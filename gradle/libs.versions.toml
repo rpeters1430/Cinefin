@@ -16,7 +16,7 @@ kotlinxCoroutines = "1.8.1"
 coil = "2.7.0"
 media3 = "1.4.1"
 navigation = "2.8.1"
-datastore = "1.1.1"
+datastore = "1.1.7"
 hilt = "2.51.1"
 hiltNavigation = "1.2.0"
 
