@@ -183,7 +183,7 @@ class JellyfinRepository @Inject constructor(
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
-        
+
         return try {
             val client = getClient(server.url, server.accessToken)
             val response = client.itemsApi.getItems(
@@ -202,6 +202,51 @@ class JellyfinRepository @Inject constructor(
                 else -> ErrorType.NETWORK
             }
             ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
+        }
+    }
+    
+    suspend fun searchItems(
+        query: String,
+        includeItemTypes: List<BaseItemKind>? = null,
+        limit: Int = 50
+    ): ApiResult<List<BaseItemDto>> {
+        val server = _currentServer.value
+        if (server?.accessToken == null || server.userId == null) {
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+        }
+        
+        if (query.isBlank()) {
+            return ApiResult.Success(emptyList())
+        }
+        
+        return try {
+            val client = getClient(server.url, server.accessToken)
+            val response = client.itemsApi.getItems(
+                userId = UUID.fromString(server.userId),
+                searchTerm = query.trim(),
+                recursive = true,
+                includeItemTypes = includeItemTypes ?: listOf(
+                    BaseItemKind.MOVIE,
+                    BaseItemKind.SERIES,
+                    BaseItemKind.EPISODE,
+                    BaseItemKind.AUDIO,
+                    BaseItemKind.MUSIC_ALBUM,
+                    BaseItemKind.MUSIC_ARTIST,
+                    BaseItemKind.BOOK,
+                    BaseItemKind.AUDIO_BOOK
+                ),
+                limit = limit
+            )
+            ApiResult.Success(response.content.items ?: emptyList())
+        } catch (e: Exception) {
+            val errorType = when {
+                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
+                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
+                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
+                else -> ErrorType.NETWORK
+            }
+            ApiResult.Error("Search failed: ${e.message}", e, errorType)
         }
     }
     
