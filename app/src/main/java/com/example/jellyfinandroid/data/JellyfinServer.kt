@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.data
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -16,12 +17,13 @@ data class JellyfinServer(
 
 @Serializable
 data class ServerInfo(
-    val id: String,
-    val name: String,
-    val version: String,
-    val operatingSystem: String? = null,
-    val localAddress: String? = null,
-    val remoteAddress: String? = null
+    @SerialName("Id") val id: String,
+    @SerialName("ServerName") val name: String,
+    @SerialName("Version") val version: String,
+    @SerialName("OperatingSystem") val operatingSystem: String? = null,
+    @SerialName("LocalAddress") val localAddress: String? = null,
+    @SerialName("ProductName") val productName: String? = null,
+    @SerialName("StartupWizardCompleted") val startupWizardCompleted: Boolean? = null
 )
 
 @Serializable
