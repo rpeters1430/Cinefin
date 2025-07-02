@@ -45,7 +45,7 @@ interface JellyfinApiService {
 @Serializable
 data class AuthenticationRequest(
     val Username: String,
-    val Pw: String
+    val Password: String
 )
 
 @Serializable

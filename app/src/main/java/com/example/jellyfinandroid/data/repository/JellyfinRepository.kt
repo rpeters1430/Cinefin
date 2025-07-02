@@ -73,7 +73,7 @@ class JellyfinRepository @Inject constructor(
             val apiService = getApiService(serverUrl)
             val request = AuthenticationRequest(
                 Username = username,
-                Pw = password
+                Password = password
             )
             
             val response = apiService.authenticateByName(request)
