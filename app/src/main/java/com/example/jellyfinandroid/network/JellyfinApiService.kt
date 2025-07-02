@@ -8,6 +8,9 @@ import retrofit2.http.*
 
 interface JellyfinApiService {
     
+    @GET("System/Ping")
+    suspend fun pingServer(): Response<String>
+    
     @GET("System/Info")
     suspend fun getServerInfo(): Response<ServerInfo>
     

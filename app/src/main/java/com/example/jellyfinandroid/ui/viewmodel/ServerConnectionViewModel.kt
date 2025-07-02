@@ -55,9 +55,9 @@ class ServerConnectionViewModel @Inject constructor(
             // First test server connection
             when (val serverResult = repository.testServerConnection(serverUrl)) {
                 is ApiResult.Success -> {
-                    val serverInfo = serverResult.data
+                    val serverName = serverResult.data.trim('"') // Remove quotes from "Jellyfin Server"
                     _connectionState.value = _connectionState.value.copy(
-                        serverName = serverInfo.name
+                        serverName = serverName
                     )
                     
                     // Now authenticate
