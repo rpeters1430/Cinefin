@@ -57,7 +57,7 @@ class ServerConnectionViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     val serverInfo = serverResult.data
                     _connectionState.value = _connectionState.value.copy(
-                        serverName = serverInfo.name
+                        serverName = serverInfo.serverName
                     )
                     
                     // Now authenticate

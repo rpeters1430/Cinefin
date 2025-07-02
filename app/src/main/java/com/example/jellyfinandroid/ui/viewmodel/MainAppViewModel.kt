@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.jellyfinandroid.data.repository.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
-import com.example.jellyfinandroid.network.BaseItem
+import org.jellyfin.sdk.model.api.BaseItemDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,9 +14,9 @@ import javax.inject.Inject
 
 data class MainAppState(
     val isLoading: Boolean = false,
-    val libraries: List<BaseItem> = emptyList(),
-    val recentlyAdded: List<BaseItem> = emptyList(),
-    val favorites: List<BaseItem> = emptyList(),
+    val libraries: List<BaseItemDto> = emptyList(),
+    val recentlyAdded: List<BaseItemDto> = emptyList(),
+    val favorites: List<BaseItemDto> = emptyList(),
     val errorMessage: String? = null
 )
 
@@ -108,7 +108,7 @@ class MainAppViewModel @Inject constructor(
         repository.logout()
     }
     
-    fun getImageUrl(item: BaseItem): String? {
-        return repository.getImageUrl(item.Id, "Primary", item.ImageTags?.Primary)
+    fun getImageUrl(item: BaseItemDto): String? {
+        return repository.getImageUrl(item.id.toString(), "Primary", null)
     }
 }

@@ -16,7 +16,7 @@ class JellyfinApiModelTest {
     fun `test authentication request serialization`() {
         val request = AuthenticationRequest(
             Username = "testuser",
-            Pw = "testpassword"
+            Password = "testpassword"
         )
         
         val jsonString = json.encodeToString(AuthenticationRequest.serializer(), request)

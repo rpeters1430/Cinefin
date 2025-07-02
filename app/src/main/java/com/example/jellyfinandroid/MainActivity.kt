@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.jellyfinandroid.data.JellyfinServer
-import com.example.jellyfinandroid.network.BaseItem
+import org.jellyfin.sdk.model.api.BaseItemDto
 import com.example.jellyfinandroid.ui.screens.ServerConnectionScreen
 import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
 import com.example.jellyfinandroid.ui.viewmodel.MainAppState
@@ -203,7 +203,7 @@ fun HomeScreen(
     appState: MainAppState,
     currentServer: JellyfinServer?,
     onRefresh: () -> Unit,
-    getImageUrl: (BaseItem) -> String?,
+    getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -319,11 +319,11 @@ fun HomeScreen(
 
 @Composable
 fun LibraryScreen(
-    libraries: List<BaseItem>,
+    libraries: List<BaseItemDto>,
     isLoading: Boolean,
     errorMessage: String?,
     onRefresh: () -> Unit,
-    getImageUrl: (BaseItem) -> String?,
+    getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(16.dp)) {
@@ -418,11 +418,11 @@ fun SearchScreen(
 
 @Composable
 fun FavoritesScreen(
-    favorites: List<BaseItem>,
+    favorites: List<BaseItemDto>,
     isLoading: Boolean,
     errorMessage: String?,
     onRefresh: () -> Unit,
-    getImageUrl: (BaseItem) -> String?,
+    getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(16.dp)) {
@@ -550,8 +550,8 @@ fun ProfileScreen(
 
 @Composable
 fun LibraryCard(
-    item: BaseItem,
-    getImageUrl: (BaseItem) -> String?,
+    item: BaseItemDto,
+    getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -561,14 +561,14 @@ fun LibraryCard(
         Column {
             AsyncImage(
                 model = getImageUrl(item),
-                contentDescription = item.Name,
+                contentDescription = item.name ?: "",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp)
             )
             
             Text(
-                text = item.Name,
+                text = item.name ?: "",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(12.dp),
                 maxLines = 2
@@ -579,8 +579,8 @@ fun LibraryCard(
 
 @Composable
 fun MediaCard(
-    item: BaseItem,
-    getImageUrl: (BaseItem) -> String?,
+    item: BaseItemDto,
+    getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -590,7 +590,7 @@ fun MediaCard(
         Column {
             AsyncImage(
                 model = getImageUrl(item),
-                contentDescription = item.Name,
+                contentDescription = item.name ?: "",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
@@ -598,12 +598,12 @@ fun MediaCard(
             
             Column(modifier = Modifier.padding(8.dp)) {
                 Text(
-                    text = item.Name,
+                    text = item.name ?: "",
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2
                 )
                 
-                item.ProductionYear?.let { year ->
+                item.productionYear?.let { year ->
                     Text(
                         text = year.toString(),
                         style = MaterialTheme.typography.bodySmall,

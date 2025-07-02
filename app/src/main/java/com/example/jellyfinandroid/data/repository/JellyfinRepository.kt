@@ -1,15 +1,23 @@
 package com.example.jellyfinandroid.data.repository
 
-import com.example.jellyfinandroid.data.AuthenticationResult
 import com.example.jellyfinandroid.data.JellyfinServer
-import com.example.jellyfinandroid.data.ServerInfo
-import com.example.jellyfinandroid.di.JellyfinApiServiceFactory
-import com.example.jellyfinandroid.network.AuthenticationRequest
-import com.example.jellyfinandroid.network.BaseItem
-import com.example.jellyfinandroid.network.JellyfinApiService
+import com.example.jellyfinandroid.di.JellyfinClientFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.extensions.userApi
+import org.jellyfin.sdk.api.client.extensions.systemApi
+import org.jellyfin.sdk.api.client.extensions.itemsApi
+import org.jellyfin.sdk.model.api.AuthenticationResult
+import org.jellyfin.sdk.model.api.AuthenticateUserByName
+import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.PublicSystemInfo
+import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.ItemSortBy
+import org.jellyfin.sdk.model.api.ItemFilter
+import org.jellyfin.sdk.model.api.ImageType
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,7 +39,7 @@ enum class ErrorType {
 
 @Singleton
 class JellyfinRepository @Inject constructor(
-    private val apiServiceFactory: JellyfinApiServiceFactory
+    private val clientFactory: JellyfinClientFactory
 ) {
     private val _currentServer = MutableStateFlow<JellyfinServer?>(null)
     val currentServer: Flow<JellyfinServer?> = _currentServer.asStateFlow()
@@ -39,28 +47,24 @@ class JellyfinRepository @Inject constructor(
     private val _isConnected = MutableStateFlow(false)
     val isConnected: Flow<Boolean> = _isConnected.asStateFlow()
     
-    private fun getApiService(serverUrl: String, accessToken: String? = null): JellyfinApiService {
-        return apiServiceFactory.getApiService(serverUrl, accessToken)
+    private fun getClient(serverUrl: String, accessToken: String? = null): ApiClient {
+        return clientFactory.getClient(serverUrl, accessToken)
     }
     
-    suspend fun testServerConnection(serverUrl: String): ApiResult<ServerInfo> {
+    suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
         return try {
-            val apiService = getApiService(serverUrl)
-            val response = apiService.getPublicServerInfo()
-            if (response.isSuccessful && response.body() != null) {
-                ApiResult.Success(response.body()!!)
-            } else {
-                val errorType = when (response.code()) {
-                    401 -> ErrorType.UNAUTHORIZED
-                    403 -> ErrorType.FORBIDDEN
-                    404 -> ErrorType.NOT_FOUND
-                    in 500..599 -> ErrorType.SERVER_ERROR
-                    else -> ErrorType.UNKNOWN
-                }
-                ApiResult.Error("Failed to connect to server: ${response.code()} ${response.message()}", errorType = errorType)
-            }
+            val client = getClient(serverUrl)
+            val response = client.systemApi.getPublicSystemInfo()
+            ApiResult.Success(response.content)
         } catch (e: Exception) {
-            ApiResult.Error("Network error: ${e.message}", e, ErrorType.NETWORK)
+            val errorType = when {
+                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
+                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
+                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
+                else -> ErrorType.NETWORK
+            }
+            ApiResult.Error("Network error: ${e.message}", e, errorType)
         }
     }
     
@@ -70,71 +74,58 @@ class JellyfinRepository @Inject constructor(
         password: String
     ): ApiResult<AuthenticationResult> {
         return try {
-            val apiService = getApiService(serverUrl)
-            val request = AuthenticationRequest(
-                Username = username,
-                Password = password
+            val client = getClient(serverUrl)
+            val request = AuthenticateUserByName(
+                username = username,
+                pw = password
+            )
+            val response = client.userApi.authenticateUserByName(request)
+            val authResult = response.content
+            
+            // Update current server state
+            val server = JellyfinServer(
+                id = authResult.serverId.toString(),
+                name = "Jellyfin Server", // We'll get the actual name from server info
+                url = serverUrl.trimEnd('/'),
+                isConnected = true,
+                userId = authResult.user?.id.toString(),
+                username = authResult.user?.name,
+                accessToken = authResult.accessToken
             )
             
-            val response = apiService.authenticateByName(request)
-            if (response.isSuccessful && response.body() != null) {
-                val authResult = response.body()!!
-                
-                // Update current server state
-                val server = JellyfinServer(
-                    id = authResult.serverId,
-                    name = "Jellyfin Server", // We'll get the actual name from server info
-                    url = serverUrl.trimEnd('/'),
-                    isConnected = true,
-                    userId = authResult.user.id,
-                    username = authResult.user.name,
-                    accessToken = authResult.accessToken
-                )
-                
-                _currentServer.value = server
-                _isConnected.value = true
-                
-                ApiResult.Success(authResult)
-            } else {
-                val errorBody = response.errorBody()?.string() ?: "Authentication failed"
-                val errorType = when (response.code()) {
-                    401 -> ErrorType.AUTHENTICATION
-                    403 -> ErrorType.FORBIDDEN
-                    else -> ErrorType.UNKNOWN
-                }
-                ApiResult.Error("Authentication failed: $errorBody", errorType = errorType)
-            }
+            _currentServer.value = server
+            _isConnected.value = true
+            
+            ApiResult.Success(authResult)
         } catch (e: Exception) {
-            ApiResult.Error("Network error: ${e.message}", e, ErrorType.NETWORK)
+            val errorType = when {
+                e.message?.contains("401") == true -> ErrorType.AUTHENTICATION
+                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+                else -> ErrorType.NETWORK
+            }
+            ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
         }
     }
     
-    suspend fun getUserLibraries(): ApiResult<List<BaseItem>> {
+    suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
         
         return try {
-            val apiService = getApiService(server.url, server.accessToken)
-            val response = apiService.getUserViews(
-                userId = server.userId
-            )
-            
-            if (response.isSuccessful && response.body() != null) {
-                ApiResult.Success(response.body()!!.Items)
-            } else {
-                val errorType = when (response.code()) {
-                    401 -> ErrorType.UNAUTHORIZED
-                    403 -> ErrorType.FORBIDDEN
-                    404 -> ErrorType.NOT_FOUND
-                    in 500..599 -> ErrorType.SERVER_ERROR
-                    else -> ErrorType.UNKNOWN
-                }
-                ApiResult.Error("Failed to load libraries: ${response.code()} ${response.message()}", errorType = errorType)
-            }
+            val client = getClient(server.url, server.accessToken)
+            val response = client.itemsApi.getItems(userId = UUID.fromString(server.userId))
+            ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
-            ApiResult.Error("Network error: ${e.message}", e, ErrorType.NETWORK)
+            val errorType = when {
+                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
+                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
+                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
+                else -> ErrorType.NETWORK
+            }
+            ApiResult.Error("Failed to load libraries: ${e.message}", e, errorType)
         }
     }
     
@@ -143,77 +134,74 @@ class JellyfinRepository @Inject constructor(
         itemTypes: String? = null,
         startIndex: Int = 0,
         limit: Int = 100
-    ): ApiResult<List<BaseItem>> {
+    ): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
         
         return try {
-            val apiService = getApiService(server.url, server.accessToken)
-            val response = apiService.getUserItems(
-                userId = server.userId,
+            val client = getClient(server.url, server.accessToken)
+            val itemKinds = itemTypes?.split(",")?.mapNotNull { type ->
+                when (type.trim()) {
+                    "Movie" -> BaseItemKind.MOVIE
+                    "Series" -> BaseItemKind.SERIES
+                    "Episode" -> BaseItemKind.EPISODE
+                    "Audio" -> BaseItemKind.AUDIO
+                    else -> null
+                }
+            }
+            val response = client.itemsApi.getItems(
+                userId = UUID.fromString(server.userId),
                 recursive = true,
-                includeItemTypes = itemTypes,
+                includeItemTypes = itemKinds,
                 startIndex = startIndex,
                 limit = limit
             )
-            
-            if (response.isSuccessful && response.body() != null) {
-                ApiResult.Success(response.body()!!.Items)
-            } else {
-                val errorType = when (response.code()) {
-                    401 -> ErrorType.UNAUTHORIZED
-                    403 -> ErrorType.FORBIDDEN
-                    404 -> ErrorType.NOT_FOUND
-                    in 500..599 -> ErrorType.SERVER_ERROR
-                    else -> ErrorType.UNKNOWN
-                }
-                ApiResult.Error("Failed to load items: ${response.code()} ${response.message()}", errorType = errorType)
-            }
+            ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
-            ApiResult.Error("Network error: ${e.message}", e, ErrorType.NETWORK)
+            val errorType = when {
+                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
+                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
+                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
+                else -> ErrorType.NETWORK
+            }
+            ApiResult.Error("Failed to load items: ${e.message}", e, errorType)
         }
     }
     
-    suspend fun getRecentlyAdded(limit: Int = 20): ApiResult<List<BaseItem>> {
+    suspend fun getRecentlyAdded(limit: Int = 20): ApiResult<List<BaseItemDto>> {
         return getLibraryItems(
             itemTypes = "Movie,Series,Episode,Audio",
             limit = limit
         )
     }
     
-    suspend fun getFavorites(): ApiResult<List<BaseItem>> {
+    suspend fun getFavorites(): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
         
         return try {
-            val apiService = getApiService(server.url, server.accessToken)
-            val response = apiService.getUserItems(
-                userId = server.userId,
+            val client = getClient(server.url, server.accessToken)
+            val response = client.itemsApi.getItems(
+                userId = UUID.fromString(server.userId),
                 recursive = true,
-                sortBy = "SortName"
+                sortBy = listOf(ItemSortBy.SORT_NAME),
+                filters = listOf(ItemFilter.IS_FAVORITE)
             )
-            
-            if (response.isSuccessful && response.body() != null) {
-                val favoriteItems = response.body()!!.Items.filter { 
-                    it.UserData?.IsFavorite == true 
-                }
-                ApiResult.Success(favoriteItems)
-            } else {
-                val errorType = when (response.code()) {
-                    401 -> ErrorType.UNAUTHORIZED
-                    403 -> ErrorType.FORBIDDEN
-                    404 -> ErrorType.NOT_FOUND
-                    in 500..599 -> ErrorType.SERVER_ERROR
-                    else -> ErrorType.UNKNOWN
-                }
-                ApiResult.Error("Failed to load favorites: ${response.code()} ${response.message()}", errorType = errorType)
-            }
+            ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
-            ApiResult.Error("Network error: ${e.message}", e, ErrorType.NETWORK)
+            val errorType = when {
+                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
+                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
+                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
+                else -> ErrorType.NETWORK
+            }
+            ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
         }
     }
     
