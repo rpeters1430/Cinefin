@@ -45,7 +45,7 @@ jobs:
       run: ./gradlew lintDebug
       
     - name: Upload lint reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: lint-reports
@@ -141,14 +141,14 @@ jobs:
         fi
         
     - name: Upload APK artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.build-type }}-apk
         path: app/build/outputs/apk/${{ matrix.build-type }}/app-${{ matrix.build-type }}.apk
         retention-days: 30
         
     - name: Upload build reports on failure
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: failure()
       with:
         name: ${{ matrix.build-type }}-build-reports
