@@ -1,9 +1,10 @@
 pluginManagement {
     plugins {
-        id("org.jetbrains.kotlin.android") version "2.0.0"
-        id("org.jetbrains.kotlin.plugin.serialization") version "2.0.0"
-        id("com.google.devtools.ksp") version "2.0.0-1.0.20"
-        id("com.google.dagger.hilt.android") version "2.51"
+        id("org.jetbrains.kotlin.android") version "2.2.0"
+        id("org.jetbrains.kotlin.plugin.compose") version "2.2.0"
+        id("org.jetbrains.kotlin.plugin.serialization") version "2.2.0"
+        id("com.google.devtools.ksp") version "2.2.0-2.0.2"  // ← Fixed version
+        id("com.google.dagger.hilt.android") version "2.56.2"
         id("com.android.application") version "8.5.2"
     }
 
@@ -13,6 +14,7 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
