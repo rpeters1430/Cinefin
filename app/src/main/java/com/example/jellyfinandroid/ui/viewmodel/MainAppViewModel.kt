@@ -17,6 +17,9 @@ data class MainAppState(
     val libraries: List<BaseItemDto> = emptyList(),
     val recentlyAdded: List<BaseItemDto> = emptyList(),
     val favorites: List<BaseItemDto> = emptyList(),
+    val searchResults: List<BaseItemDto> = emptyList(),
+    val searchQuery: String = "",
+    val isSearching: Boolean = false,
     val errorMessage: String? = null
 )
 
@@ -110,5 +113,42 @@ class MainAppViewModel @Inject constructor(
     
     fun getImageUrl(item: BaseItemDto): String? {
         return repository.getImageUrl(item.id.toString(), "Primary", null)
+    }
+    
+    fun search(query: String) {
+        viewModelScope.launch {
+            _appState.value = _appState.value.copy(
+                searchQuery = query,
+                isSearching = true,
+                errorMessage = null
+            )
+            
+            when (val result = repository.searchItems(query)) {
+                is ApiResult.Success -> {
+                    _appState.value = _appState.value.copy(
+                        searchResults = result.data,
+                        isSearching = false
+                    )
+                }
+                is ApiResult.Error -> {
+                    _appState.value = _appState.value.copy(
+                        searchResults = emptyList(),
+                        isSearching = false,
+                        errorMessage = "Search failed: ${result.message}"
+                    )
+                }
+                is ApiResult.Loading -> {
+                    // Already handled
+                }
+            }
+        }
+    }
+    
+    fun clearSearch() {
+        _appState.value = _appState.value.copy(
+            searchQuery = "",
+            searchResults = emptyList(),
+            isSearching = false
+        )
     }
 }

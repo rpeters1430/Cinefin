@@ -27,22 +27,28 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import java.util.Locale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -66,6 +72,7 @@ import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.data.JellyfinServer
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 import com.example.jellyfinandroid.ui.screens.ServerConnectionScreen
 import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
 import com.example.jellyfinandroid.ui.viewmodel.MainAppState
@@ -140,6 +147,8 @@ fun JellyfinAndroidApp() {
                             appState = appState,
                             currentServer = currentServer,
                             onRefresh = { mainViewModel.loadInitialData() },
+                            onSearch = { query -> mainViewModel.search(query) },
+                            onClearSearch = { mainViewModel.clearSearch() },
                             getImageUrl = { item -> mainViewModel.getImageUrl(item) },
                             modifier = Modifier.padding(innerPadding)
                         )
@@ -156,6 +165,10 @@ fun JellyfinAndroidApp() {
                     }
                     AppDestinations.SEARCH -> {
                         SearchScreen(
+                            appState = appState,
+                            onSearch = { query -> mainViewModel.search(query) },
+                            onClearSearch = { mainViewModel.clearSearch() },
+                            getImageUrl = { item -> mainViewModel.getImageUrl(item) },
                             modifier = Modifier.padding(innerPadding)
                         )
                     }
@@ -213,8 +226,80 @@ fun GreetingPreview() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    appState: MainAppState,
+    currentServer: JellyfinServer?,
+    onRefresh: () -> Unit,
+    onSearch: (String) -> Unit,
+    onClearSearch: () -> Unit,
+    getImageUrl: (BaseItemDto) -> String?,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        // Top App Bar with Search
+        TopAppBar(
+            title = {
+                OutlinedTextField(
+                    value = appState.searchQuery,
+                    onValueChange = onSearch,
+                    placeholder = { 
+                        Text(
+                            text = "Search movies, shows, music...",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search"
+                        )
+                    },
+                    trailingIcon = {
+                        if (appState.searchQuery.isNotEmpty()) {
+                            IconButton(onClick = onClearSearch) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Clear search"
+                                )
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        )
+        
+        // Content
+        if (appState.searchQuery.isNotEmpty()) {
+            // Show search results
+            SearchResultsContent(
+                searchResults = appState.searchResults,
+                isSearching = appState.isSearching,
+                errorMessage = appState.errorMessage,
+                getImageUrl = getImageUrl,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            // Show regular home content
+            HomeContent(
+                appState = appState,
+                currentServer = currentServer,
+                onRefresh = onRefresh,
+                getImageUrl = getImageUrl,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@Composable
+fun HomeContent(
     appState: MainAppState,
     currentServer: JellyfinServer?,
     onRefresh: () -> Unit,
@@ -416,8 +501,13 @@ fun LibraryScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
+    appState: MainAppState,
+    onSearch: (String) -> Unit,
+    onClearSearch: () -> Unit,
+    getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(16.dp)) {
@@ -425,11 +515,48 @@ fun SearchScreen(
             text = "Search",
             style = MaterialTheme.typography.headlineMedium
         )
+        
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Search functionality coming soon...",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+        
+        // Search Input
+        OutlinedTextField(
+            value = appState.searchQuery,
+            onValueChange = onSearch,
+            placeholder = { 
+                Text(
+                    text = "Search movies, shows, music, books...",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search"
+                )
+            },
+            trailingIcon = {
+                if (appState.searchQuery.isNotEmpty()) {
+                    IconButton(onClick = onClearSearch) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear search"
+                        )
+                    }
+                }
+            },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Search Results
+        SearchResultsContent(
+            searchResults = appState.searchResults,
+            isSearching = appState.isSearching,
+            errorMessage = appState.errorMessage,
+            getImageUrl = getImageUrl,
+            modifier = Modifier.fillMaxSize()
         )
     }
 }
@@ -630,7 +757,7 @@ fun LibraryCard(
                         shape = RoundedCornerShape(6.dp)
                     ) {
                         Text(
-                            text = collectionType.capitalize(),
+                            text = collectionType.toString(),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -704,7 +831,7 @@ fun MediaCard(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Movie,
+                                imageVector = Icons.Default.PlayArrow,
                                 contentDescription = null,
                                 modifier = Modifier.size(32.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -846,7 +973,7 @@ fun CarouselItemCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Movie,
+                            imageVector = Icons.Default.PlayArrow,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -946,6 +1073,127 @@ fun CarouselItemCard(
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SearchResultsContent(
+    searchResults: List<BaseItemDto>,
+    isSearching: Boolean,
+    errorMessage: String?,
+    getImageUrl: (BaseItemDto) -> String?,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        if (isSearching) {
+            item {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                        Text(
+                            text = "Searching...",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        }
+        
+        errorMessage?.let { error ->
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+        }
+        
+        if (searchResults.isEmpty() && !isSearching && errorMessage == null) {
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No results found",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Try searching with different keywords",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        
+        // Group results by type
+        val groupedResults = searchResults.groupBy { it.type }
+        
+        groupedResults.forEach { (type, items) ->
+            item {
+                Text(
+                    text = when (type) {
+                        BaseItemKind.MOVIE -> "Movies"
+                        BaseItemKind.SERIES -> "TV Shows"
+                        BaseItemKind.EPISODE -> "Episodes"
+                        BaseItemKind.AUDIO -> "Music"
+                        BaseItemKind.MUSIC_ALBUM -> "Albums"
+                        BaseItemKind.MUSIC_ARTIST -> "Artists"
+                        BaseItemKind.BOOK -> "Books"
+                        BaseItemKind.AUDIO_BOOK -> "Audiobooks"
+                        else -> type?.toString() ?: "Other"
+                    },
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+            
+            items(items.chunked(2)) { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    rowItems.forEach { item ->
+                        MediaCard(
+                            item = item,
+                            getImageUrl = getImageUrl,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    // Fill remaining space if odd number of items
+                    if (rowItems.size == 1) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
