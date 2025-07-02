@@ -94,7 +94,7 @@ fun JellyfinAndroidApp() {
         currentDestination = AppDestinations.HOME
         val mainViewModel: MainAppViewModel = hiltViewModel()
         val appState by mainViewModel.appState.collectAsState()
-        val currentServer by mainViewModel.currentServer.collectAsState()
+        val currentServer by mainViewModel.currentServer.collectAsState(initial = null)
 
         NavigationSuiteScaffold(
             navigationSuiteItems = {

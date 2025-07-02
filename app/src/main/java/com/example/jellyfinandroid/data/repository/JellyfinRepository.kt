@@ -15,8 +15,18 @@ import javax.inject.Singleton
 
 sealed class ApiResult<T> {
     data class Success<T>(val data: T) : ApiResult<T>()
-    data class Error<T>(val message: String, val cause: Throwable? = null) : ApiResult<T>()
+    data class Error<T>(val message: String, val cause: Throwable? = null, val errorType: ErrorType = ErrorType.UNKNOWN) : ApiResult<T>()
     data class Loading<T>(val message: String = "Loading...") : ApiResult<T>()
+}
+
+enum class ErrorType {
+    NETWORK,
+    AUTHENTICATION,
+    SERVER_ERROR,
+    NOT_FOUND,
+    UNAUTHORIZED,
+    FORBIDDEN,
+    UNKNOWN
 }
 
 @Singleton
@@ -29,8 +39,8 @@ class JellyfinRepository @Inject constructor(
     private val _isConnected = MutableStateFlow(false)
     val isConnected: Flow<Boolean> = _isConnected.asStateFlow()
     
-    private fun getApiService(serverUrl: String): JellyfinApiService {
-        return apiServiceFactory.getApiService(serverUrl)
+    private fun getApiService(serverUrl: String, accessToken: String? = null): JellyfinApiService {
+        return apiServiceFactory.getApiService(serverUrl, accessToken)
     }
     
     suspend fun testServerConnection(serverUrl: String): ApiResult<ServerInfo> {
@@ -40,10 +50,17 @@ class JellyfinRepository @Inject constructor(
             if (response.isSuccessful && response.body() != null) {
                 ApiResult.Success(response.body()!!)
             } else {
-                ApiResult.Error("Failed to connect to server: ${response.code()} ${response.message()}")
+                val errorType = when (response.code()) {
+                    401 -> ErrorType.UNAUTHORIZED
+                    403 -> ErrorType.FORBIDDEN
+                    404 -> ErrorType.NOT_FOUND
+                    in 500..599 -> ErrorType.SERVER_ERROR
+                    else -> ErrorType.UNKNOWN
+                }
+                ApiResult.Error("Failed to connect to server: ${response.code()} ${response.message()}", errorType = errorType)
             }
         } catch (e: Exception) {
-            ApiResult.Error("Network error: ${e.message}", e)
+            ApiResult.Error("Network error: ${e.message}", e, ErrorType.NETWORK)
         }
     }
     
@@ -80,33 +97,44 @@ class JellyfinRepository @Inject constructor(
                 ApiResult.Success(authResult)
             } else {
                 val errorBody = response.errorBody()?.string() ?: "Authentication failed"
-                ApiResult.Error("Authentication failed: $errorBody")
+                val errorType = when (response.code()) {
+                    401 -> ErrorType.AUTHENTICATION
+                    403 -> ErrorType.FORBIDDEN
+                    else -> ErrorType.UNKNOWN
+                }
+                ApiResult.Error("Authentication failed: $errorBody", errorType = errorType)
             }
         } catch (e: Exception) {
-            ApiResult.Error("Network error: ${e.message}", e)
+            ApiResult.Error("Network error: ${e.message}", e, ErrorType.NETWORK)
         }
     }
     
     suspend fun getUserLibraries(): ApiResult<List<BaseItem>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
-            return ApiResult.Error("Not authenticated")
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
         
         return try {
-            val apiService = getApiService(server.url)
+            val apiService = getApiService(server.url, server.accessToken)
             val response = apiService.getUserViews(
-                userId = server.userId,
-                token = "MediaBrowser Token=\"${server.accessToken}\""
+                userId = server.userId
             )
             
             if (response.isSuccessful && response.body() != null) {
                 ApiResult.Success(response.body()!!.Items)
             } else {
-                ApiResult.Error("Failed to load libraries: ${response.code()} ${response.message()}")
+                val errorType = when (response.code()) {
+                    401 -> ErrorType.UNAUTHORIZED
+                    403 -> ErrorType.FORBIDDEN
+                    404 -> ErrorType.NOT_FOUND
+                    in 500..599 -> ErrorType.SERVER_ERROR
+                    else -> ErrorType.UNKNOWN
+                }
+                ApiResult.Error("Failed to load libraries: ${response.code()} ${response.message()}", errorType = errorType)
             }
         } catch (e: Exception) {
-            ApiResult.Error("Network error: ${e.message}", e)
+            ApiResult.Error("Network error: ${e.message}", e, ErrorType.NETWORK)
         }
     }
     
@@ -118,14 +146,13 @@ class JellyfinRepository @Inject constructor(
     ): ApiResult<List<BaseItem>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
-            return ApiResult.Error("Not authenticated")
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
         
         return try {
-            val apiService = getApiService(server.url)
+            val apiService = getApiService(server.url, server.accessToken)
             val response = apiService.getUserItems(
                 userId = server.userId,
-                token = "MediaBrowser Token=\"${server.accessToken}\"",
                 recursive = true,
                 includeItemTypes = itemTypes,
                 startIndex = startIndex,
@@ -135,10 +162,17 @@ class JellyfinRepository @Inject constructor(
             if (response.isSuccessful && response.body() != null) {
                 ApiResult.Success(response.body()!!.Items)
             } else {
-                ApiResult.Error("Failed to load items: ${response.code()} ${response.message()}")
+                val errorType = when (response.code()) {
+                    401 -> ErrorType.UNAUTHORIZED
+                    403 -> ErrorType.FORBIDDEN
+                    404 -> ErrorType.NOT_FOUND
+                    in 500..599 -> ErrorType.SERVER_ERROR
+                    else -> ErrorType.UNKNOWN
+                }
+                ApiResult.Error("Failed to load items: ${response.code()} ${response.message()}", errorType = errorType)
             }
         } catch (e: Exception) {
-            ApiResult.Error("Network error: ${e.message}", e)
+            ApiResult.Error("Network error: ${e.message}", e, ErrorType.NETWORK)
         }
     }
     
@@ -152,14 +186,13 @@ class JellyfinRepository @Inject constructor(
     suspend fun getFavorites(): ApiResult<List<BaseItem>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
-            return ApiResult.Error("Not authenticated")
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
         
         return try {
-            val apiService = getApiService(server.url)
+            val apiService = getApiService(server.url, server.accessToken)
             val response = apiService.getUserItems(
                 userId = server.userId,
-                token = "MediaBrowser Token=\"${server.accessToken}\"",
                 recursive = true,
                 sortBy = "SortName"
             )
@@ -170,10 +203,17 @@ class JellyfinRepository @Inject constructor(
                 }
                 ApiResult.Success(favoriteItems)
             } else {
-                ApiResult.Error("Failed to load favorites: ${response.code()} ${response.message()}")
+                val errorType = when (response.code()) {
+                    401 -> ErrorType.UNAUTHORIZED
+                    403 -> ErrorType.FORBIDDEN
+                    404 -> ErrorType.NOT_FOUND
+                    in 500..599 -> ErrorType.SERVER_ERROR
+                    else -> ErrorType.UNKNOWN
+                }
+                ApiResult.Error("Failed to load favorites: ${response.code()} ${response.message()}", errorType = errorType)
             }
         } catch (e: Exception) {
-            ApiResult.Error("Network error: ${e.message}", e)
+            ApiResult.Error("Network error: ${e.message}", e, ErrorType.NETWORK)
         }
     }
     

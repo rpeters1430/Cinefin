@@ -1,3 +1,4 @@
+# Android Build Files
 *.iml
 .gradle
 /local.properties
@@ -13,3 +14,65 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Additional Android Studio / IntelliJ IDEA
+.idea/
+*.iws
+*.ipr
+*.swp
+*.swo
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Additional Build Files
+build/
+!gradle/wrapper/gradle-wrapper.jar
+gradle-app.setting
+
+# APK files
+*.apk
+*.ap_
+*.aab
+
+# DEX files
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Signing files
+*.jks
+*.keystore
+
+# Logs
+*.log
+
+# Unit test reports
+TEST-*.xml
+
+# Proguard
+proguard/
+
+# Lint
+lint-results.xml
+lint-results.html
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Kotlin
+*.kt.class

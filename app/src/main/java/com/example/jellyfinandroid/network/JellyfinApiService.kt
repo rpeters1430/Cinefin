@@ -19,7 +19,6 @@ interface JellyfinApiService {
     @GET("Users/{userId}/Items")
     suspend fun getUserItems(
         @Path("userId") userId: String,
-        @Header("Authorization") token: String,
         @Query("Recursive") recursive: Boolean = true,
         @Query("IncludeItemTypes") includeItemTypes: String? = null,
         @Query("SortBy") sortBy: String = "SortName",
@@ -30,14 +29,12 @@ interface JellyfinApiService {
     
     @GET("Users/{userId}/Views")
     suspend fun getUserViews(
-        @Path("userId") userId: String,
-        @Header("Authorization") token: String
+        @Path("userId") userId: String
     ): Response<ItemsResult>
     
     @GET("Items/{itemId}")
     suspend fun getItem(
         @Path("itemId") itemId: String,
-        @Header("Authorization") token: String,
         @Query("UserId") userId: String
     ): Response<BaseItem>
 }
