@@ -104,14 +104,19 @@ class JellyfinClientInterceptor : Interceptor {
     
     override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
         val originalRequest = chain.request()
-        val requestWithHeaders = originalRequest.newBuilder()
+        val requestBuilder = originalRequest.newBuilder()
             .header("X-Emby-Client", CLIENT_NAME)
             .header("X-Emby-Client-Version", CLIENT_VERSION)
             .header("X-Emby-Device-Name", DEVICE_NAME)
             .header("X-Emby-Device-Id", DEVICE_ID)
-            .build()
         
-        return chain.proceed(requestWithHeaders)
+        // Add X-Emby-Authorization header for authentication endpoints
+        if (originalRequest.url.encodedPath.contains("AuthenticateByName")) {
+            val authHeader = "MediaBrowser Client=\"$CLIENT_NAME\", Device=\"$DEVICE_NAME\", DeviceId=\"$DEVICE_ID\", Version=\"$CLIENT_VERSION\""
+            requestBuilder.header("X-Emby-Authorization", authHeader)
+        }
+        
+        return chain.proceed(requestBuilder.build())
     }
 }
 

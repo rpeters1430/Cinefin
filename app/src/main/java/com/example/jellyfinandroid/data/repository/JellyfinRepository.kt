@@ -43,10 +43,10 @@ class JellyfinRepository @Inject constructor(
         return apiServiceFactory.getApiService(serverUrl, accessToken)
     }
     
-    suspend fun testServerConnection(serverUrl: String): ApiResult<String> {
+    suspend fun testServerConnection(serverUrl: String): ApiResult<ServerInfo> {
         return try {
             val apiService = getApiService(serverUrl)
-            val response = apiService.pingServer()
+            val response = apiService.getPublicServerInfo()
             if (response.isSuccessful && response.body() != null) {
                 ApiResult.Success(response.body()!!)
             } else {

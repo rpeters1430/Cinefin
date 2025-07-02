@@ -11,6 +11,9 @@ interface JellyfinApiService {
     @GET("System/Ping")
     suspend fun pingServer(): Response<String>
     
+    @GET("System/Info/Public")
+    suspend fun getPublicServerInfo(): Response<ServerInfo>
+    
     @GET("System/Info")
     suspend fun getServerInfo(): Response<ServerInfo>
     
