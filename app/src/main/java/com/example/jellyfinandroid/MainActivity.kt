@@ -4,6 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,21 +22,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.ui.util.lerp
-import kotlin.math.absoluteValue
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
@@ -55,7 +52,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
-import java.util.Locale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -74,19 +70,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.test.espresso.base.Default
-import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.data.JellyfinServer
-import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.BaseItemKind
 import com.example.jellyfinandroid.ui.screens.ServerConnectionScreen
 import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
 import com.example.jellyfinandroid.ui.viewmodel.MainAppState
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
+import kotlin.math.absoluteValue
 
 @AndroidEntryPoint
 
@@ -214,7 +210,7 @@ enum class AppDestinations(
 ) {
     CONNECT("Connect", Icons.Default.Home), // Hidden from navigation
     HOME("Home", Icons.Default.Home),
-    LIBRARY("Library", Icons.Default.List),
+    LIBRARY("Library", Icons.AutoMirrored.Filled.List),
     SEARCH("Search", Icons.Default.Search),
     FAVORITES("Favorites", Icons.Default.Favorite),
     PROFILE("Profile", Icons.Default.AccountBox),
@@ -747,7 +743,7 @@ fun LibraryCard(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.List,
+                                imageVector = Icons.AutoMirrored.Filled.List,
                                 contentDescription = null,
                                 modifier = Modifier.size(32.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant

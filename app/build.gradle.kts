@@ -38,6 +38,7 @@ android {
 
     kotlinOptions {
         jvmTarget = "1.8"
+        freeCompilerArgs += "-Xannotation-default-target=param-property"
     }
 
     buildFeatures {
