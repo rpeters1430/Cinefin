@@ -24,6 +24,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
@@ -913,21 +915,50 @@ fun RecentlyAddedCarousel(
     
     val pagerState = rememberPagerState(pageCount = { items.size })
     
-    HorizontalPager(
-        state = pagerState,
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 32.dp),
-        pageSpacing = 16.dp
-    ) { page ->
-        val item = items[page]
-        val scale = if (page == pagerState.currentPage) 1f else 0.85f
+    Column(modifier = modifier) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 24.dp),
+            pageSpacing = 12.dp
+        ) { page ->
+            val item = items[page]
+            
+            CarouselItemCard(
+                item = item,
+                getImageUrl = getImageUrl,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
         
-        CarouselItemCard(
-            item = item,
-            getImageUrl = getImageUrl,
-            scale = scale,
-            modifier = Modifier.fillMaxSize()
-        )
+        // Material 3 style page indicator
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            repeat(items.size) { index ->
+                val isSelected = index == pagerState.currentPage
+                Box(
+                    modifier = Modifier
+                        .size(
+                            width = if (isSelected) 24.dp else 8.dp,
+                            height = 8.dp
+                        )
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(
+                            if (isSelected) 
+                                MaterialTheme.colorScheme.primary 
+                            else 
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                        )
+                        .padding(horizontal = 2.dp)
+                )
+            }
+        }
     }
 }
 
@@ -935,16 +966,15 @@ fun RecentlyAddedCarousel(
 fun CarouselItemCard(
     item: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
-    scale: Float,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
-            .aspectRatio(16f / 9f)
-            .graphicsLayer(scaleX = scale, scaleY = scale),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (scale == 1f) 8.dp else 4.dp
+            .aspectRatio(16f / 9f),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         )
     ) {
         Box {
