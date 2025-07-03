@@ -75,6 +75,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.test.espresso.base.Default
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.data.JellyfinServer
@@ -570,6 +571,7 @@ fun SearchScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoritesScreen(
     favorites: List<BaseItemDto>,

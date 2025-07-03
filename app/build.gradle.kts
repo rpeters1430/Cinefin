@@ -30,16 +30,16 @@ android {
             )
         }
     }
-    
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    
+
     kotlinOptions {
         jvmTarget = "1.8"
     }
-    
+
     buildFeatures {
         compose = true
     }
@@ -50,20 +50,25 @@ android {
 }
 
 dependencies {
+    // Core Android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+
+    // Compose BOM - This manages all Compose library versions
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
+
+    // Material 3 ONLY - No Material 2
     implementation(libs.androidx.material3.adaptive.navigation.suite)
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.material3)
+    implementation(libs.androidx.material3)
     implementation(libs.androidx.material3.window.size.class1)
-    implementation(libs.material3.adaptive.navigation.suite)
-    
+
+    // Navigation
+    implementation(libs.androidx.navigation.compose)
+
     // Jellyfin SDK and networking
     implementation(libs.jellyfin.sdk)
     implementation(libs.retrofit)
@@ -71,23 +76,26 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
-    
+
+    implementation(libs.androidx.material.icons.extended)
+
     // Image loading
     implementation(libs.coil.compose)
-    
-    // Media playback
+
+    // Media playback (ready for future implementation)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.common)
-    
+
     // Data storage
     implementation(libs.androidx.datastore.preferences)
-    
+
     // Dependency injection
     implementation(libs.dagger.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.dagger.hilt.compiler)
-    
+
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -95,4 +103,5 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
 }
