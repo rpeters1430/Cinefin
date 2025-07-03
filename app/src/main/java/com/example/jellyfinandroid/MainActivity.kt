@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -25,8 +24,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -63,14 +62,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.lerp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.data.JellyfinServer
@@ -82,7 +79,6 @@ import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import kotlin.math.absoluteValue
 
 @AndroidEntryPoint
 
@@ -910,6 +906,7 @@ fun MediaCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecentlyAddedCarousel(
     items: List<BaseItemDto>,
@@ -917,50 +914,28 @@ fun RecentlyAddedCarousel(
     modifier: Modifier = Modifier
 ) {
     if (items.isEmpty()) return
-    
-    val pagerState = rememberPagerState(pageCount = { items.size })
-    
+
+    val carouselState = rememberCarouselState { items.size }
+    // Track current item manually since CarouselState doesn't expose currentItem yet
+    var currentItem by rememberSaveable { mutableStateOf(0) }
+
     Column(modifier = modifier) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 32.dp),
-            pageSpacing = 20.dp
-        ) { page ->
-            val item = items[page]
-            val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
-            
-            // Material 3 Expressive style scaling and alpha
-            val scale = lerp(
-                start = 0.85f,
-                stop = 1f,
-                fraction = 1f - pageOffset.coerceIn(0f, 1f)
+        HorizontalUncontainedCarousel(
+            state = carouselState,
+            itemWidth = 320.dp,
+            itemSpacing = 20.dp,
+            contentPadding = PaddingValues(horizontal = 32.dp)
+        ) { index ->
+            CarouselItemCard(
+                item = items[index],
+                getImageUrl = getImageUrl,
+                modifier = Modifier.fillMaxSize()
             )
-            val alpha = lerp(
-                start = 0.7f,
-                stop = 1f,
-                fraction = 1f - pageOffset.coerceIn(0f, 1f)
-            )
-            
-            Box(
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        this.alpha = alpha
-                    }
-            ) {
-                CarouselItemCard(
-                    item = item,
-                    getImageUrl = getImageUrl,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
         }
-        
+
         Spacer(modifier = Modifier.height(20.dp))
-        
-        // Material 3 Expressive style indicators
+
+        // Page indicators with clickable functionality
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -969,27 +944,21 @@ fun RecentlyAddedCarousel(
             verticalAlignment = Alignment.CenterVertically
         ) {
             repeat(items.size) { index ->
-                val isSelected = index == pagerState.currentPage
+                val isSelected = index == currentItem
                 val animatedWidth by animateDpAsState(
                     targetValue = if (isSelected) 32.dp else 8.dp,
-                    animationSpec = tween(
-                        durationMillis = 300,
-                        easing = FastOutSlowInEasing
-                    ),
+                    animationSpec = tween(300),
                     label = "indicator_width"
                 )
                 val animatedColor by animateColorAsState(
-                    targetValue = if (isSelected) 
-                        MaterialTheme.colorScheme.primary 
-                    else 
+                    targetValue = if (isSelected)
+                        MaterialTheme.colorScheme.primary
+                    else
                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    animationSpec = tween<androidx.compose.ui.graphics.Color>(
-                        durationMillis = 300,
-                        easing = FastOutSlowInEasing
-                    ),
+                    animationSpec = tween(300),
                     label = "indicator_color"
                 )
-                
+
                 Box(
                     modifier = Modifier
                         .height(8.dp)
@@ -997,7 +966,7 @@ fun RecentlyAddedCarousel(
                         .clip(RoundedCornerShape(4.dp))
                         .background(animatedColor)
                 )
-                
+
                 if (index < items.size - 1) {
                     Spacer(modifier = Modifier.width(6.dp))
                 }
