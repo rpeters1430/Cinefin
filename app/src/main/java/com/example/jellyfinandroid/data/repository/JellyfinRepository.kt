@@ -17,6 +17,7 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ImageType
+import org.jellyfin.sdk.model.api.SortOrder
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -280,10 +281,41 @@ class JellyfinRepository @Inject constructor(
     }
     
     suspend fun getRecentlyAdded(limit: Int = 20): ApiResult<List<BaseItemDto>> {
-        return getLibraryItems(
-            itemTypes = "Movie,Series,Episode,Audio",
-            limit = limit
-        )
+        val server = _currentServer.value
+        if (server?.accessToken == null || server.userId == null) {
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        return try {
+            val client = getClient(server.url, server.accessToken)
+            val response = client.itemsApi.getItems(
+                userId = UUID.fromString(server.userId),
+                recursive = true,
+                includeItemTypes = listOf(
+                    BaseItemKind.MOVIE,
+                    BaseItemKind.SERIES,
+                    BaseItemKind.EPISODE,
+                    BaseItemKind.AUDIO,
+                    BaseItemKind.MUSIC_ALBUM,
+                    BaseItemKind.MUSIC_ARTIST,
+                    BaseItemKind.BOOK,
+                    BaseItemKind.AUDIO_BOOK
+                ),
+                sortBy = listOf(ItemSortBy.DATE_CREATED),
+                sortOrder = listOf(SortOrder.DESCENDING),
+                limit = limit
+            )
+            ApiResult.Success(response.content.items ?: emptyList())
+        } catch (e: Exception) {
+            val errorType = when {
+                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
+                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
+                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
+                else -> ErrorType.NETWORK
+            }
+            ApiResult.Error("Failed to load recently added items: ${e.message}", e, errorType)
+        }
     }
     
     suspend fun getFavorites(): ApiResult<List<BaseItemDto>> {

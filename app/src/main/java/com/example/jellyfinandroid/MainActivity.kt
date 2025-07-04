@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AccountBox
@@ -81,6 +82,8 @@ import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.ItemSortBy
+import org.jellyfin.sdk.model.api.SortOrder
 
 @AndroidEntryPoint
 
@@ -89,7 +92,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            JellyfinAndroidTheme {
+            JellyfinAndroidTheme(darkTheme = true) {
                 JellyfinAndroidApp()
             }
         }
@@ -522,11 +525,24 @@ fun HomeContent(
         if (appState.recentlyAdded.isNotEmpty()) {
             item {
                 Column {
-                    Text(
-                        text = "Recently Added",
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Recently Added",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        IconButton(onClick = onRefresh) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh Recently Added"
+                            )
+                        }
+                    }
                     
                     RecentlyAddedCarousel(
                         items = appState.recentlyAdded.take(10),
@@ -1264,4 +1280,5 @@ fun CarouselItemCard(
             }
         }
     }
-}}
+}
+            }
