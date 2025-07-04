@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import javax.inject.Inject
 import kotlinx.coroutines.delay
 
@@ -53,6 +55,8 @@ class ServerConnectionViewModel @Inject constructor(
     
     private val _connectionState = MutableStateFlow(ConnectionState())
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+    
+    private var quickConnectPollingJob: Job? = null
     
     init {
         // Load saved credentials and remember login state
@@ -188,6 +192,8 @@ class ServerConnectionViewModel @Inject constructor(
     }
     
     fun cancelQuickConnect() {
+        quickConnectPollingJob?.cancel()
+        quickConnectPollingJob = null
         _connectionState.value = _connectionState.value.copy(
             isQuickConnectActive = false,
             quickConnectCode = "",
@@ -241,7 +247,9 @@ class ServerConnectionViewModel @Inject constructor(
                             )
                             
                             // Start polling for approval
-                            pollQuickConnectState(serverUrl, result.secret ?: "")
+                            quickConnectPollingJob = viewModelScope.launch {
+                                pollQuickConnectState(serverUrl, result.secret ?: "")
+                            }
                         }
                         is ApiResult.Error -> {
                             _connectionState.value = _connectionState.value.copy(
@@ -271,7 +279,9 @@ class ServerConnectionViewModel @Inject constructor(
         var attempts = 0
         val maxAttempts = 60 // 5 minutes with 5-second intervals
         
-        while (attempts < maxAttempts && _connectionState.value.isQuickConnectPolling) {
+        while (attempts < maxAttempts && 
+               _connectionState.value.isQuickConnectPolling && 
+               isActive) { // Check if coroutine is still active
             delay(5000) // Wait 5 seconds between polls
             
             when (val stateResult = repository.getQuickConnectState(serverUrl, secret)) {
@@ -346,5 +356,14 @@ class ServerConnectionViewModel @Inject constructor(
                 errorMessage = "Quick Connect timed out. Please try again."
             )
         }
+        
+        // Clean up the job reference when polling completes
+        quickConnectPollingJob = null
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        // Cancel any ongoing quick connect polling when ViewModel is destroyed
+        quickConnectPollingJob?.cancel()
     }
 }
