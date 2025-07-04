@@ -57,6 +57,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -936,8 +938,15 @@ fun RecentlyAddedCarousel(
     if (items.isEmpty()) return
 
     val carouselState = rememberCarouselState { items.size }
-    // Track current item manually since CarouselState doesn't expose currentItem yet
     var currentItem by rememberSaveable { mutableStateOf(0) }
+    
+    // Monitor carousel state changes and update current item
+    LaunchedEffect(carouselState) {
+        snapshotFlow { carouselState.firstVisibleItemIndex }
+            .collect { index ->
+                currentItem = index
+            }
+    }
 
     Column(modifier = modifier) {
         HorizontalUncontainedCarousel(
