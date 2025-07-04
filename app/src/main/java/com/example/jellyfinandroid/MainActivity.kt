@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -247,6 +246,127 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 fun GreetingPreview() {
     JellyfinAndroidTheme {
         Greeting("Android")
+    }
+}
+
+@Composable
+fun SearchResultsContent(
+    searchResults: List<BaseItemDto>,
+    isSearching: Boolean,
+    errorMessage: String?,
+    getImageUrl: (BaseItemDto) -> String?,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        if (isSearching) {
+            item {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                        Text(
+                            text = "Searching...",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        }
+        
+        errorMessage?.let { error ->
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+        }
+        
+        if (searchResults.isEmpty() && !isSearching && errorMessage == null) {
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No results found",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Try searching with different keywords",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        
+        // Group results by type
+        val groupedResults = searchResults.groupBy { it.type }
+        
+        groupedResults.forEach { (type, items) ->
+            item {
+                Text(
+                    text = when (type) {
+                        BaseItemKind.MOVIE -> "Movies"
+                        BaseItemKind.SERIES -> "TV Shows"
+                        BaseItemKind.EPISODE -> "Episodes"
+                        BaseItemKind.AUDIO -> "Music"
+                        BaseItemKind.MUSIC_ALBUM -> "Albums"
+                        BaseItemKind.MUSIC_ARTIST -> "Artists"
+                        BaseItemKind.BOOK -> "Books"
+                        BaseItemKind.AUDIO_BOOK -> "Audiobooks"
+                        else -> type?.toString() ?: "Other"
+                    },
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+            
+            items(items.chunked(2)) { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    rowItems.forEach { item ->
+                        MediaCard(
+                            item = item,
+                            getImageUrl = getImageUrl,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    // Fill remaining space if odd number of items
+                    if (rowItems.size == 1) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -940,13 +1060,8 @@ fun RecentlyAddedCarousel(
     val carouselState = rememberCarouselState { items.size }
     var currentItem by rememberSaveable { mutableStateOf(0) }
     
-    // Monitor carousel state changes and update current item
-    LaunchedEffect(carouselState) {
-        snapshotFlow { carouselState.firstVisibleItemIndex }
-            .collect { index ->
-                currentItem = index
-            }
-    }
+    // For Material 3 carousel, we'll manually track the current item
+    // The carousel state doesn't have firstVisibleItemIndex like LazyListState
 
     Column(modifier = modifier) {
         HorizontalUncontainedCarousel(
@@ -964,7 +1079,7 @@ fun RecentlyAddedCarousel(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Page indicators with clickable functionality
+        // Page indicators 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1068,15 +1183,14 @@ fun CarouselItemCard(
                             endY = Float.POSITIVE_INFINITY
                         )
                     )
-            )
-            
-            // Content Overlay
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.Bottom
             ) {
+                // Content Overlay
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.Bottom
+                ) {
                 Text(
                     text = item.name ?: "Unknown Title",
                     style = MaterialTheme.typography.headlineSmall,
@@ -1150,125 +1264,4 @@ fun CarouselItemCard(
             }
         }
     }
-}
-
-@Composable
-fun SearchResultsContent(
-    searchResults: List<BaseItemDto>,
-    isSearching: Boolean,
-    errorMessage: String?,
-    getImageUrl: (BaseItemDto) -> String?,
-    modifier: Modifier = Modifier
-) {
-    LazyColumn(
-        modifier = modifier.padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        if (isSearching) {
-            item {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                        Text(
-                            text = "Searching...",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                }
-            }
-        }
-        
-        errorMessage?.let { error ->
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-            }
-        }
-        
-        if (searchResults.isEmpty() && !isSearching && errorMessage == null) {
-            item {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "No results found",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "Try searching with different keywords",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-        
-        // Group results by type
-        val groupedResults = searchResults.groupBy { it.type }
-        
-        groupedResults.forEach { (type, items) ->
-            item {
-                Text(
-                    text = when (type) {
-                        BaseItemKind.MOVIE -> "Movies"
-                        BaseItemKind.SERIES -> "TV Shows"
-                        BaseItemKind.EPISODE -> "Episodes"
-                        BaseItemKind.AUDIO -> "Music"
-                        BaseItemKind.MUSIC_ALBUM -> "Albums"
-                        BaseItemKind.MUSIC_ARTIST -> "Artists"
-                        BaseItemKind.BOOK -> "Books"
-                        BaseItemKind.AUDIO_BOOK -> "Audiobooks"
-                        else -> type?.toString() ?: "Other"
-                    },
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
-            
-            items(items.chunked(2)) { rowItems ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    rowItems.forEach { item ->
-                        MediaCard(
-                            item = item,
-                            getImageUrl = getImageUrl,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    // Fill remaining space if odd number of items
-                    if (rowItems.size == 1) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-            }
-        }
-    }
-}
+}}

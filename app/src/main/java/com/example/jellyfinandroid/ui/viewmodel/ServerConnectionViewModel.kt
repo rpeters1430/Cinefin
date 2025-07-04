@@ -281,7 +281,7 @@ class ServerConnectionViewModel @Inject constructor(
         
         while (attempts < maxAttempts && 
                _connectionState.value.isQuickConnectPolling && 
-               isActive) { // Check if coroutine is still active
+               viewModelScope.isActive) { // Check if coroutine is still active
             delay(5000) // Wait 5 seconds between polls
             
             when (val stateResult = repository.getQuickConnectState(serverUrl, secret)) {
