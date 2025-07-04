@@ -109,6 +109,10 @@ class MainAppViewModel @Inject constructor(
     
     fun logout() {
         repository.logout()
+        // Clear saved credentials on logout
+        viewModelScope.launch {
+            // This will be handled by the ServerConnectionViewModel when it observes the logout
+        }
     }
     
     fun getImageUrl(item: BaseItemDto): String? {

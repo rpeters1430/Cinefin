@@ -72,6 +72,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.ui.screens.ServerConnectionScreen
+import com.example.jellyfinandroid.ui.screens.QuickConnectScreen
 import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
 import com.example.jellyfinandroid.ui.viewmodel.MainAppState
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
@@ -102,18 +103,37 @@ fun JellyfinAndroidApp() {
     val connectionState by connectionViewModel.connectionState.collectAsState()
 
     if (!connectionState.isConnected) {
-        ServerConnectionScreen(
-            onConnect = { serverUrl, username, password, rememberLogin ->
-                connectionViewModel.connectToServer(serverUrl, username, password, rememberLogin)
-            },
-            onQuickConnect = {
-                connectionViewModel.startQuickConnect()
-            },
-            isConnecting = connectionState.isConnecting,
-            errorMessage = connectionState.errorMessage,
-            savedServerUrl = connectionState.savedServerUrl,
-            savedUsername = connectionState.savedUsername
-        )
+        if (connectionState.isQuickConnectActive) {
+            QuickConnectScreen(
+                onConnect = {
+                    connectionViewModel.initiateQuickConnect()
+                },
+                onCancel = {
+                    connectionViewModel.cancelQuickConnect()
+                },
+                isConnecting = connectionState.isConnecting,
+                errorMessage = connectionState.errorMessage,
+                serverUrl = connectionState.quickConnectServerUrl,
+                code = connectionState.quickConnectCode,
+                isPolling = connectionState.isQuickConnectPolling,
+                status = connectionState.quickConnectStatus,
+                onServerUrlChange = { serverUrl: String -> connectionViewModel.updateQuickConnectServerUrl(serverUrl) }
+            )
+        } else {
+            ServerConnectionScreen(
+                onConnect = { serverUrl, username, password, rememberLogin ->
+                    connectionViewModel.connectToServer(serverUrl, username, password, rememberLogin)
+                },
+                onQuickConnect = {
+                    connectionViewModel.startQuickConnect()
+                },
+                isConnecting = connectionState.isConnecting,
+                errorMessage = connectionState.errorMessage,
+                savedServerUrl = connectionState.savedServerUrl,
+                savedUsername = connectionState.savedUsername,
+                rememberLogin = connectionState.rememberLogin
+            )
+        }
     } else {
         currentDestination = AppDestinations.HOME
         val mainViewModel: MainAppViewModel = hiltViewModel()
