@@ -65,7 +65,7 @@ class ServerConnectionViewModel @Inject constructor(
             val savedServerUrl = preferences[PreferencesKeys.SERVER_URL] ?: ""
             val savedUsername = preferences[PreferencesKeys.USERNAME] ?: ""
             val rememberLogin = preferences[PreferencesKeys.REMEMBER_LOGIN] ?: false
-            
+
             _connectionState.value = _connectionState.value.copy(
                 savedServerUrl = savedServerUrl,
                 savedUsername = savedUsername,
@@ -114,8 +114,12 @@ class ServerConnectionViewModel @Inject constructor(
                     // Now authenticate
                     when (val authResult = repository.authenticateUser(serverUrl, username, password)) {
                         is ApiResult.Success -> {
-                            // Always save credentials after successful login
-                            saveCredentials(serverUrl, username)
+                            // Save credentials only when the user opted in
+                            if (_connectionState.value.rememberLogin) {
+                                saveCredentials(serverUrl, username)
+                            } else {
+                                clearSavedCredentials()
+                            }
                             _connectionState.value = _connectionState.value.copy(
                                 isConnecting = false,
                                 isConnected = true,
@@ -172,6 +176,18 @@ class ServerConnectionViewModel @Inject constructor(
             savedServerUrl = "",
             savedUsername = ""
         )
+    }
+
+    fun setRememberLogin(remember: Boolean) {
+        viewModelScope.launch {
+            context.dataStore.edit { preferences ->
+                preferences[PreferencesKeys.REMEMBER_LOGIN] = remember
+            }
+            if (!remember) {
+                clearSavedCredentials()
+            }
+            _connectionState.value = _connectionState.value.copy(rememberLogin = remember)
+        }
     }
     
     fun startQuickConnect() {

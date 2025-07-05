@@ -172,7 +172,9 @@ fun JellyfinAndroidApp() {
                 isConnecting = connectionState.isConnecting,
                 errorMessage = connectionState.errorMessage,
                 savedServerUrl = connectionState.savedServerUrl,
-                savedUsername = connectionState.savedUsername
+                savedUsername = connectionState.savedUsername,
+                rememberLogin = connectionState.rememberLogin,
+                onRememberLoginChange = { connectionViewModel.setRememberLogin(it) }
             )
         }
     } else {
