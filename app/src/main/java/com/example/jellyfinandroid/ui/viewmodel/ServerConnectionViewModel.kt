@@ -183,6 +183,9 @@ class ServerConnectionViewModel @Inject constructor(
             context.dataStore.edit { preferences ->
                 preferences[PreferencesKeys.REMEMBER_LOGIN] = remember
             }
+            if (!remember) {
+                clearSavedCredentials()
+            }
             _connectionState.value = _connectionState.value.copy(rememberLogin = remember)
         }
     }
