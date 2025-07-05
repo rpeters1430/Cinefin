@@ -104,6 +104,7 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import java.util.Locale
+import com.example.jellyfinandroid.ui.ShimmerBox
 
 // Quality badge helper must be at the very top for visibility
 fun getQualityLabel(item: BaseItemDto): Pair<String, Color>? {
@@ -951,44 +952,11 @@ fun LibraryCard(
     ) {
         Column {
             Box {
-                SubcomposeAsyncImage(
-                    model = getImageUrl(item),
-                    contentDescription = item.name,
+                ShimmerBox(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp),
-                    contentScale = ContentScale.Crop,
-                    loading = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp,
-                                color = contentTypeColor
-                            )
-                        }
-                    },
-                    error = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.List,
-                                contentDescription = null,
-                                modifier = Modifier.size(32.dp),
-                                tint = contentTypeColor
-                            )
-                        }
-                    }
+                    shape = RoundedCornerShape(12.dp)
                 )
 
                 // Add library type badge with semantic color
@@ -1072,54 +1040,11 @@ fun MediaCard(
     ) {
         Column {
             Box {
-                SubcomposeAsyncImage(
-                    model = getImageUrl(item),
-                    contentDescription = item.name,
+                ShimmerBox(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(2f / 3f),
-                    contentScale = ContentScale.Crop,
-                    loading = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(2f / 3f)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp,
-                                color = contentTypeColor
-                            )
-                        }
-                    },
-                    error = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(2f / 3f)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = when (item.type) {
-                                    BaseItemKind.MOVIE -> Icons.Default.PlayArrow
-                                    BaseItemKind.SERIES -> Icons.Default.PlayArrow
-                                    BaseItemKind.EPISODE -> Icons.Default.PlayArrow
-                                    BaseItemKind.AUDIO -> Icons.Default.PlayArrow
-                                    BaseItemKind.MUSIC_ALBUM -> Icons.Default.PlayArrow
-                                    BaseItemKind.MUSIC_ARTIST -> Icons.Default.AccountBox
-                                    BaseItemKind.BOOK -> Icons.Default.AccountBox
-                                    BaseItemKind.AUDIO_BOOK -> Icons.Default.AccountBox
-                                    else -> Icons.Default.PlayArrow
-                                },
-                                contentDescription = null,
-                                modifier = Modifier.size(32.dp),
-                                tint = contentTypeColor
-                            )
-                        }
-                    }
+                    shape = RoundedCornerShape(12.dp)
                 )
 
                 // Content type badge with semantic color
@@ -1255,54 +1180,11 @@ fun RecentlyAddedCard(
     ) {
         Column {
             Box {
-                SubcomposeAsyncImage(
-                    model = getImageUrl(item),
-                    contentDescription = item.name,
+                ShimmerBox(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(2f / 3f),
-                    contentScale = ContentScale.Crop,
-                    loading = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(2f / 3f)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp,
-                                color = contentTypeColor
-                            )
-                        }
-                    },
-                    error = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(2f / 3f)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = when (item.type) {
-                                    BaseItemKind.MOVIE -> Icons.Default.PlayArrow
-                                    BaseItemKind.SERIES -> Icons.Default.PlayArrow
-                                    BaseItemKind.EPISODE -> Icons.Default.PlayArrow
-                                    BaseItemKind.AUDIO -> Icons.Default.PlayArrow
-                                    BaseItemKind.MUSIC_ALBUM -> Icons.Default.PlayArrow
-                                    BaseItemKind.MUSIC_ARTIST -> Icons.Default.AccountBox
-                                    BaseItemKind.BOOK -> Icons.Default.AccountBox
-                                    BaseItemKind.AUDIO_BOOK -> Icons.Default.AccountBox
-                                    else -> Icons.Default.PlayArrow
-                                },
-                                contentDescription = null,
-                                modifier = Modifier.size(32.dp),
-                                tint = contentTypeColor
-                            )
-                        }
-                    }
+                    shape = RoundedCornerShape(12.dp)
                 )
 
                 // Add favorite indicator if applicable
@@ -1525,48 +1407,11 @@ fun CarouselItemCard(
     ) {
         Box {
             // Background Image
-            SubcomposeAsyncImage(
-                model = getImageUrl(item),
-                contentDescription = item.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                loading = {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(32.dp),
-                            strokeWidth = 2.dp,
-                            color = contentTypeColor
-                        )
-                    }
-                },
-                error = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = when (item.type) {
-                                BaseItemKind.MOVIE -> Icons.Default.PlayArrow
-                                BaseItemKind.SERIES -> Icons.Default.PlayArrow
-                                BaseItemKind.EPISODE -> Icons.Default.PlayArrow
-                                BaseItemKind.AUDIO -> Icons.Default.PlayArrow
-                                BaseItemKind.MUSIC_ALBUM -> Icons.Default.PlayArrow
-                                BaseItemKind.MUSIC_ARTIST -> Icons.Default.AccountBox
-                                BaseItemKind.BOOK -> Icons.Default.AccountBox
-                                BaseItemKind.AUDIO_BOOK -> Icons.Default.AccountBox
-                                else -> Icons.Default.PlayArrow
-                            },
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = contentTypeColor
-                        )
-                    }
-                }
+            ShimmerBox(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(2f / 3f),
+                shape = RoundedCornerShape(12.dp)
             )
 
             // Content type badge with semantic color

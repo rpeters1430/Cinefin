@@ -65,9 +65,12 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
 
-    // Material 3 ONLY - No Material 2
-    implementation(libs.androidx.material3.adaptive.navigation.suite)
+    // Material 3 - Latest Alpha Versions
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material3.adaptive.navigation.suite)
+    implementation(libs.androidx.material3.adaptive)
+    implementation(libs.androidx.material3.adaptive.layout)
+    implementation(libs.androidx.material3.adaptive.navigation)
     implementation(libs.androidx.material3.window.size.class1)
 
     // Navigation
@@ -111,4 +114,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    // Use a widely available Accompanist pullrefresh version
+    implementation("com.google.accompanist:accompanist-pullrefresh:0.32.0")
 }
