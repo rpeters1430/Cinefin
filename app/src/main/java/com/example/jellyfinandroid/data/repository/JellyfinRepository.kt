@@ -222,9 +222,11 @@ class JellyfinRepository @Inject constructor(
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
         
+        val userUuid = parseUserUuidOrError(server.userId)
+
         return try {
             val client = getClient(server.url, server.accessToken)
-            val response = client.itemsApi.getItems(userId = UUID.fromString(server.userId))
+            val response = client.itemsApi.getItems(userId = userUuid)
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
             val errorType = when {
@@ -249,6 +251,11 @@ class JellyfinRepository @Inject constructor(
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
         
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        if (userUuid == null) {
+            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+        }
+
         return try {
             val client = getClient(server.url, server.accessToken)
             val itemKinds = itemTypes?.split(",")?.mapNotNull { type ->
@@ -261,7 +268,7 @@ class JellyfinRepository @Inject constructor(
                 }
             }
             val response = client.itemsApi.getItems(
-                userId = UUID.fromString(server.userId),
+                userId = userUuid,
                 recursive = true,
                 includeItemTypes = itemKinds,
                 startIndex = startIndex,
@@ -286,10 +293,15 @@ class JellyfinRepository @Inject constructor(
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
 
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        if (userUuid == null) {
+            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+        }
+
         return try {
             val client = getClient(server.url, server.accessToken)
             val response = client.itemsApi.getItems(
-                userId = UUID.fromString(server.userId),
+                userId = userUuid,
                 recursive = true,
                 includeItemTypes = listOf(
                     BaseItemKind.MOVIE,
@@ -324,10 +336,15 @@ class JellyfinRepository @Inject constructor(
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
 
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        if (userUuid == null) {
+            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+        }
+
         return try {
             val client = getClient(server.url, server.accessToken)
             val response = client.itemsApi.getItems(
-                userId = UUID.fromString(server.userId),
+                userId = userUuid,
                 recursive = true,
                 sortBy = listOf(ItemSortBy.SORT_NAME),
                 filters = listOf(ItemFilter.IS_FAVORITE)
@@ -359,10 +376,15 @@ class JellyfinRepository @Inject constructor(
             return ApiResult.Success(emptyList())
         }
         
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        if (userUuid == null) {
+            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+        }
+
         return try {
             val client = getClient(server.url, server.accessToken)
             val response = client.itemsApi.getItems(
-                userId = UUID.fromString(server.userId),
+                userId = userUuid,
                 searchTerm = query.trim(),
                 recursive = true,
                 includeItemTypes = includeItemTypes ?: listOf(
