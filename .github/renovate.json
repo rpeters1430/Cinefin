@@ -1,11 +1,18 @@
 {
-  "extends": ["config:default"],
+  "dependencyDashboard": true,
+  "enabledManagers": ["gradle"],
   "packageRules": [
     {
-      "matchPackagePatterns": ["androidx\\.compose\\..*", "androidx\\.media3\\..*"],
       "matchDatasources": ["maven"],
-      "versioning": "loose",
-      "rangeStrategy": "bump"
+      "matchPackageNames": [
+        "/androidx\\.compose\\..*/",
+        "/androidx\\.media3\\..*/"
+      ],
+      "rangeStrategy": "bump",
+      "versioning": "loose"
     }
-  ]
+  ],
+  "labels": ["dependencies"],
+  "automerge": false,
+  "rebaseWhen": "behind-base-branch"
 }
