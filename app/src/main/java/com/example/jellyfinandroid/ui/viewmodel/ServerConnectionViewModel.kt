@@ -89,7 +89,7 @@ class ServerConnectionViewModel @Inject constructor(
         }
     }
     
-    fun connectToServer(serverUrl: String, username: String, password: String, rememberLogin: Boolean = false) {
+    fun connectToServer(serverUrl: String, username: String, password: String) {
         if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
             _connectionState.value = _connectionState.value.copy(
                 errorMessage = "Please fill in all fields"
@@ -114,18 +114,12 @@ class ServerConnectionViewModel @Inject constructor(
                     // Now authenticate
                     when (val authResult = repository.authenticateUser(serverUrl, username, password)) {
                         is ApiResult.Success -> {
-                            // Save credentials if remember login is enabled
-                            if (rememberLogin) {
-                                saveCredentials(serverUrl, username, rememberLogin)
-                            } else {
-                                clearSavedCredentials()
-                            }
-                            
+                            // Always save credentials after successful login
+                            saveCredentials(serverUrl, username)
                             _connectionState.value = _connectionState.value.copy(
                                 isConnecting = false,
                                 isConnected = true,
-                                errorMessage = null,
-                                rememberLogin = rememberLogin
+                                errorMessage = null
                             )
                         }
                         is ApiResult.Error -> {
@@ -158,16 +152,14 @@ class ServerConnectionViewModel @Inject constructor(
         _connectionState.value = _connectionState.value.copy(errorMessage = null)
     }
     
-    private suspend fun saveCredentials(serverUrl: String, username: String, rememberLogin: Boolean) {
+    private suspend fun saveCredentials(serverUrl: String, username: String) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SERVER_URL] = serverUrl
             preferences[PreferencesKeys.USERNAME] = username
-            preferences[PreferencesKeys.REMEMBER_LOGIN] = rememberLogin
         }
         _connectionState.value = _connectionState.value.copy(
             savedServerUrl = serverUrl,
-            savedUsername = username,
-            rememberLogin = rememberLogin
+            savedUsername = username
         )
     }
     
@@ -175,12 +167,10 @@ class ServerConnectionViewModel @Inject constructor(
         context.dataStore.edit { preferences ->
             preferences.remove(PreferencesKeys.SERVER_URL)
             preferences.remove(PreferencesKeys.USERNAME)
-            preferences.remove(PreferencesKeys.REMEMBER_LOGIN)
         }
         _connectionState.value = _connectionState.value.copy(
             savedServerUrl = "",
-            savedUsername = "",
-            rememberLogin = false
+            savedUsername = ""
         )
     }
     

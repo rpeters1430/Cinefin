@@ -27,29 +27,26 @@ import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServerConnectionScreen(
-    onConnect: (String, String, String, Boolean) -> Unit = { _, _, _, _ -> },
+    onConnect: (String, String, String) -> Unit = { _, _, _ -> },
     onQuickConnect: () -> Unit = {},
     isConnecting: Boolean = false,
     errorMessage: String? = null,
     savedServerUrl: String = "",
     savedUsername: String = "",
-    rememberLogin: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     var serverUrl by remember { mutableStateOf(savedServerUrl) }
     var username by remember { mutableStateOf(savedUsername) }
     var password by remember { mutableStateOf("") }
-    var rememberLoginState by remember { mutableStateOf(rememberLogin) }
     var showPassword by remember { mutableStateOf(false) }
     
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
     
     // Update local state when saved values change
-    LaunchedEffect(savedServerUrl, savedUsername, rememberLogin) {
+    LaunchedEffect(savedServerUrl, savedUsername) {
         serverUrl = savedServerUrl
         username = savedUsername
-        rememberLoginState = rememberLogin
     }
     
     Column(
@@ -122,7 +119,7 @@ fun ServerConnectionScreen(
                 onDone = {
                     keyboardController?.hide()
                     if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
-                        onConnect(serverUrl, username, password, rememberLoginState)
+                        onConnect(serverUrl, username, password)
                     }
                 }
             ),
@@ -140,30 +137,6 @@ fun ServerConnectionScreen(
                 .focusRequester(focusRequester),
             enabled = !isConnecting
         )
-        
-        // Remember login checkbox
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Checkbox(
-                checked = rememberLoginState,
-                onCheckedChange = { rememberLoginState = it },
-                enabled = !isConnecting,
-                colors = CheckboxDefaults.colors(
-                    checkedColor = MaterialTheme.colorScheme.primary,
-                    uncheckedColor = MaterialTheme.colorScheme.outline,
-                    checkmarkColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Remember login credentials",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-        }
         
         // Error message
         if (errorMessage != null) {
@@ -188,7 +161,7 @@ fun ServerConnectionScreen(
         Button(
             onClick = {
                 keyboardController?.hide()
-                onConnect(serverUrl, username, password, rememberLoginState)
+                onConnect(serverUrl, username, password)
             },
             enabled = !isConnecting && serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank(),
             modifier = Modifier

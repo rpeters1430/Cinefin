@@ -92,7 +92,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            JellyfinAndroidTheme(darkTheme = true) {
+            JellyfinAndroidTheme(
+                dynamicColor = true
+            ) {
                 JellyfinAndroidApp()
             }
         }
@@ -125,8 +127,8 @@ fun JellyfinAndroidApp() {
             )
         } else {
             ServerConnectionScreen(
-                onConnect = { serverUrl, username, password, rememberLogin ->
-                    connectionViewModel.connectToServer(serverUrl, username, password, rememberLogin)
+                onConnect = { serverUrl, username, password ->
+                    connectionViewModel.connectToServer(serverUrl, username, password)
                 },
                 onQuickConnect = {
                     connectionViewModel.startQuickConnect()
@@ -134,8 +136,7 @@ fun JellyfinAndroidApp() {
                 isConnecting = connectionState.isConnecting,
                 errorMessage = connectionState.errorMessage,
                 savedServerUrl = connectionState.savedServerUrl,
-                savedUsername = connectionState.savedUsername,
-                rememberLogin = connectionState.rememberLogin
+                savedUsername = connectionState.savedUsername
             )
         }
     } else {
@@ -572,6 +573,64 @@ fun HomeContent(
                                 item = library,
                                 getImageUrl = getImageUrl
                             )
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Recently Added by Library Type Sections
+        if (appState.recentlyAdded.isNotEmpty()) {
+            // Group recently added items by library type
+            val groupedItems = appState.recentlyAdded.groupBy { item ->
+                when (item.type) {
+                    BaseItemKind.MOVIE -> "Movies"
+                    BaseItemKind.SERIES -> "TV Shows"
+                    BaseItemKind.EPISODE -> "Episodes"
+                    BaseItemKind.AUDIO -> "Music"
+                    BaseItemKind.MUSIC_ALBUM -> "Albums"
+                    BaseItemKind.MUSIC_ARTIST -> "Artists"
+                    BaseItemKind.BOOK -> "Books"
+                    BaseItemKind.AUDIO_BOOK -> "Audiobooks"
+                    else -> "Other"
+                }
+            }
+            
+            // Display each library type section
+            groupedItems.forEach { (libraryType, items) ->
+                if (items.isNotEmpty()) {
+                    item {
+                        Column {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Recently Added $libraryType",
+                                    style = MaterialTheme.typography.headlineSmall
+                                )
+                                IconButton(onClick = onRefresh) {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = "Refresh $libraryType"
+                                    )
+                                }
+                            }
+                            
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp)
+                            ) {
+                                items(items.take(8)) { item ->
+                                    RecentlyAddedCard(
+                                        item = item,
+                                        getImageUrl = getImageUrl
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -1015,6 +1074,156 @@ fun MediaCard(
                         )
                     }
                 }
+            }
+            
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = item.name ?: "Unknown Title",
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    item.productionYear?.let { year ->
+                        Text(
+                            text = year.toString(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    
+                    item.communityRating?.let { rating ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = Color(0xFFFFD700)
+                            )
+                            Text(
+                                text = String.format("%.1f", rating),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RecentlyAddedCard(
+    item: BaseItemDto,
+    getImageUrl: (BaseItemDto) -> String?,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.width(140.dp),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column {
+            Box {
+                SubcomposeAsyncImage(
+                    model = getImageUrl(item),
+                    contentDescription = item.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(2f / 3f),
+                    contentScale = ContentScale.Crop,
+                    loading = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(2f / 3f)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(2f / 3f)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = when (item.type) {
+                                    BaseItemKind.MOVIE -> Icons.Default.PlayArrow
+                                    BaseItemKind.SERIES -> Icons.Default.PlayArrow
+                                    BaseItemKind.EPISODE -> Icons.Default.PlayArrow
+                                    BaseItemKind.AUDIO -> Icons.Default.PlayArrow
+                                    BaseItemKind.MUSIC_ALBUM -> Icons.Default.PlayArrow
+                                    BaseItemKind.MUSIC_ARTIST -> Icons.Default.AccountBox
+                                    BaseItemKind.BOOK -> Icons.Default.AccountBox
+                                    BaseItemKind.AUDIO_BOOK -> Icons.Default.AccountBox
+                                    else -> Icons.Default.PlayArrow
+                                },
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                )
+                
+                // Add favorite indicator if applicable
+                item.userData?.isFavorite?.let { isFavorite ->
+                    if (isFavorite) {
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = "Favorite",
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .size(16.dp),
+                            tint = Color.Red
+                        )
+                    }
+                }
+                
+                // Add content type badge
+                Text(
+                    text = when (item.type) {
+                        BaseItemKind.MOVIE -> "Movie"
+                        BaseItemKind.SERIES -> "Series"
+                        BaseItemKind.EPISODE -> "Episode"
+                        BaseItemKind.AUDIO -> "Music"
+                        BaseItemKind.MUSIC_ALBUM -> "Album"
+                        BaseItemKind.MUSIC_ARTIST -> "Artist"
+                        BaseItemKind.BOOK -> "Book"
+                        BaseItemKind.AUDIO_BOOK -> "Audiobook"
+                        else -> "Media"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                )
             }
             
             Column(modifier = Modifier.padding(12.dp)) {
