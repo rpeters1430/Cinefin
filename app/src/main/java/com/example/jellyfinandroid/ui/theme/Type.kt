@@ -8,17 +8,17 @@ import androidx.compose.ui.unit.sp
 
 // Material 3 Expressive typography system for Jellyfin
 val Typography = Typography(
-    // Display styles - for large, prominent text
+    // Display styles - for large, prominent text with expressive personality
     displayLarge = TextStyle(
         fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Light,
         fontSize = 57.sp,
         lineHeight = 64.sp,
         letterSpacing = (-0.25).sp
     ),
     displayMedium = TextStyle(
         fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Light,
         fontSize = 45.sp,
         lineHeight = 52.sp,
         letterSpacing = 0.sp
@@ -31,33 +31,33 @@ val Typography = Typography(
         letterSpacing = 0.sp
     ),
     
-    // Headline styles - for section headings
+    // Headline styles - for section headings with expressive character
     headlineLarge = TextStyle(
         fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 32.sp,
         lineHeight = 40.sp,
         letterSpacing = 0.sp
     ),
     headlineMedium = TextStyle(
         fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 28.sp,
         lineHeight = 36.sp,
         letterSpacing = 0.sp
     ),
     headlineSmall = TextStyle(
         fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 24.sp,
         lineHeight = 32.sp,
         letterSpacing = 0.sp
     ),
     
-    // Title styles - for card titles and section headers
+    // Title styles - for card titles and section headers with expressive weight
     titleLarge = TextStyle(
         fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 22.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp
@@ -77,7 +77,7 @@ val Typography = Typography(
         letterSpacing = 0.1.sp
     ),
     
-    // Body styles - for main content
+    // Body styles - for main content with expressive readability
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
@@ -100,10 +100,10 @@ val Typography = Typography(
         letterSpacing = 0.4.sp
     ),
     
-    // Label styles - for buttons and UI elements
+    // Label styles - for buttons and UI elements with expressive emphasis
     labelLarge = TextStyle(
         fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp

@@ -71,6 +71,13 @@ class ServerConnectionViewModel @Inject constructor(
                 savedUsername = savedUsername,
                 rememberLogin = rememberLogin
             )
+            
+            // Auto-login if we have saved credentials and remember login is enabled
+            if (rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
+                // We have saved credentials, but we can't auto-login without password
+                // The UI will show the saved server URL and username, user just needs to enter password
+                // No error message needed - this is expected behavior
+            }
         }
         
         // Observe repository connection state

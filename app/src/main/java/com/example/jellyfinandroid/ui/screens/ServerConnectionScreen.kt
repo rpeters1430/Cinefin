@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -54,6 +55,7 @@ fun ServerConnectionScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(24.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -153,6 +155,24 @@ fun ServerConnectionScreen(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text("Remember login")
+        }
+        
+        // Show helper text when saved credentials are available
+        if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank() && rememberLogin) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Saved credentials found. Just enter your password to connect.",
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(12.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
 
         // Error message
@@ -283,6 +303,7 @@ fun QuickConnectScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp)

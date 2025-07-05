@@ -12,76 +12,78 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-private val JellyfinDarkColorScheme = darkColorScheme(
-    primary = JellyfinPurple80,
-    onPrimary = Neutral0,
-    primaryContainer = JellyfinPurple30,
-    onPrimaryContainer = JellyfinPurple90,
+// Material 3 Expressive Light Color Scheme
+private val JellyfinExpressiveLightColorScheme = lightColorScheme(
+    primary = ExpressivePrimary,
+    onPrimary = ExpressiveOnPrimary,
+    primaryContainer = ExpressivePrimaryContainer,
+    onPrimaryContainer = ExpressiveOnPrimaryContainer,
     
-    secondary = JellyfinBlue80,
-    onSecondary = Neutral0,
-    secondaryContainer = JellyfinBlue30,
-    onSecondaryContainer = JellyfinBlue90,
+    secondary = ExpressiveSecondary,
+    onSecondary = ExpressiveOnSecondary,
+    secondaryContainer = ExpressiveSecondaryContainer,
+    onSecondaryContainer = ExpressiveOnSecondaryContainer,
     
-    tertiary = JellyfinTeal80,
-    onTertiary = Neutral0,
-    tertiaryContainer = JellyfinTeal30,
-    onTertiaryContainer = JellyfinTeal90,
+    tertiary = ExpressiveTertiary,
+    onTertiary = ExpressiveOnTertiary,
+    tertiaryContainer = ExpressiveTertiaryContainer,
+    onTertiaryContainer = ExpressiveOnTertiaryContainer,
+    
+    error = ExpressiveError,
+    onError = ExpressiveOnError,
+    errorContainer = ExpressiveErrorContainer,
+    onErrorContainer = ExpressiveOnErrorContainer,
+    
+    background = Background,
+    onBackground = OnBackground,
+    surface = SurfaceContainerLowest,
+    onSurface = OnBackground,
+    surfaceVariant = SurfaceContainer,
+    onSurfaceVariant = OnBackgroundVariant,
+    
+    outline = Outline,
+    outlineVariant = OutlineVariant,
+    scrim = Color(0x52000000),
+    inverseSurface = Color(0xFF1C1B1F),
+    inverseOnSurface = Color(0xFFF4EFF4),
+    inversePrimary = Color(0xFFD0BCFF),
+)
+
+// Material 3 Expressive Dark Color Scheme
+private val JellyfinExpressiveDarkColorScheme = darkColorScheme(
+    primary = Color(0xFFD0BCFF),
+    onPrimary = Color(0xFF381E72),
+    primaryContainer = Color(0xFF4F378B),
+    onPrimaryContainer = Color(0xFFEADDFF),
+    
+    secondary = Color(0xFFCCC2DC),
+    onSecondary = Color(0xFF332D41),
+    secondaryContainer = Color(0xFF4A4458),
+    onSecondaryContainer = Color(0xFFE8DEF8),
+    
+    tertiary = Color(0xFFEFB8C8),
+    onTertiary = Color(0xFF492532),
+    tertiaryContainer = Color(0xFF633B48),
+    onTertiaryContainer = Color(0xFFFFD8E4),
     
     error = Color(0xFFFFB4AB),
     onError = Color(0xFF690005),
     errorContainer = Color(0xFF93000A),
     onErrorContainer = Color(0xFFFFDAD6),
     
-    background = Color(0xFF0F0F0F),
-    onBackground = Color(0xFFE8E8E8),
-    surface = Color(0xFF151515),
-    onSurface = Color(0xFFE8E8E8),
-    surfaceVariant = Color(0xFF2A2A2A),
-    onSurfaceVariant = Color(0xFFCCCCCC),
+    background = Color(0xFF1C1B1F),
+    onBackground = Color(0xFFE6E1E6),
+    surface = Color(0xFF1C1B1F),
+    onSurface = Color(0xFFE6E1E6),
+    surfaceVariant = Color(0xFF49454F),
+    onSurfaceVariant = Color(0xFFCAC4D0),
     
-    outline = Color(0xFF777777),
-    outlineVariant = Color(0xFF404040),
-    scrim = Neutral0,
-    inverseSurface = Neutral90,
-    inverseOnSurface = Neutral20,
-    inversePrimary = JellyfinPurple40,
-)
-
-private val JellyfinLightColorScheme = lightColorScheme(
-    primary = JellyfinPurple40,
-    onPrimary = Neutral99,
-    primaryContainer = JellyfinPurple90,
-    onPrimaryContainer = JellyfinPurple30,
-    
-    secondary = JellyfinBlue40,
-    onSecondary = Neutral99,
-    secondaryContainer = JellyfinBlue90,
-    onSecondaryContainer = JellyfinBlue30,
-    
-    tertiary = JellyfinTeal40,
-    onTertiary = Neutral99,
-    tertiaryContainer = JellyfinTeal90,
-    onTertiaryContainer = JellyfinTeal30,
-    
-    error = Color(0xFFBA1A1A),
-    onError = Color(0xFFFFFFFF),
-    errorContainer = Color(0xFFFFDAD6),
-    onErrorContainer = Color(0xFF410002),
-    
-    background = Neutral99,
-    onBackground = Neutral10,
-    surface = Neutral99,
-    onSurface = Neutral10,
-    surfaceVariant = Neutral95,
-    onSurfaceVariant = Neutral30,
-    
-    outline = Neutral50,
-    outlineVariant = Neutral80,
-    scrim = Neutral0,
-    inverseSurface = Neutral20,
-    inverseOnSurface = Neutral95,
-    inversePrimary = JellyfinPurple80,
+    outline = Color(0xFF938F99),
+    outlineVariant = Color(0xFF49454F),
+    scrim = Color(0x52000000),
+    inverseSurface = Color(0xFFE6E1E6),
+    inverseOnSurface = Color(0xFF1C1B1F),
+    inversePrimary = Color(0xFF6750A4),
 )
 
 @Composable
@@ -97,8 +99,8 @@ fun JellyfinAndroidTheme(
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 
-        darkTheme -> JellyfinDarkColorScheme
-        else -> JellyfinLightColorScheme
+        darkTheme -> JellyfinExpressiveDarkColorScheme
+        else -> JellyfinExpressiveLightColorScheme
     }
 
     MaterialTheme(

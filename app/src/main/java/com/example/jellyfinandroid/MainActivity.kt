@@ -944,7 +944,7 @@ fun LibraryCard(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column {
@@ -1003,7 +1003,7 @@ fun LibraryCard(
                             .align(Alignment.BottomEnd)
                             .padding(8.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.9f)
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
                         ),
                         shape = RoundedCornerShape(6.dp)
                     ) {
@@ -1052,7 +1052,7 @@ fun MediaCard(
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column {
@@ -1246,7 +1246,7 @@ fun RecentlyAddedCard(
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column {
@@ -1540,7 +1540,7 @@ fun CarouselItemCard(
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Box {
