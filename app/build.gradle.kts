@@ -67,43 +67,43 @@ dependencies {
 
     // Material 3 - Latest Alpha Versions
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.material3.adaptive.navigation.suite)
     implementation(libs.androidx.material3.adaptive)
     implementation(libs.androidx.material3.adaptive.layout)
     implementation(libs.androidx.material3.adaptive.navigation)
-    implementation(libs.androidx.material3.window.size.class1)
+    implementation(libs.androidx.material3.window.size)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
 
-    // Jellyfin SDK and networking
-    implementation(libs.jellyfin.sdk)
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.kotlinx.serialization)
-    implementation(libs.okhttp.logging)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.coroutines.android)
-
-    implementation(libs.androidx.material.icons.extended)
-
-    // Image loading
-    implementation(libs.coil.compose)
-
-    // Media playback (ready for future implementation)
-    implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.ui)
-    implementation(libs.androidx.media3.common)
-
-    // Data storage
+    // DataStore for preferences
     implementation(libs.androidx.datastore.preferences)
 
-    // Dependency injection
+    // Jellyfin SDK
+    implementation(libs.jellyfin.sdk)
+
+    // Networking
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.kotlinx.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+    implementation(libs.kotlinx.serialization.json)
+
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.android)
+
+    // Image Loading
+    implementation(libs.coil.compose)
+
+    // Media3 for video playback
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+
+    // Hilt for dependency injection
     implementation(libs.dagger.hilt.android)
-    implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.dagger.hilt.compiler)
-    
-    // Core library desugaring for modern Java features on older Android versions
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    implementation(libs.androidx.hilt.navigation.compose)
 
     // Testing
     testImplementation(libs.junit)
@@ -114,6 +114,5 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    // Use a widely available Accompanist pullrefresh version
-    implementation("com.google.accompanist:accompanist-pullrefresh:0.32.0")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }
