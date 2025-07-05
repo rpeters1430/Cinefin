@@ -222,7 +222,10 @@ class JellyfinRepository @Inject constructor(
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
         
-        val userUuid = parseUserUuidOrError(server.userId)
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        if (userUuid == null) {
+            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+        }
 
         return try {
             val client = getClient(server.url, server.accessToken)
