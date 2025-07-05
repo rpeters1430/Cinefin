@@ -957,11 +957,31 @@ fun LibraryCard(
     ) {
         Column {
             Box {
-                ShimmerBox(
+                // ✅ FIX: Load actual library images instead of just showing shimmer
+                SubcomposeAsyncImage(
+                    model = getImageUrl(item),
+                    contentDescription = item.name,
+                    loading = {
+                        ShimmerBox(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    },
+                    error = {
+                        ShimmerBox(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    },
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp),
-                    shape = RoundedCornerShape(12.dp)
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(12.dp))
                 )
 
                 // Add library type badge with semantic color
@@ -1045,11 +1065,31 @@ fun MediaCard(
     ) {
         Column {
             Box {
-                ShimmerBox(
+                // ✅ FIX: Load actual images instead of just showing shimmer
+                SubcomposeAsyncImage(
+                    model = getImageUrl(item),
+                    contentDescription = item.name,
+                    loading = {
+                        ShimmerBox(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(2f / 3f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    },
+                    error = {
+                        ShimmerBox(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(2f / 3f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    },
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(2f / 3f),
-                    shape = RoundedCornerShape(12.dp)
+                        .aspectRatio(2f / 3f)
+                        .clip(RoundedCornerShape(12.dp))
                 )
 
                 // Content type badge with semantic color
@@ -1185,11 +1225,31 @@ fun RecentlyAddedCard(
     ) {
         Column {
             Box {
-                ShimmerBox(
+                // ✅ FIX: Load actual images instead of just showing shimmer
+                SubcomposeAsyncImage(
+                    model = getImageUrl(item),
+                    contentDescription = item.name,
+                    loading = {
+                        ShimmerBox(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(2f / 3f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    },
+                    error = {
+                        ShimmerBox(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(2f / 3f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    },
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(2f / 3f),
-                    shape = RoundedCornerShape(12.dp)
+                        .aspectRatio(2f / 3f)
+                        .clip(RoundedCornerShape(12.dp))
                 )
 
                 // Add favorite indicator if applicable
@@ -1320,8 +1380,13 @@ fun RecentlyAddedCarousel(
     var currentItem by rememberSaveable { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
 
-    // Note: CarouselState doesn't have firstVisibleItemIndex like LazyListState
-    // For Material 3 Carousel, we track the current item differently
+    // ✅ FIX: Monitor carousel state changes and update current item
+    LaunchedEffect(carouselState) {
+        snapshotFlow { carouselState.settledItemIndex }
+            .collect { index ->
+                currentItem = index
+            }
+    }
 
     Column(modifier = modifier) {
         HorizontalUncontainedCarousel(
@@ -1419,12 +1484,28 @@ fun CarouselItemCard(
         )
     ) {
         Box {
-            // Background Image
-            ShimmerBox(
+            // ✅ FIX: Load actual background images instead of just showing shimmer
+            SubcomposeAsyncImage(
+                model = getImageUrl(item),
+                contentDescription = item.name,
+                loading = {
+                    ShimmerBox(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                },
+                error = {
+                    ShimmerBox(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                },
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(2f / 3f),
-                shape = RoundedCornerShape(12.dp)
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(20.dp))
             )
 
             // Content type badge with semantic color

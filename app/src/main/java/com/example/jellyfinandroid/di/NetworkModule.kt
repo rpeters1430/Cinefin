@@ -80,6 +80,7 @@ class JellyfinClientFactory @Inject constructor(
             currentBaseUrl = clientKey
         }
         
-        return currentClient!!
+        // ✅ FIX: Safe null handling instead of unsafe !! operator
+        return currentClient ?: throw IllegalStateException("Failed to create Jellyfin API client for URL: $normalizedUrl")
     }
 }
