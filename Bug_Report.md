@@ -181,16 +181,16 @@ These bugs range from user experience issues to potential crashes and memory lea
 
 ## ✅ FIXES IMPLEMENTED
 
-All 3 bugs have been successfully fixed:
+All 3 original bugs have been successfully fixed:
 
 ### Bug #1 Fix: Carousel State Synchronization ✅
 - **Location:** `MainActivity.kt` - `RecentlyAddedCarousel` function
 - **Solution:** Added `LaunchedEffect` with `snapshotFlow` to monitor carousel state changes
 - **Code Added:**
   ```kotlin
-  // Monitor carousel state changes and update current item
+  // ✅ FIX: Monitor carousel state changes and update current item
   LaunchedEffect(carouselState) {
-      snapshotFlow { carouselState.firstVisibleItemIndex }
+      snapshotFlow { carouselState.settledItemIndex }
           .collect { index ->
               currentItem = index
           }
@@ -212,10 +212,39 @@ All 3 bugs have been successfully fixed:
   - Added `onCleared()` override for ViewModel cleanup
   - Used `viewModelScope.launch` for proper scoping
 
+## ✅ ADDITIONAL CRITICAL FIXES
+
+### Bug #4 Fix: Null Pointer Exception Risk ✅
+- **Location:** `NetworkModule.kt` - `JellyfinClientFactory.getClient()` method
+- **Solution:** Replaced unsafe `!!` operator with proper null handling
+- **Code Fixed:**
+  ```kotlin
+  // ✅ FIX: Safe null handling instead of unsafe !! operator
+  return currentClient ?: throw IllegalStateException("Failed to create Jellyfin API client for URL: $normalizedUrl")
+  ```
+
+### Bug #5 Fix: Missing Image Loading ✅
+- **Location:** `MainActivity.kt` - MediaCard, RecentlyAddedCard, CarouselItemCard, LibraryCard functions
+- **Solution:** Replaced `ShimmerBox` with `SubcomposeAsyncImage` for actual image loading
+- **Code Fixed:**
+  ```kotlin
+  // ✅ FIX: Load actual images instead of just showing shimmer
+  SubcomposeAsyncImage(
+      model = getImageUrl(item),
+      contentDescription = item.name,
+      loading = { ShimmerBox(...) },
+      error = { ShimmerBox(...) },
+      contentScale = ContentScale.Crop,
+      modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f).clip(RoundedCornerShape(12.dp))
+  )
+  ```
+
 ## Recommendations
 
 1. ✅ **Fixed:** All critical bugs (High severity)
 2. ✅ **Fixed:** Consistent data models using official Jellyfin SDK exclusively
 3. ✅ **Fixed:** Proper coroutine lifecycle management
-4. **Consider adding unit tests** to catch similar issues in the future
-5. **Consider code reviews** to prevent similar bugs from being introduced
+4. ✅ **Fixed:** Null pointer exception risks
+5. ✅ **Fixed:** Image loading functionality
+6. **Consider adding unit tests** to catch similar issues in the future
+7. **Consider code reviews** to prevent similar bugs from being introduced
