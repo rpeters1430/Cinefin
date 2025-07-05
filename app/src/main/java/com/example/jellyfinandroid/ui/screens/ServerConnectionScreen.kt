@@ -33,6 +33,8 @@ fun ServerConnectionScreen(
     errorMessage: String? = null,
     savedServerUrl: String = "",
     savedUsername: String = "",
+    rememberLogin: Boolean = false,
+    onRememberLoginChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var serverUrl by remember { mutableStateOf(savedServerUrl) }
@@ -90,6 +92,7 @@ fun ServerConnectionScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = !isConnecting
         )
+
         
         // Username input
         OutlinedTextField(
@@ -137,7 +140,21 @@ fun ServerConnectionScreen(
                 .focusRequester(focusRequester),
             enabled = !isConnecting
         )
-        
+
+        // Remember login toggle
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Switch(
+                checked = rememberLogin,
+                onCheckedChange = { onRememberLoginChange(it) },
+                enabled = !isConnecting
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Remember login")
+        }
+
         // Error message
         if (errorMessage != null) {
             Card(
