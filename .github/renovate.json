@@ -4,7 +4,8 @@
     {
       "matchPackagePatterns": ["androidx\\.compose\\..*", "androidx\\.media3\\..*"],
       "matchDatasources": ["maven"],
-      "allowPreReleases": true
+      "versioning": "loose",
+      "rangeStrategy": "bump"
     }
   ]
 }
