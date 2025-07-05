@@ -384,12 +384,10 @@ class JellyfinRepository @Inject constructor(
         val contentTypes = listOf(
             BaseItemKind.MOVIE,
             BaseItemKind.EPISODE,
-            BaseItemKind.SERIES,
             BaseItemKind.AUDIO,
-            BaseItemKind.MUSIC_ALBUM,
-            BaseItemKind.MUSIC_ARTIST,
             BaseItemKind.BOOK,
-            BaseItemKind.AUDIO_BOOK
+            BaseItemKind.AUDIO_BOOK,
+            BaseItemKind.VIDEO
         )
 
         val results = mutableMapOf<String, List<BaseItemDto>>()
@@ -400,13 +398,11 @@ class JellyfinRepository @Inject constructor(
                     if (result.data.isNotEmpty()) {
                         val typeName = when (contentType) {
                             BaseItemKind.MOVIE -> "Movies"
-                            BaseItemKind.SERIES -> "TV Shows"
                             BaseItemKind.EPISODE -> "Episodes"
                             BaseItemKind.AUDIO -> "Music"
-                            BaseItemKind.MUSIC_ALBUM -> "Albums"
-                            BaseItemKind.MUSIC_ARTIST -> "Artists"
                             BaseItemKind.BOOK -> "Books"
                             BaseItemKind.AUDIO_BOOK -> "Audiobooks"
+                            BaseItemKind.VIDEO -> "Videos"
                             else -> "Other"
                         }
                         results[typeName] = result.data
@@ -508,6 +504,17 @@ class JellyfinRepository @Inject constructor(
         val server = _currentServer.value ?: return null
         val tagParam = tag?.let { "&tag=$it" } ?: ""
         return "${server.url}/Items/$itemId/Images/$imageType?maxHeight=400&maxWidth=400$tagParam"
+    }
+    
+    fun getSeriesImageUrl(item: BaseItemDto): String? {
+        val server = _currentServer.value ?: return null
+        // For episodes, use the series poster if available
+        val imageId = if (item.type == BaseItemKind.EPISODE && item.seriesId != null) {
+            item.seriesId.toString()
+        } else {
+            item.id.toString()
+        }
+        return "${server.url}/Items/$imageId/Images/Primary?maxHeight=400&maxWidth=400"
     }
     
     fun logout() {

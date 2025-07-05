@@ -220,6 +220,7 @@ fun JellyfinAndroidApp() {
                             onSearch = { query -> mainViewModel.search(query) },
                             onClearSearch = { mainViewModel.clearSearch() },
                             getImageUrl = { item -> mainViewModel.getImageUrl(item) },
+                            getSeriesImageUrl = { item -> mainViewModel.getSeriesImageUrl(item) },
                             modifier = Modifier.padding(innerPadding)
                         )
                     }
@@ -411,6 +412,7 @@ fun HomeScreen(
     onSearch: (String) -> Unit,
     onClearSearch: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
+    getSeriesImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -468,6 +470,7 @@ fun HomeScreen(
                 currentServer = currentServer,
                 onRefresh = onRefresh,
                 getImageUrl = getImageUrl,
+                getSeriesImageUrl = getSeriesImageUrl,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -480,6 +483,7 @@ fun HomeContent(
     currentServer: JellyfinServer?,
     onRefresh: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
+    getSeriesImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -640,7 +644,8 @@ fun HomeContent(
                                 items(items.take(10)) { item ->
                                     RecentlyAddedCard(
                                         item = item,
-                                        getImageUrl = getImageUrl
+                                        getImageUrl = getImageUrl,
+                                        getSeriesImageUrl = getSeriesImageUrl
                                     )
                                 }
                             }
@@ -1231,6 +1236,7 @@ fun MediaCard(
 fun RecentlyAddedCard(
     item: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
+    getSeriesImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
     val contentTypeColor = getContentTypeColor(item.type?.toString())
@@ -1246,7 +1252,12 @@ fun RecentlyAddedCard(
         Column {
             Box {
                 // ✅ FIX: Load actual images instead of just showing shimmer
-                val imageUrl = getImageUrl(item)
+                // For episodes, use series poster; for other content, use regular image
+                val imageUrl = if (item.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE) {
+                    getSeriesImageUrl(item)
+                } else {
+                    getImageUrl(item)
+                }
                 if (imageUrl != null) {
                     SubcomposeAsyncImage(
                         model = imageUrl,

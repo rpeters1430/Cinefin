@@ -138,6 +138,10 @@ class MainAppViewModel @Inject constructor(
         return repository.getImageUrl(item.id.toString(), "Primary", null)
     }
     
+    fun getSeriesImageUrl(item: BaseItemDto): String? {
+        return repository.getSeriesImageUrl(item)
+    }
+    
     fun search(query: String) {
         viewModelScope.launch {
             _appState.value = _appState.value.copy(
