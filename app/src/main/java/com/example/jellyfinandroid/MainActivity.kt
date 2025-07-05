@@ -608,24 +608,9 @@ fun HomeContent(
         }
 
         // Recently Added by Library Type Sections
-        if (appState.recentlyAdded.isNotEmpty()) {
-            // Group recently added items by library type
-            val groupedItems = appState.recentlyAdded.groupBy { item ->
-                when (item.type) {
-                    BaseItemKind.MOVIE -> "Movies"
-                    BaseItemKind.SERIES -> "TV Shows"
-                    BaseItemKind.EPISODE -> "Episodes"
-                    BaseItemKind.AUDIO -> "Music"
-                    BaseItemKind.MUSIC_ALBUM -> "Albums"
-                    BaseItemKind.MUSIC_ARTIST -> "Artists"
-                    BaseItemKind.BOOK -> "Books"
-                    BaseItemKind.AUDIO_BOOK -> "Audiobooks"
-                    else -> "Other"
-                }
-            }
-
-            // Display each library type section
-            groupedItems.forEach { (libraryType, items) ->
+        if (appState.recentlyAddedByTypes.isNotEmpty()) {
+            // Display each library type section using the new data structure
+            appState.recentlyAddedByTypes.forEach { (libraryType, items) ->
                 if (items.isNotEmpty()) {
                     item {
                         Column {
@@ -652,7 +637,7 @@ fun HomeContent(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 contentPadding = PaddingValues(horizontal = 16.dp)
                             ) {
-                                items(items.take(8)) { item ->
+                                items(items.take(10)) { item ->
                                     RecentlyAddedCard(
                                         item = item,
                                         getImageUrl = getImageUrl

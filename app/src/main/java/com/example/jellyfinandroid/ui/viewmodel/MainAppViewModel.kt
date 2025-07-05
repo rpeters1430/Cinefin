@@ -16,6 +16,7 @@ data class MainAppState(
     val isLoading: Boolean = false,
     val libraries: List<BaseItemDto> = emptyList(),
     val recentlyAdded: List<BaseItemDto> = emptyList(),
+    val recentlyAddedByTypes: Map<String, List<BaseItemDto>> = emptyMap(),
     val favorites: List<BaseItemDto> = emptyList(),
     val searchResults: List<BaseItemDto> = emptyList(),
     val searchQuery: String = "",
@@ -67,6 +68,24 @@ class MainAppViewModel @Inject constructor(
                     if (_appState.value.errorMessage == null) {
                         _appState.value = _appState.value.copy(
                             errorMessage = "Failed to load recent items: ${result.message}"
+                        )
+                    }
+                }
+                is ApiResult.Loading -> {
+                    // Already handled
+                }
+            }
+
+            // Load recently added items by types
+            when (val result = repository.getRecentlyAddedByTypes()) {
+                is ApiResult.Success -> {
+                    _appState.value = _appState.value.copy(recentlyAddedByTypes = result.data)
+                }
+                is ApiResult.Error -> {
+                    // Don't override other errors, just log this
+                    if (_appState.value.errorMessage == null) {
+                        _appState.value = _appState.value.copy(
+                            errorMessage = "Failed to load recent items by type: ${result.message}"
                         )
                     }
                 }

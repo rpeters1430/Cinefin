@@ -352,6 +352,75 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Error("Failed to load recently added items: ${e.message}", e, errorType)
         }
     }
+
+    suspend fun getRecentlyAddedByType(itemType: BaseItemKind, limit: Int = 10): ApiResult<List<BaseItemDto>> {
+        val server = _currentServer.value
+        if (server?.accessToken == null || server.userId == null) {
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        if (userUuid == null) {
+            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        return try {
+            val client = getClient(server.url, server.accessToken)
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                recursive = true,
+                includeItemTypes = listOf(itemType),
+                sortBy = listOf(ItemSortBy.DATE_CREATED),
+                sortOrder = listOf(SortOrder.DESCENDING),
+                limit = limit
+            )
+            ApiResult.Success(response.content.items ?: emptyList())
+        } catch (e: Exception) {
+            handleException(e, "Failed to load recently added ${itemType.name.lowercase()}")
+        }
+    }
+
+    suspend fun getRecentlyAddedByTypes(limit: Int = 10): ApiResult<Map<String, List<BaseItemDto>>> {
+        val contentTypes = listOf(
+            BaseItemKind.MOVIE,
+            BaseItemKind.EPISODE,
+            BaseItemKind.SERIES,
+            BaseItemKind.AUDIO,
+            BaseItemKind.MUSIC_ALBUM,
+            BaseItemKind.MUSIC_ARTIST,
+            BaseItemKind.BOOK,
+            BaseItemKind.AUDIO_BOOK
+        )
+
+        val results = mutableMapOf<String, List<BaseItemDto>>()
+        
+        for (contentType in contentTypes) {
+            when (val result = getRecentlyAddedByType(contentType, limit)) {
+                is ApiResult.Success -> {
+                    if (result.data.isNotEmpty()) {
+                        val typeName = when (contentType) {
+                            BaseItemKind.MOVIE -> "Movies"
+                            BaseItemKind.SERIES -> "TV Shows"
+                            BaseItemKind.EPISODE -> "Episodes"
+                            BaseItemKind.AUDIO -> "Music"
+                            BaseItemKind.MUSIC_ALBUM -> "Albums"
+                            BaseItemKind.MUSIC_ARTIST -> "Artists"
+                            BaseItemKind.BOOK -> "Books"
+                            BaseItemKind.AUDIO_BOOK -> "Audiobooks"
+                            else -> "Other"
+                        }
+                        results[typeName] = result.data
+                    }
+                }
+                is ApiResult.Error -> {
+                    // Continue with other types even if one fails
+                }
+                else -> { /* Loading state not relevant here */ }
+            }
+        }
+
+        return ApiResult.Success(results)
+    }
     
     suspend fun getFavorites(): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value

@@ -83,6 +83,9 @@ dependencies {
 
     // Jellyfin SDK
     implementation(libs.jellyfin.sdk)
+    
+    // SLF4J Android Implementation for Jellyfin SDK logging
+    implementation("org.slf4j:slf4j-android:1.7.36")
 
     // Networking
     implementation(libs.retrofit)
