@@ -192,7 +192,7 @@ fun JellyfinAndroidApp() {
                         },
                         label = { Text(it.label) },
                         selected = it == currentDestination,
-                        onClick = { 
+                        onClick = {
                             currentDestination = it
                             if (it == AppDestinations.FAVORITES) {
                                 mainViewModel.loadFavorites()
@@ -304,7 +304,7 @@ fun SearchResultsContent(
                 }
             }
         }
-        
+
         errorMessage?.let { error ->
             item {
                 Card(
@@ -322,7 +322,7 @@ fun SearchResultsContent(
                 }
             }
         }
-        
+
         if (searchResults.isEmpty() && !isSearching && errorMessage == null) {
             item {
                 Column(
@@ -349,10 +349,10 @@ fun SearchResultsContent(
                 }
             }
         }
-        
+
         // Group results by type
         val groupedResults = searchResults.groupBy { it.type }
-        
+
         groupedResults.forEach { (type, items) ->
             item {
                 Text(
@@ -371,7 +371,7 @@ fun SearchResultsContent(
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
-            
+
             items(items.chunked(2)) { rowItems ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -412,7 +412,7 @@ fun HomeScreen(
                 OutlinedTextField(
                     value = appState.searchQuery,
                     onValueChange = onSearch,
-                    placeholder = { 
+                    placeholder = {
                         Text(
                             text = "Search movies, shows, music...",
                             style = MaterialTheme.typography.bodyMedium
@@ -442,7 +442,7 @@ fun HomeScreen(
                 containerColor = MaterialTheme.colorScheme.surface
             )
         )
-        
+
         // Content
         if (appState.searchQuery.isNotEmpty()) {
             // Show search results
@@ -500,7 +500,7 @@ fun HomeContent(
                             )
                         }
                     }
-                    
+
                     IconButton(onClick = onRefresh) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
@@ -510,7 +510,7 @@ fun HomeContent(
                 }
             }
         }
-        
+
         if (appState.isLoading) {
             item {
                 Box(
@@ -521,7 +521,7 @@ fun HomeContent(
                 }
             }
         }
-        
+
         appState.errorMessage?.let { error ->
             item {
                 Card(
@@ -541,7 +541,7 @@ fun HomeContent(
                 }
             }
         }
-        
+
         // Recently Added Carousel
         if (appState.recentlyAdded.isNotEmpty()) {
             item {
@@ -564,7 +564,7 @@ fun HomeContent(
                             )
                         }
                     }
-                    
+
                     RecentlyAddedCarousel(
                         items = appState.recentlyAdded.take(10),
                         getImageUrl = getImageUrl,
@@ -573,7 +573,7 @@ fun HomeContent(
                 }
             }
         }
-        
+
         // Libraries Section
         if (appState.libraries.isNotEmpty()) {
             item {
@@ -583,7 +583,7 @@ fun HomeContent(
                         style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
-                    
+
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(horizontal = 16.dp)
@@ -598,7 +598,7 @@ fun HomeContent(
                 }
             }
         }
-        
+
         // Recently Added by Library Type Sections
         if (appState.recentlyAdded.isNotEmpty()) {
             // Group recently added items by library type
@@ -615,7 +615,7 @@ fun HomeContent(
                     else -> "Other"
                 }
             }
-            
+
             // Display each library type section
             groupedItems.forEach { (libraryType, items) ->
                 if (items.isNotEmpty()) {
@@ -639,7 +639,7 @@ fun HomeContent(
                                     )
                                 }
                             }
-                            
+
                             LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 contentPadding = PaddingValues(horizontal = 16.dp)
@@ -678,7 +678,7 @@ fun LibraryScreen(
                 text = "Media Libraries",
                 style = MaterialTheme.typography.headlineMedium
             )
-            
+
             IconButton(onClick = onRefresh) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
@@ -686,9 +686,9 @@ fun LibraryScreen(
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         when {
             isLoading -> {
                 Box(
@@ -698,7 +698,7 @@ fun LibraryScreen(
                     CircularProgressIndicator()
                 }
             }
-            
+
             errorMessage != null -> {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -714,7 +714,7 @@ fun LibraryScreen(
                     )
                 }
             }
-            
+
             libraries.isEmpty() -> {
                 Text(
                     text = "No libraries found",
@@ -722,7 +722,7 @@ fun LibraryScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
             else -> {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -754,14 +754,14 @@ fun SearchScreen(
             text = "Search",
             style = MaterialTheme.typography.headlineMedium
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Search Input
         OutlinedTextField(
             value = appState.searchQuery,
             onValueChange = onSearch,
-            placeholder = { 
+            placeholder = {
                 Text(
                     text = "Search movies, shows, music, books...",
                     style = MaterialTheme.typography.bodyMedium
@@ -786,9 +786,9 @@ fun SearchScreen(
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         // Search Results
         SearchResultsContent(
             searchResults = appState.searchResults,
@@ -820,7 +820,7 @@ fun FavoritesScreen(
                 text = "Favorites",
                 style = MaterialTheme.typography.headlineMedium
             )
-            
+
             IconButton(onClick = onRefresh) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
@@ -828,9 +828,9 @@ fun FavoritesScreen(
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         when {
             isLoading -> {
                 Box(
@@ -840,7 +840,7 @@ fun FavoritesScreen(
                     CircularProgressIndicator()
                 }
             }
-            
+
             errorMessage != null -> {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -856,7 +856,7 @@ fun FavoritesScreen(
                     )
                 }
             }
-            
+
             favorites.isEmpty() -> {
                 Text(
                     text = "No favorites yet",
@@ -864,7 +864,7 @@ fun FavoritesScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
+
             else -> {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -893,9 +893,9 @@ fun ProfileScreen(
             text = "Profile",
             style = MaterialTheme.typography.headlineMedium
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         currentServer?.let { server ->
             Card(
                 modifier = Modifier.fillMaxWidth()
@@ -921,9 +921,9 @@ fun ProfileScreen(
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         // Add logout functionality later
         Text(
             text = "Profile management coming soon...",
@@ -940,7 +940,7 @@ fun LibraryCard(
     modifier: Modifier = Modifier
 ) {
     val contentTypeColor = getContentTypeColor(item.collectionType?.toString())
-    
+
     Card(
         modifier = modifier.width(200.dp),
         shape = RoundedCornerShape(16.dp),
@@ -990,7 +990,7 @@ fun LibraryCard(
                         }
                     }
                 )
-                
+
                 // Add library type badge with semantic color
                 item.collectionType?.let { collectionType ->
                     Card(
@@ -1010,7 +1010,7 @@ fun LibraryCard(
                         )
                     }
                 }
-                
+
                 // Item count badge
                 item.childCount?.let { count ->
                     Card(
@@ -1031,7 +1031,7 @@ fun LibraryCard(
                     }
                 }
             }
-            
+
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     text = item.name ?: "Unknown Library",
@@ -1040,7 +1040,7 @@ fun LibraryCard(
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 item.childCount?.let { count ->
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -1061,7 +1061,7 @@ fun MediaCard(
     modifier: Modifier = Modifier
 ) {
     val contentTypeColor = getContentTypeColor(item.type?.toString())
-    
+
     Card(
         modifier = modifier.width(140.dp),
         shape = RoundedCornerShape(12.dp),
@@ -1121,7 +1121,7 @@ fun MediaCard(
                         }
                     }
                 )
-                
+
                 // Content type badge with semantic color
                 Card(
                     modifier = Modifier
@@ -1149,7 +1149,7 @@ fun MediaCard(
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
-                
+
                 // Add favorite indicator if applicable
                 item.userData?.isFavorite?.let { isFavorite ->
                     if (isFavorite) {
@@ -1164,7 +1164,7 @@ fun MediaCard(
                         )
                     }
                 }
-                
+
                 getQualityLabel(item)?.let { (label, color) ->
                     Card(
                         modifier = Modifier
@@ -1182,7 +1182,7 @@ fun MediaCard(
                     }
                 }
             }
-            
+
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     text = item.name ?: "Unknown Title",
@@ -1191,9 +1191,9 @@ fun MediaCard(
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -1205,7 +1205,7 @@ fun MediaCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    
+
                     item.communityRating?.let { rating ->
                         val animatedRating by animateFloatAsState(
                             targetValue = rating.toFloat(),
@@ -1244,7 +1244,7 @@ fun RecentlyAddedCard(
     modifier: Modifier = Modifier
 ) {
     val contentTypeColor = getContentTypeColor(item.type?.toString())
-    
+
     Card(
         modifier = modifier.width(140.dp),
         shape = RoundedCornerShape(12.dp),
@@ -1304,7 +1304,7 @@ fun RecentlyAddedCard(
                         }
                     }
                 )
-                
+
                 // Add favorite indicator if applicable
                 item.userData?.isFavorite?.let { isFavorite ->
                     if (isFavorite) {
@@ -1319,7 +1319,7 @@ fun RecentlyAddedCard(
                         )
                     }
                 }
-                
+
                 // Content type badge with semantic color
                 Card(
                     modifier = Modifier
@@ -1347,7 +1347,7 @@ fun RecentlyAddedCard(
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
-                
+
                 getQualityLabel(item)?.let { (label, color) ->
                     Card(
                         modifier = Modifier
@@ -1365,7 +1365,7 @@ fun RecentlyAddedCard(
                     }
                 }
             }
-            
+
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     text = item.name ?: "Unknown Title",
@@ -1374,9 +1374,9 @@ fun RecentlyAddedCard(
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -1388,7 +1388,7 @@ fun RecentlyAddedCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    
+
                     item.communityRating?.let { rating ->
                         val animatedRating by animateFloatAsState(
                             targetValue = rating.toFloat(),
@@ -1431,7 +1431,7 @@ fun RecentlyAddedCarousel(
 
     val carouselState = rememberCarouselState { items.size }
     var currentItem by rememberSaveable { mutableStateOf(0) }
-    
+
     // For Material 3 carousel, we'll manually track the current item
     // The carousel state doesn't have firstVisibleItemIndex like LazyListState
 
@@ -1451,7 +1451,7 @@ fun RecentlyAddedCarousel(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Page indicators 
+        // Page indicators
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1513,7 +1513,7 @@ fun CarouselItemCard(
     modifier: Modifier = Modifier
 ) {
     val contentTypeColor = getContentTypeColor(item.type?.toString())
-    
+
     Card(
         modifier = modifier
             .aspectRatio(16f / 9f),
@@ -1568,7 +1568,7 @@ fun CarouselItemCard(
                     }
                 }
             )
-            
+
             // Content type badge with semantic color
             Card(
                 modifier = Modifier
@@ -1596,7 +1596,7 @@ fun CarouselItemCard(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
             }
-            
+
             // Gradient Overlay
             Box(
                 modifier = Modifier
@@ -1619,102 +1619,102 @@ fun CarouselItemCard(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.Bottom
                 ) {
-                Text(
-                    text = item.name ?: "Unknown Title",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = Color.White,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    item.productionYear?.let { year ->
-                        Text(
-                            text = year.toString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.9f)
-                        )
-                    }
-                    
-                    item.communityRating?.let { rating ->
-                        val animatedRating by animateFloatAsState(
-                            targetValue = rating.toFloat(),
-                            label = "rating_anim"
-                        )
-                        val ratingColor = when {
-                            rating >= 7.5f -> RatingGold
-                            rating >= 5.0f -> RatingSilver
-                            else -> RatingBronze
-                        }
-                        Box(contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(
-                                progress = { animatedRating / 10f },
-                                modifier = Modifier.size(28.dp),
-                                strokeWidth = 3.dp,
-                                color = ratingColor,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                            Text(
-                                text = String.format("%.1f", rating),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = ratingColor
-                            )
-                        }
-                    }
-                    
-                    item.officialRating?.let { rating ->
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = contentTypeColor.copy(alpha = 0.8f)
-                            ),
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                text = rating,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                }
-                
-                item.overview?.let { overview ->
-                    if (overview.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = overview,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.8f),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-            
-            getQualityLabel(item)?.let { (label, color) ->
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp),
-                    colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.9f)),
-                    shape = RoundedCornerShape(6.dp)
-                ) {
                     Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        text = item.name ?: "Unknown Title",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        item.productionYear?.let { year ->
+                            Text(
+                                text = year.toString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.9f)
+                            )
+                        }
+
+                        item.communityRating?.let { rating ->
+                            val animatedRating by animateFloatAsState(
+                                targetValue = rating.toFloat(),
+                                label = "rating_anim"
+                            )
+                            val ratingColor = when {
+                                rating >= 7.5f -> RatingGold
+                                rating >= 5.0f -> RatingSilver
+                                else -> RatingBronze
+                            }
+                            Box(contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(
+                                    progress = { animatedRating / 10f },
+                                    modifier = Modifier.size(28.dp),
+                                    strokeWidth = 3.dp,
+                                    color = ratingColor,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                )
+                                Text(
+                                    text = String.format("%.1f", rating),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = ratingColor
+                                )
+                            }
+                        }
+
+                        item.officialRating?.let { rating ->
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = contentTypeColor.copy(alpha = 0.8f)
+                                ),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    text = rating,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    item.overview?.let { overview ->
+                        if (overview.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = overview,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.8f),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+
+                getQualityLabel(item)?.let { (label, color) ->
+                    Card(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.9f)),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 }
             }
         }
     }
-}
 }
