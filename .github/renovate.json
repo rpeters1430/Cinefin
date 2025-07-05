@@ -1,0 +1,10 @@
+{
+  "extends": ["config:default"],
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["androidx\\.compose\\..*", "androidx\\.media3\\..*"],
+      "matchDatasources": ["maven"],
+      "allowPreReleases": true
+    }
+  ]
+}
