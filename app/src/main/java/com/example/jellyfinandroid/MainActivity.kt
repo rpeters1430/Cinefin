@@ -1314,8 +1314,13 @@ fun RecentlyAddedCarousel(
     val carouselState = rememberCarouselState { items.size }
     var currentItem by rememberSaveable { mutableStateOf(0) }
 
-    // For Material 3 carousel, we'll manually track the current item
-    // The carousel state doesn't have firstVisibleItemIndex like LazyListState
+    // Observe carousel scroll state and update the current item
+    LaunchedEffect(carouselState) {
+        snapshotFlow { carouselState.firstVisibleItemIndex }
+            .collect { index ->
+                currentItem = index
+            }
+    }
 
     Column(modifier = modifier) {
         HorizontalUncontainedCarousel(
