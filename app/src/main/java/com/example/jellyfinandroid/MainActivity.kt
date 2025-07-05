@@ -208,7 +208,9 @@ fun JellyfinAndroidApp() {
                 }
             }
         ) {
-            Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+            Scaffold(
+                modifier = Modifier.fillMaxSize()
+            ) { innerPadding ->
                 when (currentDestination) {
                     AppDestinations.HOME -> {
                         HomeScreen(
@@ -1066,31 +1068,64 @@ fun MediaCard(
         Column {
             Box {
                 // ✅ FIX: Load actual images instead of just showing shimmer
-                SubcomposeAsyncImage(
-                    model = getImageUrl(item),
-                    contentDescription = item.name,
-                    loading = {
-                        ShimmerBox(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(2f / 3f),
-                            shape = RoundedCornerShape(12.dp)
+                val imageUrl = getImageUrl(item)
+                if (imageUrl != null) {
+                    SubcomposeAsyncImage(
+                        model = imageUrl,
+                        contentDescription = item.name ?: "Media item",
+                        loading = {
+                            ShimmerBox(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(2f / 3f),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        },
+                        error = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(2f / 3f)
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        RoundedCornerShape(12.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = "No image",
+                                    modifier = Modifier.size(48.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(2f / 3f)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                } else {
+                    // Fallback when no image URL is available
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(2f / 3f)
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                RoundedCornerShape(12.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "No image available",
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    },
-                    error = {
-                        ShimmerBox(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(2f / 3f),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                    },
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(2f / 3f)
-                        .clip(RoundedCornerShape(12.dp))
-                )
+                    }
+                }
 
                 // Content type badge with semantic color
                 Card(
@@ -1226,31 +1261,64 @@ fun RecentlyAddedCard(
         Column {
             Box {
                 // ✅ FIX: Load actual images instead of just showing shimmer
-                SubcomposeAsyncImage(
-                    model = getImageUrl(item),
-                    contentDescription = item.name,
-                    loading = {
-                        ShimmerBox(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(2f / 3f),
-                            shape = RoundedCornerShape(12.dp)
+                val imageUrl = getImageUrl(item)
+                if (imageUrl != null) {
+                    SubcomposeAsyncImage(
+                        model = imageUrl,
+                        contentDescription = item.name ?: "Media item",
+                        loading = {
+                            ShimmerBox(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(2f / 3f),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        },
+                        error = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(2f / 3f)
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        RoundedCornerShape(12.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = "No image",
+                                    modifier = Modifier.size(48.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(2f / 3f)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                } else {
+                    // Fallback when no image URL is available
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(2f / 3f)
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                RoundedCornerShape(12.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "No image available",
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    },
-                    error = {
-                        ShimmerBox(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(2f / 3f),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                    },
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(2f / 3f)
-                        .clip(RoundedCornerShape(12.dp))
-                )
+                    }
+                }
 
                 // Add favorite indicator if applicable
                 item.userData?.isFavorite?.let { isFavorite ->
@@ -1380,13 +1448,9 @@ fun RecentlyAddedCarousel(
     var currentItem by rememberSaveable { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
 
-    // ✅ FIX: Monitor carousel state changes and update current item
-    LaunchedEffect(carouselState) {
-        snapshotFlow { carouselState.settledItemIndex }
-            .collect { index ->
-                currentItem = index
-            }
-    }
+    // Manual state management - keep indicators in sync when clicking
+    // Note: CarouselState API is experimental and firstVisibleItemIndex 
+    // may not be available in all versions
 
     Column(modifier = modifier) {
         HorizontalUncontainedCarousel(

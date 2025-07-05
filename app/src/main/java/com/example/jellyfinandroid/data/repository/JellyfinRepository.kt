@@ -21,6 +21,8 @@ import org.jellyfin.sdk.model.api.SortOrder
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 // Quick Connect data classes
 data class QuickConnectResult(
@@ -58,8 +60,33 @@ class JellyfinRepository @Inject constructor(
     private val _isConnected = MutableStateFlow(false)
     val isConnected: Flow<Boolean> = _isConnected.asStateFlow()
     
+    // Mutex to prevent race conditions in authentication
+    private val authMutex = Mutex()
+    
     private fun getClient(serverUrl: String, accessToken: String? = null): ApiClient {
         return clientFactory.getClient(serverUrl, accessToken)
+    }
+    
+    private fun <T> handleException(e: Exception, defaultMessage: String = "An error occurred"): ApiResult.Error<T> {
+        val errorType = when {
+            e is java.net.UnknownHostException -> ErrorType.NETWORK
+            e is java.net.ConnectException -> ErrorType.NETWORK  
+            e is java.net.SocketTimeoutException -> ErrorType.NETWORK
+            e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
+            e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+            e.message?.contains("404") == true -> ErrorType.NOT_FOUND
+            e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
+            else -> ErrorType.NETWORK
+        }
+        val errorMessage = when (errorType) {
+            ErrorType.NETWORK -> "Cannot connect to server. Please check your internet connection and server URL."
+            ErrorType.UNAUTHORIZED -> "Authentication failed. Please check your credentials."
+            ErrorType.FORBIDDEN -> "Access denied. You don't have permission to access this server."
+            ErrorType.NOT_FOUND -> "Server not found. Please check the server URL."
+            ErrorType.SERVER_ERROR -> "Server error. Please try again later."
+            else -> "$defaultMessage: ${e.message}"
+        }
+        return ApiResult.Error(errorMessage, e, errorType)
     }
     
     suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
@@ -68,14 +95,7 @@ class JellyfinRepository @Inject constructor(
             val response = client.systemApi.getPublicSystemInfo()
             ApiResult.Success(response.content)
         } catch (e: Exception) {
-            val errorType = when {
-                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
-                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
-                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
-                else -> ErrorType.NETWORK
-            }
-            ApiResult.Error("Network error: ${e.message}", e, errorType)
+            handleException(e, "Failed to connect to server")
         }
     }
     
@@ -83,7 +103,7 @@ class JellyfinRepository @Inject constructor(
         serverUrl: String,
         username: String,
         password: String
-    ): ApiResult<AuthenticationResult> {
+    ): ApiResult<AuthenticationResult> = authMutex.withLock {
         return try {
             val client = getClient(serverUrl)
             val request = AuthenticateUserByName(
@@ -160,7 +180,7 @@ class JellyfinRepository @Inject constructor(
     suspend fun authenticateWithQuickConnect(
         serverUrl: String,
         secret: String
-    ): ApiResult<AuthenticationResult> {
+    ): ApiResult<AuthenticationResult> = authMutex.withLock {
         return try {
             // For demonstration, we'll simulate a successful authentication
             // In real implementation, this would call the server's Quick Connect authenticate endpoint

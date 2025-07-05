@@ -288,7 +288,13 @@ class ServerConnectionViewModel @Inject constructor(
         while (attempts < maxAttempts && 
                _connectionState.value.isQuickConnectPolling && 
                viewModelScope.isActive) { // Check if coroutine is still active
-            delay(5000) // Wait 5 seconds between polls
+            try {
+                delay(5000) // Wait 5 seconds between polls
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Job was cancelled, clean up and exit
+                quickConnectPollingJob = null
+                return
+            }
             
             when (val stateResult = repository.getQuickConnectState(serverUrl, secret)) {
                 is ApiResult.Success -> {
