@@ -10,6 +10,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +61,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -99,6 +101,7 @@ import com.example.jellyfinandroid.ui.viewmodel.MainAppState
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemSortBy
@@ -1315,6 +1318,7 @@ fun RecentlyAddedCarousel(
 
     val carouselState = rememberCarouselState { items.size }
     var currentItem by rememberSaveable { mutableStateOf(0) }
+    val coroutineScope = rememberCoroutineScope()
 
     // Note: CarouselState doesn't have firstVisibleItemIndex like LazyListState
     // For Material 3 Carousel, we track the current item differently
@@ -1380,6 +1384,13 @@ fun RecentlyAddedCarousel(
                         }
                         .clip(RoundedCornerShape(4.dp))
                         .background(animatedColor)
+                        .clickable {
+                            // Update current item and scroll to the selected item
+                            currentItem = index
+                            coroutineScope.launch {
+                                carouselState.animateScrollToItem(index)
+                            }
+                        }
                 )
 
                 if (index < items.size - 1) {
