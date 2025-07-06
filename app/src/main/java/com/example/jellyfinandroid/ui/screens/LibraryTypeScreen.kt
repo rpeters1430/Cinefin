@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -291,6 +292,7 @@ enum class FilterType(val displayName: String) {
 @Composable
 fun LibraryTypeScreen(
     libraryType: LibraryType,
+    onTVShowClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel()
 ) {
@@ -481,6 +483,7 @@ fun LibraryTypeScreen(
                         viewMode = viewMode,
                         libraryType = libraryType,
                         getImageUrl = { item -> viewModel.getImageUrl(item) },
+                        onTVShowClick = onTVShowClick,
                         isLoadingMore = appState.isLoadingMore,
                         hasMoreItems = appState.hasMoreItems,
                         onLoadMore = { viewModel.loadMoreItems() },
@@ -498,6 +501,7 @@ fun LibraryContent(
     viewMode: ViewMode,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
+    onTVShowClick: ((String) -> Unit)? = null,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -523,6 +527,7 @@ fun LibraryContent(
                             item = item,
                             libraryType = libraryType,
                             getImageUrl = getImageUrl,
+                            onTVShowClick = onTVShowClick,
                             isCompact = true
                         )
                     }
@@ -552,6 +557,7 @@ fun LibraryContent(
                             item = item,
                             libraryType = libraryType,
                             getImageUrl = getImageUrl,
+                            onTVShowClick = onTVShowClick,
                             isCompact = false
                         )
                     }
@@ -595,7 +601,8 @@ fun LibraryContent(
                             items = category.items,
                             carouselState = carouselStates[index],
                             libraryType = libraryType,
-                            getImageUrl = getImageUrl
+                            getImageUrl = getImageUrl,
+                            onTVShowClick = onTVShowClick
                         )
                     }
                 }
@@ -657,6 +664,7 @@ private fun CarouselSection(
     carouselState: androidx.compose.material3.carousel.CarouselState,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
+    onTVShowClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -680,6 +688,7 @@ private fun CarouselSection(
                 item = items[itemIndex],
                 libraryType = libraryType,
                 getImageUrl = getImageUrl,
+                onTVShowClick = onTVShowClick,
                 isCompact = true
             )
         }
@@ -691,13 +700,20 @@ fun LibraryItemCard(
     item: BaseItemDto,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
+    onTVShowClick: ((String) -> Unit)? = null,
     isCompact: Boolean,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .then(if (isCompact) Modifier.width(LibraryScreenDefaults.CompactCardWidth) else Modifier),
+            .then(if (isCompact) Modifier.width(LibraryScreenDefaults.CompactCardWidth) else Modifier)
+            .clickable {
+                // Handle TV show clicks
+                if (libraryType == LibraryType.TV_SHOWS && item.type == BaseItemKind.SERIES) {
+                    onTVShowClick?.invoke(item.id.toString())
+                }
+            },
         shape = RoundedCornerShape(LibraryScreenDefaults.CardCornerRadius),
         elevation = CardDefaults.cardElevation(defaultElevation = LibraryScreenDefaults.CardElevation),
         colors = CardDefaults.cardColors(

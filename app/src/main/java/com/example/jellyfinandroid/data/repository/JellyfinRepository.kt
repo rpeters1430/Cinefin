@@ -450,6 +450,85 @@ class JellyfinRepository @Inject constructor(
         }
     }
     
+    suspend fun getSeasonsForSeries(seriesId: String): ApiResult<List<BaseItemDto>> {
+        val server = _currentServer.value
+        if (server?.accessToken == null || server.userId == null) {
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        if (userUuid == null) {
+            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val seriesUuid = runCatching { UUID.fromString(seriesId) }.getOrNull()
+        if (seriesUuid == null) {
+            return ApiResult.Error("Invalid series ID", errorType = ErrorType.NOT_FOUND)
+        }
+
+        return try {
+            val client = getClient(server.url, server.accessToken)
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                parentId = seriesUuid,
+                includeItemTypes = listOf(BaseItemKind.SEASON),
+                sortBy = listOf(ItemSortBy.SORT_NAME),
+                sortOrder = listOf(SortOrder.ASCENDING)
+            )
+            ApiResult.Success(response.content.items ?: emptyList())
+        } catch (e: Exception) {
+            val errorType = when {
+                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
+                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
+                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
+                else -> ErrorType.NETWORK
+            }
+            ApiResult.Error("Failed to load seasons: ${e.message}", e, errorType)
+        }
+    }
+    
+    suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> {
+        val server = _currentServer.value
+        if (server?.accessToken == null || server.userId == null) {
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        if (userUuid == null) {
+            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val seriesUuid = runCatching { UUID.fromString(seriesId) }.getOrNull()
+        if (seriesUuid == null) {
+            return ApiResult.Error("Invalid series ID", errorType = ErrorType.NOT_FOUND)
+        }
+
+        return try {
+            val client = getClient(server.url, server.accessToken)
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                ids = listOf(seriesUuid),
+                limit = 1
+            )
+            val item = response.content.items?.firstOrNull()
+            if (item != null) {
+                ApiResult.Success(item)
+            } else {
+                ApiResult.Error("Series not found", errorType = ErrorType.NOT_FOUND)
+            }
+        } catch (e: Exception) {
+            val errorType = when {
+                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
+                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
+                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
+                else -> ErrorType.NETWORK
+            }
+            ApiResult.Error("Failed to load series details: ${e.message}", e, errorType)
+        }
+    }
+    
     suspend fun searchItems(
         query: String,
         includeItemTypes: List<BaseItemKind>? = null,
