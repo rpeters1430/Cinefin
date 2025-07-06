@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -107,7 +108,7 @@ fun JellyfinAndroidApp() {
 
         NavigationSuiteScaffold(
             navigationSuiteItems = {
-                AppDestinations.entries.filter { it != AppDestinations.CONNECT }.forEach {
+                AppDestinations.entries.filter { it.showInNavigation }.forEach {
                     item(
                         icon = {
                             Icon(
@@ -140,6 +141,7 @@ fun JellyfinAndroidApp() {
                             onClearSearch = { mainViewModel.clearSearch() },
                             getImageUrl = { item -> mainViewModel.getImageUrl(item) },
                             getSeriesImageUrl = { item -> mainViewModel.getSeriesImageUrl(item) },
+                            onSettingsClick = { currentDestination = AppDestinations.PROFILE },
                             modifier = Modifier.padding(innerPadding)
                         )
                     }
@@ -150,6 +152,11 @@ fun JellyfinAndroidApp() {
                             errorMessage = appState.errorMessage,
                             onRefresh = { mainViewModel.loadInitialData() },
                             getImageUrl = { item -> mainViewModel.getImageUrl(item) },
+                            onNavigateToMovies = { currentDestination = AppDestinations.MOVIES },
+                            onNavigateToTVShows = { currentDestination = AppDestinations.TV_SHOWS },
+                            onNavigateToMusic = { currentDestination = AppDestinations.MUSIC },
+                            onNavigateToStuff = { currentDestination = AppDestinations.STUFF },
+                            onSettingsClick = { currentDestination = AppDestinations.PROFILE },
                             modifier = Modifier.padding(innerPadding)
                         )
                     }

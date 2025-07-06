@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -54,6 +55,7 @@ fun HomeScreen(
     onClearSearch: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
+    onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -74,6 +76,12 @@ fun HomeScreen(
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Refresh"
+                        )
+                    }
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings"
                         )
                     }
                 },
@@ -170,44 +178,86 @@ fun HomeContent(
             }
         }
 
-        // Recently Added Section
-        if (appState.recentlyAddedByTypes.isNotEmpty()) {
-            // Display each library type section using the new data structure
-            appState.recentlyAddedByTypes.forEach { (libraryType, items) ->
-                if (items.isNotEmpty()) {
-                    item {
-                        Column {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Recently Added $libraryType",
-                                    style = MaterialTheme.typography.headlineSmall
-                                )
-                                IconButton(onClick = onRefresh) {
-                                    Icon(
-                                        imageVector = Icons.Default.Refresh,
-                                        contentDescription = "Refresh $libraryType"
-                                    )
-                                }
-                            }
+        // Recently Added Movies Section
+        val recentMovies = appState.allItems.filter { 
+            it.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE 
+        }.sortedByDescending { it.dateCreated }.take(10)
+        
+        if (recentMovies.isNotEmpty()) {
+            item {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Recently Added Movies",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        IconButton(onClick = onRefresh) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh Movies"
+                            )
+                        }
+                    }
 
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp)
-                            ) {
-                                items(items.take(10)) { item ->
-                                    RecentlyAddedCard(
-                                        item = item,
-                                        getImageUrl = getImageUrl,
-                                        getSeriesImageUrl = getSeriesImageUrl
-                                    )
-                                }
-                            }
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        items(recentMovies) { item ->
+                            RecentlyAddedCard(
+                                item = item,
+                                getImageUrl = getImageUrl,
+                                getSeriesImageUrl = getSeriesImageUrl
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Recently Added Episodes Section
+        val recentEpisodes = appState.allItems.filter { 
+            it.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE 
+        }.sortedByDescending { it.dateCreated }.take(10)
+        
+        if (recentEpisodes.isNotEmpty()) {
+            item {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Recently Added Episodes",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        IconButton(onClick = onRefresh) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh Episodes"
+                            )
+                        }
+                    }
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) {
+                        items(recentEpisodes) { item ->
+                            RecentlyAddedCard(
+                                item = item,
+                                getImageUrl = getImageUrl,
+                                getSeriesImageUrl = getSeriesImageUrl
+                            )
                         }
                     }
                 }
