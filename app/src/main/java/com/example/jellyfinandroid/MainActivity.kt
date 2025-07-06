@@ -37,10 +37,14 @@ import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -81,6 +85,8 @@ import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.ui.screens.ServerConnectionScreen
 import com.example.jellyfinandroid.ui.screens.QuickConnectScreen
+import com.example.jellyfinandroid.ui.screens.LibraryTypeScreen
+import com.example.jellyfinandroid.ui.screens.LibraryType
 import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
 import com.example.jellyfinandroid.ui.theme.getContentTypeColor
 import com.example.jellyfinandroid.ui.theme.getQualityColor
@@ -234,6 +240,30 @@ fun JellyfinAndroidApp() {
                             modifier = Modifier.padding(innerPadding)
                         )
                     }
+                    AppDestinations.MOVIES -> {
+                        LibraryTypeScreen(
+                            libraryType = LibraryType.MOVIES,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    }
+                    AppDestinations.TV_SHOWS -> {
+                        LibraryTypeScreen(
+                            libraryType = LibraryType.TV_SHOWS,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    }
+                    AppDestinations.MUSIC -> {
+                        LibraryTypeScreen(
+                            libraryType = LibraryType.MUSIC,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    }
+                    AppDestinations.STUFF -> {
+                        LibraryTypeScreen(
+                            libraryType = LibraryType.STUFF,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    }
                     AppDestinations.SEARCH -> {
                         SearchScreen(
                             appState = appState,
@@ -276,6 +306,10 @@ enum class AppDestinations(
     CONNECT("Connect", Icons.Default.Home), // Hidden from navigation
     HOME("Home", Icons.Default.Home),
     LIBRARY("Library", Icons.AutoMirrored.Filled.List),
+    MOVIES("Movies", Icons.Default.Movie),
+    TV_SHOWS("TV Shows", Icons.Default.Tv),
+    MUSIC("Music", Icons.Default.MusicNote),
+    STUFF("Stuff", Icons.Default.Widgets),
     SEARCH("Search", Icons.Default.Search),
     FAVORITES("Favorites", Icons.Default.Favorite),
     PROFILE("Profile", Icons.Default.AccountBox),
