@@ -82,6 +82,49 @@ import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
+// Constants for better maintainability
+private object LibraryScreenDefaults {
+    // Layout constants
+    val GridMinItemSize = 160.dp
+    val CardElevation = 4.dp
+    val CardCornerRadius = 12.dp
+    val ContentPadding = 16.dp
+    val ItemSpacing = 12.dp
+    val SectionSpacing = 24.dp
+    val FilterChipSpacing = 8.dp
+    
+    // Carousel constants
+    const val CarouselItemsPerSection = 10
+    val CarouselHeight = 280.dp
+    val CarouselPreferredItemWidth = 200.dp
+    val CarouselItemSpacing = 8.dp
+    
+    // Card dimensions
+    val CompactCardImageHeight = 240.dp
+    val CompactCardWidth = 180.dp
+    val CompactCardPadding = 12.dp
+    val ListCardImageWidth = 100.dp
+    val ListCardImageHeight = 140.dp
+    val ListCardImageRadius = 8.dp
+    val ListCardPadding = 12.dp
+    
+    // Icon sizes
+    val ViewModeIconSize = 16.dp
+    val FilterIconSize = 16.dp
+    val CardActionIconSize = 48.dp
+    val ListCardIconSize = 32.dp
+    val EmptyStateIconSize = 64.dp
+    
+    // Other constants
+    const val TicksToMinutesDivisor = 600000000L
+    val FavoriteIconPadding = 8.dp
+    val ListItemFavoriteIconPadding = 4.dp
+    
+    // Alpha values
+    const val ColorAlpha = 0.2f
+    const val IconAlpha = 0.6f
+}
+
 enum class LibraryType(
     val displayName: String,
     val icon: ImageVector,
@@ -154,7 +197,7 @@ fun LibraryTypeScreen(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.FilterChipSpacing)
                     ) {
                         Icon(
                             imageVector = libraryType.icon,
@@ -180,7 +223,7 @@ fun LibraryTypeScreen(
                                 onClick = { viewMode = mode },
                                 selected = viewMode == mode,
                                 colors = SegmentedButtonDefaults.colors(
-                                    activeContainerColor = libraryType.color.copy(alpha = 0.2f),
+                                    activeContainerColor = libraryType.color.copy(alpha = LibraryScreenDefaults.ColorAlpha),
                                     activeContentColor = libraryType.color
                                 )
                             ) {
@@ -191,7 +234,7 @@ fun LibraryTypeScreen(
                                         ViewMode.CAROUSEL -> Icons.Default.ViewCarousel
                                     },
                                     contentDescription = mode.name,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(LibraryScreenDefaults.ViewModeIconSize)
                                 )
                             }
                         }
@@ -218,8 +261,11 @@ fun LibraryTypeScreen(
         ) {
             // Filter chips
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.FilterChipSpacing),
+                contentPadding = PaddingValues(
+                    horizontal = LibraryScreenDefaults.ContentPadding, 
+                    vertical = LibraryScreenDefaults.FilterChipSpacing
+                )
             ) {
                 items(listOf("All", "Recent", "Favorites", "A-Z")) { filter ->
                     FilterChip(
@@ -231,12 +277,12 @@ fun LibraryTypeScreen(
                                 Icon(
                                     imageVector = Icons.Default.Star,
                                     contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(LibraryScreenDefaults.FilterIconSize)
                                 )
                             }
                         } else null,
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = libraryType.color.copy(alpha = 0.2f),
+                            selectedContainerColor = libraryType.color.copy(alpha = LibraryScreenDefaults.ColorAlpha),
                             selectedLabelColor = libraryType.color,
                             selectedLeadingIconColor = libraryType.color
                         )
@@ -268,13 +314,13 @@ fun LibraryTypeScreen(
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(LibraryScreenDefaults.ContentPadding)
                         ) {
                             Text(
                                 text = appState.errorMessage,
                                 color = MaterialTheme.colorScheme.onErrorContainer,
                                 style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(16.dp),
+                                modifier = Modifier.padding(LibraryScreenDefaults.ContentPadding),
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -288,13 +334,13 @@ fun LibraryTypeScreen(
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ContentPadding)
                         ) {
                             Icon(
                                 imageVector = libraryType.icon,
                                 contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = libraryType.color.copy(alpha = 0.6f)
+                                modifier = Modifier.size(LibraryScreenDefaults.EmptyStateIconSize),
+                                tint = libraryType.color.copy(alpha = LibraryScreenDefaults.IconAlpha)
                             )
                             Text(
                                 text = "No ${libraryType.displayName.lowercase()} found",
@@ -341,10 +387,10 @@ fun LibraryContent(
         when (viewMode) {
             ViewMode.GRID -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 160.dp),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    columns = GridCells.Adaptive(minSize = LibraryScreenDefaults.GridMinItemSize),
+                    contentPadding = PaddingValues(LibraryScreenDefaults.ContentPadding),
+                    verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ContentPadding),
+                    horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(items) { item ->
@@ -360,8 +406,8 @@ fun LibraryContent(
             
             ViewMode.LIST -> {
                 LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(LibraryScreenDefaults.ContentPadding),
+                    verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(items) { item ->
@@ -376,44 +422,74 @@ fun LibraryContent(
             }
             
             ViewMode.CAROUSEL -> {
+                // Calculate grouped items outside the LazyColumn to fix logic issue
+                val groupedItems = remember(items) { 
+                    items.chunked(LibraryScreenDefaults.CarouselItemsPerSection) 
+                }
+                
+                // Create stable carousel states to preserve scroll positions
+                val carouselStates = remember(groupedItems.size) {
+                    List(groupedItems.size) { index ->
+                        androidx.compose.material3.carousel.CarouselState { groupedItems[index].size }
+                    }
+                }
+                
                 LazyColumn(
-                    contentPadding = PaddingValues(vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    contentPadding = PaddingValues(vertical = LibraryScreenDefaults.ContentPadding),
+                    verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.SectionSpacing),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // Group items by some criteria for carousel sections
-                    val groupedItems = items.chunked(10)
-                    
                     items(groupedItems.size) { index ->
-                        Column {
-                            Text(
-                                text = when (index) {
-                                    0 -> "Featured ${libraryType.displayName}"
-                                    1 -> "Recently Added"
-                                    else -> "More ${libraryType.displayName}"
-                                },
-                                style = MaterialTheme.typography.headlineSmall,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
-                            
-                            HorizontalMultiBrowseCarousel(
-                                state = rememberCarouselState { groupedItems[index].size },
-                                modifier = Modifier.height(280.dp),
-                                preferredItemWidth = 200.dp,
-                                itemSpacing = 8.dp,
-                                contentPadding = PaddingValues(horizontal = 16.dp)
-                            ) { itemIndex ->
-                                LibraryItemCard(
-                                    item = groupedItems[index][itemIndex],
-                                    libraryType = libraryType,
-                                    getImageUrl = getImageUrl,
-                                    isCompact = true
-                                )
-                            }
-                        }
+                        CarouselSection(
+                            title = when (index) {
+                                0 -> "Featured ${libraryType.displayName}"
+                                1 -> "Recently Added"
+                                else -> "More ${libraryType.displayName}"
+                            },
+                            items = groupedItems[index],
+                            carouselState = carouselStates[index],
+                            libraryType = libraryType,
+                            getImageUrl = getImageUrl
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CarouselSection(
+    title: String,
+    items: List<BaseItemDto>,
+    carouselState: androidx.compose.material3.carousel.CarouselState,
+    libraryType: LibraryType,
+    getImageUrl: (BaseItemDto) -> String?,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(
+                horizontal = LibraryScreenDefaults.ContentPadding,
+                vertical = LibraryScreenDefaults.FilterChipSpacing
+            )
+        )
+        
+        HorizontalMultiBrowseCarousel(
+            state = carouselState,
+            modifier = Modifier.height(LibraryScreenDefaults.CarouselHeight),
+            preferredItemWidth = LibraryScreenDefaults.CarouselPreferredItemWidth,
+            itemSpacing = LibraryScreenDefaults.CarouselItemSpacing,
+            contentPadding = PaddingValues(horizontal = LibraryScreenDefaults.ContentPadding)
+        ) { itemIndex ->
+            LibraryItemCard(
+                item = items[itemIndex],
+                libraryType = libraryType,
+                getImageUrl = getImageUrl,
+                isCompact = true
+            )
         }
     }
 }
@@ -429,9 +505,9 @@ fun LibraryItemCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .then(if (isCompact) Modifier.width(180.dp) else Modifier),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            .then(if (isCompact) Modifier.width(LibraryScreenDefaults.CompactCardWidth) else Modifier),
+        shape = RoundedCornerShape(LibraryScreenDefaults.CardCornerRadius),
+        elevation = CardDefaults.cardElevation(defaultElevation = LibraryScreenDefaults.CardElevation),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
@@ -447,31 +523,40 @@ fun LibraryItemCard(
                             ShimmerBox(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(240.dp),
-                                shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+                                    .height(LibraryScreenDefaults.CompactCardImageHeight),
+                                shape = RoundedCornerShape(
+                                    topStart = LibraryScreenDefaults.CardCornerRadius, 
+                                    topEnd = LibraryScreenDefaults.CardCornerRadius
+                                )
                             )
                         },
                         error = {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(240.dp)
-                                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                                    .height(LibraryScreenDefaults.CompactCardImageHeight)
+                                    .clip(RoundedCornerShape(
+                                        topStart = LibraryScreenDefaults.CardCornerRadius, 
+                                        topEnd = LibraryScreenDefaults.CardCornerRadius
+                                    )),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = libraryType.icon,
                                     contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = libraryType.color.copy(alpha = 0.6f)
+                                    modifier = Modifier.size(LibraryScreenDefaults.CardActionIconSize),
+                                    tint = libraryType.color.copy(alpha = LibraryScreenDefaults.IconAlpha)
                                 )
                             }
                         },
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(240.dp)
-                            .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                            .height(LibraryScreenDefaults.CompactCardImageHeight)
+                            .clip(RoundedCornerShape(
+                                topStart = LibraryScreenDefaults.CardCornerRadius, 
+                                topEnd = LibraryScreenDefaults.CardCornerRadius
+                            ))
                     )
                     
                     // Favorite indicator
@@ -482,13 +567,13 @@ fun LibraryItemCard(
                             tint = Color.Yellow,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(8.dp)
+                                .padding(LibraryScreenDefaults.FavoriteIconPadding)
                         )
                     }
                 }
                 
                 Column(
-                    modifier = Modifier.padding(12.dp)
+                    modifier = Modifier.padding(LibraryScreenDefaults.CompactCardPadding)
                 ) {
                     Text(
                         text = item.name ?: "Unknown",
@@ -510,8 +595,8 @@ fun LibraryItemCard(
         } else {
             // Full-width card for list view
             Row(
-                modifier = Modifier.padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.padding(LibraryScreenDefaults.ListCardPadding),
+                horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing)
             ) {
                 Box {
                     SubcomposeAsyncImage(
@@ -520,32 +605,32 @@ fun LibraryItemCard(
                         loading = {
                             ShimmerBox(
                                 modifier = Modifier
-                                    .width(100.dp)
-                                    .height(140.dp),
-                                shape = RoundedCornerShape(8.dp)
+                                    .width(LibraryScreenDefaults.ListCardImageWidth)
+                                    .height(LibraryScreenDefaults.ListCardImageHeight),
+                                shape = RoundedCornerShape(LibraryScreenDefaults.ListCardImageRadius)
                             )
                         },
                         error = {
                             Box(
                                 modifier = Modifier
-                                    .width(100.dp)
-                                    .height(140.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
+                                    .width(LibraryScreenDefaults.ListCardImageWidth)
+                                    .height(LibraryScreenDefaults.ListCardImageHeight)
+                                    .clip(RoundedCornerShape(LibraryScreenDefaults.ListCardImageRadius)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = libraryType.icon,
                                     contentDescription = null,
-                                    modifier = Modifier.size(32.dp),
-                                    tint = libraryType.color.copy(alpha = 0.6f)
+                                    modifier = Modifier.size(LibraryScreenDefaults.ListCardIconSize),
+                                    tint = libraryType.color.copy(alpha = LibraryScreenDefaults.IconAlpha)
                                 )
                             }
                         },
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .width(100.dp)
-                            .height(140.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .width(LibraryScreenDefaults.ListCardImageWidth)
+                            .height(LibraryScreenDefaults.ListCardImageHeight)
+                            .clip(RoundedCornerShape(LibraryScreenDefaults.ListCardImageRadius))
                     )
                     
                     if (item.userData?.isFavorite == true) {
@@ -555,14 +640,14 @@ fun LibraryItemCard(
                             tint = Color.Yellow,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(4.dp)
+                                .padding(LibraryScreenDefaults.ListItemFavoriteIconPadding)
                         )
                     }
                 }
                 
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ListItemFavoriteIconPadding)
                 ) {
                     Text(
                         text = item.name ?: "Unknown",
@@ -590,13 +675,13 @@ fun LibraryItemCard(
                         )
                     }
                     
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(LibraryScreenDefaults.FilterChipSpacing))
                     
                     // Additional info based on library type
                     when (libraryType) {
                         LibraryType.MOVIES -> {
                             item.runTimeTicks?.let { runtime ->
-                                val minutes = (runtime / 600000000).toInt()
+                                val minutes = (runtime / LibraryScreenDefaults.TicksToMinutesDivisor).toInt()
                                 Text(
                                     text = "${minutes} min",
                                     style = MaterialTheme.typography.bodySmall,
