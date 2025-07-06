@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -125,6 +126,117 @@ private object LibraryScreenDefaults {
     const val IconAlpha = 0.6f
 }
 
+// Data class for carousel categories
+data class CarouselCategory(
+    val title: String,
+    val items: List<BaseItemDto>
+)
+
+// Helper function to reduce code duplication in filtering logic
+private fun applyFilter(items: List<BaseItemDto>, filter: FilterType): List<BaseItemDto> {
+    return when (filter) {
+        FilterType.ALL -> items
+        FilterType.RECENT -> items.sortedByDescending { it.dateCreated }
+        FilterType.FAVORITES -> items.filter { it.userData?.isFavorite == true }
+        FilterType.ALPHABETICAL -> items.sortedBy { it.sortName ?: it.name }
+    }
+}
+
+// Organize items into meaningful categories for carousel view
+private fun organizeItemsForCarousel(items: List<BaseItemDto>, libraryType: LibraryType): List<CarouselCategory> {
+    if (items.isEmpty()) return emptyList()
+    
+    val categories = mutableListOf<CarouselCategory>()
+    
+    // Recently Added (last 30 days or most recent 10 items)
+    val recentItems = items
+        .sortedByDescending { it.dateCreated }
+        .take(10)
+    if (recentItems.isNotEmpty()) {
+        categories.add(CarouselCategory("Recently Added", recentItems))
+    }
+    
+    // Favorites
+    val favoriteItems = items
+        .filter { it.userData?.isFavorite == true }
+        .take(LibraryScreenDefaults.CarouselItemsPerSection)
+    if (favoriteItems.isNotEmpty()) {
+        categories.add(CarouselCategory("Favorites", favoriteItems))
+    }
+    
+    // High-rated items (if available)
+    val highRatedItems = items
+        .filter { (it.communityRating ?: 0.0) >= 7.0 }
+        .sortedByDescending { it.communityRating }
+        .take(LibraryScreenDefaults.CarouselItemsPerSection)
+    if (highRatedItems.isNotEmpty()) {
+        categories.add(CarouselCategory("Highly Rated", highRatedItems))
+    }
+    
+    // Library-specific categories
+    when (libraryType) {
+        LibraryType.MOVIES -> {
+            // Recent releases (by production year)
+            val recentReleases = items
+                .filter { (it.productionYear ?: 0) >= 2020 }
+                .sortedByDescending { it.productionYear }
+                .take(LibraryScreenDefaults.CarouselItemsPerSection)
+            if (recentReleases.isNotEmpty()) {
+                categories.add(CarouselCategory("Recent Releases", recentReleases))
+            }
+        }
+        LibraryType.TV_SHOWS -> {
+            // Continuing series
+            val continuingSeries = items
+                .filter { it.type == BaseItemKind.SERIES && it.status == "Continuing" }
+                .take(LibraryScreenDefaults.CarouselItemsPerSection)
+            if (continuingSeries.isNotEmpty()) {
+                categories.add(CarouselCategory("Continuing Series", continuingSeries))
+            }
+        }
+        LibraryType.MUSIC -> {
+            // Group by artist for albums
+            val albumsByArtist = items
+                .filter { it.type == BaseItemKind.MUSIC_ALBUM }
+                .groupBy { it.albumArtist }
+                .values.firstOrNull()
+                ?.take(LibraryScreenDefaults.CarouselItemsPerSection)
+            if (!albumsByArtist.isNullOrEmpty()) {
+                categories.add(CarouselCategory("Popular Artist Albums", albumsByArtist))
+            }
+        }
+        LibraryType.STUFF -> {
+            // Group by content type
+            val books = items.filter { it.type == BaseItemKind.BOOK }.take(8)
+            if (books.isNotEmpty()) {
+                categories.add(CarouselCategory("Books", books))
+            }
+            
+            val audioBooks = items.filter { it.type == BaseItemKind.AUDIO_BOOK }.take(8)
+            if (audioBooks.isNotEmpty()) {
+                categories.add(CarouselCategory("Audiobooks", audioBooks))
+            }
+        }
+    }
+    
+    // If we don't have enough categories, add remaining items in chunks
+    val usedItems = categories.flatMap { it.items }.toSet()
+    val remainingItems = items.filterNot { it in usedItems }
+    
+    if (remainingItems.isNotEmpty()) {
+        remainingItems.chunked(LibraryScreenDefaults.CarouselItemsPerSection).forEachIndexed { index, chunk ->
+            val title = if (categories.isEmpty() && index == 0) {
+                "All ${libraryType.displayName}"
+            } else {
+                "More ${libraryType.displayName}"
+            }
+            categories.add(CarouselCategory(title, chunk))
+        }
+    }
+    
+    return categories
+}
+
 enum class LibraryType(
     val displayName: String,
     val icon: ImageVector,
@@ -163,6 +275,18 @@ enum class ViewMode {
     CAROUSEL
 }
 
+enum class FilterType(val displayName: String) {
+    ALL("All"),
+    RECENT("Recent"),
+    FAVORITES("Favorites"),
+    ALPHABETICAL("A-Z");
+    
+    companion object {
+        fun getDefault() = ALL
+        fun getAllFilters() = entries
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryTypeScreen(
@@ -172,7 +296,7 @@ fun LibraryTypeScreen(
 ) {
     val appState by viewModel.appState.collectAsState()
     var viewMode by remember { mutableStateOf(ViewMode.GRID) }
-    var selectedFilter by remember { mutableStateOf("All") }
+    var selectedFilter by remember { mutableStateOf(FilterType.getDefault()) }
     
     // Filter items based on library type
     val filteredItems = remember(appState.allItems, libraryType) {
@@ -183,12 +307,7 @@ fun LibraryTypeScreen(
     
     // Further filter based on selected filter
     val displayItems = remember(filteredItems, selectedFilter) {
-        when (selectedFilter) {
-            "Recent" -> filteredItems.sortedByDescending { it.dateCreated }
-            "Favorites" -> filteredItems.filter { it.userData?.isFavorite == true }
-            "A-Z" -> filteredItems.sortedBy { it.sortName ?: it.name }
-            else -> filteredItems
-        }
+        applyFilter(filteredItems, selectedFilter)
     }
 
     Scaffold(
@@ -240,7 +359,7 @@ fun LibraryTypeScreen(
                         }
                     }
                     
-                    IconButton(onClick = { viewModel.loadInitialData() }) {
+                    IconButton(onClick = { viewModel.refreshLibraryItems() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Refresh"
@@ -267,12 +386,12 @@ fun LibraryTypeScreen(
                     vertical = LibraryScreenDefaults.FilterChipSpacing
                 )
             ) {
-                items(listOf("All", "Recent", "Favorites", "A-Z")) { filter ->
+                items(FilterType.getAllFilters()) { filter ->
                     FilterChip(
                         onClick = { selectedFilter = filter },
-                        label = { Text(filter) },
+                        label = { Text(filter.displayName) },
                         selected = selectedFilter == filter,
-                        leadingIcon = if (filter == "Favorites") {
+                        leadingIcon = if (filter == FilterType.FAVORITES) {
                             {
                                 Icon(
                                     imageVector = Icons.Default.Star,
@@ -362,6 +481,9 @@ fun LibraryTypeScreen(
                         viewMode = viewMode,
                         libraryType = libraryType,
                         getImageUrl = { item -> viewModel.getImageUrl(item) },
+                        isLoadingMore = appState.isLoadingMore,
+                        hasMoreItems = appState.hasMoreItems,
+                        onLoadMore = { viewModel.loadMoreItems() },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -376,6 +498,9 @@ fun LibraryContent(
     viewMode: ViewMode,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
+    isLoadingMore: Boolean,
+    hasMoreItems: Boolean,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
@@ -401,6 +526,18 @@ fun LibraryContent(
                             isCompact = true
                         )
                     }
+                    
+                    // Pagination loading indicator and trigger
+                    if (hasMoreItems || isLoadingMore) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            PaginationFooter(
+                                isLoadingMore = isLoadingMore,
+                                hasMoreItems = hasMoreItems,
+                                onLoadMore = onLoadMore,
+                                libraryType = libraryType
+                            )
+                        }
+                    }
                 }
             }
             
@@ -418,19 +555,31 @@ fun LibraryContent(
                             isCompact = false
                         )
                     }
+                    
+                    // Pagination loading indicator and trigger
+                    if (hasMoreItems || isLoadingMore) {
+                        item {
+                            PaginationFooter(
+                                isLoadingMore = isLoadingMore,
+                                hasMoreItems = hasMoreItems,
+                                onLoadMore = onLoadMore,
+                                libraryType = libraryType
+                            )
+                        }
+                    }
                 }
             }
             
             ViewMode.CAROUSEL -> {
-                // Calculate grouped items outside the LazyColumn to fix logic issue
-                val groupedItems = remember(items) { 
-                    items.chunked(LibraryScreenDefaults.CarouselItemsPerSection) 
+                // Organize items into meaningful categories instead of arbitrary chunks
+                val categorizedItems = remember(items) { 
+                    organizeItemsForCarousel(items, libraryType)
                 }
                 
                 // Create stable carousel states to preserve scroll positions
-                val carouselStates = remember(groupedItems.size) {
-                    List(groupedItems.size) { index ->
-                        androidx.compose.material3.carousel.CarouselState { groupedItems[index].size }
+                val carouselStates = remember(categorizedItems.size) {
+                    List(categorizedItems.size) { index ->
+                        androidx.compose.material3.carousel.CarouselState { categorizedItems[index].items.size }
                     }
                 }
                 
@@ -439,14 +588,11 @@ fun LibraryContent(
                     verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.SectionSpacing),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(groupedItems.size) { index ->
+                    items(categorizedItems.size) { index ->
+                        val category = categorizedItems[index]
                         CarouselSection(
-                            title = when (index) {
-                                0 -> "Featured ${libraryType.displayName}"
-                                1 -> "Recently Added"
-                                else -> "More ${libraryType.displayName}"
-                            },
-                            items = groupedItems[index],
+                            title = category.title,
+                            items = category.items,
                             carouselState = carouselStates[index],
                             libraryType = libraryType,
                             getImageUrl = getImageUrl
@@ -454,6 +600,52 @@ fun LibraryContent(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PaginationFooter(
+    isLoadingMore: Boolean,
+    hasMoreItems: Boolean,
+    onLoadMore: () -> Unit,
+    libraryType: LibraryType,
+    modifier: Modifier = Modifier
+) {
+    LaunchedEffect(Unit) {
+        // Trigger load more when this composable becomes visible
+        if (hasMoreItems && !isLoadingMore) {
+            onLoadMore()
+        }
+    }
+    
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(LibraryScreenDefaults.ContentPadding),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isLoadingMore) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.FilterChipSpacing)
+            ) {
+                CircularProgressIndicator(
+                    color = libraryType.color,
+                    modifier = Modifier.size(LibraryScreenDefaults.ViewModeIconSize)
+                )
+                Text(
+                    text = "Loading more...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else if (!hasMoreItems) {
+            Text(
+                text = "No more items to load",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
