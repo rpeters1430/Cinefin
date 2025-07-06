@@ -26,12 +26,15 @@ import com.example.jellyfinandroid.ui.navigation.AppDestinations
 import com.example.jellyfinandroid.ui.screens.FavoritesScreen
 import com.example.jellyfinandroid.ui.screens.HomeScreen
 import com.example.jellyfinandroid.ui.screens.LibraryScreen
-import com.example.jellyfinandroid.ui.screens.LibraryTypeScreen
+import com.example.jellyfinandroid.ui.screens.MoviesScreen
+import com.example.jellyfinandroid.ui.screens.MusicScreen
 import com.example.jellyfinandroid.ui.screens.ProfileScreen
 import com.example.jellyfinandroid.ui.screens.SearchScreen
 import com.example.jellyfinandroid.ui.screens.ServerConnectionScreen
 import com.example.jellyfinandroid.ui.screens.QuickConnectScreen
+import com.example.jellyfinandroid.ui.screens.StuffScreen
 import com.example.jellyfinandroid.ui.screens.TVSeasonScreen
+import com.example.jellyfinandroid.ui.screens.TVShowsScreen
 import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
@@ -151,8 +154,7 @@ fun JellyfinAndroidApp() {
                         )
                     }
                     AppDestinations.MOVIES -> {
-                        LibraryTypeScreen(
-                            libraryType = com.example.jellyfinandroid.ui.screens.LibraryType.MOVIES,
+                        MoviesScreen(
                             modifier = Modifier.padding(innerPadding)
                         )
                     }
@@ -168,8 +170,7 @@ fun JellyfinAndroidApp() {
                                 modifier = Modifier.padding(innerPadding)
                             )
                         } else {
-                            LibraryTypeScreen(
-                                libraryType = com.example.jellyfinandroid.ui.screens.LibraryType.TV_SHOWS,
+                            TVShowsScreen(
                                 onTVShowClick = { seriesId ->
                                     selectedSeriesId = seriesId
                                     showTVSeasonScreen = true
@@ -179,14 +180,12 @@ fun JellyfinAndroidApp() {
                         }
                     }
                     AppDestinations.MUSIC -> {
-                        LibraryTypeScreen(
-                            libraryType = com.example.jellyfinandroid.ui.screens.LibraryType.MUSIC,
+                        MusicScreen(
                             modifier = Modifier.padding(innerPadding)
                         )
                     }
                     AppDestinations.STUFF -> {
-                        LibraryTypeScreen(
-                            libraryType = com.example.jellyfinandroid.ui.screens.LibraryType.STUFF,
+                        StuffScreen(
                             modifier = Modifier.padding(innerPadding)
                         )
                     }
