@@ -16,12 +16,12 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -213,7 +213,7 @@ fun TVShowsScreen(
                                 Icon(
                                     imageVector = when (mode) {
                                         TVShowViewMode.GRID -> Icons.Default.GridView
-                                        TVShowViewMode.LIST -> Icons.Default.ViewList
+                                        TVShowViewMode.LIST -> Icons.AutoMirrored.Filled.ViewList
                                     },
                                     contentDescription = mode.name,
                                     modifier = Modifier.padding(2.dp)
@@ -226,7 +226,7 @@ fun TVShowsScreen(
                     Box {
                         IconButton(onClick = { showSortMenu = true }) {
                             Icon(
-                                imageVector = Icons.Default.Sort,
+                                imageVector = Icons.AutoMirrored.Filled.Sort,
                                 contentDescription = "Sort"
                             )
                         }
