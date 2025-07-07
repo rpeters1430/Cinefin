@@ -1,8 +1,8 @@
 # ================================================================================
-# Jellyfin Android Client - ProGuard Rules
+# Jellyfin Android Client - ProGuard/R8 Rules (Optimized)
 # ================================================================================
-# These rules ensure the app functions correctly when minification is enabled
-# for release builds. Without these rules, critical crashes would occur.
+# Modern R8-optimized rules for the Jellyfin Android client
+# These rules balance code shrinking with functionality preservation
 # ================================================================================
 
 # ================================
@@ -16,20 +16,29 @@
 -keepattributes Signature,Exceptions,*Annotation*,InnerClasses,EnclosingMethod
 
 # ================================
-# KOTLIN SERIALIZATION
+# KOTLIN SERIALIZATION (Modern Rules)
 # ================================
 # Critical for JSON parsing - prevents crashes during API responses
 -keepattributes *Annotation*, InnerClasses
--dontnote kotlinx.serialization.AnnotationsKt
 
 # Keep all serializable classes and their serializers
--keep @kotlinx.serialization.Serializable class ** {
+-keep,allowobfuscation @kotlinx.serialization.Serializable class * {
     static **$Companion Companion;
+    *** Companion;
+    kotlinx.serialization.KSerializer serializer(...);
 }
 
-# Keep serializers for all serializable classes
--keep class **$$serializer { *; }
--keep class kotlinx.serialization.** { *; }
+# Keep serializers
+-keep,allowobfuscation class * implements kotlinx.serialization.KSerializer
+-keep,allowobfuscation class **$$serializer { *; }
+
+# Keep Kotlin serialization internals
+-keep class kotlinx.serialization.internal.** { *; }
+-keep class kotlinx.serialization.json.** { *; }
+
+# R8 full mode strips generic signatures from return types if not kept
+-if class **$$serializer
+-keep class <1>
 
 # Don't warn about kotlinx.serialization
 -dontwarn kotlinx.serialization.**
@@ -48,22 +57,24 @@
 }
 
 # Keep generic signatures for Retrofit
--keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+-keep,allowobfuscation,allowshrinking class retrofit2.Call
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
 
 # OkHttp platform used only on JVM and when Conscrypt dependency is available.
--dontwarn okhttp3.internal.platform.ConscryptPlatform
--dontwarn org.conscrypt.ConscryptHostnameVerifier
+-dontwarn okhttp3.internal.platform.**
+-dontwarn org.conscrypt.**
 
 # ================================
 # JELLYFIN SDK
 # ================================
 # Preserve Jellyfin SDK classes and methods to maintain API functionality
--keep class org.jellyfin.sdk.** { *; }
+-keep,allowobfuscation class org.jellyfin.sdk.model.** { *; }
+-keep,allowobfuscation class org.jellyfin.sdk.api.** { *; }
 -keep interface org.jellyfin.sdk.** { *; }
 
-# Keep all model classes that might be used for API responses
--keep class org.jellyfin.sdk.model.** { *; }
--keep class org.jellyfin.sdk.api.** { *; }
+# Keep client and authentication classes
+-keep class org.jellyfin.sdk.Jellyfin { *; }
+-keep class org.jellyfin.sdk.discovery.** { *; }
 
 # Don't warn about Jellyfin SDK dependencies
 -dontwarn org.jellyfin.sdk.**
@@ -73,16 +84,15 @@
 # ================================
 # Keep SLF4J classes for Jellyfin SDK logging
 -keep class org.slf4j.** { *; }
--keep interface org.slf4j.** { *; }
 -dontwarn org.slf4j.**
+-dontwarn ch.qos.logback.**
 
 # ================================
 # HILT DEPENDENCY INJECTION
 # ================================
-# Keep Hilt generated classes and annotations
--keep class dagger.** { *; }
--keep class javax.inject.** { *; }
--keep class dagger.hilt.** { *; }
+# Keep Hilt generated classes
+-keep class * extends dagger.hilt.internal.GeneratedComponent
+-keep class **_HiltComponents$* { *; }
 
 # Keep Hilt entry points and components
 -keep @dagger.hilt.InstallIn class *
@@ -104,17 +114,23 @@
     @javax.inject.Inject <methods>;
 }
 
+# Keep Hilt ViewModels
+-keep @dagger.hilt.android.lifecycle.HiltViewModel class * {
+    <init>(...);
+}
+
 # ================================
-# MEDIA3 EXOPLAYER
+# ANDROIDX MEDIA3 EXOPLAYER
 # ================================
 # Essential for video/audio playback functionality
--keep class androidx.media3.** { *; }
--keep interface androidx.media3.** { *; }
-
-# Keep ExoPlayer implementation classes
+-keep class androidx.media3.common.** { *; }
 -keep class androidx.media3.exoplayer.** { *; }
 -keep class androidx.media3.ui.** { *; }
--keep class androidx.media3.common.** { *; }
+
+# Keep ExoPlayer format support
+-keep class androidx.media3.decoder.** { *; }
+-keep class androidx.media3.datasource.** { *; }
+-keep class androidx.media3.extractor.** { *; }
 
 # Don't warn about Media3 dependencies
 -dontwarn androidx.media3.**
@@ -124,12 +140,8 @@
 # ================================
 # Prevent image loading failures
 -keep class coil.** { *; }
--keep interface coil.** { *; }
-
-# Keep Coil Compose integration
 -keep class coil.compose.** { *; }
-
-# Don't warn about Coil dependencies
+-keep class coil.transform.** { *; }
 -dontwarn coil.**
 
 # ================================
@@ -138,44 +150,55 @@
 # Critical for asynchronous operations
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+-keepnames class kotlinx.coroutines.android.AndroidExceptionPreHandler {}
+-keepnames class kotlinx.coroutines.android.AndroidDispatcherFactory {}
 
 # Keep coroutines intrinsics
 -keep class kotlinx.coroutines.** { *; }
 -dontwarn kotlinx.coroutines.**
 
 # ================================
-# JETPACK COMPOSE
+# JETPACK COMPOSE (Optimized)
 # ================================
-# Keep Compose runtime classes
--keep class androidx.compose.** { *; }
--keep interface androidx.compose.** { *; }
-
 # Keep Compose compiler generated classes
 -keep class androidx.compose.runtime.** { *; }
--keep class androidx.compose.ui.** { *; }
--keep class androidx.compose.material3.** { *; }
 
-# Keep @Composable functions
--keep @androidx.compose.runtime.Composable class *
--keep class * {
+# Keep CompositionLocal providers
+-keep class androidx.compose.runtime.CompositionLocalKt { *; }
+
+# Keep @Composable functions from being inlined
+-keepclassmembers class * {
     @androidx.compose.runtime.Composable <methods>;
 }
 
-# ================================
-# ANDROIDX & ANDROID CORE
-# ================================
-# Keep essential Android framework classes
--keep class androidx.** { *; }
--keep interface androidx.** { *; }
+# Keep Material 3 theming
+-keep class androidx.compose.material3.** { *; }
+-keep class androidx.compose.material3.adaptive.** { *; }
 
-# Keep DataStore preferences
+# Keep Compose UI essentials
+-keep class androidx.compose.ui.graphics.** { *; }
+-keep class androidx.compose.ui.text.** { *; }
+
+# ================================
+# ANDROIDX ESSENTIALS (Selective)
+# ================================
+# Keep only essential androidx classes, not everything
+-keep class androidx.core.** { *; }
+-keep class androidx.lifecycle.** { *; }
+-keep class androidx.activity.** { *; }
+-keep class androidx.navigation.** { *; }
 -keep class androidx.datastore.** { *; }
 
-# Keep Navigation component classes
--keep class androidx.navigation.** { *; }
+# Keep ViewModels and LiveData
+-keep class * extends androidx.lifecycle.ViewModel {
+    <init>(...);
+}
+-keep class * extends androidx.lifecycle.AndroidViewModel {
+    <init>(...);
+}
 
 # ================================
-# GENERAL ANDROID RULES
+# ANDROID FRAMEWORK RULES
 # ================================
 # Keep native methods
 -keepclasseswithmembernames class * {
@@ -187,6 +210,8 @@
     public <init>(android.content.Context);
     public <init>(android.content.Context, android.util.AttributeSet);
     public <init>(android.content.Context, android.util.AttributeSet, int);
+    public void set*(***);
+    public *** get*();
 }
 
 # Keep Parcelable implementations
@@ -200,15 +225,8 @@
     public static ** valueOf(java.lang.String);
 }
 
-# ================================
-# SERIALIZATION SUPPORT
-# ================================
-# Keep classes that might be serialized
--keep class com.example.jellyfinandroid.data.** { *; }
--keep class com.example.jellyfinandroid.network.** { *; }
-
-# Keep model classes used for API communication
--keep class * implements java.io.Serializable { *; }
+# Keep R class and its inner classes
+-keep class **.R$* { *; }
 
 # ================================
 # APPLICATION SPECIFIC
@@ -220,37 +238,75 @@
 -keep class com.example.jellyfinandroid.MainActivity { *; }
 
 # Keep ViewModels
--keep class com.example.jellyfinandroid.ui.viewmodel.** { *; }
+-keep class com.example.jellyfinandroid.**.viewmodel.** { *; }
+
+# Keep data classes used for API communication
+-keep,allowobfuscation class com.example.jellyfinandroid.data.** { *; }
+-keep,allowobfuscation class com.example.jellyfinandroid.network.** { *; }
+
+# Keep model classes
+-keep,allowobfuscation class com.example.jellyfinandroid.model.** { *; }
+
+# ================================
+# MODERN ANDROID RULES
+# ================================
+# Keep annotation default values
+-keepattributes AnnotationDefault
+
+# Keep generic signatures (needed for reflection)
+-keepattributes Signature
+
+# Keep classes that use reflection
+-keepclassmembers class * {
+    @kotlin.jvm.JvmField *;
+}
+
+# Keep companion objects
+-keepclassmembers class * {
+    public static **$Companion Companion;
+}
 
 # ================================
 # WARNINGS SUPPRESSION
 # ================================
-# Suppress warnings for optional dependencies
--dontwarn java.lang.instrument.ClassFileTransformer
--dontwarn sun.misc.SignalHandler
--dontwarn java.lang.instrument.Instrumentation
--dontwarn sun.misc.Signal
+# Suppress warnings for missing classes that are optional
+-dontwarn java.lang.instrument.**
+-dontwarn sun.misc.**
 -dontwarn java.lang.ClassValue
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
+
+# Suppress warnings for newer Java APIs
+-dontwarn java.lang.invoke.StringConcatFactory
+
+# ================================
+# OPTIMIZATION SETTINGS
+# ================================
+# Allow aggressive optimization
+-allowaccessmodification
+-optimizationpasses 5
+-dontusemixedcaseclassnames
+-dontskipnonpubliclibraryclasses
+-verbose
+
+# Don't preverify (not needed for Android)
+-dontpreverify
 
 # ================================================================================
 # TESTING INSTRUCTIONS
 # ================================================================================
-# To enable minification and test these rules:
-# 1. In app/build.gradle.kts, change: isMinifyEnabled = false to isMinifyEnabled = true
-# 2. Build release APK: ./gradlew assembleRelease  
+# To test these optimized rules:
+# 1. Enable minification: isMinifyEnabled = true in build.gradle.kts
+# 2. Build release APK: ./gradlew assembleRelease
 # 3. Test critical functionality:
-#    - Jellyfin server connection and authentication
-#    - API calls for library content (movies, TV shows, music)
-#    - Media playback (video and audio)
-#    - Image loading and caching
-#    - Navigation between screens
-#    - Dependency injection (Hilt)
-# 4. Check logs for any ClassNotFoundException or NoSuchMethodException
-# 5. If crashes occur, add specific -keep rules for affected classes
+#    - Server connection and authentication
+#    - API calls and data parsing
+#    - Media playback
+#    - Image loading
+#    - Navigation
+#    - Dependency injection
+# 4. Monitor logs for ClassNotFoundException or NoSuchMethodException
+# 5. Use APK analyzer to verify size reduction
 #
-# These rules cover all major dependencies but may need refinement based on
-# actual usage patterns and any custom model classes added to the project.
-# ================================================================================
-# END OF PROGUARD RULES  
+# These rules are optimized for R8 and should provide better code shrinking
+# while maintaining all required functionality.
 # ================================================================================
