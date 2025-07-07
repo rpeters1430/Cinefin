@@ -36,7 +36,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.ViewCarousel
-import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -351,7 +351,7 @@ fun LibraryTypeScreen(
                                 Icon(
                                     imageVector = when (mode) {
                                         ViewMode.GRID -> Icons.Default.GridView
-                                        ViewMode.LIST -> Icons.Default.ViewList
+                                        ViewMode.LIST -> Icons.AutoMirrored.Filled.ViewList
                                         ViewMode.CAROUSEL -> Icons.Default.ViewCarousel
                                     },
                                     contentDescription = mode.name,
