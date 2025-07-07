@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,11 +24,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,6 +41,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.ui.components.MediaCard
 import com.example.jellyfinandroid.ui.components.RecentlyAddedCard
@@ -58,8 +69,6 @@ fun HomeScreen(
     onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    val isSearching = appState.isSearching || searchQuery.isNotBlank()
 
     Scaffold(
         topBar = {
@@ -97,44 +106,15 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Search Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { 
-                    searchQuery = it
-                    if (it.isBlank()) {
-                        onClearSearch()
-                    } else {
-                        onSearch(it)
-                    }
-                },
-                placeholder = { Text("Search movies, TV shows, music...") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                singleLine = true
+            // Show home content
+            HomeContent(
+                appState = appState,
+                currentServer = currentServer,
+                onRefresh = onRefresh,
+                getImageUrl = getImageUrl,
+                getSeriesImageUrl = getSeriesImageUrl,
+                modifier = Modifier.fillMaxSize()
             )
-
-            if (isSearching) {
-                // Show search results
-                SearchResultsContent(
-                    searchResults = appState.searchResults,
-                    isSearching = appState.isSearching,
-                    errorMessage = appState.errorMessage,
-                    getImageUrl = getImageUrl,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                // Show regular home content
-                HomeContent(
-                    appState = appState,
-                    currentServer = currentServer,
-                    onRefresh = onRefresh,
-                    getImageUrl = getImageUrl,
-                    getSeriesImageUrl = getSeriesImageUrl,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
         }
     }
 }
@@ -171,6 +151,66 @@ fun HomeContent(
                                 text = "Connected to ${server.name}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Featured Movies Carousel
+        val featuredMovies = appState.allItems.filter { 
+            it.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE 
+        }.sortedByDescending { it.dateCreated }.take(6)
+        
+        if (featuredMovies.isNotEmpty()) {
+            item {
+                Column {
+                    Text(
+                        text = "Featured Movies",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    
+                    val pagerState = rememberPagerState(pageCount = { featuredMovies.size })
+                    
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentPadding = PaddingValues(horizontal = 48.dp),
+                        pageSpacing = 16.dp
+                    ) { page ->
+                        val movie = featuredMovies[page]
+                        CarouselMovieCard(
+                            movie = movie,
+                            getImageUrl = getImageUrl,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(12.dp))
+                        )
+                    }
+                    
+                    // Simple page indicators
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        repeat(featuredMovies.size) { index ->
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(
+                                        color = if (pagerState.currentPage == index) 
+                                            MaterialTheme.colorScheme.primary 
+                                        else 
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                                        shape = CircleShape
+                                    )
                             )
                         }
                     }
@@ -403,6 +443,77 @@ fun SearchResultsContent(
                     if (rowItems.size == 1) {
                         Spacer(modifier = Modifier.weight(1f))
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CarouselMovieCard(
+    movie: BaseItemDto,
+    getImageUrl: (BaseItemDto) -> String?,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxSize(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Background image
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(getImageUrl(movie) ?: "")
+                    .crossfade(true)
+                    .build(),
+                contentDescription = movie.name ?: "Movie poster",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .aspectRatio(16f / 9f),
+                contentScale = ContentScale.Crop
+            )
+            
+            // Gradient overlay for better text readability
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                            colors = listOf(
+                                androidx.compose.ui.graphics.Color.Transparent,
+                                androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f)
+                            ),
+                            startY = 0f,
+                            endY = Float.POSITIVE_INFINITY
+                        )
+                    )
+            )
+            
+            // Movie title at the bottom
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = movie.name ?: "Unknown Movie",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = androidx.compose.ui.graphics.Color.White,
+                    maxLines = 2
+                )
+                movie.productionYear?.let { year ->
+                    Text(
+                        text = year.toString(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f)
+                    )
                 }
             }
         }

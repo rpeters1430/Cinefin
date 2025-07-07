@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.androidx.material3.adaptive.layout)
     implementation(libs.androidx.material3.adaptive.navigation)
     implementation(libs.androidx.material3.window.size)
+    
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
