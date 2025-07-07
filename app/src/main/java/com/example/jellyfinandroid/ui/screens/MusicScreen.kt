@@ -15,14 +15,14 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -214,7 +214,7 @@ fun MusicScreen(
                                 Icon(
                                     imageVector = when (mode) {
                                         MusicViewMode.GRID -> Icons.Default.GridView
-                                        MusicViewMode.LIST -> Icons.Default.ViewList
+                                        MusicViewMode.LIST -> Icons.AutoMirrored.Filled.ViewList
                                     },
                                     contentDescription = mode.name,
                                     modifier = Modifier.padding(2.dp)
@@ -227,7 +227,7 @@ fun MusicScreen(
                     Box {
                         IconButton(onClick = { showSortMenu = true }) {
                             Icon(
-                                imageVector = Icons.Default.Sort,
+                                imageVector = Icons.AutoMirrored.Filled.Sort,
                                 contentDescription = "Sort"
                             )
                         }
