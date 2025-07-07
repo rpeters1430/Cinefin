@@ -15,6 +15,12 @@
 .cxx
 local.properties
 
+# Temporary validation script
+validate_proguard.sh
+
+# Temporary documentation
+ProGuard_Rules_Implementation.md
+
 # Additional Android Studio / IntelliJ IDEA
 .idea/
 *.iws
