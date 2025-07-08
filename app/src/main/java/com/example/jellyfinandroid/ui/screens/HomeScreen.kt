@@ -25,12 +25,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
@@ -47,7 +49,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -60,7 +61,7 @@ import com.example.jellyfinandroid.ui.viewmodel.MainAppState
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun HomeScreen(
     appState: MainAppState,
@@ -161,6 +162,7 @@ fun HomeLibraryCard(
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun HomeContent(
     appState: MainAppState,
@@ -215,22 +217,23 @@ fun HomeContent(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                     
-                    val pagerState = rememberPagerState(pageCount = { recentMovies.size })
+                    val carouselState = rememberCarouselState { recentMovies.size }
                     
-                    HorizontalPager(
-                        state = pagerState,
+                    HorizontalMultiBrowseCarousel(
+                        state = carouselState,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(220.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        pageSpacing = 8.dp
-                    ) { page ->
-                        val movie = recentMovies[page]
+                            .height(240.dp),
+                        preferredItemWidth = 280.dp,
+                        itemSpacing = 12.dp,
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) { index ->
+                        val movie = recentMovies[index]
                         CarouselMovieCard(
                             movie = movie,
                             getImageUrl = getImageUrl,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
+                                .maskClip(MaterialTheme.shapes.large)
                                 .fillMaxSize()
                         )
                     }
@@ -478,7 +481,7 @@ private fun CarouselMovieCard(
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Background image
+            // Background image with better error handling
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(getImageUrl(movie) ?: "")
@@ -491,15 +494,16 @@ private fun CarouselMovieCard(
                 contentScale = ContentScale.Crop
             )
             
-            // Gradient overlay for better text readability
+            // Enhanced gradient overlay with multiple stops
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         brush = androidx.compose.ui.graphics.Brush.verticalGradient(
                             colors = listOf(
-                                androidx.compose.ui.graphics.Color.Transparent,
-                                androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f)
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.3f),
+                                Color.Black.copy(alpha = 0.8f)
                             ),
                             startY = 0f,
                             endY = Float.POSITIVE_INFINITY
@@ -507,7 +511,25 @@ private fun CarouselMovieCard(
                     )
             )
             
-            // Movie title at the bottom
+            // Rating badge in top right
+            movie.communityRating?.let { rating ->
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                ) {
+                    Text(
+                        text = "★ ${String.format("%.1f", rating)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+            
+            // Movie info at the bottom
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -517,15 +539,31 @@ private fun CarouselMovieCard(
                     text = movie.name ?: "Unknown Movie",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = androidx.compose.ui.graphics.Color.White,
+                    color = Color.White,
                     maxLines = 2
                 )
-                movie.productionYear?.let { year ->
-                    Text(
-                        text = year.toString(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f)
-                    )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    movie.productionYear?.let { year ->
+                        Text(
+                            text = year.toString(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
+                    movie.runTimeTicks?.let { ticks ->
+                        val minutes = (ticks / 10_000_000 / 60).toInt()
+                        val hours = minutes / 60
+                        val remainingMinutes = minutes % 60
+                        val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
+                        Text(
+                            text = "• $runtime",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
         }
