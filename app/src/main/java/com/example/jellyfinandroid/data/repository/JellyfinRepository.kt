@@ -380,6 +380,41 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
+    suspend fun getRecentlyAddedFromLibrary(
+        libraryId: String,
+        limit: Int = 10
+    ): ApiResult<List<BaseItemDto>> {
+        val server = _currentServer.value
+        if (server?.accessToken == null || server.userId == null) {
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        if (userUuid == null) {
+            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val parentUuid = runCatching { UUID.fromString(libraryId) }.getOrNull()
+        if (parentUuid == null) {
+            return ApiResult.Error("Invalid library ID", errorType = ErrorType.NETWORK)
+        }
+
+        return try {
+            val client = getClient(server.url, server.accessToken)
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                parentId = parentUuid,
+                recursive = true,
+                sortBy = listOf(ItemSortBy.DATE_CREATED),
+                sortOrder = listOf(SortOrder.DESCENDING),
+                limit = limit
+            )
+            ApiResult.Success(response.content.items ?: emptyList())
+        } catch (e: Exception) {
+            handleException(e, "Failed to load recently added items from library")
+        }
+    }
+
     suspend fun getRecentlyAddedByTypes(limit: Int = 10): ApiResult<Map<String, List<BaseItemDto>>> {
         val contentTypes = listOf(
             BaseItemKind.MOVIE,

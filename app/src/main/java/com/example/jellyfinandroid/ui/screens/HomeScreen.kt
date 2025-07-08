@@ -30,6 +30,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -55,6 +58,7 @@ import com.example.jellyfinandroid.ui.components.MediaCard
 import com.example.jellyfinandroid.ui.components.RecentlyAddedCard
 import com.example.jellyfinandroid.ui.viewmodel.MainAppState
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,6 +124,44 @@ fun HomeScreen(
 }
 
 @Composable
+fun HomeLibraryCard(
+    library: BaseItemDto,
+    getImageUrl: (BaseItemDto) -> String?,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .width(120.dp)
+            .clickable { },
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(getImageUrl(library) ?: "")
+                    .crossfade(true)
+                    .build(),
+                contentDescription = library.name ?: "Library",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(90.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentScale = ContentScale.Crop
+            )
+            
+            Text(
+                text = library.name ?: "Unknown Library",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(8.dp)
+            )
+        }
+    }
+}
+
+@Composable
 fun HomeContent(
     appState: MainAppState,
     currentServer: JellyfinServer?,
@@ -158,59 +200,63 @@ fun HomeContent(
             }
         }
 
-        // Featured Movies Carousel
-        val featuredMovies = appState.allItems.filter { 
-            it.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE 
-        }.sortedByDescending { it.dateCreated }.take(6)
+        // Material 3 Carousel with Recently Added Movies
+        val recentMovies = appState.allItems.filter { 
+            it.type == BaseItemKind.MOVIE 
+        }.sortedByDescending { it.dateCreated }.take(8)
         
-        if (featuredMovies.isNotEmpty()) {
+        if (recentMovies.isNotEmpty()) {
             item {
                 Column {
                     Text(
-                        text = "Featured Movies",
+                        text = "Recently Added Movies",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                     
-                    val pagerState = rememberPagerState(pageCount = { featuredMovies.size })
+                    val pagerState = rememberPagerState(pageCount = { recentMovies.size })
                     
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp),
-                        contentPadding = PaddingValues(horizontal = 48.dp),
-                        pageSpacing = 16.dp
+                            .height(220.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        pageSpacing = 8.dp
                     ) { page ->
-                        val movie = featuredMovies[page]
+                        val movie = recentMovies[page]
                         CarouselMovieCard(
                             movie = movie,
                             getImageUrl = getImageUrl,
                             modifier = Modifier
-                                .fillMaxSize()
                                 .clip(RoundedCornerShape(12.dp))
+                                .fillMaxSize()
                         )
                     }
+                }
+            }
+        }
+
+        // Top Libraries Section
+        if (appState.libraries.isNotEmpty()) {
+            item {
+                Column {
+                    Text(
+                        text = "Libraries",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                     
-                    // Simple page indicators
-                    Row(
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
                     ) {
-                        repeat(featuredMovies.size) { index ->
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .background(
-                                        color = if (pagerState.currentPage == index) 
-                                            MaterialTheme.colorScheme.primary 
-                                        else 
-                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                        shape = CircleShape
-                                    )
+                        items(appState.libraries) { library ->
+                            HomeLibraryCard(
+                                library = library,
+                                getImageUrl = getImageUrl
                             )
                         }
                     }
@@ -218,86 +264,52 @@ fun HomeContent(
             }
         }
 
-        // Recently Added Movies Section
-        val recentMovies = appState.allItems.filter { 
-            it.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE 
-        }.sortedByDescending { it.dateCreated }.take(10)
+        // Library-Specific Recently Added Sections
+        val libraryTypes = listOf(
+            "Movies" to BaseItemKind.MOVIE,
+            "TV Episodes" to BaseItemKind.EPISODE,
+            "Music" to BaseItemKind.AUDIO,
+            "Home Videos" to BaseItemKind.VIDEO
+        )
         
-        if (recentMovies.isNotEmpty()) {
-            item {
-                Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Recently Added Movies",
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                        IconButton(onClick = onRefresh) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "Refresh Movies"
+        libraryTypes.forEach { (libraryName, itemKind) ->
+            val recentItems = appState.allItems.filter { 
+                it.type == itemKind
+            }.sortedByDescending { it.dateCreated }.take(10)
+            
+            if (recentItems.isNotEmpty()) {
+                item {
+                    Column {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Recently Added $libraryName",
+                                style = MaterialTheme.typography.headlineSmall
                             )
+                            IconButton(onClick = onRefresh) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Refresh $libraryName"
+                                )
+                            }
                         }
-                    }
 
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp)
-                    ) {
-                        items(recentMovies) { item ->
-                            RecentlyAddedCard(
-                                item = item,
-                                getImageUrl = getImageUrl,
-                                getSeriesImageUrl = getSeriesImageUrl
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Recently Added Episodes Section
-        val recentEpisodes = appState.allItems.filter { 
-            it.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE 
-        }.sortedByDescending { it.dateCreated }.take(10)
-        
-        if (recentEpisodes.isNotEmpty()) {
-            item {
-                Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Recently Added Episodes",
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                        IconButton(onClick = onRefresh) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "Refresh Episodes"
-                            )
-                        }
-                    }
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp)
-                    ) {
-                        items(recentEpisodes) { item ->
-                            RecentlyAddedCard(
-                                item = item,
-                                getImageUrl = getImageUrl,
-                                getSeriesImageUrl = getSeriesImageUrl
-                            )
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp)
+                        ) {
+                            items(recentItems) { item ->
+                                RecentlyAddedCard(
+                                    item = item,
+                                    getImageUrl = getImageUrl,
+                                    getSeriesImageUrl = getSeriesImageUrl
+                                )
+                            }
                         }
                     }
                 }
