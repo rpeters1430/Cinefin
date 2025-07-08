@@ -74,7 +74,7 @@ dependencies {
     implementation(libs.androidx.material3.adaptive.layout)
     implementation(libs.androidx.material3.adaptive.navigation)
     implementation(libs.androidx.material3.window.size)
-    
+
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
@@ -84,9 +84,9 @@ dependencies {
 
     // Jellyfin SDK
     implementation(libs.jellyfin.sdk)
-    
+
     // SLF4J Android Implementation for Jellyfin SDK logging
-    implementation("org.slf4j:slf4j-android:1.7.36")
+    implementation(libs.slf4j.android)
 
     // Networking
     implementation(libs.retrofit)
@@ -119,5 +119,5 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
