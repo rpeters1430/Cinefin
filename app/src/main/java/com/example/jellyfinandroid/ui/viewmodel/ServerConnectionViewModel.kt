@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.jellyfinandroid.data.repository.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
+import com.example.jellyfinandroid.data.SecureCredentialManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +37,8 @@ data class ConnectionState(
     val quickConnectCode: String = "",
     val quickConnectSecret: String = "",
     val isQuickConnectPolling: Boolean = false,
-    val quickConnectStatus: String = ""
+    val quickConnectStatus: String = "",
+    val hasSavedPassword: Boolean = false
 )
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "login_preferences")
@@ -50,6 +52,7 @@ object PreferencesKeys {
 @HiltViewModel
 class ServerConnectionViewModel @Inject constructor(
     private val repository: JellyfinRepository,
+    private val secureCredentialManager: SecureCredentialManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     
@@ -69,14 +72,19 @@ class ServerConnectionViewModel @Inject constructor(
             _connectionState.value = _connectionState.value.copy(
                 savedServerUrl = savedServerUrl,
                 savedUsername = savedUsername,
-                rememberLogin = rememberLogin
+                rememberLogin = rememberLogin,
+                hasSavedPassword = if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
+                    secureCredentialManager.getPassword(savedServerUrl, savedUsername) != null
+                } else false
             )
             
             // Auto-login if we have saved credentials and remember login is enabled
             if (rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
-                // We have saved credentials, but we can't auto-login without password
-                // The UI will show the saved server URL and username, user just needs to enter password
-                // No error message needed - this is expected behavior
+                val savedPassword = secureCredentialManager.getPassword(savedServerUrl, savedUsername)
+                if (savedPassword != null) {
+                    // Auto-login with saved credentials
+                    connectToServer(savedServerUrl, savedUsername, savedPassword)
+                }
             }
         }
         
@@ -123,7 +131,7 @@ class ServerConnectionViewModel @Inject constructor(
                         is ApiResult.Success -> {
                             // Save credentials only when the user opted in
                             if (_connectionState.value.rememberLogin) {
-                                saveCredentials(serverUrl, username)
+                                saveCredentials(serverUrl, username, password)
                             } else {
                                 clearSavedCredentials()
                             }
@@ -163,25 +171,32 @@ class ServerConnectionViewModel @Inject constructor(
         _connectionState.value = _connectionState.value.copy(errorMessage = null)
     }
     
-    private suspend fun saveCredentials(serverUrl: String, username: String) {
+    private suspend fun saveCredentials(serverUrl: String, username: String, password: String) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SERVER_URL] = serverUrl
             preferences[PreferencesKeys.USERNAME] = username
         }
+        secureCredentialManager.savePassword(serverUrl, username, password)
         _connectionState.value = _connectionState.value.copy(
             savedServerUrl = serverUrl,
-            savedUsername = username
+            savedUsername = username,
+            hasSavedPassword = true
         )
     }
     
     private suspend fun clearSavedCredentials() {
+        val currentState = _connectionState.value
         context.dataStore.edit { preferences ->
             preferences.remove(PreferencesKeys.SERVER_URL)
             preferences.remove(PreferencesKeys.USERNAME)
         }
+        if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
+            secureCredentialManager.clearPassword(currentState.savedServerUrl, currentState.savedUsername)
+        }
         _connectionState.value = _connectionState.value.copy(
             savedServerUrl = "",
-            savedUsername = ""
+            savedUsername = "",
+            hasSavedPassword = false
         )
     }
 
@@ -195,6 +210,13 @@ class ServerConnectionViewModel @Inject constructor(
             }
             _connectionState.value = _connectionState.value.copy(rememberLogin = remember)
         }
+    }
+    
+    fun getSavedPassword(): String? {
+        val currentState = _connectionState.value
+        return if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
+            secureCredentialManager.getPassword(currentState.savedServerUrl, currentState.savedUsername)
+        } else null
     }
     
     fun startQuickConnect() {

@@ -81,6 +81,9 @@ dependencies {
 
     // DataStore for preferences
     implementation(libs.androidx.datastore.preferences)
+    
+    // Security for encrypted storage
+    implementation(libs.androidx.security.crypto)
 
     // Jellyfin SDK
     implementation(libs.jellyfin.sdk)

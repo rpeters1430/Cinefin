@@ -93,7 +93,19 @@ fun JellyfinAndroidApp() {
                 savedServerUrl = connectionState.savedServerUrl,
                 savedUsername = connectionState.savedUsername,
                 rememberLogin = connectionState.rememberLogin,
-                onRememberLoginChange = { connectionViewModel.setRememberLogin(it) }
+                hasSavedPassword = connectionState.hasSavedPassword,
+                onRememberLoginChange = { connectionViewModel.setRememberLogin(it) },
+                onAutoLogin = {
+                    // Auto-login with saved credentials
+                    val savedPassword = connectionViewModel.getSavedPassword()
+                    if (savedPassword != null) {
+                        connectionViewModel.connectToServer(
+                            connectionState.savedServerUrl,
+                            connectionState.savedUsername,
+                            savedPassword
+                        )
+                    }
+                }
             )
         }
     } else {

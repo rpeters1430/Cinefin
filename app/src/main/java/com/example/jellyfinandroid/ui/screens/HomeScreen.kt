@@ -204,9 +204,7 @@ fun HomeContent(
         }
 
         // Material 3 Carousel with Recently Added Movies
-        val recentMovies = appState.allItems.filter { 
-            it.type == BaseItemKind.MOVIE 
-        }.sortedByDescending { it.dateCreated }.take(8)
+        val recentMovies = appState.recentlyAddedByTypes["Movies"]?.take(8) ?: emptyList()
         
         Log.d("HomeScreen", "HomeContent: Displaying ${recentMovies.size} recent movies in carousel")
         
@@ -272,19 +270,17 @@ fun HomeContent(
 
         // Library-Specific Recently Added Sections
         val libraryTypes = listOf(
-            "Movies" to BaseItemKind.MOVIE,
-            "TV Shows" to BaseItemKind.SERIES,
-            "TV Episodes" to BaseItemKind.EPISODE,
-            "Music" to BaseItemKind.AUDIO,
-            "Home Videos" to BaseItemKind.VIDEO
+            "Movies" to "Movies",
+            "TV Shows" to "TV Shows", 
+            "TV Episodes" to "Episodes",
+            "Music" to "Music",
+            "Home Videos" to "Videos"
         )
         
-        libraryTypes.forEach { (libraryName, itemKind) ->
-            val recentItems = appState.allItems.filter { 
-                it.type == itemKind
-            }.sortedByDescending { it.dateCreated }.take(10)
+        libraryTypes.forEach { (displayName, typeKey) ->
+            val recentItems = appState.recentlyAddedByTypes[typeKey]?.take(15) ?: emptyList()
             
-            Log.d("HomeScreen", "HomeContent: Processing $libraryName - found ${recentItems.size} items of type $itemKind")
+            Log.d("HomeScreen", "HomeContent: Processing $displayName - found ${recentItems.size} items from recentlyAddedByTypes")
             
             if (recentItems.isNotEmpty()) {
                 item {
@@ -297,13 +293,13 @@ fun HomeContent(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Recently Added $libraryName",
+                                text = "Recently Added $displayName",
                                 style = MaterialTheme.typography.headlineSmall
                             )
                             IconButton(onClick = onRefresh) {
                                 Icon(
                                     imageVector = Icons.Default.Refresh,
-                                    contentDescription = "Refresh $libraryName"
+                                    contentDescription = "Refresh $displayName"
                                 )
                             }
                         }
@@ -313,7 +309,7 @@ fun HomeContent(
                             contentPadding = PaddingValues(horizontal = 16.dp)
                         ) {
                             items(recentItems) { item ->
-                                Log.d("HomeScreen", "HomeContent: Displaying $libraryName item: '${item.name}' (${item.type})")
+                                Log.d("HomeScreen", "HomeContent: Displaying $displayName item: '${item.name}' (${item.type})")
                                 RecentlyAddedCard(
                                     item = item,
                                     getImageUrl = getImageUrl,

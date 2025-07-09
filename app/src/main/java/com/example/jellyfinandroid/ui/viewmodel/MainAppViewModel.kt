@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.jellyfinandroid.data.repository.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
+import com.example.jellyfinandroid.data.SecureCredentialManager
 import org.jellyfin.sdk.model.api.BaseItemDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +38,8 @@ data class PaginatedItems(
 
 @HiltViewModel
 class MainAppViewModel @Inject constructor(
-    private val repository: JellyfinRepository
+    private val repository: JellyfinRepository,
+    private val credentialManager: SecureCredentialManager
 ) : ViewModel() {
     
     private val _appState = MutableStateFlow(MainAppState())
@@ -96,7 +98,7 @@ class MainAppViewModel @Inject constructor(
 
             // Load recently added items by types
             Log.d("MainAppViewModel", "loadInitialData: Loading recently added items by types")
-            when (val result = repository.getRecentlyAddedByTypes()) {
+            when (val result = repository.getRecentlyAddedByTypes(limit = 20)) {
                 is ApiResult.Success -> {
                     val totalItems = result.data.values.sumOf { it.size }
                     Log.d("MainAppViewModel", "loadInitialData: Loaded $totalItems items across ${result.data.size} types: ${result.data.keys.joinToString(", ")}")
@@ -160,7 +162,7 @@ class MainAppViewModel @Inject constructor(
         repository.logout()
         // Clear saved credentials on logout
         viewModelScope.launch {
-            // This will be handled by the ServerConnectionViewModel when it observes the logout
+            credentialManager.clearCredentials()
         }
     }
     

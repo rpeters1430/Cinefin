@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
+import androidx.compose.ui.text.font.FontWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +36,9 @@ fun ServerConnectionScreen(
     savedServerUrl: String = "",
     savedUsername: String = "",
     rememberLogin: Boolean = false,
+    hasSavedPassword: Boolean = false,
     onRememberLoginChange: (Boolean) -> Unit = {},
+    onAutoLogin: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var serverUrl by remember { mutableStateOf(savedServerUrl) }
@@ -80,6 +83,58 @@ fun ServerConnectionScreen(
         
         Spacer(modifier = Modifier.height(16.dp))
         
+        // Auto-login button if we have saved credentials
+        if (hasSavedPassword && rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Saved credentials found",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Server: $savedServerUrl\nUser: $savedUsername",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = onAutoLogin,
+                        enabled = !isConnecting,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Auto Login")
+                    }
+                }
+            }
+            
+            // Divider
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HorizontalDivider(modifier = Modifier.weight(1f))
+                Text(
+                    text = "OR",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                HorizontalDivider(modifier = Modifier.weight(1f))
+            }
+        }
+        
         // Server URL input
         OutlinedTextField(
             value = serverUrl,
@@ -95,7 +150,6 @@ fun ServerConnectionScreen(
             enabled = !isConnecting
         )
 
-        
         // Username input
         OutlinedTextField(
             value = username,
@@ -157,8 +211,8 @@ fun ServerConnectionScreen(
             Text("Remember login")
         }
         
-        // Show helper text when saved credentials are available
-        if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank() && rememberLogin) {
+        // Show helper text when saved credentials are available but no password
+        if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank() && rememberLogin && !hasSavedPassword) {
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
@@ -200,15 +254,13 @@ fun ServerConnectionScreen(
                 keyboardController?.hide()
                 onConnect(serverUrl, username, password)
             },
-            enabled = !isConnecting && serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
+            enabled = serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank() && !isConnecting,
+            modifier = Modifier.fillMaxWidth()
         ) {
             if (isConnecting) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Connecting...")
@@ -217,42 +269,16 @@ fun ServerConnectionScreen(
             }
         }
         
-        // Divider
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            HorizontalDivider(modifier = Modifier.weight(1f))
-            Text(
-                text = "or",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            HorizontalDivider(modifier = Modifier.weight(1f))
-        }
-        
         // Quick Connect button
         OutlinedButton(
             onClick = onQuickConnect,
             enabled = !isConnecting,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text("Quick Connect")
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Help text
-        Text(
-            text = "Need help setting up your server? Visit jellyfin.org for guides and documentation.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
