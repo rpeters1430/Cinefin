@@ -6,6 +6,7 @@ import com.example.jellyfinandroid.di.JellyfinClientFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.delay
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
@@ -24,6 +25,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.example.jellyfinandroid.data.SecureCredentialManager
 
 // Quick Connect data classes
 data class QuickConnectResult(
@@ -53,7 +55,8 @@ enum class ErrorType {
 
 @Singleton
 class JellyfinRepository @Inject constructor(
-    private val clientFactory: JellyfinClientFactory
+    private val clientFactory: JellyfinClientFactory,
+    private val secureCredentialManager: SecureCredentialManager
 ) {
     private val _currentServer = MutableStateFlow<JellyfinServer?>(null)
     val currentServer: Flow<JellyfinServer?> = _currentServer.asStateFlow()
@@ -324,26 +327,30 @@ class JellyfinRepository @Inject constructor(
 
         return try {
             Log.d("JellyfinRepository", "getRecentlyAdded: Requesting $limit items from server")
-            val client = getClient(server.url, server.accessToken)
-            val response = client.itemsApi.getItems(
-                userId = userUuid,
-                recursive = true,
-                includeItemTypes = listOf(
-                    BaseItemKind.MOVIE,
-                    BaseItemKind.SERIES,
-                    BaseItemKind.EPISODE,
-                    BaseItemKind.AUDIO,
-                    BaseItemKind.MUSIC_ALBUM,
-                    BaseItemKind.MUSIC_ARTIST,
-                    BaseItemKind.BOOK,
-                    BaseItemKind.AUDIO_BOOK,
-                    BaseItemKind.VIDEO
-                ),
-                sortBy = listOf(ItemSortBy.DATE_CREATED),
-                sortOrder = listOf(SortOrder.DESCENDING),
-                limit = limit
-            )
-            val items = response.content.items ?: emptyList()
+            
+            val items = executeWithRetry {
+                val client = getClient(server.url, server.accessToken)
+                val response = client.itemsApi.getItems(
+                    userId = userUuid,
+                    recursive = true,
+                    includeItemTypes = listOf(
+                        BaseItemKind.MOVIE,
+                        BaseItemKind.SERIES,
+                        BaseItemKind.EPISODE,
+                        BaseItemKind.AUDIO,
+                        BaseItemKind.MUSIC_ALBUM,
+                        BaseItemKind.MUSIC_ARTIST,
+                        BaseItemKind.BOOK,
+                        BaseItemKind.AUDIO_BOOK,
+                        BaseItemKind.VIDEO
+                    ),
+                    sortBy = listOf(ItemSortBy.DATE_CREATED),
+                    sortOrder = listOf(SortOrder.DESCENDING),
+                    limit = limit
+                )
+                response.content.items ?: emptyList()
+            }
+            
             Log.d("JellyfinRepository", "getRecentlyAdded: Retrieved ${items.size} items")
             
             // Log details of each item
@@ -366,6 +373,78 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
+    private suspend fun reAuthenticate(): Boolean {
+        val server = _currentServer.value ?: return false
+        
+        try {
+            // Get saved password for the current server and username
+            val savedPassword = secureCredentialManager.getPassword(server.url, server.username ?: "")
+            if (savedPassword == null) {
+                Log.w("JellyfinRepository", "No saved password found for re-authentication")
+                return false
+            }
+            
+            Log.d("JellyfinRepository", "Attempting to re-authenticate with saved credentials")
+            
+            // Re-authenticate using saved credentials
+            when (val authResult = authenticateUser(server.url, server.username ?: "", savedPassword)) {
+                is ApiResult.Success -> {
+                    Log.d("JellyfinRepository", "Re-authentication successful")
+                    return true
+                }
+                is ApiResult.Error -> {
+                    Log.w("JellyfinRepository", "Re-authentication failed: ${authResult.message}")
+                    return false
+                }
+                is ApiResult.Loading -> {
+                    Log.w("JellyfinRepository", "Re-authentication is loading (unexpected)")
+                    return false
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("JellyfinRepository", "Error during re-authentication", e)
+            return false
+        }
+    }
+
+    private suspend fun <T> executeWithRetry(
+        maxRetries: Int = 2,
+        operation: suspend () -> T
+    ): T {
+        var lastException: Exception? = null
+        
+        for (attempt in 0..maxRetries) {
+            try {
+                return operation()
+            } catch (e: Exception) {
+                lastException = e
+                
+                // If it's a 401 error and we have saved credentials, try to re-authenticate
+                if (e.message?.contains("401") == true && attempt < maxRetries) {
+                    Log.w("JellyfinRepository", "Got 401 error on attempt ${attempt + 1}, attempting to re-authenticate")
+                    
+                    // Try to re-authenticate
+                    if (reAuthenticate()) {
+                        Log.d("JellyfinRepository", "Re-authentication successful, retrying operation")
+                        // Wait a bit before retrying
+                        kotlinx.coroutines.delay(1000L * (attempt + 1))
+                        continue
+                    } else {
+                        Log.w("JellyfinRepository", "Re-authentication failed, will not retry")
+                        throw e
+                    }
+                }
+                
+                // For other errors or if we've exhausted retries, throw the exception
+                if (attempt == maxRetries) {
+                    throw e
+                }
+            }
+        }
+        
+        throw lastException ?: Exception("Unknown error occurred")
+    }
+
     suspend fun getRecentlyAddedByType(itemType: BaseItemKind, limit: Int = 10): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
@@ -379,16 +458,20 @@ class JellyfinRepository @Inject constructor(
 
         return try {
             Log.d("JellyfinRepository", "getRecentlyAddedByType: Requesting $limit items of type $itemType")
-            val client = getClient(server.url, server.accessToken)
-            val response = client.itemsApi.getItems(
-                userId = userUuid,
-                recursive = true,
-                includeItemTypes = listOf(itemType),
-                sortBy = listOf(ItemSortBy.DATE_CREATED),
-                sortOrder = listOf(SortOrder.DESCENDING),
-                limit = limit
-            )
-            val items = response.content.items ?: emptyList()
+            
+            val items = executeWithRetry {
+                val client = getClient(server.url, server.accessToken)
+                val response = client.itemsApi.getItems(
+                    userId = userUuid,
+                    recursive = true,
+                    includeItemTypes = listOf(itemType),
+                    sortBy = listOf(ItemSortBy.DATE_CREATED),
+                    sortOrder = listOf(SortOrder.DESCENDING),
+                    limit = limit
+                )
+                response.content.items ?: emptyList()
+            }
+            
             Log.d("JellyfinRepository", "getRecentlyAddedByType: Retrieved ${items.size} items of type $itemType")
             
             // Log details of each item
@@ -661,6 +744,16 @@ class JellyfinRepository @Inject constructor(
             item.id.toString()
         }
         return "${server.url}/Items/$imageId/Images/Primary?maxHeight=400&maxWidth=400"
+    }
+
+    fun getBackdropUrl(item: BaseItemDto): String? {
+        val server = _currentServer.value ?: return null
+        val backdropTag = item.backdropImageTags?.firstOrNull()
+        return if (backdropTag != null) {
+            "${server.url}/Items/${item.id}/Images/Backdrop?tag=$backdropTag&maxHeight=400&maxWidth=800"
+        } else {
+            getImageUrl(item.id.toString(), "Primary", item.imageTags?.get(ImageType.PRIMARY))
+        }
     }
     
     fun logout() {

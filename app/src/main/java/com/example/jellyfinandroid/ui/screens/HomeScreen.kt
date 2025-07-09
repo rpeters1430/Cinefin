@@ -232,10 +232,10 @@ fun HomeContent(
                         val movie = recentMovies[index]
                         CarouselMovieCard(
                             movie = movie,
-                            getImageUrl = getImageUrl,
+                            getImageUrl = getImageUrl, // Use the new function
                             modifier = Modifier
-                                .maskClip(MaterialTheme.shapes.large)
                                 .fillMaxSize()
+                                .clip(RoundedCornerShape(16.dp)) // Ensure full rounding
                         )
                     }
                 }
@@ -474,8 +474,8 @@ private fun CarouselMovieCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier
-            .fillMaxSize(),
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp), // Fully rounded
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -484,16 +484,16 @@ private fun CarouselMovieCard(
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Background image with better error handling
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(getImageUrl(movie) ?: "")
                     .crossfade(true)
                     .build(),
-                contentDescription = movie.name ?: "Movie poster",
+                contentDescription = movie.name ?: "Movie backdrop",
                 modifier = Modifier
                     .fillMaxSize()
-                    .aspectRatio(16f / 9f),
+                    .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(16.dp)), // Clip image to card shape
                 contentScale = ContentScale.Crop
             )
             
