@@ -221,9 +221,17 @@ class JellyfinRepository @Inject constructor(
             )
             
             // Fetch public system info for server details
-            val systemInfo = getClient(serverUrl, mockAuthResult.accessToken)
-                .systemApi.getPublicSystemInfo().content
+            val systemInfo = try {
+                getClient(serverUrl, mockAuthResult.accessToken)
+                    .systemApi.getPublicSystemInfo().content
+            } catch (e: Exception) {
+                Log.e("JellyfinRepository", "Failed to fetch public system info: ${e.message}", e)
+                null
+            }
 
+            if (systemInfo == null) {
+                return ApiResult.Error("Failed to fetch public system info")
+            }
             // Update current server state with real name and version
             val server = JellyfinServer(
                 id = mockAuthResult.serverId ?: "",
