@@ -118,8 +118,13 @@ class JellyfinRepository @Inject constructor(
             val authResult = response.content
 
             // Fetch public system info to get server name and version
-            val systemInfo = getClient(serverUrl, authResult.accessToken)
-                .systemApi.getPublicSystemInfo().content
+            val systemInfo = try {
+                getClient(serverUrl, authResult.accessToken)
+                    .systemApi.getPublicSystemInfo().content
+            } catch (e: Exception) {
+                Log.e("JellyfinRepository", "Failed to fetch public system info: ${e.message}", e)
+                PublicSystemInfo(serverName = "Unknown Server", version = "Unknown Version")
+            }
 
             // Update current server state with real name and version
             val server = JellyfinServer(
