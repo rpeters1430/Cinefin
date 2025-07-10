@@ -22,6 +22,7 @@ enum class AppDestinations(
     LIBRARY("Library", Icons.AutoMirrored.Filled.List),
     MOVIES("Movies", Icons.Default.Movie, false), // Hidden from bottom nav
     TV_SHOWS("TV Shows", Icons.Default.Tv, false), // Hidden from bottom nav
+    TV_EPISODES("Episodes", Icons.Default.Tv, false), // Hidden from bottom nav
     MUSIC("Music", Icons.Default.MusicNote, false), // Hidden from bottom nav
     STUFF("Stuff", Icons.Default.Widgets, false), // Hidden from bottom nav
     SEARCH("Search", Icons.Default.Search),
