@@ -11,8 +11,10 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.itemsApi
+import org.jellyfin.sdk.api.client.extensions.quickConnectApi
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.AuthenticateUserByName
+import org.jellyfin.sdk.model.api.QuickConnectDto
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -168,16 +170,25 @@ class JellyfinRepository @Inject constructor(
     
     suspend fun getQuickConnectState(serverUrl: String, secret: String): ApiResult<QuickConnectState> {
         return try {
-            // Simulate checking state - in real implementation this would call the server
-            // For now, we'll simulate that the user has approved after a delay
-            kotlinx.coroutines.delay(2000) // Simulate network delay
-            
-            // Simulate approval (in real implementation, this would check server state)
-            val state = if (secret.isNotEmpty()) "Approved" else "Pending"
-            
+            val client = getClient(serverUrl)
+            val response = client.quickConnectApi.getQuickConnectState(secret)
+            val result = response.content
+
+            val state = if (result.authenticated) "Approved" else "Pending"
             ApiResult.Success(QuickConnectState(state = state))
         } catch (e: Exception) {
-            ApiResult.Error("Failed to get Quick Connect state: ${e.message}", e, ErrorType.NETWORK)
+            val errorType = when {
+                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
+                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
+                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+                else -> ErrorType.NETWORK
+            }
+
+            if (errorType == ErrorType.NOT_FOUND) {
+                ApiResult.Success(QuickConnectState(state = "Expired"))
+            } else {
+                ApiResult.Error("Failed to get Quick Connect state: ${e.message}", e, errorType)
+            }
         }
     }
     
@@ -186,45 +197,25 @@ class JellyfinRepository @Inject constructor(
         secret: String
     ): ApiResult<AuthenticationResult> = authMutex.withLock {
         return try {
-            // For demonstration, we'll simulate a successful authentication
-            // In real implementation, this would call the server's Quick Connect authenticate endpoint
-            
-            val mockUser = org.jellyfin.sdk.model.api.UserDto(
-                id = UUID.randomUUID(),
-                name = "QuickConnect User",
-                serverId = UUID.randomUUID().toString(),
-                hasPassword = false,
-                hasConfiguredPassword = false,
-                hasConfiguredEasyPassword = false,
-                primaryImageTag = "",
-                configuration = null,
-                policy = null,
-                lastLoginDate = null,
-                lastActivityDate = null,
-                enableAutoLogin = false
-            )
-            val mockAuthResult = AuthenticationResult(
-                user = mockUser,
-                sessionInfo = null, // Not used in this mock
-                accessToken = "mock-access-token-${UUID.randomUUID()}",
-                serverId = UUID.randomUUID().toString()
-            )
-            
-            // Update current server state
+            val client = getClient(serverUrl)
+            val dto = QuickConnectDto(secret = secret)
+            val response = client.userApi.authenticateWithQuickConnect(dto)
+            val authResult = response.content
+
             val server = JellyfinServer(
-                id = mockAuthResult.serverId ?: "",
+                id = authResult.serverId ?: "",
                 name = "Jellyfin Server",
                 url = serverUrl.trimEnd('/'),
                 isConnected = true,
-                userId = mockAuthResult.user?.id?.toString(),
-                username = mockAuthResult.user?.name,
-                accessToken = mockAuthResult.accessToken
+                userId = authResult.user?.id?.toString(),
+                username = authResult.user?.name,
+                accessToken = authResult.accessToken
             )
-            
+
             _currentServer.value = server
             _isConnected.value = true
-            
-            ApiResult.Success(mockAuthResult)
+
+            ApiResult.Success(authResult)
         } catch (e: Exception) {
             val errorType = when {
                 e.message?.contains("401") == true -> ErrorType.AUTHENTICATION
