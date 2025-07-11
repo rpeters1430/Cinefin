@@ -23,6 +23,7 @@ import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.SortOrder
 import java.util.UUID
+import java.security.SecureRandom
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
@@ -271,7 +272,8 @@ class JellyfinRepository @Inject constructor(
     
     private fun generateQuickConnectCode(): String {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        return (1..6).map { chars.random() }.joinToString("")
+        val secureRandom = SecureRandom()
+        return (1..6).map { chars[secureRandom.nextInt(chars.length)] }.joinToString("")
     }
     
     suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> {

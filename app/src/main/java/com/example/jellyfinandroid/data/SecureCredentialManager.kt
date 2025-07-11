@@ -47,6 +47,14 @@ class SecureCredentialManager @Inject constructor(
     }
 
     private fun generateKey(serverUrl: String, username: String): String {
-        return "${serverUrl.trimEnd('/')}_$username"
+        require(serverUrl.isNotBlank()) { "Server URL cannot be blank" }
+        require(username.isNotBlank()) { "Username cannot be blank" }
+        require(!serverUrl.contains("_")) { "Server URL cannot contain underscore character" }
+        require(!username.contains("_")) { "Username cannot contain underscore character" }
+        
+        val sanitizedUrl = serverUrl.trimEnd('/').replace(Regex("[^a-zA-Z0-9.-]"), "")
+        val sanitizedUsername = username.replace(Regex("[^a-zA-Z0-9.-]"), "")
+        
+        return "${sanitizedUrl}_$sanitizedUsername"
     }
 } 

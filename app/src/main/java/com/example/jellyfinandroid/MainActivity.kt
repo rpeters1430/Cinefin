@@ -98,14 +98,7 @@ fun JellyfinAndroidApp() {
                 onRememberLoginChange = { connectionViewModel.setRememberLogin(it) },
                 onAutoLogin = {
                     // Auto-login with saved credentials
-                    val savedPassword = connectionViewModel.getSavedPassword()
-                    if (savedPassword != null) {
-                        connectionViewModel.connectToServer(
-                            connectionState.savedServerUrl,
-                            connectionState.savedUsername,
-                            savedPassword
-                        )
-                    }
+                    connectionViewModel.autoLogin()
                 }
             )
         }
