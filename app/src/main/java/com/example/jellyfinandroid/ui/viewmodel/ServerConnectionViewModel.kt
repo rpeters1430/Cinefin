@@ -212,11 +212,27 @@ class ServerConnectionViewModel @Inject constructor(
         }
     }
     
-    fun getSavedPassword(): String? {
+    suspend fun getSavedPassword(): String? {
         val currentState = _connectionState.value
         return if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
             secureCredentialManager.getPassword(currentState.savedServerUrl, currentState.savedUsername)
         } else null
+    }
+    
+    fun autoLogin() {
+        val currentState = _connectionState.value
+        if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
+            viewModelScope.launch {
+                val savedPassword = getSavedPassword()
+                if (savedPassword != null) {
+                    connectToServer(
+                        currentState.savedServerUrl,
+                        currentState.savedUsername,
+                        savedPassword
+                    )
+                }
+            }
+        }
     }
     
     fun startQuickConnect() {
