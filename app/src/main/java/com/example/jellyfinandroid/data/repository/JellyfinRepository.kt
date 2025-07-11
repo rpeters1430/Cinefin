@@ -118,13 +118,23 @@ class JellyfinRepository @Inject constructor(
             )
             val response = client.userApi.authenticateUserByName(request)
             val authResult = response.content
-            
-            // Update current server state
+
+            // Fetch public system info to get server name and version
+            val systemInfo = try {
+                getClient(serverUrl, authResult.accessToken)
+                    .systemApi.getPublicSystemInfo().content
+            } catch (e: Exception) {
+                Log.e("JellyfinRepository", "Failed to fetch public system info: ${e.message}", e)
+                PublicSystemInfo(serverName = "Unknown Server", version = "Unknown Version")
+            }
+
+            // Update current server state with real name and version
             val server = JellyfinServer(
                 id = authResult.serverId.toString(),
-                name = "Jellyfin Server", // We'll get the actual name from server info
+                name = systemInfo.serverName ?: "Unknown Server",
                 url = serverUrl.trimEnd('/'),
                 isConnected = true,
+                version = systemInfo.version,
                 userId = authResult.user?.id.toString(),
                 username = authResult.user?.name,
                 accessToken = authResult.accessToken
@@ -202,11 +212,22 @@ class JellyfinRepository @Inject constructor(
             val response = client.userApi.authenticateWithQuickConnect(dto)
             val authResult = response.content
 
+            // Fetch public system info to get server name and version
+            val systemInfo = try {
+                getClient(serverUrl, authResult.accessToken)
+                    .systemApi.getPublicSystemInfo().content
+            } catch (e: Exception) {
+                Log.e("JellyfinRepository", "Failed to fetch public system info: ${e.message}", e)
+                PublicSystemInfo(serverName = "Unknown Server", version = "Unknown Version")
+            }
+
+            // Update current server state with real name and version
             val server = JellyfinServer(
                 id = authResult.serverId ?: "",
-                name = "Jellyfin Server",
+                name = systemInfo.serverName ?: "Unknown Server",
                 url = serverUrl.trimEnd('/'),
                 isConnected = true,
+                version = systemInfo.version,
                 userId = authResult.user?.id?.toString(),
                 username = authResult.user?.name,
                 accessToken = authResult.accessToken
