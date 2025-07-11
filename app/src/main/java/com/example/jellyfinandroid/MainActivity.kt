@@ -36,6 +36,7 @@ import com.example.jellyfinandroid.ui.screens.QuickConnectScreen
 import com.example.jellyfinandroid.ui.screens.StuffScreen
 import com.example.jellyfinandroid.ui.screens.TVSeasonScreen
 import com.example.jellyfinandroid.ui.screens.TVShowsScreen
+import com.example.jellyfinandroid.ui.screens.TVEpisodesScreen
 import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
@@ -117,6 +118,8 @@ fun JellyfinAndroidApp() {
         // Navigation state for TV Season screen
         var selectedSeriesId by rememberSaveable { mutableStateOf<String?>(null) }
         var showTVSeasonScreen by rememberSaveable { mutableStateOf(false) }
+        var selectedSeasonId by rememberSaveable { mutableStateOf<String?>(null) }
+        var showTVEpisodeScreen by rememberSaveable { mutableStateOf(false) }
 
         NavigationSuiteScaffold(
             navigationSuiteItems = {
@@ -178,24 +181,42 @@ fun JellyfinAndroidApp() {
                         )
                     }
                     AppDestinations.TV_SHOWS -> {
-                        if (showTVSeasonScreen && selectedSeriesId != null) {
-                            TVSeasonScreen(
-                                seriesId = selectedSeriesId!!,
-                                onBackClick = {
-                                    showTVSeasonScreen = false
-                                    selectedSeriesId = null
-                                },
-                                getImageUrl = { item -> mainViewModel.getImageUrl(item) },
-                                modifier = Modifier.padding(innerPadding)
-                            )
-                        } else {
-                            TVShowsScreen(
-                                onTVShowClick = { seriesId ->
-                                    selectedSeriesId = seriesId
-                                    showTVSeasonScreen = true
-                                },
-                                modifier = Modifier.padding(innerPadding)
-                            )
+                        when {
+                            showTVEpisodeScreen && selectedSeasonId != null -> {
+                                TVEpisodesScreen(
+                                    seasonId = selectedSeasonId!!,
+                                    onBackClick = {
+                                        showTVEpisodeScreen = false
+                                        selectedSeasonId = null
+                                    },
+                                    getImageUrl = { item -> mainViewModel.getImageUrl(item) },
+                                    modifier = Modifier.padding(innerPadding)
+                                )
+                            }
+                            showTVSeasonScreen && selectedSeriesId != null -> {
+                                TVSeasonScreen(
+                                    seriesId = selectedSeriesId!!,
+                                    onBackClick = {
+                                        showTVSeasonScreen = false
+                                        selectedSeriesId = null
+                                    },
+                                    getImageUrl = { item -> mainViewModel.getImageUrl(item) },
+                                    onSeasonClick = { seasonId ->
+                                        selectedSeasonId = seasonId
+                                        showTVEpisodeScreen = true
+                                    },
+                                    modifier = Modifier.padding(innerPadding)
+                                )
+                            }
+                            else -> {
+                                TVShowsScreen(
+                                    onTVShowClick = { seriesId ->
+                                        selectedSeriesId = seriesId
+                                        showTVSeasonScreen = true
+                                    },
+                                    modifier = Modifier.padding(innerPadding)
+                                )
+                            }
                         }
                     }
                     AppDestinations.MUSIC -> {

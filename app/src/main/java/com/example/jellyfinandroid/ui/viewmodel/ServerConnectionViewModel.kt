@@ -353,13 +353,6 @@ class ServerConnectionViewModel @Inject constructor(
                                 }
                             }
                         }
-                        "Denied" -> {
-                            _connectionState.value = _connectionState.value.copy(
-                                isQuickConnectPolling = false,
-                                errorMessage = "Quick Connect was denied by the server"
-                            )
-                            return
-                        }
                         "Expired" -> {
                             _connectionState.value = _connectionState.value.copy(
                                 isQuickConnectPolling = false,

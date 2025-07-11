@@ -66,6 +66,7 @@ fun TVSeasonScreen(
     seriesId: String,
     onBackClick: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
+    onSeasonClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val viewModel: TVSeasonViewModel = hiltViewModel()
@@ -130,6 +131,7 @@ fun TVSeasonScreen(
                 TVSeasonContent(
                     state = state,
                     getImageUrl = getImageUrl,
+                    onSeasonClick = onSeasonClick,
                     modifier = Modifier.padding(innerPadding)
                 )
             }
@@ -141,6 +143,7 @@ fun TVSeasonScreen(
 private fun TVSeasonContent(
     state: TVSeasonState,
     getImageUrl: (BaseItemDto) -> String?,
+    onSeasonClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -171,7 +174,8 @@ private fun TVSeasonContent(
             items(state.seasons) { season ->
                 SeasonCard(
                     season = season,
-                    getImageUrl = getImageUrl
+                    getImageUrl = getImageUrl,
+                    onClick = { onSeasonClick(it) }
                 )
             }
         } else {
@@ -335,12 +339,13 @@ private fun SeriesDetailsHeader(
 private fun SeasonCard(
     season: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
+    onClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { /* TODO: Navigate to episodes */ },
+            .clickable { onClick(season.id.toString()) },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(

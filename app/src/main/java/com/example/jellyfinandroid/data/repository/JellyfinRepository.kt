@@ -11,8 +11,10 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.itemsApi
+import org.jellyfin.sdk.api.client.extensions.quickConnectApi
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.AuthenticateUserByName
+import org.jellyfin.sdk.model.api.QuickConnectDto
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -178,16 +180,25 @@ class JellyfinRepository @Inject constructor(
     
     suspend fun getQuickConnectState(serverUrl: String, secret: String): ApiResult<QuickConnectState> {
         return try {
-            // Simulate checking state - in real implementation this would call the server
-            // For now, we'll simulate that the user has approved after a delay
-            kotlinx.coroutines.delay(2000) // Simulate network delay
-            
-            // Simulate approval (in real implementation, this would check server state)
-            val state = if (secret.isNotEmpty()) "Approved" else "Pending"
-            
+            val client = getClient(serverUrl)
+            val response = client.quickConnectApi.getQuickConnectState(secret)
+            val result = response.content
+
+            val state = if (result.authenticated) "Approved" else "Pending"
             ApiResult.Success(QuickConnectState(state = state))
         } catch (e: Exception) {
-            ApiResult.Error("Failed to get Quick Connect state: ${e.message}", e, ErrorType.NETWORK)
+            val errorType = when {
+                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
+                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
+                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+                else -> ErrorType.NETWORK
+            }
+
+            if (errorType == ErrorType.NOT_FOUND) {
+                ApiResult.Success(QuickConnectState(state = "Expired"))
+            } else {
+                ApiResult.Error("Failed to get Quick Connect state: ${e.message}", e, errorType)
+            }
         }
     }
     
@@ -243,11 +254,11 @@ class JellyfinRepository @Inject constructor(
                 username = mockAuthResult.user?.name,
                 accessToken = mockAuthResult.accessToken
             )
-            
+
             _currentServer.value = server
             _isConnected.value = true
-            
-            ApiResult.Success(mockAuthResult)
+
+            ApiResult.Success(authResult)
         } catch (e: Exception) {
             val errorType = when {
                 e.message?.contains("401") == true -> ErrorType.AUTHENTICATION
@@ -658,6 +669,44 @@ class JellyfinRepository @Inject constructor(
                 else -> ErrorType.NETWORK
             }
             ApiResult.Error("Failed to load seasons: ${e.message}", e, errorType)
+        }
+    }
+
+    suspend fun getEpisodesForSeason(seasonId: String): ApiResult<List<BaseItemDto>> {
+        val server = _currentServer.value
+        if (server?.accessToken == null || server.userId == null) {
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        if (userUuid == null) {
+            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val seasonUuid = runCatching { UUID.fromString(seasonId) }.getOrNull()
+        if (seasonUuid == null) {
+            return ApiResult.Error("Invalid season ID", errorType = ErrorType.NOT_FOUND)
+        }
+
+        return try {
+            val client = getClient(server.url, server.accessToken)
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                parentId = seasonUuid,
+                includeItemTypes = listOf(BaseItemKind.EPISODE),
+                sortBy = listOf(ItemSortBy.INDEX_NUMBER),
+                sortOrder = listOf(SortOrder.ASCENDING)
+            )
+            ApiResult.Success(response.content.items ?: emptyList())
+        } catch (e: Exception) {
+            val errorType = when {
+                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
+                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
+                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
+                else -> ErrorType.NETWORK
+            }
+            ApiResult.Error("Failed to load episodes: ${e.message}", e, errorType)
         }
     }
     
