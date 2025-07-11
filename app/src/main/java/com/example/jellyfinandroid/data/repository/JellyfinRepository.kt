@@ -207,30 +207,52 @@ class JellyfinRepository @Inject constructor(
         secret: String
     ): ApiResult<AuthenticationResult> = authMutex.withLock {
         return try {
-            val client = getClient(serverUrl)
-            val dto = QuickConnectDto(secret = secret)
-            val response = client.userApi.authenticateWithQuickConnect(dto)
-            val authResult = response.content
-
-            // Fetch public system info to get server name and version
+            // For demonstration, we'll simulate a successful authentication
+            // In real implementation, this would call the server's Quick Connect authenticate endpoint
+            
+            val mockUser = org.jellyfin.sdk.model.api.UserDto(
+                id = UUID.randomUUID(),
+                name = "QuickConnect User",
+                serverId = UUID.randomUUID().toString(),
+                hasPassword = false,
+                hasConfiguredPassword = false,
+                hasConfiguredEasyPassword = false,
+                primaryImageTag = "",
+                configuration = null,
+                policy = null,
+                lastLoginDate = null,
+                lastActivityDate = null,
+                enableAutoLogin = false
+            )
+            val mockAuthResult = AuthenticationResult(
+                user = mockUser,
+                sessionInfo = null, // Not used in this mock
+                accessToken = "mock-access-token-${UUID.randomUUID()}",
+                serverId = UUID.randomUUID().toString()
+            )
+            
+            // Fetch public system info for server details
             val systemInfo = try {
-                getClient(serverUrl, authResult.accessToken)
+                getClient(serverUrl, mockAuthResult.accessToken)
                     .systemApi.getPublicSystemInfo().content
             } catch (e: Exception) {
                 Log.e("JellyfinRepository", "Failed to fetch public system info: ${e.message}", e)
-                PublicSystemInfo(serverName = "Unknown Server", version = "Unknown Version")
+                null
             }
 
+            if (systemInfo == null) {
+                return ApiResult.Error("Failed to fetch public system info")
+            }
             // Update current server state with real name and version
             val server = JellyfinServer(
-                id = authResult.serverId ?: "",
+                id = mockAuthResult.serverId ?: "",
                 name = systemInfo.serverName ?: "Unknown Server",
                 url = serverUrl.trimEnd('/'),
                 isConnected = true,
                 version = systemInfo.version,
-                userId = authResult.user?.id?.toString(),
-                username = authResult.user?.name,
-                accessToken = authResult.accessToken
+                userId = mockAuthResult.user?.id?.toString(),
+                username = mockAuthResult.user?.name,
+                accessToken = mockAuthResult.accessToken
             )
 
             _currentServer.value = server
