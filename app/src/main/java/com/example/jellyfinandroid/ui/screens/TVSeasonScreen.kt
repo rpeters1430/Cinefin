@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,11 +49,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.SubcomposeAsyncImage
+import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.ui.ShimmerBox
 import com.example.jellyfinandroid.ui.theme.SeriesBlue
 import com.example.jellyfinandroid.ui.viewmodel.TVSeasonState
@@ -76,56 +80,120 @@ fun TVSeasonScreen(
         viewModel.loadSeriesData(seriesId)
     }
     
+    val context = LocalContext.current
+    
+    LaunchedEffect(state.errorMessage) {
+        state.errorMessage?.let { error ->
+            // For now, we'll just log the error
+            // In a production app, you might want to show a Snackbar or other UI feedback
+            println("TVSeasonScreen error: $error")
+        }
+    }
+    
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = state.seriesDetails?.name ?: "TV Show",
+                        text = state.seriesDetails?.name ?: stringResource(id = R.string.tv_show),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleLarge
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(id = R.string.navigate_up)
                         )
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh"
+                    if (state.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .padding(8.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 2.dp
                         )
+                    } else {
+                        IconButton(
+                            onClick = { viewModel.refresh() },
+                            enabled = !state.isLoading
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = stringResource(id = R.string.refresh)
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = SeriesBlue.copy(alpha = 0.1f)
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
         modifier = modifier
     ) { innerPadding ->
         when {
-            state.isLoading -> {
+            state.isLoading && state.seriesDetails == null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            !state.errorMessage.isNullOrEmpty() -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding),
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = SeriesBlue)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.error_loading_data),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        Text(
+                            text = state.errorMessage ?: stringResource(id = R.string.unknown_error),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        Button(
+                            onClick = { viewModel.refresh() },
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        ) {
+                            Text(stringResource(id = R.string.retry))
+                        }
+                    }
                 }
             }
-            state.errorMessage != null -> {
-                ErrorContent(
-                    message = state.errorMessage!!,
-                    onRetry = { viewModel.refresh() },
-                    modifier = Modifier.padding(innerPadding)
-                )
+            state.seriesDetails == null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.no_data_available),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             else -> {
                 TVSeasonContent(

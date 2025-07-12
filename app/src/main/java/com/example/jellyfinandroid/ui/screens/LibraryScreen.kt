@@ -13,12 +13,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.res.stringResource
+import com.example.jellyfinandroid.R
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jellyfin.sdk.model.api.BaseItemDto
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(
     libraries: List<BaseItemDto>,
@@ -45,86 +52,90 @@ fun LibraryScreen(
     onNavigateToMusic: () -> Unit = {},
     onNavigateToStuff: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
+    onBackClick: () -> Unit = {},
+    showBackButton: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.padding(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Media Libraries",
-                style = MaterialTheme.typography.headlineMedium
-            )
-
-            Row {
+    Column(modifier = modifier) {
+        TopAppBar(
+            title = { Text(stringResource(id = R.string.library)) },
+            navigationIcon = {
+                if (showBackButton) {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(id = R.string.navigate_up)
+                        )
+                    }
+                } else null
+            },
+            actions = {
                 IconButton(onClick = onRefresh) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
-                        contentDescription = "Refresh"
+                        contentDescription = stringResource(id = R.string.refresh)
                     )
                 }
                 IconButton(onClick = onSettingsClick) {
                     Icon(
                         imageVector = Icons.Default.Settings,
-                        contentDescription = "Settings"
+                        contentDescription = stringResource(id = R.string.settings)
                     )
                 }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                actionIconContentColor = MaterialTheme.colorScheme.onSurface,
+                navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+            )
+        )
+        
+        Column(modifier = Modifier.padding(16.dp)) {
+            Spacer(modifier = Modifier.height(16.dp))
         
         // Quick access cards for media types
         Text(
-            text = "Browse by Type",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 12.dp)
+            text = stringResource(id = R.string.browse_by_type),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(vertical = 8.dp)
         )
         
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(bottom = 16.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            item {
-                MediaTypeCard(
-                    title = "Movies",
-                    icon = Icons.Default.Movie,
-                    onClick = onNavigateToMovies
-                )
-            }
-            item {
-                MediaTypeCard(
-                    title = "TV Shows",
-                    icon = Icons.Default.Tv,
-                    onClick = onNavigateToTVShows
-                )
-            }
-            item {
-                MediaTypeCard(
-                    title = "Music",
-                    icon = Icons.Default.MusicNote,
-                    onClick = onNavigateToMusic
-                )
-            }
-            item {
-                MediaTypeCard(
-                    title = "Other Media",
-                    icon = Icons.Default.Widgets,
-                    onClick = onNavigateToStuff
-                )
-            }
+            MediaTypeCard(
+                title = stringResource(id = R.string.movies),
+                icon = Icons.Default.Movie,
+                onClick = onNavigateToMovies
+            )
+            
+            MediaTypeCard(
+                title = stringResource(id = R.string.tv_shows),
+                icon = Icons.Default.Tv,
+                onClick = onNavigateToTVShows
+            )
+            
+            MediaTypeCard(
+                title = stringResource(id = R.string.music),
+                icon = Icons.Default.MusicNote,
+                onClick = onNavigateToMusic
+            )
+            
+            MediaTypeCard(
+                title = stringResource(id = R.string.other),
+                icon = Icons.Default.Widgets,
+                onClick = onNavigateToStuff
+            )
         }
         
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
-            text = "All Libraries",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 12.dp)
+            text = stringResource(id = R.string.your_libraries),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(vertical = 8.dp)
         )
 
         when {
@@ -157,7 +168,7 @@ fun LibraryScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No libraries found",
+                        text = stringResource(id = R.string.no_libraries_found),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -176,11 +187,12 @@ fun LibraryScreen(
                 }
             }
         }
+        }
     }
 }
 
 @Composable
-private fun LibraryCard(
+fun LibraryCard(
     library: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
@@ -217,7 +229,7 @@ private fun LibraryCard(
 }
 
 @Composable
-private fun MediaTypeCard(
+fun MediaTypeCard(
     title: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit,

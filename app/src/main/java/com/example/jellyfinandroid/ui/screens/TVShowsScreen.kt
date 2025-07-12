@@ -16,12 +16,15 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.ui.res.stringResource
+import com.example.jellyfinandroid.R
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -59,33 +62,33 @@ import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
-enum class TVShowFilter(val displayName: String) {
-    ALL("All Shows"),
-    FAVORITES("Favorites"),
-    CONTINUING("Continuing"),
-    ENDED("Ended"),
-    RECENT("Recent"),
-    UNWATCHED("Unwatched"),
-    IN_PROGRESS("In Progress"),
-    HIGH_RATED("High Rated");
+enum class TVShowFilter(val displayNameResId: Int) {
+    ALL(R.string.filter_all_shows),
+    FAVORITES(R.string.filter_favorites_shows),
+    CONTINUING(R.string.filter_continuing),
+    ENDED(R.string.filter_ended),
+    RECENT(R.string.filter_recent_shows),
+    UNWATCHED(R.string.filter_unwatched_shows),
+    IN_PROGRESS(R.string.filter_in_progress),
+    HIGH_RATED(R.string.filter_high_rated_shows);
     
     companion object {
         fun getAllFilters() = entries
     }
 }
 
-enum class TVShowSortOrder(val displayName: String) {
-    TITLE_ASC("Title A-Z"),
-    TITLE_DESC("Title Z-A"),
-    YEAR_DESC("Newest First"),
-    YEAR_ASC("Oldest First"),
-    RATING_DESC("Highest Rated"),
-    RATING_ASC("Lowest Rated"),
-    DATE_ADDED_DESC("Recently Added"),
-    DATE_ADDED_ASC("Oldest Added"),
-    LAST_PLAYED_DESC("Recently Watched"),
-    EPISODE_COUNT_DESC("Most Episodes"),
-    EPISODE_COUNT_ASC("Fewest Episodes");
+enum class TVShowSortOrder(val displayNameResId: Int) {
+    TITLE_ASC(R.string.sort_title_asc_shows),
+    TITLE_DESC(R.string.sort_title_desc_shows),
+    YEAR_DESC(R.string.sort_year_desc_shows),
+    YEAR_ASC(R.string.sort_year_asc_shows),
+    RATING_DESC(R.string.sort_rating_desc_shows),
+    RATING_ASC(R.string.sort_rating_asc_shows),
+    DATE_ADDED_DESC(R.string.sort_date_added_desc_shows),
+    DATE_ADDED_ASC(R.string.sort_date_added_asc_shows),
+    LAST_PLAYED_DESC(R.string.sort_last_played_desc),
+    EPISODE_COUNT_DESC(R.string.sort_episode_count_desc),
+    EPISODE_COUNT_ASC(R.string.sort_episode_count_asc);
     
     companion object {
         fun getDefault() = TITLE_ASC
@@ -102,8 +105,9 @@ enum class TVShowViewMode {
 @Composable
 fun TVShowsScreen(
     onTVShowClick: ((String) -> Unit)? = null,
-    modifier: Modifier = Modifier,
-    viewModel: MainAppViewModel = hiltViewModel()
+    onBackClick: () -> Unit = {},
+    viewModel: MainAppViewModel = hiltViewModel(),
+    modifier: Modifier = Modifier
 ) {
     val appState by viewModel.appState.collectAsState()
     var selectedFilter by remember { mutableStateOf(TVShowFilter.ALL) }
@@ -178,20 +182,7 @@ fun TVShowsScreen(
                         Icon(
                             imageVector = Icons.Default.Tv,
                             contentDescription = null,
-                            tint = SeriesBlue
                         )
-                        Text(
-                            text = "TV Shows",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (filteredAndSortedTVShows.isNotEmpty()) {
-                            Text(
-                                text = "(${filteredAndSortedTVShows.size})",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
                 },
                 actions = {
@@ -215,7 +206,7 @@ fun TVShowsScreen(
                                         TVShowViewMode.GRID -> Icons.Default.GridView
                                         TVShowViewMode.LIST -> Icons.AutoMirrored.Filled.ViewList
                                     },
-                                    contentDescription = mode.name,
+                                    contentDescription = if (mode == TVShowViewMode.GRID) stringResource(id = R.string.grid_view) else stringResource(id = R.string.list_view),
                                     modifier = Modifier.padding(2.dp)
                                 )
                             }
@@ -227,7 +218,7 @@ fun TVShowsScreen(
                         IconButton(onClick = { showSortMenu = true }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Sort,
-                                contentDescription = "Sort"
+                                contentDescription = stringResource(id = R.string.sort)
                             )
                         }
                         DropdownMenu(
@@ -236,7 +227,7 @@ fun TVShowsScreen(
                         ) {
                             TVShowSortOrder.getAllSortOrders().forEach { order ->
                                 DropdownMenuItem(
-                                    text = { Text(order.displayName) },
+                                    text = { Text(stringResource(id = order.displayNameResId)) },
                                     onClick = {
                                         sortOrder = order
                                         showSortMenu = false
@@ -249,12 +240,14 @@ fun TVShowsScreen(
                     IconButton(onClick = { viewModel.refreshLibraryItems() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh"
+                            contentDescription = stringResource(id = R.string.refresh)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
@@ -273,7 +266,7 @@ fun TVShowsScreen(
                 items(TVShowFilter.getAllFilters()) { filter ->
                     FilterChip(
                         onClick = { selectedFilter = filter },
-                        label = { Text(filter.displayName) },
+                        label = { Text(stringResource(id = filter.displayNameResId)) },
                         selected = selectedFilter == filter,
                         leadingIcon = if (filter == TVShowFilter.FAVORITES) {
                             {
@@ -344,12 +337,12 @@ fun TVShowsScreen(
                                 tint = SeriesBlue.copy(alpha = 0.6f)
                             )
                             Text(
-                                text = "No TV shows found",
+                                text = stringResource(id = R.string.no_tv_shows_found),
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "Try adjusting your filters or refresh the library",
+                                text = stringResource(id = R.string.adjust_tv_shows_filters_hint),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -475,14 +468,14 @@ private fun TVShowsPaginationFooter(
                     modifier = Modifier.padding(8.dp)
                 )
                 Text(
-                    text = "Loading more TV shows...",
+                    text = stringResource(id = R.string.loading_more_tv_shows),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else if (!hasMoreItems) {
             Text(
-                text = "No more TV shows to load",
+                text = stringResource(id = R.string.no_more_tv_shows),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

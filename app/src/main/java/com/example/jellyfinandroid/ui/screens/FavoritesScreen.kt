@@ -3,13 +3,16 @@ package com.example.jellyfinandroid.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
@@ -26,10 +29,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.PaddingValues
+import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.ui.components.MediaCard
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -41,13 +44,22 @@ fun FavoritesScreen(
     errorMessage: String?,
     onRefresh: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
-    modifier: Modifier = Modifier
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Favorites")
+                    Text(stringResource(id = R.string.favorites))
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(id = R.string.navigate_up)
+                        )
+                    }
                 },
                 actions = {
                     IconButton(onClick = onRefresh) {

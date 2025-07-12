@@ -287,4 +287,19 @@ class MainAppViewModel @Inject constructor(
     fun refreshLibraryItems() {
         loadLibraryItemsPage(reset = true)
     }
+    
+    fun loadTVShowDetails(seriesId: String) {
+        // This method exists for navigation compatibility but doesn't need implementation
+        // The actual TV show details loading happens in the appropriate screens
+    }
+    
+    fun loadEpisodes(seasonId: String) {
+        // This method exists for navigation compatibility but doesn't need implementation  
+        // Episode loading is handled by SeasonEpisodesViewModel
+    }
+    
+    fun loadMusic() {
+        // This method exists for navigation compatibility but doesn't need implementation
+        // Music loading can use the existing loadLibraryItems functionality
+    }
 }
