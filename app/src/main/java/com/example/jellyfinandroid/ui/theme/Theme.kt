@@ -89,8 +89,8 @@ private val JellyfinExpressiveDarkColorScheme = darkColorScheme(
 @Composable
 fun JellyfinAndroidTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Dynamic color is available on Android 12+ but we're using Expressive theming
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

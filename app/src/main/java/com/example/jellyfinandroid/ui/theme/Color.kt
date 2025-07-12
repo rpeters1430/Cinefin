@@ -72,7 +72,7 @@ val StatusInfo = Color(0xFF3182CE)
 // ============================================================================
 
 // Expressive primary colors (Material 3 Expressive)
-val ExpressivePrimary = Color(0xFF6750A4)
+val ExpressivePrimary = Color(0xFF6442D6)
 val ExpressiveOnPrimary = Color(0xFFFFFFFF)
 val ExpressivePrimaryContainer = Color(0xFFEADDFF)
 val ExpressiveOnPrimaryContainer = Color(0xFF21005D)
@@ -99,14 +99,20 @@ val ExpressiveOnErrorContainer = Color(0xFF410002)
 // SURFACE AND BACKGROUND COLORS
 // ============================================================================
 
-// Surface colors for different elevation levels
+// Surface colors for different elevation levels (Material 3 Expressive)
 val SurfaceDim = Color(0xFFDED8E1)
 val SurfaceBright = Color(0xFFFEF7FF)
-val SurfaceContainerLowest = Color(0xFFFFFFFF)
-val SurfaceContainerLow = Color(0xFFF7F2FA)
-val SurfaceContainer = Color(0xFFF1ECF4)
-val SurfaceContainerHigh = Color(0xFFEBE6EE)
-val SurfaceContainerHighest = Color(0xFFE5E0E7)
+val Surface0 = Color(0xFFFFFFFF)
+val Surface1 = Color(0xFFF7F2FA)
+val Surface2 = Color(0xFFF1ECF4)
+val Surface3 = Color(0xFFEBE6EE)
+val Surface4 = Color(0xFFE8E5E8)
+val Surface5 = Color(0xFFE5E0E7)
+val SurfaceContainerLowest = Surface0
+val SurfaceContainerLow = Surface1
+val SurfaceContainer = Surface2
+val SurfaceContainerHigh = Surface3
+val SurfaceContainerHighest = Surface5
 
 // Background colors
 val Background = Color(0xFFFEF7FF)
