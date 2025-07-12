@@ -1,3 +1,162 @@
 <resources>
+    <!-- App Name -->
     <string name="app_name">Jellyfin Android</string>
+    
+    <!-- Navigation -->
+    <string name="navigate_up">Navigate up</string>
+    <string name="back">Back</string>
+    
+    <!-- Common Actions -->
+    <string name="refresh">Refresh</string>
+    <string name="retry">Retry</string>
+    <string name="cancel">Cancel</string>
+    <string name="done">Done</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    
+    <!-- Screen Titles -->
+    <string name="home">Home</string>
+    <string name="library">Library</string>
+    <string name="movies">Movies</string>
+    <string name="tv_shows">TV Shows</string>
+    <string name="music">Music</string>
+    <string name="favorites">Favorites</string>
+    <string name="search">Search</string>
+    <string name="profile">Profile</string>
+    <string name="episodes">Episodes</string>
+    <string name="season">Season</string>
+    <string name="tv_show">TV Show</string>
+    
+    <!-- Search -->
+    <string name="search_hint">Search for movies, TV shows, music…</string>
+    
+    <!-- View Types -->
+    <string name="view_as">View as</string>
+    <string name="grid_view">Grid view</string>
+    <string name="list_view">List view</string>
+    <string name="sort_by">Sort by</string>
+    
+    <!-- Error Messages -->
+    <string name="error_loading_episodes">Error loading episodes</string>
+    <string name="error_loading_data">Error loading data</string>
+    <string name="unknown_error">An unknown error occurred</string>
+    <string name="no_data_available">No data available</string>
+    <string name="no_tv_shows_found">No TV shows found</string>
+    <string name="no_episodes_found">No episodes found</string>
+    <string name="loading_more_tv_shows">Loading more TV shows…</string>
+    <string name="no_more_tv_shows">No more TV shows to load</string>
+    
+    <!-- Profile -->
+    <string name="version">Version %1$s</string>
+    <string name="unknown">Unknown</string>
+    <string name="server">Server: %1$s</string>
+    
+    <!-- Buttons -->
+    <string name="sign_out">Sign Out</string>
+    <string name="sign_in">Sign In</string>
+    <string name="settings">Settings</string>
+    
+    <!-- Placeholders -->
+    <string name="title_placeholder">Title</string>
+    <string name="description_placeholder">Description</string>
+    
+    <!-- Accessibility -->
+    <string name="content_description_cover_art">Cover art for %1$s</string>
+    <string name="content_description_poster">Poster for %1$s</string>
+    <string name="content_description_avatar">User avatar</string>
+    
+    <!-- Library Screen -->
+    <string name="browse_by_type">Browse by type</string>
+    <string name="your_libraries">Your libraries</string>
+    <string name="no_libraries_found">No libraries found</string>
+    <string name="refresh_libraries">Refresh libraries</string>
+    <string name="other">Other</string>
+    
+    <!-- Movies Screen -->
+    <string name="sort">Sort</string>
+    <string name="adjust_filters_hint">Try adjusting your filters or refresh the library</string>
+    <string name="no_movies_found">No movies found</string>
+    
+    <!-- Movie Filters -->
+    <string name="filter_all_movies">All Movies</string>
+    <string name="filter_recent">Recent</string>
+    <string name="filter_favorites">Favorites</string>
+    <string name="filter_2020s">2020s</string>
+    <string name="filter_2010s">2010s</string>
+    <string name="filter_2000s">2000s</string>
+    <string name="filter_1990s">1990s</string>
+    <string name="filter_high_rated">High Rated</string>
+    <string name="filter_unwatched">Unwatched</string>
+    
+    <!-- Sort Orders -->
+    <string name="sort_title_asc">Title A-Z</string>
+    <string name="sort_title_desc">Title Z-A</string>
+    <string name="sort_year_desc">Newest First</string>
+    <string name="sort_year_asc">Oldest First</string>
+    <string name="sort_rating_desc">Highest Rated</string>
+    <string name="sort_rating_asc">Lowest Rated</string>
+    <string name="sort_runtime_desc">Longest First</string>
+    <string name="sort_runtime_asc">Shortest First</string>
+    <string name="sort_date_added_desc">Recently Added</string>
+    <string name="sort_date_added_asc">Oldest Added</string>
+    
+    <!-- Loading States -->
+    <string name="loading_more_movies">Loading more movies…</string>
+    <string name="no_more_movies">No more movies to load</string>
+    <string name="loading_more_music">Loading more music…</string>
+    <string name="no_more_music">No more music to load</string>
+    
+    <!-- Music Screen -->
+    <string name="no_music_found">No music found</string>
+    <string name="adjust_music_filters_hint">Try adjusting your filters or refresh the library</string>
+    
+    <!-- Music Filters -->
+    <string name="filter_all_music">All Music</string>
+    <string name="filter_albums">Albums</string>
+    <string name="filter_artists">Artists</string>
+    <string name="filter_songs">Songs</string>
+    <string name="filter_favorites_music">Favorites</string>
+    <string name="filter_recent_music">Recent</string>
+    <string name="filter_unplayed_music">Unplayed</string>
+    
+    <!-- Music Sort Orders -->
+    <string name="sort_title_asc_music">Title A-Z</string>
+    <string name="sort_title_desc_music">Title Z-A</string>
+    <string name="sort_artist_asc">Artist A-Z</string>
+    <string name="sort_artist_desc">Artist Z-A</string>
+    <string name="sort_year_desc_music">Newest First</string>
+    <string name="sort_year_asc_music">Oldest First</string>
+    <string name="sort_date_added_desc_music">Recently Added</string>
+    <string name="sort_date_added_asc_music">Oldest Added</string>
+    <string name="sort_play_count_desc">Most Played</string>
+    <string name="sort_play_count_asc">Least Played</string>
+    <string name="sort_runtime_desc_music">Longest First</string>
+    <string name="sort_runtime_asc_music">Shortest First</string>
+    
+    <!-- TV Shows Screen -->
+    <string name="adjust_tv_shows_filters_hint">Try adjusting your filters or refresh the library</string>
+    
+    <!-- TV Show Filters -->
+    <string name="filter_all_shows">All Shows</string>
+    <string name="filter_favorites_shows">Favorites</string>
+    <string name="filter_continuing">Continuing</string>
+    <string name="filter_ended">Ended</string>
+    <string name="filter_recent_shows">Recent</string>
+    <string name="filter_unwatched_shows">Unwatched</string>
+    <string name="filter_in_progress">In Progress</string>
+    <string name="filter_high_rated_shows">High Rated</string>
+    
+    <!-- TV Show Sort Orders -->
+    <string name="sort_title_asc_shows">Title A-Z</string>
+    <string name="sort_title_desc_shows">Title Z-A</string>
+    <string name="sort_year_desc_shows">Newest First</string>
+    <string name="sort_year_asc_shows">Oldest First</string>
+    <string name="sort_rating_desc_shows">Highest Rated</string>
+    <string name="sort_rating_asc_shows">Lowest Rated</string>
+    <string name="sort_date_added_desc_shows">Recently Added</string>
+    <string name="sort_date_added_asc_shows">Oldest Added</string>
+    <string name="sort_last_played_desc">Recently Watched</string>
+    <string name="sort_episode_count_desc">Most Episodes</string>
+    <string name="sort_episode_count_asc">Fewest Episodes</string>
 </resources>

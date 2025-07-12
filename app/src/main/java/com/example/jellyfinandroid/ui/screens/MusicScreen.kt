@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Album
@@ -23,6 +24,8 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.ui.res.stringResource
+import com.example.jellyfinandroid.R
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -60,33 +63,33 @@ import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
-enum class MusicFilter(val displayName: String) {
-    ALL("All Music"),
-    ALBUMS("Albums"),
-    ARTISTS("Artists"),
-    SONGS("Songs"),
-    FAVORITES("Favorites"),
-    RECENT("Recent"),
-    UNPLAYED("Unplayed");
+enum class MusicFilter(val displayNameResId: Int) {
+    ALL(R.string.filter_all_music),
+    ALBUMS(R.string.filter_albums),
+    ARTISTS(R.string.filter_artists),
+    SONGS(R.string.filter_songs),
+    FAVORITES(R.string.filter_favorites_music),
+    RECENT(R.string.filter_recent_music),
+    UNPLAYED(R.string.filter_unplayed_music);
     
     companion object {
         fun getAllFilters() = entries
     }
 }
 
-enum class MusicSortOrder(val displayName: String) {
-    TITLE_ASC("Title A-Z"),
-    TITLE_DESC("Title Z-A"),
-    ARTIST_ASC("Artist A-Z"),
-    ARTIST_DESC("Artist Z-A"),
-    YEAR_DESC("Newest First"),
-    YEAR_ASC("Oldest First"),
-    DATE_ADDED_DESC("Recently Added"),
-    DATE_ADDED_ASC("Oldest Added"),
-    PLAY_COUNT_DESC("Most Played"),
-    PLAY_COUNT_ASC("Least Played"),
-    RUNTIME_DESC("Longest First"),
-    RUNTIME_ASC("Shortest First");
+enum class MusicSortOrder(val displayNameResId: Int) {
+    TITLE_ASC(R.string.sort_title_asc_music),
+    TITLE_DESC(R.string.sort_title_desc_music),
+    ARTIST_ASC(R.string.sort_artist_asc),
+    ARTIST_DESC(R.string.sort_artist_desc),
+    YEAR_DESC(R.string.sort_year_desc_music),
+    YEAR_ASC(R.string.sort_year_asc_music),
+    DATE_ADDED_DESC(R.string.sort_date_added_desc_music),
+    DATE_ADDED_ASC(R.string.sort_date_added_asc_music),
+    PLAY_COUNT_DESC(R.string.sort_play_count_desc),
+    PLAY_COUNT_ASC(R.string.sort_play_count_asc),
+    RUNTIME_DESC(R.string.sort_runtime_desc_music),
+    RUNTIME_ASC(R.string.sort_runtime_asc_music);
     
     companion object {
         fun getDefault() = TITLE_ASC
@@ -102,8 +105,9 @@ enum class MusicViewMode {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicScreen(
-    modifier: Modifier = Modifier,
-    viewModel: MainAppViewModel = hiltViewModel()
+    onBackClick: () -> Unit = {},
+    viewModel: MainAppViewModel = hiltViewModel(),
+    modifier: Modifier = Modifier
 ) {
     val appState by viewModel.appState.collectAsState()
     var selectedFilter by remember { mutableStateOf(MusicFilter.ALL) }
@@ -179,20 +183,7 @@ fun MusicScreen(
                         Icon(
                             imageVector = Icons.Default.MusicNote,
                             contentDescription = null,
-                            tint = MusicGreen
                         )
-                        Text(
-                            text = "Music",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (filteredAndSortedMusic.isNotEmpty()) {
-                            Text(
-                                text = "(${filteredAndSortedMusic.size})",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
                 },
                 actions = {
@@ -228,7 +219,7 @@ fun MusicScreen(
                         IconButton(onClick = { showSortMenu = true }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Sort,
-                                contentDescription = "Sort"
+                                contentDescription = stringResource(id = R.string.sort)
                             )
                         }
                         DropdownMenu(
@@ -237,7 +228,7 @@ fun MusicScreen(
                         ) {
                             MusicSortOrder.getAllSortOrders().forEach { order ->
                                 DropdownMenuItem(
-                                    text = { Text(order.displayName) },
+                                    text = { Text(stringResource(id = order.displayNameResId)) },
                                     onClick = {
                                         sortOrder = order
                                         showSortMenu = false
@@ -250,12 +241,14 @@ fun MusicScreen(
                     IconButton(onClick = { viewModel.refreshLibraryItems() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh"
+                            contentDescription = stringResource(id = R.string.refresh)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
@@ -274,7 +267,7 @@ fun MusicScreen(
                 items(MusicFilter.getAllFilters()) { filter ->
                     FilterChip(
                         onClick = { selectedFilter = filter },
-                        label = { Text(filter.displayName) },
+                        label = { Text(stringResource(id = filter.displayNameResId)) },
                         selected = selectedFilter == filter,
                         leadingIcon = when (filter) {
                             MusicFilter.FAVORITES -> {
@@ -366,12 +359,12 @@ fun MusicScreen(
                                 tint = MusicGreen.copy(alpha = 0.6f)
                             )
                             Text(
-                                text = "No music found",
+                                text = stringResource(id = R.string.no_music_found),
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "Try adjusting your filters or refresh the library",
+                                text = stringResource(id = R.string.adjust_music_filters_hint),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -489,14 +482,14 @@ private fun MusicPaginationFooter(
                     modifier = Modifier.padding(8.dp)
                 )
                 Text(
-                    text = "Loading more music...",
+                    text = stringResource(id = R.string.loading_more_music),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else if (!hasMoreItems) {
             Text(
-                text = "No more music to load",
+                text = stringResource(id = R.string.no_more_music),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

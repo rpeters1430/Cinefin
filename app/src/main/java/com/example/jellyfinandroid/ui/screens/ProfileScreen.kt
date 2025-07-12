@@ -9,17 +9,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Computer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -28,8 +30,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.data.JellyfinServer
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,16 +41,29 @@ import com.example.jellyfinandroid.data.JellyfinServer
 fun ProfileScreen(
     currentServer: JellyfinServer?,
     onLogout: () -> Unit,
+    onBackClick: () -> Unit = {},
+    showBackButton: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text("Profile")
+                title = { Text(stringResource(id = R.string.profile)) },
+                navigationIcon = {
+                    if (showBackButton) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(id = R.string.navigate_up)
+                            )
+                        }
+                    } else null
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
@@ -81,8 +98,12 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Text(
-                        text = currentServer?.username ?: "Unknown User",
-                        style = MaterialTheme.typography.headlineMedium,
+                        stringResource(id = R.string.version),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        currentServer?.version ?: stringResource(id = R.string.unknown),
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold
                     )
                     
@@ -115,9 +136,13 @@ fun ProfileScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "Server Information",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                            stringResource(id = R.string.server),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            currentServer?.name ?: stringResource(id = R.string.unknown),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                     

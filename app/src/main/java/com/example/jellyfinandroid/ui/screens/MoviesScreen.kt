@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.FilterList
@@ -22,6 +23,8 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.ui.res.stringResource
+import com.example.jellyfinandroid.R
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -60,33 +63,33 @@ import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
-enum class MovieFilter(val displayName: String) {
-    ALL("All Movies"),
-    RECENT("Recent"),
-    FAVORITES("Favorites"),
-    DECADE_2020S("2020s"),
-    DECADE_2010S("2010s"),
-    DECADE_2000S("2000s"),
-    DECADE_1990S("1990s"),
-    HIGH_RATED("High Rated"),
-    UNWATCHED("Unwatched");
+enum class MovieFilter(val displayNameResId: Int) {
+    ALL(R.string.filter_all_movies),
+    RECENT(R.string.filter_recent),
+    FAVORITES(R.string.filter_favorites),
+    DECADE_2020S(R.string.filter_2020s),
+    DECADE_2010S(R.string.filter_2010s),
+    DECADE_2000S(R.string.filter_2000s),
+    DECADE_1990S(R.string.filter_1990s),
+    HIGH_RATED(R.string.filter_high_rated),
+    UNWATCHED(R.string.filter_unwatched);
     
     companion object {
         fun getAllFilters() = entries
     }
 }
 
-enum class MovieSortOrder(val displayName: String) {
-    TITLE_ASC("Title A-Z"),
-    TITLE_DESC("Title Z-A"),
-    YEAR_DESC("Newest First"),
-    YEAR_ASC("Oldest First"),
-    RATING_DESC("Highest Rated"),
-    RATING_ASC("Lowest Rated"),
-    RUNTIME_DESC("Longest First"),
-    RUNTIME_ASC("Shortest First"),
-    DATE_ADDED_DESC("Recently Added"),
-    DATE_ADDED_ASC("Oldest Added");
+enum class MovieSortOrder(val displayNameResId: Int) {
+    TITLE_ASC(R.string.sort_title_asc),
+    TITLE_DESC(R.string.sort_title_desc),
+    YEAR_DESC(R.string.sort_year_desc),
+    YEAR_ASC(R.string.sort_year_asc),
+    RATING_DESC(R.string.sort_rating_desc),
+    RATING_ASC(R.string.sort_rating_asc),
+    RUNTIME_DESC(R.string.sort_runtime_desc),
+    RUNTIME_ASC(R.string.sort_runtime_asc),
+    DATE_ADDED_DESC(R.string.sort_date_added_desc),
+    DATE_ADDED_ASC(R.string.sort_date_added_asc);
     
     companion object {
         fun getDefault() = TITLE_ASC
@@ -102,8 +105,9 @@ enum class MovieViewMode {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoviesScreen(
-    modifier: Modifier = Modifier,
-    viewModel: MainAppViewModel = hiltViewModel()
+    onBackClick: () -> Unit = {},
+    viewModel: MainAppViewModel = hiltViewModel(),
+    modifier: Modifier = Modifier
 ) {
     val appState by viewModel.appState.collectAsState()
     var selectedFilter by remember { mutableStateOf(MovieFilter.ALL) }
@@ -185,20 +189,7 @@ fun MoviesScreen(
                         Icon(
                             imageVector = Icons.Default.Movie,
                             contentDescription = null,
-                            tint = MovieRed
                         )
-                        Text(
-                            text = "Movies",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (filteredAndSortedMovies.isNotEmpty()) {
-                            Text(
-                                text = "(${filteredAndSortedMovies.size})",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
                 },
                 actions = {
@@ -234,7 +225,7 @@ fun MoviesScreen(
                         IconButton(onClick = { showSortMenu = true }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Sort,
-                                contentDescription = "Sort"
+                                contentDescription = stringResource(id = R.string.sort)
                             )
                         }
                         DropdownMenu(
@@ -243,7 +234,7 @@ fun MoviesScreen(
                         ) {
                             MovieSortOrder.getAllSortOrders().forEach { order ->
                                 DropdownMenuItem(
-                                    text = { Text(order.displayName) },
+                                    text = { Text(stringResource(id = order.displayNameResId)) },
                                     onClick = {
                                         sortOrder = order
                                         showSortMenu = false
@@ -256,12 +247,14 @@ fun MoviesScreen(
                     IconButton(onClick = { viewModel.refreshLibraryItems() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh"
+                            contentDescription = stringResource(id = R.string.refresh)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
@@ -280,7 +273,7 @@ fun MoviesScreen(
                 items(MovieFilter.getAllFilters()) { filter ->
                     FilterChip(
                         onClick = { selectedFilter = filter },
-                        label = { Text(filter.displayName) },
+                        label = { Text(stringResource(id = filter.displayNameResId)) },
                         selected = selectedFilter == filter,
                         leadingIcon = if (filter == MovieFilter.FAVORITES) {
                             {
@@ -351,12 +344,12 @@ fun MoviesScreen(
                                 tint = MovieRed.copy(alpha = 0.6f)
                             )
                             Text(
-                                text = "No movies found",
+                                text = stringResource(id = R.string.no_movies_found),
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "Try adjusting your filters or refresh the library",
+                                text = stringResource(id = R.string.adjust_filters_hint),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -474,14 +467,14 @@ private fun MoviesPaginationFooter(
                     modifier = Modifier.padding(8.dp)
                 )
                 Text(
-                    text = "Loading more movies...",
+                    text = stringResource(id = R.string.loading_more_movies),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else if (!hasMoreItems) {
             Text(
-                text = "No more movies to load",
+                text = stringResource(id = R.string.no_more_movies),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
