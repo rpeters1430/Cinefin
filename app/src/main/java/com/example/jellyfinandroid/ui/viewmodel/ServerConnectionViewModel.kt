@@ -69,13 +69,16 @@ class ServerConnectionViewModel @Inject constructor(
             val savedUsername = preferences[PreferencesKeys.USERNAME] ?: ""
             val rememberLogin = preferences[PreferencesKeys.REMEMBER_LOGIN] ?: false
 
+            // ✅ FIX: Handle suspend function calls properly
+            val hasSavedPassword = if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
+                secureCredentialManager.getPassword(savedServerUrl, savedUsername) != null
+            } else false
+
             _connectionState.value = _connectionState.value.copy(
                 savedServerUrl = savedServerUrl,
                 savedUsername = savedUsername,
                 rememberLogin = rememberLogin,
-                hasSavedPassword = if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
-                    secureCredentialManager.getPassword(savedServerUrl, savedUsername) != null
-                } else false
+                hasSavedPassword = hasSavedPassword
             )
             
             // Auto-login if we have saved credentials and remember login is enabled

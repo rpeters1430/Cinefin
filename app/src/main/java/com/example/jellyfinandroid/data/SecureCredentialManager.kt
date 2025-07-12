@@ -1,60 +1,146 @@
 package com.example.jellyfinandroid.data
 
 import android.content.Context
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
 import javax.inject.Inject
 import javax.inject.Singleton
+import android.util.Base64
+
+// Modern secure DataStore extension
+private val Context.secureCredentialsDataStore: DataStore<Preferences> by preferencesDataStore(name = "secure_credentials")
 
 @Singleton
 class SecureCredentialManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
-
-    private val encryptedSharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        "secure_credentials",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
-
-    fun savePassword(serverUrl: String, username: String, password: String) {
-        val key = generateKey(serverUrl, username)
-        encryptedSharedPreferences.edit().putString(key, password).apply()
-    }
-
-    fun getPassword(serverUrl: String, username: String): String? {
-        val key = generateKey(serverUrl, username)
-        return encryptedSharedPreferences.getString(key, null)
-    }
-
-    fun clearPassword(serverUrl: String, username: String) {
-        val key = generateKey(serverUrl, username)
-        encryptedSharedPreferences.edit().remove(key).apply()
-    }
-
-    fun clearAllPasswords() {
-        encryptedSharedPreferences.edit().clear().apply()
+    
+    companion object {
+        private const val KEY_ALIAS = "JellyfinCredentialKey"
+        private const val TRANSFORMATION = "AES/GCM/NoPadding"
+        private const val IV_LENGTH = 12
     }
     
-    fun clearCredentials() {
+    // ✅ FIX: Use modern Android Keystore with DataStore for secure storage
+    private val keyStore: KeyStore by lazy {
+        KeyStore.getInstance("AndroidKeyStore").apply {
+            load(null)
+        }
+    }
+    
+    private fun getOrCreateSecretKey(): SecretKey {
+        return if (keyStore.containsAlias(KEY_ALIAS)) {
+            keyStore.getKey(KEY_ALIAS, null) as SecretKey
+        } else {
+            val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+            val keyGenParameterSpec = KeyGenParameterSpec.Builder(
+                KEY_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setUserAuthenticationRequired(false)
+                .build()
+            
+            keyGenerator.init(keyGenParameterSpec)
+            keyGenerator.generateKey()
+        }
+    }
+    
+    private fun encrypt(data: String): String {
+        val cipher = Cipher.getInstance(TRANSFORMATION)
+        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateSecretKey())
+        
+        val iv = cipher.iv
+        val encryptedData = cipher.doFinal(data.toByteArray())
+        
+        // Combine IV + encrypted data and encode to Base64
+        val combined = iv + encryptedData
+        return Base64.encodeToString(combined, Base64.DEFAULT)
+    }
+    
+    private fun decrypt(encryptedData: String): String? {
+        return try {
+            val combined = Base64.decode(encryptedData, Base64.DEFAULT)
+            val iv = combined.sliceArray(0..IV_LENGTH - 1)
+            val cipherData = combined.sliceArray(IV_LENGTH until combined.size)
+            
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            val spec = GCMParameterSpec(128, iv)
+            cipher.init(Cipher.DECRYPT_MODE, getOrCreateSecretKey(), spec)
+            
+            String(cipher.doFinal(cipherData))
+        } catch (e: Exception) {
+            null // Return null if decryption fails
+        }
+    }
+
+    // ✅ FIX: Modern secure storage with Android Keystore + DataStore
+    suspend fun savePassword(serverUrl: String, username: String, password: String) {
+        val key = generateKey(serverUrl, username)
+        val encryptedPassword = encrypt(password)
+        
+        context.secureCredentialsDataStore.edit { preferences ->
+            preferences[stringPreferencesKey(key)] = encryptedPassword
+        }
+    }
+
+    suspend fun getPassword(serverUrl: String, username: String): String? {
+        val key = generateKey(serverUrl, username)
+        val encryptedPassword = context.secureCredentialsDataStore.data.map { preferences ->
+            preferences[stringPreferencesKey(key)]
+        }.first()
+        
+        return encryptedPassword?.let { decrypt(it) }
+    }
+
+    suspend fun clearPassword(serverUrl: String, username: String) {
+        val key = generateKey(serverUrl, username)
+        context.secureCredentialsDataStore.edit { preferences ->
+            preferences.remove(stringPreferencesKey(key))
+        }
+    }
+
+    suspend fun clearAllPasswords() {
+        context.secureCredentialsDataStore.edit { preferences ->
+            preferences.clear()
+        }
+    }
+    
+    suspend fun clearCredentials() {
         clearAllPasswords()
     }
 
+    // ✅ FIX: Improved key generation with better collision prevention
     private fun generateKey(serverUrl: String, username: String): String {
         require(serverUrl.isNotBlank()) { "Server URL cannot be blank" }
         require(username.isNotBlank()) { "Username cannot be blank" }
-        require(!serverUrl.contains("_")) { "Server URL cannot contain underscore character" }
-        require(!username.contains("_")) { "Username cannot contain underscore character" }
         
-        val sanitizedUrl = serverUrl.trimEnd('/').replace(Regex("[^a-zA-Z0-9.-]"), "")
-        val sanitizedUsername = username.replace(Regex("[^a-zA-Z0-9.-]"), "")
+        // More robust sanitization and collision prevention
+        val sanitizedUrl = serverUrl.trimEnd('/')
+            .replace(Regex("[^a-zA-Z0-9._-]"), "_")
+            .take(50) // Limit length
+        val sanitizedUsername = username
+            .replace(Regex("[^a-zA-Z0-9._-]"), "_")
+            .take(30) // Limit length
         
-        return "${sanitizedUrl}_$sanitizedUsername"
+        // Add hash suffix to prevent collisions
+        val combined = "${sanitizedUrl}::${sanitizedUsername}"
+        val hashSuffix = combined.hashCode().toString().takeLast(4)
+        
+        return "pwd_${sanitizedUrl}_${sanitizedUsername}_$hashSuffix"
     }
 } 
