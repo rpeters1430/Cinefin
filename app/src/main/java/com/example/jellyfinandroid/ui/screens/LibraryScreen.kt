@@ -56,7 +56,7 @@ fun LibraryScreen(
     showBackButton: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
+    Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(stringResource(id = R.string.library)) },
             navigationIcon = {
@@ -91,7 +91,7 @@ fun LibraryScreen(
             )
         )
         
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp).fillMaxWidth().weight(1f)) {
             Spacer(modifier = Modifier.height(16.dp))
         
         // Quick access cards for media types
@@ -176,6 +176,9 @@ fun LibraryScreen(
             }
             else -> {
                 LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(libraries) { library ->
