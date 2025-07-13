@@ -91,7 +91,7 @@ fun LibraryScreen(
             )
         )
         
-        Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
+        Column(modifier = Modifier.padding(16.dp).fillMaxWidth().weight(1f)) {
             Spacer(modifier = Modifier.height(16.dp))
         
         // Quick access cards for media types
