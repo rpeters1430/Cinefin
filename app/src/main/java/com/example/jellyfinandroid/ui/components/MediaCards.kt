@@ -56,6 +56,7 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 fun MediaCard(
     item: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
+    onClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val contentTypeColor = getContentTypeColor(item.type?.toString())
@@ -64,7 +65,8 @@ fun MediaCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(16f / 9f),
+            .aspectRatio(16f / 9f)
+            .clickable { onClick(item) },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
@@ -241,12 +243,15 @@ fun RecentlyAddedCard(
     item: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
+    onClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val contentTypeColor = getContentTypeColor(item.type?.toString())
 
     Card(
-        modifier = modifier.width(140.dp),
+        modifier = modifier
+            .width(140.dp)
+            .clickable { onClick(item) },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(

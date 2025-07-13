@@ -108,6 +108,7 @@ enum class MovieViewMode {
 @Composable
 fun MoviesScreen(
     onBackClick: () -> Unit = {},
+    onMovieClick: (BaseItemDto) -> Unit = {},
     viewModel: MainAppViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
@@ -358,6 +359,7 @@ fun MoviesScreen(
                         movies = filteredAndSortedMovies,
                         viewMode = viewMode,
                         getImageUrl = { item -> viewModel.getImageUrl(item) },
+                        onMovieClick = onMovieClick,
                         isLoadingMore = appState.isLoadingMore,
                         hasMoreItems = appState.hasMoreItems,
                         onLoadMore = { viewModel.loadMoreItems() }
@@ -373,6 +375,7 @@ private fun MoviesContent(
     movies: List<BaseItemDto>,
     viewMode: MovieViewMode,
     getImageUrl: (BaseItemDto) -> String?,
+    onMovieClick: (BaseItemDto) -> Unit,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -390,7 +393,8 @@ private fun MoviesContent(
                 items(movies) { movie ->
                     MediaCard(
                         item = movie,
-                        getImageUrl = getImageUrl
+                        getImageUrl = getImageUrl,
+                        onClick = onMovieClick
                     )
                 }
                 
@@ -416,7 +420,8 @@ private fun MoviesContent(
                 items(movies) { movie ->
                     MediaCard(
                         item = movie,
-                        getImageUrl = getImageUrl
+                        getImageUrl = getImageUrl,
+                        onClick = onMovieClick
                     )
                 }
                 

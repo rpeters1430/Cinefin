@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.clickable
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,6 +53,7 @@ fun LibraryScreen(
     errorMessage: String?,
     onRefresh: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
+    onLibraryClick: (BaseItemDto) -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
     showBackButton: Boolean = false,
@@ -146,7 +148,8 @@ fun LibraryScreen(
                     items(libraries) { library ->
                         LibraryCard(
                             library = library,
-                            getImageUrl = getImageUrl
+                            getImageUrl = getImageUrl,
+                            onClick = { onLibraryClick(library) }
                         )
                     }
                 }
@@ -160,12 +163,15 @@ fun LibraryScreen(
 fun LibraryCard(
     library: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val libraryIcon = getLibraryIcon(library.collectionType)
     
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface

@@ -21,6 +21,8 @@ import androidx.navigation.navArgument
 import com.example.jellyfinandroid.ui.screens.FavoritesScreen
 import com.example.jellyfinandroid.ui.screens.HomeScreen
 import com.example.jellyfinandroid.ui.screens.LibraryScreen
+import com.example.jellyfinandroid.ui.screens.MovieDetailScreen
+import com.example.jellyfinandroid.ui.screens.TVEpisodeDetailScreen
 import com.example.jellyfinandroid.ui.screens.MoviesScreen
 import com.example.jellyfinandroid.ui.screens.MusicScreen
 import com.example.jellyfinandroid.ui.screens.ProfileScreen
@@ -110,6 +112,33 @@ fun JellyfinNavGraph(
                 getImageUrl = { item -> viewModel.getImageUrl(item) },
                 getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
                 getSeriesImageUrl = { item -> viewModel.getSeriesImageUrl(item) },
+                onItemClick = { item ->
+                    when (item.type) {
+                        org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
+                            item.id?.let { movieId ->
+                                navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                            }
+                        }
+                        org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+                            item.id?.let { seriesId ->
+                                navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
+                            }
+                        }
+                        org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
+                            item.id?.let { episodeId ->
+                                navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                            }
+                        }
+                        else -> {
+                            // For backward compatibility, try to handle movies
+                            if (item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE) {
+                                item.id?.let { movieId ->
+                                    navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                                }
+                            }
+                        }
+                    }
+                },
                 onSettingsClick = { navController.navigate(Screen.Profile.route) }
             )
         }
@@ -146,6 +175,11 @@ fun JellyfinNavGraph(
             
             MoviesScreen(
                 onBackClick = { navController.popBackStack() },
+                onMovieClick = { movie -> 
+                    movie.id?.let { movieId ->
+                        navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                    }
+                },
                 viewModel = viewModel
             )
         }
@@ -208,6 +242,11 @@ fun JellyfinNavGraph(
                 seasonId = seasonId,
                 onBackClick = { navController.popBackStack() },
                 getImageUrl = { item -> mainViewModel.getImageUrl(item) },
+                onEpisodeClick = { episode ->
+                    episode.id?.let { episodeId ->
+                        navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                    }
+                },
                 viewModel = viewModel
             )
         }
@@ -286,6 +325,88 @@ fun JellyfinNavGraph(
                 },
                 onBackClick = { navController.popBackStack() }
             )
+        }
+        
+        composable(
+            route = Screen.MovieDetail.route,
+            arguments = listOf(navArgument(Screen.MOVIE_ID_ARG) { type = NavType.StringType })
+        ) { backStackEntry ->
+            val movieId = backStackEntry.arguments?.getString(Screen.MOVIE_ID_ARG) ?: return@composable
+            val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
+            val appState by viewModel.appState.collectAsStateWithLifecycle(
+                lifecycle = lifecycleOwner.lifecycle,
+                minActiveState = Lifecycle.State.STARTED
+            )
+            
+            // Find the movie from the loaded items
+            val movie = appState.allItems.find { it.id.toString() == movieId }
+            
+            if (movie != null) {
+                // Get related items (movies from same genre or similar)
+                val relatedItems = appState.allItems.filter { item ->
+                    item.id.toString() != movieId && 
+                    item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
+                    movie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
+                }.take(10)
+                
+                MovieDetailScreen(
+                    movie = movie,
+                    getImageUrl = { item -> viewModel.getImageUrl(item) },
+                    getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
+                    onBackClick = { navController.popBackStack() },
+                    onPlayClick = { /* TODO: Implement play functionality */ },
+                    onFavoriteClick = { /* TODO: Implement favorite toggle */ },
+                    relatedItems = relatedItems
+                )
+            } else {
+                // Movie not found, show error or navigate back
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            }
+        }
+        
+        composable(
+            route = Screen.TVEpisodeDetail.route,
+            arguments = listOf(navArgument(Screen.EPISODE_ID_ARG) { type = NavType.StringType })
+        ) { backStackEntry ->
+            val episodeId = backStackEntry.arguments?.getString(Screen.EPISODE_ID_ARG) ?: return@composable
+            val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
+            val appState by viewModel.appState.collectAsStateWithLifecycle(
+                lifecycle = lifecycleOwner.lifecycle,
+                minActiveState = Lifecycle.State.STARTED
+            )
+            
+            // Find the episode from the loaded items
+            val episode = appState.allItems.find { it.id.toString() == episodeId }
+            
+            if (episode != null) {
+                // Find the series information if available
+                val seriesInfo = episode.seriesId?.let { seriesId ->
+                    appState.allItems.find { it.id.toString() == seriesId.toString() }
+                }
+                
+                TVEpisodeDetailScreen(
+                    episode = episode,
+                    seriesInfo = seriesInfo,
+                    getImageUrl = { item -> viewModel.getImageUrl(item) },
+                    getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
+                    onBackClick = { navController.popBackStack() },
+                    onPlayClick = { /* TODO: Implement play functionality */ },
+                    onDownloadClick = { /* TODO: Implement download functionality */ },
+                    onDeleteClick = { /* TODO: Implement delete functionality */ },
+                    onMarkWatchedClick = { /* TODO: Implement mark watched functionality */ },
+                    onMarkUnwatchedClick = { /* TODO: Implement mark unwatched functionality */ },
+                    onFavoriteClick = { /* TODO: Implement favorite toggle functionality */ }
+                )
+            } else {
+                // Episode not found, show error or navigate back
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            }
         }
     }
 }

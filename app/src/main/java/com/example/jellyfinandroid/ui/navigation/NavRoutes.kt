@@ -24,11 +24,19 @@ sealed class Screen(val route: String) {
     object Search : Screen("search")
     object Favorites : Screen("favorites")
     object Profile : Screen("profile")
+    object MovieDetail : Screen("movie_detail/{movieId}") {
+        fun createRoute(movieId: String) = "movie_detail/$movieId"
+    }
+    object TVEpisodeDetail : Screen("episode_detail/{episodeId}") {
+        fun createRoute(episodeId: String) = "episode_detail/$episodeId"
+    }
     
     // For navigation arguments
     companion object {
         const val SERIES_ID_ARG = "seriesId"
         const val SEASON_ID_ARG = "seasonId"
+        const val MOVIE_ID_ARG = "movieId"
+        const val EPISODE_ID_ARG = "episodeId"
     }
 }
 

@@ -80,6 +80,7 @@ fun HomeScreen(
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -141,6 +142,7 @@ fun HomeScreen(
                 getImageUrl = getImageUrl,
                 getBackdropUrl = getBackdropUrl,
                 getSeriesImageUrl = getSeriesImageUrl,
+                onItemClick = onItemClick,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -239,6 +241,7 @@ fun HomeContent(
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -301,6 +304,7 @@ fun HomeContent(
                         CarouselMovieCard(
                             movie = movie,
                             getBackdropUrl = getBackdropUrl, // Use backdrop for horizontal cards
+                            onClick = onItemClick,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(RoundedCornerShape(16.dp)) // Ensure full rounding
@@ -381,7 +385,8 @@ fun HomeContent(
                                 RecentlyAddedCard(
                                     item = item,
                                     getImageUrl = getImageUrl,
-                                    getSeriesImageUrl = getSeriesImageUrl
+                                    getSeriesImageUrl = getSeriesImageUrl,
+                                    onClick = onItemClick
                                 )
                             }
                         }
@@ -539,10 +544,11 @@ fun SearchResultsContent(
 private fun CarouselMovieCard(
     movie: BaseItemDto,
     getBackdropUrl: (BaseItemDto) -> String?,
+    onClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable { onClick(movie) },
         shape = RoundedCornerShape(16.dp), // Fully rounded
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(

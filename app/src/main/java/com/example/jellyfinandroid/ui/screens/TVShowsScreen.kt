@@ -106,7 +106,7 @@ enum class TVShowViewMode {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TVShowsScreen(
-    onTVShowClick: ((String) -> Unit)? = null,
+    onTVShowClick: (String) -> Unit = {},
     onBackClick: () -> Unit = {},
     viewModel: MainAppViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
@@ -367,7 +367,7 @@ private fun TVShowsContent(
     tvShows: List<BaseItemDto>,
     viewMode: TVShowViewMode,
     getImageUrl: (BaseItemDto) -> String?,
-    onTVShowClick: ((String) -> Unit)?,
+    onTVShowClick: (String) -> Unit,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -386,9 +386,7 @@ private fun TVShowsContent(
                     MediaCard(
                         item = tvShow,
                         getImageUrl = getImageUrl,
-                        modifier = Modifier.clickable {
-                            onTVShowClick?.invoke(tvShow.id.toString())
-                        }
+                        onClick = { onTVShowClick(tvShow.id.toString()) }
                     )
                 }
                 
@@ -415,9 +413,7 @@ private fun TVShowsContent(
                     MediaCard(
                         item = tvShow,
                         getImageUrl = getImageUrl,
-                        modifier = Modifier.clickable {
-                            onTVShowClick?.invoke(tvShow.id.toString())
-                        }
+                        onClick = { onTVShowClick(tvShow.id.toString()) }
                     )
                 }
                 

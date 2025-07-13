@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
@@ -58,6 +59,7 @@ fun TVEpisodesScreen(
     seasonId: String,
     onBackClick: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
+    onEpisodeClick: (BaseItemDto) -> Unit = {},
     viewModel: SeasonEpisodesViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
@@ -181,6 +183,7 @@ fun TVEpisodesScreen(
                 EpisodeList(
                     episodes = state.episodes,
                     getImageUrl = getImageUrl,
+                    onEpisodeClick = onEpisodeClick,
                     modifier = Modifier.padding(innerPadding)
                 )
             }
@@ -192,6 +195,7 @@ fun TVEpisodesScreen(
 private fun EpisodeList(
     episodes: List<BaseItemDto>,
     getImageUrl: (BaseItemDto) -> String?,
+    onEpisodeClick: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -202,7 +206,8 @@ private fun EpisodeList(
         items(episodes) { episode ->
             EpisodeRow(
                 episode = episode,
-                getImageUrl = getImageUrl
+                getImageUrl = getImageUrl,
+                onClick = onEpisodeClick
             )
         }
     }
@@ -212,10 +217,13 @@ private fun EpisodeList(
 private fun EpisodeRow(
     episode: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
+    onClick: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick(episode) },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
