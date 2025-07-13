@@ -416,6 +416,9 @@ class JellyfinRepository @Inject constructor(
         val server = _currentServer.value ?: return false
         
         try {
+            // Clear any cached clients before re-authenticating
+            clientFactory.invalidateClient()
+            
             // Get saved password for the current server and username
             val savedPassword = secureCredentialManager.getPassword(server.url, server.username ?: "")
             if (savedPassword == null) {
@@ -428,7 +431,7 @@ class JellyfinRepository @Inject constructor(
             // Re-authenticate using saved credentials
             when (val authResult = authenticateUser(server.url, server.username ?: "", savedPassword)) {
                 is ApiResult.Success -> {
-                    Log.d("JellyfinRepository", "Re-authentication successful")
+                    Log.d("JellyfinRepository", "Re-authentication successful with new token")
                     return true
                 }
                 is ApiResult.Error -> {
@@ -465,8 +468,8 @@ class JellyfinRepository @Inject constructor(
                     // Try to re-authenticate
                     if (reAuthenticate()) {
                         Log.d("JellyfinRepository", "Re-authentication successful, retrying operation")
-                        // Wait a bit before retrying
-                        kotlinx.coroutines.delay(1000L * (attempt + 1))
+                        // Additional delay to ensure token propagation
+                        kotlinx.coroutines.delay(2000L)
                         continue
                     } else {
                         Log.w("JellyfinRepository", "Re-authentication failed, will not retry")

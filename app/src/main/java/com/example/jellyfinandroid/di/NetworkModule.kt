@@ -67,20 +67,26 @@ class JellyfinClientFactory @Inject constructor(
 ) {
     private var currentClient: org.jellyfin.sdk.api.client.ApiClient? = null
     private var currentBaseUrl: String? = null
+    private var currentToken: String? = null
     
     fun getClient(baseUrl: String, accessToken: String? = null): org.jellyfin.sdk.api.client.ApiClient {
         val normalizedUrl = baseUrl.trimEnd('/') + "/"
-        val clientKey = "$normalizedUrl|$accessToken"
         
-        if (currentClient == null || currentBaseUrl != clientKey) {
+        if (currentToken != accessToken || currentBaseUrl != normalizedUrl || currentClient == null) {
             currentClient = jellyfin.createApi(
                 baseUrl = normalizedUrl,
                 accessToken = accessToken
             )
-            currentBaseUrl = clientKey
+            currentBaseUrl = normalizedUrl
+            currentToken = accessToken
         }
         
-        // ✅ FIX: Safe null handling instead of unsafe !! operator
         return currentClient ?: throw IllegalStateException("Failed to create Jellyfin API client for URL: $normalizedUrl")
+    }
+    
+    fun invalidateClient() {
+        currentClient = null
+        currentBaseUrl = null
+        currentToken = null
     }
 }
