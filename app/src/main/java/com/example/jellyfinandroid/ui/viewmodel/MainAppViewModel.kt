@@ -170,6 +170,10 @@ class MainAppViewModel @Inject constructor(
         return repository.getImageUrl(item.id.toString(), "Primary", null)
     }
     
+    fun getBackdropUrl(item: BaseItemDto): String? {
+        return repository.getBackdropUrl(item)
+    }
+    
     fun getSeriesImageUrl(item: BaseItemDto): String? {
         return repository.getSeriesImageUrl(item)
     }

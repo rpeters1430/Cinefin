@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.res.stringResource
@@ -57,10 +58,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.ui.components.MediaCard
 import com.example.jellyfinandroid.ui.components.RecentlyAddedCard
+import com.example.jellyfinandroid.ui.components.ShimmerBox
+import com.example.jellyfinandroid.ui.theme.getContentTypeColor
 import com.example.jellyfinandroid.ui.viewmodel.MainAppState
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -74,6 +78,7 @@ fun HomeScreen(
     onSearch: (String) -> Unit,
     onClearSearch: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
+    getBackdropUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
     onSettingsClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
@@ -134,6 +139,7 @@ fun HomeScreen(
                 currentServer = currentServer,
                 onRefresh = onRefresh,
                 getImageUrl = getImageUrl,
+                getBackdropUrl = getBackdropUrl,
                 getSeriesImageUrl = getSeriesImageUrl,
                 modifier = Modifier.fillMaxSize()
             )
@@ -147,34 +153,79 @@ fun HomeLibraryCard(
     getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
+    val contentTypeColor = getContentTypeColor(library.type?.toString())
+    
     Card(
         modifier = modifier
-            .width(120.dp)
+            .width(140.dp)
             .clickable { },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(getImageUrl(library) ?: "")
-                    .crossfade(true)
-                    .build(),
-                contentDescription = library.name ?: "Library",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(90.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentScale = ContentScale.Crop
-            )
+            Box {
+                SubcomposeAsyncImage(
+                    model = getImageUrl(library),
+                    contentDescription = library.name ?: "Library",
+                    loading = {
+                        ShimmerBox(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            cornerRadius = 12
+                        )
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .background(contentTypeColor.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Folder,
+                                contentDescription = "Library",
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                )
+            }
             
-            Text(
-                text = library.name ?: "Unknown Library",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(8.dp)
-            )
+            // Content Information
+            Column(
+                modifier = Modifier.padding(12.dp)
+            ) {
+                Text(
+                    text = library.name ?: "Unknown Library",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                // Show library type if available
+                library.type?.let { type ->
+                    Text(
+                        text = type.toString().replace("_", " ").lowercase()
+                            .replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -186,6 +237,7 @@ fun HomeContent(
     currentServer: JellyfinServer?,
     onRefresh: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
+    getBackdropUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
@@ -248,7 +300,7 @@ fun HomeContent(
                         val movie = recentMovies[index]
                         CarouselMovieCard(
                             movie = movie,
-                            getImageUrl = getImageUrl, // Use the new function
+                            getBackdropUrl = getBackdropUrl, // Use backdrop for horizontal cards
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(RoundedCornerShape(16.dp)) // Ensure full rounding
@@ -486,7 +538,7 @@ fun SearchResultsContent(
 @Composable
 private fun CarouselMovieCard(
     movie: BaseItemDto,
-    getImageUrl: (BaseItemDto) -> String?,
+    getBackdropUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -502,7 +554,7 @@ private fun CarouselMovieCard(
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(getImageUrl(movie) ?: "")
+                    .data(getBackdropUrl(movie) ?: "")
                     .crossfade(true)
                     .build(),
                 contentDescription = movie.name ?: "Movie backdrop",
@@ -530,20 +582,22 @@ private fun CarouselMovieCard(
                     )
             )
             
-            // Rating badge in top right
+            // ✅ FIX: Enhanced rating badge with better positioning and styling
             movie.communityRating?.let { rating ->
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(8.dp),
-                    shape = RoundedCornerShape(4.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                        .padding(12.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.95f),
+                    shadowElevation = 4.dp
                 ) {
                     Text(
                         text = "★ ${String.format("%.1f", rating)}",
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
             }

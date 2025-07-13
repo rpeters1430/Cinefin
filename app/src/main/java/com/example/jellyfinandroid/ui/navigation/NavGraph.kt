@@ -108,6 +108,7 @@ fun JellyfinNavGraph(
                 },
                 onClearSearch = { viewModel.clearSearch() },
                 getImageUrl = { item -> viewModel.getImageUrl(item) },
+                getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
                 getSeriesImageUrl = { item -> viewModel.getSeriesImageUrl(item) },
                 onSettingsClick = { navController.navigate(Screen.Profile.route) }
             )

@@ -289,7 +289,10 @@ class JellyfinRepository @Inject constructor(
 
         return try {
             val client = getClient(server.url, server.accessToken)
-            val response = client.userApi.getUserViews(userId = userUuid)
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                includeItemTypes = listOf(org.jellyfin.sdk.model.api.BaseItemKind.COLLECTION_FOLDER)
+            )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
             val errorType = when {
