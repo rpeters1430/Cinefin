@@ -1,6 +1,5 @@
 package com.example.jellyfinandroid.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +19,12 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.Games
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -47,10 +52,6 @@ fun LibraryScreen(
     errorMessage: String?,
     onRefresh: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
-    onNavigateToMovies: () -> Unit = {},
-    onNavigateToTVShows: () -> Unit = {},
-    onNavigateToMusic: () -> Unit = {},
-    onNavigateToStuff: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
     showBackButton: Boolean = false,
@@ -92,51 +93,12 @@ fun LibraryScreen(
         )
         
         Column(modifier = Modifier.padding(16.dp).fillMaxWidth().weight(1f)) {
-            Spacer(modifier = Modifier.height(16.dp))
-        
-        // Quick access cards for media types
-        Text(
-            text = stringResource(id = R.string.browse_by_type),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(vertical = 8.dp)
-        )
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            MediaTypeCard(
-                title = stringResource(id = R.string.movies),
-                icon = Icons.Default.Movie,
-                onClick = onNavigateToMovies
+            Text(
+                text = stringResource(id = R.string.your_libraries),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = 16.dp)
             )
-            
-            MediaTypeCard(
-                title = stringResource(id = R.string.tv_shows),
-                icon = Icons.Default.Tv,
-                onClick = onNavigateToTVShows
-            )
-            
-            MediaTypeCard(
-                title = stringResource(id = R.string.music),
-                icon = Icons.Default.MusicNote,
-                onClick = onNavigateToMusic
-            )
-            
-            MediaTypeCard(
-                title = stringResource(id = R.string.other),
-                icon = Icons.Default.Widgets,
-                onClick = onNavigateToStuff
-            )
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = stringResource(id = R.string.your_libraries),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(vertical = 8.dp)
-        )
 
         when {
             isLoading -> {
@@ -200,6 +162,8 @@ fun LibraryCard(
     getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier
 ) {
+    val libraryIcon = getLibraryIcon(library.collectionType)
+    
     Card(
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -208,14 +172,21 @@ fun LibraryCard(
         )
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(20.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                imageVector = libraryIcon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(end = 4.dp)
+            )
+            
             Text(
                 text = library.name ?: "Unknown Library",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Medium
             )
             
             Spacer(modifier = Modifier.weight(1f))
@@ -232,39 +203,19 @@ fun LibraryCard(
 }
 
 @Composable
-fun MediaTypeCard(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
-            )
-            
-            Spacer(modifier = Modifier.weight(1f))
-        }
+fun getLibraryIcon(collectionType: org.jellyfin.sdk.model.api.CollectionType?): androidx.compose.ui.graphics.vector.ImageVector {
+    return when (collectionType?.toString()?.lowercase()) {
+        "movies" -> Icons.Default.Movie
+        "tvshows" -> Icons.Default.Tv
+        "music" -> Icons.Default.MusicNote
+        "books" -> Icons.AutoMirrored.Filled.LibraryBooks
+        "photos" -> Icons.Default.Photo
+        "homevideos" -> Icons.Default.Photo
+        "musicvideos" -> Icons.Default.Audiotrack
+        "playlists" -> Icons.Default.BookmarkBorder
+        "mixed" -> Icons.Default.Widgets
+        else -> Icons.Default.Folder
     }
-} 
+}
+
+ 

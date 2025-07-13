@@ -132,9 +132,6 @@ fun JellyfinNavGraph(
                 errorMessage = appState.errorMessage,
                 onRefresh = { viewModel.loadInitialData() },
                 getImageUrl = { item -> viewModel.getImageUrl(item) },
-                onNavigateToMovies = { navController.navigate(Screen.Movies.route) },
-                onNavigateToTVShows = { navController.navigate(Screen.TVShows.route) },
-                onNavigateToMusic = { navController.navigate(Screen.Music.route) },
                 onSettingsClick = { navController.navigate(Screen.Profile.route) }
             )
         }
