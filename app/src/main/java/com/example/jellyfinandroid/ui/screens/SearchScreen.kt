@@ -30,6 +30,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.example.jellyfinandroid.utils.AppConstants
+import com.example.jellyfinandroid.utils.rememberDebouncedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -53,12 +55,24 @@ fun SearchScreen(
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
+    val debouncedQuery = rememberDebouncedState(
+        value = searchQuery,
+        delayMs = AppConstants.Search.SEARCH_DEBOUNCE_MS
+    )
 
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    LaunchedEffect(debouncedQuery) {
+        if (debouncedQuery.isBlank()) {
+            onClearSearch()
+        } else {
+            onSearch(debouncedQuery)
+        }
     }
 
     Scaffold(
@@ -92,13 +106,8 @@ fun SearchScreen(
         ) {
             OutlinedTextField(
                 value = searchQuery,
-                onValueChange = { 
+                onValueChange = {
                     searchQuery = it
-                    if (it.isBlank()) {
-                        onClearSearch()
-                    } else {
-                        onSearch(it)
-                    }
                 },
                 leadingIcon = {
                     Icon(
