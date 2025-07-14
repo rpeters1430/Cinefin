@@ -3,6 +3,7 @@ package com.example.jellyfinandroid.utils
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -164,12 +165,14 @@ class ResourceManager {
 }
 
 @Composable
+
 fun rememberResourceManager(): ResourceManager {
     val resourceManager = remember { ResourceManager() }
-    
-    LaunchedEffect(Unit) {
-        // Cleanup on disposal
-        resourceManager.cleanup()
+
+    DisposableEffect(Unit) {
+        onDispose {
+            resourceManager.cleanup()
+        }
     }
     
     return resourceManager
