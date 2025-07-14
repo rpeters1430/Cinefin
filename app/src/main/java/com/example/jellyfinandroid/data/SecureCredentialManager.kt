@@ -19,6 +19,7 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.inject.Inject
 import javax.inject.Singleton
 import android.util.Base64
+import com.example.jellyfinandroid.utils.AppConstants
 
 // Modern secure DataStore extension
 private val Context.secureCredentialsDataStore: DataStore<Preferences> by preferencesDataStore(name = "secure_credentials")
@@ -28,11 +29,6 @@ class SecureCredentialManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     
-    companion object {
-        private const val KEY_ALIAS = "JellyfinCredentialKey"
-        private const val TRANSFORMATION = "AES/GCM/NoPadding"
-        private const val IV_LENGTH = 12
-    }
     
     // ✅ FIX: Use modern Android Keystore with DataStore for secure storage
     private val keyStore: KeyStore by lazy {
@@ -42,12 +38,12 @@ class SecureCredentialManager @Inject constructor(
     }
     
     private fun getOrCreateSecretKey(): SecretKey {
-        return if (keyStore.containsAlias(KEY_ALIAS)) {
-            keyStore.getKey(KEY_ALIAS, null) as SecretKey
+        return if (keyStore.containsAlias(AppConstants.Security.KEY_ALIAS)) {
+            keyStore.getKey(AppConstants.Security.KEY_ALIAS, null) as SecretKey
         } else {
             val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
             val keyGenParameterSpec = KeyGenParameterSpec.Builder(
-                KEY_ALIAS,
+                AppConstants.Security.KEY_ALIAS,
                 KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
             )
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
@@ -61,7 +57,7 @@ class SecureCredentialManager @Inject constructor(
     }
     
     private fun encrypt(data: String): String {
-        val cipher = Cipher.getInstance(TRANSFORMATION)
+        val cipher = Cipher.getInstance(AppConstants.Security.ENCRYPTION_TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateSecretKey())
         
         val iv = cipher.iv
@@ -75,10 +71,10 @@ class SecureCredentialManager @Inject constructor(
     private fun decrypt(encryptedData: String): String? {
         return try {
             val combined = Base64.decode(encryptedData, Base64.DEFAULT)
-            val iv = combined.sliceArray(0..IV_LENGTH - 1)
-            val cipherData = combined.sliceArray(IV_LENGTH until combined.size)
+            val iv = combined.sliceArray(0 until AppConstants.Security.IV_LENGTH)
+            val cipherData = combined.sliceArray(AppConstants.Security.IV_LENGTH until combined.size)
             
-            val cipher = Cipher.getInstance(TRANSFORMATION)
+            val cipher = Cipher.getInstance(AppConstants.Security.ENCRYPTION_TRANSFORMATION)
             val spec = GCMParameterSpec(128, iv)
             cipher.init(Cipher.DECRYPT_MODE, getOrCreateSecretKey(), spec)
             
