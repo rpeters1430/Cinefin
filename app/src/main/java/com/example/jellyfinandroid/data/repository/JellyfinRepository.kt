@@ -172,10 +172,7 @@ class JellyfinRepository @Inject constructor(
             
             ApiResult.Success(authResult)
         } catch (e: Exception) {
-            var errorType = getErrorType(e)
-            if (errorType == ErrorType.UNAUTHORIZED) {
-                errorType = ErrorType.AUTHENTICATION
-            }
+            val errorType = mapErrorType(getErrorType(e))
             ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
         }
     }
