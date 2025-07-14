@@ -34,7 +34,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -159,7 +159,7 @@ fun HomeLibraryCard(
     
     Card(
         modifier = modifier
-            .width(140.dp)
+            .width(200.dp) // Increased width for horizontal aspect
             .clickable { },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -176,7 +176,7 @@ fun HomeLibraryCard(
                         ShimmerBox(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(200.dp),
+                                .height(120.dp), // Reduced height for horizontal aspect
                             cornerRadius = 12
                         )
                     },
@@ -184,7 +184,7 @@ fun HomeLibraryCard(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(200.dp)
+                                .height(120.dp) // Reduced height for horizontal aspect
                                 .background(contentTypeColor.copy(alpha = 0.1f)),
                             contentAlignment = Alignment.Center
                         ) {
@@ -199,7 +199,7 @@ fun HomeLibraryCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp)
+                        .height(120.dp) // Reduced height for horizontal aspect (16:10 ratio)
                         .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
                 )
             }
@@ -291,12 +291,12 @@ fun HomeContent(
                     
                     val carouselState = rememberCarouselState { recentMovies.size }
                     
-                    HorizontalMultiBrowseCarousel(
+                    HorizontalUncontainedCarousel(
                         state = carouselState,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(240.dp),
-                        preferredItemWidth = 280.dp,
+                        itemWidth = 280.dp,
                         itemSpacing = 12.dp,
                         contentPadding = PaddingValues(horizontal = 16.dp)
                     ) { index ->

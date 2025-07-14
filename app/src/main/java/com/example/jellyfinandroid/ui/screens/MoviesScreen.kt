@@ -118,9 +118,9 @@ fun MoviesScreen(
     var viewMode by remember { mutableStateOf(MovieViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
     
-    // Filter movies from all items
-    val movieItems = remember(appState.allItems) {
-        appState.allItems.filter { it.type == BaseItemKind.MOVIE }
+    // Filter movies from recently added types data (this is where the movies data actually is)
+    val movieItems = remember(appState.recentlyAddedByTypes) {
+        appState.recentlyAddedByTypes["Movies"] ?: emptyList()
     }
     
     // Apply filtering and sorting

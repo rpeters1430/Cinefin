@@ -115,13 +115,9 @@ fun MusicScreen(
     var viewMode by remember { mutableStateOf(MusicViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
     
-    // Filter music items from all items
-    val musicItems = remember(appState.allItems) {
-        appState.allItems.filter { 
-            it.type == BaseItemKind.AUDIO || 
-            it.type == BaseItemKind.MUSIC_ALBUM || 
-            it.type == BaseItemKind.MUSIC_ARTIST 
-        }
+    // Filter music items from recently added types data (this is where the music data actually is)
+    val musicItems = remember(appState.recentlyAddedByTypes) {
+        appState.recentlyAddedByTypes["Music"] ?: emptyList()
     }
     
     // Apply filtering and sorting

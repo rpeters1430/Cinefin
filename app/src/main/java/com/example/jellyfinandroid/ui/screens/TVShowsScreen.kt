@@ -117,9 +117,9 @@ fun TVShowsScreen(
     var viewMode by remember { mutableStateOf(TVShowViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
     
-    // Filter TV shows from all items
-    val tvShowItems = remember(appState.allItems) {
-        appState.allItems.filter { it.type == BaseItemKind.SERIES }
+    // Filter TV shows from recently added types data (this is where the TV series data actually is)
+    val tvShowItems = remember(appState.recentlyAddedByTypes) {
+        appState.recentlyAddedByTypes["TV Shows"] ?: emptyList()
     }
     
     // Apply filtering and sorting
