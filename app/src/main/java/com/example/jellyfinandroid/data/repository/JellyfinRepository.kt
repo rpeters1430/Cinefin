@@ -3,6 +3,7 @@ package com.example.jellyfinandroid.data.repository
 import android.util.Log
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.di.JellyfinClientFactory
+import retrofit2.HttpException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -89,22 +90,27 @@ class JellyfinRepository @Inject constructor(
         if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
             throw e
         }
-        
+
         return handleException(e, defaultMessage)
     }
-    
-    private fun <T> handleException(e: Exception, defaultMessage: String = "An error occurred"): ApiResult.Error<T> {
-        val errorType = when {
-            e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException -> ErrorType.OPERATION_CANCELLED
-            e is java.net.UnknownHostException -> ErrorType.NETWORK
-            e is java.net.ConnectException -> ErrorType.NETWORK  
-            e is java.net.SocketTimeoutException -> ErrorType.NETWORK
-            e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
-            e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-            e.message?.contains("404") == true -> ErrorType.NOT_FOUND
-            e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
+
+    private fun getErrorType(e: Throwable): ErrorType {
+        return when (e) {
+            is java.util.concurrent.CancellationException, is kotlinx.coroutines.CancellationException -> ErrorType.OPERATION_CANCELLED
+            is java.net.UnknownHostException, is java.net.ConnectException, is java.net.SocketTimeoutException -> ErrorType.NETWORK
+            is HttpException -> when (e.code()) {
+                401 -> ErrorType.UNAUTHORIZED
+                403 -> ErrorType.FORBIDDEN
+                404 -> ErrorType.NOT_FOUND
+                in 500..599 -> ErrorType.SERVER_ERROR
+                else -> ErrorType.NETWORK
+            }
             else -> ErrorType.NETWORK
         }
+    }
+
+    private fun <T> handleException(e: Exception, defaultMessage: String = "An error occurred"): ApiResult.Error<T> {
+        val errorType = getErrorType(e)
         val errorMessage = when (errorType) {
             ErrorType.NETWORK -> "Cannot connect to server. Please check your internet connection and server URL."
             ErrorType.UNAUTHORIZED -> "Authentication failed. Please check your credentials."
@@ -166,10 +172,9 @@ class JellyfinRepository @Inject constructor(
             
             ApiResult.Success(authResult)
         } catch (e: Exception) {
-            val errorType = when {
-                e.message?.contains("401") == true -> ErrorType.AUTHENTICATION
-                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                else -> ErrorType.NETWORK
+            var errorType = getErrorType(e)
+            if (errorType == ErrorType.UNAUTHORIZED) {
+                errorType = ErrorType.AUTHENTICATION
             }
             ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
         }
@@ -188,13 +193,7 @@ class JellyfinRepository @Inject constructor(
             
             ApiResult.Success(QuickConnectResult(code = code, secret = secret))
         } catch (e: Exception) {
-            val errorType = when {
-                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
-                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
-                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
-                else -> ErrorType.NETWORK
-            }
+            val errorType = getErrorType(e)
             ApiResult.Error("Failed to initiate Quick Connect: ${e.message}", e, errorType)
         }
     }
@@ -208,12 +207,7 @@ class JellyfinRepository @Inject constructor(
             val state = if (result.authenticated) "Approved" else "Pending"
             ApiResult.Success(QuickConnectState(state = state))
         } catch (e: Exception) {
-            val errorType = when {
-                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
-                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
-                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                else -> ErrorType.NETWORK
-            }
+            val errorType = getErrorType(e)
 
             if (errorType == ErrorType.NOT_FOUND) {
                 ApiResult.Success(QuickConnectState(state = "Expired"))
@@ -281,10 +275,9 @@ class JellyfinRepository @Inject constructor(
 
             ApiResult.Success(mockAuthResult)
         } catch (e: Exception) {
-            val errorType = when {
-                e.message?.contains("401") == true -> ErrorType.AUTHENTICATION
-                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                else -> ErrorType.NETWORK
+            var errorType = getErrorType(e)
+            if (errorType == ErrorType.UNAUTHORIZED) {
+                errorType = ErrorType.AUTHENTICATION
             }
             ApiResult.Error("Quick Connect authentication failed: ${e.message}", e, errorType)
         }
@@ -356,13 +349,7 @@ class JellyfinRepository @Inject constructor(
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
-            val errorType = when {
-                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
-                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
-                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
-                else -> ErrorType.NETWORK
-            }
+            val errorType = getErrorType(e)
             ApiResult.Error("Failed to load items: ${e.message}", e, errorType)
         }
     }
@@ -420,13 +407,7 @@ class JellyfinRepository @Inject constructor(
             }
             
             Log.e("JellyfinRepository", "getRecentlyAdded: Failed to load items", e)
-            val errorType = when {
-                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
-                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
-                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
-                else -> ErrorType.NETWORK
-            }
+            val errorType = getErrorType(e)
             ApiResult.Error("Failed to load recently added items: ${e.message}", e, errorType)
         }
     }
@@ -487,7 +468,7 @@ class JellyfinRepository @Inject constructor(
                 }
                 
                 // If it's a 401 error and we have saved credentials, try to re-authenticate
-                if (e.message?.contains("401") == true && attempt < maxRetries) {
+                if (e is HttpException && e.code() == 401 && attempt < maxRetries) {
                     Log.w("JellyfinRepository", "Got 401 error on attempt ${attempt + 1}, attempting to re-authenticate")
                     
                     // Try to re-authenticate
@@ -664,13 +645,7 @@ class JellyfinRepository @Inject constructor(
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
-            val errorType = when {
-                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
-                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
-                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
-                else -> ErrorType.NETWORK
-            }
+            val errorType = getErrorType(e)
             ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
         }
     }
@@ -702,13 +677,7 @@ class JellyfinRepository @Inject constructor(
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
-            val errorType = when {
-                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
-                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
-                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
-                else -> ErrorType.NETWORK
-            }
+            val errorType = getErrorType(e)
             ApiResult.Error("Failed to load seasons: ${e.message}", e, errorType)
         }
     }
@@ -740,13 +709,7 @@ class JellyfinRepository @Inject constructor(
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
-            val errorType = when {
-                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
-                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
-                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
-                else -> ErrorType.NETWORK
-            }
+            val errorType = getErrorType(e)
             ApiResult.Error("Failed to load episodes: ${e.message}", e, errorType)
         }
     }
@@ -781,13 +744,7 @@ class JellyfinRepository @Inject constructor(
                 ApiResult.Error("Series not found", errorType = ErrorType.NOT_FOUND)
             }
         } catch (e: Exception) {
-            val errorType = when {
-                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
-                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
-                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
-                else -> ErrorType.NETWORK
-            }
+            val errorType = getErrorType(e)
             ApiResult.Error("Failed to load series details: ${e.message}", e, errorType)
         }
     }
@@ -831,13 +788,7 @@ class JellyfinRepository @Inject constructor(
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
-            val errorType = when {
-                e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
-                e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                e.message?.contains("404") == true -> ErrorType.NOT_FOUND
-                e.message?.contains("5") == true -> ErrorType.SERVER_ERROR
-                else -> ErrorType.NETWORK
-            }
+            val errorType = getErrorType(e)
             ApiResult.Error("Search failed: ${e.message}", e, errorType)
         }
     }
