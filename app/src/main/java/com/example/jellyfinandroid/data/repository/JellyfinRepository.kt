@@ -103,9 +103,9 @@ class JellyfinRepository @Inject constructor(
                 403 -> ErrorType.FORBIDDEN
                 404 -> ErrorType.NOT_FOUND
                 in 500..599 -> ErrorType.SERVER_ERROR
-                else -> ErrorType.NETWORK
+                else -> ErrorType.UNKNOWN
             }
-            else -> ErrorType.NETWORK
+            else -> ErrorType.UNKNOWN
         }
     }
 
