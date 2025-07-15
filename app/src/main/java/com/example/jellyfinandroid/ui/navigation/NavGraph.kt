@@ -367,24 +367,22 @@ fun JellyfinNavGraph(
             // Find the movie from the loaded items
             val movie = appState.allItems.find { it.id.toString() == movieId }
 
-            LaunchedEffect(movieId) {
+            LaunchedEffect(movieId, movie) {
                 if (movie == null) {
                     viewModel.getMovieDetails(movieId)
                 }
             }
 
-            val currentMovie = appState.allItems.find { it.id.toString() == movieId }
-
-            if (currentMovie != null) {
+            if (movie != null) {
                 // Get related items (movies from same genre or similar)
                 val relatedItems = appState.allItems.filter { item ->
                     item.id.toString() != movieId &&
                     item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
-                    currentMovie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
+                    movie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
                 }.take(10)
 
                 MovieDetailScreen(
-                    movie = currentMovie,
+                    movie = movie,
                     getImageUrl = { item -> viewModel.getImageUrl(item) },
                     getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
                     onBackClick = { navController.popBackStack() },
