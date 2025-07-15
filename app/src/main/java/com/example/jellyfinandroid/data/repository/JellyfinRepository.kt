@@ -294,9 +294,7 @@ class JellyfinRepository @Inject constructor(
     private fun generateQuickConnectCode(): String {
         val secureRandom = SecureRandom()
         val chars = QuickConnectConstants.CODE_CHARACTERS
-        return (1..QuickConnectConstants.CODE_LENGTH)
-            .map { chars[secureRandom.nextInt(chars.length)] }
-            .joinToString("")
+return List(QuickConnectConstants.CODE_LENGTH) { chars.random(secureRandom) }.joinToString("")
     }
     
     suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> {
