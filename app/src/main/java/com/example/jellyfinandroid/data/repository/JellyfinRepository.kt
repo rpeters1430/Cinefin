@@ -720,7 +720,7 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         }
     }
     
-    suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> {
+    private suspend fun getItemDetailsById(itemId: String, itemTypeName: String): ApiResult<BaseItemDto> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
@@ -731,67 +731,36 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
             return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
         }
 
-        val seriesUuid = runCatching { UUID.fromString(seriesId) }.getOrNull()
-        if (seriesUuid == null) {
-            return ApiResult.Error("Invalid series ID", errorType = ErrorType.NOT_FOUND)
+        val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull()
+        if (itemUuid == null) {
+            return ApiResult.Error("Invalid $itemTypeName ID", errorType = ErrorType.NOT_FOUND)
         }
 
         return try {
             val client = getClient(server.url, server.accessToken)
             val response = client.itemsApi.getItems(
                 userId = userUuid,
-                ids = listOf(seriesUuid),
+                ids = listOf(itemUuid),
                 limit = 1
             )
             val item = response.content.items?.firstOrNull()
             if (item != null) {
                 ApiResult.Success(item)
             } else {
-                ApiResult.Error("Series not found", errorType = ErrorType.NOT_FOUND)
+                ApiResult.Error("$itemTypeName not found", errorType = ErrorType.NOT_FOUND)
             }
         } catch (e: Exception) {
             val errorType = getErrorType(e)
-            ApiResult.Error("Failed to load series details: ${e.message}", e, errorType)
+            ApiResult.Error("Failed to load $itemTypeName details: ${e.message}", e, errorType)
         }
     }
 
+    suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> {
+        return getItemDetailsById(seriesId, "series")
+    }
+
     suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> {
-        val server = _currentServer.value
-        if (server?.accessToken == null || server.userId == null) {
-            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
-        }
-
-        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
-        if (userUuid == null) {
-            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
-        }
-
-        val movieUuid = runCatching { UUID.fromString(movieId) }.getOrNull()
-        if (movieUuid == null) {
-            return ApiResult.Error("Invalid movie ID", errorType = ErrorType.NOT_FOUND)
-        }
-
-        return try {
-            val client = getClient(server.url, server.accessToken)
-            val response = client.itemsApi.getItems(
-                userId = userUuid,
-                ids = listOf(movieUuid),
-                additionalFields = listOf(
-                    ItemFields.MEDIA_SOURCES,
-                    ItemFields.MEDIA_STREAMS
-                ),
-                limit = 1
-            )
-            val item = response.content.items?.firstOrNull()
-            if (item != null) {
-                ApiResult.Success(item)
-            } else {
-                ApiResult.Error("Movie not found", errorType = ErrorType.NOT_FOUND)
-            }
-        } catch (e: Exception) {
-            val errorType = getErrorType(e)
-            ApiResult.Error("Failed to load movie details: ${e.message}", e, errorType)
-        }
+        return getItemDetailsById(movieId, "movie")
     }
     
     suspend fun searchItems(

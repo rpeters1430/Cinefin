@@ -43,6 +43,11 @@ import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
 import com.example.jellyfinandroid.ui.utils.MediaPlayerUtils
 import com.example.jellyfinandroid.ui.utils.ShareUtils
 import com.example.jellyfinandroid.ui.utils.MediaDownloadManager
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
 import android.util.Log
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -365,53 +370,57 @@ fun JellyfinNavGraph(
                 lifecycle = lifecycleOwner.lifecycle,
                 minActiveState = Lifecycle.State.STARTED
             )
-            val movieState by detailViewModel.state.collectAsStateWithLifecycle()
+            
+            // Find the movie from the loaded items
+            val movie = appState.allItems.find { it.id.toString() == movieId }
 
-            LaunchedEffect(movieId) { detailViewModel.loadMovieDetails(movieId) }
-
-            when {
-                movieState.isLoading -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+            LaunchedEffect(movieId, movie) {
+                if (movie == null) {
+                    viewModel.getMovieDetails(movieId)
                 }
-                movieState.movie != null -> {
-                    val movie = movieState.movie!!
-                    val relatedItems = appState.allItems.filter { item ->
-                        item.id.toString() != movieId &&
-                            item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
-                            movie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
-                    }.take(10)
+            }
 
-                    MovieDetailScreen(
-                        movie = movie,
-                        getImageUrl = { item -> mainViewModel.getImageUrl(item) },
-                        getBackdropUrl = { item -> mainViewModel.getBackdropUrl(item) },
-                        onBackClick = { navController.popBackStack() },
-                        onPlayClick = { movieItem ->
-                            try {
-                                val streamUrl = mainViewModel.getStreamUrl(movieItem)
-                                if (streamUrl != null) {
-                                    MediaPlayerUtils.playMedia(context = navController.context, streamUrl = streamUrl, item = movieItem)
-                                    Log.d("NavGraph", "Playing movie: ${movieItem.name}")
-                                } else {
-                                    Log.e("NavGraph", "No stream URL available for movie: ${movieItem.name}")
-                                }
-                            } catch (e: Exception) {
-                                Log.e("NavGraph", "Failed to play movie: ${e.message}", e)
+            if (movie != null) {
+                // Get related items (movies from same genre or similar)
+                val relatedItems = appState.allItems.filter { item ->
+                    item.id.toString() != movieId &&
+                    item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
+                    movie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
+                }.take(10)
+
+                MovieDetailScreen(
+                    movie = movie,
+                    getImageUrl = { item -> viewModel.getImageUrl(item) },
+                    getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
+                    onBackClick = { navController.popBackStack() },
+                    onPlayClick = { movieItem ->
+                        try {
+                            val streamUrl = viewModel.getStreamUrl(movieItem)
+                            if (streamUrl != null) {
+                                MediaPlayerUtils.playMedia(context = navController.context, streamUrl = streamUrl, item = movieItem)
+                                Log.d("NavGraph", "Playing movie: ${movieItem.name}")
+                            } else {
+                                Log.e("NavGraph", "No stream URL available for movie: ${movieItem.name}")
                             }
-                        },
-                        onFavoriteClick = { movieItem ->
-                            mainViewModel.toggleFavorite(movieItem)
-                        },
-                        onShareClick = { movieItem ->
-                            ShareUtils.shareMedia(context = navController.context, item = movieItem)
-                        },
-                        relatedItems = relatedItems
-                    )
+                        } catch (e: Exception) {
+                            Log.e("NavGraph", "Failed to play movie: ${e.message}", e)
+                        }
+                    },
+                    onFavoriteClick = { movieItem ->
+                        viewModel.toggleFavorite(movieItem)
+                    },
+                    onShareClick = { movieItem ->
+                        ShareUtils.shareMedia(context = navController.context, item = movieItem)
+                    },
+                    relatedItems = relatedItems
+                )
+            } else if (appState.isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
-                movieState.errorMessage != null -> {
-                    LaunchedEffect(Unit) { navController.popBackStack() }
+            } else {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(appState.errorMessage ?: "Movie not found")
                 }
             }
         }
