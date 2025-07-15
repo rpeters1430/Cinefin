@@ -390,6 +390,32 @@ class MainAppViewModel @Inject constructor(
         return repository.getDirectStreamUrl(item.id.toString(), container)
     }
 
+    fun getMovieDetails(movieId: String) {
+        viewModelScope.launch {
+            _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
+            when (val result = repository.getMovieDetails(movieId)) {
+                is ApiResult.Success -> {
+                    val existing = _appState.value.allItems
+                    val updated = if (existing.any { it.id.toString() == movieId }) {
+                        existing.map { if (it.id.toString() == movieId) result.data else it }
+                    } else {
+                        existing + result.data
+                    }
+                    _appState.value = _appState.value.copy(allItems = updated, isLoading = false)
+                }
+                is ApiResult.Error -> {
+                    _appState.value = _appState.value.copy(
+                        isLoading = false,
+                        errorMessage = "Failed to load movie details: ${result.message}"
+                    )
+                }
+                is ApiResult.Loading -> {
+                    // no-op
+                }
+            }
+        }
+    }
+
     // Navigation compatibility methods - no-op for now
     fun loadTVShowDetails(seriesId: String) {
         // Navigation compatibility method - actual details loading handled by dedicated ViewModels
