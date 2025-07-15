@@ -39,7 +39,7 @@ class MovieDetailViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        errorMessage = "Failed to load movie details: ${result.message}"
+errorMessage = result.message
                     )
                 }
                 is ApiResult.Loading -> {
