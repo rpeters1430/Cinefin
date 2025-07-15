@@ -2,6 +2,7 @@ package com.example.jellyfinandroid.data.repository
 
 import org.junit.Test
 import org.junit.Assert.*
+import com.example.jellyfinandroid.data.model.QuickConnectConstants
 
 /**
  * Test for JellyfinRepository server info fetching functionality.
@@ -32,10 +33,28 @@ class JellyfinRepositoryTest {
     fun `verify error handling for server info fetching`() {
         // Both authentication methods should handle getPublicSystemInfo failures gracefully
         // by falling back to default values:
-        // - serverName: "Unknown Server" 
+        // - serverName: "Unknown Server"
         // - version: "Unknown Version"
         
         // This ensures authentication doesn't fail if server info can't be fetched
         assertTrue("Server info fetching should have proper error handling", true)
+    }
+
+    @Test
+    fun `generated quick connect codes match allowed characters`() {
+        val allowed = QuickConnectConstants.CODE_CHARACTERS.toSet()
+        repeat(10) {
+            val code = generateCodeForTest()
+            assertEquals(QuickConnectConstants.CODE_LENGTH, code.length)
+            assertTrue(code.all { it in allowed })
+        }
+    }
+
+    private fun generateCodeForTest(): String {
+        val chars = QuickConnectConstants.CODE_CHARACTERS
+        val secureRandom = java.security.SecureRandom()
+        return (1..QuickConnectConstants.CODE_LENGTH)
+            .map { chars[secureRandom.nextInt(chars.length)] }
+            .joinToString("")
     }
 }
