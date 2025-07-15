@@ -316,6 +316,24 @@ class JellyfinRepositoryTest {
         assertTrue("Should return empty list for blank query", (result as ApiResult.Success).data.isEmpty())
     }
 
+    @Test
+    fun `getMovieDetails returns movie with media info`() = runTest {
+        // Arrange
+        setupAuthenticatedState()
+        val movie = createMockMovie("Detail Movie")
+        val queryResult = BaseItemDtoQueryResult(items = listOf(movie), totalRecordCount = 1)
+        val mockResponse = mockk<Response<BaseItemDtoQueryResult>>()
+        every { mockResponse.content } returns queryResult
+coEvery { mockItemsApi.getItems(userId = any(), ids = any(), additionalFields = any(), limit = any()) } returns mockResponse
+
+        // Act
+        val result = repository.getMovieDetails(movie.id.toString())
+
+        // Assert
+        assertTrue(result is ApiResult.Success)
+        assertEquals(movie.id, (result as ApiResult.Success).data.id)
+    }
+
     private fun setupAuthenticatedState() {
         val mockServer = JellyfinServer(
             id = "test-server-id",
