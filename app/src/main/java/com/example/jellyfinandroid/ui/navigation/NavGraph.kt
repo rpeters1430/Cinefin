@@ -34,6 +34,7 @@ import com.example.jellyfinandroid.ui.screens.TVSeasonScreen
 import com.example.jellyfinandroid.ui.screens.TVShowsScreen
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesViewModel
+import com.example.jellyfinandroid.ui.viewmodel.MovieDetailViewModel
 import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
 import com.example.jellyfinandroid.ui.utils.MediaPlayerUtils
 import com.example.jellyfinandroid.ui.utils.ShareUtils
@@ -352,32 +353,33 @@ fun JellyfinNavGraph(
             arguments = listOf(navArgument(Screen.MOVIE_ID_ARG) { type = NavType.StringType })
         ) { backStackEntry ->
             val movieId = backStackEntry.arguments?.getString(Screen.MOVIE_ID_ARG) ?: return@composable
-            val viewModel = hiltViewModel<MainAppViewModel>()
+            val mainViewModel = hiltViewModel<MainAppViewModel>()
+            val detailViewModel = hiltViewModel<MovieDetailViewModel>()
+
             val lifecycleOwner = LocalLifecycleOwner.current
-            val appState by viewModel.appState.collectAsStateWithLifecycle(
+            val appState by mainViewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
                 minActiveState = Lifecycle.State.STARTED
             )
-            
-            // Find the movie from the loaded items
-            val movie = appState.allItems.find { it.id.toString() == movieId }
-            
-            if (movie != null) {
-                // Get related items (movies from same genre or similar)
+            val movieState by detailViewModel.state.collectAsStateWithLifecycle()
+
+            LaunchedEffect(movieId) { detailViewModel.loadMovieDetails(movieId) }
+
+            movieState.movie?.let { movie ->
                 val relatedItems = appState.allItems.filter { item ->
-                    item.id.toString() != movieId && 
-                    item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
-                    movie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
+                    item.id.toString() != movieId &&
+                        item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
+                        movie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
                 }.take(10)
-                
+
                 MovieDetailScreen(
                     movie = movie,
-                    getImageUrl = { item -> viewModel.getImageUrl(item) },
-                    getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
+                    getImageUrl = { item -> mainViewModel.getImageUrl(item) },
+                    getBackdropUrl = { item -> mainViewModel.getBackdropUrl(item) },
                     onBackClick = { navController.popBackStack() },
                     onPlayClick = { movieItem ->
                         try {
-                            val streamUrl = viewModel.getStreamUrl(movieItem)
+                            val streamUrl = mainViewModel.getStreamUrl(movieItem)
                             if (streamUrl != null) {
                                 MediaPlayerUtils.playMedia(context = navController.context, streamUrl = streamUrl, item = movieItem)
                                 Log.d("NavGraph", "Playing movie: ${movieItem.name}")
@@ -389,18 +391,15 @@ fun JellyfinNavGraph(
                         }
                     },
                     onFavoriteClick = { movieItem ->
-                        viewModel.toggleFavorite(movieItem)
+                        mainViewModel.toggleFavorite(movieItem)
                     },
                     onShareClick = { movieItem ->
                         ShareUtils.shareMedia(context = navController.context, item = movieItem)
                     },
                     relatedItems = relatedItems
                 )
-            } else {
-                // Movie not found, show error or navigate back
-                LaunchedEffect(Unit) {
-                    navController.popBackStack()
-                }
+            } ?: LaunchedEffect(Unit) {
+                navController.popBackStack()
             }
         }
         

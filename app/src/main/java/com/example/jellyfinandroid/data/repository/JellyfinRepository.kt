@@ -24,6 +24,7 @@ import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.SortOrder
+import org.jellyfin.sdk.model.api.ItemFields
 import com.example.jellyfinandroid.data.model.QuickConnectConstants
 import java.util.UUID
 import java.security.SecureRandom
@@ -751,6 +752,45 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         } catch (e: Exception) {
             val errorType = getErrorType(e)
             ApiResult.Error("Failed to load series details: ${e.message}", e, errorType)
+        }
+    }
+
+    suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> {
+        val server = _currentServer.value
+        if (server?.accessToken == null || server.userId == null) {
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        if (userUuid == null) {
+            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val movieUuid = runCatching { UUID.fromString(movieId) }.getOrNull()
+        if (movieUuid == null) {
+            return ApiResult.Error("Invalid movie ID", errorType = ErrorType.NOT_FOUND)
+        }
+
+        return try {
+            val client = getClient(server.url, server.accessToken)
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                ids = listOf(movieUuid),
+                additionalFields = listOf(
+                    ItemFields.MEDIA_SOURCES,
+                    ItemFields.MEDIA_STREAMS
+                ),
+                limit = 1
+            )
+            val item = response.content.items?.firstOrNull()
+            if (item != null) {
+                ApiResult.Success(item)
+            } else {
+                ApiResult.Error("Movie not found", errorType = ErrorType.NOT_FOUND)
+            }
+        } catch (e: Exception) {
+            val errorType = getErrorType(e)
+            ApiResult.Error("Failed to load movie details: ${e.message}", e, errorType)
         }
     }
     
