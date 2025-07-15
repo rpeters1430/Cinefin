@@ -30,16 +30,8 @@ import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import com.example.jellyfinandroid.data.SecureCredentialManager
-
-// Quick Connect data classes
-data class QuickConnectResult(
-    val code: String,
-    val secret: String
-)
-
-data class QuickConnectState(
-    val state: String // "Pending", "Approved", "Denied", "Expired"
-)
+import com.example.jellyfinandroid.data.model.QuickConnectResult
+import com.example.jellyfinandroid.data.model.QuickConnectState
 
 sealed class ApiResult<T> {
     data class Success<T>(val data: T) : ApiResult<T>()
