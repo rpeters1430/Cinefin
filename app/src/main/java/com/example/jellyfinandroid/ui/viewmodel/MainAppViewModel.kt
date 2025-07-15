@@ -392,22 +392,27 @@ class MainAppViewModel @Inject constructor(
 
     fun getMovieDetails(movieId: String) {
         viewModelScope.launch {
-            _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
+            _appState.update { it.copy(isLoading = true, errorMessage = null) }
             when (val result = repository.getMovieDetails(movieId)) {
                 is ApiResult.Success -> {
-                    val existing = _appState.value.allItems
-                    val updated = if (existing.any { it.id.toString() == movieId }) {
-                        existing.map { if (it.id.toString() == movieId) result.data else it }
-                    } else {
-                        existing + result.data
+                    _appState.update { currentState ->
+                        val items = currentState.allItems.toMutableList()
+                        val index = items.indexOfFirst { it.id.toString() == movieId }
+                        if (index != -1) {
+                            items[index] = result.data
+                        } else {
+                            items.add(result.data)
+                        }
+                        currentState.copy(allItems = items, isLoading = false)
                     }
-                    _appState.value = _appState.value.copy(allItems = updated, isLoading = false)
                 }
                 is ApiResult.Error -> {
-                    _appState.value = _appState.value.copy(
-                        isLoading = false,
-                        errorMessage = "Failed to load movie details: ${result.message}"
-                    )
+                    _appState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "Failed to load movie details: ${result.message}"
+                        )
+                    }
                 }
                 is ApiResult.Loading -> {
                     // no-op
