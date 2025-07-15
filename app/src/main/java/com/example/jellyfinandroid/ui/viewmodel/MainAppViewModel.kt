@@ -397,9 +397,12 @@ class MainAppViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     _appState.update { currentState ->
                         val items = currentState.allItems.toMutableList()
-                        val index = items.indexOfFirst { it.id.toString() == movieId }
-                        if (index != -1) {
-                            items[index] = result.data
+val items = currentState.allItems.associateBy { it.id.toString() }.toMutableMap()
+        if (items.containsKey(movieId)) {
+            items[movieId] = result.data
+        } else {
+            items[result.data.id.toString()] = result.data
+        }
                         } else {
                             items.add(result.data)
                         }
