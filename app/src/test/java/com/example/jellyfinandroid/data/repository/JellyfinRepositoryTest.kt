@@ -324,7 +324,7 @@ class JellyfinRepositoryTest {
         val queryResult = BaseItemDtoQueryResult(items = listOf(movie), totalRecordCount = 1)
         val mockResponse = mockk<Response<BaseItemDtoQueryResult>>()
         every { mockResponse.content } returns queryResult
-        coEvery { mockItemsApi.getItems(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns mockResponse
+coEvery { mockItemsApi.getItems(userId = any(), ids = any(), additionalFields = any(), limit = any()) } returns mockResponse
 
         // Act
         val result = repository.getMovieDetails(movie.id.toString())
