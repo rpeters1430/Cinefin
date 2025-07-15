@@ -65,9 +65,9 @@ class SecureCredentialManager @Inject constructor(
         
         // Combine IV + encrypted data and encode to Base64
         val combined = iv + encryptedData
-        return Base64.encodeToString(combined, Base64.DEFAULT)
+        return Base64.encodeToString(combined, Base64.NO_WRAP)
     }
-    
+
     private fun decrypt(encryptedData: String): String? {
         return try {
             val combined = Base64.decode(encryptedData, Base64.DEFAULT)
