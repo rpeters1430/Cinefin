@@ -361,6 +361,8 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
     }
     
     suspend fun getRecentlyAdded(limit: Int = 20): ApiResult<List<BaseItemDto>> {
+        validateToken() // Ensure the token is valid before making the API call
+
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
@@ -373,7 +375,7 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
 
         return try {
             Log.d("JellyfinRepository", "getRecentlyAdded: Requesting $limit items from server")
-            
+
             val items = executeWithRetry {
                 val client = getClient(server.url, server.accessToken)
                 val response = client.itemsApi.getItems(
@@ -396,22 +398,22 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
                 )
                 response.content.items ?: emptyList()
             }
-            
+
             Log.d("JellyfinRepository", "getRecentlyAdded: Retrieved ${items.size} items")
-            
+
             // Log details of each item
             items.forEachIndexed { index, item ->
                 val dateFormatted = item.dateCreated?.toString() ?: "Unknown date"
                 Log.d("JellyfinRepository", "getRecentlyAdded[$index]: ${item.type} - '${item.name}' (Created: $dateFormatted)")
             }
-            
+
             ApiResult.Success(items)
         } catch (e: Exception) {
             // ✅ FIX: Let cancellation exceptions bubble up instead of converting to ApiResult.Error
             if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
                 throw e
             }
-            
+
             Log.e("JellyfinRepository", "getRecentlyAdded: Failed to load items", e)
             val errorType = getErrorType(e)
             ApiResult.Error("Failed to load recently added items: ${e.message}", e, errorType)
@@ -422,8 +424,9 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         val server = _currentServer.value ?: return false
         
         try {
-            // Clear any cached clients before re-authenticating
+            // Clear any cached clients and tokens before re-authenticating
             clientFactory.invalidateClient()
+            tokenManager.clearToken() // Ensure the expired token is cleared
             
             // Get saved password for the current server and username
             val savedPassword = secureCredentialManager.getPassword(server.url, server.username ?: "")
@@ -438,14 +441,11 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
             when (val authResult = authenticateUser(server.url, server.username ?: "", savedPassword)) {
                 is ApiResult.Success -> {
                     Log.d("JellyfinRepository", "Re-authentication successful")
+                    tokenManager.saveToken(authResult.data.token) // Save the new token
                     return true
                 }
                 is ApiResult.Error -> {
-                    Log.w("JellyfinRepository", "Re-authentication failed: ${authResult.message}")
-                    return false
-                }
-                is ApiResult.Loading -> {
-                    Log.w("JellyfinRepository", "Re-authentication is loading (unexpected)")
+                    Log.w("JellyfinRepository", "Re-authentication failed: ${authResult.errorMessage}")
                     return false
                 }
             }
@@ -679,7 +679,8 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
                 parentId = seriesUuid,
                 includeItemTypes = listOf(BaseItemKind.SEASON),
                 sortBy = listOf(ItemSortBy.SORT_NAME),
-                sortOrder = listOf(SortOrder.ASCENDING)
+                sortOrder = listOf(SortOrder.ASCENDING),
+                fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.PRODUCTION_YEAR, ItemFields.COMMUNITY_RATING)
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
@@ -711,7 +712,8 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
                 parentId = seasonUuid,
                 includeItemTypes = listOf(BaseItemKind.EPISODE),
                 sortBy = listOf(ItemSortBy.INDEX_NUMBER),
-                sortOrder = listOf(SortOrder.ASCENDING)
+                sortOrder = listOf(SortOrder.ASCENDING),
+                fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.PRODUCTION_YEAR, ItemFields.COMMUNITY_RATING)
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
@@ -834,9 +836,38 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         }
     }
     
+    private suspend fun <T> safeApiCall(operation: suspend () -> T): T {
+        try {
+            return operation()
+        } catch (e: HttpException) {
+            if (e.code() == 401) {
+                Log.w("JellyfinRepository", "401 Unauthorized detected. AccessToken: ${_currentServer.value?.accessToken}, Endpoint: ${e.response()?.raw()?.request?.url}")
+                logout() // Clear session and redirect to login
+                throw e
+            }
+            throw e
+        }
+    }
+
+    private fun isTokenExpired(): Boolean {
+        val server = _currentServer.value ?: return true
+        val loginTimestamp = server.loginTimestamp ?: return true
+        val currentTime = System.currentTimeMillis()
+        val tokenValidityDuration = 60 * 60 * 1000 // 1 hour in milliseconds
+        return (currentTime - loginTimestamp) > tokenValidityDuration
+    }
+
+    private fun validateToken() {
+        if (isTokenExpired()) {
+            Log.w("JellyfinRepository", "Token expired. Clearing session.")
+            logout()
+        }
+    }
+
     fun logout() {
         _currentServer.value = null
         _isConnected.value = false
+        secureCredentialManager.clearToken()
     }
     
     suspend fun toggleFavorite(itemId: String, isFavorite: Boolean): ApiResult<Boolean> {
