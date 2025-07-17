@@ -117,9 +117,16 @@ fun TVShowsScreen(
     var viewMode by remember { mutableStateOf(TVShowViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
     
-    // Filter TV shows from recently added types data (this is where the TV series data actually is)
-    val tvShowItems = remember(appState.recentlyAddedByTypes) {
-        appState.recentlyAddedByTypes["TV Shows"] ?: emptyList()
+    // Load TV shows when screen is first displayed
+    LaunchedEffect(Unit) {
+        if (appState.allTVShows.isEmpty() && !appState.isLoadingTVShows) {
+            viewModel.loadAllTVShows(reset = true)
+        }
+    }
+    
+    // Get all TV shows from the dedicated allTVShows field
+    val tvShowItems = remember(appState.allTVShows) {
+        appState.allTVShows
     }
     
     // Apply filtering and sorting
@@ -233,7 +240,7 @@ fun TVShowsScreen(
                         }
                     }
                     
-                    IconButton(onClick = { viewModel.refreshLibraryItems() }) {
+                    IconButton(onClick = { viewModel.refreshTVShows() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = stringResource(id = R.string.refresh)
@@ -284,7 +291,7 @@ fun TVShowsScreen(
             
             // Content
             when {
-                appState.isLoading -> {
+                appState.isLoadingTVShows && tvShowItems.isEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -352,9 +359,9 @@ fun TVShowsScreen(
                         viewMode = viewMode,
                         getImageUrl = { item -> viewModel.getImageUrl(item) },
                         onTVShowClick = onTVShowClick,
-                        isLoadingMore = appState.isLoadingMore,
-                        hasMoreItems = appState.hasMoreItems,
-                        onLoadMore = { viewModel.loadMoreItems() }
+                        isLoadingMore = appState.isLoadingTVShows,
+                        hasMoreItems = appState.hasMoreTVShows,
+                        onLoadMore = { viewModel.loadMoreTVShows() }
                     )
                 }
             }

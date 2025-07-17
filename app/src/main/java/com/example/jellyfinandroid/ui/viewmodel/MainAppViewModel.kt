@@ -24,6 +24,10 @@ data class MainAppState(
     val searchQuery: String = "",
     val isSearching: Boolean = false,
     val allItems: List<BaseItemDto> = emptyList(),
+    val allTVShows: List<BaseItemDto> = emptyList(),
+    val isLoadingTVShows: Boolean = false,
+    val hasMoreTVShows: Boolean = true,
+    val tvShowsPage: Int = 0,
     val isLoadingMore: Boolean = false,
     val hasMoreItems: Boolean = true,
     val currentPage: Int = 0,
@@ -139,6 +143,10 @@ class MainAppViewModel @Inject constructor(
             // Load initial page of items for library type screens
             Log.d("MainAppViewModel", "loadInitialData: Loading library items page")
             loadLibraryItemsPage(reset = true)
+            
+            // Load all TV shows for TV Shows screen
+            Log.d("MainAppViewModel", "loadInitialData: Loading all TV shows")
+            loadAllTVShows(reset = true)
             
             _appState.value = _appState.value.copy(isLoading = false)
             Log.d("MainAppViewModel", "loadInitialData: Completed loading all data")
@@ -478,6 +486,87 @@ class MainAppViewModel @Inject constructor(
         }
     }
     
+    /**
+     * Loads all TV shows with pagination support
+     */
+    fun loadAllTVShows(reset: Boolean = false) {
+        viewModelScope.launch {
+            val currentState = _appState.value
+            
+            if (reset) {
+                Log.d("MainAppViewModel", "loadAllTVShows: Resetting and loading first page")
+                _appState.value = currentState.copy(
+                    allTVShows = emptyList(),
+                    tvShowsPage = 0,
+                    hasMoreTVShows = true,
+                    isLoadingTVShows = true
+                )
+            } else {
+                if (currentState.isLoadingTVShows || !currentState.hasMoreTVShows) {
+                    return@launch
+                }
+                Log.d("MainAppViewModel", "loadAllTVShows: Loading next page")
+                _appState.value = currentState.copy(isLoadingTVShows = true)
+            }
+            
+            val pageSize = 50
+            val page = if (reset) 0 else currentState.tvShowsPage + 1
+            val startIndex = page * pageSize
+            
+            Log.d("MainAppViewModel", "loadAllTVShows: Requesting page $page (startIndex: $startIndex, limit: $pageSize)")
+            
+            when (val result = repository.getLibraryItems(
+                itemTypes = "Series",
+                startIndex = startIndex,
+                limit = pageSize
+            )) {
+                is ApiResult.Success -> {
+                    val newTVShows = result.data
+                    val allTVShows = if (reset) {
+                        newTVShows
+                    } else {
+                        currentState.allTVShows + newTVShows
+                    }
+                    
+                    Log.d("MainAppViewModel", "loadAllTVShows: Successfully loaded ${newTVShows.size} TV shows for page $page")
+                    Log.d("MainAppViewModel", "loadAllTVShows: Total TV shows now: ${allTVShows.size}")
+                    
+                    _appState.value = _appState.value.copy(
+                        allTVShows = allTVShows,
+                        tvShowsPage = page,
+                        hasMoreTVShows = newTVShows.size == pageSize,
+                        isLoadingTVShows = false,
+                        errorMessage = null
+                    )
+                }
+                is ApiResult.Error -> {
+                    Log.e("MainAppViewModel", "loadAllTVShows: Failed to load page $page: ${result.message}")
+                    _appState.value = _appState.value.copy(
+                        isLoadingTVShows = false,
+                        errorMessage = if (reset) "Failed to load TV shows: ${result.message}" else result.message
+                    )
+                }
+                is ApiResult.Loading -> {
+                    // Already handled above
+                }
+            }
+        }
+    }
+    
+    /**
+     * Loads more TV shows for pagination
+     */
+    fun loadMoreTVShows() {
+        loadAllTVShows(reset = false)
+    }
+    
+    /**
+     * Refreshes TV shows by reloading from the beginning
+     */
+    fun refreshTVShows() {
+        loadAllTVShows(reset = true)
+    }
+
     /**
      * Adds or updates an item in the main app state
      */
