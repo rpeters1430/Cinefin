@@ -656,23 +656,20 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         }
     }
     
+    /**
+     * Fetches all seasons for a given series.
+     *
+     * @param seriesId The ID of the series to fetch seasons for.
+     * @return [ApiResult] containing a list of seasons or an error.
+     */
     suspend fun getSeasonsForSeries(seriesId: String): ApiResult<List<BaseItemDto>> {
-        val server = _currentServer.value
-        if (server?.accessToken == null || server.userId == null) {
-            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
-        }
-
-        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
-        if (userUuid == null) {
-            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
-        }
-
-        val seriesUuid = runCatching { UUID.fromString(seriesId) }.getOrNull()
-        if (seriesUuid == null) {
-            return ApiResult.Error("Invalid series ID", errorType = ErrorType.NOT_FOUND)
-        }
-
+        Log.d("JellyfinRepository", "getSeasonsForSeries: Fetching seasons for seriesId=$seriesId")
         return try {
+            val server = validateServer()
+            val userUuid = parseUuid(server.userId, "user")
+            val seriesUuid = parseUuid(seriesId, "series")
+
+            // Cache the client to avoid creating it multiple times
             val client = getClient(server.url, server.accessToken)
             val response = client.itemsApi.getItems(
                 userId = userUuid,
@@ -682,30 +679,29 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
                 sortOrder = listOf(SortOrder.ASCENDING),
                 fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.PRODUCTION_YEAR, ItemFields.COMMUNITY_RATING)
             )
+            Log.d("JellyfinRepository", "getSeasonsForSeries: Successfully fetched ${response.content.items?.size ?: 0} seasons for seriesId=$seriesId")
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
+            Log.e("JellyfinRepository", "getSeasonsForSeries: Failed to fetch seasons for seriesId=$seriesId", e)
             val errorType = getErrorType(e)
             ApiResult.Error("Failed to load seasons: ${e.message}", e, errorType)
         }
     }
 
+    /**
+     * Fetches all episodes for a given season.
+     *
+     * @param seasonId The ID of the season to fetch episodes for.
+     * @return [ApiResult] containing a list of episodes or an error.
+     */
     suspend fun getEpisodesForSeason(seasonId: String): ApiResult<List<BaseItemDto>> {
-        val server = _currentServer.value
-        if (server?.accessToken == null || server.userId == null) {
-            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
-        }
-
-        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
-        if (userUuid == null) {
-            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
-        }
-
-        val seasonUuid = runCatching { UUID.fromString(seasonId) }.getOrNull()
-        if (seasonUuid == null) {
-            return ApiResult.Error("Invalid season ID", errorType = ErrorType.NOT_FOUND)
-        }
-
+        Log.d("JellyfinRepository", "getEpisodesForSeason: Fetching episodes for seasonId=$seasonId")
         return try {
+            val server = validateServer()
+            val userUuid = parseUuid(server.userId, "user")
+            val seasonUuid = parseUuid(seasonId, "season")
+
+            // Cache the client to avoid creating it multiple times
             val client = getClient(server.url, server.accessToken)
             val response = client.itemsApi.getItems(
                 userId = userUuid,
@@ -715,8 +711,10 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
                 sortOrder = listOf(SortOrder.ASCENDING),
                 fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.PRODUCTION_YEAR, ItemFields.COMMUNITY_RATING)
             )
+            Log.d("JellyfinRepository", "getEpisodesForSeason: Successfully fetched ${response.content.items?.size ?: 0} episodes for seasonId=$seasonId")
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
+            Log.e("JellyfinRepository", "getEpisodesForSeason: Failed to fetch episodes for seasonId=$seasonId", e)
             val errorType = getErrorType(e)
             ApiResult.Error("Failed to load episodes: ${e.message}", e, errorType)
         }
@@ -1029,6 +1027,23 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
             offlineManager.getOfflineErrorMessage(operation)
         } else {
             "$operation failed. Please check your connection and try again."
+        }
+    }
+
+    private fun validateServer(): JellyfinServer {
+        val server = _currentServer.value
+            ?: throw IllegalStateException("Server is not available")
+
+        if (server.accessToken == null || server.userId == null) {
+            throw IllegalStateException("Not authenticated")
+        }
+
+        return server
+    }
+
+    private fun parseUuid(id: String, idType: String): UUID {
+        return runCatching { UUID.fromString(id) }.getOrElse {
+            throw IllegalArgumentException("Invalid $idType ID")
         }
     }
 }
