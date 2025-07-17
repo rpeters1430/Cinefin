@@ -11,11 +11,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -43,11 +43,6 @@ import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
 import com.example.jellyfinandroid.ui.utils.MediaPlayerUtils
 import com.example.jellyfinandroid.ui.utils.ShareUtils
 import com.example.jellyfinandroid.ui.utils.MediaDownloadManager
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
 import android.util.Log
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -379,7 +374,7 @@ fun JellyfinNavGraph(
 
             LaunchedEffect(movieId, movie) {
                 if (movie == null) {
-                    viewModel.getMovieDetails(movieId)
+                    detailViewModel.loadMovieDetails(movieId)
                 }
             }
 
@@ -393,24 +388,20 @@ fun JellyfinNavGraph(
 
                 MovieDetailScreen(
                     movie = movie,
-                    getImageUrl = { item -> viewModel.getImageUrl(item) },
-                    getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
+                    getImageUrl = { item -> mainViewModel.getImageUrl(item) },
+                    getBackdropUrl = { item -> mainViewModel.getBackdropUrl(item) },
                     onBackClick = { navController.popBackStack() },
                     onPlayClick = { movieItem ->
-                        try {
-                            val streamUrl = viewModel.getStreamUrl(movieItem)
-                            if (streamUrl != null) {
-                                MediaPlayerUtils.playMedia(context = navController.context, streamUrl = streamUrl, item = movieItem)
-                                Log.d("NavGraph", "Playing movie: ${movieItem.name}")
-                            } else {
-                                Log.e("NavGraph", "No stream URL available for movie: ${movieItem.name}")
-                            }
-                        } catch (e: Exception) {
-                            Log.e("NavGraph", "Failed to play movie: ${e.message}", e)
+                        val streamUrl = mainViewModel.getStreamUrl(movieItem)
+                        if (streamUrl != null) {
+                            MediaPlayerUtils.playMedia(context = navController.context, streamUrl = streamUrl, item = movieItem)
+                            Log.d("NavGraph", "Playing movie: ${movieItem.name}")
+                        } else {
+                            Log.e("NavGraph", "No stream URL available for movie: ${movieItem.name}")
                         }
                     },
                     onFavoriteClick = { movieItem ->
-                        viewModel.toggleFavorite(movieItem)
+                        mainViewModel.toggleFavorite(movieItem)
                     },
                     onShareClick = { movieItem ->
                         ShareUtils.shareMedia(context = navController.context, item = movieItem)

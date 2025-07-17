@@ -1,12 +1,15 @@
 package com.example.jellyfinandroid.ui.viewmodel
 
 import com.example.jellyfinandroid.data.SecureCredentialManager
+import com.example.jellyfinandroid.data.repository.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -32,12 +35,13 @@ class MainAppViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         
-        mockRepository = mockk()
-        mockCredentialManager = mockk()
+        mockRepository = mockk(relaxed = true)
+        mockCredentialManager = mockk(relaxed = true)
 
-        // Setup default repository flows
-        every { mockRepository.currentServer } returns MutableStateFlow(null)
-        every { mockRepository.isConnected } returns MutableStateFlow(false)
+        // Mock repository methods that are called during initialization
+        coEvery { mockRepository.getUserLibraries() } returns ApiResult.Success(emptyList())
+        coEvery { mockRepository.getRecentlyAdded(any()) } returns ApiResult.Success(emptyList())
+        coEvery { mockRepository.getRecentlyAddedByTypes(any()) } returns ApiResult.Success(emptyMap())
 
         viewModel = MainAppViewModel(mockRepository, mockCredentialManager)
     }

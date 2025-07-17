@@ -340,15 +340,17 @@ fun MovieDetailScreen(
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                    )
+                                            )
+                                        }
+                                    }
                                 }
                             }
 
                             movie.mediaSources?.firstOrNull()?.let { source ->
-val videoStream = source.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
-val videoCodec = videoStream?.codec
-val audioCodec = source.mediaStreams?.find { it.type == MediaStreamType.AUDIO }?.codec
-val resolution = videoStream?.let { "${it.width}x${it.height}" }
+                                val videoStream = source.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
+                                val videoCodec = videoStream?.codec
+                                val audioCodec = source.mediaStreams?.find { it.type == MediaStreamType.AUDIO }?.codec
+                                val resolution = videoStream?.let { "${it.width}x${it.height}" }
 
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -410,8 +412,6 @@ val resolution = videoStream?.let { "${it.width}x${it.height}" }
                             }
                         }
                     }
-                }
-            }
                 }
             }
             
