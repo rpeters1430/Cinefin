@@ -162,9 +162,6 @@ fun JellyfinNavGraph(
                 minActiveState = Lifecycle.State.STARTED
             )
             
-            LaunchedEffect(Unit) {
-                viewModel.loadInitialData()
-            }
             
             LibraryScreen(
                 libraries = appState.libraries,
@@ -192,10 +189,6 @@ fun JellyfinNavGraph(
             val viewModel = hiltViewModel<MainAppViewModel>()
             val lifecycleOwner = LocalLifecycleOwner.current
             
-            LaunchedEffect(Unit) {
-                // Load initial movies data if needed
-                viewModel.loadInitialData()
-            }
             
             MoviesScreen(
                 onBackClick = { navController.popBackStack() },
@@ -212,10 +205,6 @@ fun JellyfinNavGraph(
             val viewModel = hiltViewModel<MainAppViewModel>()
             val lifecycleOwner = LocalLifecycleOwner.current
             
-            LaunchedEffect(Unit) {
-                // Load initial TV shows data
-                viewModel.loadInitialData()
-            }
             
             TVShowsScreen(
                 onTVShowClick = { seriesId ->
