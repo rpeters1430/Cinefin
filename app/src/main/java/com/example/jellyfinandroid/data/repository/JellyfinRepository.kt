@@ -106,6 +106,15 @@ class JellyfinRepository @Inject constructor(
                 in 500..599 -> ErrorType.SERVER_ERROR
                 else -> ErrorType.UNKNOWN
             }
+            is org.jellyfin.sdk.api.client.exception.InvalidStatusException -> {
+                when {
+                    e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
+                    e.message?.contains("403") == true -> ErrorType.FORBIDDEN
+                    e.message?.contains("404") == true -> ErrorType.NOT_FOUND
+                    e.message?.contains("5") == true && e.message?.substring(e.message!!.indexOf("5"), e.message!!.indexOf("5") + 3)?.toIntOrNull() in 500..599 -> ErrorType.SERVER_ERROR
+                    else -> ErrorType.UNKNOWN
+                }
+            }
             else -> ErrorType.UNKNOWN
         }
     }
@@ -476,7 +485,9 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
                 }
                 
                 // If it's a 401 error and we have saved credentials, try to re-authenticate
-                if (e is HttpException && e.code() == 401 && attempt < maxRetries) {
+                val is401Error = (e is HttpException && e.code() == 401) ||
+                    (e is org.jellyfin.sdk.api.client.exception.InvalidStatusException && e.message?.contains("401") == true)
+                if (is401Error && attempt < maxRetries) {
                     Log.w("JellyfinRepository", "Got 401 error on attempt ${attempt + 1}, attempting to re-authenticate")
                     
                     // Try to re-authenticate

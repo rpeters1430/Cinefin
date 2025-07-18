@@ -502,8 +502,13 @@ fun JellyfinNavGraph(
                         viewModel.toggleFavorite(episodeItem)
                     }
                 )
+            } else if (appState.isLoading) {
+                // Still loading, show loading indicator
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             } else {
-                // Episode not found, show error or navigate back
+                // Episode not found and not loading, show error or navigate back
                 LaunchedEffect(Unit) {
                     navController.popBackStack()
                 }
