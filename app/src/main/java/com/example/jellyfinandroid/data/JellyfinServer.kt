@@ -12,7 +12,8 @@ data class JellyfinServer(
     val version: String? = null,
     val userId: String? = null,
     val username: String? = null,
-    val accessToken: String? = null
+    val accessToken: String? = null,
+    val loginTimestamp: Long? = null
 )
 
 @Serializable

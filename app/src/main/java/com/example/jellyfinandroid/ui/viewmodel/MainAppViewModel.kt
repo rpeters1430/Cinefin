@@ -182,9 +182,9 @@ class MainAppViewModel @Inject constructor(
     }
     
     fun logout() {
-        repository.logout()
-        // Clear saved credentials on logout
         viewModelScope.launch {
+            repository.logout()
+            // Clear saved credentials on logout
             credentialManager.clearCredentials()
         }
     }

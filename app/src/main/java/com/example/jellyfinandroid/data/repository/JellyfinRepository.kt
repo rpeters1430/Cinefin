@@ -424,9 +424,8 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         val server = _currentServer.value ?: return false
         
         try {
-            // Clear any cached clients and tokens before re-authenticating
+            // Clear any cached clients before re-authenticating
             clientFactory.invalidateClient()
-            tokenManager.clearToken() // Ensure the expired token is cleared
             
             // Get saved password for the current server and username
             val savedPassword = secureCredentialManager.getPassword(server.url, server.username ?: "")
@@ -441,11 +440,14 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
             when (val authResult = authenticateUser(server.url, server.username ?: "", savedPassword)) {
                 is ApiResult.Success -> {
                     Log.d("JellyfinRepository", "Re-authentication successful")
-                    tokenManager.saveToken(authResult.data.token) // Save the new token
                     return true
                 }
                 is ApiResult.Error -> {
-                    Log.w("JellyfinRepository", "Re-authentication failed: ${authResult.errorMessage}")
+                    Log.w("JellyfinRepository", "Re-authentication failed: ${authResult.message}")
+                    return false
+                }
+                is ApiResult.Loading -> {
+                    Log.d("JellyfinRepository", "Re-authentication in progress")
                     return false
                 }
             }
@@ -666,7 +668,7 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         Log.d("JellyfinRepository", "getSeasonsForSeries: Fetching seasons for seriesId=$seriesId")
         return try {
             val server = validateServer()
-            val userUuid = parseUuid(server.userId, "user")
+            val userUuid = parseUuid(server.userId ?: "", "user")
             val seriesUuid = parseUuid(seriesId, "series")
 
             // Cache the client to avoid creating it multiple times
@@ -677,7 +679,7 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
                 includeItemTypes = listOf(BaseItemKind.SEASON),
                 sortBy = listOf(ItemSortBy.SORT_NAME),
                 sortOrder = listOf(SortOrder.ASCENDING),
-                fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.PRODUCTION_YEAR, ItemFields.COMMUNITY_RATING)
+                fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW)
             )
             Log.d("JellyfinRepository", "getSeasonsForSeries: Successfully fetched ${response.content.items?.size ?: 0} seasons for seriesId=$seriesId")
             ApiResult.Success(response.content.items ?: emptyList())
@@ -698,7 +700,7 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         Log.d("JellyfinRepository", "getEpisodesForSeason: Fetching episodes for seasonId=$seasonId")
         return try {
             val server = validateServer()
-            val userUuid = parseUuid(server.userId, "user")
+            val userUuid = parseUuid(server.userId ?: "", "user")
             val seasonUuid = parseUuid(seasonId, "season")
 
             // Cache the client to avoid creating it multiple times
@@ -709,7 +711,7 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
                 includeItemTypes = listOf(BaseItemKind.EPISODE),
                 sortBy = listOf(ItemSortBy.INDEX_NUMBER),
                 sortOrder = listOf(SortOrder.ASCENDING),
-                fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.PRODUCTION_YEAR, ItemFields.COMMUNITY_RATING)
+                fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW)
             )
             Log.d("JellyfinRepository", "getEpisodesForSeason: Successfully fetched ${response.content.items?.size ?: 0} episodes for seasonId=$seasonId")
             ApiResult.Success(response.content.items ?: emptyList())
@@ -855,17 +857,17 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         return (currentTime - loginTimestamp) > tokenValidityDuration
     }
 
-    private fun validateToken() {
+    private suspend fun validateToken() {
         if (isTokenExpired()) {
             Log.w("JellyfinRepository", "Token expired. Clearing session.")
             logout()
         }
     }
 
-    fun logout() {
+    suspend fun logout() {
         _currentServer.value = null
         _isConnected.value = false
-        secureCredentialManager.clearToken()
+        secureCredentialManager.clearCredentials()
     }
     
     suspend fun toggleFavorite(itemId: String, isFavorite: Boolean): ApiResult<Boolean> {
