@@ -363,8 +363,6 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
     }
     
     suspend fun getRecentlyAdded(limit: Int = 20): ApiResult<List<BaseItemDto>> {
-        validateToken() // Ensure the token is valid before making the API call
-
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
