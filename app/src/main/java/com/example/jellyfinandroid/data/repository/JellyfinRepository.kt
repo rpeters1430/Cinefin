@@ -171,7 +171,8 @@ class JellyfinRepository @Inject constructor(
                 version = systemInfo.version,
                 userId = authResult.user?.id.toString(),
                 username = authResult.user?.name,
-                accessToken = authResult.accessToken
+                accessToken = authResult.accessToken,
+                loginTimestamp = System.currentTimeMillis()
             )
             
             _currentServer.value = server
@@ -271,7 +272,8 @@ class JellyfinRepository @Inject constructor(
                 version = systemInfo.version,
                 userId = mockAuthResult.user?.id?.toString(),
                 username = mockAuthResult.user?.name,
-                accessToken = mockAuthResult.accessToken
+                accessToken = mockAuthResult.accessToken,
+                loginTimestamp = System.currentTimeMillis()
             )
 
             _currentServer.value = server
