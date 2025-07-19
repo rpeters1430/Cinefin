@@ -107,15 +107,55 @@ class JellyfinRepository @Inject constructor(
                 else -> ErrorType.UNKNOWN
             }
             is org.jellyfin.sdk.api.client.exception.InvalidStatusException -> {
-                when {
-                    e.message?.contains("401") == true -> ErrorType.UNAUTHORIZED
-                    e.message?.contains("403") == true -> ErrorType.FORBIDDEN
-                    e.message?.contains("404") == true -> ErrorType.NOT_FOUND
-                    e.message?.contains("5") == true && e.message?.substring(e.message!!.indexOf("5"), e.message!!.indexOf("5") + 3)?.toIntOrNull() in 500..599 -> ErrorType.SERVER_ERROR
-                    else -> ErrorType.UNKNOWN
+                // More robust status code extraction for better error classification
+                val statusCode = extractStatusCode(e)
+                Log.d("JellyfinRepository", "InvalidStatusException: status code = $statusCode, message = ${e.message}")
+                
+                when (statusCode) {
+                    401 -> ErrorType.UNAUTHORIZED
+                    403 -> ErrorType.FORBIDDEN
+                    404 -> ErrorType.NOT_FOUND
+                    in 500..599 -> ErrorType.SERVER_ERROR
+                    else -> {
+                        // If we can't determine the status code but message contains 401, still treat as UNAUTHORIZED
+                        if (e.message?.contains("401") == true) {
+                            Log.w("JellyfinRepository", "Detected 401 error from message content, treating as UNAUTHORIZED")
+                            ErrorType.UNAUTHORIZED
+                        } else {
+                            ErrorType.UNKNOWN
+                        }
+                    }
                 }
             }
             else -> ErrorType.UNKNOWN
+        }
+    }
+    
+    /**
+     * Extracts HTTP status code from InvalidStatusException message
+     */
+    private fun extractStatusCode(e: org.jellyfin.sdk.api.client.exception.InvalidStatusException): Int? {
+        return try {
+            // Try multiple patterns to extract status code
+            val message = e.message ?: return null
+            
+            // Pattern 1: "Invalid HTTP status in response: 401"
+            val pattern1 = """Invalid HTTP status in response:\s*(\d{3})""".toRegex()
+            pattern1.find(message)?.groupValues?.get(1)?.toIntOrNull()?.let { return it }
+            
+            // Pattern 2: Any 3-digit number that looks like an HTTP status
+            val pattern2 = """\b([4-5]\d{2})\b""".toRegex()
+            pattern2.find(message)?.groupValues?.get(1)?.toIntOrNull()?.let { return it }
+            
+            // Pattern 3: Generic 3-digit number extraction
+            val pattern3 = """\b(\d{3})\b""".toRegex()
+            val matches = pattern3.findAll(message).map { it.groupValues[1].toIntOrNull() }.filterNotNull()
+            
+            // Return the first match that looks like an HTTP status code
+            matches.firstOrNull { it in 400..599 }
+        } catch (e: Exception) {
+            Log.w("JellyfinRepository", "Failed to extract status code from exception", e)
+            null
         }
     }
 
@@ -315,18 +355,16 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
             return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
         }
 
-        return retryNetworkCall("getUserLibraries") {
-            try {
-                val client = getClient(server.url, server.accessToken)
-                val response = client.itemsApi.getItems(
-                    userId = userUuid,
-                    includeItemTypes = listOf(org.jellyfin.sdk.model.api.BaseItemKind.COLLECTION_FOLDER)
-                )
-                ApiResult.Success(response.content.items ?: emptyList())
-            } catch (e: Exception) {
-                // ✅ FIX: Use helper to preserve cancellation exceptions
-                handleExceptionSafely(e, "Failed to load libraries")
-            }
+        // Proactively check and refresh token if needed
+        validateAndRefreshToken()
+
+        return executeWithAuthRetry("getUserLibraries") {
+            val client = getClient(server.url, server.accessToken)
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                includeItemTypes = listOf(org.jellyfin.sdk.model.api.BaseItemKind.COLLECTION_FOLDER)
+            )
+            ApiResult.Success(response.content.items ?: emptyList())
         }
     }
     
@@ -432,6 +470,8 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
     private suspend fun reAuthenticate(): Boolean {
         val server = _currentServer.value ?: return false
         
+        Log.d("JellyfinRepository", "reAuthenticate: Starting re-authentication for user ${server.username} on ${server.url}")
+        
         try {
             // Clear any cached clients before re-authenticating
             clientFactory.invalidateClient()
@@ -439,31 +479,51 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
             // Get saved password for the current server and username
             val savedPassword = secureCredentialManager.getPassword(server.url, server.username ?: "")
             if (savedPassword == null) {
-                Log.w("JellyfinRepository", "No saved password found for re-authentication")
+                Log.w("JellyfinRepository", "reAuthenticate: No saved password found for user ${server.username}")
+                // If we can't re-authenticate, logout the user
+                logout()
                 return false
             }
             
-            Log.d("JellyfinRepository", "Attempting to re-authenticate with saved credentials")
+            Log.d("JellyfinRepository", "reAuthenticate: Found saved credentials, attempting authentication")
             
             // Re-authenticate using saved credentials
             when (val authResult = authenticateUser(server.url, server.username ?: "", savedPassword)) {
                 is ApiResult.Success -> {
-                    Log.d("JellyfinRepository", "Re-authentication successful")
+                    Log.d("JellyfinRepository", "reAuthenticate: Successfully re-authenticated user ${server.username}")
+                    // Update the current server with the new token and login timestamp
+                    val updatedServer = server.copy(
+                        accessToken = authResult.data.accessToken,
+                        loginTimestamp = System.currentTimeMillis()
+                    )
+                    _currentServer.value = updatedServer
                     return true
                 }
                 is ApiResult.Error -> {
-                    Log.w("JellyfinRepository", "Re-authentication failed: ${authResult.message}")
+                    Log.w("JellyfinRepository", "reAuthenticate: Failed to re-authenticate: ${authResult.message}")
+                    // If re-authentication fails, logout the user
+                    logout()
                     return false
                 }
                 is ApiResult.Loading -> {
-                    Log.d("JellyfinRepository", "Re-authentication in progress")
+                    Log.d("JellyfinRepository", "reAuthenticate: Authentication in progress")
                     return false
                 }
             }
         } catch (e: Exception) {
-            Log.e("JellyfinRepository", "Error during re-authentication", e)
+            Log.e("JellyfinRepository", "reAuthenticate: Exception during re-authentication", e)
+            // If there's an exception during re-auth, logout to prevent further errors
+            logout()
             return false
         }
+    }
+
+    suspend fun logout() {
+        Log.d("JellyfinRepository", "Logging out user")
+        clientFactory.invalidateClient()
+        _currentServer.value = null
+        _isConnected.value = false
+        secureCredentialManager.clearCredentials()
     }
 
     private suspend fun <T> executeWithRetry(
@@ -514,6 +574,84 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         throw lastException ?: Exception("Unknown error occurred")
     }
 
+    /**
+     * Execute an operation with automatic re-authentication on 401 errors
+     */
+    private suspend fun <T> executeWithAuthRetry(
+        operationName: String,
+        maxRetries: Int = 2,
+        operation: suspend () -> ApiResult<T>
+    ): ApiResult<T> {
+        for (attempt in 0..maxRetries) {
+            try {
+                Log.d("JellyfinRepository", "$operationName: Attempt ${attempt + 1}/${maxRetries + 1}")
+                
+                val result = operation()
+                
+                when (result) {
+                    is ApiResult.Success -> {
+                        if (attempt > 0) {
+                            Log.i("JellyfinRepository", "$operationName: Succeeded on attempt ${attempt + 1}")
+                        }
+                        return result
+                    }
+                    is ApiResult.Loading -> return result
+                    is ApiResult.Error -> {
+                        Log.w("JellyfinRepository", "$operationName: Got error on attempt ${attempt + 1}: ${result.message} (type: ${result.errorType})")
+                        
+                        // Check if this is a 401 error that we should retry with re-authentication
+                        if (result.errorType == ErrorType.UNAUTHORIZED && attempt < maxRetries) {
+                            Log.w("JellyfinRepository", "$operationName: Got 401 error, attempting re-authentication")
+                            
+                            if (reAuthenticate()) {
+                                Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
+                                clientFactory.invalidateClient()
+                                kotlinx.coroutines.delay(1000L) // Longer delay for token propagation
+                                continue
+                            } else {
+                                Log.w("JellyfinRepository", "$operationName: Re-authentication failed")
+                                return result
+                            }
+                        } else {
+                            Log.d("JellyfinRepository", "$operationName: Error type ${result.errorType} not retryable or max attempts reached")
+                            return result
+                        }
+                    }
+                }
+                
+            } catch (e: Exception) {
+                // Handle direct exceptions from the operation
+                if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
+                    Log.d("JellyfinRepository", "$operationName: Operation cancelled on attempt ${attempt + 1}")
+                    throw e
+                }
+                
+                val errorType = getErrorType(e)
+                Log.w("JellyfinRepository", "$operationName: Exception on attempt ${attempt + 1}: ${e.message} (type: $errorType)")
+                
+                // Check for 401 in exception and retry with re-authentication
+                if (errorType == ErrorType.UNAUTHORIZED && attempt < maxRetries) {
+                    Log.w("JellyfinRepository", "$operationName: Got 401 exception, attempting re-authentication")
+                    
+                    if (reAuthenticate()) {
+                        Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
+                        clientFactory.invalidateClient()
+                        kotlinx.coroutines.delay(1000L) // Longer delay for token propagation
+                        continue
+                    } else {
+                        Log.w("JellyfinRepository", "$operationName: Re-authentication failed")
+                        return handleExceptionSafely(e, operationName)
+                    }
+                } else {
+                    Log.d("JellyfinRepository", "$operationName: Exception type $errorType not retryable or max attempts reached")
+                    return handleExceptionSafely(e, operationName)
+                }
+            }
+        }
+        
+        return ApiResult.Error("$operationName failed after $maxRetries retry attempts", errorType = ErrorType.UNKNOWN)
+    }
+
     suspend fun getRecentlyAddedByType(itemType: BaseItemKind, limit: Int = 10): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
@@ -525,27 +663,24 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
             return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
         }
 
-        return try {
-            Log.d("JellyfinRepository", "getRecentlyAddedByType: Requesting $limit items of type $itemType")
-            
-            val items = executeWithRetry {
-                // ✅ FIX: Get current server state for each retry attempt
-                val currentServer = _currentServer.value 
-                    ?: throw IllegalStateException("Server not available")
-                val client = getClient(currentServer.url, currentServer.accessToken)
-                val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
-                    ?: throw IllegalStateException("Invalid user ID")
-                    
-                val response = client.itemsApi.getItems(
-                    userId = currentUserUuid,
-                    recursive = true,
-                    includeItemTypes = listOf(itemType),
-                    sortBy = listOf(ItemSortBy.DATE_CREATED),
-                    sortOrder = listOf(SortOrder.DESCENDING),
-                    limit = limit
-                )
-                response.content.items ?: emptyList()
-            }
+        Log.d("JellyfinRepository", "getRecentlyAddedByType: Requesting $limit items of type $itemType")
+
+        return executeWithAuthRetry("getRecentlyAddedByType") {
+            val currentServer = _currentServer.value 
+                ?: return@executeWithAuthRetry ApiResult.Error("Server not available", errorType = ErrorType.AUTHENTICATION)
+            val client = getClient(currentServer.url, currentServer.accessToken)
+            val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
+                ?: return@executeWithAuthRetry ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+                
+            val response = client.itemsApi.getItems(
+                userId = currentUserUuid,
+                recursive = true,
+                includeItemTypes = listOf(itemType),
+                sortBy = listOf(ItemSortBy.DATE_CREATED),
+                sortOrder = listOf(SortOrder.DESCENDING),
+                limit = limit
+            )
+            val items = response.content.items ?: emptyList()
             
             Log.d("JellyfinRepository", "getRecentlyAddedByType: Retrieved ${items.size} items of type $itemType")
             
@@ -556,9 +691,6 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
             }
             
             ApiResult.Success(items)
-        } catch (e: Exception) {
-            Log.e("JellyfinRepository", "getRecentlyAddedByType: Failed to load $itemType items", e)
-            handleExceptionSafely(e, "Failed to load recently added ${itemType.name.lowercase()}")
         }
     }
 
@@ -864,21 +996,35 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         val server = _currentServer.value ?: return true
         val loginTimestamp = server.loginTimestamp ?: return true
         val currentTime = System.currentTimeMillis()
-        val tokenValidityDuration = 60 * 60 * 1000 // 1 hour in milliseconds
-        return (currentTime - loginTimestamp) > tokenValidityDuration
+        
+        // Consider token expired after 50 minutes (10 minutes before actual expiry)
+        // This gives us time to refresh before hitting 401 errors
+        val tokenValidityDuration = 50 * 60 * 1000 // 50 minutes in milliseconds
+        val isExpired = (currentTime - loginTimestamp) > tokenValidityDuration
+        
+        if (isExpired) {
+            Log.w("JellyfinRepository", "Token expired. Login timestamp: $loginTimestamp, current: $currentTime, duration: ${currentTime - loginTimestamp}ms")
+        }
+        
+        return isExpired
     }
 
-    private suspend fun validateToken() {
+    private suspend fun validateAndRefreshToken() {
         if (isTokenExpired()) {
-            Log.w("JellyfinRepository", "Token expired. Clearing session.")
-            logout()
+            Log.w("JellyfinRepository", "Token expired, attempting proactive refresh")
+            if (reAuthenticate()) {
+                Log.d("JellyfinRepository", "Proactive token refresh successful")
+            } else {
+                Log.w("JellyfinRepository", "Proactive token refresh failed, user will be logged out")
+            }
         }
     }
-
-    suspend fun logout() {
-        _currentServer.value = null
-        _isConnected.value = false
-        secureCredentialManager.clearCredentials()
+    
+    /**
+     * Manually validate and refresh token - exposed for manual refresh
+     */
+    suspend fun validateAndRefreshTokenManually() {
+        validateAndRefreshToken()
     }
     
     suspend fun toggleFavorite(itemId: String, isFavorite: Boolean): ApiResult<Boolean> {

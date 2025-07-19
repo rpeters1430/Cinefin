@@ -117,10 +117,10 @@ object ErrorHandler {
             )
             
             401 -> ProcessedError(
-                userMessage = "Authentication failed. Please log in again.",
+                userMessage = "Authentication expired. Attempting to refresh session...",
                 errorType = ErrorType.UNAUTHORIZED,
-                isRetryable = false,
-                suggestedAction = "Log out and log in again"
+                isRetryable = true,
+                suggestedAction = "Please wait while we refresh your session"
             )
             
             403 -> ProcessedError(
@@ -210,7 +210,7 @@ object ErrorHandler {
             ErrorType.SERVER_ERROR -> true
             ErrorType.UNKNOWN -> attemptNumber < 2 // Only retry once for unknown errors
             ErrorType.AUTHENTICATION -> false // Don't auto-retry auth errors
-            ErrorType.UNAUTHORIZED -> false // Don't auto-retry unauthorized errors
+            ErrorType.UNAUTHORIZED -> attemptNumber < 3 // Allow up to 2 retries for token refresh scenarios
             ErrorType.FORBIDDEN -> false // Don't retry permission errors
             ErrorType.NOT_FOUND -> false // Don't retry 404s
             ErrorType.OPERATION_CANCELLED -> false // User cancelled

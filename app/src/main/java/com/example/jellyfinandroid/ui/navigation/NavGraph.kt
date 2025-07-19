@@ -4,7 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Box
@@ -265,10 +267,11 @@ fun JellyfinNavGraph(
                 onBackClick = { navController.popBackStack() },
                 getImageUrl = { item -> mainViewModel.getImageUrl(item) },
                 onEpisodeClick = { episode ->
-                    // Add episode to main app state for detail screen access
-                    mainViewModel.addOrUpdateItem(episode)
-                    
                     episode.id?.let { episodeId ->
+                        // Add episode to main app state for detail screen access
+                        mainViewModel.addOrUpdateItem(episode)
+                        
+                        // Navigate to episode detail screen
                         navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
                     }
                 },
@@ -439,78 +442,107 @@ fun JellyfinNavGraph(
             // Find the episode from the loaded items
             val episode = appState.allItems.find { it.id?.toString() == episodeId }
             
-            if (episode != null) {
-                // Find the series information if available
-                val seriesInfo = episode.seriesId?.let { seriesId ->
-                    appState.allItems.find { it.id?.toString() == seriesId.toString() }
-                }
-                
-                TVEpisodeDetailScreen(
-                    episode = episode,
-                    seriesInfo = seriesInfo,
-                    getImageUrl = { item -> viewModel.getImageUrl(item) },
-                    getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
-                    onBackClick = { navController.popBackStack() },
-                    onPlayClick = { episodeItem ->
-                        try {
-                            val streamUrl = viewModel.getStreamUrl(episodeItem)
-                            if (streamUrl != null) {
-                                MediaPlayerUtils.playMedia(context = navController.context, streamUrl = streamUrl, item = episodeItem)
-                                Log.d("NavGraph", "Playing episode: ${episodeItem.name}")
-                            } else {
-                                Log.e("NavGraph", "No stream URL available for episode: ${episodeItem.name}")
-                            }
-                        } catch (e: Exception) {
-                            Log.e("NavGraph", "Failed to play episode: ${e.message}", e)
-                        }
-                    },
-                    onDownloadClick = { episodeItem ->
-                        try {
-                            val context = navController.context
-                            val downloadUrl = viewModel.getDownloadUrl(episodeItem)
-                            
-                            if (downloadUrl != null) {
-                                val downloadId = MediaDownloadManager.downloadMedia(
-                                    context = context,
-                                    item = episodeItem,
-                                    streamUrl = downloadUrl
-                                )
-                                
-                                if (downloadId != null) {
-                                    Log.d("NavGraph", "Started download for episode: ${episodeItem.name} (ID: $downloadId)")
-                                } else {
-                                    Log.e("NavGraph", "Failed to start download for episode: ${episodeItem.name}")
-                                }
-                            } else {
-                                Log.e("NavGraph", "No download URL available for episode: ${episodeItem.name}")
-                            }
-                        } catch (e: Exception) {
-                            Log.e("NavGraph", "Failed to download episode: ${e.message}", e)
-                        }
-                    },
-                    onDeleteClick = { episodeItem ->
-                        // TODO: Implement delete functionality - requires admin permissions
-                        Log.d("NavGraph", "Delete requested for episode: ${episodeItem.name}")
-                    },
-                    onMarkWatchedClick = { episodeItem ->
-                        viewModel.markAsWatched(episodeItem)
-                    },
-                    onMarkUnwatchedClick = { episodeItem ->
-                        viewModel.markAsUnwatched(episodeItem)
-                    },
-                    onFavoriteClick = { episodeItem ->
-                        viewModel.toggleFavorite(episodeItem)
+            when {
+                episode != null -> {
+                    // Episode found, show detail screen
+                    Log.d("NavGraph", "TVEpisodeDetail: Found episode ${episode.name} in app state")
+                    
+                    // Find the series information if available
+                    val seriesInfo = episode.seriesId?.let { seriesId ->
+                        appState.allItems.find { it.id?.toString() == seriesId.toString() }
                     }
-                )
-            } else if (appState.isLoading) {
-                // Still loading, show loading indicator
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    
+                    TVEpisodeDetailScreen(
+                        episode = episode,
+                        seriesInfo = seriesInfo,
+                        getImageUrl = { item -> viewModel.getImageUrl(item) },
+                        getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
+                        onBackClick = { navController.popBackStack() },
+                        onPlayClick = { episodeItem ->
+                            try {
+                                val streamUrl = viewModel.getStreamUrl(episodeItem)
+                                if (streamUrl != null) {
+                                    MediaPlayerUtils.playMedia(context = navController.context, streamUrl = streamUrl, item = episodeItem)
+                                    Log.d("NavGraph", "Playing episode: ${episodeItem.name}")
+                                } else {
+                                    Log.e("NavGraph", "No stream URL available for episode: ${episodeItem.name}")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("NavGraph", "Failed to play episode: ${e.message}", e)
+                            }
+                        },
+                        onDownloadClick = { episodeItem ->
+                            try {
+                                val context = navController.context
+                                val downloadUrl = viewModel.getDownloadUrl(episodeItem)
+                                
+                                if (downloadUrl != null) {
+                                    val downloadId = MediaDownloadManager.downloadMedia(
+                                        context = context,
+                                        item = episodeItem,
+                                        streamUrl = downloadUrl
+                                    )
+                                    
+                                    if (downloadId != null) {
+                                        Log.d("NavGraph", "Started download for episode: ${episodeItem.name} (ID: $downloadId)")
+                                    } else {
+                                        Log.e("NavGraph", "Failed to start download for episode: ${episodeItem.name}")
+                                    }
+                                } else {
+                                    Log.e("NavGraph", "No download URL available for episode: ${episodeItem.name}")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("NavGraph", "Failed to download episode: ${e.message}", e)
+                            }
+                        },
+                        onDeleteClick = { episodeItem ->
+                            // TODO: Implement delete functionality - requires admin permissions
+                            Log.d("NavGraph", "Delete requested for episode: ${episodeItem.name}")
+                        },
+                        onMarkWatchedClick = { episodeItem ->
+                            viewModel.markAsWatched(episodeItem)
+                        },
+                        onMarkUnwatchedClick = { episodeItem ->
+                            viewModel.markAsUnwatched(episodeItem)
+                        },
+                        onFavoriteClick = { episodeItem ->
+                            viewModel.toggleFavorite(episodeItem)
+                        }
+                    )
                 }
-            } else {
-                // Episode not found and not loading, show error or navigate back
-                LaunchedEffect(Unit) {
-                    navController.popBackStack()
+                appState.isLoading -> {
+                    // Still loading, show loading indicator
+                    Log.d("NavGraph", "TVEpisodeDetail: App state is loading, showing loading indicator")
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                else -> {
+                    // Episode not found and not loading
+                    Log.w("NavGraph", "TVEpisodeDetail: Episode $episodeId not found in app state with ${appState.allItems.size} items, attempting delayed retry")
+                    
+                    // Give it a brief moment for state updates to propagate before giving up
+                    var hasRetried by remember { mutableStateOf(false) }
+                    
+                    LaunchedEffect(episodeId, hasRetried) {
+                        if (!hasRetried) {
+                            hasRetried = true
+                            // Wait a bit for state to update
+                            kotlinx.coroutines.delay(100)
+                            
+                            // Check again
+                            val retryEpisode = viewModel.appState.value.allItems.find { it.id?.toString() == episodeId }
+                            if (retryEpisode == null) {
+                                Log.e("NavGraph", "TVEpisodeDetail: Episode $episodeId still not found after retry, navigating back")
+                                navController.popBackStack()
+                            }
+                        }
+                    }
+                    
+                    // Show loading while we retry
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
             }
         }

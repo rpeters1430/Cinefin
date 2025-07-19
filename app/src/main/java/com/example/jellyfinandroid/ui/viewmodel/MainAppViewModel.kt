@@ -189,6 +189,24 @@ class MainAppViewModel @Inject constructor(
         }
     }
     
+    /**
+     * Manually refresh authentication token if expired
+     */
+    fun refreshAuthentication() {
+        viewModelScope.launch {
+            Log.d("MainAppViewModel", "Manual authentication refresh requested")
+            try {
+                repository.validateAndRefreshTokenManually()
+                Log.d("MainAppViewModel", "Authentication refresh completed")
+            } catch (e: Exception) {
+                Log.e("MainAppViewModel", "Authentication refresh failed", e)
+                _appState.value = _appState.value.copy(
+                    errorMessage = "Failed to refresh authentication: ${e.message}"
+                )
+            }
+        }
+    }
+    
     fun getImageUrl(item: BaseItemDto): String? {
         return repository.getImageUrl(item.id.toString(), "Primary", null)
     }
