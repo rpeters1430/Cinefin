@@ -1141,18 +1141,18 @@ class JellyfinRepository @Inject constructor(
      * Checks if the currently authenticated user has administrator privileges
      * or permission to delete content.
      */
-    private suspend fun hasAdminDeletePermission(server: JellyfinServer): Boolean {
-        val userId = server.userId ?: return false
-        return try {
-            val userUuid = parseUuid(userId, "user")
-            val client = getClient(server.url, server.accessToken)
-            val user = client.userApi.getUser(userUuid).content
-            user.policy?.isAdministrator == true || user.policy?.enableContentDeletion == true
-        } catch (e: Exception) {
-            Log.e("JellyfinRepository", "Failed to verify admin permissions: ${e.message}", e)
-            false
-        }
+private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<Boolean> {
+    val userId = server.userId ?: return ApiResult.Success(false)
+    return try {
+        val userUuid = parseUuid(userId, "user")
+        val client = getClient(server.url, server.accessToken)
+        val user = client.userApi.getUser(userUuid).content
+        ApiResult.Success(user.policy?.isAdministrator == true || user.policy?.enableContentDeletion == true)
+    } catch (e: Exception) {
+        Log.e("JellyfinRepository", "Failed to verify admin permissions: ${e.message}", e)
+        ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, getErrorType(e))
     }
+}
 
     /**
      * Deletes an item only if the current user has administrator permissions.
