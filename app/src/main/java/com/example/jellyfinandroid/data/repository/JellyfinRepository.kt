@@ -234,18 +234,21 @@ class JellyfinRepository @Inject constructor(
         }
     }
     
-    // Simple Quick Connect implementation for demonstration
+    /**
+     * Start a new Quick Connect session by calling the server API.
+     */
     suspend fun initiateQuickConnect(serverUrl: String): ApiResult<QuickConnectResult> {
         return try {
-            // First test server connection
             val client = getClient(serverUrl)
-            val serverInfo = client.systemApi.getPublicSystemInfo()
-            
-            // Generate a simple code for demonstration
-            val code = generateQuickConnectCode()
-            val secret = UUID.randomUUID().toString()
-            
-            ApiResult.Success(QuickConnectResult(code = code, secret = secret))
+            val response = client.quickConnectApi.initiateQuickConnect()
+            val result = response.content
+
+            ApiResult.Success(
+                QuickConnectResult(
+                    code = result.code,
+                    secret = result.secret
+                )
+            )
         } catch (e: Exception) {
             val errorType = getErrorType(e)
             ApiResult.Error("Failed to initiate Quick Connect: ${e.message}", e, errorType)
@@ -276,33 +279,13 @@ class JellyfinRepository @Inject constructor(
         secret: String
     ): ApiResult<AuthenticationResult> = authMutex.withLock {
         return try {
-            // For demonstration, we'll simulate a successful authentication
-            // In real implementation, this would call the server's Quick Connect authenticate endpoint
-            
-            val mockUser = org.jellyfin.sdk.model.api.UserDto(
-                id = UUID.randomUUID(),
-                name = "QuickConnect User",
-                serverId = UUID.randomUUID().toString(),
-                hasPassword = false,
-                hasConfiguredPassword = false,
-                hasConfiguredEasyPassword = false,
-                primaryImageTag = "",
-                configuration = null,
-                policy = null,
-                lastLoginDate = null,
-                lastActivityDate = null,
-                enableAutoLogin = false
-            )
-            val mockAuthResult = AuthenticationResult(
-                user = mockUser,
-                sessionInfo = null, // Not used in this mock
-                accessToken = "mock-access-token-${UUID.randomUUID()}",
-                serverId = UUID.randomUUID().toString()
-            )
-            
-            // Fetch public system info for server details
+            val client = getClient(serverUrl)
+            val request = QuickConnectDto(secret = secret)
+            val response = client.quickConnectApi.authenticateQuickConnect(request)
+            val authResult = response.content
+
             val systemInfo = try {
-                getClient(serverUrl, mockAuthResult.accessToken)
+                getClient(serverUrl, authResult.accessToken)
                     .systemApi.getPublicSystemInfo().content
             } catch (e: Exception) {
                 Log.e("JellyfinRepository", "Failed to fetch public system info: ${e.message}", e)
@@ -312,23 +295,23 @@ class JellyfinRepository @Inject constructor(
             if (systemInfo == null) {
                 return ApiResult.Error("Failed to fetch public system info")
             }
-            // Update current server state with real name and version
+
             val server = JellyfinServer(
-                id = mockAuthResult.serverId ?: "",
+                id = authResult.serverId ?: "",
                 name = systemInfo.serverName ?: "Unknown Server",
                 url = serverUrl.trimEnd('/'),
                 isConnected = true,
                 version = systemInfo.version,
-                userId = mockAuthResult.user?.id?.toString(),
-                username = mockAuthResult.user?.name,
-                accessToken = mockAuthResult.accessToken,
+                userId = authResult.user?.id?.toString(),
+                username = authResult.user?.name,
+                accessToken = authResult.accessToken,
                 loginTimestamp = System.currentTimeMillis()
             )
 
             _currentServer.value = server
             _isConnected.value = true
 
-            ApiResult.Success(mockAuthResult)
+            ApiResult.Success(authResult)
         } catch (e: Exception) {
             var errorType = getErrorType(e)
             if (errorType == ErrorType.UNAUTHORIZED) {
@@ -341,7 +324,9 @@ class JellyfinRepository @Inject constructor(
     private fun generateQuickConnectCode(): String {
         val secureRandom = SecureRandom()
         val chars = QuickConnectConstants.CODE_CHARACTERS
-return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRandom.nextLong())) }.joinToString("")
+        return (1..QuickConnectConstants.CODE_LENGTH)
+            .map { chars[secureRandom.nextInt(chars.length)] }
+            .joinToString("")
     }
     
     suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> {
