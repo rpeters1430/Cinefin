@@ -21,7 +21,7 @@ object MediaPlayerUtils {
                 itemId = item.id?.toString() ?: "",
                 itemName = item.name ?: "Unknown Title",
                 streamUrl = streamUrl,
-                startPosition = 0L // TODO: Get resume position from user data
+                startPosition = item.userData?.playbackPositionTicks?.div(10_000) ?: 0L
             )
             
             context.startActivity(intent)
@@ -124,13 +124,27 @@ object MediaPlayerUtils {
      * Gets the optimal stream URL based on device capabilities and network conditions
      */
     fun getOptimalStreamUrl(context: Context, baseStreamUrl: String): String {
-        // TODO: Implement logic to select optimal stream based on:
-        // - Network connection type (WiFi, cellular, etc.)
-        // - Device screen resolution
-        // - Device hardware capabilities
-        // - User preferences for quality vs. data usage
-        
-        return baseStreamUrl
+        return try {
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+            val isWifi = capabilities?.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) == true
+
+            val metrics = context.resources.displayMetrics
+            val maxWidth = metrics.widthPixels
+
+            val separator = if (baseStreamUrl.contains("?")) "&" else "?"
+            buildString {
+                append(baseStreamUrl)
+                append(separator)
+                append("MaxWidth=$maxWidth")
+                if (!isWifi) {
+                    append("&MaxStreamingBitrate=4000000")
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("MediaPlayerUtils", "Failed to compute optimal stream URL: ${e.message}", e)
+            baseStreamUrl
+        }
     }
 }
 
