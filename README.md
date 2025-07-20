@@ -24,7 +24,7 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 - **Server connection testing** before authentication
 - **Token-based authentication** with automatic session management
 - **Multi-server support** (connect to different Jellyfin instances)
-- **Quick Connect** support (coming soon)
+- **Quick Connect** support
 
 ### 📱 **Modern Android Architecture**
 - **Jetpack Compose** for declarative UI
