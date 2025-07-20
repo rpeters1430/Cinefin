@@ -504,7 +504,19 @@ fun JellyfinNavGraph(
                             }
                         },
                         onDeleteClick = { episodeItem ->
-                            viewModel.deleteItem(episodeItem)
+                            viewModel.deleteItem(episodeItem) { success, error ->
+                                val context = navController.context
+                                val message = if (success) {
+                                    "Item deleted successfully"
+                                } else {
+                                    error ?: "Failed to delete item"
+                                }
+                                android.widget.Toast.makeText(
+                                    context,
+                                    message,
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         },
                         onMarkWatchedClick = { episodeItem ->
                             viewModel.markAsWatched(episodeItem)

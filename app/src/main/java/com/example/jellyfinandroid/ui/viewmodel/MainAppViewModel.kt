@@ -397,9 +397,9 @@ class MainAppViewModel @Inject constructor(
         }
     }
 
-    fun deleteItem(item: BaseItemDto) {
+    fun deleteItem(item: BaseItemDto, onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
         viewModelScope.launch {
-            when (val result = repository.deleteItem(item.id.toString())) {
+            when (val result = repository.deleteItemAsAdmin(item.id.toString())) {
                 is ApiResult.Success -> {
                     Log.d("MainAppViewModel", "Successfully deleted ${item.name}")
                     _appState.value = _appState.value.copy(
@@ -412,12 +412,14 @@ class MainAppViewModel @Inject constructor(
                         allItems = _appState.value.allItems.filterNot { it.id == item.id },
                         allTVShows = _appState.value.allTVShows.filterNot { it.id == item.id }
                     )
+                    onResult(true, null)
                 }
                 is ApiResult.Error -> {
                     Log.e("MainAppViewModel", "Failed to delete item: ${result.message}")
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to delete item: ${result.message}"
                     )
+                    onResult(false, result.message)
                 }
                 is ApiResult.Loading -> {
                     // no-op
