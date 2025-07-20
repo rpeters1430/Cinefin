@@ -920,6 +920,10 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         return getItemDetailsById(movieId, "movie")
     }
     
+    suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> {
+        return getItemDetailsById(episodeId, "episode")
+    }
+    
     suspend fun searchItems(
         query: String,
         includeItemTypes: List<BaseItemKind>? = null,

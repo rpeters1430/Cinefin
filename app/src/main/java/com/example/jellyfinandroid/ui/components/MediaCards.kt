@@ -202,14 +202,14 @@ fun MediaCard(
                             Box(contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator(
                                     progress = { animatedRating / 10f },
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(28.dp),
                                     strokeWidth = 2.dp,
                                     color = ratingColor,
                                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                                 )
                                 Text(
-                                    text = String.format("%.1f", rating),
-                                    style = MaterialTheme.typography.labelSmall,
+                                    text = rating.toInt().toString(),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                     color = ratingColor
                                 )
                             }
@@ -403,14 +403,14 @@ fun RecentlyAddedCard(
                         Box(contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(
                                 progress = { animatedRating / 10f },
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(24.dp),
                                 strokeWidth = 2.dp,
                                 color = ratingColor,
                                 trackColor = MaterialTheme.colorScheme.surfaceVariant
                             )
                             Text(
-                                text = String.format("%.1f", rating),
-                                style = MaterialTheme.typography.labelSmall,
+                                text = rating.toInt().toString(),
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                 color = ratingColor
                             )
                         }

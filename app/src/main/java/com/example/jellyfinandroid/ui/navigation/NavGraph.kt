@@ -10,9 +10,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -517,29 +525,47 @@ fun JellyfinNavGraph(
                         CircularProgressIndicator()
                     }
                 }
-                else -> {
-                    // Episode not found and not loading
-                    Log.w("NavGraph", "TVEpisodeDetail: Episode $episodeId not found in app state with ${appState.allItems.size} items, attempting delayed retry")
-                    
-                    // Give it a brief moment for state updates to propagate before giving up
-                    var hasRetried by remember { mutableStateOf(false) }
-                    
-                    LaunchedEffect(episodeId, hasRetried) {
-                        if (!hasRetried) {
-                            hasRetried = true
-                            // Wait a bit for state to update
-                            kotlinx.coroutines.delay(100)
-                            
-                            // Check again
-                            val retryEpisode = viewModel.appState.value.allItems.find { it.id?.toString() == episodeId }
-                            if (retryEpisode == null) {
-                                Log.e("NavGraph", "TVEpisodeDetail: Episode $episodeId still not found after retry, navigating back")
-                                navController.popBackStack()
+                !appState.errorMessage.isNullOrBlank() -> {
+                    // Error occurred during loading
+                    Log.e("NavGraph", "TVEpisodeDetail: Error loading episode: ${appState.errorMessage}")
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "Failed to load episode",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = appState.errorMessage ?: "Unknown error",
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { 
+                                    viewModel.clearError()
+                                    navController.popBackStack() 
+                                }
+                            ) {
+                                Text("Go Back")
                             }
                         }
                     }
+                }
+                else -> {
+                    // Episode not found and not loading - try to load it
+                    Log.w("NavGraph", "TVEpisodeDetail: Episode $episodeId not found in app state with ${appState.allItems.size} items, attempting to load")
                     
-                    // Show loading while we retry
+                    // Load the episode details if we haven't already
+                    LaunchedEffect(episodeId) {
+                        viewModel.loadEpisodeDetails(episodeId)
+                    }
+                    
+                    // Show loading while we fetch the episode
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }

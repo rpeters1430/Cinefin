@@ -498,9 +498,57 @@ class MainAppViewModel @Inject constructor(
                 return@launch
             }
             
-            // If not found, try to load it via series context
-            // This is a fallback - episodes should ideally be loaded when viewing seasons
-            Log.d("MainAppViewModel", "loadEpisodeDetails: Episode not found in current data, episode detail screen will handle loading")
+            // Set loading state
+            _appState.value = _appState.value.copy(isLoading = true)
+            
+            try {
+                // Fetch episode details from repository
+                when (val result = repository.getEpisodeDetails(episodeId)) {
+                    is ApiResult.Success -> {
+                        val episode = result.data
+                        Log.d("MainAppViewModel", "loadEpisodeDetails: Successfully loaded episode: ${episode.name}")
+                        
+                        // Add episode to app state
+                        addOrUpdateItem(episode)
+                        
+                        // If episode has series info, try to load series details too for better context
+                        episode.seriesId?.let { seriesId ->
+                            val existingSeries = _appState.value.allItems.find { it.id.toString() == seriesId.toString() }
+                            if (existingSeries == null) {
+                                Log.d("MainAppViewModel", "loadEpisodeDetails: Loading series details for context")
+                                when (val seriesResult = repository.getSeriesDetails(seriesId.toString())) {
+                                    is ApiResult.Success -> {
+                                        addOrUpdateItem(seriesResult.data)
+                                        Log.d("MainAppViewModel", "loadEpisodeDetails: Added series context: ${seriesResult.data.name}")
+                                    }
+                                    is ApiResult.Error -> {
+                                        Log.w("MainAppViewModel", "loadEpisodeDetails: Failed to load series context: ${seriesResult.message}")
+                                    }
+                                    else -> { /* Loading state not relevant here */ }
+                                }
+                            }
+                        }
+                        
+                        _appState.value = _appState.value.copy(isLoading = false)
+                    }
+                    is ApiResult.Error -> {
+                        Log.e("MainAppViewModel", "loadEpisodeDetails: Failed to load episode: ${result.message}")
+                        _appState.value = _appState.value.copy(
+                            isLoading = false,
+                            errorMessage = "Failed to load episode: ${result.message}"
+                        )
+                    }
+                    is ApiResult.Loading -> {
+                        Log.d("MainAppViewModel", "loadEpisodeDetails: Episode loading in progress")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("MainAppViewModel", "loadEpisodeDetails: Exception loading episode", e)
+                _appState.value = _appState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Failed to load episode: ${e.message}"
+                )
+            }
         }
     }
     
