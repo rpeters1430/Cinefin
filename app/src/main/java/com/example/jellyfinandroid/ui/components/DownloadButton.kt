@@ -19,6 +19,7 @@ import com.example.jellyfinandroid.ui.downloads.DownloadsViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import kotlin.math.roundToInt
 
+@androidx.media3.common.util.UnstableApi
 @Composable
 fun DownloadButton(
     item: BaseItemDto,

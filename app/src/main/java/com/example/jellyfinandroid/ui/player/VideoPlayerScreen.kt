@@ -59,8 +59,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.delay
 
+@UnstableApi
 @Composable
 fun VideoPlayerScreen(
     playerState: VideoPlayerState,
@@ -394,8 +396,8 @@ private fun formatTime(timeMs: Long): String {
     val seconds = totalSeconds % 60
     
     return if (hours > 0) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
+        String.format(java.util.Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
     } else {
-        String.format("%d:%02d", minutes, seconds)
+        String.format(java.util.Locale.ROOT, "%d:%02d", minutes, seconds)
     }
 }

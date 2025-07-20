@@ -12,13 +12,17 @@ import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.common.util.UnstableApi
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
 import com.google.android.gms.cast.framework.CastContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -48,6 +52,7 @@ data class VideoQuality(
     val height: Int
 )
 
+@UnstableApi
 @HiltViewModel
 class VideoPlayerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -115,18 +120,22 @@ class VideoPlayerViewModel @Inject constructor(
                 val isOfflinePlayback = offlineMediaItem != null && streamUrl.startsWith("file://")
                 
                 // Create media item and store references
-                currentMediaItem = if (isOfflinePlayback) {
-                    offlineMediaItem!!
+                currentMediaItem = if (isOfflinePlayback && offlineMediaItem != null) {
+                    offlineMediaItem
                 } else {
                     MediaItem.fromUri(streamUrl)
                 }
                 
+                // Ensure trackSelector and currentMediaItem are not null before creating ExoPlayer
+                val selector = trackSelector ?: throw IllegalStateException("Track selector not initialized")
+                val mediaItem = currentMediaItem ?: throw IllegalStateException("Media item not created")
+                
                 exoPlayer = ExoPlayer.Builder(context)
-                    .setTrackSelector(trackSelector!!)
+                    .setTrackSelector(selector)
                     .build()
                     .apply {
                         addListener(playerListener)
-                        setMediaItem(currentMediaItem!!)
+                        setMediaItem(mediaItem)
                         seekTo(startPosition)
                         prepare()
                     }
@@ -139,6 +148,9 @@ class VideoPlayerViewModel @Inject constructor(
                 
                 // Load available qualities
                 loadAvailableQualities(itemId)
+                
+                // Start position updates
+                startPositionUpdates()
                 
                 Log.d("VideoPlayerViewModel", "Player initialized for item: $itemName")
                 
@@ -225,23 +237,23 @@ class VideoPlayerViewModel @Inject constructor(
     }
     
     fun releasePlayer() {
-private fun saveCurrentPlaybackPosition(position: Long, itemId: String) {
-    if (itemId.isNotEmpty()) {
-        viewModelScope.launch {
-            com.example.jellyfinandroid.data.PlaybackPositionStore.savePlaybackPosition(context, itemId, position)
-        }
-    }
-}
+        val position = exoPlayer?.currentPosition ?: 0L
+        val itemId = _playerState.value.itemId
+        saveCurrentPlaybackPosition(position, itemId)
 
-// In releasePlayer:
-val position = exoPlayer?.currentPosition ?: 0L
-val itemId = _playerState.value.itemId
-saveCurrentPlaybackPosition(position, itemId)
-
+        stopPositionUpdates()
         exoPlayer?.removeListener(playerListener)
         exoPlayer?.release()
         exoPlayer = null
         castManager.release()
+    }
+    
+    private fun saveCurrentPlaybackPosition(position: Long, itemId: String) {
+        if (itemId.isNotEmpty()) {
+            viewModelScope.launch {
+                com.example.jellyfinandroid.data.PlaybackPositionStore.savePlaybackPosition(context, itemId, position)
+            }
+        }
     }
     
     
@@ -297,10 +309,12 @@ saveCurrentPlaybackPosition(position, itemId)
         }
     }
     
-    // Update position periodically
-    init {
-        viewModelScope.launch {
-            while (true) {
+    private var positionUpdateJob: Job? = null
+    
+    private fun startPositionUpdates() {
+        positionUpdateJob?.cancel()
+        positionUpdateJob = viewModelScope.launch {
+            while (isActive) {
                 exoPlayer?.let { player ->
                     _playerState.value = _playerState.value.copy(
                         currentPosition = player.currentPosition,
@@ -308,8 +322,19 @@ saveCurrentPlaybackPosition(position, itemId)
                         bufferedPosition = player.bufferedPosition
                     )
                 }
-                kotlinx.coroutines.delay(1000L) // Update every second
+                delay(1000L) // Update every second
             }
         }
+    }
+    
+    private fun stopPositionUpdates() {
+        positionUpdateJob?.cancel()
+        positionUpdateJob = null
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        stopPositionUpdates()
+        releasePlayer()
     }
 }

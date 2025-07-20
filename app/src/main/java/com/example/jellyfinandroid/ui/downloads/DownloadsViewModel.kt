@@ -13,12 +13,17 @@ import com.example.jellyfinandroid.data.offline.OfflineStorageInfo
 import com.example.jellyfinandroid.ui.player.VideoPlayerActivity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import javax.inject.Inject
 
+@androidx.media3.common.util.UnstableApi
 @HiltViewModel
 class DownloadsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -30,7 +35,7 @@ class DownloadsViewModel @Inject constructor(
     val downloadProgress: StateFlow<Map<String, DownloadProgress>> = downloadManager.downloadProgress
     
     val storageInfo: StateFlow<OfflineStorageInfo?> = kotlinx.coroutines.flow.flow {
-        while (true) {
+        while (currentCoroutineContext().isActive) {
             emit(playbackManager.getOfflineStorageInfo())
             kotlinx.coroutines.delay(5000L) // Update every 5 seconds
         }

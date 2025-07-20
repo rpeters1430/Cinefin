@@ -14,6 +14,7 @@ import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.quickConnectApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
+import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.AuthenticateUserByName
 import org.jellyfin.sdk.model.api.QuickConnectDto
@@ -279,7 +280,7 @@ class JellyfinRepository @Inject constructor(
         return try {
             val client = getClient(serverUrl)
             val request = QuickConnectDto(secret = secret)
-            val response = client.quickConnectApi.authenticateQuickConnect(request)
+            val response = client.userApi.authenticateWithQuickConnect(request)
             val authResult = response.content
 
             val systemInfo = try {
@@ -1120,7 +1121,7 @@ class JellyfinRepository @Inject constructor(
 
         return try {
             val client = getClient(server.url, server.accessToken)
-            client.itemsApi.deleteItem(itemId = itemUuid)
+            client.libraryApi.deleteItem(itemId = itemUuid)
             ApiResult.Success(true)
         } catch (e: Exception) {
             val errorType = getErrorType(e)
@@ -1137,7 +1138,7 @@ private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<
     return try {
         val userUuid = parseUuid(userId, "user")
         val client = getClient(server.url, server.accessToken)
-        val user = client.userApi.getUser(userUuid).content
+        val user = client.userApi.getCurrentUser().content
         ApiResult.Success(user.policy?.isAdministrator == true || user.policy?.enableContentDeletion == true)
     } catch (e: Exception) {
         Log.e("JellyfinRepository", "Failed to verify admin permissions: ${e.message}", e)
@@ -1159,13 +1160,17 @@ private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<
             return ApiResult.Error("Invalid item ID", errorType = ErrorType.NOT_FOUND)
         }
 
-        if (!hasAdminDeletePermission(server)) {
+        val adminPermissionResult = hasAdminDeletePermission(server)
+        if (adminPermissionResult is ApiResult.Error) {
+            return adminPermissionResult
+        }
+        if (adminPermissionResult is ApiResult.Success && !adminPermissionResult.data) {
             return ApiResult.Error("Administrator permissions required", errorType = ErrorType.FORBIDDEN)
         }
 
         return try {
             val client = getClient(server.url, server.accessToken)
-            client.itemsApi.deleteItem(itemId = itemUuid)
+            client.libraryApi.deleteItem(itemId = itemUuid)
             ApiResult.Success(true)
         } catch (e: Exception) {
             val errorType = getErrorType(e)

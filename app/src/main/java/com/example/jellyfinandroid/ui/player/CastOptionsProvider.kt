@@ -8,6 +8,7 @@ import com.google.android.gms.cast.framework.media.CastMediaOptions
 import com.google.android.gms.cast.framework.media.MediaIntentReceiver
 import com.google.android.gms.cast.framework.media.NotificationOptions
 
+@androidx.media3.common.util.UnstableApi
 class CastOptionsProvider : OptionsProvider {
     
     companion object {

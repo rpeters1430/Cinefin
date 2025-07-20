@@ -24,6 +24,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
 import dagger.hilt.android.AndroidEntryPoint
 
+@androidx.media3.common.util.UnstableApi
 @AndroidEntryPoint
 class VideoPlayerActivity : ComponentActivity() {
     
@@ -112,8 +113,7 @@ class VideoPlayerActivity : ComponentActivity() {
     
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && 
-            packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
             enterPictureInPictureModeCustom()
         }
     }
@@ -126,13 +126,17 @@ class VideoPlayerActivity : ComponentActivity() {
     }
     
     private fun enterPictureInPictureModeCustom() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val aspectRatio = Rational(16, 9)
-            val params = PictureInPictureParams.Builder()
-                .setAspectRatio(aspectRatio)
-                .build()
-            enterPictureInPictureMode(params)
-        }
+        val aspectRatio = Rational(16, 9)
+        val params = PictureInPictureParams.Builder()
+            .setAspectRatio(aspectRatio)
+            .apply {
+                // setAutoEnterEnabled requires API 31+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    setAutoEnterEnabled(true)
+                }
+            }
+            .build()
+        enterPictureInPictureMode(params)
     }
     
     private fun toggleOrientation() {

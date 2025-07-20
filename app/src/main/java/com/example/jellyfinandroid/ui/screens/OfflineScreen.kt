@@ -348,12 +348,14 @@ private fun OfflineContentItem(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     
-                    if (item.type == BaseItemKind.EPISODE && item.seriesName != null) {
-                        Text(
-                            text = item.seriesName!!,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    item.seriesName?.let { seriesName ->
+                        if (item.type == BaseItemKind.EPISODE) {
+                            Text(
+                                text = seriesName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }

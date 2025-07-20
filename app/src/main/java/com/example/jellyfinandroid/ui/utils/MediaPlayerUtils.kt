@@ -6,9 +6,11 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import com.example.jellyfinandroid.ui.player.VideoPlayerActivity
 import org.jellyfin.sdk.model.api.BaseItemDto
 
+@androidx.media3.common.util.UnstableApi
 object MediaPlayerUtils {
 
     private const val WIFI_MAX_BITRATE = 8_000_000
@@ -22,11 +24,7 @@ object MediaPlayerUtils {
             Log.d("MediaPlayerUtils", "Launching internal video player for: ${item.name}")
             
             val itemId = item.id?.toString() ?: ""
-            val itemId = item.id?.toString() ?: ""
-            val resumePosition = withContext(Dispatchers.IO) {
-                com.example.jellyfinandroid.data.PlaybackPositionStore.getPlaybackPosition(context, itemId)
-            }.takeIf { it > 0 }
-                ?: item.userData?.playbackPositionTicks?.div(10_000) ?: 0L
+            val resumePosition = item.userData?.playbackPositionTicks?.div(10_000) ?: 0L
 
             val intent = VideoPlayerActivity.createIntent(
                 context = context,
@@ -55,7 +53,7 @@ object MediaPlayerUtils {
             Log.d("MediaPlayerUtils", "Attempting to play with external player: ${item.name}")
             
             val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(Uri.parse(streamUrl), "video/*")
+                setDataAndType(streamUrl.toUri(), "video/*")
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 
                 // Add extra information for media players
@@ -73,7 +71,7 @@ object MediaPlayerUtils {
             
             // Last resort fallback: try with generic intent
             try {
-                val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(streamUrl)).apply {
+                val fallbackIntent = Intent(Intent.ACTION_VIEW, streamUrl.toUri()).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
                 context.startActivity(fallbackIntent)
@@ -122,7 +120,7 @@ object MediaPlayerUtils {
     fun isMediaPlayerAvailable(context: Context): Boolean {
         return try {
             val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(Uri.parse("http://example.com/test.mp4"), "video/*")
+                setDataAndType("http://example.com/test.mp4".toUri(), "video/*")
             }
             val activities = context.packageManager.queryIntentActivities(intent, 0)
             activities.isNotEmpty()

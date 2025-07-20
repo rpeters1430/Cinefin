@@ -15,6 +15,7 @@ import com.example.jellyfinandroid.ui.navigation.Screen
 import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
 import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
 
+@androidx.media3.common.util.UnstableApi
 @Composable
 fun JellyfinApp(onLogout: () -> Unit = {}) {
     JellyfinAndroidTheme(dynamicColor = true) {

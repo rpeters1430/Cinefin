@@ -8,6 +8,7 @@ import androidx.media3.common.Tracks
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.trackselection.MappingTrackSelector
+import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +38,7 @@ data class TrackSelectionState(
     val subtitlesEnabled: Boolean = false
 )
 
+@UnstableApi
 class TrackSelectionManager(
     private val exoPlayer: ExoPlayer,
     private val trackSelector: DefaultTrackSelector

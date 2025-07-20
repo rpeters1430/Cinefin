@@ -2,8 +2,10 @@ package com.example.jellyfinandroid.ui.player
 
 import android.content.Context
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.media3.cast.CastPlayer
 import androidx.media3.cast.SessionAvailabilityListener
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -22,6 +24,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@UnstableApi
 data class CastState(
     val isAvailable: Boolean = false,
     val isConnected: Boolean = false,
@@ -30,6 +33,7 @@ data class CastState(
     val castPlayer: CastPlayer? = null
 )
 
+@UnstableApi
 @Singleton
 class CastManager @Inject constructor(
     @ApplicationContext private val context: Context
@@ -113,8 +117,10 @@ class CastManager @Inject constructor(
                 sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
             }
             
-            castPlayer = CastPlayer(castContext!!).apply {
-                setSessionAvailabilityListener(sessionAvailabilityListener)
+            castContext?.let { context ->
+                castPlayer = CastPlayer(context).apply {
+                    setSessionAvailabilityListener(sessionAvailabilityListener)
+                }
             }
             
             updateCastState(
@@ -141,7 +147,7 @@ class CastManager @Inject constructor(
                     
                     // Add artwork if available - simplified for compatibility
                     val imageUrl = buildImageUrl(item.id.toString(), "primary")
-                    addImage(WebImage(android.net.Uri.parse(imageUrl)))
+                    addImage(WebImage(imageUrl.toUri()))
                 }
                 
                 // Build media info

@@ -42,6 +42,11 @@ class MainAppViewModelTest {
         coEvery { mockRepository.getUserLibraries() } returns ApiResult.Success(emptyList())
         coEvery { mockRepository.getRecentlyAdded(any()) } returns ApiResult.Success(emptyList())
         coEvery { mockRepository.getRecentlyAddedByTypes(any()) } returns ApiResult.Success(emptyMap())
+        coEvery { mockRepository.getLibraryItems(any(), any()) } returns ApiResult.Success(emptyList())
+        
+        // Mock StateFlow properties
+        every { mockRepository.currentServer } returns MutableStateFlow(null).asStateFlow()
+        every { mockRepository.isConnected } returns MutableStateFlow(false).asStateFlow()
 
         viewModel = MainAppViewModel(mockRepository, mockCredentialManager)
     }

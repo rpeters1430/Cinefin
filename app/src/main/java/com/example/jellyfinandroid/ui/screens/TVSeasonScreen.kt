@@ -370,7 +370,7 @@ private fun SeriesDetailsHeader(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = String.format("%.1f", rating),
+                                text = String.format(java.util.Locale.ROOT, "%.1f", rating),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.White.copy(alpha = 0.9f)
                             )

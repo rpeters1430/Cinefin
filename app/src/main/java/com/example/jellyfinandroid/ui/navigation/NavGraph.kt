@@ -57,6 +57,7 @@ import android.util.Log
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 
+@androidx.media3.common.util.UnstableApi
 @Composable
 fun JellyfinNavGraph(
     navController: NavHostController = rememberNavController(),

@@ -41,7 +41,7 @@ object ShareUtils {
         } ?: ""
         
         val rating = item.communityRating?.let { 
-            "\nRating: ${String.format("%.1f", it)}/10" 
+            "\nRating: ${String.format(java.util.Locale.ROOT, "%.1f", it)}/10" 
         } ?: ""
         
         val runtime = item.runTimeTicks?.let { ticks ->

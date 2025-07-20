@@ -309,7 +309,7 @@ private fun EpisodeHeroSection(
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = String.format("%.1f", rating),
+                            text = String.format(java.util.Locale.ROOT, "%.1f", rating),
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White.copy(alpha = 0.9f)
                         )
@@ -322,7 +322,7 @@ private fun EpisodeHeroSection(
                 if (progress > 0.0) {
                     Column(modifier = Modifier.padding(top = 8.dp)) {
                         Text(
-                            text = "${String.format("%.0f", progress)}% watched",
+                            text = "${String.format(java.util.Locale.ROOT, "%.0f", progress)}% watched",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.8f)
                         )
@@ -660,7 +660,7 @@ private fun SeriesInfoSection(
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    text = String.format("%.1f", rating),
+                                    text = String.format(java.util.Locale.ROOT, "%.1f", rating),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

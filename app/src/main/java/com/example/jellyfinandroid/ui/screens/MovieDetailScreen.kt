@@ -212,7 +212,7 @@ fun MovieDetailScreen(
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    text = String.format("%.1f", rating),
+                                    text = String.format(java.util.Locale.ROOT, "%.1f", rating),
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White

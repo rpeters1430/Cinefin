@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import android.util.Log
+import androidx.core.net.toUri
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.io.File
 
@@ -32,7 +33,7 @@ object MediaDownloadManager {
             val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             
             // Create download request
-            val request = DownloadManager.Request(Uri.parse(streamUrl)).apply {
+            val request = DownloadManager.Request(streamUrl.toUri()).apply {
                 setTitle("${item.name ?: "Unknown"}")
                 setDescription("Downloading from Jellyfin")
                 

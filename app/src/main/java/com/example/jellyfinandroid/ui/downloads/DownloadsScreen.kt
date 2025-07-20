@@ -21,6 +21,7 @@ import com.example.jellyfinandroid.data.offline.DownloadStatus
 import com.example.jellyfinandroid.data.offline.OfflineDownload
 import kotlin.math.roundToInt
 
+@androidx.media3.common.util.UnstableApi
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadsScreen(

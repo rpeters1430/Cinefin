@@ -9,6 +9,7 @@ import com.example.jellyfinandroid.ui.JellyfinApp
 import com.example.jellyfinandroid.utils.ImageLoaderInitializer
 import dagger.hilt.android.AndroidEntryPoint
 
+@androidx.media3.common.util.UnstableApi
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject lateinit var imageLoaderInitializer: ImageLoaderInitializer
