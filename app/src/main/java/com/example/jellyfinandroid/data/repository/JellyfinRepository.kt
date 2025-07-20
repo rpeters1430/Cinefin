@@ -359,9 +359,15 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
         validateAndRefreshToken()
 
         return executeWithAuthRetry("getUserLibraries") {
-            val client = getClient(server.url, server.accessToken)
+            // ✅ FIX: Always get current server state inside the retry closure to use fresh token
+            val currentServer = _currentServer.value 
+                ?: return@executeWithAuthRetry ApiResult.Error("Server not available", errorType = ErrorType.AUTHENTICATION)
+            val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
+                ?: return@executeWithAuthRetry ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+                
+            val client = getClient(currentServer.url, currentServer.accessToken)
             val response = client.itemsApi.getItems(
-                userId = userUuid,
+                userId = currentUserUuid,
                 includeItemTypes = listOf(org.jellyfin.sdk.model.api.BaseItemKind.COLLECTION_FOLDER)
             )
             ApiResult.Success(response.content.items ?: emptyList())
@@ -424,9 +430,15 @@ return List(QuickConnectConstants.CODE_LENGTH) { chars.random(Random(secureRando
             Log.d("JellyfinRepository", "getRecentlyAdded: Requesting $limit items from server")
 
             val items = executeWithRetry {
-                val client = getClient(server.url, server.accessToken)
+                // ✅ FIX: Always get current server state inside the retry closure to use fresh token
+                val currentServer = _currentServer.value 
+                    ?: throw IllegalStateException("Server not available")
+                val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
+                    ?: throw IllegalStateException("Invalid user ID")
+                    
+                val client = getClient(currentServer.url, currentServer.accessToken)
                 val response = client.itemsApi.getItems(
-                    userId = userUuid,
+                    userId = currentUserUuid,
                     recursive = true,
                     includeItemTypes = listOf(
                         BaseItemKind.MOVIE,
