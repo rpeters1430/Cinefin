@@ -138,7 +138,7 @@ object MediaPlayerUtils {
                 append(separator)
                 append("MaxWidth=$maxWidth")
                 if (!isWifi) {
-                    append("&MaxStreamingBitrate=4000000")
+private const val CELLULAR_MAX_BITRATE = 4_000_000
                 }
             }
         } catch (e: Exception) {
