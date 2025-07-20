@@ -1116,6 +1116,27 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
+    suspend fun deleteItem(itemId: String): ApiResult<Boolean> {
+        val server = _currentServer.value
+        if (server?.accessToken == null || server.userId == null) {
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull()
+        if (itemUuid == null) {
+            return ApiResult.Error("Invalid item ID", errorType = ErrorType.NOT_FOUND)
+        }
+
+        return try {
+            val client = getClient(server.url, server.accessToken)
+            client.itemsApi.deleteItem(itemId = itemUuid)
+            ApiResult.Success(true)
+        } catch (e: Exception) {
+            val errorType = getErrorType(e)
+            ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
+        }
+    }
+
     fun getStreamUrl(itemId: String): String? {
         val server = _currentServer.value ?: return null
         return "${server.url}/Videos/${itemId}/stream?static=true&api_key=${server.accessToken}"

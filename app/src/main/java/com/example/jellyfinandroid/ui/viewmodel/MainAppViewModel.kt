@@ -397,6 +397,35 @@ class MainAppViewModel @Inject constructor(
         }
     }
 
+    fun deleteItem(item: BaseItemDto) {
+        viewModelScope.launch {
+            when (val result = repository.deleteItem(item.id.toString())) {
+                is ApiResult.Success -> {
+                    Log.d("MainAppViewModel", "Successfully deleted ${item.name}")
+                    _appState.value = _appState.value.copy(
+                        recentlyAdded = _appState.value.recentlyAdded.filterNot { it.id == item.id },
+                        recentlyAddedByTypes = _appState.value.recentlyAddedByTypes.mapValues { entry ->
+                            entry.value.filterNot { it.id == item.id }
+                        }.filterValues { it.isNotEmpty() },
+                        favorites = _appState.value.favorites.filterNot { it.id == item.id },
+                        searchResults = _appState.value.searchResults.filterNot { it.id == item.id },
+                        allItems = _appState.value.allItems.filterNot { it.id == item.id },
+                        allTVShows = _appState.value.allTVShows.filterNot { it.id == item.id }
+                    )
+                }
+                is ApiResult.Error -> {
+                    Log.e("MainAppViewModel", "Failed to delete item: ${result.message}")
+                    _appState.value = _appState.value.copy(
+                        errorMessage = "Failed to delete item: ${result.message}"
+                    )
+                }
+                is ApiResult.Loading -> {
+                    // no-op
+                }
+            }
+        }
+    }
+
     fun getStreamUrl(item: BaseItemDto): String? {
         return repository.getStreamUrl(item.id.toString())
     }

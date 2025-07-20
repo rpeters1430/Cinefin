@@ -504,8 +504,7 @@ fun JellyfinNavGraph(
                             }
                         },
                         onDeleteClick = { episodeItem ->
-                            // TODO: Implement delete functionality - requires admin permissions
-                            Log.d("NavGraph", "Delete requested for episode: ${episodeItem.name}")
+                            viewModel.deleteItem(episodeItem)
                         },
                         onMarkWatchedClick = { episodeItem ->
                             viewModel.markAsWatched(episodeItem)
