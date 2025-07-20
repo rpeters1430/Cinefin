@@ -2,7 +2,7 @@
 
 [![Android CI](https://github.com/yourusername/JellyfinAndroid/actions/workflows/android-ci.yml/badge.svg)](https://github.com/yourusername/JellyfinAndroid/actions/workflows/android-ci.yml)
 [![Dependency Check](https://github.com/yourusername/JellyfinAndroid/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/yourusername/JellyfinAndroid/actions/workflows/dependency-check.yml)
-[![API Level](https://img.shields.io/badge/API-31%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=31)
+[![API Level](https://img.shields.io/badge/API-26%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=26)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.2.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
 
 A modern, beautiful Android client for Jellyfin media servers built with Material 3 design principles and the latest Android development technologies.
@@ -56,7 +56,7 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 
 ## 📱 Requirements
 
-- **Android 12** (API level 31) or higher
+- **Android 8.0** (API level 26) or higher
 - **Active Jellyfin server** (version 10.8.0 or later recommended)
 - **Internet connection** for streaming
 
@@ -65,7 +65,7 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 ### Prerequisites
 - Android Studio Iguana or later
 - JDK 17
-- Android SDK 31+
+- Android SDK 36+
 
 ### Building the Project
 
