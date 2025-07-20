@@ -17,7 +17,6 @@
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     
     <!-- Download manager access -->
-    <uses-permission android:name="android.permission.ACCESS_DOWNLOAD_MANAGER" />
     
     <!-- Video player permissions -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
