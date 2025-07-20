@@ -25,9 +25,7 @@ import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.ItemFields
-import com.example.jellyfinandroid.data.model.QuickConnectConstants
 import java.util.UUID
-import java.security.SecureRandom
 import kotlin.random.Random
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -321,13 +319,6 @@ class JellyfinRepository @Inject constructor(
         }
     }
     
-    private fun generateQuickConnectCode(): String {
-        val secureRandom = SecureRandom()
-        val chars = QuickConnectConstants.CODE_CHARACTERS
-        return (1..QuickConnectConstants.CODE_LENGTH)
-            .map { chars[secureRandom.nextInt(chars.length)] }
-            .joinToString("")
-    }
     
     suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
