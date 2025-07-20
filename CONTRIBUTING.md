@@ -30,7 +30,7 @@ We use GitHub to host code, track issues and feature requests, as well as accept
 
 ## 🐛 Bug Reports
 
-We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/yourusername/JellyfinAndroid/issues/new).
+We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/rpeters1430/JellyfinAndroid/issues/new).
 
 ### **Great Bug Reports Include:**
 
@@ -75,7 +75,7 @@ Feature requests are welcome! Please provide:
 ### **Setup Steps**
 ```bash
 # Clone your fork
-git clone https://github.com/yourusername/JellyfinAndroid.git
+git clone https://github.com/YOUR_USERNAME/JellyfinAndroid.git
 cd JellyfinAndroid
 
 # Add upstream remote

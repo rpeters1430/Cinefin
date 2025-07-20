@@ -1,7 +1,7 @@
 # Jellyfin Android Client
 
-[![Android CI](https://github.com/yourusername/JellyfinAndroid/actions/workflows/android-ci.yml/badge.svg)](https://github.com/yourusername/JellyfinAndroid/actions/workflows/android-ci.yml)
-[![Dependency Check](https://github.com/yourusername/JellyfinAndroid/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/yourusername/JellyfinAndroid/actions/workflows/dependency-check.yml)
+[![Android CI](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/android-ci.yml/badge.svg)](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/android-ci.yml)
+[![Dependency Check](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/dependency-check.yml)
 [![API Level](https://img.shields.io/badge/API-31%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=31)
 [![Kotlin](https://img.shields.io/badge/kotlin-2.2.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
 
@@ -71,7 +71,7 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/JellyfinAndroid.git
+   git clone https://github.com/rpeters1430/JellyfinAndroid.git
    cd JellyfinAndroid
    ```
 
@@ -255,7 +255,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **GitHub Issues:** [Report bugs and request features](https://github.com/yourusername/JellyfinAndroid/issues)
+- **GitHub Issues:** [Report bugs and request features](https://github.com/rpeters1430/JellyfinAndroid/issues)
 - **Jellyfin Community:** [Official Jellyfin forums](https://forum.jellyfin.org/)
 - **Documentation:** [Jellyfin API docs](https://api.jellyfin.org/)
 
