@@ -64,8 +64,8 @@ This repository includes several GitHub Actions workflows to ensure code quality
 Add these to your main README.md:
 
 ```markdown
-[![Android CI](https://github.com/yourusername/JellyfinAndroid/actions/workflows/android-ci.yml/badge.svg)](https://github.com/yourusername/JellyfinAndroid/actions/workflows/android-ci.yml)
-[![Dependency Check](https://github.com/yourusername/JellyfinAndroid/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/yourusername/JellyfinAndroid/actions/workflows/dependency-check.yml)
+[![Android CI](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/android-ci.yml/badge.svg)](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/android-ci.yml)
+[![Dependency Check](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/dependency-check.yml)
 ```
 
 ## Local Development
