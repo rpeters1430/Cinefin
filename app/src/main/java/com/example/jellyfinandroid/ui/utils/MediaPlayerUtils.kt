@@ -2,12 +2,17 @@ package com.example.jellyfinandroid.ui.utils
 
 import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.util.Log
 import com.example.jellyfinandroid.ui.player.VideoPlayerActivity
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 object MediaPlayerUtils {
+
+    private const val WIFI_MAX_BITRATE = 8_000_000
+    private const val CELLULAR_MAX_BITRATE = 4_000_000
     
     /**
      * Launches the internal video player with enhanced features
@@ -125,21 +130,29 @@ object MediaPlayerUtils {
      */
     fun getOptimalStreamUrl(context: Context, baseStreamUrl: String): String {
         return try {
-            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
-            val isWifi = capabilities?.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) == true
+            val isWifi = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+            val isCellular = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true
 
             val metrics = context.resources.displayMetrics
-            val maxWidth = metrics.widthPixels
+            val screenWidth = maxOf(metrics.widthPixels, metrics.heightPixels)
+
+            val (targetWidth, targetHeight) = when {
+                screenWidth >= 1920 -> 1920 to 1080
+                screenWidth >= 1280 -> 1280 to 720
+                else -> 854 to 480
+            }
+
+            val bitrate = if (isCellular && !isWifi) CELLULAR_MAX_BITRATE else WIFI_MAX_BITRATE
 
             val separator = if (baseStreamUrl.contains("?")) "&" else "?"
             buildString {
                 append(baseStreamUrl)
                 append(separator)
-                append("MaxWidth=$maxWidth")
-                if (!isWifi) {
-private const val CELLULAR_MAX_BITRATE = 4_000_000
-                }
+                append("MaxWidth=$targetWidth&")
+                append("MaxHeight=$targetHeight&")
+                append("MaxStreamingBitrate=$bitrate")
             }
         } catch (e: Exception) {
             Log.w("MediaPlayerUtils", "Failed to compute optimal stream URL: ${e.message}", e)
