@@ -16,12 +16,18 @@ object MediaPlayerUtils {
         try {
             Log.d("MediaPlayerUtils", "Launching internal video player for: ${item.name}")
             
+            val itemId = item.id?.toString() ?: ""
+            val resumePosition = kotlinx.coroutines.runBlocking {
+                com.example.jellyfinandroid.data.PlaybackPositionStore.getPlaybackPosition(context, itemId)
+            }.takeIf { it > 0 }
+                ?: item.userData?.playbackPositionTicks?.div(10_000) ?: 0L
+
             val intent = VideoPlayerActivity.createIntent(
                 context = context,
-                itemId = item.id?.toString() ?: "",
+                itemId = itemId,
                 itemName = item.name ?: "Unknown Title",
                 streamUrl = streamUrl,
-                startPosition = item.userData?.playbackPositionTicks?.div(10_000) ?: 0L
+                startPosition = resumePosition
             )
             
             context.startActivity(intent)

@@ -158,6 +158,13 @@ class VideoPlayerViewModel @Inject constructor(
     
     fun pausePlayback() {
         exoPlayer?.pause()
+        val position = exoPlayer?.currentPosition ?: 0L
+        val itemId = _playerState.value.itemId
+        if (itemId.isNotEmpty()) {
+            viewModelScope.launch {
+                com.example.jellyfinandroid.data.PlaybackPositionStore.savePlaybackPosition(context, itemId, position)
+            }
+        }
     }
     
     fun togglePlayPause() {
@@ -218,6 +225,14 @@ class VideoPlayerViewModel @Inject constructor(
     }
     
     fun releasePlayer() {
+        val position = exoPlayer?.currentPosition ?: 0L
+        val itemId = _playerState.value.itemId
+        if (itemId.isNotEmpty()) {
+            viewModelScope.launch {
+                com.example.jellyfinandroid.data.PlaybackPositionStore.savePlaybackPosition(context, itemId, position)
+            }
+        }
+
         exoPlayer?.removeListener(playerListener)
         exoPlayer?.release()
         exoPlayer = null

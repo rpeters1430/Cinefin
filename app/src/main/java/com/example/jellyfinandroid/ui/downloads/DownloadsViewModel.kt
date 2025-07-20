@@ -81,7 +81,9 @@ class DownloadsViewModel @Inject constructor(
                     itemId = download.jellyfinItemId,
                     itemName = download.itemName,
                     streamUrl = "file://${download.localFilePath}",
-                    startPosition = 0L
+                    startPosition = kotlinx.coroutines.runBlocking {
+                        com.example.jellyfinandroid.data.PlaybackPositionStore.getPlaybackPosition(context, download.jellyfinItemId)
+                    }
                 )
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
