@@ -117,11 +117,16 @@ fun MoviesScreen(
     var sortOrder by remember { mutableStateOf(MovieSortOrder.getDefault()) }
     var viewMode by remember { mutableStateOf(MovieViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
-    
-    // Filter movies from recently added types data (this is where the movies data actually is)
-    val movieItems = remember(appState.recentlyAddedByTypes) {
-        appState.recentlyAddedByTypes["Movies"] ?: emptyList()
+
+    // Load movies when screen is first displayed
+    LaunchedEffect(Unit) {
+        if (appState.allMovies.isEmpty() && !appState.isLoadingMovies) {
+            viewModel.loadAllMovies(reset = true)
+        }
     }
+
+    // Use allMovies list from the view model
+    val movieItems = remember(appState.allMovies) { appState.allMovies }
     
     // Apply filtering and sorting
     val filteredAndSortedMovies = remember(movieItems, selectedFilter, sortOrder) {
@@ -241,7 +246,7 @@ fun MoviesScreen(
                         }
                     }
                     
-                    IconButton(onClick = { viewModel.refreshLibraryItems() }) {
+                    IconButton(onClick = { viewModel.refreshMovies() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = stringResource(id = R.string.refresh)
@@ -292,7 +297,7 @@ fun MoviesScreen(
             
             // Content
             when {
-                appState.isLoading -> {
+                appState.isLoadingMovies && movieItems.isEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -360,9 +365,9 @@ fun MoviesScreen(
                         viewMode = viewMode,
                         getImageUrl = { item -> viewModel.getImageUrl(item) },
                         onMovieClick = onMovieClick,
-                        isLoadingMore = appState.isLoadingMore,
-                        hasMoreItems = appState.hasMoreItems,
-                        onLoadMore = { viewModel.loadMoreItems() }
+                        isLoadingMore = appState.isLoadingMovies,
+                        hasMoreItems = appState.hasMoreMovies,
+                        onLoadMore = { viewModel.loadMoreMovies() }
                     )
                 }
             }
