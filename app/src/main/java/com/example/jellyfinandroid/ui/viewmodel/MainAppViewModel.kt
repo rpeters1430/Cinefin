@@ -24,6 +24,10 @@ data class MainAppState(
     val searchQuery: String = "",
     val isSearching: Boolean = false,
     val allItems: List<BaseItemDto> = emptyList(),
+    val allMovies: List<BaseItemDto> = emptyList(),
+    val isLoadingMovies: Boolean = false,
+    val hasMoreMovies: Boolean = true,
+    val moviesPage: Int = 0,
     val allTVShows: List<BaseItemDto> = emptyList(),
     val isLoadingTVShows: Boolean = false,
     val hasMoreTVShows: Boolean = true,
@@ -143,8 +147,11 @@ class MainAppViewModel @Inject constructor(
             // Load initial page of items for library type screens
             Log.d("MainAppViewModel", "loadInitialData: Loading library items page")
             loadLibraryItemsPage(reset = true)
-            
-            // Load all TV shows for TV Shows screen
+
+            // Load all movies and TV shows for their respective screens
+            Log.d("MainAppViewModel", "loadInitialData: Loading all movies")
+            loadAllMovies(reset = true)
+
             Log.d("MainAppViewModel", "loadInitialData: Loading all TV shows")
             loadAllTVShows(reset = true)
             
@@ -410,7 +417,8 @@ class MainAppViewModel @Inject constructor(
                         favorites = _appState.value.favorites.filterNot { it.id == item.id },
                         searchResults = _appState.value.searchResults.filterNot { it.id == item.id },
                         allItems = _appState.value.allItems.filterNot { it.id == item.id },
-                        allTVShows = _appState.value.allTVShows.filterNot { it.id == item.id }
+                        allTVShows = _appState.value.allTVShows.filterNot { it.id == item.id },
+                        allMovies = _appState.value.allMovies.filterNot { it.id == item.id }
                     )
                     onResult(true, null)
                 }
@@ -581,6 +589,87 @@ class MainAppViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    /**
+     * Loads all movies with pagination support
+     */
+    fun loadAllMovies(reset: Boolean = false) {
+        viewModelScope.launch {
+            val currentState = _appState.value
+
+            if (reset) {
+                Log.d("MainAppViewModel", "loadAllMovies: Resetting and loading first page")
+                _appState.value = currentState.copy(
+                    allMovies = emptyList(),
+                    moviesPage = 0,
+                    hasMoreMovies = true,
+                    isLoadingMovies = true
+                )
+            } else {
+                if (currentState.isLoadingMovies || !currentState.hasMoreMovies) {
+                    return@launch
+                }
+                Log.d("MainAppViewModel", "loadAllMovies: Loading next page")
+                _appState.value = currentState.copy(isLoadingMovies = true)
+            }
+
+            val pageSize = 50
+            val page = if (reset) 0 else currentState.moviesPage + 1
+            val startIndex = page * pageSize
+
+            Log.d("MainAppViewModel", "loadAllMovies: Requesting page $page (startIndex: $startIndex, limit: $pageSize)")
+
+            when (val result = repository.getLibraryItems(
+                itemTypes = "Movie",
+                startIndex = startIndex,
+                limit = pageSize
+            )) {
+                is ApiResult.Success -> {
+                    val newMovies = result.data
+                    val allMovies = if (reset) {
+                        newMovies
+                    } else {
+                        currentState.allMovies + newMovies
+                    }
+
+                    Log.d("MainAppViewModel", "loadAllMovies: Successfully loaded ${newMovies.size} movies for page $page")
+                    Log.d("MainAppViewModel", "loadAllMovies: Total movies now: ${allMovies.size}")
+
+                    _appState.value = _appState.value.copy(
+                        allMovies = allMovies,
+                        moviesPage = page,
+                        hasMoreMovies = newMovies.size == pageSize,
+                        isLoadingMovies = false,
+                        errorMessage = null
+                    )
+                }
+                is ApiResult.Error -> {
+                    Log.e("MainAppViewModel", "loadAllMovies: Failed to load page $page: ${result.message}")
+                    _appState.value = _appState.value.copy(
+                        isLoadingMovies = false,
+                        errorMessage = if (reset) "Failed to load movies: ${result.message}" else result.message
+                    )
+                }
+                is ApiResult.Loading -> {
+                    // Already handled above
+                }
+            }
+        }
+    }
+
+    /**
+     * Loads more movies for pagination
+     */
+    fun loadMoreMovies() {
+        loadAllMovies(reset = false)
+    }
+
+    /**
+     * Refreshes movies by reloading from the beginning
+     */
+    fun refreshMovies() {
+        loadAllMovies(reset = true)
     }
     
     /**
