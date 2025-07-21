@@ -24,7 +24,7 @@ fun JellyfinApp(onLogout: () -> Unit = {}) {
         val connectionState by connectionViewModel.connectionState.collectAsState()
 
         val startDestination = if (connectionState.isConnected) {
-            Screen.Home.route
+            Screen.Main.route
         } else {
             Screen.ServerConnection.route
         }
