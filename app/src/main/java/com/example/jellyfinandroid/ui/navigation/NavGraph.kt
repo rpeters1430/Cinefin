@@ -114,10 +114,15 @@ fun JellyfinNavGraph(
         }
         
         // Main app flow
-        composable(Screen.Home.route) {
-            val viewModel: MainAppViewModel = hiltViewModel()
-            val lifecycleOwner = LocalLifecycleOwner.current
-            val appState by viewModel.appState.collectAsStateWithLifecycle()
+        navigation(route = Screen.Main.route, startDestination = Screen.Home.route) {
+            val mainEntry = remember(navController) {
+                navController.getBackStackEntry(Screen.Main.route)
+            }
+
+            composable(Screen.Home.route) {
+                val viewModel: MainAppViewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val lifecycleOwner = LocalLifecycleOwner.current
+                val appState by viewModel.appState.collectAsStateWithLifecycle()
             
             HomeScreen(
                 appState = appState,
@@ -163,11 +168,11 @@ fun JellyfinNavGraph(
                 },
                 onSettingsClick = { navController.navigate(Screen.Profile.route) }
             )
-        }
-        
-        composable(Screen.Library.route) {
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
+            }
+
+            composable(Screen.Library.route) {
+                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
                 minActiveState = Lifecycle.State.STARTED
@@ -194,11 +199,11 @@ fun JellyfinNavGraph(
                 },
                 onSettingsClick = { navController.navigate(Screen.Profile.route) }
             )
-        }
-        
-        composable(Screen.Movies.route) {
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
+            }
+
+            composable(Screen.Movies.route) {
+                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val lifecycleOwner = LocalLifecycleOwner.current
             
             
             MoviesScreen(
@@ -210,11 +215,11 @@ fun JellyfinNavGraph(
                 },
                 viewModel = viewModel
             )
-        }
-        
-        composable(Screen.TVShows.route) {
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
+            }
+
+            composable(Screen.TVShows.route) {
+                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val lifecycleOwner = LocalLifecycleOwner.current
             
             
             TVShowsScreen(
@@ -224,9 +229,9 @@ fun JellyfinNavGraph(
                 onBackClick = { navController.popBackStack() },
                 viewModel = viewModel
             )
-        }
-        
-        composable(
+            }
+
+            composable(
             route = Screen.TVSeasons.route,
             arguments = listOf(navArgument(Screen.SERIES_ID_ARG) { type = NavType.StringType })
         ) { backStackEntry ->
@@ -235,8 +240,8 @@ fun JellyfinNavGraph(
                 Log.e("NavGraph", "TVSeasons navigation cancelled: seriesId is null or blank")
                 return@composable
             }
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
+                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val lifecycleOwner = LocalLifecycleOwner.current
             
             LaunchedEffect(seriesId) {
                 // Load series data when screen is first shown
@@ -251,9 +256,9 @@ fun JellyfinNavGraph(
                     navController.navigate(Screen.TVEpisodes.createRoute(seasonId))
                 }
             )
-        }
-        
-        composable(
+            }
+
+            composable(
             route = Screen.TVEpisodes.route,
             arguments = listOf(navArgument(Screen.SEASON_ID_ARG) { type = NavType.StringType })
         ) { backStackEntry ->
@@ -263,8 +268,8 @@ fun JellyfinNavGraph(
                 return@composable
             }
             val viewModel = hiltViewModel<SeasonEpisodesViewModel>()
-            val mainViewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
+                val mainViewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val lifecycleOwner = LocalLifecycleOwner.current
             
             LaunchedEffect(seasonId) {
                 // Load episodes when screen is first shown
@@ -286,11 +291,11 @@ fun JellyfinNavGraph(
                 },
                 viewModel = viewModel
             )
-        }
-        
-        composable(Screen.Music.route) {
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
+            }
+
+            composable(Screen.Music.route) {
+                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val lifecycleOwner = LocalLifecycleOwner.current
             
             LaunchedEffect(Unit) {
                 // Load music data when screen is first shown
@@ -301,11 +306,11 @@ fun JellyfinNavGraph(
                 onBackClick = { navController.popBackStack() },
                 viewModel = viewModel
             )
-        }
-        
-        composable(Screen.Search.route) {
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
+            }
+
+            composable(Screen.Search.route) {
+                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
                 minActiveState = Lifecycle.State.STARTED
@@ -318,11 +323,11 @@ fun JellyfinNavGraph(
                 getImageUrl = { item -> viewModel.getImageUrl(item) },
                 onBackClick = { navController.popBackStack() }
             )
-        }
-        
-        composable(Screen.Favorites.route) {
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
+            }
+
+            composable(Screen.Favorites.route) {
+                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
                 minActiveState = Lifecycle.State.STARTED
@@ -340,11 +345,11 @@ fun JellyfinNavGraph(
                 getImageUrl = { item -> viewModel.getImageUrl(item) },
                 onBackClick = { navController.popBackStack() }
             )
-        }
-        
-        composable(Screen.Profile.route) {
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
+            }
+
+            composable(Screen.Profile.route) {
+                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val lifecycleOwner = LocalLifecycleOwner.current
             val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
                 initialValue = null
@@ -355,16 +360,16 @@ fun JellyfinNavGraph(
                 onLogout = {
                     viewModel.logout()
                     onLogout()
-                    navController.popBackStack(Screen.Home.route, inclusive = false)
+                    navController.popBackStack(Screen.Main.route, inclusive = true)
                     navController.navigate(Screen.ServerConnection.route) {
-                        popUpTo(Screen.Home.route) { inclusive = true }
+                        popUpTo(Screen.ServerConnection.route) { inclusive = true }
                     }
                 },
                 onBackClick = { navController.popBackStack() }
             )
         }
-        
-        composable(
+            
+            composable(
             route = Screen.MovieDetail.route,
             arguments = listOf(navArgument(Screen.MOVIE_ID_ARG) { type = NavType.StringType })
         ) { backStackEntry ->
@@ -373,7 +378,7 @@ fun JellyfinNavGraph(
                 Log.e("NavGraph", "MovieDetail navigation cancelled: movieId is null or blank")
                 return@composable
             }
-            val mainViewModel = hiltViewModel<MainAppViewModel>()
+                val mainViewModel = hiltViewModel<MainAppViewModel>(mainEntry)
             val detailViewModel = hiltViewModel<MovieDetailViewModel>()
 
             val lifecycleOwner = LocalLifecycleOwner.current
@@ -430,9 +435,9 @@ fun JellyfinNavGraph(
                     Text(appState.errorMessage ?: "Movie not found")
                 }
             }
-        }
-        
-        composable(
+            }
+
+            composable(
             route = Screen.TVEpisodeDetail.route,
             arguments = listOf(navArgument(Screen.EPISODE_ID_ARG) { type = NavType.StringType })
         ) { backStackEntry ->
@@ -441,7 +446,7 @@ fun JellyfinNavGraph(
                 Log.e("NavGraph", "TVEpisodeDetail navigation cancelled: episodeId is null or blank")
                 return@composable
             }
-            val viewModel = hiltViewModel<MainAppViewModel>()
+                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
             val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
@@ -582,6 +587,7 @@ fun JellyfinNavGraph(
                         CircularProgressIndicator()
                     }
                 }
+            }
             }
         }
     }
