@@ -114,13 +114,8 @@ fun JellyfinNavGraph(
         }
         
         // Main app flow
-        navigation(route = Screen.Main.route, startDestination = Screen.Home.route) {
-            val mainEntry = remember(navController) {
-                navController.getBackStackEntry(Screen.Main.route)
-            }
-
-            composable(Screen.Home.route) {
-                val viewModel: MainAppViewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+        composable(Screen.Home.route) {
+            val viewModel: MainAppViewModel = hiltViewModel()
                 val lifecycleOwner = LocalLifecycleOwner.current
                 val appState by viewModel.appState.collectAsStateWithLifecycle()
             
@@ -171,7 +166,7 @@ fun JellyfinNavGraph(
             }
 
             composable(Screen.Library.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val viewModel = hiltViewModel<MainAppViewModel>()
                 val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
@@ -202,7 +197,7 @@ fun JellyfinNavGraph(
             }
 
             composable(Screen.Movies.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val viewModel = hiltViewModel<MainAppViewModel>()
                 val lifecycleOwner = LocalLifecycleOwner.current
             
             
@@ -218,7 +213,7 @@ fun JellyfinNavGraph(
             }
 
             composable(Screen.TVShows.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val viewModel = hiltViewModel<MainAppViewModel>()
                 val lifecycleOwner = LocalLifecycleOwner.current
             
             
@@ -240,7 +235,7 @@ fun JellyfinNavGraph(
                 Log.e("NavGraph", "TVSeasons navigation cancelled: seriesId is null or blank")
                 return@composable
             }
-                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val viewModel = hiltViewModel<MainAppViewModel>()
                 val lifecycleOwner = LocalLifecycleOwner.current
             
             LaunchedEffect(seriesId) {
@@ -268,7 +263,7 @@ fun JellyfinNavGraph(
                 return@composable
             }
             val viewModel = hiltViewModel<SeasonEpisodesViewModel>()
-                val mainViewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val mainViewModel = hiltViewModel<MainAppViewModel>()
                 val lifecycleOwner = LocalLifecycleOwner.current
             
             LaunchedEffect(seasonId) {
@@ -294,7 +289,7 @@ fun JellyfinNavGraph(
             }
 
             composable(Screen.Music.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val viewModel = hiltViewModel<MainAppViewModel>()
                 val lifecycleOwner = LocalLifecycleOwner.current
             
             LaunchedEffect(Unit) {
@@ -309,7 +304,7 @@ fun JellyfinNavGraph(
             }
 
             composable(Screen.Search.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val viewModel = hiltViewModel<MainAppViewModel>()
                 val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
@@ -326,7 +321,7 @@ fun JellyfinNavGraph(
             }
 
             composable(Screen.Favorites.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val viewModel = hiltViewModel<MainAppViewModel>()
                 val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
@@ -348,7 +343,7 @@ fun JellyfinNavGraph(
             }
 
             composable(Screen.Profile.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val viewModel = hiltViewModel<MainAppViewModel>()
                 val lifecycleOwner = LocalLifecycleOwner.current
             val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
@@ -378,7 +373,7 @@ fun JellyfinNavGraph(
                 Log.e("NavGraph", "MovieDetail navigation cancelled: movieId is null or blank")
                 return@composable
             }
-                val mainViewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val mainViewModel = hiltViewModel<MainAppViewModel>()
             val detailViewModel = hiltViewModel<MovieDetailViewModel>()
 
             val lifecycleOwner = LocalLifecycleOwner.current
@@ -446,7 +441,7 @@ fun JellyfinNavGraph(
                 Log.e("NavGraph", "TVEpisodeDetail navigation cancelled: episodeId is null or blank")
                 return@composable
             }
-                val viewModel = hiltViewModel<MainAppViewModel>(mainEntry)
+                val viewModel = hiltViewModel<MainAppViewModel>()
             val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
@@ -589,6 +584,5 @@ fun JellyfinNavGraph(
                 }
             }
             }
-        }
     }
 }
