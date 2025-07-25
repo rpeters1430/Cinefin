@@ -448,12 +448,20 @@ fun JellyfinNavGraph(
             )
             
             // Find the episode from the loaded items
-            val episode = appState.allItems.find { it.id?.toString() == episodeId }
+            // Try multiple approaches to find the episode
+            val episode = appState.allItems.find { item ->
+                val itemIdString = item.id?.toString()
+                itemIdString == episodeId || itemIdString?.equals(episodeId, ignoreCase = true) == true
+            } ?: appState.allItems.find { item ->
+                // Fallback: check if this is an episode with matching UUID
+                item.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE && 
+                item.id?.toString()?.equals(episodeId, ignoreCase = true) == true
+            }
             
             when {
                 episode != null -> {
                     // Episode found, show detail screen
-                    Log.d("NavGraph", "TVEpisodeDetail: Found episode ${episode.name} in app state")
+                    Log.d("NavGraph", "TVEpisodeDetail: Found episode ${episode.name} (${episode.id}) in app state")
                     
                     // Find the series information if available
                     val seriesInfo = episode.seriesId?.let { seriesId ->
@@ -570,6 +578,13 @@ fun JellyfinNavGraph(
                 else -> {
                     // Episode not found and not loading - try to load it
                     Log.w("NavGraph", "TVEpisodeDetail: Episode $episodeId not found in app state with ${appState.allItems.size} items, attempting to load")
+                    
+                    // Debug: Log available episode IDs for troubleshooting
+                    val episodeIds = appState.allItems
+                        .filter { it.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE }
+                        .map { "${it.name} (${it.id})" }
+                        .take(5) // Limit to first 5 for log readability
+                    Log.d("NavGraph", "TVEpisodeDetail: Available episodes: $episodeIds")
                     
                     // Load the episode details if we haven't already
                     LaunchedEffect(episodeId) {
