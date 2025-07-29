@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.player
 
+import com.example.jellyfinandroid.BuildConfig
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -63,7 +64,11 @@ class PlaybackProgressManager @Inject constructor(
         // Start periodic progress sync
         startProgressSync(scope)
         
-        Log.d("PlaybackProgressManager", "Started tracking for item: $itemId")
+        if (BuildConfig.DEBUG) {
+        
+            Log.d("PlaybackProgressManager", "Started tracking for item: $itemId")
+        
+        }
     }
     
     fun updateProgress(positionMs: Long, durationMs: Long) {
@@ -97,7 +102,9 @@ class PlaybackProgressManager @Inject constructor(
                 when (val result = repository.markAsWatched(currentItemId)) {
                     is ApiResult.Success -> {
                         _playbackProgress.value = _playbackProgress.value.copy(isWatched = true)
-                        Log.d("PlaybackProgressManager", "Marked item as watched: $currentItemId")
+                        if (BuildConfig.DEBUG) {
+                            Log.d("PlaybackProgressManager", "Marked item as watched: $currentItemId")
+                        }
                     }
                     is ApiResult.Error -> {
                         Log.e("PlaybackProgressManager", "Failed to mark as watched: ${result.message}")
@@ -120,7 +127,9 @@ class PlaybackProgressManager @Inject constructor(
                 when (val result = repository.markAsUnwatched(currentItemId)) {
                     is ApiResult.Success -> {
                         _playbackProgress.value = _playbackProgress.value.copy(isWatched = false)
-                        Log.d("PlaybackProgressManager", "Marked item as unwatched: $currentItemId")
+                        if (BuildConfig.DEBUG) {
+                            Log.d("PlaybackProgressManager", "Marked item as unwatched: $currentItemId")
+                        }
                     }
                     is ApiResult.Error -> {
                         Log.e("PlaybackProgressManager", "Failed to mark as unwatched: ${result.message}")
@@ -149,7 +158,9 @@ class PlaybackProgressManager @Inject constructor(
         
         currentItemId = ""
         lastReportedPosition = 0L
-        Log.d("PlaybackProgressManager", "Stopped tracking")
+        if (BuildConfig.DEBUG) {
+            Log.d("PlaybackProgressManager", "Stopped tracking")
+        }
     }
     
     override fun onPause(owner: LifecycleOwner) {
@@ -186,7 +197,9 @@ class PlaybackProgressManager @Inject constructor(
             // In a real implementation, you would load the existing progress from the server
             // For now, we'll simulate this by checking the item's userData
             // This would typically be done through a dedicated API endpoint
-            Log.d("PlaybackProgressManager", "Loading existing progress for item: $itemId")
+            if (BuildConfig.DEBUG) {
+                Log.d("PlaybackProgressManager", "Loading existing progress for item: $itemId")
+            }
             
         } catch (e: Exception) {
             Log.e("PlaybackProgressManager", "Failed to load existing progress", e)
@@ -200,9 +213,12 @@ class PlaybackProgressManager @Inject constructor(
             
             // This would be the proper Jellyfin API call for reporting progress
             // For now, we'll simulate the API call
-            Log.d("PlaybackProgressManager", 
-                "Reporting progress: ${positionMs}ms / ${durationMs}ms (${(positionMs.toFloat() / durationMs * 100).toInt()}%)"
-            )
+            if (BuildConfig.DEBUG) {
+                Log.d(
+                    "PlaybackProgressManager",
+                    "Reporting progress: ${positionMs}ms / ${durationMs}ms (${(positionMs.toFloat() / durationMs * 100).toInt()}%)"
+                )
+            }
             
             _playbackProgress.value = _playbackProgress.value.copy(
                 lastSyncTime = System.currentTimeMillis()
@@ -218,7 +234,9 @@ class PlaybackProgressManager @Inject constructor(
             val server = repository.getCurrentServer() ?: return
             
             // Report playback start to Jellyfin
-            Log.d("PlaybackProgressManager", "Reporting playback start for: $currentItemId")
+            if (BuildConfig.DEBUG) {
+                Log.d("PlaybackProgressManager", "Reporting playback start for: $currentItemId")
+            }
             
         } catch (e: Exception) {
             Log.e("PlaybackProgressManager", "Failed to report playback start", e)
@@ -230,7 +248,9 @@ class PlaybackProgressManager @Inject constructor(
             val server = repository.getCurrentServer() ?: return
             
             // Report playback stop to Jellyfin
-            Log.d("PlaybackProgressManager", "Reporting playback stop for: $currentItemId")
+            if (BuildConfig.DEBUG) {
+                Log.d("PlaybackProgressManager", "Reporting playback stop for: $currentItemId")
+            }
             
         } catch (e: Exception) {
             Log.e("PlaybackProgressManager", "Failed to report playback stop", e)

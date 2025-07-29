@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.utils
 
+import com.example.jellyfinandroid.BuildConfig
 import android.content.Context
 import android.content.Intent
 import android.util.Log
@@ -25,7 +26,11 @@ object ShareUtils {
             chooser.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             context.startActivity(chooser)
             
-            Log.d("ShareUtils", "Successfully shared: ${item.name}")
+            if (BuildConfig.DEBUG) {
+            
+                Log.d("ShareUtils", "Successfully shared: ${item.name}")
+            
+            }
             
         } catch (e: Exception) {
             Log.e("ShareUtils", "Failed to share media: ${e.message}", e)

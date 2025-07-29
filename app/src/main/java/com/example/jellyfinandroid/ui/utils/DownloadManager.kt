@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.utils
 
+import com.example.jellyfinandroid.BuildConfig
 import android.app.DownloadManager
 import android.content.Context
 import android.net.Uri
@@ -61,7 +62,11 @@ object MediaDownloadManager {
             // Enqueue the download
             val downloadId = downloadManager.enqueue(request)
             
-            Log.i(TAG, "Started download for ${item.name} with ID: $downloadId")
+            if (BuildConfig.DEBUG) {
+            
+                Log.i(TAG, "Started download for ${item.name} with ID: $downloadId")
+            
+            }
             downloadId
             
         } catch (e: Exception) {
@@ -133,13 +138,17 @@ object MediaDownloadManager {
             if (file.exists()) {
                 val deleted = file.delete()
                 if (deleted) {
-                    Log.i(TAG, "Deleted download for ${item.name}")
+                    if (BuildConfig.DEBUG) {
+                        Log.i(TAG, "Deleted download for ${item.name}")
+                    }
                 } else {
                     Log.w(TAG, "Failed to delete download for ${item.name}")
                 }
                 deleted
             } else {
-                Log.d(TAG, "Download file does not exist for ${item.name}")
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "Download file does not exist for ${item.name}")
+                }
                 true // Consider it deleted if it doesn't exist
             }
         } catch (e: Exception) {

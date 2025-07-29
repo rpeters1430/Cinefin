@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.utils
 
+import com.example.jellyfinandroid.BuildConfig
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
@@ -21,7 +22,9 @@ object MediaPlayerUtils {
      */
     fun playMedia(context: Context, streamUrl: String, item: BaseItemDto) {
         try {
-            Log.d("MediaPlayerUtils", "Launching internal video player for: ${item.name}")
+            if (BuildConfig.DEBUG) {
+                Log.d("MediaPlayerUtils", "Launching internal video player for: ${item.name}")
+            }
             
             val itemId = item.id?.toString() ?: ""
             val resumePosition = item.userData?.playbackPositionTicks?.div(10_000) ?: 0L
@@ -35,7 +38,9 @@ object MediaPlayerUtils {
             )
             
             context.startActivity(intent)
-            Log.d("MediaPlayerUtils", "Successfully launched internal video player")
+            if (BuildConfig.DEBUG) {
+                Log.d("MediaPlayerUtils", "Successfully launched internal video player")
+            }
             
         } catch (e: Exception) {
             Log.e("MediaPlayerUtils", "Failed to launch internal player, trying external: ${e.message}", e)
@@ -50,7 +55,9 @@ object MediaPlayerUtils {
      */
     fun playMediaExternal(context: Context, streamUrl: String, item: BaseItemDto) {
         try {
-            Log.d("MediaPlayerUtils", "Attempting to play with external player: ${item.name}")
+            if (BuildConfig.DEBUG) {
+                Log.d("MediaPlayerUtils", "Attempting to play with external player: ${item.name}")
+            }
             
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(streamUrl.toUri(), "video/*")
@@ -64,7 +71,9 @@ object MediaPlayerUtils {
             
             // Try to start the intent
             context.startActivity(intent)
-            Log.d("MediaPlayerUtils", "Successfully launched external media player")
+            if (BuildConfig.DEBUG) {
+                Log.d("MediaPlayerUtils", "Successfully launched external media player")
+            }
             
         } catch (e: Exception) {
             Log.e("MediaPlayerUtils", "Failed to launch external player: ${e.message}", e)
@@ -75,7 +84,9 @@ object MediaPlayerUtils {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
                 context.startActivity(fallbackIntent)
-                Log.d("MediaPlayerUtils", "Successfully launched fallback intent")
+                if (BuildConfig.DEBUG) {
+                    Log.d("MediaPlayerUtils", "Successfully launched fallback intent")
+                }
             } catch (fallbackException: Exception) {
                 Log.e("MediaPlayerUtils", "All playback methods failed: ${fallbackException.message}", fallbackException)
                 throw MediaPlayerException("Unable to play media. No compatible media player found.")
@@ -94,7 +105,9 @@ object MediaPlayerUtils {
         startPosition: Long = 0L
     ) {
         try {
-            Log.d("MediaPlayerUtils", "Launching video player with quality $quality for: ${item.name}")
+            if (BuildConfig.DEBUG) {
+                Log.d("MediaPlayerUtils", "Launching video player with quality $quality for: ${item.name}")
+            }
             
             val intent = VideoPlayerActivity.createIntent(
                 context = context,
@@ -105,7 +118,9 @@ object MediaPlayerUtils {
             )
             
             context.startActivity(intent)
-            Log.d("MediaPlayerUtils", "Successfully launched video player with quality settings")
+            if (BuildConfig.DEBUG) {
+                Log.d("MediaPlayerUtils", "Successfully launched video player with quality settings")
+            }
             
         } catch (e: Exception) {
             Log.e("MediaPlayerUtils", "Failed to launch video player with quality: ${e.message}", e)

@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.player
 
+import com.example.jellyfinandroid.BuildConfig
 import android.content.Context
 import android.util.Log
 import androidx.core.net.toUri
@@ -47,7 +48,9 @@ class CastManager @Inject constructor(
     
     private val sessionManagerListener = object : SessionManagerListener<CastSession> {
         override fun onSessionStarted(session: CastSession, sessionId: String) {
-            Log.d("CastManager", "Cast session started: $sessionId")
+            if (BuildConfig.DEBUG) {
+                Log.d("CastManager", "Cast session started: $sessionId")
+            }
             updateCastState(
                 isConnected = true,
                 deviceName = session.castDevice?.friendlyName,
@@ -56,7 +59,9 @@ class CastManager @Inject constructor(
         }
         
         override fun onSessionEnded(session: CastSession, error: Int) {
-            Log.d("CastManager", "Cast session ended")
+            if (BuildConfig.DEBUG) {
+                Log.d("CastManager", "Cast session ended")
+            }
             updateCastState(
                 isConnected = false,
                 deviceName = null,
@@ -65,7 +70,9 @@ class CastManager @Inject constructor(
         }
         
         override fun onSessionResumed(session: CastSession, wasSuspended: Boolean) {
-            Log.d("CastManager", "Cast session resumed")
+            if (BuildConfig.DEBUG) {
+                Log.d("CastManager", "Cast session resumed")
+            }
             updateCastState(
                 isConnected = true,
                 deviceName = session.castDevice?.friendlyName,
@@ -74,12 +81,16 @@ class CastManager @Inject constructor(
         }
         
         override fun onSessionSuspended(session: CastSession, reason: Int) {
-            Log.d("CastManager", "Cast session suspended")
+            if (BuildConfig.DEBUG) {
+                Log.d("CastManager", "Cast session suspended")
+            }
             updateCastState(isCasting = false)
         }
         
         override fun onSessionStarting(session: CastSession) {
-            Log.d("CastManager", "Cast session starting")
+            if (BuildConfig.DEBUG) {
+                Log.d("CastManager", "Cast session starting")
+            }
         }
         
         override fun onSessionStartFailed(session: CastSession, error: Int) {
@@ -87,11 +98,15 @@ class CastManager @Inject constructor(
         }
         
         override fun onSessionEnding(session: CastSession) {
-            Log.d("CastManager", "Cast session ending")
+            if (BuildConfig.DEBUG) {
+                Log.d("CastManager", "Cast session ending")
+            }
         }
         
         override fun onSessionResuming(session: CastSession, sessionId: String) {
-            Log.d("CastManager", "Cast session resuming: $sessionId")
+            if (BuildConfig.DEBUG) {
+                Log.d("CastManager", "Cast session resuming: $sessionId")
+            }
         }
         
         override fun onSessionResumeFailed(session: CastSession, error: Int) {
@@ -101,12 +116,16 @@ class CastManager @Inject constructor(
     
     private val sessionAvailabilityListener = object : SessionAvailabilityListener {
         override fun onCastSessionAvailable() {
-            Log.d("CastManager", "Cast session available")
+            if (BuildConfig.DEBUG) {
+                Log.d("CastManager", "Cast session available")
+            }
             updateCastState(isAvailable = true)
         }
         
         override fun onCastSessionUnavailable() {
-            Log.d("CastManager", "Cast session unavailable")
+            if (BuildConfig.DEBUG) {
+                Log.d("CastManager", "Cast session unavailable")
+            }
             updateCastState(isAvailable = false)
         }
     }
@@ -128,7 +147,11 @@ class CastManager @Inject constructor(
                 castPlayer = castPlayer
             )
             
-            Log.d("CastManager", "Cast manager initialized successfully")
+            if (BuildConfig.DEBUG) {
+            
+                Log.d("CastManager", "Cast manager initialized successfully")
+            
+            }
             
         } catch (e: Exception) {
             Log.e("CastManager", "Failed to initialize Cast", e)
@@ -165,7 +188,11 @@ class CastManager @Inject constructor(
                 
                 castSession.remoteMediaClient?.load(request)
                 
-                Log.d("CastManager", "Started casting: ${item.name}")
+                if (BuildConfig.DEBUG) {
+                
+                    Log.d("CastManager", "Started casting: ${item.name}")
+                
+                }
                 
             } else {
                 Log.w("CastManager", "No active Cast session")
@@ -179,7 +206,9 @@ class CastManager @Inject constructor(
     fun stopCasting() {
         try {
             castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.stop()
-            Log.d("CastManager", "Stopped casting")
+            if (BuildConfig.DEBUG) {
+                Log.d("CastManager", "Stopped casting")
+            }
         } catch (e: Exception) {
             Log.e("CastManager", "Failed to stop casting", e)
         }
@@ -196,7 +225,11 @@ class CastManager @Inject constructor(
             castPlayer?.release()
             castPlayer = null
             
-            Log.d("CastManager", "Cast manager released")
+            if (BuildConfig.DEBUG) {
+            
+                Log.d("CastManager", "Cast manager released")
+            
+            }
             
         } catch (e: Exception) {
             Log.e("CastManager", "Error releasing Cast manager", e)

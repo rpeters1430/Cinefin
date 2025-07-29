@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.screens
 
+import com.example.jellyfinandroid.BuildConfig
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -277,7 +278,11 @@ fun HomeContent(
         // Material 3 Carousel with Recently Added Movies
         val recentMovies = appState.recentlyAddedByTypes["Movies"]?.take(8) ?: emptyList()
         
-        Log.d("HomeScreen", "HomeContent: Displaying ${recentMovies.size} recent movies in carousel")
+        if (BuildConfig.DEBUG) {
+        
+            Log.d("HomeScreen", "HomeContent: Displaying ${recentMovies.size} recent movies in carousel")
+        
+        }
         
         if (recentMovies.isNotEmpty()) {
             item {
@@ -352,7 +357,11 @@ fun HomeContent(
         libraryTypes.forEach { (displayName, typeKey) ->
             val recentItems = appState.recentlyAddedByTypes[typeKey]?.take(15) ?: emptyList()
             
-            Log.d("HomeScreen", "HomeContent: Processing $displayName - found ${recentItems.size} items from recentlyAddedByTypes")
+            if (BuildConfig.DEBUG) {
+            
+                Log.d("HomeScreen", "HomeContent: Processing $displayName - found ${recentItems.size} items from recentlyAddedByTypes")
+            
+            }
             
             if (recentItems.isNotEmpty()) {
                 item {
@@ -381,7 +390,9 @@ fun HomeContent(
                             contentPadding = PaddingValues(horizontal = 16.dp)
                         ) {
                             items(recentItems) { item ->
-                                Log.d("HomeScreen", "HomeContent: Displaying $displayName item: '${item.name}' (${item.type})")
+                                if (BuildConfig.DEBUG) {
+                                    Log.d("HomeScreen", "HomeContent: Displaying $displayName item: '${item.name}' (${item.type})")
+                                }
                                 RecentlyAddedCard(
                                     item = item,
                                     getImageUrl = getImageUrl,
