@@ -214,10 +214,7 @@ class PlaybackProgressManager @Inject constructor(
             // This would be the proper Jellyfin API call for reporting progress
             // For now, we'll simulate the API call
             if (BuildConfig.DEBUG) {
-                Log.d(
-                    "PlaybackProgressManager",
-                    "Reporting progress: ${positionMs}ms / ${durationMs}ms (${(positionMs.toFloat() / durationMs * 100).toInt()}%)"
-                )
+                Log.d("PlaybackProgressManager", "Reporting progress: ${positionMs}ms / ${durationMs}ms (${(positionMs.toFloat() / durationMs * 100).toInt()}%)")
             }
             
             _playbackProgress.value = _playbackProgress.value.copy(
