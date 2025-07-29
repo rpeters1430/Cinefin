@@ -7,7 +7,6 @@ import retrofit2.HttpException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.delay
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
@@ -1179,22 +1178,10 @@ class JellyfinRepository @Inject constructor(
 
         return try {
             val client = getClient(server.url, server.accessToken)
-            
-            // TODO: Implement actual Jellyfin SDK API call
-            // The Jellyfin SDK may use different method names. Common patterns to try:
-            // - client.userLibraryApi.markItemAsPlayed(itemId, userId)
-            // - client.userApi.updateUserItemData(itemId, userId, userData) 
-            // - client.playStateApi.markAsWatched(itemId, userId)
-            // 
-            // For now, this simulates success to prevent UI blocking
-            delay(100) // Simulate network call
-            if (BuildConfig.DEBUG) {
-                Log.i("JellyfinRepository", "markAsWatched: API implementation needed - simulated success for item $itemId")
-            }
+            client.userLibraryApi.markItemAsPlayed(itemId = itemUuid, userId = userUuid)
             ApiResult.Success(true)
         } catch (e: Exception) {
             val errorType = getErrorType(e)
-            Log.w("JellyfinRepository", "Failed to mark item $itemId as watched: ${e.message}")
             ApiResult.Error("Failed to mark as watched: ${e.message}", e, errorType)
         }
     }
@@ -1217,22 +1204,10 @@ class JellyfinRepository @Inject constructor(
 
         return try {
             val client = getClient(server.url, server.accessToken)
-            
-            // TODO: Implement actual Jellyfin SDK API call  
-            // The Jellyfin SDK may use different method names. Common patterns to try:
-            // - client.userLibraryApi.markItemAsUnplayed(itemId, userId)
-            // - client.userApi.updateUserItemData(itemId, userId, userData)
-            // - client.playStateApi.markAsUnwatched(itemId, userId)
-            //
-            // For now, this simulates success to prevent UI blocking  
-            delay(100) // Simulate network call
-            if (BuildConfig.DEBUG) {
-                Log.i("JellyfinRepository", "markAsUnwatched: API implementation needed - simulated success for item $itemId")
-            }
+            client.userLibraryApi.markItemAsUnplayed(itemId = itemUuid, userId = userUuid)
             ApiResult.Success(true)
         } catch (e: Exception) {
             val errorType = getErrorType(e)
-            Log.w("JellyfinRepository", "Failed to mark item $itemId as unwatched: ${e.message}")
             ApiResult.Error("Failed to mark as unwatched: ${e.message}", e, errorType)
         }
     }
