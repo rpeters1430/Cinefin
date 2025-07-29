@@ -111,9 +111,7 @@ class JellyfinRepository @Inject constructor(
     // Helper function for debug logging that only logs in debug builds
     private fun logDebug(message: String) {
         if (BuildConfig.DEBUG) {
-            if (BuildConfig.DEBUG) {
-                Log.d("JellyfinRepository", message)
-            }
+            Log.d("JellyfinRepository", message)
         }
     }
     
