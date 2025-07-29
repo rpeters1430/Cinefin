@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.data.offline
 
+import com.example.jellyfinandroid.BuildConfig
 import android.content.Context
 import android.os.Environment
 import android.util.Log
@@ -166,7 +167,9 @@ class OfflineDownloadManager @Inject constructor(
                 downloadFile(response, download)
                 
             } catch (e: CancellationException) {
-                Log.d("OfflineDownloadManager", "Download cancelled: ${download.id}")
+                if (BuildConfig.DEBUG) {
+                    Log.d("OfflineDownloadManager", "Download cancelled: ${download.id}")
+                }
             } catch (e: Exception) {
                 Log.e("OfflineDownloadManager", "Download failed: ${download.id}", e)
                 updateDownloadStatus(download.id, DownloadStatus.FAILED)
@@ -228,7 +231,9 @@ class OfflineDownloadManager @Inject constructor(
                 if (currentCoroutineContext().isActive && totalBytesRead == contentLength) {
                     updateDownloadStatus(download.id, DownloadStatus.COMPLETED)
                     downloadJobs.remove(download.id)
-                    Log.d("OfflineDownloadManager", "Download completed: ${download.itemName}")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("OfflineDownloadManager", "Download completed: ${download.itemName}")
+                    }
                 }
             }
         }

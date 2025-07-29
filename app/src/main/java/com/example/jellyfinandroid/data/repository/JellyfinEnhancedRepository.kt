@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.data.repository
 
+import com.example.jellyfinandroid.BuildConfig
 import android.util.Log
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.data.SecureCredentialManager
@@ -68,7 +69,9 @@ class JellyfinEnhancedRepository @Inject constructor(
         password: String,
         saveCredentials: Boolean = false
     ): ApiResult<AuthenticationResult> = authMutex.withLock {
-        Log.d(TAG, "Authenticating user: $username")
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Authenticating user: $username")
+        }
         
         val normalizedUrl = systemRepository.normalizeServerUrl(serverUrl)
         
@@ -127,7 +130,9 @@ class JellyfinEnhancedRepository @Inject constructor(
      * ✅ PHASE 3: Session management
      */
     suspend fun logout() {
-        Log.d(TAG, "Logging out user")
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Logging out user")
+        }
         
         _isConnected.value = false
         _currentServer.value = null
@@ -147,7 +152,11 @@ class JellyfinEnhancedRepository @Inject constructor(
     suspend fun attemptAutoReconnection(): ApiResult<Boolean> {
         val server = _currentServer.first() ?: return ApiResult.Success(false)
         
-        Log.d(TAG, "Attempting auto-reconnection to ${server.url}")
+        if (BuildConfig.DEBUG) {
+        
+            Log.d(TAG, "Attempting auto-reconnection to ${server.url}")
+        
+        }
         
         return when (val result = testServerConnection(server.url)) {
             is ApiResult.Success -> {
@@ -193,7 +202,9 @@ class JellyfinEnhancedRepository @Inject constructor(
         }
         
         // Placeholder - will be replaced with media repository call
-        Log.d(TAG, "getUserLibraries - implementation pending")
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "getUserLibraries - implementation pending")
+        }
         return ApiResult.Error("Media repository implementation pending")
     }
 
@@ -207,7 +218,9 @@ class JellyfinEnhancedRepository @Inject constructor(
         }
         
         // Placeholder - will be replaced with media repository call
-        Log.d(TAG, "getLibraryItems - implementation pending")
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "getLibraryItems - implementation pending")
+        }
         return ApiResult.Error("Media repository implementation pending")
     }
 
@@ -217,7 +230,9 @@ class JellyfinEnhancedRepository @Inject constructor(
         }
         
         // Placeholder - will be replaced with media repository call
-        Log.d(TAG, "getRecentlyAdded - implementation pending")
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "getRecentlyAdded - implementation pending")
+        }
         return ApiResult.Error("Media repository implementation pending")
     }
 }

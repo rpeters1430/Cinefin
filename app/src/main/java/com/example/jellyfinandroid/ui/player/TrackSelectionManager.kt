@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.player
 
+import com.example.jellyfinandroid.BuildConfig
 import android.util.Log
 import androidx.media3.common.C
 import androidx.media3.common.Format
@@ -108,7 +109,11 @@ class TrackSelectionManager(
             subtitlesEnabled = selectedSubtitleId != null
         )
         
-        Log.d("TrackSelectionManager", "Updated tracks: ${audioTracks.size} audio, ${subtitleTracks.size} subtitle")
+        if (BuildConfig.DEBUG) {
+        
+            Log.d("TrackSelectionManager", "Updated tracks: ${audioTracks.size} audio, ${subtitleTracks.size} subtitle")
+        
+        }
     }
     
     fun selectAudioTrack(trackId: String) {
@@ -139,7 +144,11 @@ class TrackSelectionManager(
                 selectedAudioTrackId = trackId
             )
             
-            Log.d("TrackSelectionManager", "Selected audio track: $trackId")
+            if (BuildConfig.DEBUG) {
+            
+                Log.d("TrackSelectionManager", "Selected audio track: $trackId")
+            
+            }
             
         } catch (e: Exception) {
             Log.e("TrackSelectionManager", "Failed to select audio track: $trackId", e)
@@ -159,7 +168,11 @@ class TrackSelectionManager(
                     subtitlesEnabled = false
                 )
                 
-                Log.d("TrackSelectionManager", "Disabled subtitles")
+                if (BuildConfig.DEBUG) {
+                
+                    Log.d("TrackSelectionManager", "Disabled subtitles")
+                
+                }
                 
             } else {
                 // Enable and select specific subtitle track
@@ -181,7 +194,11 @@ class TrackSelectionManager(
                                     subtitlesEnabled = true
                                 )
                                 
-                                Log.d("TrackSelectionManager", "Selected subtitle track: $trackId")
+                                if (BuildConfig.DEBUG) {
+                                
+                                    Log.d("TrackSelectionManager", "Selected subtitle track: $trackId")
+                                
+                                }
                                 break
                             }
                         }

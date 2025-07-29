@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.utils
 
+import com.example.jellyfinandroid.BuildConfig
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
@@ -42,18 +43,24 @@ class OfflineManager(private val context: Context) {
     // Network callback for monitoring connectivity changes
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            Log.d(TAG, "Network available: $network")
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Network available: $network")
+            }
             _isOnline.value = true
             _networkType.value = getCurrentNetworkType()
         }
         
         override fun onLost(network: Network) {
-            Log.d(TAG, "Network lost: $network")
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Network lost: $network")
+            }
             val stillOnline = isCurrentlyOnline()
             _isOnline.value = stillOnline
             if (!stillOnline) {
                 _networkType.value = NetworkType.NONE
-                Log.i(TAG, "Device is now offline")
+                if (BuildConfig.DEBUG) {
+                    Log.i(TAG, "Device is now offline")
+                }
             }
         }
         
@@ -130,7 +137,11 @@ class OfflineManager(private val context: Context) {
             // alongside downloaded files to properly reconstruct BaseItemDto objects
             _offlineContent.value = offlineItems
             
-            Log.d(TAG, "Refreshed offline content: ${offlineItems.size} items available")
+            if (BuildConfig.DEBUG) {
+            
+                Log.d(TAG, "Refreshed offline content: ${offlineItems.size} items available")
+            
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to refresh offline content", e)
         }
@@ -165,7 +176,9 @@ class OfflineManager(private val context: Context) {
             val cleared = MediaDownloadManager.clearAllDownloads(context)
             if (cleared) {
                 _offlineContent.value = emptyList()
-                Log.i(TAG, "Cleared all offline content")
+                if (BuildConfig.DEBUG) {
+                    Log.i(TAG, "Cleared all offline content")
+                }
             }
             cleared
         } catch (e: Exception) {
@@ -234,7 +247,9 @@ class OfflineManager(private val context: Context) {
     fun cleanup() {
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
-            Log.d(TAG, "Cleanup completed")
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Cleanup completed")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error during cleanup", e)
         }

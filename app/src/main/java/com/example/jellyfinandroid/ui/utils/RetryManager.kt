@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.utils
 
+import com.example.jellyfinandroid.BuildConfig
 import android.util.Log
 import com.example.jellyfinandroid.data.repository.ApiResult
 import com.example.jellyfinandroid.data.repository.ErrorType
@@ -34,14 +35,18 @@ object RetryManager {
         
         for (attempt in 1..maxAttempts) {
             try {
-                Log.d(TAG, "$operationName: Attempt $attempt/$maxAttempts")
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "$operationName: Attempt $attempt/$maxAttempts")
+                }
                 
                 val result = operation(attempt)
                 
                 when (result) {
                     is ApiResult.Success -> {
                         if (attempt > 1) {
-                            Log.i(TAG, "$operationName: Succeeded on attempt $attempt")
+                            if (BuildConfig.DEBUG) {
+                                Log.i(TAG, "$operationName: Succeeded on attempt $attempt")
+                            }
                         }
                         return result
                     }
@@ -55,12 +60,16 @@ object RetryManager {
                         }
                         
                         if (!ErrorHandler.shouldRetry(result.errorType, attempt, maxAttempts)) {
-                            Log.d(TAG, "$operationName: Error type ${result.errorType} is not retryable")
+                            if (BuildConfig.DEBUG) {
+                                Log.d(TAG, "$operationName: Error type ${result.errorType} is not retryable")
+                            }
                             return result
                         }
                         
                         val delay = ErrorHandler.getRetryDelay(result.errorType, attempt)
-                        Log.d(TAG, "$operationName: Attempt $attempt failed (${result.errorType}), retrying in ${delay}ms")
+                        if (BuildConfig.DEBUG) {
+                            Log.d(TAG, "$operationName: Attempt $attempt failed (${result.errorType}), retrying in ${delay}ms")
+                        }
                         delay(delay)
                     }
                     
@@ -75,7 +84,9 @@ object RetryManager {
                 }
                 
             } catch (e: CancellationException) {
-                Log.d(TAG, "$operationName: Operation was cancelled on attempt $attempt")
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "$operationName: Operation was cancelled on attempt $attempt")
+                }
                 throw e // Always rethrow cancellation exceptions
                 
             } catch (e: Exception) {
@@ -118,7 +129,9 @@ object RetryManager {
         when (circuitState.state) {
             CircuitState.OPEN -> {
                 if (circuitState.shouldAttemptReset()) {
-                    Log.d(TAG, "$operationName: Circuit breaker attempting reset")
+                    if (BuildConfig.DEBUG) {
+                        Log.d(TAG, "$operationName: Circuit breaker attempting reset")
+                    }
                     circuitState.state = CircuitState.HALF_OPEN
                 } else {
                     Log.w(TAG, "$operationName: Circuit breaker is OPEN, rejecting request")
@@ -130,7 +143,9 @@ object RetryManager {
             }
             
             CircuitState.HALF_OPEN -> {
-                Log.d(TAG, "$operationName: Circuit breaker is HALF_OPEN, testing service")
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "$operationName: Circuit breaker is HALF_OPEN, testing service")
+                }
             }
             
             CircuitState.CLOSED -> {

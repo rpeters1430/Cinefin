@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.data.repository
 
+import com.example.jellyfinandroid.BuildConfig
 import android.util.Log
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.data.SecureCredentialManager
@@ -211,7 +212,11 @@ class JellyfinAuthRepository @Inject constructor(
     suspend fun reAuthenticate(): Boolean {
         val server = _currentServer.value ?: return false
         
-        Log.d("JellyfinAuthRepository", "reAuthenticate: Starting re-authentication for user ${server.username} on ${server.url}")
+        if (BuildConfig.DEBUG) {
+        
+            Log.d("JellyfinAuthRepository", "reAuthenticate: Starting re-authentication for user ${server.username} on ${server.url}")
+        
+        }
         
         try {
             // Clear any cached clients before re-authenticating
@@ -226,12 +231,18 @@ class JellyfinAuthRepository @Inject constructor(
                 return false
             }
             
-            Log.d("JellyfinAuthRepository", "reAuthenticate: Found saved credentials, attempting authentication")
+            if (BuildConfig.DEBUG) {
+            
+                Log.d("JellyfinAuthRepository", "reAuthenticate: Found saved credentials, attempting authentication")
+            
+            }
             
             // Re-authenticate using saved credentials
             when (val authResult = authenticateUser(server.url, server.username ?: "", savedPassword)) {
                 is ApiResult.Success -> {
-                    Log.d("JellyfinAuthRepository", "reAuthenticate: Successfully re-authenticated user ${server.username}")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("JellyfinAuthRepository", "reAuthenticate: Successfully re-authenticated user ${server.username}")
+                    }
                     // Update the current server with the new token and login timestamp
                     val updatedServer = server.copy(
                         accessToken = authResult.data.accessToken,
@@ -247,7 +258,9 @@ class JellyfinAuthRepository @Inject constructor(
                     return false
                 }
                 is ApiResult.Loading -> {
-                    Log.d("JellyfinAuthRepository", "reAuthenticate: Authentication in progress")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("JellyfinAuthRepository", "reAuthenticate: Authentication in progress")
+                    }
                     return false
                 }
             }
@@ -284,7 +297,9 @@ class JellyfinAuthRepository @Inject constructor(
         if (isTokenExpired()) {
             Log.w("JellyfinAuthRepository", "Token expired, attempting proactive refresh")
             if (reAuthenticate()) {
-                Log.d("JellyfinAuthRepository", "Proactive token refresh successful")
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinAuthRepository", "Proactive token refresh successful")
+                }
             } else {
                 Log.w("JellyfinAuthRepository", "Proactive token refresh failed, user will be logged out")
             }
@@ -295,7 +310,9 @@ class JellyfinAuthRepository @Inject constructor(
      * Logout current user
      */
     suspend fun logout() {
-        Log.d("JellyfinAuthRepository", "Logging out user")
+        if (BuildConfig.DEBUG) {
+            Log.d("JellyfinAuthRepository", "Logging out user")
+        }
         clientFactory.invalidateClient()
         _currentServer.value = null
         _isConnected.value = false

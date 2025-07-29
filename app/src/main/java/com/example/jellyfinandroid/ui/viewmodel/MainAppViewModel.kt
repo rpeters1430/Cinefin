@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.viewmodel
 
+import com.example.jellyfinandroid.BuildConfig
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -62,20 +63,28 @@ class MainAppViewModel @Inject constructor(
     
     fun loadInitialData() {
         viewModelScope.launch {
-            Log.d("MainAppViewModel", "loadInitialData: Starting to load all data")
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadInitialData: Starting to load all data")
+            }
             _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
             
             // Load libraries
-            Log.d("MainAppViewModel", "loadInitialData: Loading libraries")
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadInitialData: Loading libraries")
+            }
             when (val result = repository.getUserLibraries()) {
                 is ApiResult.Success -> {
-                    Log.d("MainAppViewModel", "loadInitialData: Loaded ${result.data.size} libraries")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadInitialData: Loaded ${result.data.size} libraries")
+                    }
                     _appState.value = _appState.value.copy(libraries = result.data)
                 }
                 is ApiResult.Error -> {
                     // ✅ FIX: Don't show error messages for cancelled operations (navigation/lifecycle)
                     if (result.errorType == com.example.jellyfinandroid.data.repository.ErrorType.OPERATION_CANCELLED) {
-                        Log.d("MainAppViewModel", "loadInitialData: Library loading was cancelled (navigation)")
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadInitialData: Library loading was cancelled (navigation)")
+                        }
                     } else {
                         Log.e("MainAppViewModel", "loadInitialData: Failed to load libraries: ${result.message}")
                         _appState.value = _appState.value.copy(
@@ -89,16 +98,22 @@ class MainAppViewModel @Inject constructor(
             }
             
             // Load recently added items
-            Log.d("MainAppViewModel", "loadInitialData: Loading recently added items")
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadInitialData: Loading recently added items")
+            }
             when (val result = repository.getRecentlyAdded()) {
                 is ApiResult.Success -> {
-                    Log.d("MainAppViewModel", "loadInitialData: Loaded ${result.data.size} recently added items")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadInitialData: Loaded ${result.data.size} recently added items")
+                    }
                     _appState.value = _appState.value.copy(recentlyAdded = result.data)
                 }
                 is ApiResult.Error -> {
                     // ✅ FIX: Don't show error messages for cancelled operations
                     if (result.errorType == com.example.jellyfinandroid.data.repository.ErrorType.OPERATION_CANCELLED) {
-                        Log.d("MainAppViewModel", "loadInitialData: Recent items loading was cancelled (navigation)")
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadInitialData: Recent items loading was cancelled (navigation)")
+                        }
                     } else {
                         Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items: ${result.message}")
                         // Don't override library error, just log this
@@ -115,20 +130,28 @@ class MainAppViewModel @Inject constructor(
             }
 
             // Load recently added items by types
-            Log.d("MainAppViewModel", "loadInitialData: Loading recently added items by types")
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadInitialData: Loading recently added items by types")
+            }
             when (val result = repository.getRecentlyAddedByTypes(limit = 20)) {
                 is ApiResult.Success -> {
                     val totalItems = result.data.values.sumOf { it.size }
-                    Log.d("MainAppViewModel", "loadInitialData: Loaded $totalItems items across ${result.data.size} types: ${result.data.keys.joinToString(", ")}")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadInitialData: Loaded $totalItems items across ${result.data.size} types: ${result.data.keys.joinToString(", ")}")
+                    }
                     result.data.forEach { (type, items) ->
-                        Log.d("MainAppViewModel", "loadInitialData: $type: ${items.size} items")
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadInitialData: $type: ${items.size} items")
+                        }
                     }
                     _appState.value = _appState.value.copy(recentlyAddedByTypes = result.data)
                 }
                 is ApiResult.Error -> {
                     // ✅ FIX: Don't show error messages for cancelled operations  
                     if (result.errorType == com.example.jellyfinandroid.data.repository.ErrorType.OPERATION_CANCELLED) {
-                        Log.d("MainAppViewModel", "loadInitialData: Recent items by type loading was cancelled (navigation)")
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadInitialData: Recent items by type loading was cancelled (navigation)")
+                        }
                     } else {
                         Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items by type: ${result.message}")
                         // Don't override other errors, just log this
@@ -145,18 +168,28 @@ class MainAppViewModel @Inject constructor(
             }
             
             // Load initial page of items for library type screens
-            Log.d("MainAppViewModel", "loadInitialData: Loading library items page")
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadInitialData: Loading library items page")
+            }
             loadLibraryItemsPage(reset = true)
 
             // Load all movies and TV shows for their respective screens
-            Log.d("MainAppViewModel", "loadInitialData: Loading all movies")
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadInitialData: Loading all movies")
+            }
             loadAllMovies(reset = true)
 
-            Log.d("MainAppViewModel", "loadInitialData: Loading all TV shows")
+            if (BuildConfig.DEBUG) {
+
+                Log.d("MainAppViewModel", "loadInitialData: Loading all TV shows")
+
+            }
             loadAllTVShows(reset = true)
             
             _appState.value = _appState.value.copy(isLoading = false)
-            Log.d("MainAppViewModel", "loadInitialData: Completed loading all data")
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadInitialData: Completed loading all data")
+            }
         }
     }
     
@@ -201,10 +234,14 @@ class MainAppViewModel @Inject constructor(
      */
     fun refreshAuthentication() {
         viewModelScope.launch {
-            Log.d("MainAppViewModel", "Manual authentication refresh requested")
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "Manual authentication refresh requested")
+            }
             try {
                 repository.validateAndRefreshTokenManually()
-                Log.d("MainAppViewModel", "Authentication refresh completed")
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "Authentication refresh completed")
+                }
             } catch (e: Exception) {
                 Log.e("MainAppViewModel", "Authentication refresh failed", e)
                 _appState.value = _appState.value.copy(
@@ -268,7 +305,9 @@ class MainAppViewModel @Inject constructor(
             val currentState = _appState.value
             
             if (reset) {
-                Log.d("MainAppViewModel", "loadLibraryItemsPage: Resetting and loading first page")
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "loadLibraryItemsPage: Resetting and loading first page")
+                }
                 _appState.value = currentState.copy(
                     allItems = emptyList(),
                     currentPage = 0,
@@ -276,7 +315,9 @@ class MainAppViewModel @Inject constructor(
                     isLoading = true
                 )
             } else {
-                Log.d("MainAppViewModel", "loadLibraryItemsPage: Loading next page")
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "loadLibraryItemsPage: Loading next page")
+                }
                 _appState.value = currentState.copy(isLoadingMore = true)
             }
             
@@ -284,7 +325,11 @@ class MainAppViewModel @Inject constructor(
             val page = if (reset) 0 else currentState.currentPage + 1
             val startIndex = page * pageSize
             
-            Log.d("MainAppViewModel", "loadLibraryItemsPage: Requesting page $page (startIndex: $startIndex, limit: $pageSize)")
+            if (BuildConfig.DEBUG) {
+            
+                Log.d("MainAppViewModel", "loadLibraryItemsPage: Requesting page $page (startIndex: $startIndex, limit: $pageSize)")
+            
+            }
             
             when (val result = repository.getLibraryItems(
                 startIndex = startIndex,
@@ -298,12 +343,20 @@ class MainAppViewModel @Inject constructor(
                         currentState.allItems + newItems
                     }
                     
-                    Log.d("MainAppViewModel", "loadLibraryItemsPage: Successfully loaded ${newItems.size} items for page $page")
-                    Log.d("MainAppViewModel", "loadLibraryItemsPage: Total items now: ${allItems.size}")
+                    if (BuildConfig.DEBUG) {
+                    
+                        Log.d("MainAppViewModel", "loadLibraryItemsPage: Successfully loaded ${newItems.size} items for page $page")
+                    
+                    }
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadLibraryItemsPage: Total items now: ${allItems.size}")
+                    }
                     
                     // Log item types breakdown
                     val typeBreakdown = allItems.groupBy { it.type }.mapValues { it.value.size }
-                    Log.d("MainAppViewModel", "loadLibraryItemsPage: Item types breakdown: $typeBreakdown")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadLibraryItemsPage: Item types breakdown: $typeBreakdown")
+                    }
                     
                     _appState.value = _appState.value.copy(
                         allItems = allItems,
@@ -345,7 +398,9 @@ class MainAppViewModel @Inject constructor(
             val currentFavoriteState = item.userData?.isFavorite ?: false
             when (val result = repository.toggleFavorite(item.id.toString(), !currentFavoriteState)) {
                 is ApiResult.Success -> {
-                    Log.d("MainAppViewModel", "Successfully toggled favorite for ${item.name}")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "Successfully toggled favorite for ${item.name}")
+                    }
                     // Refresh data to update UI state
                     loadInitialData()
                 }
@@ -366,7 +421,9 @@ class MainAppViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = repository.markAsWatched(item.id.toString())) {
                 is ApiResult.Success -> {
-                    Log.d("MainAppViewModel", "Successfully marked ${item.name} as watched")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "Successfully marked ${item.name} as watched")
+                    }
                     // Refresh data to update UI state
                     loadInitialData()
                 }
@@ -387,7 +444,9 @@ class MainAppViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = repository.markAsUnwatched(item.id.toString())) {
                 is ApiResult.Success -> {
-                    Log.d("MainAppViewModel", "Successfully marked ${item.name} as unwatched")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "Successfully marked ${item.name} as unwatched")
+                    }
                     // Refresh data to update UI state
                     loadInitialData()
                 }
@@ -408,7 +467,9 @@ class MainAppViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = repository.deleteItemAsAdmin(item.id.toString())) {
                 is ApiResult.Success -> {
-                    Log.d("MainAppViewModel", "Successfully deleted ${item.name}")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "Successfully deleted ${item.name}")
+                    }
                     _appState.value = _appState.value.copy(
                         recentlyAdded = _appState.value.recentlyAdded.filterNot { it.id == item.id },
                         recentlyAddedByTypes = _appState.value.recentlyAddedByTypes.mapValues { entry ->
@@ -487,7 +548,9 @@ class MainAppViewModel @Inject constructor(
     // Navigation compatibility methods
     fun loadTVShowDetails(seriesId: String) {
         viewModelScope.launch {
-            Log.d("MainAppViewModel", "loadTVShowDetails: Loading series details for $seriesId")
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadTVShowDetails: Loading series details for $seriesId")
+            }
             
             // Load the series details and add to allItems if not already there
             when (val result = repository.getSeriesDetails(seriesId)) {
@@ -502,7 +565,9 @@ class MainAppViewModel @Inject constructor(
                     }
                     
                     _appState.value = _appState.value.copy(allItems = currentItems)
-                    Log.d("MainAppViewModel", "loadTVShowDetails: Successfully loaded series ${result.data.name}")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadTVShowDetails: Successfully loaded series ${result.data.name}")
+                    }
                 }
                 is ApiResult.Error -> {
                     Log.e("MainAppViewModel", "loadTVShowDetails: Failed to load series details: ${result.message}")
@@ -528,12 +593,16 @@ class MainAppViewModel @Inject constructor(
      */
     fun loadEpisodeDetails(episodeId: String) {
         viewModelScope.launch {
-            Log.d("MainAppViewModel", "loadEpisodeDetails: Loading episode details for $episodeId")
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadEpisodeDetails: Loading episode details for $episodeId")
+            }
             
             // Check if episode already exists in allItems
             val existingEpisode = _appState.value.allItems.find { it.id.toString() == episodeId }
             if (existingEpisode != null) {
-                Log.d("MainAppViewModel", "loadEpisodeDetails: Episode already loaded: ${existingEpisode.name}")
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "loadEpisodeDetails: Episode already loaded: ${existingEpisode.name}")
+                }
                 return@launch
             }
             
@@ -545,7 +614,9 @@ class MainAppViewModel @Inject constructor(
                 when (val result = repository.getEpisodeDetails(episodeId)) {
                     is ApiResult.Success -> {
                         val episode = result.data
-                        Log.d("MainAppViewModel", "loadEpisodeDetails: Successfully loaded episode: ${episode.name}")
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadEpisodeDetails: Successfully loaded episode: ${episode.name}")
+                        }
                         
                         // Add episode to app state
                         addOrUpdateItem(episode)
@@ -554,11 +625,15 @@ class MainAppViewModel @Inject constructor(
                         episode.seriesId?.let { seriesId ->
                             val existingSeries = _appState.value.allItems.find { it.id.toString() == seriesId.toString() }
                             if (existingSeries == null) {
-                                Log.d("MainAppViewModel", "loadEpisodeDetails: Loading series details for context")
+                                if (BuildConfig.DEBUG) {
+                                    Log.d("MainAppViewModel", "loadEpisodeDetails: Loading series details for context")
+                                }
                                 when (val seriesResult = repository.getSeriesDetails(seriesId.toString())) {
                                     is ApiResult.Success -> {
                                         addOrUpdateItem(seriesResult.data)
-                                        Log.d("MainAppViewModel", "loadEpisodeDetails: Added series context: ${seriesResult.data.name}")
+                                        if (BuildConfig.DEBUG) {
+                                            Log.d("MainAppViewModel", "loadEpisodeDetails: Added series context: ${seriesResult.data.name}")
+                                        }
                                     }
                                     is ApiResult.Error -> {
                                         Log.w("MainAppViewModel", "loadEpisodeDetails: Failed to load series context: ${seriesResult.message}")
@@ -578,7 +653,9 @@ class MainAppViewModel @Inject constructor(
                         )
                     }
                     is ApiResult.Loading -> {
-                        Log.d("MainAppViewModel", "loadEpisodeDetails: Episode loading in progress")
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadEpisodeDetails: Episode loading in progress")
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -599,7 +676,9 @@ class MainAppViewModel @Inject constructor(
             val currentState = _appState.value
 
             if (reset) {
-                Log.d("MainAppViewModel", "loadAllMovies: Resetting and loading first page")
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "loadAllMovies: Resetting and loading first page")
+                }
                 _appState.value = currentState.copy(
                     allMovies = emptyList(),
                     moviesPage = 0,
@@ -610,7 +689,9 @@ class MainAppViewModel @Inject constructor(
                 if (currentState.isLoadingMovies || !currentState.hasMoreMovies) {
                     return@launch
                 }
-                Log.d("MainAppViewModel", "loadAllMovies: Loading next page")
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "loadAllMovies: Loading next page")
+                }
                 _appState.value = currentState.copy(isLoadingMovies = true)
             }
 
@@ -618,7 +699,11 @@ class MainAppViewModel @Inject constructor(
             val page = if (reset) 0 else currentState.moviesPage + 1
             val startIndex = page * pageSize
 
-            Log.d("MainAppViewModel", "loadAllMovies: Requesting page $page (startIndex: $startIndex, limit: $pageSize)")
+            if (BuildConfig.DEBUG) {
+
+                Log.d("MainAppViewModel", "loadAllMovies: Requesting page $page (startIndex: $startIndex, limit: $pageSize)")
+
+            }
 
             when (val result = repository.getLibraryItems(
                 itemTypes = "Movie",
@@ -633,8 +718,14 @@ class MainAppViewModel @Inject constructor(
                         currentState.allMovies + newMovies
                     }
 
-                    Log.d("MainAppViewModel", "loadAllMovies: Successfully loaded ${newMovies.size} movies for page $page")
-                    Log.d("MainAppViewModel", "loadAllMovies: Total movies now: ${allMovies.size}")
+                    if (BuildConfig.DEBUG) {
+
+                        Log.d("MainAppViewModel", "loadAllMovies: Successfully loaded ${newMovies.size} movies for page $page")
+
+                    }
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadAllMovies: Total movies now: ${allMovies.size}")
+                    }
 
                     _appState.value = _appState.value.copy(
                         allMovies = allMovies,
@@ -680,7 +771,9 @@ class MainAppViewModel @Inject constructor(
             val currentState = _appState.value
             
             if (reset) {
-                Log.d("MainAppViewModel", "loadAllTVShows: Resetting and loading first page")
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "loadAllTVShows: Resetting and loading first page")
+                }
                 _appState.value = currentState.copy(
                     allTVShows = emptyList(),
                     tvShowsPage = 0,
@@ -691,7 +784,9 @@ class MainAppViewModel @Inject constructor(
                 if (currentState.isLoadingTVShows || !currentState.hasMoreTVShows) {
                     return@launch
                 }
-                Log.d("MainAppViewModel", "loadAllTVShows: Loading next page")
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "loadAllTVShows: Loading next page")
+                }
                 _appState.value = currentState.copy(isLoadingTVShows = true)
             }
             
@@ -699,7 +794,11 @@ class MainAppViewModel @Inject constructor(
             val page = if (reset) 0 else currentState.tvShowsPage + 1
             val startIndex = page * pageSize
             
-            Log.d("MainAppViewModel", "loadAllTVShows: Requesting page $page (startIndex: $startIndex, limit: $pageSize)")
+            if (BuildConfig.DEBUG) {
+            
+                Log.d("MainAppViewModel", "loadAllTVShows: Requesting page $page (startIndex: $startIndex, limit: $pageSize)")
+            
+            }
             
             when (val result = repository.getLibraryItems(
                 itemTypes = "Series",
@@ -714,8 +813,14 @@ class MainAppViewModel @Inject constructor(
                         currentState.allTVShows + newTVShows
                     }
                     
-                    Log.d("MainAppViewModel", "loadAllTVShows: Successfully loaded ${newTVShows.size} TV shows for page $page")
-                    Log.d("MainAppViewModel", "loadAllTVShows: Total TV shows now: ${allTVShows.size}")
+                    if (BuildConfig.DEBUG) {
+                    
+                        Log.d("MainAppViewModel", "loadAllTVShows: Successfully loaded ${newTVShows.size} TV shows for page $page")
+                    
+                    }
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadAllTVShows: Total TV shows now: ${allTVShows.size}")
+                    }
                     
                     _appState.value = _appState.value.copy(
                         allTVShows = allTVShows,
@@ -762,10 +867,14 @@ class MainAppViewModel @Inject constructor(
         
         if (existingIndex >= 0) {
             currentItems[existingIndex] = item
-            Log.d("MainAppViewModel", "addOrUpdateItem: Updated existing item ${item.name}")
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "addOrUpdateItem: Updated existing item ${item.name}")
+            }
         } else {
             currentItems.add(item)
-            Log.d("MainAppViewModel", "addOrUpdateItem: Added new item ${item.name}")
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "addOrUpdateItem: Added new item ${item.name}")
+            }
         }
         
         _appState.value = _appState.value.copy(allItems = currentItems)

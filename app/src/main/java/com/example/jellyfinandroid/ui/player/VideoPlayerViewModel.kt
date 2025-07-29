@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.player
 
+import com.example.jellyfinandroid.BuildConfig
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -152,7 +153,11 @@ class VideoPlayerViewModel @Inject constructor(
                 // Start position updates
                 startPositionUpdates()
                 
-                Log.d("VideoPlayerViewModel", "Player initialized for item: $itemName")
+                if (BuildConfig.DEBUG) {
+                
+                    Log.d("VideoPlayerViewModel", "Player initialized for item: $itemName")
+                
+                }
                 
             } catch (e: Exception) {
                 Log.e("VideoPlayerViewModel", "Failed to initialize player", e)
@@ -210,7 +215,9 @@ class VideoPlayerViewModel @Inject constructor(
                     }
                     
                     _playerState.value = _playerState.value.copy(selectedQuality = quality)
-                    Log.d("VideoPlayerViewModel", "Quality changed to: ${quality.label}")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("VideoPlayerViewModel", "Quality changed to: ${quality.label}")
+                    }
                 }
                 
             } catch (e: Exception) {
@@ -226,14 +233,18 @@ class VideoPlayerViewModel @Inject constructor(
         currentMediaItem?.let { mediaItem ->
             currentJellyfinItem?.let { jellyfinItem ->
                 castManager.startCasting(mediaItem, jellyfinItem)
-                Log.d("VideoPlayerViewModel", "Started casting: ${jellyfinItem.name}")
+                if (BuildConfig.DEBUG) {
+                    Log.d("VideoPlayerViewModel", "Started casting: ${jellyfinItem.name}")
+                }
             }
         }
     }
     
     fun stopCasting() {
         castManager.stopCasting()
-        Log.d("VideoPlayerViewModel", "Stopped casting")
+        if (BuildConfig.DEBUG) {
+            Log.d("VideoPlayerViewModel", "Stopped casting")
+        }
     }
     
     fun releasePlayer() {

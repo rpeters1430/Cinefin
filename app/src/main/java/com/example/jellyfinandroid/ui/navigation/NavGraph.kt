@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.navigation
 
+import com.example.jellyfinandroid.BuildConfig
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -407,7 +408,9 @@ fun JellyfinNavGraph(
                         val streamUrl = mainViewModel.getStreamUrl(movieItem)
                         if (streamUrl != null) {
                             MediaPlayerUtils.playMedia(context = navController.context, streamUrl = streamUrl, item = movieItem)
-                            Log.d("NavGraph", "Playing movie: ${movieItem.name}")
+                            if (BuildConfig.DEBUG) {
+                                Log.d("NavGraph", "Playing movie: ${movieItem.name}")
+                            }
                         } else {
                             Log.e("NavGraph", "No stream URL available for movie: ${movieItem.name}")
                         }
@@ -461,7 +464,9 @@ fun JellyfinNavGraph(
             when {
                 episode != null -> {
                     // Episode found, show detail screen
-                    Log.d("NavGraph", "TVEpisodeDetail: Found episode ${episode.name} (${episode.id}) in app state")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("NavGraph", "TVEpisodeDetail: Found episode ${episode.name} (${episode.id}) in app state")
+                    }
                     
                     // Find the series information if available
                     val seriesInfo = episode.seriesId?.let { seriesId ->
@@ -479,7 +484,9 @@ fun JellyfinNavGraph(
                                 val streamUrl = viewModel.getStreamUrl(episodeItem)
                                 if (streamUrl != null) {
                                     MediaPlayerUtils.playMedia(context = navController.context, streamUrl = streamUrl, item = episodeItem)
-                                    Log.d("NavGraph", "Playing episode: ${episodeItem.name}")
+                                    if (BuildConfig.DEBUG) {
+                                        Log.d("NavGraph", "Playing episode: ${episodeItem.name}")
+                                    }
                                 } else {
                                     Log.e("NavGraph", "No stream URL available for episode: ${episodeItem.name}")
                                 }
@@ -500,7 +507,9 @@ fun JellyfinNavGraph(
                                     )
                                     
                                     if (downloadId != null) {
-                                        Log.d("NavGraph", "Started download for episode: ${episodeItem.name} (ID: $downloadId)")
+                                        if (BuildConfig.DEBUG) {
+                                            Log.d("NavGraph", "Started download for episode: ${episodeItem.name} (ID: $downloadId)")
+                                        }
                                     } else {
                                         Log.e("NavGraph", "Failed to start download for episode: ${episodeItem.name}")
                                     }
@@ -539,7 +548,9 @@ fun JellyfinNavGraph(
                 }
                 appState.isLoading -> {
                     // Still loading, show loading indicator
-                    Log.d("NavGraph", "TVEpisodeDetail: App state is loading, showing loading indicator")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("NavGraph", "TVEpisodeDetail: App state is loading, showing loading indicator")
+                    }
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
@@ -584,7 +595,9 @@ fun JellyfinNavGraph(
                         .filter { it.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE }
                         .map { "${it.name} (${it.id})" }
                         .take(5) // Limit to first 5 for log readability
-                    Log.d("NavGraph", "TVEpisodeDetail: Available episodes: $episodeIds")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("NavGraph", "TVEpisodeDetail: Available episodes: $episodeIds")
+                    }
                     
                     // Load the episode details if we haven't already
                     LaunchedEffect(episodeId) {

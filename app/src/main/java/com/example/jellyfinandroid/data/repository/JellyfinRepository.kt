@@ -485,7 +485,9 @@ class JellyfinRepository @Inject constructor(
             // Log details of each item
             items.forEachIndexed { index, item ->
                 val dateFormatted = item.dateCreated?.toString() ?: "Unknown date"
-                Log.d("JellyfinRepository", "getRecentlyAdded[$index]: ${item.type} - '${item.name}' (Created: $dateFormatted)")
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinRepository", "getRecentlyAdded[$index]: ${item.type} - '${item.name}' (Created: $dateFormatted)")
+                }
             }
 
             ApiResult.Success(items)
@@ -504,7 +506,11 @@ class JellyfinRepository @Inject constructor(
     private suspend fun reAuthenticate(): Boolean {
         val server = _currentServer.value ?: return false
         
-        Log.d("JellyfinRepository", "reAuthenticate: Starting re-authentication for user ${server.username} on ${server.url}")
+        if (BuildConfig.DEBUG) {
+        
+            Log.d("JellyfinRepository", "reAuthenticate: Starting re-authentication for user ${server.username} on ${server.url}")
+        
+        }
         
         try {
             // Clear any cached clients before re-authenticating
@@ -519,12 +525,18 @@ class JellyfinRepository @Inject constructor(
                 return false
             }
             
-            Log.d("JellyfinRepository", "reAuthenticate: Found saved credentials, attempting authentication")
+            if (BuildConfig.DEBUG) {
+            
+                Log.d("JellyfinRepository", "reAuthenticate: Found saved credentials, attempting authentication")
+            
+            }
             
             // Re-authenticate using saved credentials
             when (val authResult = authenticateUser(server.url, server.username ?: "", savedPassword)) {
                 is ApiResult.Success -> {
-                    Log.d("JellyfinRepository", "reAuthenticate: Successfully re-authenticated user ${server.username}")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("JellyfinRepository", "reAuthenticate: Successfully re-authenticated user ${server.username}")
+                    }
                     // Update the current server with the new token and login timestamp
                     val updatedServer = server.copy(
                         accessToken = authResult.data.accessToken,
@@ -540,7 +552,9 @@ class JellyfinRepository @Inject constructor(
                     return false
                 }
                 is ApiResult.Loading -> {
-                    Log.d("JellyfinRepository", "reAuthenticate: Authentication in progress")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("JellyfinRepository", "reAuthenticate: Authentication in progress")
+                    }
                     return false
                 }
             }
@@ -553,7 +567,9 @@ class JellyfinRepository @Inject constructor(
     }
 
     suspend fun logout() {
-        Log.d("JellyfinRepository", "Logging out user")
+        if (BuildConfig.DEBUG) {
+            Log.d("JellyfinRepository", "Logging out user")
+        }
         clientFactory.invalidateClient()
         _currentServer.value = null
         _isConnected.value = false
@@ -574,7 +590,9 @@ class JellyfinRepository @Inject constructor(
                 
                 // ✅ FIX: Don't retry if the job was cancelled (navigation/lifecycle cancellation)
                 if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
-                    Log.d("JellyfinRepository", "Operation was cancelled, not retrying")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("JellyfinRepository", "Operation was cancelled, not retrying")
+                    }
                     throw e
                 }
                 
@@ -586,7 +604,9 @@ class JellyfinRepository @Inject constructor(
                     
                     // Try to re-authenticate
                     if (reAuthenticate()) {
-                        Log.d("JellyfinRepository", "Re-authentication successful, retrying operation")
+                        if (BuildConfig.DEBUG) {
+                            Log.d("JellyfinRepository", "Re-authentication successful, retrying operation")
+                        }
                         // ✅ FIX: Invalidate client factory to ensure new token is used
                         clientFactory.invalidateClient()
                         // Additional delay to ensure token propagation
@@ -618,14 +638,18 @@ class JellyfinRepository @Inject constructor(
     ): ApiResult<T> {
         for (attempt in 0..maxRetries) {
             try {
-                Log.d("JellyfinRepository", "$operationName: Attempt ${attempt + 1}/${maxRetries + 1}")
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinRepository", "$operationName: Attempt ${attempt + 1}/${maxRetries + 1}")
+                }
                 
                 val result = operation()
                 
                 when (result) {
                     is ApiResult.Success -> {
                         if (attempt > 0) {
-                            Log.i("JellyfinRepository", "$operationName: Succeeded on attempt ${attempt + 1}")
+                            if (BuildConfig.DEBUG) {
+                                Log.i("JellyfinRepository", "$operationName: Succeeded on attempt ${attempt + 1}")
+                            }
                         }
                         return result
                     }
@@ -638,7 +662,9 @@ class JellyfinRepository @Inject constructor(
                             Log.w("JellyfinRepository", "$operationName: Got 401 error, attempting re-authentication")
                             
                             if (reAuthenticate()) {
-                                Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
+                                if (BuildConfig.DEBUG) {
+                                    Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
+                                }
                                 clientFactory.invalidateClient()
                                 kotlinx.coroutines.delay(RE_AUTH_DELAY_MS) // Longer delay for token propagation
                                 continue
@@ -647,7 +673,9 @@ class JellyfinRepository @Inject constructor(
                                 return result
                             }
                         } else {
-                            Log.d("JellyfinRepository", "$operationName: Error type ${result.errorType} not retryable or max attempts reached")
+                            if (BuildConfig.DEBUG) {
+                                Log.d("JellyfinRepository", "$operationName: Error type ${result.errorType} not retryable or max attempts reached")
+                            }
                             return result
                         }
                     }
@@ -656,7 +684,9 @@ class JellyfinRepository @Inject constructor(
             } catch (e: Exception) {
                 // Handle direct exceptions from the operation
                 if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
-                    Log.d("JellyfinRepository", "$operationName: Operation cancelled on attempt ${attempt + 1}")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("JellyfinRepository", "$operationName: Operation cancelled on attempt ${attempt + 1}")
+                    }
                     throw e
                 }
                 
@@ -668,7 +698,9 @@ class JellyfinRepository @Inject constructor(
                     Log.w("JellyfinRepository", "$operationName: Got 401 exception, attempting re-authentication")
                     
                     if (reAuthenticate()) {
-                        Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
+                        if (BuildConfig.DEBUG) {
+                            Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
+                        }
                         clientFactory.invalidateClient()
                         kotlinx.coroutines.delay(RE_AUTH_DELAY_MS) // Longer delay for token propagation
                         continue
@@ -677,7 +709,9 @@ class JellyfinRepository @Inject constructor(
                         return handleExceptionSafely(e, operationName)
                     }
                 } else {
-                    Log.d("JellyfinRepository", "$operationName: Exception type $errorType not retryable or max attempts reached")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("JellyfinRepository", "$operationName: Exception type $errorType not retryable or max attempts reached")
+                    }
                     return handleExceptionSafely(e, operationName)
                 }
             }
@@ -697,7 +731,11 @@ class JellyfinRepository @Inject constructor(
             return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
         }
 
-        Log.d("JellyfinRepository", "getRecentlyAddedByType: Requesting $limit items of type $itemType")
+        if (BuildConfig.DEBUG) {
+
+            Log.d("JellyfinRepository", "getRecentlyAddedByType: Requesting $limit items of type $itemType")
+
+        }
 
         return executeWithAuthRetry("getRecentlyAddedByType") {
             val currentServer = _currentServer.value 
@@ -716,12 +754,18 @@ class JellyfinRepository @Inject constructor(
             )
             val items = response.content.items ?: emptyList()
             
-            Log.d("JellyfinRepository", "getRecentlyAddedByType: Retrieved ${items.size} items of type $itemType")
+            if (BuildConfig.DEBUG) {
+            
+                Log.d("JellyfinRepository", "getRecentlyAddedByType: Retrieved ${items.size} items of type $itemType")
+            
+            }
             
             // Log details of each item
             items.forEachIndexed { index, item ->
                 val dateFormatted = item.dateCreated?.toString() ?: "Unknown date"
-                Log.d("JellyfinRepository", "getRecentlyAddedByType[$itemType][$index]: '${item.name}' (Created: $dateFormatted)")
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinRepository", "getRecentlyAddedByType[$itemType][$index]: '${item.name}' (Created: $dateFormatted)")
+                }
             }
             
             ApiResult.Success(items)
@@ -774,7 +818,11 @@ class JellyfinRepository @Inject constructor(
             BaseItemKind.VIDEO
         )
 
-        Log.d("JellyfinRepository", "getRecentlyAddedByTypes: Starting to fetch items for ${contentTypes.size} content types")
+        if (BuildConfig.DEBUG) {
+
+            Log.d("JellyfinRepository", "getRecentlyAddedByTypes: Starting to fetch items for ${contentTypes.size} content types")
+
+        }
         val results = mutableMapOf<String, List<BaseItemDto>>()
         
         for (contentType in contentTypes) {
@@ -792,9 +840,13 @@ class JellyfinRepository @Inject constructor(
                             else -> "Other"
                         }
                         results[typeName] = result.data
-                        Log.d("JellyfinRepository", "getRecentlyAddedByTypes: Added ${result.data.size} items to category '$typeName'")
+                        if (BuildConfig.DEBUG) {
+                            Log.d("JellyfinRepository", "getRecentlyAddedByTypes: Added ${result.data.size} items to category '$typeName'")
+                        }
                     } else {
-                        Log.d("JellyfinRepository", "getRecentlyAddedByTypes: No items found for type $contentType")
+                        if (BuildConfig.DEBUG) {
+                            Log.d("JellyfinRepository", "getRecentlyAddedByTypes: No items found for type $contentType")
+                        }
                     }
                 }
                 is ApiResult.Error -> {
@@ -805,7 +857,11 @@ class JellyfinRepository @Inject constructor(
             }
         }
 
-        Log.d("JellyfinRepository", "getRecentlyAddedByTypes: Completed with ${results.size} categories: ${results.keys.joinToString(", ")}")
+        if (BuildConfig.DEBUG) {
+
+            Log.d("JellyfinRepository", "getRecentlyAddedByTypes: Completed with ${results.size} categories: ${results.keys.joinToString(", ")}")
+
+        }
         return ApiResult.Success(results)
     }
     
@@ -842,7 +898,9 @@ class JellyfinRepository @Inject constructor(
      * @return [ApiResult] containing a list of seasons or an error.
      */
     suspend fun getSeasonsForSeries(seriesId: String): ApiResult<List<BaseItemDto>> {
-        Log.d("JellyfinRepository", "getSeasonsForSeries: Fetching seasons for seriesId=$seriesId")
+        if (BuildConfig.DEBUG) {
+            Log.d("JellyfinRepository", "getSeasonsForSeries: Fetching seasons for seriesId=$seriesId")
+        }
         return try {
             val server = validateServer()
             val userUuid = parseUuid(server.userId ?: "", "user")
@@ -858,7 +916,9 @@ class JellyfinRepository @Inject constructor(
                 sortOrder = listOf(SortOrder.ASCENDING),
                 fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW)
             )
-            Log.d("JellyfinRepository", "getSeasonsForSeries: Successfully fetched ${response.content.items?.size ?: 0} seasons for seriesId=$seriesId")
+            if (BuildConfig.DEBUG) {
+                Log.d("JellyfinRepository", "getSeasonsForSeries: Successfully fetched ${response.content.items?.size ?: 0} seasons for seriesId=$seriesId")
+            }
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "getSeasonsForSeries: Failed to fetch seasons for seriesId=$seriesId", e)
@@ -874,7 +934,9 @@ class JellyfinRepository @Inject constructor(
      * @return [ApiResult] containing a list of episodes or an error.
      */
     suspend fun getEpisodesForSeason(seasonId: String): ApiResult<List<BaseItemDto>> {
-        Log.d("JellyfinRepository", "getEpisodesForSeason: Fetching episodes for seasonId=$seasonId")
+        if (BuildConfig.DEBUG) {
+            Log.d("JellyfinRepository", "getEpisodesForSeason: Fetching episodes for seasonId=$seasonId")
+        }
         return try {
             val server = validateServer()
             val userUuid = parseUuid(server.userId ?: "", "user")
@@ -890,7 +952,9 @@ class JellyfinRepository @Inject constructor(
                 sortOrder = listOf(SortOrder.ASCENDING),
                 fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW)
             )
-            Log.d("JellyfinRepository", "getEpisodesForSeason: Successfully fetched ${response.content.items?.size ?: 0} episodes for seasonId=$seasonId")
+            if (BuildConfig.DEBUG) {
+                Log.d("JellyfinRepository", "getEpisodesForSeason: Successfully fetched ${response.content.items?.size ?: 0} episodes for seasonId=$seasonId")
+            }
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "getEpisodesForSeason: Failed to fetch episodes for seasonId=$seasonId", e)
@@ -1050,7 +1114,9 @@ class JellyfinRepository @Inject constructor(
         if (isTokenExpired()) {
             Log.w("JellyfinRepository", "Token expired, attempting proactive refresh")
             if (reAuthenticate()) {
-                Log.d("JellyfinRepository", "Proactive token refresh successful")
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinRepository", "Proactive token refresh successful")
+                }
             } else {
                 Log.w("JellyfinRepository", "Proactive token refresh failed, user will be logged out")
             }
