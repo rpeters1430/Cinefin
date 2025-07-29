@@ -33,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -56,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
 import androidx.compose.ui.text.font.FontWeight
+import com.example.jellyfinandroid.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -369,14 +371,14 @@ fun QuickConnectScreen(
         
         // Header
         Text(
-            text = "Quick Connect",
+            text = stringResource(id = R.string.quick_connect_title),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Center
         )
         
         Text(
-            text = "Enter your Jellyfin server URL to get a connection code",
+            text = stringResource(id = R.string.quick_connect_instruction),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
@@ -388,8 +390,8 @@ fun QuickConnectScreen(
         OutlinedTextField(
             value = serverUrl,
             onValueChange = onServerUrlChange,
-            label = { Text("Server URL") },
-            placeholder = { Text("https://jellyfin.example.com") },
+            label = { Text(stringResource(id = R.string.quick_connect_server_url_label)) },
+            placeholder = { Text(stringResource(id = R.string.quick_connect_server_url_placeholder)) },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Uri,
                 imeAction = ImeAction.Done
@@ -444,7 +446,7 @@ fun QuickConnectScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Quick Connect Code",
+                        text = stringResource(id = R.string.quick_connect_code_label),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onTertiaryContainer
                     )
@@ -457,7 +459,7 @@ fun QuickConnectScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Enter this code in your Jellyfin server's Quick Connect page",
+                        text = stringResource(id = R.string.quick_connect_enter_code_instruction),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
                         textAlign = TextAlign.Center
@@ -502,16 +504,16 @@ fun QuickConnectScreen(
                     strokeWidth = 2.dp
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Connecting...")
+                Text(stringResource(id = R.string.quick_connect_connecting))
             } else if (isPolling) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Waiting for approval...")
+                Text(stringResource(id = R.string.quick_connect_waiting))
             } else {
-                Text("Get Quick Connect Code")
+                Text(stringResource(id = R.string.quick_connect_get_code))
             }
         }
         
@@ -523,14 +525,14 @@ fun QuickConnectScreen(
                 .fillMaxWidth()
                 .height(48.dp)
         ) {
-            Text("Cancel")
+            Text(stringResource(id = R.string.cancel))
         }
         
         Spacer(modifier = Modifier.height(16.dp))
         
         // Help text
         Text(
-            text = "To use Quick Connect:\n1. Enter your server URL above\n2. Click 'Get Quick Connect Code'\n3. Go to your Jellyfin server dashboard\n4. Navigate to Users > Quick Connect\n5. Enter the code shown above",
+            text = stringResource(id = R.string.quick_connect_help),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,

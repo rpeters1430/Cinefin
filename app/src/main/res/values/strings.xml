@@ -190,6 +190,17 @@
     <string name="failed_to_initiate_quick_connect">Failed to initiate Quick Connect</string>
     <string name="failed_to_get_quick_connect_state">Failed to get Quick Connect state</string>
     <string name="quick_connect_authentication_failed">Quick Connect authentication failed</string>
+
+    <string name="quick_connect_title">Quick Connect</string>
+    <string name="quick_connect_instruction">Enter your Jellyfin server URL to get a connection code</string>
+    <string name="quick_connect_server_url_label">Server URL</string>
+    <string name="quick_connect_server_url_placeholder">https://jellyfin.example.com</string>
+    <string name="quick_connect_code_label">Quick Connect Code</string>
+    <string name="quick_connect_enter_code_instruction">Enter this code in your Jellyfin server&#39;s Quick Connect page</string>
+    <string name="quick_connect_connecting">Connecting…</string>
+    <string name="quick_connect_waiting">Waiting for approval…</string>
+    <string name="quick_connect_get_code">Get Quick Connect Code</string>
+    <string name="quick_connect_help">To use Quick Connect:\n1. Enter your server URL above\n2. Click 'Get Quick Connect Code'\n3. Go to your Jellyfin server dashboard\n4. Navigate to Users &gt; Quick Connect\n5. Enter the code shown above</string>
     
     <!-- Logging and Debug Messages -->
     <string name="no_access_token_available">No access token available</string>
