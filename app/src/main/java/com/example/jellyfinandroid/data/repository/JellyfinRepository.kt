@@ -14,6 +14,7 @@ import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.quickConnectApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
+import org.jellyfin.sdk.api.client.extensions.playStateApi
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.AuthenticateUserByName
 import org.jellyfin.sdk.model.api.QuickConnectDto
@@ -1178,7 +1179,7 @@ class JellyfinRepository @Inject constructor(
 
         return try {
             val client = getClient(server.url, server.accessToken)
-            client.userLibraryApi.markItemAsPlayed(itemId = itemUuid, userId = userUuid)
+            client.playStateApi.markPlayedItem(itemId = itemUuid, userId = userUuid)
             ApiResult.Success(true)
         } catch (e: Exception) {
             val errorType = getErrorType(e)
@@ -1204,7 +1205,7 @@ class JellyfinRepository @Inject constructor(
 
         return try {
             val client = getClient(server.url, server.accessToken)
-            client.userLibraryApi.markItemAsUnplayed(itemId = itemUuid, userId = userUuid)
+            client.playStateApi.markUnplayedItem(itemId = itemUuid, userId = userUuid)
             ApiResult.Success(true)
         } catch (e: Exception) {
             val errorType = getErrorType(e)

@@ -196,7 +196,7 @@
     <string name="quick_connect_server_url_label">Server URL</string>
     <string name="quick_connect_server_url_placeholder">https://jellyfin.example.com</string>
     <string name="quick_connect_code_label">Quick Connect Code</string>
-    <string name="quick_connect_enter_code_instruction">Enter this code in your Jellyfin server&#39;s Quick Connect page</string>
+    <string name="quick_connect_enter_code_instruction">Enter this code in your Jellyfin server\'s Quick Connect page</string>
     <string name="quick_connect_connecting">Connecting…</string>
     <string name="quick_connect_waiting">Waiting for approval…</string>
     <string name="quick_connect_get_code">Get Quick Connect Code</string>
