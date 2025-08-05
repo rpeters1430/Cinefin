@@ -21,16 +21,15 @@ interface ImageLoaderInitializerEntryPoint {
 @androidx.media3.common.util.UnstableApi
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private val imageLoaderInitializer: ImageLoaderInitializer by lazy {
-        EntryPointAccessors.fromApplication(
-            applicationContext,
-            ImageLoaderInitializerEntryPoint::class.java
-        ).imageLoaderInitializer()
-    }
+    private lateinit var imageLoaderInitializer: ImageLoaderInitializer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        imageLoaderInitializer = EntryPointAccessors.fromApplication(
+            applicationContext,
+            ImageLoaderInitializerEntryPoint::class.java
+        ).imageLoaderInitializer()
         imageLoaderInitializer.initialize()
 
         setContent {
