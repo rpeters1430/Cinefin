@@ -5,7 +5,6 @@ import com.example.jellyfinandroid.di.JellyfinClientFactory
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
-import org.junit.Before
 import org.junit.Test
 
 /**
@@ -15,17 +14,9 @@ import org.junit.Test
  */
 class JellyfinRepositoryTest {
 
-    private lateinit var repository: JellyfinRepository
-    private lateinit var mockClientFactory: JellyfinClientFactory
-    private lateinit var mockCredentialManager: SecureCredentialManager
-
-    @Before
-    fun setup() {
-        mockClientFactory = mockk()
-        mockCredentialManager = mockk()
-
-        repository = JellyfinRepository(mockClientFactory, mockCredentialManager)
-    }
+    private val mockClientFactory = mockk<JellyfinClientFactory>()
+    private val mockCredentialManager = mockk<SecureCredentialManager>()
+    private val repository = JellyfinRepository(mockClientFactory, mockCredentialManager)
 
     @Test
     fun `JellyfinRepository can be instantiated`() {
