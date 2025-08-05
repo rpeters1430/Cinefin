@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         imageLoaderInitializer = EntryPointAccessors.fromApplication(
             applicationContext,
-            ImageLoaderInitializerEntryPoint::class.java
+            ImageLoaderInitializerEntryPoint::class.java,
         ).imageLoaderInitializer()
         imageLoaderInitializer.initialize()
 
