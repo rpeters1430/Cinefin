@@ -27,11 +27,11 @@ class WatchStatusRepositoryTest {
     private val repository by lazy {
         JellyfinRepository(clientFactory, credentialManager, context).apply {
             val server = JellyfinServer(
-                id = UUID.randomUUID().toString(),
+                id = "a4b6-4a3e-8b0a-0a8b0a0a8b0a",
                 name = "Test",
                 url = "http://localhost",
                 isConnected = true,
-                userId = UUID.randomUUID().toString(),
+                userId = "c8d9-4f7e-9a1b-1b2c3d4e5f6a",
                 accessToken = "token",
             )
             setCurrentServerForTest(server)
