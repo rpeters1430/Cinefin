@@ -18,33 +18,30 @@ import org.junit.Test
 import java.util.UUID
 
 class WatchStatusRepositoryTest {
-    private lateinit var repository: JellyfinRepository
-    private lateinit var clientFactory: JellyfinClientFactory
-    private lateinit var credentialManager: SecureCredentialManager
-    private lateinit var context: Context
-    private lateinit var client: ApiClient
-    private lateinit var userLibraryApi: UserLibraryApi
+    private val clientFactory = mockk<JellyfinClientFactory>()
+    private val credentialManager = mockk<SecureCredentialManager>()
+    private val context = mockk<Context>(relaxed = true)
+    private val client = mockk<ApiClient>(relaxed = true)
+    private val userLibraryApi = mockk<UserLibraryApi>(relaxed = true)
+
+    private val repository by lazy {
+        JellyfinRepository(clientFactory, credentialManager, context).apply {
+            val server = JellyfinServer(
+                id = UUID.randomUUID().toString(),
+                name = "Test",
+                url = "http://localhost",
+                isConnected = true,
+                userId = UUID.randomUUID().toString(),
+                accessToken = "token",
+            )
+            setCurrentServerForTest(server)
+        }
+    }
 
     @Before
     fun setUp() {
-        clientFactory = mockk()
-        credentialManager = mockk()
-        context = mockk(relaxed = true)
-        client = mockk(relaxed = true)
-        userLibraryApi = mockk(relaxed = true)
         every { client.userLibraryApi } returns userLibraryApi
         coEvery { clientFactory.getClient(any(), any()) } returns client
-        repository = JellyfinRepository(clientFactory, credentialManager, context)
-
-        val server = JellyfinServer(
-            id = UUID.randomUUID().toString(),
-            name = "Test",
-            url = "http://localhost",
-            isConnected = true,
-            userId = UUID.randomUUID().toString(),
-            accessToken = "token",
-        )
-        repository.setCurrentServerForTest(server)
     }
 
     @Test
