@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.map
 @Composable
 fun LazyListState.OnBottomReached(
     loadMore: () -> Unit,
-    buffer: Int = 3
+    buffer: Int = 3,
 ) {
     val shouldLoadMore = remember {
         derivedStateOf {
@@ -52,7 +52,7 @@ fun LazyListState.OnBottomReached(
 @Composable
 fun LazyGridState.OnBottomReached(
     loadMore: () -> Unit,
-    buffer: Int = 6
+    buffer: Int = 6,
 ) {
     val shouldLoadMore = remember {
         derivedStateOf {
@@ -79,7 +79,7 @@ data class ImageLoadingConfig(
     val quality: Int = 85,
     val enableMemoryCache: Boolean = true,
     val enableDiskCache: Boolean = true,
-    val crossfadeMs: Int = 300
+    val crossfadeMs: Int = 300,
 )
 
 /**
@@ -88,7 +88,7 @@ data class ImageLoadingConfig(
 @Composable
 fun <T> rememberDebouncedState(
     value: T,
-    delayMs: Long = 300L
+    delayMs: Long = 300L,
 ): T {
     var debouncedValue by remember { mutableStateOf(value) }
 
@@ -109,13 +109,14 @@ fun <T> rememberDebouncedState(
  */
 @Composable
 fun rememberViewportAwareLoader(
-    threshold: Dp = 200.dp
+    threshold: Dp = 200.dp,
 ): (Boolean) -> Boolean {
     val density = LocalDensity.current
     val thresholdPx = with(density) { threshold.toPx() }
-    
+
     return remember {
-        { isInViewport ->
+        {
+                isInViewport ->
             isInViewport // For now, simple passthrough. Can be enhanced with distance calculations
         }
     }
@@ -153,11 +154,11 @@ object PerformanceConstants {
  */
 class ResourceManager {
     private val resources = mutableSetOf<() -> Unit>()
-    
+
     fun addCleanupTask(cleanup: () -> Unit) {
         resources.add(cleanup)
     }
-    
+
     fun cleanup() {
         resources.forEach { it() }
         resources.clear()
@@ -165,7 +166,6 @@ class ResourceManager {
 }
 
 @Composable
-
 fun rememberResourceManager(): ResourceManager {
     val resourceManager = remember { ResourceManager() }
 
@@ -174,7 +174,7 @@ fun rememberResourceManager(): ResourceManager {
             resourceManager.cleanup()
         }
     }
-    
+
     return resourceManager
 }
 
@@ -183,14 +183,14 @@ fun rememberResourceManager(): ResourceManager {
  */
 sealed class PreloadStrategy {
     object Aggressive : PreloadStrategy() // Preload 2 screens ahead
-    object Moderate : PreloadStrategy()   // Preload 1 screen ahead
+    object Moderate : PreloadStrategy() // Preload 1 screen ahead
     object Conservative : PreloadStrategy() // Preload only visible + buffer
 }
 
 data class PreloadConfig(
     val strategy: PreloadStrategy = PreloadStrategy.Moderate,
     val bufferSize: Int = 5,
-    val enablePrefetch: Boolean = true
+    val enablePrefetch: Boolean = true,
 )
 
 /**
@@ -204,7 +204,7 @@ object AdaptivePerformance {
             else -> 85
         }
     }
-    
+
     fun getOptimalCacheSize(availableMemoryMb: Long): Int {
         return when {
             availableMemoryMb < 512 -> 25
@@ -212,6 +212,6 @@ object AdaptivePerformance {
             else -> 100
         }.coerceAtMost(availableMemoryMb.toInt() / 10)
     }
-    
+
     fun shouldReduceAnimations(isLowPowerMode: Boolean): Boolean = isLowPowerMode
 }

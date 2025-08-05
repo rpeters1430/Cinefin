@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Album
@@ -24,8 +23,6 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.ui.res.stringResource
-import com.example.jellyfinandroid.R
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,10 +50,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.ui.components.MediaCard
 import com.example.jellyfinandroid.ui.theme.MusicGreen
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
@@ -70,8 +68,9 @@ enum class MusicFilter(val displayNameResId: Int) {
     SONGS(R.string.filter_songs),
     FAVORITES(R.string.filter_favorites_music),
     RECENT(R.string.filter_recent_music),
-    UNPLAYED(R.string.filter_unplayed_music);
-    
+    UNPLAYED(R.string.filter_unplayed_music),
+    ;
+
     companion object {
         fun getAllFilters() = entries
     }
@@ -89,8 +88,9 @@ enum class MusicSortOrder(val displayNameResId: Int) {
     PLAY_COUNT_DESC(R.string.sort_play_count_desc),
     PLAY_COUNT_ASC(R.string.sort_play_count_asc),
     RUNTIME_DESC(R.string.sort_runtime_desc_music),
-    RUNTIME_ASC(R.string.sort_runtime_asc_music);
-    
+    RUNTIME_ASC(R.string.sort_runtime_asc_music),
+    ;
+
     companion object {
         fun getDefault() = TITLE_ASC
         fun getAllSortOrders() = entries
@@ -99,7 +99,7 @@ enum class MusicSortOrder(val displayNameResId: Int) {
 
 enum class MusicViewMode {
     GRID,
-    LIST
+    LIST,
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -107,19 +107,19 @@ enum class MusicViewMode {
 fun MusicScreen(
     onBackClick: () -> Unit = {},
     viewModel: MainAppViewModel = hiltViewModel(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val appState by viewModel.appState.collectAsState()
     var selectedFilter by remember { mutableStateOf(MusicFilter.ALL) }
     var sortOrder by remember { mutableStateOf(MusicSortOrder.getDefault()) }
     var viewMode by remember { mutableStateOf(MusicViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
-    
+
     // Filter music items from recently added types data (this is where the music data actually is)
     val musicItems = remember(appState.recentlyAddedByTypes) {
         appState.recentlyAddedByTypes["Music"] ?: emptyList()
     }
-    
+
     // Apply filtering and sorting
     val filteredAndSortedMusic = remember(musicItems, selectedFilter, sortOrder) {
         val filtered = when (selectedFilter) {
@@ -128,42 +128,42 @@ fun MusicScreen(
             MusicFilter.ARTISTS -> musicItems.filter { it.type == BaseItemKind.MUSIC_ARTIST }
             MusicFilter.SONGS -> musicItems.filter { it.type == BaseItemKind.AUDIO }
             MusicFilter.FAVORITES -> musicItems.filter { it.userData?.isFavorite == true }
-            MusicFilter.RECENT -> musicItems.filter { 
-                ((it.productionYear as? Number)?.toInt() ?: 0) >= 2020 
+            MusicFilter.RECENT -> musicItems.filter {
+                ((it.productionYear as? Number)?.toInt() ?: 0) >= 2020
             }
-            MusicFilter.UNPLAYED -> musicItems.filter { 
-                it.userData?.played != true 
+            MusicFilter.UNPLAYED -> musicItems.filter {
+                it.userData?.played != true
             }
         }
-        
+
         when (sortOrder) {
             MusicSortOrder.TITLE_ASC -> filtered.sortedBy { it.sortName ?: it.name }
             MusicSortOrder.TITLE_DESC -> filtered.sortedByDescending { it.sortName ?: it.name }
-            MusicSortOrder.ARTIST_ASC -> filtered.sortedBy { 
-                it.albumArtist ?: it.artists?.firstOrNull() ?: it.name 
+            MusicSortOrder.ARTIST_ASC -> filtered.sortedBy {
+                it.albumArtist ?: it.artists?.firstOrNull() ?: it.name
             }
-            MusicSortOrder.ARTIST_DESC -> filtered.sortedByDescending { 
-                it.albumArtist ?: it.artists?.firstOrNull() ?: it.name 
+            MusicSortOrder.ARTIST_DESC -> filtered.sortedByDescending {
+                it.albumArtist ?: it.artists?.firstOrNull() ?: it.name
             }
-            MusicSortOrder.YEAR_DESC -> filtered.sortedByDescending { 
-                (it.productionYear as? Number)?.toInt() ?: 0 
+            MusicSortOrder.YEAR_DESC -> filtered.sortedByDescending {
+                (it.productionYear as? Number)?.toInt() ?: 0
             }
-            MusicSortOrder.YEAR_ASC -> filtered.sortedBy { 
-                (it.productionYear as? Number)?.toInt() ?: 0 
+            MusicSortOrder.YEAR_ASC -> filtered.sortedBy {
+                (it.productionYear as? Number)?.toInt() ?: 0
             }
             MusicSortOrder.DATE_ADDED_DESC -> filtered.sortedByDescending { it.dateCreated }
             MusicSortOrder.DATE_ADDED_ASC -> filtered.sortedBy { it.dateCreated }
-            MusicSortOrder.PLAY_COUNT_DESC -> filtered.sortedByDescending { 
-                it.userData?.playCount ?: 0 
+            MusicSortOrder.PLAY_COUNT_DESC -> filtered.sortedByDescending {
+                it.userData?.playCount ?: 0
             }
-            MusicSortOrder.PLAY_COUNT_ASC -> filtered.sortedBy { 
-                it.userData?.playCount ?: 0 
+            MusicSortOrder.PLAY_COUNT_ASC -> filtered.sortedBy {
+                it.userData?.playCount ?: 0
             }
-            MusicSortOrder.RUNTIME_DESC -> filtered.sortedByDescending { 
-                it.runTimeTicks ?: 0L 
+            MusicSortOrder.RUNTIME_DESC -> filtered.sortedByDescending {
+                it.runTimeTicks ?: 0L
             }
-            MusicSortOrder.RUNTIME_ASC -> filtered.sortedBy { 
-                it.runTimeTicks ?: 0L 
+            MusicSortOrder.RUNTIME_ASC -> filtered.sortedBy {
+                it.runTimeTicks ?: 0L
             }
         }
     }
@@ -174,7 +174,7 @@ fun MusicScreen(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.MusicNote,
@@ -189,14 +189,14 @@ fun MusicScreen(
                             SegmentedButton(
                                 shape = SegmentedButtonDefaults.itemShape(
                                     index = index,
-                                    count = MusicViewMode.entries.size
+                                    count = MusicViewMode.entries.size,
                                 ),
                                 onClick = { viewMode = mode },
                                 selected = viewMode == mode,
                                 colors = SegmentedButtonDefaults.colors(
                                     activeContainerColor = MusicGreen.copy(alpha = 0.2f),
-                                    activeContentColor = MusicGreen
-                                )
+                                    activeContentColor = MusicGreen,
+                                ),
                             ) {
                                 Icon(
                                     imageVector = when (mode) {
@@ -204,23 +204,23 @@ fun MusicScreen(
                                         MusicViewMode.LIST -> Icons.AutoMirrored.Filled.ViewList
                                     },
                                     contentDescription = mode.name,
-                                    modifier = Modifier.padding(2.dp)
+                                    modifier = Modifier.padding(2.dp),
                                 )
                             }
                         }
                     }
-                    
+
                     // Sort menu
                     Box {
                         IconButton(onClick = { showSortMenu = true }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Sort,
-                                contentDescription = stringResource(id = R.string.sort)
+                                contentDescription = stringResource(id = R.string.sort),
                             )
                         }
                         DropdownMenu(
                             expanded = showSortMenu,
-                            onDismissRequest = { showSortMenu = false }
+                            onDismissRequest = { showSortMenu = false },
                         ) {
                             MusicSortOrder.getAllSortOrders().forEach { order ->
                                 DropdownMenuItem(
@@ -228,37 +228,37 @@ fun MusicScreen(
                                     onClick = {
                                         sortOrder = order
                                         showSortMenu = false
-                                    }
+                                    },
                                 )
                             }
                         }
                     }
-                    
+
                     IconButton(onClick = { viewModel.refreshLibraryItems() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = stringResource(id = R.string.refresh)
+                            contentDescription = stringResource(id = R.string.refresh),
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                ),
             )
         },
-        modifier = modifier
+        modifier = modifier,
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
         ) {
             // Filter chips
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 items(MusicFilter.getAllFilters()) { filter ->
                     FilterChip(
@@ -271,7 +271,7 @@ fun MusicScreen(
                                     Icon(
                                         imageVector = Icons.Default.Star,
                                         contentDescription = null,
-                                        modifier = Modifier.padding(2.dp)
+                                        modifier = Modifier.padding(2.dp),
                                     )
                                 }
                             }
@@ -280,7 +280,7 @@ fun MusicScreen(
                                     Icon(
                                         imageVector = Icons.Default.Album,
                                         contentDescription = null,
-                                        modifier = Modifier.padding(2.dp)
+                                        modifier = Modifier.padding(2.dp),
                                     )
                                 }
                             }
@@ -289,7 +289,7 @@ fun MusicScreen(
                                     Icon(
                                         imageVector = Icons.Default.Person,
                                         contentDescription = null,
-                                        modifier = Modifier.padding(2.dp)
+                                        modifier = Modifier.padding(2.dp),
                                     )
                                 }
                             }
@@ -298,76 +298,76 @@ fun MusicScreen(
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MusicGreen.copy(alpha = 0.2f),
                             selectedLabelColor = MusicGreen,
-                            selectedLeadingIconColor = MusicGreen
-                        )
+                            selectedLeadingIconColor = MusicGreen,
+                        ),
                     )
                 }
             }
-            
+
             // Content
             when {
                 appState.isLoading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator(color = MusicGreen)
                     }
                 }
-                
+
                 appState.errorMessage != null -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(16.dp),
                         ) {
                             Text(
                                 text = appState.errorMessage ?: "Unknown error",
                                 color = MaterialTheme.colorScheme.onErrorContainer,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(16.dp),
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
                 }
-                
+
                 filteredAndSortedMusic.isEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.MusicNote,
                                 contentDescription = null,
                                 modifier = Modifier.padding(32.dp),
-                                tint = MusicGreen.copy(alpha = 0.6f)
+                                tint = MusicGreen.copy(alpha = 0.6f),
                             )
                             Text(
                                 text = stringResource(id = R.string.no_music_found),
                                 style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
                                 text = stringResource(id = R.string.adjust_music_filters_hint),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                 }
-                
+
                 else -> {
                     MusicContent(
                         musicItems = filteredAndSortedMusic,
@@ -375,7 +375,7 @@ fun MusicScreen(
                         getImageUrl = { item -> viewModel.getImageUrl(item) },
                         isLoadingMore = appState.isLoadingMore,
                         hasMoreItems = appState.hasMoreItems,
-                        onLoadMore = { viewModel.loadMoreItems() }
+                        onLoadMore = { viewModel.loadMoreItems() },
                     )
                 }
             }
@@ -391,7 +391,7 @@ private fun MusicContent(
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     when (viewMode) {
         MusicViewMode.GRID -> {
@@ -400,47 +400,47 @@ private fun MusicContent(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = modifier.fillMaxSize()
+                modifier = modifier.fillMaxSize(),
             ) {
                 items(musicItems) { musicItem ->
                     MediaCard(
                         item = musicItem,
-                        getImageUrl = getImageUrl
+                        getImageUrl = getImageUrl,
                     )
                 }
-                
+
                 if (hasMoreItems || isLoadingMore) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         MusicPaginationFooter(
                             isLoadingMore = isLoadingMore,
                             hasMoreItems = hasMoreItems,
-                            onLoadMore = onLoadMore
+                            onLoadMore = onLoadMore,
                         )
                     }
                 }
             }
         }
-        
+
         MusicViewMode.LIST -> {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(1),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = modifier.fillMaxSize()
+                modifier = modifier.fillMaxSize(),
             ) {
                 items(musicItems) { musicItem ->
                     MediaCard(
                         item = musicItem,
-                        getImageUrl = getImageUrl
+                        getImageUrl = getImageUrl,
                     )
                 }
-                
+
                 if (hasMoreItems || isLoadingMore) {
                     item {
                         MusicPaginationFooter(
                             isLoadingMore = isLoadingMore,
                             hasMoreItems = hasMoreItems,
-                            onLoadMore = onLoadMore
+                            onLoadMore = onLoadMore,
                         )
                     }
                 }
@@ -454,40 +454,40 @@ private fun MusicPaginationFooter(
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(Unit) {
         if (hasMoreItems && !isLoadingMore) {
             onLoadMore()
         }
     }
-    
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(16.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         if (isLoadingMore) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 CircularProgressIndicator(
                     color = MusicGreen,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(8.dp),
                 )
                 Text(
                     text = stringResource(id = R.string.loading_more_music),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         } else if (!hasMoreItems) {
             Text(
                 text = stringResource(id = R.string.no_more_music),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

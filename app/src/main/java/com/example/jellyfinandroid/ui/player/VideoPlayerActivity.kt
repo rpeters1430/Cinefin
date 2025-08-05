@@ -27,21 +27,21 @@ import dagger.hilt.android.AndroidEntryPoint
 @androidx.media3.common.util.UnstableApi
 @AndroidEntryPoint
 class VideoPlayerActivity : ComponentActivity() {
-    
+
     private val playerViewModel: VideoPlayerViewModel by viewModels()
-    
+
     companion object {
         private const val EXTRA_ITEM_ID = "extra_item_id"
         private const val EXTRA_ITEM_NAME = "extra_item_name"
         private const val EXTRA_STREAM_URL = "extra_stream_url"
         private const val EXTRA_START_POSITION = "extra_start_position"
-        
+
         fun createIntent(
             context: Context,
             itemId: String,
             itemName: String,
             streamUrl: String,
-            startPosition: Long = 0L
+            startPosition: Long = 0L,
         ): Intent {
             return Intent(context, VideoPlayerActivity::class.java).apply {
                 putExtra(EXTRA_ITEM_ID, itemId)
@@ -51,34 +51,34 @@ class VideoPlayerActivity : ComponentActivity() {
             }
         }
     }
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // Set up full screen and landscape orientation
         setupFullScreenMode()
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        
+
         // Keep screen on during playback
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        
+
         // Extract intent data
         val itemId = intent.getStringExtra(EXTRA_ITEM_ID) ?: ""
         val itemName = intent.getStringExtra(EXTRA_ITEM_NAME) ?: ""
         val streamUrl = intent.getStringExtra(EXTRA_STREAM_URL) ?: ""
         val startPosition = intent.getLongExtra(EXTRA_START_POSITION, 0L)
-        
+
         // Initialize player
         playerViewModel.initializePlayer(itemId, itemName, streamUrl, startPosition)
-        
+
         setContent {
             JellyfinAndroidTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.background,
                 ) {
                     val playerState by playerViewModel.playerState.collectAsState()
-                    
+
                     VideoPlayerScreen(
                         playerState = playerState,
                         onPlayPause = playerViewModel::togglePlayPause,
@@ -88,43 +88,43 @@ class VideoPlayerActivity : ComponentActivity() {
                         onPictureInPictureClick = ::enterPictureInPictureModeCustom,
                         onBackClick = ::finish,
                         onOrientationToggle = ::toggleOrientation,
-                        exoPlayer = playerViewModel.exoPlayer
+                        exoPlayer = playerViewModel.exoPlayer,
                     )
                 }
             }
         }
     }
-    
+
     override fun onStart() {
         super.onStart()
         playerViewModel.startPlayback()
     }
-    
+
     override fun onStop() {
         super.onStop()
         playerViewModel.pausePlayback()
     }
-    
+
     override fun onDestroy() {
         super.onDestroy()
         playerViewModel.releasePlayer()
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
-    
+
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         if (packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
             enterPictureInPictureModeCustom()
         }
     }
-    
+
     private fun setupFullScreenMode() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(WindowInsetsCompat.Type.systemBars())
         controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
-    
+
     private fun enterPictureInPictureModeCustom() {
         val aspectRatio = Rational(16, 9)
         val params = PictureInPictureParams.Builder()
@@ -138,7 +138,7 @@ class VideoPlayerActivity : ComponentActivity() {
             .build()
         enterPictureInPictureMode(params)
     }
-    
+
     private fun toggleOrientation() {
         requestedOrientation = when (requestedOrientation) {
             ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT

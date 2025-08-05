@@ -1,29 +1,28 @@
 package com.example.jellyfinandroid.ui.utils
 
-import com.example.jellyfinandroid.BuildConfig
 import android.app.DownloadManager
 import android.content.Context
-import android.net.Uri
 import android.os.Environment
 import android.util.Log
 import androidx.core.net.toUri
+import com.example.jellyfinandroid.BuildConfig
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.io.File
 
 /**
  * Utility class for handling media downloads from Jellyfin server.
- * 
+ *
  * Manages downloading media files to local storage with proper file organization,
  * progress tracking, and storage management.
  */
 object MediaDownloadManager {
-    
+
     private const val TAG = "MediaDownloadManager"
     private const val DOWNLOADS_FOLDER = "JellyfinAndroid"
-    
+
     /**
      * Downloads a media item to local storage using Android's DownloadManager.
-     * 
+     *
      * @param context The application context
      * @param item The Jellyfin media item to download
      * @param streamUrl The stream URL for the media item
@@ -32,52 +31,49 @@ object MediaDownloadManager {
     fun downloadMedia(context: Context, item: BaseItemDto, streamUrl: String): Long? {
         return try {
             val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            
+
             // Create download request
             val request = DownloadManager.Request(streamUrl.toUri()).apply {
                 setTitle("${item.name ?: "Unknown"}")
                 setDescription("Downloading from Jellyfin")
-                
+
                 // Set destination in Downloads directory with organized folder structure
                 val fileName = generateFileName(item)
                 val subPath = generateSubPath(item)
                 setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "$DOWNLOADS_FOLDER/$subPath/$fileName")
-                
+
                 // Allow download only over WiFi by default for large media files
                 setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI)
-                
+
                 // Show download notification
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                
+
                 // Allow media scanner to find the file
                 setVisibleInDownloadsUi(true)
-                
+
                 // Set MIME type based on media type
                 val mimeType = getMimeType(item)
                 if (mimeType != null) {
                     setMimeType(mimeType)
                 }
             }
-            
+
             // Enqueue the download
             val downloadId = downloadManager.enqueue(request)
-            
+
             if (BuildConfig.DEBUG) {
-            
                 Log.i(TAG, "Started download for ${item.name} with ID: $downloadId")
-            
             }
             downloadId
-            
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start download for ${item.name}: ${e.message}", e)
             null
         }
     }
-    
+
     /**
      * Checks if a media item is already downloaded.
-     * 
+     *
      * @param context The application context
      * @param item The media item to check
      * @return True if the item is already downloaded
@@ -86,19 +82,21 @@ object MediaDownloadManager {
         return try {
             val fileName = generateFileName(item)
             val subPath = generateSubPath(item)
-            val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), 
-                            "$DOWNLOADS_FOLDER/$subPath/$fileName")
-            
+            val file = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                "$DOWNLOADS_FOLDER/$subPath/$fileName",
+            )
+
             file.exists() && file.length() > 0
         } catch (e: Exception) {
             Log.e(TAG, "Error checking download status for ${item.name}: ${e.message}", e)
             false
         }
     }
-    
+
     /**
      * Gets the local file path for a downloaded media item.
-     * 
+     *
      * @param context The application context
      * @param item The media item
      * @return The local file path, or null if not downloaded
@@ -107,9 +105,11 @@ object MediaDownloadManager {
         return try {
             val fileName = generateFileName(item)
             val subPath = generateSubPath(item)
-            val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), 
-                            "$DOWNLOADS_FOLDER/$subPath/$fileName")
-            
+            val file = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                "$DOWNLOADS_FOLDER/$subPath/$fileName",
+            )
+
             if (file.exists() && file.length() > 0) {
                 file.absolutePath
             } else {
@@ -120,10 +120,10 @@ object MediaDownloadManager {
             null
         }
     }
-    
+
     /**
      * Deletes a downloaded media file.
-     * 
+     *
      * @param context The application context
      * @param item The media item to delete
      * @return True if the file was successfully deleted
@@ -132,9 +132,11 @@ object MediaDownloadManager {
         return try {
             val fileName = generateFileName(item)
             val subPath = generateSubPath(item)
-            val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), 
-                            "$DOWNLOADS_FOLDER/$subPath/$fileName")
-            
+            val file = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                "$DOWNLOADS_FOLDER/$subPath/$fileName",
+            )
+
             if (file.exists()) {
                 val deleted = file.delete()
                 if (deleted) {
@@ -156,10 +158,10 @@ object MediaDownloadManager {
             false
         }
     }
-    
+
     /**
      * Gets the download status for a given download ID.
-     * 
+     *
      * @param context The application context
      * @param downloadId The download ID
      * @return A DownloadStatus object with progress and status information
@@ -168,26 +170,26 @@ object MediaDownloadManager {
         return try {
             val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             val cursor = downloadManager.query(DownloadManager.Query().setFilterById(downloadId))
-            
+
             if (cursor.moveToFirst()) {
                 val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
                 val reasonIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
                 val totalSizeIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
                 val downloadedSizeIndex = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
-                
+
                 val status = cursor.getInt(statusIndex)
                 val reason = cursor.getInt(reasonIndex)
                 val totalSize = cursor.getLong(totalSizeIndex)
                 val downloadedSize = cursor.getLong(downloadedSizeIndex)
-                
+
                 cursor.close()
-                
+
                 DownloadStatus(
                     status = status,
                     reason = reason,
                     totalSize = totalSize,
                     downloadedSize = downloadedSize,
-                    progress = if (totalSize > 0) (downloadedSize.toFloat() / totalSize.toFloat()) else 0f
+                    progress = if (totalSize > 0) (downloadedSize.toFloat() / totalSize.toFloat()) else 0f,
                 )
             } else {
                 cursor.close()
@@ -198,18 +200,20 @@ object MediaDownloadManager {
             null
         }
     }
-    
+
     /**
      * Calculates total storage used by downloads.
-     * 
+     *
      * @param context The application context
      * @return The total size in bytes used by downloads
      */
     fun getTotalDownloadSize(context: Context): Long {
         return try {
-            val downloadsDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), 
-                                   DOWNLOADS_FOLDER)
-            
+            val downloadsDir = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                DOWNLOADS_FOLDER,
+            )
+
             if (downloadsDir.exists() && downloadsDir.isDirectory) {
                 calculateDirectorySize(downloadsDir)
             } else {
@@ -220,18 +224,20 @@ object MediaDownloadManager {
             0L
         }
     }
-    
+
     /**
      * Clears all downloads to free up storage space.
-     * 
+     *
      * @param context The application context
      * @return True if all downloads were successfully cleared
      */
     fun clearAllDownloads(context: Context): Boolean {
         return try {
-            val downloadsDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), 
-                                   DOWNLOADS_FOLDER)
-            
+            val downloadsDir = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                DOWNLOADS_FOLDER,
+            )
+
             if (downloadsDir.exists() && downloadsDir.isDirectory) {
                 downloadsDir.deleteRecursively()
             } else {
@@ -242,15 +248,15 @@ object MediaDownloadManager {
             false
         }
     }
-    
+
     // Helper methods
-    
+
     private fun generateFileName(item: BaseItemDto): String {
         val baseName = (item.name ?: "Unknown").replace(Regex("[^a-zA-Z0-9._-]"), "_")
         val extension = getFileExtension(item)
         return "$baseName.$extension"
     }
-    
+
     private fun generateSubPath(item: BaseItemDto): String {
         return when (item.type?.name) {
             "MOVIE" -> "Movies"
@@ -260,7 +266,7 @@ object MediaDownloadManager {
             else -> "Other"
         }.replace(Regex("[^a-zA-Z0-9._/ -]"), "_")
     }
-    
+
     private fun getFileExtension(item: BaseItemDto): String {
         // Default extensions based on media type
         return when (item.type?.name) {
@@ -270,7 +276,7 @@ object MediaDownloadManager {
             else -> "bin"
         }
     }
-    
+
     private fun getMimeType(item: BaseItemDto): String? {
         return when (item.type?.name) {
             "MOVIE", "EPISODE", "MUSIC_VIDEO" -> "video/mp4"
@@ -278,7 +284,7 @@ object MediaDownloadManager {
             else -> null
         }
     }
-    
+
     private fun calculateDirectorySize(directory: File): Long {
         var size = 0L
         if (directory.isDirectory) {
@@ -304,20 +310,20 @@ data class DownloadStatus(
     val reason: Int,
     val totalSize: Long,
     val downloadedSize: Long,
-    val progress: Float
+    val progress: Float,
 ) {
     val isCompleted: Boolean
         get() = status == DownloadManager.STATUS_SUCCESSFUL
-    
+
     val isFailed: Boolean
         get() = status == DownloadManager.STATUS_FAILED
-    
+
     val isRunning: Boolean
         get() = status == DownloadManager.STATUS_RUNNING
-    
+
     val isPaused: Boolean
         get() = status == DownloadManager.STATUS_PAUSED
-    
+
     val isPending: Boolean
         get() = status == DownloadManager.STATUS_PENDING
 }

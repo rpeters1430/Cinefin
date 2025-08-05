@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 @Singleton
 class ImageLoaderInitializer @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) {
     fun initialize() {
         val imageLoader = ImageLoader.Builder(context)

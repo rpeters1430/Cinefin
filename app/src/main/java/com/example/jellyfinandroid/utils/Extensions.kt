@@ -10,19 +10,19 @@ import org.jellyfin.sdk.model.api.BaseItemDto
  * Safely converts community rating to Double with fallback to 0.0
  * Eliminates code duplication across multiple screen files
  */
-fun BaseItemDto.getRatingAsDouble(): Double = 
+fun BaseItemDto.getRatingAsDouble(): Double =
     (communityRating as? Number)?.toDouble() ?: 0.0
 
 /**
  * ✅ PHASE 3: Enhanced rating checks using centralized constants
  */
-fun BaseItemDto.hasHighRating(): Boolean = 
+fun BaseItemDto.hasHighRating(): Boolean =
     getRatingAsDouble() >= AppConstants.Rating.HIGH_RATING_THRESHOLD
 
-fun BaseItemDto.hasExcellentRating(): Boolean = 
+fun BaseItemDto.hasExcellentRating(): Boolean =
     getRatingAsDouble() >= AppConstants.Rating.EXCELLENT_RATING_THRESHOLD
 
-fun BaseItemDto.hasGoodRating(): Boolean = 
+fun BaseItemDto.hasGoodRating(): Boolean =
     getRatingAsDouble() >= AppConstants.Rating.GOOD_RATING_THRESHOLD
 
 fun BaseItemDto.getRatingCategory(): RatingCategory {
@@ -44,7 +44,7 @@ enum class RatingCategory(val displayName: String, val color: String) {
     HIGH("High", "#8BC34A"),
     GOOD("Good", "#FFC107"),
     AVERAGE("Average", "#FF9800"),
-    POOR("Poor", "#F44336")
+    POOR("Poor", "#F44336"),
 }
 
 /**
@@ -68,7 +68,7 @@ fun BaseItemDto.getFormattedDuration(): String? {
     val totalSeconds = ticks / 10_000_000 // Convert from ticks to seconds
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
-    
+
     return when {
         hours > 0 -> "${hours}h ${minutes}m"
         minutes > 0 -> "${minutes}m"
@@ -88,8 +88,8 @@ fun BaseItemDto.isPartiallyWatched(): Boolean {
 
 fun BaseItemDto.canResume(): Boolean {
     val percentage = userData?.playedPercentage ?: 0.0
-    return percentage > AppConstants.Playback.RESUME_THRESHOLD_PERCENT && 
-           percentage < AppConstants.Playback.WATCHED_THRESHOLD_PERCENT
+    return percentage > AppConstants.Playback.RESUME_THRESHOLD_PERCENT &&
+        percentage < AppConstants.Playback.WATCHED_THRESHOLD_PERCENT
 }
 
 fun BaseItemDto.getWatchedPercentage(): Double = userData?.playedPercentage ?: 0.0
@@ -97,7 +97,7 @@ fun BaseItemDto.getWatchedPercentage(): Double = userData?.playedPercentage ?: 0
 /**
  * ✅ PHASE 3: Enhanced key generation for lists
  */
-fun BaseItemDto.getItemKey(): String = 
+fun BaseItemDto.getItemKey(): String =
     generateItemKey(type?.toString() ?: "unknown", id?.toString() ?: "")
 
 /**

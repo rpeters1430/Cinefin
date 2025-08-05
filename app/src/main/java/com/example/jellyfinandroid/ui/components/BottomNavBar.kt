@@ -6,22 +6,20 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.ui.navigation.BottomNavItem
 
 @Composable
 fun BottomNavBar(
-    navController: NavController
+    navController: NavController,
 ) {
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry.value?.destination
-    
+
     // Only show bottom nav for main screens
     if (shouldShowBottomNav(currentDestination)) {
         NavigationBar {
@@ -29,7 +27,7 @@ fun BottomNavBar(
                 AddItem(
                     screen = item,
                     currentDestination = currentDestination,
-                    navController = navController
+                    navController = navController,
                 )
             }
         }
@@ -40,18 +38,18 @@ fun BottomNavBar(
 private fun RowScope.AddItem(
     screen: BottomNavItem,
     currentDestination: NavDestination?,
-    navController: NavController
+    navController: NavController,
 ) {
     NavigationBarItem(
-        icon = { 
+        icon = {
             Icon(
                 imageVector = screen.icon.icon,
-                contentDescription = screen.title
-            ) 
+                contentDescription = screen.title,
+            )
         },
         label = { Text(screen.title) },
-        selected = currentDestination?.hierarchy?.any { 
-            it.route == screen.route 
+        selected = currentDestination?.hierarchy?.any {
+            it.route == screen.route
         } == true,
         onClick = {
             navController.navigate(screen.route) {
@@ -61,7 +59,7 @@ private fun RowScope.AddItem(
                 launchSingleTop = true
                 restoreState = true
             }
-        }
+        },
     )
 }
 
@@ -72,7 +70,8 @@ private fun shouldShowBottomNav(destination: NavDestination?): Boolean {
         "library",
         "search",
         "favorites",
-        "profile" -> true
+        "profile",
+        -> true
         else -> false
     }
 }

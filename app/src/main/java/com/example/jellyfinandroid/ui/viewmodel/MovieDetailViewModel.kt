@@ -5,22 +5,22 @@ import androidx.lifecycle.viewModelScope
 import com.example.jellyfinandroid.data.repository.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import javax.inject.Inject
 
 data class MovieDetailState(
     val movie: BaseItemDto? = null,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
 )
 
 @HiltViewModel
 class MovieDetailViewModel @Inject constructor(
-    private val repository: JellyfinRepository
+    private val repository: JellyfinRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MovieDetailState())
@@ -33,13 +33,13 @@ class MovieDetailViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     _state.value = _state.value.copy(
                         movie = result.data,
-                        isLoading = false
+                        isLoading = false,
                     )
                 }
                 is ApiResult.Error -> {
                     _state.value = _state.value.copy(
                         isLoading = false,
-errorMessage = result.message
+                        errorMessage = result.message,
                     )
                 }
                 is ApiResult.Loading -> {

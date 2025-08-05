@@ -35,13 +35,13 @@ fun JellyfinApp(onLogout: () -> Unit = {}) {
                     BottomNavBar(navController = navController)
                 }
             },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         ) { innerPadding ->
             JellyfinNavGraph(
                 navController = navController,
                 startDestination = startDestination,
                 modifier = Modifier.padding(innerPadding),
-                onLogout = onLogout
+                onLogout = onLogout,
             )
         }
     }

@@ -70,8 +70,9 @@ enum class StuffFilter(val displayName: String) {
     PHOTOS("Photos"),
     FAVORITES("Favorites"),
     RECENT("Recent"),
-    UNVIEWED("Unviewed");
-    
+    UNVIEWED("Unviewed"),
+    ;
+
     companion object {
         fun getAllFilters() = entries
     }
@@ -87,8 +88,9 @@ enum class StuffSortOrder(val displayName: String) {
     SIZE_DESC("Largest First"),
     SIZE_ASC("Smallest First"),
     YEAR_DESC("Newest First"),
-    YEAR_ASC("Oldest First");
-    
+    YEAR_ASC("Oldest First"),
+    ;
+
     companion object {
         fun getDefault() = TITLE_ASC
         fun getAllSortOrders() = entries
@@ -97,37 +99,39 @@ enum class StuffSortOrder(val displayName: String) {
 
 enum class StuffViewMode {
     GRID,
-    LIST
+    LIST,
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StuffScreen(
     modifier: Modifier = Modifier,
-    viewModel: MainAppViewModel = hiltViewModel()
+    viewModel: MainAppViewModel = hiltViewModel(),
 ) {
     val appState by viewModel.appState.collectAsState()
     var selectedFilter by remember { mutableStateOf(StuffFilter.ALL) }
     var sortOrder by remember { mutableStateOf(StuffSortOrder.getDefault()) }
     var viewMode by remember { mutableStateOf(StuffViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
-    
+
     // Filter stuff items from all items (everything that's not movies, TV shows, or music)
     val stuffItems = remember(appState.allItems) {
-        appState.allItems.filter { 
-            it.type == BaseItemKind.BOOK || 
-            it.type == BaseItemKind.AUDIO_BOOK || 
-            it.type == BaseItemKind.VIDEO ||
-            it.type == BaseItemKind.PHOTO ||
-            (it.type != BaseItemKind.MOVIE && 
-             it.type != BaseItemKind.SERIES && 
-             it.type != BaseItemKind.EPISODE &&
-             it.type != BaseItemKind.AUDIO && 
-             it.type != BaseItemKind.MUSIC_ALBUM && 
-             it.type != BaseItemKind.MUSIC_ARTIST)
+        appState.allItems.filter {
+            it.type == BaseItemKind.BOOK ||
+                it.type == BaseItemKind.AUDIO_BOOK ||
+                it.type == BaseItemKind.VIDEO ||
+                it.type == BaseItemKind.PHOTO ||
+                (
+                    it.type != BaseItemKind.MOVIE &&
+                        it.type != BaseItemKind.SERIES &&
+                        it.type != BaseItemKind.EPISODE &&
+                        it.type != BaseItemKind.AUDIO &&
+                        it.type != BaseItemKind.MUSIC_ALBUM &&
+                        it.type != BaseItemKind.MUSIC_ARTIST
+                    )
         }
     }
-    
+
     // Apply filtering and sorting
     val filteredAndSortedStuff = remember(stuffItems, selectedFilter, sortOrder) {
         val filtered = when (selectedFilter) {
@@ -137,14 +141,14 @@ fun StuffScreen(
             StuffFilter.VIDEOS -> stuffItems.filter { it.type == BaseItemKind.VIDEO }
             StuffFilter.PHOTOS -> stuffItems.filter { it.type == BaseItemKind.PHOTO }
             StuffFilter.FAVORITES -> stuffItems.filter { it.userData?.isFavorite == true }
-            StuffFilter.RECENT -> stuffItems.filter { 
-                ((it.productionYear as? Number)?.toInt() ?: 0) >= 2020 
+            StuffFilter.RECENT -> stuffItems.filter {
+                ((it.productionYear as? Number)?.toInt() ?: 0) >= 2020
             }
-            StuffFilter.UNVIEWED -> stuffItems.filter { 
-                it.userData?.played != true 
+            StuffFilter.UNVIEWED -> stuffItems.filter {
+                it.userData?.played != true
             }
         }
-        
+
         when (sortOrder) {
             StuffSortOrder.TITLE_ASC -> filtered.sortedBy { it.sortName ?: it.name }
             StuffSortOrder.TITLE_DESC -> filtered.sortedByDescending { it.sortName ?: it.name }
@@ -154,11 +158,11 @@ fun StuffScreen(
             StuffSortOrder.DATE_ADDED_ASC -> filtered.sortedBy { it.dateCreated }
             StuffSortOrder.SIZE_DESC -> filtered.sortedByDescending { it.runTimeTicks ?: 0L }
             StuffSortOrder.SIZE_ASC -> filtered.sortedBy { it.runTimeTicks ?: 0L }
-            StuffSortOrder.YEAR_DESC -> filtered.sortedByDescending { 
-                (it.productionYear as? Number)?.toInt() ?: 0 
+            StuffSortOrder.YEAR_DESC -> filtered.sortedByDescending {
+                (it.productionYear as? Number)?.toInt() ?: 0
             }
-            StuffSortOrder.YEAR_ASC -> filtered.sortedBy { 
-                (it.productionYear as? Number)?.toInt() ?: 0 
+            StuffSortOrder.YEAR_ASC -> filtered.sortedBy {
+                (it.productionYear as? Number)?.toInt() ?: 0
             }
         }
     }
@@ -169,23 +173,23 @@ fun StuffScreen(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Widgets,
                             contentDescription = null,
-                            tint = BookPurple
+                            tint = BookPurple,
                         )
                         Text(
                             text = "Stuff",
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         if (filteredAndSortedStuff.isNotEmpty()) {
                             Text(
                                 text = "(${filteredAndSortedStuff.size})",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -197,14 +201,14 @@ fun StuffScreen(
                             SegmentedButton(
                                 shape = SegmentedButtonDefaults.itemShape(
                                     index = index,
-                                    count = StuffViewMode.entries.size
+                                    count = StuffViewMode.entries.size,
                                 ),
                                 onClick = { viewMode = mode },
                                 selected = viewMode == mode,
                                 colors = SegmentedButtonDefaults.colors(
                                     activeContainerColor = BookPurple.copy(alpha = 0.2f),
-                                    activeContentColor = BookPurple
-                                )
+                                    activeContentColor = BookPurple,
+                                ),
                             ) {
                                 Icon(
                                     imageVector = when (mode) {
@@ -212,23 +216,23 @@ fun StuffScreen(
                                         StuffViewMode.LIST -> Icons.AutoMirrored.Filled.ViewList
                                     },
                                     contentDescription = mode.name,
-                                    modifier = Modifier.padding(2.dp)
+                                    modifier = Modifier.padding(2.dp),
                                 )
                             }
                         }
                     }
-                    
+
                     // Sort menu
                     Box {
                         IconButton(onClick = { showSortMenu = true }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Sort,
-                                contentDescription = "Sort"
+                                contentDescription = "Sort",
                             )
                         }
                         DropdownMenu(
                             expanded = showSortMenu,
-                            onDismissRequest = { showSortMenu = false }
+                            onDismissRequest = { showSortMenu = false },
                         ) {
                             StuffSortOrder.getAllSortOrders().forEach { order ->
                                 DropdownMenuItem(
@@ -236,35 +240,35 @@ fun StuffScreen(
                                     onClick = {
                                         sortOrder = order
                                         showSortMenu = false
-                                    }
+                                    },
                                 )
                             }
                         }
                     }
-                    
+
                     IconButton(onClick = { viewModel.refreshLibraryItems() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh"
+                            contentDescription = "Refresh",
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
             )
         },
-        modifier = modifier
+        modifier = modifier,
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
         ) {
             // Filter chips
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 items(StuffFilter.getAllFilters()) { filter ->
                     FilterChip(
@@ -277,7 +281,7 @@ fun StuffScreen(
                                     Icon(
                                         imageVector = Icons.Default.Star,
                                         contentDescription = null,
-                                        modifier = Modifier.padding(2.dp)
+                                        modifier = Modifier.padding(2.dp),
                                     )
                                 }
                             }
@@ -286,7 +290,7 @@ fun StuffScreen(
                                     Icon(
                                         imageVector = Icons.Default.Book,
                                         contentDescription = null,
-                                        modifier = Modifier.padding(2.dp)
+                                        modifier = Modifier.padding(2.dp),
                                     )
                                 }
                             }
@@ -295,7 +299,7 @@ fun StuffScreen(
                                     Icon(
                                         imageVector = Icons.Default.AudioFile,
                                         contentDescription = null,
-                                        modifier = Modifier.padding(2.dp)
+                                        modifier = Modifier.padding(2.dp),
                                     )
                                 }
                             }
@@ -304,7 +308,7 @@ fun StuffScreen(
                                     Icon(
                                         imageVector = Icons.Default.VideoFile,
                                         contentDescription = null,
-                                        modifier = Modifier.padding(2.dp)
+                                        modifier = Modifier.padding(2.dp),
                                     )
                                 }
                             }
@@ -313,7 +317,7 @@ fun StuffScreen(
                                     Icon(
                                         imageVector = Icons.Default.Image,
                                         contentDescription = null,
-                                        modifier = Modifier.padding(2.dp)
+                                        modifier = Modifier.padding(2.dp),
                                     )
                                 }
                             }
@@ -322,76 +326,76 @@ fun StuffScreen(
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = BookPurple.copy(alpha = 0.2f),
                             selectedLabelColor = BookPurple,
-                            selectedLeadingIconColor = BookPurple
-                        )
+                            selectedLeadingIconColor = BookPurple,
+                        ),
                     )
                 }
             }
-            
+
             // Content
             when {
                 appState.isLoading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator(color = BookPurple)
                     }
                 }
-                
+
                 appState.errorMessage != null -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(16.dp),
                         ) {
                             Text(
                                 text = appState.errorMessage ?: "Unknown error",
                                 color = MaterialTheme.colorScheme.onErrorContainer,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(16.dp),
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
                 }
-                
+
                 filteredAndSortedStuff.isEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Widgets,
                                 contentDescription = null,
                                 modifier = Modifier.padding(32.dp),
-                                tint = BookPurple.copy(alpha = 0.6f)
+                                tint = BookPurple.copy(alpha = 0.6f),
                             )
                             Text(
                                 text = "No items found",
                                 style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
                                 text = "Try adjusting your filters or refresh the library",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                 }
-                
+
                 else -> {
                     StuffContent(
                         stuffItems = filteredAndSortedStuff,
@@ -399,7 +403,7 @@ fun StuffScreen(
                         getImageUrl = { item -> viewModel.getImageUrl(item) },
                         isLoadingMore = appState.isLoadingMore,
                         hasMoreItems = appState.hasMoreItems,
-                        onLoadMore = { viewModel.loadMoreItems() }
+                        onLoadMore = { viewModel.loadMoreItems() },
                     )
                 }
             }
@@ -415,7 +419,7 @@ private fun StuffContent(
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     when (viewMode) {
         StuffViewMode.GRID -> {
@@ -424,47 +428,47 @@ private fun StuffContent(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = modifier.fillMaxSize()
+                modifier = modifier.fillMaxSize(),
             ) {
                 items(stuffItems) { stuffItem ->
                     MediaCard(
                         item = stuffItem,
-                        getImageUrl = getImageUrl
+                        getImageUrl = getImageUrl,
                     )
                 }
-                
+
                 if (hasMoreItems || isLoadingMore) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         StuffPaginationFooter(
                             isLoadingMore = isLoadingMore,
                             hasMoreItems = hasMoreItems,
-                            onLoadMore = onLoadMore
+                            onLoadMore = onLoadMore,
                         )
                     }
                 }
             }
         }
-        
+
         StuffViewMode.LIST -> {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(1),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = modifier.fillMaxSize()
+                modifier = modifier.fillMaxSize(),
             ) {
                 items(stuffItems) { stuffItem ->
                     MediaCard(
                         item = stuffItem,
-                        getImageUrl = getImageUrl
+                        getImageUrl = getImageUrl,
                     )
                 }
-                
+
                 if (hasMoreItems || isLoadingMore) {
                     item {
                         StuffPaginationFooter(
                             isLoadingMore = isLoadingMore,
                             hasMoreItems = hasMoreItems,
-                            onLoadMore = onLoadMore
+                            onLoadMore = onLoadMore,
                         )
                     }
                 }
@@ -478,40 +482,40 @@ private fun StuffPaginationFooter(
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(Unit) {
         if (hasMoreItems && !isLoadingMore) {
             onLoadMore()
         }
     }
-    
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(16.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         if (isLoadingMore) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 CircularProgressIndicator(
                     color = BookPurple,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(8.dp),
                 )
                 Text(
                     text = "Loading more items...",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         } else if (!hasMoreItems) {
             Text(
                 text = "No more items to load",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

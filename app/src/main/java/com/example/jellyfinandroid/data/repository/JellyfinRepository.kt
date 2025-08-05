@@ -1,48 +1,45 @@
 package com.example.jellyfinandroid.data.repository
 
+import android.content.Context
 import android.util.Log
-import com.example.jellyfinandroid.data.JellyfinServer
-import com.example.jellyfinandroid.di.JellyfinClientFactory
-import retrofit2.HttpException
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.client.extensions.userApi
-import org.jellyfin.sdk.api.client.extensions.systemApi
-import org.jellyfin.sdk.api.client.extensions.itemsApi
-import org.jellyfin.sdk.api.client.extensions.quickConnectApi
-import org.jellyfin.sdk.api.client.extensions.userLibraryApi
-import org.jellyfin.sdk.api.client.extensions.libraryApi
-import org.jellyfin.sdk.api.client.extensions.playStateApi
-import org.jellyfin.sdk.model.api.AuthenticationResult
-import org.jellyfin.sdk.model.api.AuthenticateUserByName
-import org.jellyfin.sdk.model.api.QuickConnectDto
-import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.PublicSystemInfo
-import org.jellyfin.sdk.model.api.BaseItemKind
-import org.jellyfin.sdk.model.api.ItemSortBy
-import org.jellyfin.sdk.model.api.ItemFilter
-import org.jellyfin.sdk.model.api.ImageType
-import org.jellyfin.sdk.model.api.SortOrder
-import org.jellyfin.sdk.model.api.ItemFields
-import java.util.UUID
-import kotlin.random.Random
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import com.example.jellyfinandroid.BuildConfig
-import dagger.hilt.android.qualifiers.ApplicationContext
 import com.example.jellyfinandroid.R
+import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.data.model.QuickConnectResult
 import com.example.jellyfinandroid.data.model.QuickConnectState
+import com.example.jellyfinandroid.di.JellyfinClientFactory
 import com.example.jellyfinandroid.ui.utils.ErrorHandler
-import com.example.jellyfinandroid.ui.utils.retryNetworkCall
 import com.example.jellyfinandroid.ui.utils.OfflineManager
-import com.example.jellyfinandroid.ui.utils.PlaybackSource
-import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.extensions.itemsApi
+import org.jellyfin.sdk.api.client.extensions.libraryApi
+import org.jellyfin.sdk.api.client.extensions.playStateApi
+import org.jellyfin.sdk.api.client.extensions.quickConnectApi
+import org.jellyfin.sdk.api.client.extensions.systemApi
+import org.jellyfin.sdk.api.client.extensions.userApi
+import org.jellyfin.sdk.api.client.extensions.userLibraryApi
+import org.jellyfin.sdk.model.api.AuthenticateUserByName
+import org.jellyfin.sdk.model.api.AuthenticationResult
+import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.ImageType
+import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.ItemFilter
+import org.jellyfin.sdk.model.api.ItemSortBy
+import org.jellyfin.sdk.model.api.PublicSystemInfo
+import org.jellyfin.sdk.model.api.QuickConnectDto
+import org.jellyfin.sdk.model.api.SortOrder
+import retrofit2.HttpException
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 sealed class ApiResult<T> {
     data class Success<T>(val data: T) : ApiResult<T>()
@@ -58,78 +55,78 @@ enum class ErrorType {
     UNAUTHORIZED,
     FORBIDDEN,
     OPERATION_CANCELLED,
-    UNKNOWN
+    UNKNOWN,
 }
 
 @Singleton
 class JellyfinRepository @Inject constructor(
     private val clientFactory: JellyfinClientFactory,
     private val secureCredentialManager: SecureCredentialManager,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) {
     companion object {
         // Token validity constants
         private const val TOKEN_VALIDITY_DURATION_MINUTES = 50
         private const val TOKEN_VALIDITY_DURATION_MS = TOKEN_VALIDITY_DURATION_MINUTES * 60 * 1000L
-        
+
         // API retry constants
         private const val DEFAULT_MAX_RETRIES = 2
         private const val RE_AUTH_DELAY_MS = 1000L
-        
+
         // Stream quality constants
         private const val DEFAULT_MAX_BITRATE = 140_000_000
         private const val DEFAULT_MAX_AUDIO_CHANNELS = 2
-        
+
         // Image size constants
         private const val DEFAULT_IMAGE_MAX_HEIGHT = 400
         private const val DEFAULT_IMAGE_MAX_WIDTH = 400
         private const val BACKDROP_MAX_HEIGHT = 400
         private const val BACKDROP_MAX_WIDTH = 800
-        
+
         // API pagination constants
         private const val DEFAULT_LIMIT = 100
         private const val DEFAULT_START_INDEX = 0
         private const val RECENTLY_ADDED_LIMIT = 20
         private const val RECENTLY_ADDED_BY_TYPE_LIMIT = 10
         private const val SEARCH_LIMIT = 50
-        
+
         // Default codecs
         private const val DEFAULT_VIDEO_CODEC = "h264"
         private const val DEFAULT_AUDIO_CODEC = "aac"
         private const val DEFAULT_CONTAINER = "mp4"
     }
-    
+
     private val _currentServer = MutableStateFlow<JellyfinServer?>(null)
     val currentServer: Flow<JellyfinServer?> = _currentServer.asStateFlow()
-    
+
     private val _isConnected = MutableStateFlow(false)
     val isConnected: Flow<Boolean> = _isConnected.asStateFlow()
-    
+
     // Mutex to prevent race conditions in authentication
     private val authMutex = Mutex()
-    
+
     // Helper function for debug logging that only logs in debug builds
     private fun logDebug(message: String) {
         if (BuildConfig.DEBUG) {
             Log.d("JellyfinRepository", message)
         }
     }
-    
+
     // Helper function to get string resources
     private fun getString(resId: Int): String = context.getString(resId)
-    
+
     private fun getClient(serverUrl: String, accessToken: String? = null): ApiClient {
         return clientFactory.getClient(serverUrl, accessToken)
     }
-    
-    // ✅ FIX: Helper method to get current authenticated client 
+
+    // ✅ FIX: Helper method to get current authenticated client
     private fun getCurrentAuthenticatedClient(): ApiClient? {
         val currentServer = _currentServer.value
-        return currentServer?.let { 
+        return currentServer?.let {
             getClient(it.url, it.accessToken)
         }
     }
-    
+
     // ✅ FIX: Helper to safely handle exceptions while preserving cancellation
     private fun <T> handleExceptionSafely(e: Exception, defaultMessage: String = getString(R.string.error_occurred)): ApiResult.Error<T> {
         // Let cancellation exceptions bubble up instead of converting to ApiResult.Error
@@ -155,7 +152,7 @@ class JellyfinRepository @Inject constructor(
                 // More robust status code extraction for better error classification
                 val statusCode = extractStatusCode(e)
                 logDebug("InvalidStatusException: status code = $statusCode, message = ${e.message}")
-                
+
                 when (statusCode) {
                     401 -> ErrorType.UNAUTHORIZED
                     403 -> ErrorType.FORBIDDEN
@@ -175,7 +172,7 @@ class JellyfinRepository @Inject constructor(
             else -> ErrorType.UNKNOWN
         }
     }
-    
+
     /**
      * Extracts HTTP status code from InvalidStatusException message
      */
@@ -183,19 +180,19 @@ class JellyfinRepository @Inject constructor(
         return try {
             // Try multiple patterns to extract status code
             val message = e.message ?: return null
-            
+
             // Pattern 1: "Invalid HTTP status in response: 401"
             val pattern1 = """Invalid HTTP status in response:\s*(\d{3})""".toRegex()
             pattern1.find(message)?.groupValues?.get(1)?.toIntOrNull()?.let { return it }
-            
+
             // Pattern 2: Any 3-digit number that looks like an HTTP status
             val pattern2 = """\b([4-5]\d{2})\b""".toRegex()
             pattern2.find(message)?.groupValues?.get(1)?.toIntOrNull()?.let { return it }
-            
+
             // Pattern 3: Generic 3-digit number extraction
             val pattern3 = """\b(\d{3})\b""".toRegex()
             val matches = pattern3.findAll(message).map { it.groupValues[1].toIntOrNull() }.filterNotNull()
-            
+
             // Return the first match that looks like an HTTP status code
             matches.firstOrNull { it in 400..599 }
         } catch (e: Exception) {
@@ -206,23 +203,23 @@ class JellyfinRepository @Inject constructor(
 
     private fun <T> handleException(e: Exception, defaultMessage: String = getString(R.string.error_occurred)): ApiResult.Error<T> {
         val processedError = ErrorHandler.processError(e, operation = defaultMessage)
-        
+
         // Log error analytics
         val currentServer = _currentServer.value
         ErrorHandler.logErrorAnalytics(
             error = processedError,
             operation = defaultMessage,
             userId = currentServer?.userId,
-            serverUrl = currentServer?.url
+            serverUrl = currentServer?.url,
         )
-        
+
         return ApiResult.Error(
             message = processedError.userMessage,
             cause = e,
-            errorType = processedError.errorType
+            errorType = processedError.errorType,
         )
     }
-    
+
     suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
         return try {
             val client = getClient(serverUrl)
@@ -232,17 +229,17 @@ class JellyfinRepository @Inject constructor(
             handleException(e, "Failed to connect to server")
         }
     }
-    
+
     suspend fun authenticateUser(
         serverUrl: String,
         username: String,
-        password: String
+        password: String,
     ): ApiResult<AuthenticationResult> = authMutex.withLock {
         return try {
             val client = getClient(serverUrl)
             val request = AuthenticateUserByName(
                 username = username,
-                pw = password
+                pw = password,
             )
             val response = client.userApi.authenticateUserByName(request)
             val authResult = response.content
@@ -266,19 +263,19 @@ class JellyfinRepository @Inject constructor(
                 userId = authResult.user?.id.toString(),
                 username = authResult.user?.name,
                 accessToken = authResult.accessToken,
-                loginTimestamp = System.currentTimeMillis()
+                loginTimestamp = System.currentTimeMillis(),
             )
-            
+
             _currentServer.value = server
             _isConnected.value = true
-            
+
             ApiResult.Success(authResult)
         } catch (e: Exception) {
             val errorType = getErrorType(e)
             ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
         }
     }
-    
+
     /**
      * Start a new Quick Connect session by calling the server API.
      */
@@ -291,15 +288,15 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Success(
                 QuickConnectResult(
                     code = result.code,
-                    secret = result.secret
-                )
+                    secret = result.secret,
+                ),
             )
         } catch (e: Exception) {
             val errorType = getErrorType(e)
             ApiResult.Error("Failed to initiate Quick Connect: ${e.message}", e, errorType)
         }
     }
-    
+
     suspend fun getQuickConnectState(serverUrl: String, secret: String): ApiResult<QuickConnectState> {
         return try {
             val client = getClient(serverUrl)
@@ -318,10 +315,10 @@ class JellyfinRepository @Inject constructor(
             }
         }
     }
-    
+
     suspend fun authenticateWithQuickConnect(
         serverUrl: String,
-        secret: String
+        secret: String,
     ): ApiResult<AuthenticationResult> = authMutex.withLock {
         return try {
             val client = getClient(serverUrl)
@@ -350,7 +347,7 @@ class JellyfinRepository @Inject constructor(
                 userId = authResult.user?.id?.toString(),
                 username = authResult.user?.name,
                 accessToken = authResult.accessToken,
-                loginTimestamp = System.currentTimeMillis()
+                loginTimestamp = System.currentTimeMillis(),
             )
 
             _currentServer.value = server
@@ -365,14 +362,13 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Error("Quick Connect authentication failed: ${e.message}", e, errorType)
         }
     }
-    
-    
+
     suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error(getString(R.string.not_authenticated), errorType = ErrorType.AUTHENTICATION)
         }
-        
+
         val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
         if (userUuid == null) {
             return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
@@ -383,31 +379,31 @@ class JellyfinRepository @Inject constructor(
 
         return executeWithAuthRetry("getUserLibraries") {
             // ✅ FIX: Always get current server state inside the retry closure to use fresh token
-            val currentServer = _currentServer.value 
+            val currentServer = _currentServer.value
                 ?: return@executeWithAuthRetry ApiResult.Error("Server not available", errorType = ErrorType.AUTHENTICATION)
             val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
                 ?: return@executeWithAuthRetry ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
-                
+
             val client = getClient(currentServer.url, currentServer.accessToken)
             val response = client.itemsApi.getItems(
                 userId = currentUserUuid,
-                includeItemTypes = listOf(org.jellyfin.sdk.model.api.BaseItemKind.COLLECTION_FOLDER)
+                includeItemTypes = listOf(org.jellyfin.sdk.model.api.BaseItemKind.COLLECTION_FOLDER),
             )
             ApiResult.Success(response.content.items ?: emptyList())
         }
     }
-    
+
     suspend fun getLibraryItems(
         parentId: String? = null,
         itemTypes: String? = null,
         startIndex: Int = DEFAULT_START_INDEX,
-        limit: Int = DEFAULT_LIMIT
+        limit: Int = DEFAULT_LIMIT,
     ): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
-        
+
         val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
         if (userUuid == null) {
             return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
@@ -429,7 +425,7 @@ class JellyfinRepository @Inject constructor(
                 recursive = true,
                 includeItemTypes = itemKinds,
                 startIndex = startIndex,
-                limit = limit
+                limit = limit,
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
@@ -437,7 +433,7 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Error("Failed to load items: ${e.message}", e, errorType)
         }
     }
-    
+
     suspend fun getRecentlyAdded(limit: Int = RECENTLY_ADDED_LIMIT): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
@@ -454,11 +450,11 @@ class JellyfinRepository @Inject constructor(
 
             val items = executeWithRetry {
                 // ✅ FIX: Always get current server state inside the retry closure to use fresh token
-                val currentServer = _currentServer.value 
+                val currentServer = _currentServer.value
                     ?: throw IllegalStateException("Server not available")
                 val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
                     ?: throw IllegalStateException("Invalid user ID")
-                    
+
                 val client = getClient(currentServer.url, currentServer.accessToken)
                 val response = client.itemsApi.getItems(
                     userId = currentUserUuid,
@@ -472,11 +468,11 @@ class JellyfinRepository @Inject constructor(
                         BaseItemKind.MUSIC_ARTIST,
                         BaseItemKind.BOOK,
                         BaseItemKind.AUDIO_BOOK,
-                        BaseItemKind.VIDEO
+                        BaseItemKind.VIDEO,
                     ),
                     sortBy = listOf(ItemSortBy.DATE_CREATED),
                     sortOrder = listOf(SortOrder.DESCENDING),
-                    limit = limit
+                    limit = limit,
                 )
                 response.content.items ?: emptyList()
             }
@@ -506,17 +502,15 @@ class JellyfinRepository @Inject constructor(
 
     private suspend fun reAuthenticate(): Boolean {
         val server = _currentServer.value ?: return false
-        
+
         if (BuildConfig.DEBUG) {
-        
             Log.d("JellyfinRepository", "reAuthenticate: Starting re-authentication for user ${server.username} on ${server.url}")
-        
         }
-        
+
         try {
             // Clear any cached clients before re-authenticating
             clientFactory.invalidateClient()
-            
+
             // Get saved password for the current server and username
             val savedPassword = secureCredentialManager.getPassword(server.url, server.username ?: "")
             if (savedPassword == null) {
@@ -525,13 +519,11 @@ class JellyfinRepository @Inject constructor(
                 logout()
                 return false
             }
-            
+
             if (BuildConfig.DEBUG) {
-            
                 Log.d("JellyfinRepository", "reAuthenticate: Found saved credentials, attempting authentication")
-            
             }
-            
+
             // Re-authenticate using saved credentials
             when (val authResult = authenticateUser(server.url, server.username ?: "", savedPassword)) {
                 is ApiResult.Success -> {
@@ -541,7 +533,7 @@ class JellyfinRepository @Inject constructor(
                     // Update the current server with the new token and login timestamp
                     val updatedServer = server.copy(
                         accessToken = authResult.data.accessToken,
-                        loginTimestamp = System.currentTimeMillis()
+                        loginTimestamp = System.currentTimeMillis(),
                     )
                     _currentServer.value = updatedServer
                     return true
@@ -579,16 +571,16 @@ class JellyfinRepository @Inject constructor(
 
     private suspend fun <T> executeWithRetry(
         maxRetries: Int = 2,
-        operation: suspend () -> T
+        operation: suspend () -> T,
     ): T {
         var lastException: Exception? = null
-        
+
         for (attempt in 0..maxRetries) {
             try {
                 return operation()
             } catch (e: Exception) {
                 lastException = e
-                
+
                 // ✅ FIX: Don't retry if the job was cancelled (navigation/lifecycle cancellation)
                 if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
                     if (BuildConfig.DEBUG) {
@@ -596,13 +588,13 @@ class JellyfinRepository @Inject constructor(
                     }
                     throw e
                 }
-                
+
                 // If it's a 401 error and we have saved credentials, try to re-authenticate
                 val is401Error = (e is HttpException && e.code() == 401) ||
                     (e is org.jellyfin.sdk.api.client.exception.InvalidStatusException && e.message?.contains("401") == true)
                 if (is401Error && attempt < maxRetries) {
                     Log.w("JellyfinRepository", "Got 401 error on attempt ${attempt + 1}, attempting to re-authenticate")
-                    
+
                     // Try to re-authenticate
                     if (reAuthenticate()) {
                         if (BuildConfig.DEBUG) {
@@ -618,14 +610,14 @@ class JellyfinRepository @Inject constructor(
                         throw e
                     }
                 }
-                
+
                 // For other errors or if we've exhausted retries, throw the exception
                 if (attempt == maxRetries) {
                     throw e
                 }
             }
         }
-        
+
         throw lastException ?: Exception("Unknown error occurred")
     }
 
@@ -635,16 +627,16 @@ class JellyfinRepository @Inject constructor(
     private suspend fun <T> executeWithAuthRetry(
         operationName: String,
         maxRetries: Int = 2,
-        operation: suspend () -> ApiResult<T>
+        operation: suspend () -> ApiResult<T>,
     ): ApiResult<T> {
         for (attempt in 0..maxRetries) {
             try {
                 if (BuildConfig.DEBUG) {
                     Log.d("JellyfinRepository", "$operationName: Attempt ${attempt + 1}/${maxRetries + 1}")
                 }
-                
+
                 val result = operation()
-                
+
                 when (result) {
                     is ApiResult.Success -> {
                         if (attempt > 0) {
@@ -657,11 +649,11 @@ class JellyfinRepository @Inject constructor(
                     is ApiResult.Loading -> return result
                     is ApiResult.Error -> {
                         Log.w("JellyfinRepository", "$operationName: Got error on attempt ${attempt + 1}: ${result.message} (type: ${result.errorType})")
-                        
+
                         // Check if this is a 401 error that we should retry with re-authentication
                         if (result.errorType == ErrorType.UNAUTHORIZED && attempt < maxRetries) {
                             Log.w("JellyfinRepository", "$operationName: Got 401 error, attempting re-authentication")
-                            
+
                             if (reAuthenticate()) {
                                 if (BuildConfig.DEBUG) {
                                     Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
@@ -681,7 +673,6 @@ class JellyfinRepository @Inject constructor(
                         }
                     }
                 }
-                
             } catch (e: Exception) {
                 // Handle direct exceptions from the operation
                 if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
@@ -690,14 +681,14 @@ class JellyfinRepository @Inject constructor(
                     }
                     throw e
                 }
-                
+
                 val errorType = getErrorType(e)
                 Log.w("JellyfinRepository", "$operationName: Exception on attempt ${attempt + 1}: ${e.message} (type: $errorType)")
-                
+
                 // Check for 401 in exception and retry with re-authentication
                 if (errorType == ErrorType.UNAUTHORIZED && attempt < maxRetries) {
                     Log.w("JellyfinRepository", "$operationName: Got 401 exception, attempting re-authentication")
-                    
+
                     if (reAuthenticate()) {
                         if (BuildConfig.DEBUG) {
                             Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
@@ -717,7 +708,7 @@ class JellyfinRepository @Inject constructor(
                 }
             }
         }
-        
+
         return ApiResult.Error("$operationName failed after $maxRetries retry attempts", errorType = ErrorType.UNKNOWN)
     }
 
@@ -733,34 +724,30 @@ class JellyfinRepository @Inject constructor(
         }
 
         if (BuildConfig.DEBUG) {
-
             Log.d("JellyfinRepository", "getRecentlyAddedByType: Requesting $limit items of type $itemType")
-
         }
 
         return executeWithAuthRetry("getRecentlyAddedByType") {
-            val currentServer = _currentServer.value 
+            val currentServer = _currentServer.value
                 ?: return@executeWithAuthRetry ApiResult.Error("Server not available", errorType = ErrorType.AUTHENTICATION)
             val client = getClient(currentServer.url, currentServer.accessToken)
             val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
                 ?: return@executeWithAuthRetry ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
-                
+
             val response = client.itemsApi.getItems(
                 userId = currentUserUuid,
                 recursive = true,
                 includeItemTypes = listOf(itemType),
                 sortBy = listOf(ItemSortBy.DATE_CREATED),
                 sortOrder = listOf(SortOrder.DESCENDING),
-                limit = limit
+                limit = limit,
             )
             val items = response.content.items ?: emptyList()
-            
+
             if (BuildConfig.DEBUG) {
-            
                 Log.d("JellyfinRepository", "getRecentlyAddedByType: Retrieved ${items.size} items of type $itemType")
-            
             }
-            
+
             // Log details of each item
             items.forEachIndexed { index, item ->
                 val dateFormatted = item.dateCreated?.toString() ?: "Unknown date"
@@ -768,14 +755,14 @@ class JellyfinRepository @Inject constructor(
                     Log.d("JellyfinRepository", "getRecentlyAddedByType[$itemType][$index]: '${item.name}' (Created: $dateFormatted)")
                 }
             }
-            
+
             ApiResult.Success(items)
         }
     }
 
     suspend fun getRecentlyAddedFromLibrary(
         libraryId: String,
-        limit: Int = 10
+        limit: Int = 10,
     ): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
@@ -800,7 +787,7 @@ class JellyfinRepository @Inject constructor(
                 recursive = true,
                 sortBy = listOf(ItemSortBy.DATE_CREATED),
                 sortOrder = listOf(SortOrder.DESCENDING),
-                limit = limit
+                limit = limit,
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
@@ -816,16 +803,14 @@ class JellyfinRepository @Inject constructor(
             BaseItemKind.AUDIO,
             BaseItemKind.BOOK,
             BaseItemKind.AUDIO_BOOK,
-            BaseItemKind.VIDEO
+            BaseItemKind.VIDEO,
         )
 
         if (BuildConfig.DEBUG) {
-
             Log.d("JellyfinRepository", "getRecentlyAddedByTypes: Starting to fetch items for ${contentTypes.size} content types")
-
         }
         val results = mutableMapOf<String, List<BaseItemDto>>()
-        
+
         for (contentType in contentTypes) {
             when (val result = getRecentlyAddedByType(contentType, limit)) {
                 is ApiResult.Success -> {
@@ -859,13 +844,11 @@ class JellyfinRepository @Inject constructor(
         }
 
         if (BuildConfig.DEBUG) {
-
             Log.d("JellyfinRepository", "getRecentlyAddedByTypes: Completed with ${results.size} categories: ${results.keys.joinToString(", ")}")
-
         }
         return ApiResult.Success(results)
     }
-    
+
     suspend fun getFavorites(): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
@@ -883,7 +866,7 @@ class JellyfinRepository @Inject constructor(
                 userId = userUuid,
                 recursive = true,
                 sortBy = listOf(ItemSortBy.SORT_NAME),
-                filters = listOf(ItemFilter.IS_FAVORITE)
+                filters = listOf(ItemFilter.IS_FAVORITE),
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
@@ -891,7 +874,7 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
         }
     }
-    
+
     /**
      * Fetches all seasons for a given series.
      *
@@ -915,7 +898,7 @@ class JellyfinRepository @Inject constructor(
                 includeItemTypes = listOf(BaseItemKind.SEASON),
                 sortBy = listOf(ItemSortBy.SORT_NAME),
                 sortOrder = listOf(SortOrder.ASCENDING),
-                fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW)
+                fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW),
             )
             if (BuildConfig.DEBUG) {
                 Log.d("JellyfinRepository", "getSeasonsForSeries: Successfully fetched ${response.content.items?.size ?: 0} seasons for seriesId=$seriesId")
@@ -951,7 +934,7 @@ class JellyfinRepository @Inject constructor(
                 includeItemTypes = listOf(BaseItemKind.EPISODE),
                 sortBy = listOf(ItemSortBy.INDEX_NUMBER),
                 sortOrder = listOf(SortOrder.ASCENDING),
-                fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW)
+                fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW),
             )
             if (BuildConfig.DEBUG) {
                 Log.d("JellyfinRepository", "getEpisodesForSeason: Successfully fetched ${response.content.items?.size ?: 0} episodes for seasonId=$seasonId")
@@ -963,7 +946,7 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Error("Failed to load episodes: ${e.message}", e, errorType)
         }
     }
-    
+
     private suspend fun getItemDetailsById(itemId: String, itemTypeName: String): ApiResult<BaseItemDto> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
@@ -985,7 +968,7 @@ class JellyfinRepository @Inject constructor(
             val response = client.itemsApi.getItems(
                 userId = userUuid,
                 ids = listOf(itemUuid),
-                limit = 1
+                limit = 1,
             )
             val item = response.content.items?.firstOrNull()
             if (item != null) {
@@ -1006,25 +989,25 @@ class JellyfinRepository @Inject constructor(
     suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> {
         return getItemDetailsById(movieId, "movie")
     }
-    
+
     suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> {
         return getItemDetailsById(episodeId, "episode")
     }
-    
+
     suspend fun searchItems(
         query: String,
         includeItemTypes: List<BaseItemKind>? = null,
-        limit: Int = SEARCH_LIMIT
+        limit: Int = SEARCH_LIMIT,
     ): ApiResult<List<BaseItemDto>> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
-        
+
         if (query.isBlank()) {
             return ApiResult.Success(emptyList())
         }
-        
+
         val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
         if (userUuid == null) {
             return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
@@ -1044,9 +1027,9 @@ class JellyfinRepository @Inject constructor(
                     BaseItemKind.MUSIC_ALBUM,
                     BaseItemKind.MUSIC_ARTIST,
                     BaseItemKind.BOOK,
-                    BaseItemKind.AUDIO_BOOK
+                    BaseItemKind.AUDIO_BOOK,
                 ),
-                limit = limit
+                limit = limit,
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
@@ -1054,13 +1037,13 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Error("Search failed: ${e.message}", e, errorType)
         }
     }
-    
+
     fun getImageUrl(itemId: String, imageType: String = "Primary", tag: String? = null): String? {
         val server = _currentServer.value ?: return null
         val tagParam = tag?.let { "&tag=$it" } ?: ""
         return "${server.url}/Items/$itemId/Images/$imageType?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH$tagParam"
     }
-    
+
     fun getSeriesImageUrl(item: BaseItemDto): String? {
         val server = _currentServer.value ?: return null
         // For episodes, use the series poster if available
@@ -1081,7 +1064,7 @@ class JellyfinRepository @Inject constructor(
             getImageUrl(item.id.toString(), "Primary", item.imageTags?.get(ImageType.PRIMARY))
         }
     }
-    
+
     private suspend fun <T> safeApiCall(operation: suspend () -> T): T {
         try {
             return operation()
@@ -1099,15 +1082,15 @@ class JellyfinRepository @Inject constructor(
         val server = _currentServer.value ?: return true
         val loginTimestamp = server.loginTimestamp ?: return true
         val currentTime = System.currentTimeMillis()
-        
+
         // Consider token expired after 50 minutes (10 minutes before actual expiry)
         // This gives us time to refresh before hitting 401 errors
         val isExpired = (currentTime - loginTimestamp) > TOKEN_VALIDITY_DURATION_MS
-        
+
         if (isExpired) {
             Log.w("JellyfinRepository", "Token expired. Login timestamp: $loginTimestamp, current: $currentTime, duration: ${currentTime - loginTimestamp}ms")
         }
-        
+
         return isExpired
     }
 
@@ -1123,14 +1106,14 @@ class JellyfinRepository @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Manually validate and refresh token - exposed for manual refresh
      */
     suspend fun validateAndRefreshTokenManually() {
         validateAndRefreshToken()
     }
-    
+
     suspend fun toggleFavorite(itemId: String, isFavorite: Boolean): ApiResult<Boolean> {
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
@@ -1238,18 +1221,18 @@ class JellyfinRepository @Inject constructor(
      * Checks if the currently authenticated user has administrator privileges
      * or permission to delete content.
      */
-private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<Boolean> {
-    val userId = server.userId ?: return ApiResult.Success(false)
-    return try {
-        val userUuid = parseUuid(userId, "user")
-        val client = getClient(server.url, server.accessToken)
-        val user = client.userApi.getCurrentUser().content
-        ApiResult.Success(user.policy?.isAdministrator == true || user.policy?.enableContentDeletion == true)
-    } catch (e: Exception) {
-        Log.e("JellyfinRepository", "Failed to verify admin permissions: ${e.message}", e)
-        ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, getErrorType(e))
+    private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<Boolean> {
+        val userId = server.userId ?: return ApiResult.Success(false)
+        return try {
+            val userUuid = parseUuid(userId, "user")
+            val client = getClient(server.url, server.accessToken)
+            val user = client.userApi.getCurrentUser().content
+            ApiResult.Success(user.policy?.isAdministrator == true || user.policy?.enableContentDeletion == true)
+        } catch (e: Exception) {
+            Log.e("JellyfinRepository", "Failed to verify admin permissions: ${e.message}", e)
+            ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, getErrorType(e))
+        }
     }
-}
 
     /**
      * Deletes an item only if the current user has administrator permissions.
@@ -1285,33 +1268,33 @@ private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<
 
     fun getStreamUrl(itemId: String): String? {
         val server = _currentServer.value ?: return null
-        
+
         // Validate server connection and authentication
         if (server.accessToken.isNullOrBlank()) {
             Log.w("JellyfinRepository", "getStreamUrl: No access token available")
             return null
         }
-        
+
         // Validate itemId format
         if (itemId.isBlank()) {
             Log.w("JellyfinRepository", "getStreamUrl: Invalid item ID")
             return null
         }
-        
+
         // Validate that itemId is a valid UUID format
         runCatching { UUID.fromString(itemId) }.getOrNull() ?: run {
             Log.w("JellyfinRepository", "getStreamUrl: Invalid item ID format: $itemId")
             return null
         }
-        
+
         return try {
-            "${server.url}/Videos/${itemId}/stream?static=true&api_key=${server.accessToken}"
+            "${server.url}/Videos/$itemId/stream?static=true&api_key=${server.accessToken}"
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "getStreamUrl: Failed to generate stream URL for item $itemId", e)
             null
         }
     }
-    
+
     /**
      * Gets a transcoded stream URL with specific quality parameters
      */
@@ -1322,31 +1305,31 @@ private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<
         maxHeight: Int? = null,
         videoCodec: String = DEFAULT_VIDEO_CODEC,
         audioCodec: String = DEFAULT_AUDIO_CODEC,
-        container: String = DEFAULT_CONTAINER
+        container: String = DEFAULT_CONTAINER,
     ): String? {
         val server = _currentServer.value ?: return null
-        
+
         // Validate server connection and authentication
         if (server.accessToken.isNullOrBlank()) {
             Log.w("JellyfinRepository", "getTranscodedStreamUrl: No access token available")
             return null
         }
-        
+
         // Validate itemId format
         if (itemId.isBlank()) {
             Log.w("JellyfinRepository", "getTranscodedStreamUrl: Invalid item ID")
             return null
         }
-        
+
         // Validate that itemId is a valid UUID format
         runCatching { UUID.fromString(itemId) }.getOrNull() ?: run {
             Log.w("JellyfinRepository", "getTranscodedStreamUrl: Invalid item ID format: $itemId")
             return null
         }
-        
+
         return try {
             val params = mutableListOf<String>()
-            
+
             // Add transcoding parameters
             maxBitrate?.let { params.add("MaxStreamingBitrate=$it") }
             maxWidth?.let { params.add("MaxWidth=$it") }
@@ -1357,60 +1340,60 @@ private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<
             params.add("TranscodingMaxAudioChannels=2")
             params.add("BreakOnNonKeyFrames=true")
             params.add("api_key=${server.accessToken}")
-            
-            "${server.url}/Videos/${itemId}/master.m3u8?${params.joinToString("&")}"
+
+            "${server.url}/Videos/$itemId/master.m3u8?${params.joinToString("&")}"
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "getTranscodedStreamUrl: Failed to generate transcoded stream URL for item $itemId", e)
             null
         }
     }
-    
+
     /**
      * Gets HLS (HTTP Live Streaming) URL for adaptive bitrate streaming
      */
     fun getHlsStreamUrl(itemId: String): String? {
         val server = _currentServer.value ?: return null
-        return "${server.url}/Videos/${itemId}/master.m3u8?" +
-                "VideoCodec=h264&" +
-                "AudioCodec=aac&" +
-                "MaxStreamingBitrate=140000000&" +
-                "PlaySessionId=${java.util.UUID.randomUUID()}&" +
-                "api_key=${server.accessToken}"
+        return "${server.url}/Videos/$itemId/master.m3u8?" +
+            "VideoCodec=h264&" +
+            "AudioCodec=aac&" +
+            "MaxStreamingBitrate=140000000&" +
+            "PlaySessionId=${java.util.UUID.randomUUID()}&" +
+            "api_key=${server.accessToken}"
     }
-    
+
     /**
      * Gets DASH (Dynamic Adaptive Streaming over HTTP) URL
      */
     fun getDashStreamUrl(itemId: String): String? {
         val server = _currentServer.value ?: return null
-        return "${server.url}/Videos/${itemId}/stream.mpd?" +
-                "VideoCodec=h264&" +
-                "AudioCodec=aac&" +
-                "MaxStreamingBitrate=140000000&" +
-                "PlaySessionId=${java.util.UUID.randomUUID()}&" +
-                "api_key=${server.accessToken}"
+        return "${server.url}/Videos/$itemId/stream.mpd?" +
+            "VideoCodec=h264&" +
+            "AudioCodec=aac&" +
+            "MaxStreamingBitrate=140000000&" +
+            "PlaySessionId=${java.util.UUID.randomUUID()}&" +
+            "api_key=${server.accessToken}"
     }
 
     fun getCurrentServer(): JellyfinServer? = _currentServer.value
-    
+
     fun isUserAuthenticated(): Boolean = _currentServer.value?.accessToken != null
-    
+
     /**
      * Gets a download URL for a media item.
      * This URL can be used with DownloadManager for offline storage.
-     * 
+     *
      * @param itemId The ID of the item to download
      * @return The download URL, or null if not authenticated
      */
     fun getDownloadUrl(itemId: String): String? {
         val server = _currentServer.value ?: return null
-        return "${server.url}/Items/${itemId}/Download?api_key=${server.accessToken}"
+        return "${server.url}/Items/$itemId/Download?api_key=${server.accessToken}"
     }
-    
+
     /**
      * Gets a direct stream URL optimized for downloads.
      * This provides better file management than the regular stream URL.
-     * 
+     *
      * @param itemId The ID of the item to download
      * @param container The preferred container format (optional)
      * @return The direct stream URL, or null if not authenticated
@@ -1418,12 +1401,12 @@ private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<
     fun getDirectStreamUrl(itemId: String, container: String? = null): String? {
         val server = _currentServer.value ?: return null
         val containerParam = container?.let { "&Container=$it" } ?: ""
-        return "${server.url}/Videos/${itemId}/stream.${container ?: "mp4"}?static=true&api_key=${server.accessToken}$containerParam"
+        return "${server.url}/Videos/$itemId/stream.${container ?: "mp4"}?static=true&api_key=${server.accessToken}$containerParam"
     }
-    
+
     /**
      * Gets the best stream URL for an item considering offline availability.
-     * 
+     *
      * @param itemId The ID of the item
      * @param offlineManager The offline manager to check availability
      * @param container Preferred container format
@@ -1434,20 +1417,20 @@ private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<
         // For now, fall back to regular stream URL
         return getStreamUrl(itemId)
     }
-    
+
     /**
      * Determines if the repository should use offline mode for operations.
-     * 
+     *
      * @param offlineManager The offline manager to check connectivity
      * @return True if should operate in offline mode
      */
     fun shouldUseOfflineMode(offlineManager: OfflineManager): Boolean {
         return !offlineManager.isCurrentlyOnline()
     }
-    
+
     /**
      * Gets offline-compatible error messages when operations fail.
-     * 
+     *
      * @param offlineManager The offline manager for connectivity info
      * @param operation The operation that failed
      * @return User-friendly error message with offline context

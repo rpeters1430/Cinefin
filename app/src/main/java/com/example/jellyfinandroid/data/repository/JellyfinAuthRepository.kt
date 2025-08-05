@@ -1,25 +1,25 @@
 package com.example.jellyfinandroid.data.repository
 
-import com.example.jellyfinandroid.BuildConfig
 import android.util.Log
+import com.example.jellyfinandroid.BuildConfig
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.data.SecureCredentialManager
-import com.example.jellyfinandroid.di.JellyfinClientFactory
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asStateFlow
-import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.client.extensions.userApi
-import org.jellyfin.sdk.api.client.extensions.systemApi
-import org.jellyfin.sdk.api.client.extensions.quickConnectApi
-import org.jellyfin.sdk.model.api.AuthenticationResult
-import org.jellyfin.sdk.model.api.AuthenticateUserByName
-import org.jellyfin.sdk.model.api.QuickConnectDto
-import org.jellyfin.sdk.model.api.PublicSystemInfo
 import com.example.jellyfinandroid.data.model.QuickConnectResult
 import com.example.jellyfinandroid.data.model.QuickConnectState
+import com.example.jellyfinandroid.di.JellyfinClientFactory
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.extensions.quickConnectApi
+import org.jellyfin.sdk.api.client.extensions.systemApi
+import org.jellyfin.sdk.api.client.extensions.userApi
+import org.jellyfin.sdk.model.api.AuthenticateUserByName
+import org.jellyfin.sdk.model.api.AuthenticationResult
+import org.jellyfin.sdk.model.api.PublicSystemInfo
+import org.jellyfin.sdk.model.api.QuickConnectDto
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,27 +30,27 @@ import javax.inject.Singleton
 @Singleton
 class JellyfinAuthRepository @Inject constructor(
     private val clientFactory: JellyfinClientFactory,
-    private val secureCredentialManager: SecureCredentialManager
+    private val secureCredentialManager: SecureCredentialManager,
 ) {
     private val _currentServer = MutableStateFlow<JellyfinServer?>(null)
     val currentServer: Flow<JellyfinServer?> = _currentServer.asStateFlow()
-    
+
     private val _isConnected = MutableStateFlow(false)
     val isConnected: Flow<Boolean> = _isConnected.asStateFlow()
-    
+
     // Mutex to prevent race conditions in authentication
     private val authMutex = Mutex()
-    
+
     companion object {
         // Token validity constants
         private const val TOKEN_VALIDITY_DURATION_MINUTES = 50
         private const val TOKEN_VALIDITY_DURATION_MS = TOKEN_VALIDITY_DURATION_MINUTES * 60 * 1000L
     }
-    
+
     private fun getClient(serverUrl: String, accessToken: String? = null): ApiClient {
         return clientFactory.getClient(serverUrl, accessToken)
     }
-    
+
     /**
      * Test connection to a Jellyfin server
      */
@@ -63,20 +63,20 @@ class JellyfinAuthRepository @Inject constructor(
             ApiResult.Error("Failed to connect to server: ${e.message}", e, getErrorType(e))
         }
     }
-    
+
     /**
      * Authenticate user with username and password
      */
     suspend fun authenticateUser(
         serverUrl: String,
         username: String,
-        password: String
+        password: String,
     ): ApiResult<AuthenticationResult> = authMutex.withLock {
         return try {
             val client = getClient(serverUrl)
             val request = AuthenticateUserByName(
                 username = username,
-                pw = password
+                pw = password,
             )
             val response = client.userApi.authenticateUserByName(request)
             val authResult = response.content
@@ -100,19 +100,19 @@ class JellyfinAuthRepository @Inject constructor(
                 userId = authResult.user?.id.toString(),
                 username = authResult.user?.name,
                 accessToken = authResult.accessToken,
-                loginTimestamp = System.currentTimeMillis()
+                loginTimestamp = System.currentTimeMillis(),
             )
-            
+
             _currentServer.value = server
             _isConnected.value = true
-            
+
             ApiResult.Success(authResult)
         } catch (e: Exception) {
             val errorType = getErrorType(e)
             ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
         }
     }
-    
+
     /**
      * Start a new Quick Connect session
      */
@@ -125,15 +125,15 @@ class JellyfinAuthRepository @Inject constructor(
             ApiResult.Success(
                 QuickConnectResult(
                     code = result.code,
-                    secret = result.secret
-                )
+                    secret = result.secret,
+                ),
             )
         } catch (e: Exception) {
             val errorType = getErrorType(e)
             ApiResult.Error("Failed to initiate Quick Connect: ${e.message}", e, errorType)
         }
     }
-    
+
     /**
      * Get Quick Connect state
      */
@@ -155,13 +155,13 @@ class JellyfinAuthRepository @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Authenticate with Quick Connect
      */
     suspend fun authenticateWithQuickConnect(
         serverUrl: String,
-        secret: String
+        secret: String,
     ): ApiResult<AuthenticationResult> = authMutex.withLock {
         return try {
             val client = getClient(serverUrl)
@@ -190,7 +190,7 @@ class JellyfinAuthRepository @Inject constructor(
                 userId = authResult.user?.id?.toString(),
                 username = authResult.user?.name,
                 accessToken = authResult.accessToken,
-                loginTimestamp = System.currentTimeMillis()
+                loginTimestamp = System.currentTimeMillis(),
             )
 
             _currentServer.value = server
@@ -205,23 +205,21 @@ class JellyfinAuthRepository @Inject constructor(
             ApiResult.Error("Quick Connect authentication failed: ${e.message}", e, errorType)
         }
     }
-    
+
     /**
      * Re-authenticate using saved credentials
      */
     suspend fun reAuthenticate(): Boolean {
         val server = _currentServer.value ?: return false
-        
+
         if (BuildConfig.DEBUG) {
-        
             Log.d("JellyfinAuthRepository", "reAuthenticate: Starting re-authentication for user ${server.username} on ${server.url}")
-        
         }
-        
+
         try {
             // Clear any cached clients before re-authenticating
             clientFactory.invalidateClient()
-            
+
             // Get saved password for the current server and username
             val savedPassword = secureCredentialManager.getPassword(server.url, server.username ?: "")
             if (savedPassword == null) {
@@ -230,13 +228,11 @@ class JellyfinAuthRepository @Inject constructor(
                 logout()
                 return false
             }
-            
+
             if (BuildConfig.DEBUG) {
-            
                 Log.d("JellyfinAuthRepository", "reAuthenticate: Found saved credentials, attempting authentication")
-            
             }
-            
+
             // Re-authenticate using saved credentials
             when (val authResult = authenticateUser(server.url, server.username ?: "", savedPassword)) {
                 is ApiResult.Success -> {
@@ -246,7 +242,7 @@ class JellyfinAuthRepository @Inject constructor(
                     // Update the current server with the new token and login timestamp
                     val updatedServer = server.copy(
                         accessToken = authResult.data.accessToken,
-                        loginTimestamp = System.currentTimeMillis()
+                        loginTimestamp = System.currentTimeMillis(),
                     )
                     _currentServer.value = updatedServer
                     return true
@@ -271,7 +267,7 @@ class JellyfinAuthRepository @Inject constructor(
             return false
         }
     }
-    
+
     /**
      * Check if the current token is expired
      */
@@ -279,17 +275,17 @@ class JellyfinAuthRepository @Inject constructor(
         val server = _currentServer.value ?: return true
         val loginTimestamp = server.loginTimestamp ?: return true
         val currentTime = System.currentTimeMillis()
-        
+
         // Consider token expired after 50 minutes (10 minutes before actual expiry)
         val isExpired = (currentTime - loginTimestamp) > TOKEN_VALIDITY_DURATION_MS
-        
+
         if (isExpired) {
             Log.w("JellyfinAuthRepository", "Token expired. Login timestamp: $loginTimestamp, current: $currentTime, duration: ${currentTime - loginTimestamp}ms")
         }
-        
+
         return isExpired
     }
-    
+
     /**
      * Validate and refresh token if needed
      */
@@ -305,7 +301,7 @@ class JellyfinAuthRepository @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Logout current user
      */
@@ -318,17 +314,17 @@ class JellyfinAuthRepository @Inject constructor(
         _isConnected.value = false
         secureCredentialManager.clearCredentials()
     }
-    
+
     /**
      * Get current server
      */
     fun getCurrentServer(): JellyfinServer? = _currentServer.value
-    
+
     /**
      * Check if user is authenticated
      */
     fun isUserAuthenticated(): Boolean = _currentServer.value?.accessToken != null
-    
+
     /**
      * Update current server state
      */
@@ -336,7 +332,7 @@ class JellyfinAuthRepository @Inject constructor(
         _currentServer.value = server
         _isConnected.value = server.isConnected
     }
-    
+
     private fun getErrorType(e: Throwable): ErrorType {
         return when (e) {
             is java.util.concurrent.CancellationException, is kotlinx.coroutines.CancellationException -> ErrorType.OPERATION_CANCELLED
@@ -367,23 +363,23 @@ class JellyfinAuthRepository @Inject constructor(
             else -> ErrorType.UNKNOWN
         }
     }
-    
+
     private fun extractStatusCode(e: org.jellyfin.sdk.api.client.exception.InvalidStatusException): Int? {
         return try {
             val message = e.message ?: return null
-            
+
             // Pattern 1: "Invalid HTTP status in response: 401"
             val pattern1 = """Invalid HTTP status in response:\s*(\d{3})""".toRegex()
             pattern1.find(message)?.groupValues?.get(1)?.toIntOrNull()?.let { return it }
-            
+
             // Pattern 2: Any 3-digit number that looks like an HTTP status
             val pattern2 = """\b([4-5]\d{2})\b""".toRegex()
             pattern2.find(message)?.groupValues?.get(1)?.toIntOrNull()?.let { return it }
-            
+
             // Pattern 3: Generic 3-digit number extraction
             val pattern3 = """\b(\d{3})\b""".toRegex()
             val matches = pattern3.findAll(message).map { it.groupValues[1].toIntOrNull() }.filterNotNull()
-            
+
             // Return the first match that looks like an HTTP status code
             matches.firstOrNull { it in 400..599 }
         } catch (e: Exception) {

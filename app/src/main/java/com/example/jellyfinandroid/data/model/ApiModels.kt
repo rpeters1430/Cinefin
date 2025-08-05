@@ -8,9 +8,9 @@ package com.example.jellyfinandroid.data.model
 sealed class ApiResult<T> {
     data class Success<T>(val data: T) : ApiResult<T>()
     data class Error<T>(
-        val message: String, 
-        val cause: Throwable? = null, 
-        val errorType: ErrorType = ErrorType.UNKNOWN
+        val message: String,
+        val cause: Throwable? = null,
+        val errorType: ErrorType = ErrorType.UNKNOWN,
     ) : ApiResult<T>()
     data class Loading<T>(val message: String = "Loading...") : ApiResult<T>()
 }
@@ -21,7 +21,7 @@ enum class ErrorType {
     SERVER_ERROR,
     PARSING_ERROR,
     TIMEOUT,
-    UNKNOWN
+    UNKNOWN,
 }
 
 /**
@@ -33,7 +33,7 @@ sealed class JellyfinError {
     object ServerError : JellyfinError()
     object TimeoutError : JellyfinError()
     data class UnknownError(val message: String, val cause: Throwable? = null) : JellyfinError()
-    
+
     fun <T> toApiResult(): ApiResult.Error<T> = when (this) {
         is NetworkError -> ApiResult.Error("Network connection failed", null, ErrorType.NETWORK)
         is AuthenticationError -> ApiResult.Error("Authentication failed", null, ErrorType.AUTHENTICATION)
@@ -51,7 +51,7 @@ suspend fun <T> withRetry(
     initialDelay: Long = 1000,
     maxDelay: Long = 10000,
     factor: Double = 2.0,
-    operation: suspend () -> T
+    operation: suspend () -> T,
 ): T {
     var currentDelay = initialDelay
     repeat(times - 1) { attempt ->

@@ -1,12 +1,13 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.jellyfinandroid.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
@@ -39,7 +39,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -49,9 +48,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.ui.components.ShimmerBox
-import com.example.jellyfinandroid.ui.theme.SeriesBlue
 import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesViewModel
-import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesState
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @Composable
@@ -61,7 +58,7 @@ fun TVEpisodesScreen(
     getImageUrl: (BaseItemDto) -> String?,
     onEpisodeClick: (BaseItemDto) -> Unit = {},
     viewModel: SeasonEpisodesViewModel = hiltViewModel(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsState()
@@ -82,14 +79,14 @@ fun TVEpisodesScreen(
                 title = {
                     Text(
                         stringResource(id = R.string.episodes),
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge,
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(id = R.string.navigate_up)
+                            contentDescription = stringResource(id = R.string.navigate_up),
                         )
                     }
                 },
@@ -100,16 +97,16 @@ fun TVEpisodesScreen(
                                 .size(24.dp)
                                 .padding(8.dp),
                             color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 2.dp
+                            strokeWidth = 2.dp,
                         )
                     } else {
                         IconButton(
                             onClick = { viewModel.refresh() },
-                            enabled = !state.isLoading
+                            enabled = !state.isLoading,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = stringResource(id = R.string.refresh)
+                                contentDescription = stringResource(id = R.string.refresh),
                             )
                         }
                     }
@@ -118,20 +115,20 @@ fun TVEpisodesScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                     navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
+                ),
             )
         },
-        modifier = modifier
+        modifier = modifier,
     ) { innerPadding ->
         when {
             state.isLoading && state.episodes.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -140,27 +137,27 @@ fun TVEpisodesScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Text(
                             text = stringResource(id = R.string.error_loading_episodes),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            modifier = Modifier.padding(bottom = 8.dp),
                         )
                         Text(
                             text = state.errorMessage ?: stringResource(id = R.string.unknown_error),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(bottom = 16.dp)
+                            modifier = Modifier.padding(bottom = 16.dp),
                         )
                         Button(
                             onClick = { viewModel.loadEpisodes(seasonId) },
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
                         ) {
                             Text(stringResource(id = R.string.retry))
                         }
@@ -170,12 +167,12 @@ fun TVEpisodesScreen(
             state.episodes.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = stringResource(id = R.string.no_episodes_found),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -184,7 +181,7 @@ fun TVEpisodesScreen(
                     episodes = state.episodes,
                     getImageUrl = getImageUrl,
                     onEpisodeClick = onEpisodeClick,
-                    modifier = Modifier.padding(innerPadding)
+                    modifier = Modifier.padding(innerPadding),
                 )
             }
         }
@@ -196,18 +193,18 @@ private fun EpisodeList(
     episodes: List<BaseItemDto>,
     getImageUrl: (BaseItemDto) -> String?,
     onEpisodeClick: (BaseItemDto) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(episodes) { episode ->
             EpisodeRow(
                 episode = episode,
                 getImageUrl = getImageUrl,
-                onClick = onEpisodeClick
+                onClick = onEpisodeClick,
             )
         }
     }
@@ -218,7 +215,7 @@ private fun EpisodeRow(
     episode: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     onClick: (BaseItemDto) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier
@@ -226,12 +223,12 @@ private fun EpisodeRow(
             .clickable { onClick(episode) },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             SubcomposeAsyncImage(
                 model = getImageUrl(episode),
@@ -241,23 +238,23 @@ private fun EpisodeRow(
                         modifier = Modifier
                             .width(80.dp)
                             .height(120.dp),
-                        cornerRadius = 8
+                        cornerRadius = 8,
                     )
                 },
                 modifier = Modifier
                     .width(80.dp)
                     .height(120.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(8.dp)),
             )
 
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
                     text = episode.name ?: "Episode",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
 
                 episode.overview?.let { overview ->
@@ -267,7 +264,7 @@ private fun EpisodeRow(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }

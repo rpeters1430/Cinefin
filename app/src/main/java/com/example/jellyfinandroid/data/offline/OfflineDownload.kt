@@ -18,7 +18,7 @@ data class OfflineDownload(
     val thumbnailUrl: String? = null,
     val downloadStartTime: Long? = null,
     val downloadCompleteTime: Long? = null,
-    val lastModified: Long = System.currentTimeMillis()
+    val lastModified: Long = System.currentTimeMillis(),
 )
 
 @Serializable
@@ -27,7 +27,7 @@ data class VideoQuality(
     val label: String,
     val bitrate: Int,
     val width: Int,
-    val height: Int
+    val height: Int,
 )
 
 enum class DownloadStatus {
@@ -36,7 +36,7 @@ enum class DownloadStatus {
     PAUSED,
     COMPLETED,
     FAILED,
-    CANCELLED
+    CANCELLED,
 }
 
 data class DownloadProgress(
@@ -45,5 +45,5 @@ data class DownloadProgress(
     val totalBytes: Long,
     val progressPercent: Float,
     val downloadSpeedBps: Long,
-    val remainingTimeMs: Long?
+    val remainingTimeMs: Long?,
 )

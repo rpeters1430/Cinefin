@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
-    val showInNavigation: Boolean = true
+    val showInNavigation: Boolean = true,
 ) {
     CONNECT("Connect", Icons.Default.Home, false), // Hidden from navigation
     HOME("Home", Icons.Default.Home),
@@ -28,4 +28,4 @@ enum class AppDestinations(
     SEARCH("Search", Icons.Default.Search),
     FAVORITES("Favorites", Icons.Default.Favorite),
     PROFILE("Profile", Icons.Default.AccountBox),
-} 
+}

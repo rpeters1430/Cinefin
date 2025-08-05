@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -25,7 +26,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.foundation.layout.size
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.ui.ShimmerBox
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -40,7 +40,7 @@ fun LibraryItemCard(
     getImageUrl: (BaseItemDto) -> String?,
     onTVShowClick: ((String) -> Unit)? = null,
     isCompact: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier
@@ -56,8 +56,8 @@ fun LibraryItemCard(
             }
         },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
     ) {
         if (isCompact) {
             Column {
@@ -72,8 +72,8 @@ fun LibraryItemCard(
                                     .height(LibraryScreenDefaults.CompactCardImageHeight),
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(
                                     topStart = LibraryScreenDefaults.CardCornerRadius,
-                                    topEnd = LibraryScreenDefaults.CardCornerRadius
-                                )
+                                    topEnd = LibraryScreenDefaults.CardCornerRadius,
+                                ),
                             )
                         },
                         error = {
@@ -84,16 +84,16 @@ fun LibraryItemCard(
                                     .clip(
                                         androidx.compose.foundation.shape.RoundedCornerShape(
                                             topStart = LibraryScreenDefaults.CardCornerRadius,
-                                            topEnd = LibraryScreenDefaults.CardCornerRadius
-                                        )
+                                            topEnd = LibraryScreenDefaults.CardCornerRadius,
+                                        ),
                                     ),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     imageVector = libraryType.icon,
                                     contentDescription = null,
                                     modifier = Modifier.size(LibraryScreenDefaults.CardActionIconSize),
-                                    tint = libraryType.color.copy(alpha = LibraryScreenDefaults.IconAlpha)
+                                    tint = libraryType.color.copy(alpha = LibraryScreenDefaults.IconAlpha),
                                 )
                             }
                         },
@@ -104,9 +104,9 @@ fun LibraryItemCard(
                             .clip(
                                 androidx.compose.foundation.shape.RoundedCornerShape(
                                     topStart = LibraryScreenDefaults.CardCornerRadius,
-                                    topEnd = LibraryScreenDefaults.CardCornerRadius
-                                )
-                            )
+                                    topEnd = LibraryScreenDefaults.CardCornerRadius,
+                                ),
+                            ),
                     )
 
                     if (item.userData?.isFavorite == true) {
@@ -116,7 +116,7 @@ fun LibraryItemCard(
                             tint = Color.Yellow,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(LibraryScreenDefaults.FavoriteIconPadding)
+                                .padding(LibraryScreenDefaults.FavoriteIconPadding),
                         )
                     }
                 }
@@ -127,14 +127,14 @@ fun LibraryItemCard(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
 
                     item.productionYear?.let { year ->
                         Text(
                             text = year.toString(),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -142,7 +142,7 @@ fun LibraryItemCard(
         } else {
             Row(
                 modifier = Modifier.padding(LibraryScreenDefaults.ListCardPadding),
-                horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing)
+                horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
             ) {
                 Box {
                     SubcomposeAsyncImage(
@@ -153,7 +153,7 @@ fun LibraryItemCard(
                                 modifier = Modifier
                                     .width(LibraryScreenDefaults.ListCardImageWidth)
                                     .height(LibraryScreenDefaults.ListCardImageHeight),
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(LibraryScreenDefaults.ListCardImageRadius)
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(LibraryScreenDefaults.ListCardImageRadius),
                             )
                         },
                         error = {
@@ -162,13 +162,13 @@ fun LibraryItemCard(
                                     .width(LibraryScreenDefaults.ListCardImageWidth)
                                     .height(LibraryScreenDefaults.ListCardImageHeight)
                                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(LibraryScreenDefaults.ListCardImageRadius)),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     imageVector = libraryType.icon,
                                     contentDescription = null,
                                     modifier = Modifier.size(LibraryScreenDefaults.ListCardIconSize),
-                                    tint = libraryType.color.copy(alpha = LibraryScreenDefaults.IconAlpha)
+                                    tint = libraryType.color.copy(alpha = LibraryScreenDefaults.IconAlpha),
                                 )
                             }
                         },
@@ -176,7 +176,7 @@ fun LibraryItemCard(
                         modifier = Modifier
                             .width(LibraryScreenDefaults.ListCardImageWidth)
                             .height(LibraryScreenDefaults.ListCardImageHeight)
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(LibraryScreenDefaults.ListCardImageRadius))
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(LibraryScreenDefaults.ListCardImageRadius)),
                     )
 
                     if (item.userData?.isFavorite == true) {
@@ -186,28 +186,28 @@ fun LibraryItemCard(
                             tint = Color.Yellow,
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(LibraryScreenDefaults.ListItemFavoriteIconPadding)
+                                .padding(LibraryScreenDefaults.ListItemFavoriteIconPadding),
                         )
                     }
                 }
 
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ListItemFavoriteIconPadding)
+                    verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ListItemFavoriteIconPadding),
                 ) {
                     Text(
                         text = item.name ?: "Unknown",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
 
                     item.productionYear?.let { year ->
                         Text(
                             text = year.toString(),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 
@@ -217,7 +217,7 @@ fun LibraryItemCard(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 3,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
 
@@ -228,9 +228,9 @@ fun LibraryItemCard(
                             item.runTimeTicks?.let { runtime ->
                                 val minutes = (runtime / LibraryScreenDefaults.TicksToMinutesDivisor).toInt()
                                 Text(
-                                    text = "${minutes} min",
+                                    text = "$minutes min",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = libraryType.color
+                                    color = libraryType.color,
                                 )
                             }
                         }
@@ -240,7 +240,7 @@ fun LibraryItemCard(
                                     Text(
                                         text = "$count episodes",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = libraryType.color
+                                        color = libraryType.color,
                                     )
                                 }
                             }
@@ -250,7 +250,7 @@ fun LibraryItemCard(
                                 Text(
                                     text = artist,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = libraryType.color
+                                    color = libraryType.color,
                                 )
                             }
                         }
@@ -259,7 +259,7 @@ fun LibraryItemCard(
                                 Text(
                                     text = type.toString(),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = libraryType.color
+                                    color = libraryType.color,
                                 )
                             }
                         }
@@ -269,4 +269,3 @@ fun LibraryItemCard(
         }
     }
 }
-

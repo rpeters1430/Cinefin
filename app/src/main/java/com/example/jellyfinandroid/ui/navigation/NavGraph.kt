@@ -1,31 +1,27 @@
 package com.example.jellyfinandroid.ui.navigation
 
-import com.example.jellyfinandroid.BuildConfig
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -33,30 +29,28 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.jellyfinandroid.BuildConfig
 import com.example.jellyfinandroid.ui.screens.FavoritesScreen
 import com.example.jellyfinandroid.ui.screens.HomeScreen
 import com.example.jellyfinandroid.ui.screens.LibraryScreen
 import com.example.jellyfinandroid.ui.screens.MovieDetailScreen
-import com.example.jellyfinandroid.ui.screens.TVEpisodeDetailScreen
 import com.example.jellyfinandroid.ui.screens.MoviesScreen
 import com.example.jellyfinandroid.ui.screens.MusicScreen
 import com.example.jellyfinandroid.ui.screens.ProfileScreen
 import com.example.jellyfinandroid.ui.screens.QuickConnectScreen
-import com.example.jellyfinandroid.ui.screens.ServerConnectionScreen
 import com.example.jellyfinandroid.ui.screens.SearchScreen
+import com.example.jellyfinandroid.ui.screens.ServerConnectionScreen
+import com.example.jellyfinandroid.ui.screens.TVEpisodeDetailScreen
 import com.example.jellyfinandroid.ui.screens.TVEpisodesScreen
 import com.example.jellyfinandroid.ui.screens.TVSeasonScreen
 import com.example.jellyfinandroid.ui.screens.TVShowsScreen
-import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
-import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesViewModel
-import com.example.jellyfinandroid.ui.viewmodel.MovieDetailViewModel
-import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
+import com.example.jellyfinandroid.ui.utils.MediaDownloadManager
 import com.example.jellyfinandroid.ui.utils.MediaPlayerUtils
 import com.example.jellyfinandroid.ui.utils.ShareUtils
-import com.example.jellyfinandroid.ui.utils.MediaDownloadManager
-import android.util.Log
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
+import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
+import com.example.jellyfinandroid.ui.viewmodel.MovieDetailViewModel
+import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesViewModel
+import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
 
 @androidx.media3.common.util.UnstableApi
 @Composable
@@ -64,18 +58,18 @@ fun JellyfinNavGraph(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.ServerConnection.route,
     modifier: Modifier = Modifier,
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = modifier
+        modifier = modifier,
     ) {
         // Authentication flow
         composable(Screen.ServerConnection.route) {
             val viewModel: ServerConnectionViewModel = hiltViewModel()
             val connectionState by viewModel.connectionState.collectAsStateWithLifecycle()
-            
+
             ServerConnectionScreen(
                 onConnect = { serverUrl, username, password ->
                     viewModel.connectToServer(serverUrl, username, password)
@@ -90,17 +84,17 @@ fun JellyfinNavGraph(
                 rememberLogin = connectionState.rememberLogin,
                 hasSavedPassword = connectionState.hasSavedPassword,
                 onRememberLoginChange = { viewModel.setRememberLogin(it) },
-                onAutoLogin = { viewModel.autoLogin() }
+                onAutoLogin = { viewModel.autoLogin() },
             )
         }
-        
+
         composable(Screen.QuickConnect.route) {
             val viewModel: ServerConnectionViewModel = hiltViewModel()
             val connectionState by viewModel.connectionState.collectAsStateWithLifecycle()
-            
+
             QuickConnectScreen(
                 onConnect = { viewModel.initiateQuickConnect() },
-                onCancel = { 
+                onCancel = {
                     viewModel.cancelQuickConnect()
                     navController.popBackStack()
                 },
@@ -110,24 +104,24 @@ fun JellyfinNavGraph(
                 code = connectionState.quickConnectCode,
                 isPolling = connectionState.isQuickConnectPolling,
                 status = connectionState.quickConnectStatus,
-                onServerUrlChange = { url -> viewModel.updateQuickConnectServerUrl(url) }
+                onServerUrlChange = { url -> viewModel.updateQuickConnectServerUrl(url) },
             )
         }
-        
+
         // Main app flow
         composable(Screen.Home.route) {
             val viewModel: MainAppViewModel = hiltViewModel()
-                val lifecycleOwner = LocalLifecycleOwner.current
-                val appState by viewModel.appState.collectAsStateWithLifecycle()
-            
+            val lifecycleOwner = LocalLifecycleOwner.current
+            val appState by viewModel.appState.collectAsStateWithLifecycle()
+
             HomeScreen(
                 appState = appState,
                 currentServer = viewModel.currentServer.collectAsStateWithLifecycle(
                     lifecycle = lifecycleOwner.lifecycle,
-                    initialValue = null
+                    initialValue = null,
                 ).value,
                 onRefresh = { viewModel.loadInitialData() },
-                onSearch = { query -> 
+                onSearch = { query ->
                     viewModel.search(query)
                     navController.navigate(Screen.Search.route)
                 },
@@ -162,19 +156,18 @@ fun JellyfinNavGraph(
                         }
                     }
                 },
-                onSettingsClick = { navController.navigate(Screen.Profile.route) }
+                onSettingsClick = { navController.navigate(Screen.Profile.route) },
             )
-            }
+        }
 
-            composable(Screen.Library.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>()
-                val lifecycleOwner = LocalLifecycleOwner.current
+        composable(Screen.Library.route) {
+            val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
-                minActiveState = Lifecycle.State.STARTED
+                minActiveState = Lifecycle.State.STARTED,
             )
-            
-            
+
             LibraryScreen(
                 libraries = appState.libraries,
                 isLoading = appState.isLoading,
@@ -193,70 +186,68 @@ fun JellyfinNavGraph(
                         }
                     }
                 },
-                onSettingsClick = { navController.navigate(Screen.Profile.route) }
+                onSettingsClick = { navController.navigate(Screen.Profile.route) },
             )
-            }
+        }
 
-            composable(Screen.Movies.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>()
-                val lifecycleOwner = LocalLifecycleOwner.current
-            
-            
+        composable(Screen.Movies.route) {
+            val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
+
             MoviesScreen(
                 onBackClick = { navController.popBackStack() },
-                onMovieClick = { movie -> 
+                onMovieClick = { movie ->
                     movie.id?.let { movieId ->
                         navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
                     }
                 },
-                viewModel = viewModel
+                viewModel = viewModel,
             )
-            }
+        }
 
-            composable(Screen.TVShows.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>()
-                val lifecycleOwner = LocalLifecycleOwner.current
-            
-            
+        composable(Screen.TVShows.route) {
+            val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
+
             TVShowsScreen(
                 onTVShowClick = { seriesId ->
                     navController.navigate(Screen.TVSeasons.createRoute(seriesId))
                 },
                 onBackClick = { navController.popBackStack() },
-                viewModel = viewModel
+                viewModel = viewModel,
             )
-            }
+        }
 
-            composable(
+        composable(
             route = Screen.TVSeasons.route,
-            arguments = listOf(navArgument(Screen.SERIES_ID_ARG) { type = NavType.StringType })
+            arguments = listOf(navArgument(Screen.SERIES_ID_ARG) { type = NavType.StringType }),
         ) { backStackEntry ->
             val seriesId = backStackEntry.arguments?.getString(Screen.SERIES_ID_ARG)
             if (seriesId.isNullOrBlank()) {
                 Log.e("NavGraph", "TVSeasons navigation cancelled: seriesId is null or blank")
                 return@composable
             }
-                val viewModel = hiltViewModel<MainAppViewModel>()
-                val lifecycleOwner = LocalLifecycleOwner.current
-            
+            val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
+
             LaunchedEffect(seriesId) {
                 // Load series data when screen is first shown
                 viewModel.loadTVShowDetails(seriesId)
             }
-            
+
             TVSeasonScreen(
                 seriesId = seriesId,
                 onBackClick = { navController.popBackStack() },
                 getImageUrl = { item -> viewModel.getImageUrl(item) },
                 onSeasonClick = { seasonId ->
                     navController.navigate(Screen.TVEpisodes.createRoute(seasonId))
-                }
+                },
             )
-            }
+        }
 
-            composable(
+        composable(
             route = Screen.TVEpisodes.route,
-            arguments = listOf(navArgument(Screen.SEASON_ID_ARG) { type = NavType.StringType })
+            arguments = listOf(navArgument(Screen.SEASON_ID_ARG) { type = NavType.StringType }),
         ) { backStackEntry ->
             val seasonId = backStackEntry.arguments?.getString(Screen.SEASON_ID_ARG)
             if (seasonId.isNullOrBlank()) {
@@ -264,14 +255,14 @@ fun JellyfinNavGraph(
                 return@composable
             }
             val viewModel = hiltViewModel<SeasonEpisodesViewModel>()
-                val mainViewModel = hiltViewModel<MainAppViewModel>()
-                val lifecycleOwner = LocalLifecycleOwner.current
-            
+            val mainViewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
+
             LaunchedEffect(seasonId) {
                 // Load episodes when screen is first shown
                 viewModel.loadEpisodes(seasonId)
             }
-            
+
             TVEpisodesScreen(
                 seasonId = seasonId,
                 onBackClick = { navController.popBackStack() },
@@ -280,77 +271,77 @@ fun JellyfinNavGraph(
                     episode.id?.let { episodeId ->
                         // Add episode to main app state for detail screen access
                         mainViewModel.addOrUpdateItem(episode)
-                        
+
                         // Navigate to episode detail screen
                         navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
                     }
                 },
-                viewModel = viewModel
+                viewModel = viewModel,
             )
-            }
+        }
 
-            composable(Screen.Music.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>()
-                val lifecycleOwner = LocalLifecycleOwner.current
-            
+        composable(Screen.Music.route) {
+            val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
+
             LaunchedEffect(Unit) {
                 // Load music data when screen is first shown
                 viewModel.loadMusic()
             }
-            
+
             MusicScreen(
                 onBackClick = { navController.popBackStack() },
-                viewModel = viewModel
+                viewModel = viewModel,
             )
-            }
+        }
 
-            composable(Screen.Search.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>()
-                val lifecycleOwner = LocalLifecycleOwner.current
+        composable(Screen.Search.route) {
+            val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
-                minActiveState = Lifecycle.State.STARTED
+                minActiveState = Lifecycle.State.STARTED,
             )
-            
+
             SearchScreen(
                 appState = appState,
                 onSearch = { query -> viewModel.search(query) },
                 onClearSearch = { viewModel.clearSearch() },
                 getImageUrl = { item -> viewModel.getImageUrl(item) },
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
             )
-            }
+        }
 
-            composable(Screen.Favorites.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>()
-                val lifecycleOwner = LocalLifecycleOwner.current
+        composable(Screen.Favorites.route) {
+            val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
-                minActiveState = Lifecycle.State.STARTED
+                minActiveState = Lifecycle.State.STARTED,
             )
-            
+
             LaunchedEffect(Unit) {
                 viewModel.loadFavorites()
             }
-            
+
             FavoritesScreen(
                 favorites = appState.favorites,
                 isLoading = appState.isLoading,
                 errorMessage = appState.errorMessage,
                 onRefresh = { viewModel.loadFavorites() },
                 getImageUrl = { item -> viewModel.getImageUrl(item) },
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
             )
-            }
+        }
 
-            composable(Screen.Profile.route) {
-                val viewModel = hiltViewModel<MainAppViewModel>()
-                val lifecycleOwner = LocalLifecycleOwner.current
+        composable(Screen.Profile.route) {
+            val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
             val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
-                initialValue = null
+                initialValue = null,
             )
-            
+
             ProfileScreen(
                 currentServer = currentServer,
                 onLogout = {
@@ -360,28 +351,28 @@ fun JellyfinNavGraph(
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
             )
         }
-            
-            composable(
+
+        composable(
             route = Screen.MovieDetail.route,
-            arguments = listOf(navArgument(Screen.MOVIE_ID_ARG) { type = NavType.StringType })
+            arguments = listOf(navArgument(Screen.MOVIE_ID_ARG) { type = NavType.StringType }),
         ) { backStackEntry ->
             val movieId = backStackEntry.arguments?.getString(Screen.MOVIE_ID_ARG)
             if (movieId.isNullOrBlank()) {
                 Log.e("NavGraph", "MovieDetail navigation cancelled: movieId is null or blank")
                 return@composable
             }
-                val mainViewModel = hiltViewModel<MainAppViewModel>()
+            val mainViewModel = hiltViewModel<MainAppViewModel>()
             val detailViewModel = hiltViewModel<MovieDetailViewModel>()
 
             val lifecycleOwner = LocalLifecycleOwner.current
             val appState by mainViewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
-                minActiveState = Lifecycle.State.STARTED
+                minActiveState = Lifecycle.State.STARTED,
             )
-            
+
             // Find the movie from the loaded items
             val movie = appState.allItems.find { it.id?.toString() == movieId }
 
@@ -395,8 +386,8 @@ fun JellyfinNavGraph(
                 // Get related items (movies from same genre or similar)
                 val relatedItems = appState.allItems.filter { item ->
                     item.id?.toString() != movieId &&
-                    item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
-                    movie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
+                        item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
+                        movie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
                 }.take(10)
 
                 MovieDetailScreen(
@@ -421,7 +412,7 @@ fun JellyfinNavGraph(
                     onShareClick = { movieItem ->
                         ShareUtils.shareMedia(context = navController.context, item = movieItem)
                     },
-                    relatedItems = relatedItems
+                    relatedItems = relatedItems,
                 )
             } else if (appState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -432,24 +423,24 @@ fun JellyfinNavGraph(
                     Text(appState.errorMessage ?: "Movie not found")
                 }
             }
-            }
+        }
 
-            composable(
+        composable(
             route = Screen.TVEpisodeDetail.route,
-            arguments = listOf(navArgument(Screen.EPISODE_ID_ARG) { type = NavType.StringType })
+            arguments = listOf(navArgument(Screen.EPISODE_ID_ARG) { type = NavType.StringType }),
         ) { backStackEntry ->
             val episodeId = backStackEntry.arguments?.getString(Screen.EPISODE_ID_ARG)
             if (episodeId.isNullOrBlank()) {
                 Log.e("NavGraph", "TVEpisodeDetail navigation cancelled: episodeId is null or blank")
                 return@composable
             }
-                val viewModel = hiltViewModel<MainAppViewModel>()
+            val viewModel = hiltViewModel<MainAppViewModel>()
             val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
-                minActiveState = Lifecycle.State.STARTED
+                minActiveState = Lifecycle.State.STARTED,
             )
-            
+
             // Find the episode from the loaded items
             // Try multiple approaches to find the episode
             val episode = appState.allItems.find { item ->
@@ -457,22 +448,22 @@ fun JellyfinNavGraph(
                 itemIdString == episodeId || itemIdString?.equals(episodeId, ignoreCase = true) == true
             } ?: appState.allItems.find { item ->
                 // Fallback: check if this is an episode with matching UUID
-                item.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE && 
-                item.id?.toString()?.equals(episodeId, ignoreCase = true) == true
+                item.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE &&
+                    item.id?.toString()?.equals(episodeId, ignoreCase = true) == true
             }
-            
+
             when {
                 episode != null -> {
                     // Episode found, show detail screen
                     if (BuildConfig.DEBUG) {
                         Log.d("NavGraph", "TVEpisodeDetail: Found episode ${episode.name} (${episode.id}) in app state")
                     }
-                    
+
                     // Find the series information if available
                     val seriesInfo = episode.seriesId?.let { seriesId ->
                         appState.allItems.find { it.id?.toString() == seriesId.toString() }
                     }
-                    
+
                     TVEpisodeDetailScreen(
                         episode = episode,
                         seriesInfo = seriesInfo,
@@ -498,14 +489,14 @@ fun JellyfinNavGraph(
                             try {
                                 val context = navController.context
                                 val downloadUrl = viewModel.getDownloadUrl(episodeItem)
-                                
+
                                 if (downloadUrl != null) {
                                     val downloadId = MediaDownloadManager.downloadMedia(
                                         context = context,
                                         item = episodeItem,
-                                        streamUrl = downloadUrl
+                                        streamUrl = downloadUrl,
                                     )
-                                    
+
                                     if (downloadId != null) {
                                         if (BuildConfig.DEBUG) {
                                             Log.d("NavGraph", "Started download for episode: ${episodeItem.name} (ID: $downloadId)")
@@ -531,7 +522,7 @@ fun JellyfinNavGraph(
                                 android.widget.Toast.makeText(
                                     context,
                                     message,
-                                    android.widget.Toast.LENGTH_SHORT
+                                    android.widget.Toast.LENGTH_SHORT,
                                 ).show()
                             }
                         },
@@ -543,7 +534,7 @@ fun JellyfinNavGraph(
                         },
                         onFavoriteClick = { episodeItem ->
                             viewModel.toggleFavorite(episodeItem)
-                        }
+                        },
                     )
                 }
                 appState.isLoading -> {
@@ -561,25 +552,25 @@ fun JellyfinNavGraph(
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            verticalArrangement = Arrangement.Center,
                         ) {
                             Text(
                                 text = "Failed to load episode",
                                 style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.error
+                                color = MaterialTheme.colorScheme.error,
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = appState.errorMessage ?: "Unknown error",
                                 style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
-                                onClick = { 
+                                onClick = {
                                     viewModel.clearError()
-                                    navController.popBackStack() 
-                                }
+                                    navController.popBackStack()
+                                },
                             ) {
                                 Text("Go Back")
                             }
@@ -589,7 +580,7 @@ fun JellyfinNavGraph(
                 else -> {
                     // Episode not found and not loading - try to load it
                     Log.w("NavGraph", "TVEpisodeDetail: Episode $episodeId not found in app state with ${appState.allItems.size} items, attempting to load")
-                    
+
                     // Debug: Log available episode IDs for troubleshooting
                     val episodeIds = appState.allItems
                         .filter { it.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE }
@@ -598,18 +589,18 @@ fun JellyfinNavGraph(
                     if (BuildConfig.DEBUG) {
                         Log.d("NavGraph", "TVEpisodeDetail: Available episodes: $episodeIds")
                     }
-                    
+
                     // Load the episode details if we haven't already
                     LaunchedEffect(episodeId) {
                         viewModel.loadEpisodeDetails(episodeId)
                     }
-                    
+
                     // Show loading while we fetch the episode
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
                 }
             }
-            }
+        }
     }
 }

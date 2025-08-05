@@ -1,11 +1,7 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.jellyfinandroid.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -62,7 +58,6 @@ import com.example.jellyfinandroid.ui.theme.SeriesBlue
 import com.example.jellyfinandroid.ui.viewmodel.TVSeasonState
 import com.example.jellyfinandroid.ui.viewmodel.TVSeasonViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.BaseItemKind
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,17 +66,17 @@ fun TVSeasonScreen(
     onBackClick: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
     onSeasonClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val viewModel: TVSeasonViewModel = hiltViewModel()
     val state by viewModel.state.collectAsState()
-    
+
     LaunchedEffect(seriesId) {
         viewModel.loadSeriesData(seriesId)
     }
-    
+
     val context = LocalContext.current
-    
+
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let { error ->
             // For now, we'll just log the error
@@ -89,7 +84,7 @@ fun TVSeasonScreen(
             println("TVSeasonScreen error: $error")
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -98,14 +93,14 @@ fun TVSeasonScreen(
                         text = state.seriesDetails?.name ?: stringResource(id = R.string.tv_show),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge,
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(id = R.string.navigate_up)
+                            contentDescription = stringResource(id = R.string.navigate_up),
                         )
                     }
                 },
@@ -116,16 +111,16 @@ fun TVSeasonScreen(
                                 .size(24.dp)
                                 .padding(8.dp),
                             color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 2.dp
+                            strokeWidth = 2.dp,
                         )
                     } else {
                         IconButton(
                             onClick = { viewModel.refresh() },
-                            enabled = !state.isLoading
+                            enabled = !state.isLoading,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = stringResource(id = R.string.refresh)
+                                contentDescription = stringResource(id = R.string.refresh),
                             )
                         }
                     }
@@ -134,20 +129,20 @@ fun TVSeasonScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                     navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
+                ),
             )
         },
-        modifier = modifier
+        modifier = modifier,
     ) { innerPadding ->
         when {
             state.isLoading && state.seriesDetails == null -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -156,27 +151,27 @@ fun TVSeasonScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Text(
                             text = stringResource(id = R.string.error_loading_data),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            modifier = Modifier.padding(bottom = 8.dp),
                         )
                         Text(
                             text = state.errorMessage ?: stringResource(id = R.string.unknown_error),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(bottom = 16.dp)
+                            modifier = Modifier.padding(bottom = 16.dp),
                         )
                         Button(
                             onClick = { viewModel.refresh() },
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
                         ) {
                             Text(stringResource(id = R.string.retry))
                         }
@@ -186,12 +181,12 @@ fun TVSeasonScreen(
             state.seriesDetails == null -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = stringResource(id = R.string.no_data_available),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -200,7 +195,7 @@ fun TVSeasonScreen(
                     state = state,
                     getImageUrl = getImageUrl,
                     onSeasonClick = onSeasonClick,
-                    modifier = Modifier.padding(innerPadding)
+                    modifier = Modifier.padding(innerPadding),
                 )
             }
         }
@@ -212,38 +207,38 @@ private fun TVSeasonContent(
     state: TVSeasonState,
     getImageUrl: (BaseItemDto) -> String?,
     onSeasonClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         // Series Details Header
         state.seriesDetails?.let { series ->
             item {
                 SeriesDetailsHeader(
                     series = series,
-                    getImageUrl = getImageUrl
+                    getImageUrl = getImageUrl,
                 )
             }
         }
-        
+
         // Seasons Section
         if (state.seasons.isNotEmpty()) {
             item {
                 Text(
                     text = "Seasons",
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
-            
+
             items(state.seasons) { season ->
                 SeasonCard(
                     season = season,
                     getImageUrl = getImageUrl,
-                    onClick = { onSeasonClick(it) }
+                    onClick = { onSeasonClick(it) },
                 )
             }
         } else {
@@ -252,12 +247,12 @@ private fun TVSeasonContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = "No seasons available",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -269,15 +264,15 @@ private fun TVSeasonContent(
 private fun SeriesDetailsHeader(
     series: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
     ) {
         Box {
             // Background Image
@@ -289,7 +284,7 @@ private fun SeriesDetailsHeader(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(200.dp),
-                        cornerRadius = 16
+                        cornerRadius = 16,
                     )
                 },
                 error = {
@@ -298,12 +293,12 @@ private fun SeriesDetailsHeader(
                             .fillMaxWidth()
                             .height(200.dp)
                             .background(SeriesBlue.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = series.name ?: "Unknown Series",
                             style = MaterialTheme.typography.headlineMedium,
-                            color = SeriesBlue
+                            color = SeriesBlue,
                         )
                     }
                 },
@@ -311,9 +306,9 @@ private fun SeriesDetailsHeader(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(16.dp)),
             )
-            
+
             // Gradient Overlay
             Box(
                 modifier = Modifier
@@ -322,70 +317,70 @@ private fun SeriesDetailsHeader(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.7f)
+                                Color.Black.copy(alpha = 0.7f),
                             ),
                             startY = 0f,
-                            endY = Float.POSITIVE_INFINITY
-                        )
-                    )
+                            endY = Float.POSITIVE_INFINITY,
+                        ),
+                    ),
             )
-            
+
             // Content
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                verticalArrangement = Arrangement.Bottom
+                verticalArrangement = Arrangement.Bottom,
             ) {
                 Text(
                     text = series.name ?: "Unknown Series",
                     style = MaterialTheme.typography.headlineMedium,
                     color = Color.White,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     series.productionYear?.let { year ->
                         Text(
                             text = year.toString(),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White.copy(alpha = 0.9f)
+                            color = Color.White.copy(alpha = 0.9f),
                         )
                     }
-                    
+
                     series.communityRating?.let { rating ->
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = null,
                                 tint = Color.Yellow,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(16.dp),
                             )
                             Text(
                                 text = String.format(java.util.Locale.ROOT, "%.1f", rating),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.9f)
+                                color = Color.White.copy(alpha = 0.9f),
                             )
                         }
                     }
-                    
+
                     series.childCount?.let { count ->
                         Text(
                             text = "$count episodes",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.9f)
+                            color = Color.White.copy(alpha = 0.9f),
                         )
                     }
                 }
-                
+
                 series.overview?.let { overview ->
                     if (overview.isNotBlank()) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -394,7 +389,7 @@ private fun SeriesDetailsHeader(
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White.copy(alpha = 0.8f),
                             maxLines = 3,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -408,12 +403,12 @@ private fun SeasonCard(
     season: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     onClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { 
+            .clickable {
                 season.id?.let { seasonId ->
                     onClick(seasonId.toString())
                 }
@@ -421,12 +416,12 @@ private fun SeasonCard(
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // Season Poster
             SubcomposeAsyncImage(
@@ -437,7 +432,7 @@ private fun SeasonCard(
                         modifier = Modifier
                             .width(80.dp)
                             .height(120.dp),
-                        cornerRadius = 8
+                        cornerRadius = 8,
                     )
                 },
                 error = {
@@ -446,12 +441,12 @@ private fun SeasonCard(
                             .width(80.dp)
                             .height(120.dp)
                             .background(SeriesBlue.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = season.name ?: "Season",
                             style = MaterialTheme.typography.bodySmall,
-                            color = SeriesBlue
+                            color = SeriesBlue,
                         )
                     }
                 },
@@ -459,36 +454,36 @@ private fun SeasonCard(
                 modifier = Modifier
                     .width(80.dp)
                     .height(120.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(8.dp)),
             )
-            
+
             // Season Details
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
                     text = season.name ?: "Unknown Season",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
-                
+
                 season.productionYear?.let { year ->
                     Text(
                         text = year.toString(),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                
+
                 season.childCount?.let { count ->
                     Text(
                         text = "$count episodes",
                         style = MaterialTheme.typography.bodySmall,
-                        color = SeriesBlue
+                        color = SeriesBlue,
                     )
                 }
-                
+
                 season.overview?.let { overview ->
                     if (overview.isNotBlank()) {
                         Text(
@@ -496,7 +491,7 @@ private fun SeasonCard(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -509,37 +504,37 @@ private fun SeasonCard(
 fun ErrorContent(
     message: String,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = "Error",
             style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.error
+            color = MaterialTheme.colorScheme.error,
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         androidx.compose.material3.Button(
             onClick = onRetry,
             colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                containerColor = SeriesBlue
-            )
+                containerColor = SeriesBlue,
+            ),
         ) {
             Text("Retry")
         }
     }
-} 
+}

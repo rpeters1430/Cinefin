@@ -6,12 +6,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -23,26 +20,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.VolumeOff
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -52,23 +43,19 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 @Composable
 fun ExpressiveVideoControls(
@@ -82,13 +69,13 @@ fun ExpressiveVideoControls(
     onBackClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
     isVisible: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = isVisible,
         enter = fadeIn(animationSpec = tween(300)),
         exit = fadeOut(animationSpec = tween(300)),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Box {
             // Background gradient overlay
@@ -101,14 +88,14 @@ fun ExpressiveVideoControls(
                                 Color.Black.copy(alpha = 0.7f),
                                 Color.Transparent,
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.8f)
+                                Color.Black.copy(alpha = 0.8f),
                             ),
                             startY = 0f,
-                            endY = Float.POSITIVE_INFINITY
-                        )
-                    )
+                            endY = Float.POSITIVE_INFINITY,
+                        ),
+                    ),
             )
-            
+
             Column {
                 // Top Controls Bar
                 ExpressiveTopControls(
@@ -117,26 +104,26 @@ fun ExpressiveVideoControls(
                     onQualityClick = onQualityClick,
                     onCastClick = onCastClick,
                     onPictureInPictureClick = onPictureInPictureClick,
-                    onFullscreenToggle = onFullscreenToggle
+                    onFullscreenToggle = onFullscreenToggle,
                 )
-                
+
                 Spacer(modifier = Modifier.weight(1f))
-                
+
                 // Center Play Controls
                 ExpressiveCenterControls(
                     isPlaying = playerState.isPlaying,
                     isLoading = playerState.isLoading,
                     onPlayPause = onPlayPause,
                     onSeekBackward = { onSeekBy(-10000) },
-                    onSeekForward = { onSeekBy(10000) }
+                    onSeekForward = { onSeekBy(10000) },
                 )
-                
+
                 Spacer(modifier = Modifier.weight(1f))
-                
+
                 // Bottom Progress and Controls
                 ExpressiveBottomControls(
                     playerState = playerState,
-                    onSeek = onSeek
+                    onSeek = onSeek,
                 )
             }
         }
@@ -151,86 +138,86 @@ private fun ExpressiveTopControls(
     onCastClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = true,
         enter = slideInVertically(initialOffsetY = { -it }),
         exit = slideOutVertically(targetOffsetY = { -it }),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Surface(
             color = Color.Transparent,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Left side - Back button and title
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     ExpressiveIconButton(
                         icon = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        onClick = onBackClick
+                        onClick = onBackClick,
                     )
-                    
+
                     Column {
                         Text(
                             text = playerState.itemName,
                             color = Color.White,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
                         )
                         if (playerState.selectedQuality != null) {
                             Text(
                                 text = playerState.selectedQuality.label,
                                 color = Color.White.copy(alpha = 0.7f),
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall,
                             )
                         }
                     }
                 }
-                
+
                 // Right side - Action buttons
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     ExpressiveIconButton(
                         icon = Icons.Default.Settings,
                         contentDescription = "Quality",
-                        onClick = onQualityClick
+                        onClick = onQualityClick,
                     )
-                    
+
                     AnimatedContent(
                         targetState = playerState.isCasting,
-                        label = "cast_button"
+                        label = "cast_button",
                     ) { isCasting ->
                         ExpressiveIconButton(
                             icon = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
                             contentDescription = "Cast",
                             onClick = onCastClick,
-                            isActive = isCasting
+                            isActive = isCasting,
                         )
                     }
-                    
+
                     ExpressiveIconButton(
                         icon = Icons.Default.PictureInPicture,
                         contentDescription = "Picture in Picture",
-                        onClick = onPictureInPictureClick
+                        onClick = onPictureInPictureClick,
                     )
-                    
+
                     ExpressiveIconButton(
                         icon = Icons.Default.Fullscreen,
                         contentDescription = "Fullscreen",
-                        onClick = onFullscreenToggle
+                        onClick = onFullscreenToggle,
                     )
                 }
             }
@@ -245,38 +232,38 @@ private fun ExpressiveCenterControls(
     onPlayPause: () -> Unit,
     onSeekBackward: () -> Unit,
     onSeekForward: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(32.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         // Seek backward button
         ExpressiveSeekButton(
             icon = Icons.Default.Replay10,
             contentDescription = "Seek backward 10s",
-            onClick = onSeekBackward
+            onClick = onSeekBackward,
         )
-        
+
         // Main play/pause button
         AnimatedContent(
             targetState = isPlaying,
-            label = "play_pause_button"
+            label = "play_pause_button",
         ) { playing ->
             ExpressiveMainButton(
                 icon = if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
                 contentDescription = if (playing) "Pause" else "Play",
                 onClick = onPlayPause,
-                isLoading = isLoading
+                isLoading = isLoading,
             )
         }
-        
-        // Seek forward button  
+
+        // Seek forward button
         ExpressiveSeekButton(
             icon = Icons.Default.Forward10,
             contentDescription = "Seek forward 10s",
-            onClick = onSeekForward
+            onClick = onSeekForward,
         )
     }
 }
@@ -285,22 +272,22 @@ private fun ExpressiveCenterControls(
 private fun ExpressiveBottomControls(
     playerState: VideoPlayerState,
     onSeek: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = true,
         enter = slideInVertically(initialOffsetY = { it }),
         exit = slideOutVertically(targetOffsetY = { it }),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Surface(
             color = Color.Transparent,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
                 // Progress bar with buffer indicator
                 if (playerState.duration > 0) {
@@ -310,18 +297,22 @@ private fun ExpressiveBottomControls(
                             progress = {
                                 if (playerState.duration > 0) {
                                     playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()
-                                } else 0f
+                                } else {
+                                    0f
+                                }
                             },
                             modifier = Modifier.fillMaxWidth(),
                             color = Color.White.copy(alpha = 0.3f),
-                            trackColor = Color.White.copy(alpha = 0.1f)
+                            trackColor = Color.White.copy(alpha = 0.1f),
                         )
-                        
+
                         // Main progress slider
                         Slider(
                             value = if (playerState.duration > 0) {
                                 playerState.currentPosition.toFloat() / playerState.duration.toFloat()
-                            } else 0f,
+                            } else {
+                                0f
+                            },
                             onValueChange = { progress ->
                                 val newPosition = (progress * playerState.duration).toLong()
                                 onSeek(newPosition)
@@ -330,30 +321,30 @@ private fun ExpressiveBottomControls(
                             colors = SliderDefaults.colors(
                                 thumbColor = MaterialTheme.colorScheme.primary,
                                 activeTrackColor = MaterialTheme.colorScheme.primary,
-                                inactiveTrackColor = Color.Transparent
-                            )
+                                inactiveTrackColor = Color.Transparent,
+                            ),
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     // Time indicators
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(
                             text = formatTime(playerState.currentPosition),
                             color = Color.White,
                             style = MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = FontWeight.Medium
-                            )
+                                fontWeight = FontWeight.Medium,
+                            ),
                         )
-                        
+
                         Text(
                             text = formatTime(playerState.duration),
                             color = Color.White.copy(alpha = 0.7f),
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
                         )
                     }
                 }
@@ -368,14 +359,14 @@ private fun ExpressiveIconButton(
     contentDescription: String?,
     onClick: () -> Unit,
     isActive: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isActive) 1.1f else 1f,
         animationSpec = tween(200),
-        label = "icon_scale"
+        label = "icon_scale",
     )
-    
+
     Surface(
         modifier = modifier
             .scale(scale)
@@ -383,20 +374,20 @@ private fun ExpressiveIconButton(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClick = onClick
+                onClick = onClick,
             ),
         color = if (isActive) {
             MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
         } else {
             Color.White.copy(alpha = 0.1f)
         },
-        shape = CircleShape
+        shape = CircleShape,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = if (isActive) MaterialTheme.colorScheme.primary else Color.White,
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(12.dp),
         )
     }
 }
@@ -407,14 +398,14 @@ private fun ExpressiveMainButton(
     contentDescription: String?,
     onClick: () -> Unit,
     isLoading: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isLoading) 0.9f else 1f,
         animationSpec = tween(200),
-        label = "main_button_scale"
+        label = "main_button_scale",
     )
-    
+
     FilledIconButton(
         onClick = onClick,
         modifier = modifier
@@ -422,24 +413,24 @@ private fun ExpressiveMainButton(
             .scale(scale),
         colors = IconButtonDefaults.filledIconButtonColors(
             containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        )
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        ),
     ) {
         AnimatedContent(
             targetState = isLoading,
-            label = "main_button_content"
+            label = "main_button_content",
         ) { loading ->
             if (loading) {
                 androidx.compose.material3.CircularProgressIndicator(
                     modifier = Modifier.size(32.dp),
                     color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 3.dp
+                    strokeWidth = 3.dp,
                 )
             } else {
                 Icon(
                     imageVector = icon,
                     contentDescription = contentDescription,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(40.dp),
                 )
             }
         }
@@ -451,16 +442,16 @@ private fun ExpressiveSeekButton(
     icon: ImageVector,
     contentDescription: String?,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var isPressed by remember { mutableStateOf(false) }
-    
+
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 1.2f else 1f,
         animationSpec = tween(150),
-        label = "seek_button_scale"
+        label = "seek_button_scale",
     )
-    
+
     Surface(
         modifier = modifier
             .scale(scale)
@@ -471,16 +462,16 @@ private fun ExpressiveSeekButton(
                 onClick = {
                     isPressed = true
                     onClick()
-                }
+                },
             ),
         color = Color.White.copy(alpha = 0.15f),
-        shape = CircleShape
+        shape = CircleShape,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = Color.White,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         )
     }
 }
@@ -490,7 +481,7 @@ private fun formatTime(timeMs: Long): String {
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     val seconds = totalSeconds % 60
-    
+
     return if (hours > 0) {
         String.format(java.util.Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
     } else {
