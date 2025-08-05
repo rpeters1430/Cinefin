@@ -86,19 +86,6 @@ object RetryManager {
                     Log.d(TAG, "$operationName: Operation was cancelled on attempt $attempt")
                 }
                 throw e // Always rethrow cancellation exceptions
-            } catch (e: Exception) {
-                Log.e(TAG, "$operationName: Unexpected exception on attempt $attempt", e)
-
-                if (attempt == maxAttempts) {
-                    return ApiResult.Error(
-                        "Failed after $maxAttempts attempts: ${e.message}",
-                        e,
-                        ErrorType.UNKNOWN,
-                    )
-                }
-
-                val delay = ErrorHandler.getRetryDelay(ErrorType.UNKNOWN, attempt)
-                delay(delay)
             }
         }
 

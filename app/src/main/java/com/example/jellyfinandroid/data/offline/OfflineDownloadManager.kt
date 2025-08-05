@@ -169,9 +169,6 @@ class OfflineDownloadManager @Inject constructor(
                 if (BuildConfig.DEBUG) {
                     Log.d("OfflineDownloadManager", "Download cancelled: ${download.id}")
                 }
-            } catch (e: Exception) {
-                Log.e("OfflineDownloadManager", "Download failed: ${download.id}", e)
-                updateDownloadStatus(download.id, DownloadStatus.FAILED)
             }
         }
 
