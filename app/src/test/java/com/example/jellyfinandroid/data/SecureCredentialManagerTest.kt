@@ -14,11 +14,10 @@ import org.junit.Test
  */
 class SecureCredentialManagerTest {
 
-    private lateinit var mockContext: Context
+    private val mockContext: Context = mockk()
 
     @Before
     fun setup() {
-        mockContext = mockk()
     }
 
     @Test
