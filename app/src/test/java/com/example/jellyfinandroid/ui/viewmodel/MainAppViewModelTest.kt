@@ -20,7 +20,7 @@ import org.junit.Test
 
 /**
  * Basic test suite for MainAppViewModel.
- * 
+ *
  * Tests core functionality and security patterns.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -34,7 +34,7 @@ class MainAppViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        
+
         mockRepository = mockk(relaxed = true)
         mockCredentialManager = mockk(relaxed = true)
 
@@ -43,7 +43,7 @@ class MainAppViewModelTest {
         coEvery { mockRepository.getRecentlyAdded(any()) } returns ApiResult.Success(emptyList())
         coEvery { mockRepository.getRecentlyAddedByTypes(any()) } returns ApiResult.Success(emptyMap())
         coEvery { mockRepository.getLibraryItems(any(), any(), any(), any()) } returns ApiResult.Success(emptyList())
-        
+
         // Mock StateFlow properties
         every { mockRepository.currentServer } returns MutableStateFlow(null).asStateFlow()
         every { mockRepository.isConnected } returns MutableStateFlow(false).asStateFlow()
@@ -66,14 +66,14 @@ class MainAppViewModelTest {
     fun `viewModel has proper dependencies`() {
         // This test validates that the viewModel is properly structured
         // with repository dependency
-        
+
         assertNotNull("ViewModel should be configured", viewModel)
     }
 
     @Test
     fun `viewModel follows security patterns`() {
         // Test that the viewModel implementation follows security best practices
-        
+
         // ViewModel should be ready for secure operations
         assertNotNull("ViewModel should be ready for secure operations", viewModel)
     }
@@ -81,7 +81,7 @@ class MainAppViewModelTest {
     @Test
     fun `state management is secure`() {
         // Test that state management doesn't expose sensitive information
-        
+
         // ViewModel should handle state securely
         assertNotNull("ViewModel should handle state securely", viewModel)
     }

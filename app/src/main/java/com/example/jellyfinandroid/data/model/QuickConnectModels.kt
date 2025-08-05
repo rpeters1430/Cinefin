@@ -7,11 +7,11 @@ package com.example.jellyfinandroid.data.model
 
 data class QuickConnectResult(
     val code: String,
-    val secret: String
+    val secret: String,
 )
 
 data class QuickConnectState(
-    val state: String // "Pending", "Approved", "Denied", "Expired"
+    val state: String, // "Pending", "Approved", "Denied", "Expired"
 ) {
     val isPending: Boolean get() = state == "Pending"
     val isApproved: Boolean get() = state == "Approved"

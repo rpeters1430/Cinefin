@@ -3,26 +3,26 @@ package com.example.jellyfinandroid.ui.viewmodel
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.data.repository.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
-import com.example.jellyfinandroid.data.SecureCredentialManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlinx.coroutines.delay
 
 data class ConnectionState(
     val isConnecting: Boolean = false,
@@ -38,7 +38,7 @@ data class ConnectionState(
     val quickConnectSecret: String = "",
     val isQuickConnectPolling: Boolean = false,
     val quickConnectStatus: String = "",
-    val hasSavedPassword: Boolean = false
+    val hasSavedPassword: Boolean = false,
 )
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "login_preferences")
@@ -53,14 +53,14 @@ object PreferencesKeys {
 class ServerConnectionViewModel @Inject constructor(
     private val repository: JellyfinRepository,
     private val secureCredentialManager: SecureCredentialManager,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
-    
+
     private val _connectionState = MutableStateFlow(ConnectionState())
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
-    
+
     private var quickConnectPollingJob: Job? = null
-    
+
     init {
         // Load saved credentials and remember login state
         viewModelScope.launch {
@@ -72,15 +72,17 @@ class ServerConnectionViewModel @Inject constructor(
             // ✅ FIX: Handle suspend function calls properly
             val hasSavedPassword = if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
                 secureCredentialManager.getPassword(savedServerUrl, savedUsername) != null
-            } else false
+            } else {
+                false
+            }
 
             _connectionState.value = _connectionState.value.copy(
                 savedServerUrl = savedServerUrl,
                 savedUsername = savedUsername,
                 rememberLogin = rememberLogin,
-                hasSavedPassword = hasSavedPassword
+                hasSavedPassword = hasSavedPassword,
             )
-            
+
             // Auto-login if we have saved credentials and remember login is enabled
             if (rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
                 val savedPassword = secureCredentialManager.getPassword(savedServerUrl, savedUsername)
@@ -90,15 +92,15 @@ class ServerConnectionViewModel @Inject constructor(
                 }
             }
         }
-        
+
         // Observe repository connection state
         viewModelScope.launch {
             repository.isConnected.collect { isConnected ->
                 _connectionState.value = _connectionState.value.copy(
                     isConnected = isConnected,
-                    isConnecting = false
+                    isConnecting = false,
                 )
-                
+
                 // Clear saved credentials when disconnected
                 if (!isConnected) {
                     clearSavedCredentials()
@@ -106,29 +108,29 @@ class ServerConnectionViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun connectToServer(serverUrl: String, username: String, password: String) {
         if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
             _connectionState.value = _connectionState.value.copy(
-                errorMessage = "Please fill in all fields"
+                errorMessage = "Please fill in all fields",
             )
             return
         }
-        
+
         viewModelScope.launch {
             _connectionState.value = _connectionState.value.copy(
                 isConnecting = true,
-                errorMessage = null
+                errorMessage = null,
             )
-            
+
             // First test server connection
             when (val serverResult = repository.testServerConnection(serverUrl)) {
                 is ApiResult.Success -> {
                     val serverInfo = serverResult.data
                     _connectionState.value = _connectionState.value.copy(
-                        serverName = serverInfo.serverName
+                        serverName = serverInfo.serverName,
                     )
-                    
+
                     // Now authenticate
                     when (val authResult = repository.authenticateUser(serverUrl, username, password)) {
                         is ApiResult.Success -> {
@@ -141,7 +143,7 @@ class ServerConnectionViewModel @Inject constructor(
                             _connectionState.value = _connectionState.value.copy(
                                 isConnecting = false,
                                 isConnected = true,
-                                errorMessage = null
+                                errorMessage = null,
                             )
                         }
                         is ApiResult.Error -> {
@@ -149,7 +151,7 @@ class ServerConnectionViewModel @Inject constructor(
                             clearSavedCredentials()
                             _connectionState.value = _connectionState.value.copy(
                                 isConnecting = false,
-                                errorMessage = authResult.message
+                                errorMessage = authResult.message,
                             )
                         }
                         is ApiResult.Loading -> {
@@ -160,7 +162,7 @@ class ServerConnectionViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     _connectionState.value = _connectionState.value.copy(
                         isConnecting = false,
-                        errorMessage = "Cannot connect to server: ${serverResult.message}"
+                        errorMessage = "Cannot connect to server: ${serverResult.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -169,11 +171,11 @@ class ServerConnectionViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun clearError() {
         _connectionState.value = _connectionState.value.copy(errorMessage = null)
     }
-    
+
     private suspend fun saveCredentials(serverUrl: String, username: String, password: String) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SERVER_URL] = serverUrl
@@ -183,10 +185,10 @@ class ServerConnectionViewModel @Inject constructor(
         _connectionState.value = _connectionState.value.copy(
             savedServerUrl = serverUrl,
             savedUsername = username,
-            hasSavedPassword = true
+            hasSavedPassword = true,
         )
     }
-    
+
     private suspend fun clearSavedCredentials() {
         val currentState = _connectionState.value
         context.dataStore.edit { preferences ->
@@ -199,7 +201,7 @@ class ServerConnectionViewModel @Inject constructor(
         _connectionState.value = _connectionState.value.copy(
             savedServerUrl = "",
             savedUsername = "",
-            hasSavedPassword = false
+            hasSavedPassword = false,
         )
     }
 
@@ -214,14 +216,16 @@ class ServerConnectionViewModel @Inject constructor(
             _connectionState.value = _connectionState.value.copy(rememberLogin = remember)
         }
     }
-    
+
     suspend fun getSavedPassword(): String? {
         val currentState = _connectionState.value
         return if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
             secureCredentialManager.getPassword(currentState.savedServerUrl, currentState.savedUsername)
-        } else null
+        } else {
+            null
+        }
     }
-    
+
     fun autoLogin() {
         val currentState = _connectionState.value
         if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
@@ -231,20 +235,20 @@ class ServerConnectionViewModel @Inject constructor(
                     connectToServer(
                         currentState.savedServerUrl,
                         currentState.savedUsername,
-                        savedPassword
+                        savedPassword,
                     )
                 }
             }
         }
     }
-    
+
     fun startQuickConnect() {
         _connectionState.value = _connectionState.value.copy(
             isQuickConnectActive = true,
-            errorMessage = null
+            errorMessage = null,
         )
     }
-    
+
     fun cancelQuickConnect() {
         quickConnectPollingJob?.cancel()
         quickConnectPollingJob = null
@@ -254,40 +258,40 @@ class ServerConnectionViewModel @Inject constructor(
             quickConnectServerUrl = "",
             quickConnectSecret = "",
             isQuickConnectPolling = false,
-            quickConnectStatus = ""
+            quickConnectStatus = "",
         )
     }
-    
+
     fun updateQuickConnectServerUrl(serverUrl: String) {
         _connectionState.value = _connectionState.value.copy(
-            quickConnectServerUrl = serverUrl
+            quickConnectServerUrl = serverUrl,
         )
     }
-    
+
     fun initiateQuickConnect() {
         val serverUrl = _connectionState.value.quickConnectServerUrl
-        
+
         if (serverUrl.isBlank()) {
             _connectionState.value = _connectionState.value.copy(
-                errorMessage = "Please enter the server URL"
+                errorMessage = "Please enter the server URL",
             )
             return
         }
-        
+
         viewModelScope.launch {
             _connectionState.value = _connectionState.value.copy(
                 isConnecting = true,
                 errorMessage = null,
-                quickConnectStatus = "Connecting to server..."
+                quickConnectStatus = "Connecting to server...",
             )
-            
+
             // First test server connection
             when (val serverResult = repository.testServerConnection(serverUrl)) {
                 is ApiResult.Success -> {
                     _connectionState.value = _connectionState.value.copy(
-                        quickConnectStatus = "Initiating Quick Connect..."
+                        quickConnectStatus = "Initiating Quick Connect...",
                     )
-                    
+
                     // Now initiate Quick Connect
                     when (val quickConnectResult = repository.initiateQuickConnect(serverUrl)) {
                         is ApiResult.Success -> {
@@ -297,9 +301,9 @@ class ServerConnectionViewModel @Inject constructor(
                                 quickConnectCode = result.code ?: "",
                                 quickConnectSecret = result.secret ?: "",
                                 isQuickConnectPolling = true,
-                                quickConnectStatus = "Code generated! Enter this code in your Jellyfin server."
+                                quickConnectStatus = "Code generated! Enter this code in your Jellyfin server.",
                             )
-                            
+
                             // Start polling for approval
                             quickConnectPollingJob = viewModelScope.launch {
                                 pollQuickConnectState(serverUrl, result.secret ?: "")
@@ -308,7 +312,7 @@ class ServerConnectionViewModel @Inject constructor(
                         is ApiResult.Error -> {
                             _connectionState.value = _connectionState.value.copy(
                                 isConnecting = false,
-                                errorMessage = "Quick Connect initiation failed: ${quickConnectResult.message}"
+                                errorMessage = "Quick Connect initiation failed: ${quickConnectResult.message}",
                             )
                         }
                         is ApiResult.Loading -> {
@@ -319,7 +323,7 @@ class ServerConnectionViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     _connectionState.value = _connectionState.value.copy(
                         isConnecting = false,
-                        errorMessage = "Cannot connect to server: ${serverResult.message}"
+                        errorMessage = "Cannot connect to server: ${serverResult.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -328,14 +332,15 @@ class ServerConnectionViewModel @Inject constructor(
             }
         }
     }
-    
+
     private suspend fun pollQuickConnectState(serverUrl: String, secret: String) {
         var attempts = 0
         val maxAttempts = 60 // 5 minutes with 5-second intervals
-        
-        while (attempts < maxAttempts && 
-               _connectionState.value.isQuickConnectPolling && 
-               viewModelScope.isActive) { // Check if coroutine is still active
+
+        while (attempts < maxAttempts &&
+            _connectionState.value.isQuickConnectPolling &&
+            viewModelScope.isActive
+        ) { // Check if coroutine is still active
             try {
                 delay(5000) // Wait 5 seconds between polls
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -343,7 +348,7 @@ class ServerConnectionViewModel @Inject constructor(
                 quickConnectPollingJob = null
                 return
             }
-            
+
             when (val stateResult = repository.getQuickConnectState(serverUrl, secret)) {
                 is ApiResult.Success -> {
                     val state = stateResult.data
@@ -356,14 +361,14 @@ class ServerConnectionViewModel @Inject constructor(
                                         isConnected = true,
                                         isQuickConnectActive = false,
                                         isQuickConnectPolling = false,
-                                        quickConnectStatus = "Connected successfully!"
+                                        quickConnectStatus = "Connected successfully!",
                                     )
                                     return
                                 }
                                 is ApiResult.Error -> {
                                     _connectionState.value = _connectionState.value.copy(
                                         isQuickConnectPolling = false,
-                                        errorMessage = "Authentication failed: ${authResult.message}"
+                                        errorMessage = "Authentication failed: ${authResult.message}",
                                     )
                                     return
                                 }
@@ -375,14 +380,14 @@ class ServerConnectionViewModel @Inject constructor(
                         "Expired" -> {
                             _connectionState.value = _connectionState.value.copy(
                                 isQuickConnectPolling = false,
-                                errorMessage = "Quick Connect code has expired"
+                                errorMessage = "Quick Connect code has expired",
                             )
                             return
                         }
                         else -> {
                             // Still waiting for approval
                             _connectionState.value = _connectionState.value.copy(
-                                quickConnectStatus = "Waiting for approval... (${attempts + 1}/60)"
+                                quickConnectStatus = "Waiting for approval... (${attempts + 1}/60)",
                             )
                         }
                     }
@@ -390,7 +395,7 @@ class ServerConnectionViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     _connectionState.value = _connectionState.value.copy(
                         isQuickConnectPolling = false,
-                        errorMessage = "Failed to check Quick Connect state: ${stateResult.message}"
+                        errorMessage = "Failed to check Quick Connect state: ${stateResult.message}",
                     )
                     return
                 }
@@ -398,22 +403,22 @@ class ServerConnectionViewModel @Inject constructor(
                     // This shouldn't happen for this call
                 }
             }
-            
+
             attempts++
         }
-        
+
         // Timeout
         if (attempts >= maxAttempts) {
             _connectionState.value = _connectionState.value.copy(
                 isQuickConnectPolling = false,
-                errorMessage = "Quick Connect timed out. Please try again."
+                errorMessage = "Quick Connect timed out. Please try again.",
             )
         }
-        
+
         // Clean up the job reference when polling completes
         quickConnectPollingJob = null
     }
-    
+
     override fun onCleared() {
         super.onCleared()
         // Cancel any ongoing quick connect polling when ViewModel is destroyed

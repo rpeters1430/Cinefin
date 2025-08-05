@@ -57,7 +57,7 @@ fun FavoritesScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(id = R.string.navigate_up)
+                            contentDescription = stringResource(id = R.string.navigate_up),
                         )
                     }
                 },
@@ -65,16 +65,16 @@ fun FavoritesScreen(
                     IconButton(onClick = onRefresh) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh"
+                            contentDescription = "Refresh",
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
             )
         },
-        modifier = modifier
+        modifier = modifier,
     ) { paddingValues ->
         when {
             isLoading -> {
@@ -82,7 +82,7 @@ fun FavoritesScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
                 }
@@ -92,19 +92,19 @@ fun FavoritesScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Card(
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
                         ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
                             text = errorMessage,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier.padding(16.dp),
                         )
                     }
                 }
@@ -114,27 +114,27 @@ fun FavoritesScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Favorite,
                             contentDescription = null,
                             modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
                             text = "No favorites yet",
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
                         Text(
                             text = "Add items to your favorites to see them here",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -145,19 +145,19 @@ fun FavoritesScreen(
                         .fillMaxSize()
                         .padding(paddingValues),
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     items(favorites.chunked(2)) { rowItems ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             rowItems.forEach { item ->
-                                                        MediaCard(
-                            item = item,
-                            getImageUrl = getImageUrl,
-                            modifier = Modifier.weight(1f)
-                        )
+                                MediaCard(
+                                    item = item,
+                                    getImageUrl = getImageUrl,
+                                    modifier = Modifier.weight(1f),
+                                )
                             }
                             // Fill remaining space if odd number of items
                             if (rowItems.size == 1) {
@@ -169,4 +169,4 @@ fun FavoritesScreen(
             }
         }
     }
-} 
+}

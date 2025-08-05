@@ -19,7 +19,7 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 
 /**
  * Screen for managing offline content and displaying offline status.
- * 
+ *
  * Shows downloaded content, storage usage, connectivity status,
  * and provides offline content management options.
  */
@@ -29,70 +29,70 @@ fun OfflineScreen(
     onPlayOfflineContent: (BaseItemDto) -> Unit = {},
     onDeleteOfflineContent: (BaseItemDto) -> Unit = {},
     onBackClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val isOnline by offlineManager.isOnline.collectAsStateWithLifecycle()
     val networkType by offlineManager.networkType.collectAsStateWithLifecycle()
     val offlineContent by offlineManager.offlineContent.collectAsStateWithLifecycle()
-    
+
     var showClearDialog by remember { mutableStateOf(false) }
     var storageInfo by remember { mutableStateOf<OfflineStorageInfo?>(null) }
-    
+
     // Load storage info
     LaunchedEffect(offlineContent) {
         storageInfo = offlineManager.getOfflineStorageUsage()
     }
-    
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Header with back button
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             IconButton(onClick = onBackClick) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Back")
             }
-            
+
             Text(
                 text = "Offline Content",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
             )
         }
-        
+
         // Connection status card
         ConnectivityStatusCard(
             isOnline = isOnline,
-            networkType = networkType
+            networkType = networkType,
         )
-        
+
         // Storage info card
         storageInfo?.let { info ->
             StorageInfoCard(
                 storageInfo = info,
-                onClearAll = { showClearDialog = true }
+                onClearAll = { showClearDialog = true },
             )
         }
-        
+
         // Offline content list
         OfflineContentSection(
             offlineContent = offlineContent,
             onPlayContent = onPlayOfflineContent,
-            onDeleteContent = onDeleteOfflineContent
+            onDeleteContent = onDeleteOfflineContent,
         )
     }
-    
+
     // Clear all dialog
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
             title = { Text("Clear All Downloads") },
-            text = { 
+            text = {
                 Text("This will delete all downloaded content and free up storage space. This action cannot be undone.")
             },
             confirmButton = {
@@ -103,8 +103,8 @@ fun OfflineScreen(
                         storageInfo = offlineManager.getOfflineStorageUsage()
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
+                        containerColor = MaterialTheme.colorScheme.error,
+                    ),
                 ) {
                     Text("Clear All")
                 }
@@ -113,7 +113,7 @@ fun OfflineScreen(
                 TextButton(onClick = { showClearDialog = false }) {
                     Text("Cancel")
                 }
-            }
+            },
         )
     }
 }
@@ -122,7 +122,7 @@ fun OfflineScreen(
 private fun ConnectivityStatusCard(
     isOnline: Boolean,
     networkType: NetworkType,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -131,13 +131,13 @@ private fun ConnectivityStatusCard(
                 MaterialTheme.colorScheme.primaryContainer
             } else {
                 MaterialTheme.colorScheme.errorContainer
-            }
-        )
+            },
+        ),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Icon(
                 imageVector = if (isOnline) Icons.Default.Wifi else Icons.Default.WifiOff,
@@ -146,9 +146,9 @@ private fun ConnectivityStatusCard(
                     MaterialTheme.colorScheme.onPrimaryContainer
                 } else {
                     MaterialTheme.colorScheme.onErrorContainer
-                }
+                },
             )
-            
+
             Column {
                 Text(
                     text = if (isOnline) "Online" else "Offline",
@@ -157,9 +157,9 @@ private fun ConnectivityStatusCard(
                         MaterialTheme.colorScheme.onPrimaryContainer
                     } else {
                         MaterialTheme.colorScheme.onErrorContainer
-                    }
+                    },
                 )
-                
+
                 Text(
                     text = when {
                         !isOnline -> "Only downloaded content is available"
@@ -173,7 +173,7 @@ private fun ConnectivityStatusCard(
                         MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     } else {
                         MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
-                    }
+                    },
                 )
             }
         }
@@ -184,52 +184,52 @@ private fun ConnectivityStatusCard(
 private fun StorageInfoCard(
     storageInfo: OfflineStorageInfo,
     onClearAll: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "Storage Usage",
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
-                
+
                 if (storageInfo.itemCount > 0) {
                     TextButton(onClick = onClearAll) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Clear All")
                     }
                 }
             }
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
                     text = "${storageInfo.itemCount} items",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                
+
                 Text(
                     text = storageInfo.formattedSize,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -241,63 +241,63 @@ private fun OfflineContentSection(
     offlineContent: List<BaseItemDto>,
     onPlayContent: (BaseItemDto) -> Unit,
     onDeleteContent: (BaseItemDto) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Text(
                 text = "Downloaded Content",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             if (offlineContent.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(32.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Download,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        
+
                         Text(
                             text = "No downloaded content",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
-                        
+
                         Text(
                             text = "Download content when online to watch offline",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
                         )
                     }
                 }
             } else {
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(offlineContent) { item ->
                         OfflineContentItem(
                             item = item,
                             onPlay = { onPlayContent(item) },
-                            onDelete = { onDeleteContent(item) }
+                            onDelete = { onDeleteContent(item) },
                         )
                     }
                 }
@@ -311,25 +311,25 @@ private fun OfflineContentItem(
     item: BaseItemDto,
     onPlay: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
     ) {
         Row(
             modifier = Modifier
                 .padding(12.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 Icon(
                     imageVector = when (item.type) {
@@ -339,43 +339,43 @@ private fun OfflineContentItem(
                         else -> Icons.Default.FilePresent
                     },
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                
+
                 Column {
                     Text(
                         text = item.name ?: "Unknown",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
                     )
-                    
+
                     item.seriesName?.let { seriesName ->
                         if (item.type == BaseItemKind.EPISODE) {
                             Text(
                                 text = seriesName,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                 }
             }
-            
+
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 IconButton(onClick = onPlay) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
                         contentDescription = "Play",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
-                
+
                 IconButton(onClick = onDelete) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error
+                        tint = MaterialTheme.colorScheme.error,
                     )
                 }
             }

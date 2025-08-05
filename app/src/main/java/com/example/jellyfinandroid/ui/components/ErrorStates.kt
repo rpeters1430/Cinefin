@@ -60,12 +60,12 @@ data class ErrorUIState(
     val icon: ImageVector,
     val primaryAction: ErrorAction? = null,
     val secondaryAction: ErrorAction? = null,
-    val canRetry: Boolean = true
+    val canRetry: Boolean = true,
 )
 
 data class ErrorAction(
     val label: String,
-    val action: suspend () -> Unit
+    val action: suspend () -> Unit,
 )
 
 @Composable
@@ -75,7 +75,7 @@ fun ErrorStateScreen(
     onRetry: (suspend () -> Unit)? = null,
     onDismiss: (() -> Unit)? = null,
     onNavigateToSettings: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val errorState = remember(errorType, errorMessage) {
         when (errorType) {
@@ -84,106 +84,106 @@ fun ErrorStateScreen(
                 message = "Unable to connect to the server. Please check your internet connection and try again.",
                 icon = Icons.Default.SignalWifiOff,
                 primaryAction = onRetry?.let { ErrorAction("Retry", it) },
-                secondaryAction = onNavigateToSettings?.let { ErrorAction("Settings") { it() } }
+                secondaryAction = onNavigateToSettings?.let { ErrorAction("Settings") { it() } },
             )
-            
+
             ErrorType.AUTHENTICATION -> ErrorUIState(
                 title = "Authentication Failed",
                 message = "Unable to authenticate with the server. Please check your credentials.",
                 icon = Icons.Default.Lock,
                 primaryAction = onDismiss?.let { ErrorAction("Try Again") { it() } },
-                canRetry = false
+                canRetry = false,
             )
-            
+
             ErrorType.SERVER_ERROR -> ErrorUIState(
                 title = "Server Error",
                 message = "The server encountered an error. Please try again later.",
                 icon = Icons.Default.CloudOff,
-                primaryAction = onRetry?.let { ErrorAction("Retry", it) }
+                primaryAction = onRetry?.let { ErrorAction("Retry", it) },
             )
-            
+
             ErrorType.TIMEOUT -> ErrorUIState(
                 title = "Request Timeout",
                 message = "The request took too long to complete. Please check your connection and try again.",
                 icon = Icons.Default.Warning,
-                primaryAction = onRetry?.let { ErrorAction("Retry", it) }
+                primaryAction = onRetry?.let { ErrorAction("Retry", it) },
             )
-            
+
             else -> ErrorUIState(
                 title = "Something Went Wrong",
                 message = errorMessage.ifBlank { "An unexpected error occurred. Please try again." },
                 icon = Icons.Default.Error,
-                primaryAction = onRetry?.let { ErrorAction("Retry", it) }
+                primaryAction = onRetry?.let { ErrorAction("Retry", it) },
             )
         }
     }
-    
+
     ErrorContent(
         errorState = errorState,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
 @Composable
 private fun ErrorContent(
     errorState: ErrorUIState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
     var isRetrying by remember { mutableStateOf(false) }
-    
+
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(32.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
             ) {
                 // Error Icon
                 Icon(
                     imageVector = errorState.icon,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.error,
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Error Title
                 Text(
                     text = errorState.title,
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // Error Message
                 Text(
                     text = errorState.message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
-                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
                 )
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 // Action Buttons
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     // Primary Action Button
                     errorState.primaryAction?.let { action ->
@@ -202,36 +202,36 @@ private fun ErrorContent(
                             enabled = !isRetrying,
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary
+                                containerColor = MaterialTheme.colorScheme.primary,
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             AnimatedVisibility(
                                 visible = isRetrying,
                                 enter = fadeIn(),
-                                exit = fadeOut()
+                                exit = fadeOut(),
                             ) {
                                 Row(
                                     horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(16.dp),
                                         color = MaterialTheme.colorScheme.onPrimary,
-                                        strokeWidth = 2.dp
+                                        strokeWidth = 2.dp,
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }
                             }
-                            
+
                             Text(
                                 text = if (isRetrying) "Retrying..." else action.label,
                                 style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
                             )
                         }
                     }
-                    
+
                     // Secondary Action Button
                     errorState.secondaryAction?.let { action ->
                         OutlinedButton(
@@ -241,11 +241,11 @@ private fun ErrorContent(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             Text(
                                 text = action.label,
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.bodyLarge,
                             )
                         }
                     }
@@ -264,62 +264,62 @@ fun ErrorBanner(
     onDismiss: () -> Unit,
     onRetry: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
-    isVisible: Boolean = true
+    isVisible: Boolean = true,
 ) {
     AnimatedVisibility(
         visible = isVisible,
         enter = slideInVertically() + fadeIn(),
         exit = slideOutVertically() + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer
+                containerColor = MaterialTheme.colorScheme.errorContainer,
             ),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
                     modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
-                    
+
                     Spacer(modifier = Modifier.width(12.dp))
-                    
+
                     Text(
                         text = message,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = MaterialTheme.colorScheme.onErrorContainer,
                     )
                 }
-                
+
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     onRetry?.let {
                         OutlinedButton(
                             onClick = it,
-                            modifier = Modifier.height(32.dp)
+                            modifier = Modifier.height(32.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = "Retry",
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(16.dp),
                             )
                         }
                     }
@@ -339,48 +339,48 @@ fun EmptyStateScreen(
     icon: ImageVector = Icons.Default.Warning,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier.padding(32.dp),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.outline
+                tint = MaterialTheme.colorScheme.outline,
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
-            
+
             if (actionLabel != null && onAction != null) {
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 Button(
                     onClick = onAction,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Text(text = actionLabel)
                 }

@@ -1,10 +1,6 @@
 package com.example.jellyfinandroid.ui.components
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,10 +19,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,7 +43,6 @@ import com.example.jellyfinandroid.ui.theme.RatingBronze
 import com.example.jellyfinandroid.ui.theme.RatingGold
 import com.example.jellyfinandroid.ui.theme.RatingSilver
 import com.example.jellyfinandroid.ui.theme.getContentTypeColor
-import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -57,7 +51,7 @@ fun MediaCard(
     item: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     onClick: (BaseItemDto) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val contentTypeColor = getContentTypeColor(item.type?.toString())
     val coroutineScope = rememberCoroutineScope()
@@ -70,8 +64,8 @@ fun MediaCard(
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
     ) {
         Box {
             // Background Image
@@ -81,7 +75,7 @@ fun MediaCard(
                 loading = {
                     ShimmerBox(
                         modifier = Modifier.fillMaxSize(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
                     )
                 },
                 error = {
@@ -89,20 +83,20 @@ fun MediaCard(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(contentTypeColor.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = "No image available",
                             modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 },
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(12.dp)),
             )
 
             // Content type badge with semantic color
@@ -111,9 +105,9 @@ fun MediaCard(
                     .align(Alignment.TopStart)
                     .padding(8.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = contentTypeColor.copy(alpha = 0.9f)
+                    containerColor = contentTypeColor.copy(alpha = 0.9f),
                 ),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
             ) {
                 Text(
                     text = when (item.type) {
@@ -129,7 +123,7 @@ fun MediaCard(
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                 )
             }
 
@@ -141,7 +135,7 @@ fun MediaCard(
                     tint = Color.Yellow,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(8.dp)
+                        .padding(8.dp),
                 )
             }
 
@@ -153,46 +147,46 @@ fun MediaCard(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.7f)
+                                Color.Black.copy(alpha = 0.7f),
                             ),
                             startY = 0f,
-                            endY = Float.POSITIVE_INFINITY
-                        )
-                    )
+                            endY = Float.POSITIVE_INFINITY,
+                        ),
+                    ),
             ) {
                 // Content Overlay
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(12.dp),
-                    verticalArrangement = Arrangement.Bottom
+                    verticalArrangement = Arrangement.Bottom,
                 ) {
                     Text(
                         text = item.name ?: "Unknown Title",
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         item.productionYear?.let { year ->
                             Text(
                                 text = year.toString(),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.9f)
+                                color = Color.White.copy(alpha = 0.9f),
                             )
                         }
 
                         item.communityRating?.let { rating ->
                             val animatedRating by animateFloatAsState(
                                 targetValue = rating.toFloat(),
-                                label = "rating_anim"
+                                label = "rating_anim",
                             )
                             val ratingColor = when {
                                 rating >= 7.5f -> RatingGold
@@ -205,12 +199,12 @@ fun MediaCard(
                                     modifier = Modifier.size(28.dp),
                                     strokeWidth = 2.dp,
                                     color = ratingColor,
-                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
                                 )
                                 Text(
                                     text = rating.toInt().toString(),
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = ratingColor
+                                    color = ratingColor,
                                 )
                             }
                         }
@@ -223,13 +217,13 @@ fun MediaCard(
                             .align(Alignment.TopEnd)
                             .padding(8.dp),
                         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.9f)),
-                        shape = RoundedCornerShape(6.dp)
+                        shape = RoundedCornerShape(6.dp),
                     ) {
                         Text(
                             text = label,
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         )
                     }
                 }
@@ -244,7 +238,7 @@ fun RecentlyAddedCard(
     getImageUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
     onClick: (BaseItemDto) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val contentTypeColor = getContentTypeColor(item.type?.toString())
 
@@ -255,8 +249,8 @@ fun RecentlyAddedCard(
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
     ) {
         Column {
             Box {
@@ -278,8 +272,8 @@ fun RecentlyAddedCard(
                                     .height(200.dp),
                                 shape = RoundedCornerShape(
                                     topStart = 12.dp,
-                                    topEnd = 12.dp
-                                )
+                                    topEnd = 12.dp,
+                                ),
                             )
                         },
                         error = {
@@ -288,13 +282,13 @@ fun RecentlyAddedCard(
                                     .fillMaxWidth()
                                     .height(200.dp)
                                     .background(contentTypeColor.copy(alpha = 0.1f)),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.PlayArrow,
                                     contentDescription = "No image available",
                                     modifier = Modifier.size(32.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         },
@@ -302,7 +296,7 @@ fun RecentlyAddedCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(200.dp)
-                            .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                            .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
                     )
                 } else {
                     Box(
@@ -310,13 +304,13 @@ fun RecentlyAddedCard(
                             .fillMaxWidth()
                             .height(200.dp)
                             .background(contentTypeColor.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = "No image available",
                             modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -327,9 +321,9 @@ fun RecentlyAddedCard(
                         .align(Alignment.TopStart)
                         .padding(8.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = contentTypeColor.copy(alpha = 0.9f)
+                        containerColor = contentTypeColor.copy(alpha = 0.9f),
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
                 ) {
                     Text(
                         text = when (item.type) {
@@ -345,7 +339,7 @@ fun RecentlyAddedCard(
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     )
                 }
 
@@ -355,13 +349,13 @@ fun RecentlyAddedCard(
                             .align(Alignment.TopEnd)
                             .padding(8.dp),
                         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.9f)),
-                        shape = RoundedCornerShape(6.dp)
+                        shape = RoundedCornerShape(6.dp),
                     ) {
                         Text(
                             text = label,
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         )
                     }
                 }
@@ -373,27 +367,27 @@ fun RecentlyAddedCard(
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     item.productionYear?.let { year ->
                         Text(
                             text = year.toString(),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 
                     item.communityRating?.let { rating ->
                         val animatedRating by animateFloatAsState(
                             targetValue = rating.toFloat(),
-                            label = "rating_anim"
+                            label = "rating_anim",
                         )
                         val ratingColor = when {
                             rating >= 7.5f -> RatingGold
@@ -406,12 +400,12 @@ fun RecentlyAddedCard(
                                 modifier = Modifier.size(24.dp),
                                 strokeWidth = 2.dp,
                                 color = ratingColor,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
                             )
                             Text(
                                 text = rating.toInt().toString(),
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = ratingColor
+                                color = ratingColor,
                             )
                         }
                     }
@@ -419,4 +413,4 @@ fun RecentlyAddedCard(
             }
         }
     }
-} 
+}

@@ -2,13 +2,12 @@ package com.example.jellyfinandroid.data.repository
 
 import android.content.Context
 import com.example.jellyfinandroid.data.JellyfinServer
-import com.example.jellyfinandroid.di.JellyfinClientFactory
 import com.example.jellyfinandroid.data.SecureCredentialManager
+import com.example.jellyfinandroid.di.JellyfinClientFactory
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.apis.UserLibraryApi
@@ -43,7 +42,7 @@ class WatchStatusRepositoryTest {
             url = "http://localhost",
             isConnected = true,
             userId = UUID.randomUUID().toString(),
-            accessToken = "token"
+            accessToken = "token",
         )
         repository.setCurrentServerForTest(server)
     }

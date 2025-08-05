@@ -13,7 +13,7 @@ data class JellyfinServer(
     val userId: String? = null,
     val username: String? = null,
     val accessToken: String? = null,
-    val loginTimestamp: Long? = null
+    val loginTimestamp: Long? = null,
 )
 
 @Serializable
@@ -24,7 +24,7 @@ data class ServerInfo(
     @SerialName("OperatingSystem") val operatingSystem: String? = null,
     @SerialName("LocalAddress") val localAddress: String? = null,
     @SerialName("ProductName") val productName: String? = null,
-    @SerialName("StartupWizardCompleted") val startupWizardCompleted: Boolean? = null
+    @SerialName("StartupWizardCompleted") val startupWizardCompleted: Boolean? = null,
 )
 
 @Serializable
@@ -32,7 +32,7 @@ data class AuthenticationResult(
     val user: User,
     val sessionInfo: SessionInfo,
     val accessToken: String,
-    val serverId: String
+    val serverId: String,
 )
 
 @Serializable
@@ -47,7 +47,7 @@ data class User(
     val lastActivityDate: String? = null,
     val configuration: UserConfiguration? = null,
     val policy: UserPolicy? = null,
-    val primaryImageTag: String? = null
+    val primaryImageTag: String? = null,
 )
 
 @Serializable
@@ -65,7 +65,7 @@ data class UserConfiguration(
     val hidePlayedInLatest: Boolean = true,
     val rememberAudioSelections: Boolean = true,
     val rememberSubtitleSelections: Boolean = true,
-    val enableNextEpisodeAutoPlay: Boolean = true
+    val enableNextEpisodeAutoPlay: Boolean = true,
 )
 
 @Serializable
@@ -108,7 +108,7 @@ data class UserPolicy(
     val remoteClientBitrateLimit: Int = 0,
     val authenticationProviderId: String = "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
     val passwordResetProviderId: String = "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
-    val syncPlayAccess: String = "CreateAndJoinGroups"
+    val syncPlayAccess: String = "CreateAndJoinGroups",
 )
 
 @Serializable
@@ -138,7 +138,7 @@ data class SessionInfo(
     val playlistItemId: String? = null,
     val serverId: String? = null,
     val userPrimaryImageTag: String? = null,
-    val supportedCommands: List<String> = emptyList()
+    val supportedCommands: List<String> = emptyList(),
 )
 
 @Serializable
@@ -159,7 +159,7 @@ data class PlayState(
     val playSessionId: String? = null,
     val repeatState: String = "RepeatNone",
     val subtitleOffset: Int = 0,
-    val playbackRate: Double = 1.0
+    val playbackRate: Double = 1.0,
 )
 
 @Serializable
@@ -173,5 +173,5 @@ data class ClientCapabilities(
     val supportsSync: Boolean = false,
     val deviceProfile: String? = null,
     val appStoreUrl: String? = null,
-    val iconUrl: String? = null
+    val iconUrl: String? = null,
 )

@@ -33,7 +33,7 @@ sealed class Screen(val route: String) {
     object TVEpisodeDetail : Screen("episode_detail/{episodeId}") {
         fun createRoute(episodeId: String) = "episode_detail/$episodeId"
     }
-    
+
     // For navigation arguments
     companion object {
         const val SERIES_ID_ARG = "seriesId"
@@ -50,33 +50,33 @@ sealed class BottomNavItem(val route: String, val title: String, val icon: AppDe
     object Home : BottomNavItem(
         route = Screen.Home.route,
         title = "Home",
-        icon = AppDestinations.HOME
+        icon = AppDestinations.HOME,
     )
-    
+
     object Library : BottomNavItem(
         route = Screen.Library.route,
         title = "Library",
-        icon = AppDestinations.LIBRARY
+        icon = AppDestinations.LIBRARY,
     )
-    
+
     object Search : BottomNavItem(
         route = Screen.Search.route,
         title = "Search",
-        icon = AppDestinations.SEARCH
+        icon = AppDestinations.SEARCH,
     )
-    
+
     object Favorites : BottomNavItem(
         route = Screen.Favorites.route,
         title = "Favorites",
-        icon = AppDestinations.FAVORITES
+        icon = AppDestinations.FAVORITES,
     )
-    
+
     object Profile : BottomNavItem(
         route = Screen.Profile.route,
         title = "Profile",
-        icon = AppDestinations.PROFILE
+        icon = AppDestinations.PROFILE,
     )
-    
+
     companion object {
         val bottomNavItems = listOf(Home, Library, Search, Favorites, Profile)
     }

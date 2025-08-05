@@ -15,7 +15,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class JellyfinSystemRepository @Inject constructor(
-    private val clientFactory: JellyfinClientFactory
+    private val clientFactory: JellyfinClientFactory,
 ) {
     companion object {
         private const val TAG = "JellyfinSystemRepository"
@@ -24,10 +24,10 @@ class JellyfinSystemRepository @Inject constructor(
     private fun getClient(serverUrl: String): ApiClient {
         return clientFactory.getClient(serverUrl, null)
     }
-    
+
     private fun <T> handleException(e: Exception, defaultMessage: String = "System error"): ApiResult.Error<T> {
         Log.e(TAG, "$defaultMessage: ${e.message}", e)
-        
+
         val error = when {
             e.message?.contains("network", ignoreCase = true) == true -> JellyfinError.NetworkError
             e.message?.contains("connection", ignoreCase = true) == true -> JellyfinError.NetworkError
@@ -36,7 +36,7 @@ class JellyfinSystemRepository @Inject constructor(
             e.message?.contains("host", ignoreCase = true) == true -> JellyfinError.NetworkError
             else -> JellyfinError.UnknownError(e.message ?: defaultMessage, e)
         }
-        
+
         return error.toApiResult()
     }
 

@@ -1,4 +1,5 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.jellyfinandroid.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
@@ -60,7 +61,7 @@ fun LibraryTypeScreen(
     libraryType: LibraryType,
     onTVShowClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
-    viewModel: MainAppViewModel = hiltViewModel()
+    viewModel: MainAppViewModel = hiltViewModel(),
 ) {
     val appState by viewModel.appState.collectAsState()
     var viewMode by remember { mutableStateOf(ViewMode.GRID) }
@@ -79,16 +80,16 @@ fun LibraryTypeScreen(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.FilterChipSpacing)
+                        horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.FilterChipSpacing),
                     ) {
                         Icon(
                             imageVector = libraryType.icon,
                             contentDescription = null,
-                            tint = libraryType.color
+                            tint = libraryType.color,
                         )
                         Text(
                             text = libraryType.displayName,
-                            style = MaterialTheme.typography.headlineSmall
+                            style = MaterialTheme.typography.headlineSmall,
                         )
                     }
                 },
@@ -101,8 +102,8 @@ fun LibraryTypeScreen(
                                 selected = viewMode == mode,
                                 colors = SegmentedButtonDefaults.colors(
                                     activeContainerColor = libraryType.color.copy(alpha = LibraryScreenDefaults.ColorAlpha),
-                                    activeContentColor = libraryType.color
-                                )
+                                    activeContentColor = libraryType.color,
+                                ),
                             ) {
                                 Icon(
                                     imageVector = when (mode) {
@@ -111,7 +112,7 @@ fun LibraryTypeScreen(
                                         ViewMode.CAROUSEL -> Icons.Default.ViewCarousel
                                     },
                                     contentDescription = mode.name,
-                                    modifier = Modifier.padding(4.dp)
+                                    modifier = Modifier.padding(4.dp),
                                 )
                             }
                         }
@@ -120,27 +121,27 @@ fun LibraryTypeScreen(
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
             )
         },
-        modifier = modifier
+        modifier = modifier,
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
         ) {
             LibraryFilterRow(
                 selectedFilter = selectedFilter,
                 onFilterSelected = { selectedFilter = it },
-                libraryType = libraryType
+                libraryType = libraryType,
             )
 
             AnimatedVisibility(
                 visible = displayItems.isNotEmpty(),
                 enter = fadeIn() + slideInVertically(),
                 exit = fadeOut() + slideOutVertically(),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             ) {
                 when (viewMode) {
                     ViewMode.GRID -> GridContent(
@@ -150,7 +151,7 @@ fun LibraryTypeScreen(
                         onTVShowClick = onTVShowClick,
                         isLoadingMore = appState.isLoadingMore,
                         hasMoreItems = appState.hasMoreItems,
-                        onLoadMore = { viewModel.loadMoreItems() }
+                        onLoadMore = { viewModel.loadMoreItems() },
                     )
                     ViewMode.LIST -> ListContent(
                         items = displayItems,
@@ -159,13 +160,13 @@ fun LibraryTypeScreen(
                         onTVShowClick = onTVShowClick,
                         isLoadingMore = appState.isLoadingMore,
                         hasMoreItems = appState.hasMoreItems,
-                        onLoadMore = { viewModel.loadMoreItems() }
+                        onLoadMore = { viewModel.loadMoreItems() },
                     )
                     ViewMode.CAROUSEL -> CarouselContent(
                         items = displayItems,
                         libraryType = libraryType,
                         getImageUrl = { viewModel.getImageUrl(it) },
-                        onTVShowClick = onTVShowClick
+                        onTVShowClick = onTVShowClick,
                     )
                 }
             }
@@ -175,7 +176,7 @@ fun LibraryTypeScreen(
                     Text(
                         text = "No items found",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -191,7 +192,7 @@ fun LibraryTypeScreen(
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
                         Text(
                             text = error,
-                            modifier = Modifier.padding(LibraryScreenDefaults.ContentPadding)
+                            modifier = Modifier.padding(LibraryScreenDefaults.ContentPadding),
                         )
                     }
                 }
@@ -208,15 +209,14 @@ private fun GridContent(
     onTVShowClick: ((String) -> Unit)?,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
-    onLoadMore: () -> Unit
+    onLoadMore: () -> Unit,
 ) {
-
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = LibraryScreenDefaults.GridMinItemSize),
         contentPadding = PaddingValues(LibraryScreenDefaults.ContentPadding),
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ContentPadding),
         horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
     ) {
         items(items) { item ->
             LibraryItemCard(
@@ -224,7 +224,7 @@ private fun GridContent(
                 libraryType = libraryType,
                 getImageUrl = getImageUrl,
                 onTVShowClick = onTVShowClick,
-                isCompact = true
+                isCompact = true,
             )
         }
         if (hasMoreItems || isLoadingMore) {
@@ -243,12 +243,12 @@ private fun ListContent(
     onTVShowClick: ((String) -> Unit)?,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
-    onLoadMore: () -> Unit
+    onLoadMore: () -> Unit,
 ) {
     LazyColumn(
         contentPadding = PaddingValues(LibraryScreenDefaults.ContentPadding),
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
     ) {
         items(items) { item ->
             LibraryItemCard(
@@ -256,7 +256,7 @@ private fun ListContent(
                 libraryType = libraryType,
                 getImageUrl = getImageUrl,
                 onTVShowClick = onTVShowClick,
-                isCompact = false
+                isCompact = false,
             )
         }
         if (hasMoreItems || isLoadingMore) {
@@ -272,13 +272,13 @@ private fun CarouselContent(
     items: List<BaseItemDto>,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
-    onTVShowClick: ((String) -> Unit)?
+    onTVShowClick: ((String) -> Unit)?,
 ) {
     val categories = remember(items) { organizeItemsForCarousel(items, libraryType) }
     LazyColumn(
         contentPadding = PaddingValues(vertical = LibraryScreenDefaults.ContentPadding),
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.SectionSpacing),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
     ) {
         items(categories.size) { index ->
             val category = categories[index]
@@ -289,9 +289,8 @@ private fun CarouselContent(
                 carouselState = carouselState,
                 libraryType = libraryType,
                 getImageUrl = getImageUrl,
-                onTVShowClick = onTVShowClick
+                onTVShowClick = onTVShowClick,
             )
         }
     }
 }
-

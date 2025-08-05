@@ -1,7 +1,7 @@
 package com.example.jellyfinandroid.data.repository
 
-import com.example.jellyfinandroid.BuildConfig
 import android.util.Log
+import com.example.jellyfinandroid.BuildConfig
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.data.model.ApiResult
@@ -28,7 +28,7 @@ import javax.inject.Singleton
 @Singleton
 class JellyfinEnhancedRepository @Inject constructor(
     private val systemRepository: JellyfinSystemRepository,
-    private val credentialManager: SecureCredentialManager
+    private val credentialManager: SecureCredentialManager,
 ) {
     companion object {
         private const val TAG = "JellyfinRepository"
@@ -37,13 +37,13 @@ class JellyfinEnhancedRepository @Inject constructor(
     // Global app state
     private val _currentServer = MutableStateFlow<JellyfinServer?>(null)
     val currentServer: Flow<JellyfinServer?> = _currentServer.asStateFlow()
-    
+
     private val _isConnected = MutableStateFlow(false)
     val isConnected: Flow<Boolean> = _isConnected.asStateFlow()
-    
+
     private val _currentUser = MutableStateFlow<UUID?>(null)
     val currentUser: Flow<UUID?> = _currentUser.asStateFlow()
-    
+
     // Authentication mutex to prevent race conditions
     private val authMutex = Mutex()
 
@@ -52,11 +52,11 @@ class JellyfinEnhancedRepository @Inject constructor(
      */
     suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
         val normalizedUrl = systemRepository.normalizeServerUrl(serverUrl)
-        
+
         if (!systemRepository.validateServerUrl(normalizedUrl)) {
             return ApiResult.Error("Invalid server URL format")
         }
-        
+
         return systemRepository.testServerConnection(normalizedUrl)
     }
 
@@ -67,44 +67,43 @@ class JellyfinEnhancedRepository @Inject constructor(
         serverUrl: String,
         username: String,
         password: String,
-        saveCredentials: Boolean = false
+        saveCredentials: Boolean = false,
     ): ApiResult<AuthenticationResult> = authMutex.withLock {
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Authenticating user: $username")
         }
-        
+
         val normalizedUrl = systemRepository.normalizeServerUrl(serverUrl)
-        
+
         return try {
             // For now, we'll implement a basic version that will be enhanced
             // when we add back the auth repository
-            
+
             if (saveCredentials) {
                 credentialManager.savePassword(normalizedUrl, username, password)
             }
-                 // Update connection state
-        _currentServer.value = JellyfinServer(
-            url = normalizedUrl,
-            name = "Jellyfin Server", // Will be updated with real server name
-            version = "Unknown",
-            id = "" // Add empty id parameter
-        )
+            // Update connection state
+            _currentServer.value = JellyfinServer(
+                url = normalizedUrl,
+                name = "Jellyfin Server", // Will be updated with real server name
+                version = "Unknown",
+                id = "", // Add empty id parameter
+            )
             _isConnected.value = true
-            
+
             // This is a placeholder - will be replaced with real auth
             ApiResult.Error("Authentication implementation pending modular refactor")
-            
         } catch (e: Exception) {
             Log.e(TAG, "Authentication failed", e)
             _isConnected.value = false
             _currentServer.value = null
-            
+
             val error = when {
                 e.message?.contains("network", ignoreCase = true) == true -> JellyfinError.NetworkError
                 e.message?.contains("unauthorized", ignoreCase = true) == true -> JellyfinError.AuthenticationError
                 else -> JellyfinError.UnknownError(e.message ?: "Authentication failed", e)
             }
-            
+
             error.toApiResult()
         }
     }
@@ -133,7 +132,7 @@ class JellyfinEnhancedRepository @Inject constructor(
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Logging out user")
         }
-        
+
         _isConnected.value = false
         _currentServer.value = null
         _currentUser.value = null
@@ -151,13 +150,11 @@ class JellyfinEnhancedRepository @Inject constructor(
      */
     suspend fun attemptAutoReconnection(): ApiResult<Boolean> {
         val server = _currentServer.first() ?: return ApiResult.Success(false)
-        
+
         if (BuildConfig.DEBUG) {
-        
             Log.d(TAG, "Attempting auto-reconnection to ${server.url}")
-        
         }
-        
+
         return when (val result = testServerConnection(server.url)) {
             is ApiResult.Success -> {
                 _isConnected.value = true
@@ -177,7 +174,7 @@ class JellyfinEnhancedRepository @Inject constructor(
      */
     suspend fun performHealthCheck(): ApiResult<Boolean> {
         val serverUrl = getCurrentServerUrl() ?: return ApiResult.Error("No server connected")
-        
+
         return when (val result = testServerConnection(serverUrl)) {
             is ApiResult.Success -> {
                 _isConnected.value = true
@@ -200,7 +197,7 @@ class JellyfinEnhancedRepository @Inject constructor(
         if (!isServerConnected()) {
             return ApiResult.Error("Not connected to server")
         }
-        
+
         // Placeholder - will be replaced with media repository call
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "getUserLibraries - implementation pending")
@@ -211,12 +208,12 @@ class JellyfinEnhancedRepository @Inject constructor(
     suspend fun getLibraryItems(
         parentId: UUID? = null,
         itemTypes: List<BaseItemKind> = emptyList(),
-        limit: Int? = null
+        limit: Int? = null,
     ): ApiResult<List<BaseItemDto>> {
         if (!isServerConnected()) {
             return ApiResult.Error("Not connected to server")
         }
-        
+
         // Placeholder - will be replaced with media repository call
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "getLibraryItems - implementation pending")
@@ -228,7 +225,7 @@ class JellyfinEnhancedRepository @Inject constructor(
         if (!isServerConnected()) {
             return ApiResult.Error("Not connected to server")
         }
-        
+
         // Placeholder - will be replaced with media repository call
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "getRecentlyAdded - implementation pending")

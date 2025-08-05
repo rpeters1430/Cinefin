@@ -1,20 +1,12 @@
 package com.example.jellyfinandroid.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,9 +22,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.example.jellyfinandroid.utils.AppConstants
-import com.example.jellyfinandroid.utils.rememberDebouncedState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -40,8 +29,9 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.jellyfinandroid.R
-import com.example.jellyfinandroid.ui.components.MediaCard
 import com.example.jellyfinandroid.ui.viewmodel.MainAppState
+import com.example.jellyfinandroid.utils.AppConstants
+import com.example.jellyfinandroid.utils.rememberDebouncedState
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,12 +42,12 @@ fun SearchScreen(
     onClearSearch: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
     onBackClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val debouncedQuery = rememberDebouncedState(
         value = searchQuery,
-        delayMs = AppConstants.Search.SEARCH_DEBOUNCE_MS
+        delayMs = AppConstants.Search.SEARCH_DEBOUNCE_MS,
     )
 
     val focusManager = LocalFocusManager.current
@@ -80,29 +70,29 @@ fun SearchScreen(
             TopAppBar(
                 title = { Text(stringResource(id = R.string.search)) },
                 navigationIcon = {
-                    IconButton(onClick = { 
+                    IconButton(onClick = {
                         focusManager.clearFocus()
-                        onBackClick() 
+                        onBackClick()
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(id = R.string.navigate_up)
+                            contentDescription = stringResource(id = R.string.navigate_up),
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                ),
             )
         },
-        modifier = modifier
+        modifier = modifier,
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
         ) {
             OutlinedTextField(
                 value = searchQuery,
@@ -112,7 +102,7 @@ fun SearchScreen(
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = stringResource(id = R.string.search)
+                        contentDescription = stringResource(id = R.string.search),
                     )
                 },
                 label = { Text(stringResource(id = R.string.search)) },
@@ -121,7 +111,7 @@ fun SearchScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
-                    .focusRequester(focusRequester)
+                    .focusRequester(focusRequester),
             )
 
             SearchResultsContent(
@@ -129,8 +119,8 @@ fun SearchScreen(
                 isSearching = appState.isSearching,
                 errorMessage = appState.errorMessage,
                 getImageUrl = getImageUrl,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         }
     }
-} 
+}

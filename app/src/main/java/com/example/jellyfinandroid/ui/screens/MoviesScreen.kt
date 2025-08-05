@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import com.example.jellyfinandroid.utils.getRatingAsDouble
-import com.example.jellyfinandroid.utils.hasHighRating
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,16 +15,12 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
-import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.ui.res.stringResource
-import com.example.jellyfinandroid.R
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -54,16 +48,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.ui.components.MediaCard
 import com.example.jellyfinandroid.ui.theme.MovieRed
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
+import com.example.jellyfinandroid.utils.getRatingAsDouble
+import com.example.jellyfinandroid.utils.hasHighRating
 import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.BaseItemKind
 
 enum class MovieFilter(val displayNameResId: Int) {
     ALL(R.string.filter_all_movies),
@@ -74,8 +69,9 @@ enum class MovieFilter(val displayNameResId: Int) {
     DECADE_2000S(R.string.filter_2000s),
     DECADE_1990S(R.string.filter_1990s),
     HIGH_RATED(R.string.filter_high_rated),
-    UNWATCHED(R.string.filter_unwatched);
-    
+    UNWATCHED(R.string.filter_unwatched),
+    ;
+
     companion object {
         fun getAllFilters() = entries
     }
@@ -91,8 +87,9 @@ enum class MovieSortOrder(val displayNameResId: Int) {
     RUNTIME_DESC(R.string.sort_runtime_desc),
     RUNTIME_ASC(R.string.sort_runtime_asc),
     DATE_ADDED_DESC(R.string.sort_date_added_desc),
-    DATE_ADDED_ASC(R.string.sort_date_added_asc);
-    
+    DATE_ADDED_ASC(R.string.sort_date_added_asc),
+    ;
+
     companion object {
         fun getDefault() = TITLE_ASC
         fun getAllSortOrders() = entries
@@ -101,7 +98,7 @@ enum class MovieSortOrder(val displayNameResId: Int) {
 
 enum class MovieViewMode {
     GRID,
-    LIST
+    LIST,
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,7 +107,7 @@ fun MoviesScreen(
     onBackClick: () -> Unit = {},
     onMovieClick: (BaseItemDto) -> Unit = {},
     viewModel: MainAppViewModel = hiltViewModel(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val appState by viewModel.appState.collectAsState()
     var selectedFilter by remember { mutableStateOf(MovieFilter.ALL) }
@@ -127,53 +124,53 @@ fun MoviesScreen(
 
     // Use allMovies list from the view model
     val movieItems = remember(appState.allMovies) { appState.allMovies }
-    
+
     // Apply filtering and sorting
     val filteredAndSortedMovies = remember(movieItems, selectedFilter, sortOrder) {
         val filtered = when (selectedFilter) {
             MovieFilter.ALL -> movieItems
-            MovieFilter.RECENT -> movieItems.filter { 
-                ((it.productionYear as? Number)?.toInt() ?: 0) >= 2020 
+            MovieFilter.RECENT -> movieItems.filter {
+                ((it.productionYear as? Number)?.toInt() ?: 0) >= 2020
             }
             MovieFilter.FAVORITES -> movieItems.filter { it.userData?.isFavorite == true }
-            MovieFilter.DECADE_2020S -> movieItems.filter { 
+            MovieFilter.DECADE_2020S -> movieItems.filter {
                 val year = (it.productionYear as? Number)?.toInt() ?: 0
                 year >= 2020 && year <= 2029
             }
-            MovieFilter.DECADE_2010S -> movieItems.filter { 
+            MovieFilter.DECADE_2010S -> movieItems.filter {
                 val year = (it.productionYear as? Number)?.toInt() ?: 0
                 year >= 2010 && year <= 2019
             }
-            MovieFilter.DECADE_2000S -> movieItems.filter { 
+            MovieFilter.DECADE_2000S -> movieItems.filter {
                 val year = (it.productionYear as? Number)?.toInt() ?: 0
                 year >= 2000 && year <= 2009
             }
-            MovieFilter.DECADE_1990S -> movieItems.filter { 
+            MovieFilter.DECADE_1990S -> movieItems.filter {
                 val year = (it.productionYear as? Number)?.toInt() ?: 0
                 year >= 1990 && year <= 1999
             }
             MovieFilter.HIGH_RATED -> movieItems.filter { it.hasHighRating() }
-            MovieFilter.UNWATCHED -> movieItems.filter { 
-                it.userData?.played != true 
+            MovieFilter.UNWATCHED -> movieItems.filter {
+                it.userData?.played != true
             }
         }
-        
+
         when (sortOrder) {
             MovieSortOrder.TITLE_ASC -> filtered.sortedBy { it.sortName ?: it.name }
             MovieSortOrder.TITLE_DESC -> filtered.sortedByDescending { it.sortName ?: it.name }
-            MovieSortOrder.YEAR_DESC -> filtered.sortedByDescending { 
-                (it.productionYear as? Number)?.toInt() ?: 0 
+            MovieSortOrder.YEAR_DESC -> filtered.sortedByDescending {
+                (it.productionYear as? Number)?.toInt() ?: 0
             }
-            MovieSortOrder.YEAR_ASC -> filtered.sortedBy { 
-                (it.productionYear as? Number)?.toInt() ?: 0 
+            MovieSortOrder.YEAR_ASC -> filtered.sortedBy {
+                (it.productionYear as? Number)?.toInt() ?: 0
             }
             MovieSortOrder.RATING_DESC -> filtered.sortedByDescending { it.getRatingAsDouble() }
             MovieSortOrder.RATING_ASC -> filtered.sortedBy { it.getRatingAsDouble() }
-            MovieSortOrder.RUNTIME_DESC -> filtered.sortedByDescending { 
-                it.runTimeTicks ?: 0L 
+            MovieSortOrder.RUNTIME_DESC -> filtered.sortedByDescending {
+                it.runTimeTicks ?: 0L
             }
-            MovieSortOrder.RUNTIME_ASC -> filtered.sortedBy { 
-                it.runTimeTicks ?: 0L 
+            MovieSortOrder.RUNTIME_ASC -> filtered.sortedBy {
+                it.runTimeTicks ?: 0L
             }
             MovieSortOrder.DATE_ADDED_DESC -> filtered.sortedByDescending { it.dateCreated }
             MovieSortOrder.DATE_ADDED_ASC -> filtered.sortedBy { it.dateCreated }
@@ -186,7 +183,7 @@ fun MoviesScreen(
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Movie,
@@ -201,14 +198,14 @@ fun MoviesScreen(
                             SegmentedButton(
                                 shape = SegmentedButtonDefaults.itemShape(
                                     index = index,
-                                    count = MovieViewMode.entries.size
+                                    count = MovieViewMode.entries.size,
                                 ),
                                 onClick = { viewMode = mode },
                                 selected = viewMode == mode,
                                 colors = SegmentedButtonDefaults.colors(
                                     activeContainerColor = MovieRed.copy(alpha = 0.2f),
-                                    activeContentColor = MovieRed
-                                )
+                                    activeContentColor = MovieRed,
+                                ),
                             ) {
                                 Icon(
                                     imageVector = when (mode) {
@@ -216,23 +213,23 @@ fun MoviesScreen(
                                         MovieViewMode.LIST -> Icons.AutoMirrored.Filled.ViewList
                                     },
                                     contentDescription = mode.name,
-                                    modifier = Modifier.padding(2.dp)
+                                    modifier = Modifier.padding(2.dp),
                                 )
                             }
                         }
                     }
-                    
+
                     // Sort menu
                     Box {
                         IconButton(onClick = { showSortMenu = true }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Sort,
-                                contentDescription = stringResource(id = R.string.sort)
+                                contentDescription = stringResource(id = R.string.sort),
                             )
                         }
                         DropdownMenu(
                             expanded = showSortMenu,
-                            onDismissRequest = { showSortMenu = false }
+                            onDismissRequest = { showSortMenu = false },
                         ) {
                             MovieSortOrder.getAllSortOrders().forEach { order ->
                                 DropdownMenuItem(
@@ -240,37 +237,37 @@ fun MoviesScreen(
                                     onClick = {
                                         sortOrder = order
                                         showSortMenu = false
-                                    }
+                                    },
                                 )
                             }
                         }
                     }
-                    
+
                     IconButton(onClick = { viewModel.refreshMovies() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = stringResource(id = R.string.refresh)
+                            contentDescription = stringResource(id = R.string.refresh),
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                ),
             )
         },
-        modifier = modifier
+        modifier = modifier,
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
         ) {
             // Filter chips
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 items(MovieFilter.getAllFilters()) { filter ->
                     FilterChip(
@@ -282,83 +279,85 @@ fun MoviesScreen(
                                 Icon(
                                     imageVector = Icons.Default.Star,
                                     contentDescription = null,
-                                    modifier = Modifier.padding(2.dp)
+                                    modifier = Modifier.padding(2.dp),
                                 )
                             }
-                        } else null,
+                        } else {
+                            null
+                        },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MovieRed.copy(alpha = 0.2f),
                             selectedLabelColor = MovieRed,
-                            selectedLeadingIconColor = MovieRed
-                        )
+                            selectedLeadingIconColor = MovieRed,
+                        ),
                     )
                 }
             }
-            
+
             // Content
             when {
                 appState.isLoadingMovies && movieItems.isEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator(color = MovieRed)
                     }
                 }
-                
+
                 appState.errorMessage != null -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(16.dp),
                         ) {
                             Text(
                                 text = appState.errorMessage ?: "Unknown error",
                                 color = MaterialTheme.colorScheme.onErrorContainer,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(16.dp),
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
                 }
-                
+
                 filteredAndSortedMovies.isEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Movie,
                                 contentDescription = null,
                                 modifier = Modifier.padding(32.dp),
-                                tint = MovieRed.copy(alpha = 0.6f)
+                                tint = MovieRed.copy(alpha = 0.6f),
                             )
                             Text(
                                 text = stringResource(id = R.string.no_movies_found),
                                 style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
                                 text = stringResource(id = R.string.adjust_filters_hint),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                 }
-                
+
                 else -> {
                     MoviesContent(
                         movies = filteredAndSortedMovies,
@@ -367,7 +366,7 @@ fun MoviesScreen(
                         onMovieClick = onMovieClick,
                         isLoadingMore = appState.isLoadingMovies,
                         hasMoreItems = appState.hasMoreMovies,
-                        onLoadMore = { viewModel.loadMoreMovies() }
+                        onLoadMore = { viewModel.loadMoreMovies() },
                     )
                 }
             }
@@ -384,7 +383,7 @@ private fun MoviesContent(
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     when (viewMode) {
         MovieViewMode.GRID -> {
@@ -393,49 +392,49 @@ private fun MoviesContent(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = modifier.fillMaxSize()
+                modifier = modifier.fillMaxSize(),
             ) {
                 items(movies) { movie ->
                     MediaCard(
                         item = movie,
                         getImageUrl = getImageUrl,
-                        onClick = onMovieClick
+                        onClick = onMovieClick,
                     )
                 }
-                
+
                 if (hasMoreItems || isLoadingMore) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         MoviesPaginationFooter(
                             isLoadingMore = isLoadingMore,
                             hasMoreItems = hasMoreItems,
-                            onLoadMore = onLoadMore
+                            onLoadMore = onLoadMore,
                         )
                     }
                 }
             }
         }
-        
+
         MovieViewMode.LIST -> {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(1),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = modifier.fillMaxSize()
+                modifier = modifier.fillMaxSize(),
             ) {
                 items(movies) { movie ->
                     MediaCard(
                         item = movie,
                         getImageUrl = getImageUrl,
-                        onClick = onMovieClick
+                        onClick = onMovieClick,
                     )
                 }
-                
+
                 if (hasMoreItems || isLoadingMore) {
                     item {
                         MoviesPaginationFooter(
                             isLoadingMore = isLoadingMore,
                             hasMoreItems = hasMoreItems,
-                            onLoadMore = onLoadMore
+                            onLoadMore = onLoadMore,
                         )
                     }
                 }
@@ -449,40 +448,40 @@ private fun MoviesPaginationFooter(
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(Unit) {
         if (hasMoreItems && !isLoadingMore) {
             onLoadMore()
         }
     }
-    
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(16.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         if (isLoadingMore) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 CircularProgressIndicator(
                     color = MovieRed,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(8.dp),
                 )
                 Text(
                     text = stringResource(id = R.string.loading_more_movies),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         } else if (!hasMoreItems) {
             Text(
                 text = stringResource(id = R.string.no_more_movies),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

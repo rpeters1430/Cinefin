@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -48,37 +47,37 @@ fun Modifier.shimmer(): Modifier = composed {
         animationSpec = infiniteRepeatable(
             animation = tween(
                 durationMillis = 1000,
-                easing = FastOutSlowInEasing
+                easing = FastOutSlowInEasing,
             ),
-            repeatMode = RepeatMode.Reverse
+            repeatMode = RepeatMode.Reverse,
         ),
-        label = "shimmer"
+        label = "shimmer",
     )
-    
+
     val shimmerColorStops = arrayOf(
         0.0f to Color.Gray.copy(alpha = 0.6f),
         0.5f to Color.Gray.copy(alpha = alpha),
-        1.0f to Color.Gray.copy(alpha = 0.6f)
+        1.0f to Color.Gray.copy(alpha = 0.6f),
     )
-    
+
     background(
         brush = Brush.linearGradient(
             colorStops = shimmerColorStops,
             start = Offset(0f, 0f),
-            end = Offset(1000f, 1000f)
-        )
+            end = Offset(1000f, 1000f),
+        ),
     )
 }
 
 @Composable
 fun ShimmerBox(
     modifier: Modifier = Modifier,
-    cornerRadius: Int = 8
+    cornerRadius: Int = 8,
 ) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(cornerRadius.dp))
-            .shimmer()
+            .shimmer(),
     )
 }
 
@@ -87,42 +86,42 @@ fun ShimmerBox(
  */
 @Composable
 fun SkeletonMovieCard(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.width(160.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column(
-            modifier = Modifier.padding(8.dp)
+            modifier = Modifier.padding(8.dp),
         ) {
             // Movie poster placeholder
             ShimmerBox(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(240.dp),
-                cornerRadius = 8
+                cornerRadius = 8,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Title placeholder
             ShimmerBox(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(16.dp),
-                cornerRadius = 4
+                cornerRadius = 4,
             )
-            
+
             Spacer(modifier = Modifier.height(4.dp))
-            
+
             // Subtitle placeholder
             ShimmerBox(
                 modifier = Modifier
                     .fillMaxWidth(0.7f)
                     .height(12.dp),
-                cornerRadius = 4
+                cornerRadius = 4,
             )
         }
     }
@@ -133,42 +132,42 @@ fun SkeletonMovieCard(
  */
 @Composable
 fun SkeletonTVShowCard(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.width(160.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column(
-            modifier = Modifier.padding(8.dp)
+            modifier = Modifier.padding(8.dp),
         ) {
             // Show poster placeholder
             ShimmerBox(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(240.dp),
-                cornerRadius = 8
+                cornerRadius = 8,
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Title placeholder
             ShimmerBox(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(16.dp),
-                cornerRadius = 4
+                cornerRadius = 4,
             )
-            
+
             Spacer(modifier = Modifier.height(4.dp))
-            
+
             // Episode count placeholder
             ShimmerBox(
                 modifier = Modifier
                     .fillMaxWidth(0.5f)
                     .height(12.dp),
-                cornerRadius = 4
+                cornerRadius = 4,
             )
         }
     }
@@ -180,38 +179,38 @@ fun SkeletonTVShowCard(
 @Composable
 fun SkeletonListItem(
     modifier: Modifier = Modifier,
-    showThumbnail: Boolean = true
+    showThumbnail: Boolean = true,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         if (showThumbnail) {
             ShimmerBox(
                 modifier = Modifier.size(60.dp),
-                cornerRadius = 8
+                cornerRadius = 8,
             )
         }
-        
+
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             ShimmerBox(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(16.dp),
-                cornerRadius = 4
+                cornerRadius = 4,
             )
-            
+
             ShimmerBox(
                 modifier = Modifier
                     .fillMaxWidth(0.6f)
                     .height(12.dp),
-                cornerRadius = 4
+                cornerRadius = 4,
             )
         }
     }
@@ -225,13 +224,13 @@ fun SkeletonGrid(
     modifier: Modifier = Modifier,
     columns: GridCells = GridCells.Adaptive(minSize = 160.dp),
     itemCount: Int = 12,
-    content: @Composable () -> Unit = { SkeletonMovieCard() }
+    content: @Composable () -> Unit = { SkeletonMovieCard() },
 ) {
     LazyVerticalGrid(
         columns = columns,
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(itemCount) {
             content()
@@ -246,10 +245,10 @@ fun SkeletonGrid(
 fun SkeletonCarousel(
     modifier: Modifier = Modifier,
     title: String = "",
-    itemCount: Int = 6
+    itemCount: Int = 6,
 ) {
     Column(
-        modifier = modifier.padding(vertical = 8.dp)
+        modifier = modifier.padding(vertical = 8.dp),
     ) {
         if (title.isNotEmpty()) {
             // Title placeholder
@@ -258,16 +257,16 @@ fun SkeletonCarousel(
                     .padding(horizontal = 16.dp)
                     .width(120.dp)
                     .height(20.dp),
-                cornerRadius = 4
+                cornerRadius = 4,
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
         }
-        
+
         // Horizontal scrolling items
         Row(
             modifier = Modifier.padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             repeat(itemCount) {
                 SkeletonMovieCard()
@@ -281,26 +280,26 @@ fun SkeletonCarousel(
  */
 @Composable
 fun SkeletonHomeScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         // Featured content placeholder
         ShimmerBox(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp),
-            cornerRadius = 12
+            cornerRadius = 12,
         )
-        
+
         // Continue watching carousel
         SkeletonCarousel(title = "Continue Watching")
-        
+
         // Recently added carousel
         SkeletonCarousel(title = "Recently Added")
-        
+
         // Recommended carousel
         SkeletonCarousel(title = "Recommended")
     }

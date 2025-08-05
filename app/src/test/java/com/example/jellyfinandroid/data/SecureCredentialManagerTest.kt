@@ -9,7 +9,7 @@ import org.junit.Test
 
 /**
  * Basic test suite for SecureCredentialManager.
- * 
+ *
  * Tests core functionality and security patterns.
  */
 class SecureCredentialManagerTest {
@@ -32,9 +32,9 @@ class SecureCredentialManagerTest {
     fun `generateKey handles different inputs correctly`() {
         // This test validates that the key generation follows secure patterns
         // Since generateKey is private, we test it indirectly through behavior
-        
+
         val manager = SecureCredentialManager(mockContext)
-        
+
         // The manager should be properly initialized with security components
         assertNotNull("Manager should handle security setup", manager)
     }
@@ -43,9 +43,9 @@ class SecureCredentialManagerTest {
     fun `security patterns are followed`() {
         // This test ensures the credential manager follows security best practices
         // by validating its structure and dependencies
-        
+
         val manager = SecureCredentialManager(mockContext)
-        
+
         // Manager should be configured for secure operations
         assertNotNull("Manager should be configured for security", manager)
     }
@@ -54,7 +54,7 @@ class SecureCredentialManagerTest {
     fun `encryption patterns are secure`() = runTest {
         // Test that the encryption implementation follows secure patterns
         val manager = SecureCredentialManager(mockContext)
-        
+
         // The manager should be ready to handle encryption operations
         assertNotNull("Manager should be ready for encryption", manager)
     }

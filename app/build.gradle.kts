@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.jellyfinandroid"
-        minSdk = 26  // Android 8.0+ (was 31) - Broader device compatibility
+        minSdk = 26 // Android 8.0+ (was 31) - Broader device compatibility
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -26,7 +26,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -76,13 +76,12 @@ dependencies {
     implementation(libs.androidx.material3.adaptive.navigation)
     implementation(libs.androidx.material3.window.size)
 
-
     // Navigation
     implementation(libs.androidx.navigation.compose)
 
     // DataStore for preferences
     implementation(libs.androidx.datastore.preferences)
-    
+
     // Security for encrypted storage
     implementation(libs.androidx.security.crypto)
 

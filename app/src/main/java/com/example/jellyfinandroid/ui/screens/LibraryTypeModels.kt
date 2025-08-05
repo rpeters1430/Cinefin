@@ -65,7 +65,7 @@ object LibraryScreenDefaults {
 /** Simple container for carousel sections. */
 data class CarouselCategory(
     val title: String,
-    val items: List<BaseItemDto>
+    val items: List<BaseItemDto>,
 )
 
 /** Available library categories. */
@@ -73,32 +73,32 @@ enum class LibraryType(
     val displayName: String,
     val icon: ImageVector,
     val color: Color,
-    val itemKinds: List<BaseItemKind>
+    val itemKinds: List<BaseItemKind>,
 ) {
     MOVIES(
         displayName = "Movies",
         icon = Icons.Default.Movie,
         color = MovieRed,
-        itemKinds = listOf(BaseItemKind.MOVIE)
+        itemKinds = listOf(BaseItemKind.MOVIE),
     ),
     TV_SHOWS(
         displayName = "TV Shows",
         icon = Icons.Default.Tv,
         color = SeriesBlue,
-        itemKinds = listOf(BaseItemKind.SERIES, BaseItemKind.EPISODE)
+        itemKinds = listOf(BaseItemKind.SERIES, BaseItemKind.EPISODE),
     ),
     MUSIC(
         displayName = "Music",
         icon = Icons.Default.MusicNote,
         color = MusicGreen,
-        itemKinds = listOf(BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM, BaseItemKind.MUSIC_ARTIST)
+        itemKinds = listOf(BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM, BaseItemKind.MUSIC_ARTIST),
     ),
     STUFF(
         displayName = "Stuff",
         icon = Icons.Default.Widgets,
         color = BookPurple,
-        itemKinds = listOf(BaseItemKind.BOOK, BaseItemKind.AUDIO_BOOK, BaseItemKind.VIDEO, BaseItemKind.PHOTO)
-    )
+        itemKinds = listOf(BaseItemKind.BOOK, BaseItemKind.AUDIO_BOOK, BaseItemKind.VIDEO, BaseItemKind.PHOTO),
+    ),
 }
 
 /** Different ways the library can be displayed. */
@@ -187,4 +187,3 @@ fun organizeItemsForCarousel(items: List<BaseItemDto>, libraryType: LibraryType)
 
     return categories
 }
-

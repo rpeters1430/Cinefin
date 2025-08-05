@@ -22,4 +22,4 @@ fun getQualityLabel(item: BaseItemDto): Pair<String, Color>? {
         mediaSource.container?.contains("hd", ignoreCase = true) == true -> "HD" to QualityHD
         else -> null
     }
-} 
+}

@@ -3,11 +3,13 @@ package com.example.jellyfinandroid.data
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Base64
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.jellyfinandroid.utils.AppConstants
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -18,25 +20,22 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import javax.inject.Inject
 import javax.inject.Singleton
-import android.util.Base64
-import com.example.jellyfinandroid.utils.AppConstants
 
 // Modern secure DataStore extension
 private val Context.secureCredentialsDataStore: DataStore<Preferences> by preferencesDataStore(name = "secure_credentials")
 
 @Singleton
 class SecureCredentialManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) {
-    
-    
+
     // ✅ FIX: Use modern Android Keystore with DataStore for secure storage
     private val keyStore: KeyStore by lazy {
         KeyStore.getInstance("AndroidKeyStore").apply {
             load(null)
         }
     }
-    
+
     private fun getOrCreateSecretKey(): SecretKey {
         return if (keyStore.containsAlias(AppConstants.Security.KEY_ALIAS)) {
             keyStore.getKey(AppConstants.Security.KEY_ALIAS, null) as SecretKey
@@ -44,25 +43,25 @@ class SecureCredentialManager @Inject constructor(
             val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
             val keyGenParameterSpec = KeyGenParameterSpec.Builder(
                 AppConstants.Security.KEY_ALIAS,
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
             )
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                 .setUserAuthenticationRequired(false)
                 .build()
-            
+
             keyGenerator.init(keyGenParameterSpec)
             keyGenerator.generateKey()
         }
     }
-    
+
     private fun encrypt(data: String): String {
         val cipher = Cipher.getInstance(AppConstants.Security.ENCRYPTION_TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateSecretKey())
-        
+
         val iv = cipher.iv
         val encryptedData = cipher.doFinal(data.toByteArray())
-        
+
         // Combine IV + encrypted data and encode to Base64
         val combined = iv + encryptedData
         return Base64.encodeToString(combined, Base64.NO_WRAP)
@@ -73,11 +72,11 @@ class SecureCredentialManager @Inject constructor(
             val combined = Base64.decode(encryptedData, Base64.NO_WRAP)
             val iv = combined.sliceArray(0 until AppConstants.Security.IV_LENGTH)
             val cipherData = combined.sliceArray(AppConstants.Security.IV_LENGTH until combined.size)
-            
+
             val cipher = Cipher.getInstance(AppConstants.Security.ENCRYPTION_TRANSFORMATION)
             val spec = GCMParameterSpec(128, iv)
             cipher.init(Cipher.DECRYPT_MODE, getOrCreateSecretKey(), spec)
-            
+
             String(cipher.doFinal(cipherData))
         } catch (e: Exception) {
             null // Return null if decryption fails
@@ -88,7 +87,7 @@ class SecureCredentialManager @Inject constructor(
     suspend fun savePassword(serverUrl: String, username: String, password: String) {
         val key = generateKey(serverUrl, username)
         val encryptedPassword = encrypt(password)
-        
+
         context.secureCredentialsDataStore.edit { preferences ->
             preferences[stringPreferencesKey(key)] = encryptedPassword
         }
@@ -99,7 +98,7 @@ class SecureCredentialManager @Inject constructor(
         val encryptedPassword = context.secureCredentialsDataStore.data.map { preferences ->
             preferences[stringPreferencesKey(key)]
         }.first()
-        
+
         return encryptedPassword?.let { decrypt(it) }
     }
 
@@ -115,7 +114,7 @@ class SecureCredentialManager @Inject constructor(
             preferences.clear()
         }
     }
-    
+
     suspend fun clearCredentials() {
         clearAllPasswords()
     }
@@ -124,7 +123,7 @@ class SecureCredentialManager @Inject constructor(
     private fun generateKey(serverUrl: String, username: String): String {
         require(serverUrl.isNotBlank()) { "Server URL cannot be blank" }
         require(username.isNotBlank()) { "Username cannot be blank" }
-        
+
         // More robust sanitization and collision prevention
         val sanitizedUrl = serverUrl.trimEnd('/')
             .replace(Regex("[^a-zA-Z0-9._-]"), "_")
@@ -132,11 +131,11 @@ class SecureCredentialManager @Inject constructor(
         val sanitizedUsername = username
             .replace(Regex("[^a-zA-Z0-9._-]"), "_")
             .take(30) // Limit length
-        
+
         // Add hash suffix to prevent collisions
-        val combined = "${sanitizedUrl}::${sanitizedUsername}"
+        val combined = "$sanitizedUrl::$sanitizedUsername"
         val hashSuffix = combined.hashCode().toString().takeLast(4)
-        
+
         return "pwd_${sanitizedUrl}_${sanitizedUsername}_$hashSuffix"
     }
-} 
+}

@@ -1,18 +1,18 @@
 package com.example.jellyfinandroid.ui.viewmodel
 
-import com.example.jellyfinandroid.BuildConfig
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.jellyfinandroid.BuildConfig
+import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.data.repository.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
-import com.example.jellyfinandroid.data.SecureCredentialManager
-import org.jellyfin.sdk.model.api.BaseItemDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
 
 data class MainAppState(
@@ -36,38 +36,38 @@ data class MainAppState(
     val isLoadingMore: Boolean = false,
     val hasMoreItems: Boolean = true,
     val currentPage: Int = 0,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
 )
 
 data class PaginatedItems(
     val items: List<BaseItemDto>,
     val hasMore: Boolean,
-    val totalCount: Int? = null
+    val totalCount: Int? = null,
 )
 
 @HiltViewModel
 class MainAppViewModel @Inject constructor(
     private val repository: JellyfinRepository,
-    private val credentialManager: SecureCredentialManager
+    private val credentialManager: SecureCredentialManager,
 ) : ViewModel() {
-    
+
     private val _appState = MutableStateFlow(MainAppState())
     val appState: StateFlow<MainAppState> = _appState.asStateFlow()
-    
+
     val currentServer = repository.currentServer
     val isConnected = repository.isConnected
-    
+
     init {
         loadInitialData()
     }
-    
+
     fun loadInitialData() {
         viewModelScope.launch {
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Starting to load all data")
             }
             _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
-            
+
             // Load libraries
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Loading libraries")
@@ -88,7 +88,7 @@ class MainAppViewModel @Inject constructor(
                     } else {
                         Log.e("MainAppViewModel", "loadInitialData: Failed to load libraries: ${result.message}")
                         _appState.value = _appState.value.copy(
-                            errorMessage = "Failed to load libraries: ${result.message}"
+                            errorMessage = "Failed to load libraries: ${result.message}",
                         )
                     }
                 }
@@ -96,7 +96,7 @@ class MainAppViewModel @Inject constructor(
                     // Already handled
                 }
             }
-            
+
             // Load recently added items
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Loading recently added items")
@@ -119,7 +119,7 @@ class MainAppViewModel @Inject constructor(
                         // Don't override library error, just log this
                         if (_appState.value.errorMessage == null) {
                             _appState.value = _appState.value.copy(
-                                errorMessage = "Failed to load recent items: ${result.message}"
+                                errorMessage = "Failed to load recent items: ${result.message}",
                             )
                         }
                     }
@@ -147,7 +147,7 @@ class MainAppViewModel @Inject constructor(
                     _appState.value = _appState.value.copy(recentlyAddedByTypes = result.data)
                 }
                 is ApiResult.Error -> {
-                    // ✅ FIX: Don't show error messages for cancelled operations  
+                    // ✅ FIX: Don't show error messages for cancelled operations
                     if (result.errorType == com.example.jellyfinandroid.data.repository.ErrorType.OPERATION_CANCELLED) {
                         if (BuildConfig.DEBUG) {
                             Log.d("MainAppViewModel", "loadInitialData: Recent items by type loading was cancelled (navigation)")
@@ -157,7 +157,7 @@ class MainAppViewModel @Inject constructor(
                         // Don't override other errors, just log this
                         if (_appState.value.errorMessage == null) {
                             _appState.value = _appState.value.copy(
-                                errorMessage = "Failed to load recent items by type: ${result.message}"
+                                errorMessage = "Failed to load recent items by type: ${result.message}",
                             )
                         }
                     }
@@ -166,7 +166,7 @@ class MainAppViewModel @Inject constructor(
                     // Already handled
                 }
             }
-            
+
             // Load initial page of items for library type screens
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Loading library items page")
@@ -180,34 +180,32 @@ class MainAppViewModel @Inject constructor(
             loadAllMovies(reset = true)
 
             if (BuildConfig.DEBUG) {
-
                 Log.d("MainAppViewModel", "loadInitialData: Loading all TV shows")
-
             }
             loadAllTVShows(reset = true)
-            
+
             _appState.value = _appState.value.copy(isLoading = false)
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Completed loading all data")
             }
         }
     }
-    
+
     fun loadFavorites() {
         viewModelScope.launch {
             _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
-            
+
             when (val result = repository.getFavorites()) {
                 is ApiResult.Success -> {
                     _appState.value = _appState.value.copy(
                         favorites = result.data,
-                        isLoading = false
+                        isLoading = false,
                     )
                 }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to load favorites: ${result.message}",
-                        isLoading = false
+                        isLoading = false,
                     )
                 }
                 is ApiResult.Loading -> {
@@ -216,11 +214,11 @@ class MainAppViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun clearError() {
         _appState.value = _appState.value.copy(errorMessage = null)
     }
-    
+
     fun logout() {
         viewModelScope.launch {
             repository.logout()
@@ -228,7 +226,7 @@ class MainAppViewModel @Inject constructor(
             credentialManager.clearCredentials()
         }
     }
-    
+
     /**
      * Manually refresh authentication token if expired
      */
@@ -245,44 +243,44 @@ class MainAppViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e("MainAppViewModel", "Authentication refresh failed", e)
                 _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to refresh authentication: ${e.message}"
+                    errorMessage = "Failed to refresh authentication: ${e.message}",
                 )
             }
         }
     }
-    
+
     fun getImageUrl(item: BaseItemDto): String? {
         return repository.getImageUrl(item.id.toString(), "Primary", null)
     }
-    
+
     fun getBackdropUrl(item: BaseItemDto): String? {
         return repository.getBackdropUrl(item)
     }
-    
+
     fun getSeriesImageUrl(item: BaseItemDto): String? {
         return repository.getSeriesImageUrl(item)
     }
-    
+
     fun search(query: String) {
         viewModelScope.launch {
             _appState.value = _appState.value.copy(
                 searchQuery = query,
                 isSearching = true,
-                errorMessage = null
+                errorMessage = null,
             )
-            
+
             when (val result = repository.searchItems(query)) {
                 is ApiResult.Success -> {
                     _appState.value = _appState.value.copy(
                         searchResults = result.data,
-                        isSearching = false
+                        isSearching = false,
                     )
                 }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         searchResults = emptyList(),
                         isSearching = false,
-                        errorMessage = "Search failed: ${result.message}"
+                        errorMessage = "Search failed: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -291,19 +289,19 @@ class MainAppViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun clearSearch() {
         _appState.value = _appState.value.copy(
             searchQuery = "",
             searchResults = emptyList(),
-            isSearching = false
+            isSearching = false,
         )
     }
-    
+
     private fun loadLibraryItemsPage(reset: Boolean = false) {
         viewModelScope.launch {
             val currentState = _appState.value
-            
+
             if (reset) {
                 if (BuildConfig.DEBUG) {
                     Log.d("MainAppViewModel", "loadLibraryItemsPage: Resetting and loading first page")
@@ -312,7 +310,7 @@ class MainAppViewModel @Inject constructor(
                     allItems = emptyList(),
                     currentPage = 0,
                     hasMoreItems = true,
-                    isLoading = true
+                    isLoading = true,
                 )
             } else {
                 if (BuildConfig.DEBUG) {
@@ -320,21 +318,21 @@ class MainAppViewModel @Inject constructor(
                 }
                 _appState.value = currentState.copy(isLoadingMore = true)
             }
-            
+
             val pageSize = 50 // Reasonable page size
             val page = if (reset) 0 else currentState.currentPage + 1
             val startIndex = page * pageSize
-            
+
             if (BuildConfig.DEBUG) {
-            
                 Log.d("MainAppViewModel", "loadLibraryItemsPage: Requesting page $page (startIndex: $startIndex, limit: $pageSize)")
-            
             }
-            
-            when (val result = repository.getLibraryItems(
-                startIndex = startIndex,
-                limit = pageSize
-            )) {
+
+            when (
+                val result = repository.getLibraryItems(
+                    startIndex = startIndex,
+                    limit = pageSize,
+                )
+            ) {
                 is ApiResult.Success -> {
                     val newItems = result.data
                     val allItems = if (reset) {
@@ -342,29 +340,27 @@ class MainAppViewModel @Inject constructor(
                     } else {
                         currentState.allItems + newItems
                     }
-                    
+
                     if (BuildConfig.DEBUG) {
-                    
                         Log.d("MainAppViewModel", "loadLibraryItemsPage: Successfully loaded ${newItems.size} items for page $page")
-                    
                     }
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "loadLibraryItemsPage: Total items now: ${allItems.size}")
                     }
-                    
+
                     // Log item types breakdown
                     val typeBreakdown = allItems.groupBy { it.type }.mapValues { it.value.size }
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "loadLibraryItemsPage: Item types breakdown: $typeBreakdown")
                     }
-                    
+
                     _appState.value = _appState.value.copy(
                         allItems = allItems,
                         currentPage = page,
                         hasMoreItems = newItems.size == pageSize, // If we got less than pageSize, no more items
                         isLoading = false,
                         isLoadingMore = false,
-                        errorMessage = null
+                        errorMessage = null,
                     )
                 }
                 is ApiResult.Error -> {
@@ -372,7 +368,7 @@ class MainAppViewModel @Inject constructor(
                     _appState.value = _appState.value.copy(
                         isLoading = false,
                         isLoadingMore = false,
-                        errorMessage = if (reset) "Failed to load items: ${result.message}" else result.message
+                        errorMessage = if (reset) "Failed to load items: ${result.message}" else result.message,
                     )
                 }
                 is ApiResult.Loading -> {
@@ -381,18 +377,18 @@ class MainAppViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun loadMoreItems() {
         val currentState = _appState.value
         if (!currentState.isLoadingMore && currentState.hasMoreItems) {
             loadLibraryItemsPage(reset = false)
         }
     }
-    
+
     fun refreshLibraryItems() {
         loadLibraryItemsPage(reset = true)
     }
-    
+
     fun toggleFavorite(item: BaseItemDto) {
         viewModelScope.launch {
             val currentFavoriteState = item.userData?.isFavorite ?: false
@@ -407,7 +403,7 @@ class MainAppViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     Log.e("MainAppViewModel", "Failed to toggle favorite: ${result.message}")
                     _appState.value = _appState.value.copy(
-                        errorMessage = "Failed to update favorite: ${result.message}"
+                        errorMessage = "Failed to update favorite: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -430,7 +426,7 @@ class MainAppViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     Log.e("MainAppViewModel", "Failed to mark as watched: ${result.message}")
                     _appState.value = _appState.value.copy(
-                        errorMessage = "Failed to mark as watched: ${result.message}"
+                        errorMessage = "Failed to mark as watched: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -453,7 +449,7 @@ class MainAppViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     Log.e("MainAppViewModel", "Failed to mark as unwatched: ${result.message}")
                     _appState.value = _appState.value.copy(
-                        errorMessage = "Failed to mark as unwatched: ${result.message}"
+                        errorMessage = "Failed to mark as unwatched: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -479,14 +475,14 @@ class MainAppViewModel @Inject constructor(
                         searchResults = _appState.value.searchResults.filterNot { it.id == item.id },
                         allItems = _appState.value.allItems.filterNot { it.id == item.id },
                         allTVShows = _appState.value.allTVShows.filterNot { it.id == item.id },
-                        allMovies = _appState.value.allMovies.filterNot { it.id == item.id }
+                        allMovies = _appState.value.allMovies.filterNot { it.id == item.id },
                     )
                     onResult(true, null)
                 }
                 is ApiResult.Error -> {
                     Log.e("MainAppViewModel", "Failed to delete item: ${result.message}")
                     _appState.value = _appState.value.copy(
-                        errorMessage = "Failed to delete item: ${result.message}"
+                        errorMessage = "Failed to delete item: ${result.message}",
                     )
                     onResult(false, result.message)
                 }
@@ -500,7 +496,7 @@ class MainAppViewModel @Inject constructor(
     fun getStreamUrl(item: BaseItemDto): String? {
         return repository.getStreamUrl(item.id.toString())
     }
-    
+
     /**
      * Gets the download URL for a media item.
      * This URL can be used with DownloadManager for offline storage.
@@ -508,7 +504,7 @@ class MainAppViewModel @Inject constructor(
     fun getDownloadUrl(item: BaseItemDto): String? {
         return repository.getDownloadUrl(item.id.toString())
     }
-    
+
     /**
      * Gets a direct stream URL optimized for downloads.
      */
@@ -523,19 +519,19 @@ class MainAppViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     val currentItems = _appState.value.allItems.toMutableList()
                     val existingIndex = currentItems.indexOfFirst { it.id?.toString() == movieId }
-                    
+
                     if (existingIndex >= 0) {
                         currentItems[existingIndex] = result.data
                     } else {
                         currentItems.add(result.data)
                     }
-                    
+
                     _appState.value = _appState.value.copy(allItems = currentItems, isLoading = false)
                 }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         isLoading = false,
-                        errorMessage = "Failed to load movie details: ${result.message}"
+                        errorMessage = "Failed to load movie details: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -551,19 +547,19 @@ class MainAppViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadTVShowDetails: Loading series details for $seriesId")
             }
-            
+
             // Load the series details and add to allItems if not already there
             when (val result = repository.getSeriesDetails(seriesId)) {
                 is ApiResult.Success -> {
                     val currentItems = _appState.value.allItems.toMutableList()
                     val existingIndex = currentItems.indexOfFirst { it.id?.toString() == seriesId }
-                    
+
                     if (existingIndex >= 0) {
                         currentItems[existingIndex] = result.data
                     } else {
                         currentItems.add(result.data)
                     }
-                    
+
                     _appState.value = _appState.value.copy(allItems = currentItems)
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "loadTVShowDetails: Successfully loaded series ${result.data.name}")
@@ -573,7 +569,7 @@ class MainAppViewModel @Inject constructor(
                     Log.e("MainAppViewModel", "loadTVShowDetails: Failed to load series details: ${result.message}")
                     if (result.errorType != com.example.jellyfinandroid.data.repository.ErrorType.OPERATION_CANCELLED) {
                         _appState.value = _appState.value.copy(
-                            errorMessage = "Failed to load series details: ${result.message}"
+                            errorMessage = "Failed to load series details: ${result.message}",
                         )
                     }
                 }
@@ -583,11 +579,11 @@ class MainAppViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun loadMusic() {
         // Navigation compatibility method - music loading handled by existing functionality
     }
-    
+
     /**
      * Loads episode details for episode detail screen navigation
      */
@@ -596,7 +592,7 @@ class MainAppViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadEpisodeDetails: Loading episode details for $episodeId")
             }
-            
+
             // Check if episode already exists in allItems
             val existingEpisode = _appState.value.allItems.find { it.id.toString() == episodeId }
             if (existingEpisode != null) {
@@ -605,10 +601,10 @@ class MainAppViewModel @Inject constructor(
                 }
                 return@launch
             }
-            
+
             // Set loading state
             _appState.value = _appState.value.copy(isLoading = true)
-            
+
             try {
                 // Fetch episode details from repository
                 when (val result = repository.getEpisodeDetails(episodeId)) {
@@ -617,10 +613,10 @@ class MainAppViewModel @Inject constructor(
                         if (BuildConfig.DEBUG) {
                             Log.d("MainAppViewModel", "loadEpisodeDetails: Successfully loaded episode: ${episode.name}")
                         }
-                        
+
                         // Add episode to app state
                         addOrUpdateItem(episode)
-                        
+
                         // If episode has series info, try to load series details too for better context
                         episode.seriesId?.let { seriesId ->
                             val existingSeries = _appState.value.allItems.find { it.id.toString() == seriesId.toString() }
@@ -642,14 +638,14 @@ class MainAppViewModel @Inject constructor(
                                 }
                             }
                         }
-                        
+
                         _appState.value = _appState.value.copy(isLoading = false)
                     }
                     is ApiResult.Error -> {
                         Log.e("MainAppViewModel", "loadEpisodeDetails: Failed to load episode: ${result.message}")
                         _appState.value = _appState.value.copy(
                             isLoading = false,
-                            errorMessage = "Failed to load episode: ${result.message}"
+                            errorMessage = "Failed to load episode: ${result.message}",
                         )
                     }
                     is ApiResult.Loading -> {
@@ -662,7 +658,7 @@ class MainAppViewModel @Inject constructor(
                 Log.e("MainAppViewModel", "loadEpisodeDetails: Exception loading episode", e)
                 _appState.value = _appState.value.copy(
                     isLoading = false,
-                    errorMessage = "Failed to load episode: ${e.message}"
+                    errorMessage = "Failed to load episode: ${e.message}",
                 )
             }
         }
@@ -683,7 +679,7 @@ class MainAppViewModel @Inject constructor(
                     allMovies = emptyList(),
                     moviesPage = 0,
                     hasMoreMovies = true,
-                    isLoadingMovies = true
+                    isLoadingMovies = true,
                 )
             } else {
                 if (currentState.isLoadingMovies || !currentState.hasMoreMovies) {
@@ -700,16 +696,16 @@ class MainAppViewModel @Inject constructor(
             val startIndex = page * pageSize
 
             if (BuildConfig.DEBUG) {
-
                 Log.d("MainAppViewModel", "loadAllMovies: Requesting page $page (startIndex: $startIndex, limit: $pageSize)")
-
             }
 
-            when (val result = repository.getLibraryItems(
-                itemTypes = "Movie",
-                startIndex = startIndex,
-                limit = pageSize
-            )) {
+            when (
+                val result = repository.getLibraryItems(
+                    itemTypes = "Movie",
+                    startIndex = startIndex,
+                    limit = pageSize,
+                )
+            ) {
                 is ApiResult.Success -> {
                     val newMovies = result.data
                     val allMovies = if (reset) {
@@ -719,9 +715,7 @@ class MainAppViewModel @Inject constructor(
                     }
 
                     if (BuildConfig.DEBUG) {
-
                         Log.d("MainAppViewModel", "loadAllMovies: Successfully loaded ${newMovies.size} movies for page $page")
-
                     }
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "loadAllMovies: Total movies now: ${allMovies.size}")
@@ -732,14 +726,14 @@ class MainAppViewModel @Inject constructor(
                         moviesPage = page,
                         hasMoreMovies = newMovies.size == pageSize,
                         isLoadingMovies = false,
-                        errorMessage = null
+                        errorMessage = null,
                     )
                 }
                 is ApiResult.Error -> {
                     Log.e("MainAppViewModel", "loadAllMovies: Failed to load page $page: ${result.message}")
                     _appState.value = _appState.value.copy(
                         isLoadingMovies = false,
-                        errorMessage = if (reset) "Failed to load movies: ${result.message}" else result.message
+                        errorMessage = if (reset) "Failed to load movies: ${result.message}" else result.message,
                     )
                 }
                 is ApiResult.Loading -> {
@@ -762,14 +756,14 @@ class MainAppViewModel @Inject constructor(
     fun refreshMovies() {
         loadAllMovies(reset = true)
     }
-    
+
     /**
      * Loads all TV shows with pagination support
      */
     fun loadAllTVShows(reset: Boolean = false) {
         viewModelScope.launch {
             val currentState = _appState.value
-            
+
             if (reset) {
                 if (BuildConfig.DEBUG) {
                     Log.d("MainAppViewModel", "loadAllTVShows: Resetting and loading first page")
@@ -778,7 +772,7 @@ class MainAppViewModel @Inject constructor(
                     allTVShows = emptyList(),
                     tvShowsPage = 0,
                     hasMoreTVShows = true,
-                    isLoadingTVShows = true
+                    isLoadingTVShows = true,
                 )
             } else {
                 if (currentState.isLoadingTVShows || !currentState.hasMoreTVShows) {
@@ -789,22 +783,22 @@ class MainAppViewModel @Inject constructor(
                 }
                 _appState.value = currentState.copy(isLoadingTVShows = true)
             }
-            
+
             val pageSize = 50
             val page = if (reset) 0 else currentState.tvShowsPage + 1
             val startIndex = page * pageSize
-            
+
             if (BuildConfig.DEBUG) {
-            
                 Log.d("MainAppViewModel", "loadAllTVShows: Requesting page $page (startIndex: $startIndex, limit: $pageSize)")
-            
             }
-            
-            when (val result = repository.getLibraryItems(
-                itemTypes = "Series",
-                startIndex = startIndex,
-                limit = pageSize
-            )) {
+
+            when (
+                val result = repository.getLibraryItems(
+                    itemTypes = "Series",
+                    startIndex = startIndex,
+                    limit = pageSize,
+                )
+            ) {
                 is ApiResult.Success -> {
                     val newTVShows = result.data
                     val allTVShows = if (reset) {
@@ -812,29 +806,27 @@ class MainAppViewModel @Inject constructor(
                     } else {
                         currentState.allTVShows + newTVShows
                     }
-                    
+
                     if (BuildConfig.DEBUG) {
-                    
                         Log.d("MainAppViewModel", "loadAllTVShows: Successfully loaded ${newTVShows.size} TV shows for page $page")
-                    
                     }
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "loadAllTVShows: Total TV shows now: ${allTVShows.size}")
                     }
-                    
+
                     _appState.value = _appState.value.copy(
                         allTVShows = allTVShows,
                         tvShowsPage = page,
                         hasMoreTVShows = newTVShows.size == pageSize,
                         isLoadingTVShows = false,
-                        errorMessage = null
+                        errorMessage = null,
                     )
                 }
                 is ApiResult.Error -> {
                     Log.e("MainAppViewModel", "loadAllTVShows: Failed to load page $page: ${result.message}")
                     _appState.value = _appState.value.copy(
                         isLoadingTVShows = false,
-                        errorMessage = if (reset) "Failed to load TV shows: ${result.message}" else result.message
+                        errorMessage = if (reset) "Failed to load TV shows: ${result.message}" else result.message,
                     )
                 }
                 is ApiResult.Loading -> {
@@ -843,14 +835,14 @@ class MainAppViewModel @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Loads more TV shows for pagination
      */
     fun loadMoreTVShows() {
         loadAllTVShows(reset = false)
     }
-    
+
     /**
      * Refreshes TV shows by reloading from the beginning
      */
@@ -864,7 +856,7 @@ class MainAppViewModel @Inject constructor(
     fun addOrUpdateItem(item: BaseItemDto) {
         val currentItems = _appState.value.allItems.toMutableList()
         val existingIndex = currentItems.indexOfFirst { it.id == item.id }
-        
+
         if (existingIndex >= 0) {
             currentItems[existingIndex] = item
             if (BuildConfig.DEBUG) {
@@ -876,7 +868,7 @@ class MainAppViewModel @Inject constructor(
                 Log.d("MainAppViewModel", "addOrUpdateItem: Added new item ${item.name}")
             }
         }
-        
+
         _appState.value = _appState.value.copy(allItems = currentItems)
     }
 }

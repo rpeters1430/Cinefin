@@ -26,12 +26,12 @@ import kotlin.math.roundToInt
 @Composable
 fun DownloadsScreen(
     onNavigateBack: () -> Unit,
-    downloadsViewModel: DownloadsViewModel = hiltViewModel()
+    downloadsViewModel: DownloadsViewModel = hiltViewModel(),
 ) {
     val downloads by downloadsViewModel.downloads.collectAsState()
     val downloadProgress by downloadsViewModel.downloadProgress.collectAsState()
     val storageInfo by downloadsViewModel.storageInfo.collectAsState()
-    
+
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Downloads") },
@@ -47,41 +47,41 @@ fun DownloadsScreen(
                 IconButton(onClick = { downloadsViewModel.pauseAllDownloads() }) {
                     Icon(Icons.Default.Pause, contentDescription = "Pause all")
                 }
-            }
+            },
         )
-        
+
         // Storage info card
         storageInfo?.let { info ->
             StorageInfoCard(
                 storageInfo = info,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
             )
         }
-        
+
         if (downloads.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Icon(
                         Icons.Default.CloudDownload,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         "No downloads yet",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         "Downloaded content will appear here",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -89,7 +89,7 @@ fun DownloadsScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(downloads, key = { it.id }) { download ->
                     DownloadItem(
@@ -99,7 +99,7 @@ fun DownloadsScreen(
                         onResume = { downloadsViewModel.resumeDownload(download.id) },
                         onCancel = { downloadsViewModel.cancelDownload(download.id) },
                         onDelete = { downloadsViewModel.deleteDownload(download.id) },
-                        onPlay = { downloadsViewModel.playOfflineContent(download.jellyfinItemId) }
+                        onPlay = { downloadsViewModel.playOfflineContent(download.jellyfinItemId) },
                     )
                 }
             }
@@ -110,50 +110,50 @@ fun DownloadsScreen(
 @Composable
 fun StorageInfoCard(
     storageInfo: com.example.jellyfinandroid.data.offline.OfflineStorageInfo,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     "Storage Usage",
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
                     "${storageInfo.downloadCount} downloads",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            
+
             LinearProgressIndicator(
                 progress = { storageInfo.usedSpacePercentage / 100f },
                 modifier = Modifier.fillMaxWidth(),
             )
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
                     formatBytes(storageInfo.usedSpaceBytes),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     formatBytes(storageInfo.totalSpaceBytes),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -168,47 +168,47 @@ fun DownloadItem(
     onResume: () -> Unit,
     onCancel: () -> Unit,
     onDelete: () -> Unit,
-    onPlay: () -> Unit
+    onPlay: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         download.itemName,
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         download.quality?.label ?: "Original Quality",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                
+
                 DownloadStatusChip(download.status)
             }
-            
+
             // Progress indicator for active downloads
             if (download.status == DownloadStatus.DOWNLOADING && progress != null) {
                 DownloadProgressIndicator(progress)
             }
-            
+
             // Action buttons
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 when (download.status) {
                     DownloadStatus.DOWNLOADING -> {
@@ -264,16 +264,16 @@ fun DownloadStatusChip(status: DownloadStatus) {
         DownloadStatus.FAILED -> MaterialTheme.colorScheme.error to "Failed"
         DownloadStatus.CANCELLED -> MaterialTheme.colorScheme.outline to "Cancelled"
     }
-    
+
     Surface(
         modifier = Modifier.clip(RoundedCornerShape(12.dp)),
-        color = color.copy(alpha = 0.1f)
+        color = color.copy(alpha = 0.1f),
     ) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             style = MaterialTheme.typography.labelSmall,
-            color = color
+            color = color,
         )
     }
 }
@@ -284,39 +284,39 @@ fun DownloadProgressIndicator(progress: DownloadProgress) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 "${progress.progressPercent.roundToInt()}%",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 "${formatBytes(progress.downloadedBytes)} / ${formatBytes(progress.totalBytes)}",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        
+
         LinearProgressIndicator(
             progress = { progress.progressPercent / 100f },
             modifier = Modifier.fillMaxWidth(),
         )
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 "${formatBytes(progress.downloadSpeedBps)}/s",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             progress.remainingTimeMs?.let { remaining ->
                 Text(
                     formatDuration(remaining),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -327,12 +327,12 @@ private fun formatBytes(bytes: Long): String {
     val units = arrayOf("B", "KB", "MB", "GB", "TB")
     var size = bytes.toDouble()
     var unitIndex = 0
-    
+
     while (size >= 1024 && unitIndex < units.size - 1) {
         size /= 1024
         unitIndex++
     }
-    
+
     return "%.1f %s".format(size, units[unitIndex])
 }
 
@@ -340,7 +340,7 @@ private fun formatDuration(milliseconds: Long): String {
     val seconds = milliseconds / 1000
     val minutes = seconds / 60
     val hours = minutes / 60
-    
+
     return when {
         hours > 0 -> "${hours}h ${minutes % 60}m"
         minutes > 0 -> "${minutes}m ${seconds % 60}s"
