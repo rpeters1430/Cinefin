@@ -20,16 +20,13 @@ import java.util.UUID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MovieDetailViewModelTest {
-
-    private lateinit var repository: JellyfinRepository
-    private lateinit var viewModel: MovieDetailViewModel
+    private val repository: JellyfinRepository = mockk()
     private val dispatcher = StandardTestDispatcher()
+    private val viewModel by lazy { MovieDetailViewModel(repository) }
 
     @Before
     fun setup() {
         Dispatchers.setMain(dispatcher)
-        repository = mockk()
-        viewModel = MovieDetailViewModel(repository)
     }
 
     @After
