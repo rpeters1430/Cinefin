@@ -26,17 +26,14 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainAppViewModelTest {
 
-    private lateinit var viewModel: MainAppViewModel
-    private lateinit var mockRepository: JellyfinRepository
-    private lateinit var mockCredentialManager: SecureCredentialManager
+    private val mockRepository: JellyfinRepository = mockk(relaxed = true)
+    private val mockCredentialManager: SecureCredentialManager = mockk(relaxed = true)
+    private val viewModel by lazy { MainAppViewModel(mockRepository, mockCredentialManager) }
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-
-        mockRepository = mockk(relaxed = true)
-        mockCredentialManager = mockk(relaxed = true)
 
         // Mock repository methods that are called during initialization
         coEvery { mockRepository.getUserLibraries() } returns ApiResult.Success(emptyList())
@@ -47,8 +44,6 @@ class MainAppViewModelTest {
         // Mock StateFlow properties
         every { mockRepository.currentServer } returns MutableStateFlow(null).asStateFlow()
         every { mockRepository.isConnected } returns MutableStateFlow(false).asStateFlow()
-
-        viewModel = MainAppViewModel(mockRepository, mockCredentialManager)
     }
 
     @After
