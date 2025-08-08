@@ -50,6 +50,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.mediarouter.app.MediaRouteButton
+import androidx.mediarouter.media.MediaRouteSelector
+import com.google.android.gms.cast.framework.CastButtonFactory
+import com.google.android.gms.cast.CastMediaControlIntent
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
@@ -240,12 +244,35 @@ private fun VideoControlsOverlay(
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // Cast button
-                IconButton(onClick = onCastClick) {
-                    Icon(
-                        imageVector = if (playerState.isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
-                        contentDescription = "Cast",
-                        tint = Color.White,
+                // Native MediaRouteButton for device selection + fallback icon button action
+                Box {
+                    AndroidView(
+                        factory = { context ->
+                            MediaRouteButton(context).apply {
+                                // Attach the framework factories
+                                CastButtonFactory.setUpMediaRouteButton(context, this)
+                                val selector = MediaRouteSelector.Builder()
+                                    .addControlCategory(
+                                        CastMediaControlIntent.categoryForCast(CastOptionsProvider.getReceiverApplicationId()),
+                                    )
+                                    .build()
+                                routeSelector = selector
+                                contentDescription = "Select Cast Device"
+                            }
+                        },
+                        modifier = Modifier.size(40.dp),
                     )
+                    // Overlay state indicator (optional highlight when casting)
+                    if (playerState.isCasting) {
+                        Icon(
+                            imageVector = Icons.Default.CastConnected,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .size(18.dp),
+                        )
+                    }
                 }
 
                 // Quality settings

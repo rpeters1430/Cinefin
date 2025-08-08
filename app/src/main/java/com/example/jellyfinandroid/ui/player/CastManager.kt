@@ -194,6 +194,89 @@ class CastManager @Inject constructor(
         }
     }
 
+    /**
+     * Loads a non-playing preview (artwork + metadata) for the given item onto the Cast device.
+     * Shows the largest available image (backdrop preferred over poster) without starting playback.
+     */
+    fun loadPreview(item: BaseItemDto, imageUrl: String?, backdropUrl: String?) {
+        try {
+            val castSession = castContext?.sessionManager?.currentCastSession
+            if (castSession?.isConnected != true) {
+                if (BuildConfig.DEBUG) {
+                    Log.d("CastManager", "loadPreview: No active Cast session")
+                }
+                return
+            }
+
+            val primaryImage = imageUrl
+            val backdropImage = backdropUrl
+            val largestImageUrl = backdropImage ?: primaryImage
+            if (largestImageUrl.isNullOrBlank()) {
+                if (BuildConfig.DEBUG) {
+                    Log.d("CastManager", "loadPreview: No image available for preview")
+                }
+                return
+            }
+
+            // Derive a basic content type from extension (default to image/jpeg)
+            val lowered = largestImageUrl.lowercase()
+            val contentType = when {
+                lowered.endsWith(".png") -> "image/png"
+                lowered.endsWith(".webp") -> "image/webp"
+                lowered.endsWith(".gif") -> "image/gif"
+                else -> "image/jpeg"
+            }
+
+            val metadata = CastMediaMetadata(CastMediaMetadata.MEDIA_TYPE_MOVIE).apply {
+                putString(CastMediaMetadata.KEY_TITLE, item.name ?: "")
+                // Prefer shorter subtitle: Year + Runtime or Series/Episode info if TV
+                val subtitle = buildString {
+                    item.productionYear?.let { append(it) }
+                    val runtime = item.runTimeTicks?.let { ticks ->
+                        // Ticks to minutes (10,000,000 ticks per second)
+                        val totalSeconds = ticks / 10_000_000
+                        val minutes = totalSeconds / 60
+                        if (minutes > 0) "${minutes}m" else null
+                    }
+                    if (!runtime.isNullOrBlank()) {
+                        if (isNotEmpty()) append(" · ")
+                        append(runtime)
+                    }
+                    if (isEmpty()) {
+                        // Fallback to overview first sentence
+                        item.overview?.split('.')?.firstOrNull()?.take(80)?.let { append(it.trim()) }
+                    }
+                }
+                if (subtitle.isNotBlank()) {
+                    putString(CastMediaMetadata.KEY_SUBTITLE, subtitle)
+                }
+
+                // Attach images (backdrop first for better display)
+                backdropImage?.let { addImage(WebImage(it.toUri())) }
+                primaryImage?.let { addImage(WebImage(it.toUri())) }
+            }
+
+            val mediaInfo = MediaInfo.Builder(largestImageUrl)
+                .setStreamType(MediaInfo.STREAM_TYPE_NONE)
+                .setContentType(contentType)
+                .setMetadata(metadata)
+                .build()
+
+            val request = MediaLoadRequestData.Builder()
+                .setMediaInfo(mediaInfo)
+                .setAutoplay(false) // preview only
+                .build()
+
+            castSession.remoteMediaClient?.load(request)
+
+            if (BuildConfig.DEBUG) {
+                Log.d("CastManager", "loadPreview: Sent preview for ${item.name}")
+            }
+        } catch (e: Exception) {
+            Log.e("CastManager", "loadPreview: Failed to send preview", e)
+        }
+    }
+
     fun stopCasting() {
         try {
             castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.stop()

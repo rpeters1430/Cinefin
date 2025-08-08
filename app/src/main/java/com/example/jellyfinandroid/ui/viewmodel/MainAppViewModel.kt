@@ -49,6 +49,7 @@ data class PaginatedItems(
 class MainAppViewModel @Inject constructor(
     private val repository: JellyfinRepository,
     private val credentialManager: SecureCredentialManager,
+    private val castManager: com.example.jellyfinandroid.ui.player.CastManager,
 ) : ViewModel() {
 
     private val _appState = MutableStateFlow(MainAppState())
@@ -870,5 +871,16 @@ class MainAppViewModel @Inject constructor(
         }
 
         _appState.value = _appState.value.copy(allItems = currentItems)
+    }
+
+    /**
+     * Sends a preview (artwork + metadata) to the Cast device if connected.
+     */
+    fun sendCastPreview(item: BaseItemDto) {
+        // Initialize cast if not yet initialized (safe to call multiple times)
+        castManager.initialize()
+        val image = getImageUrl(item)
+        val backdrop = getBackdropUrl(item)
+        castManager.loadPreview(item, imageUrl = image, backdropUrl = backdrop)
     }
 }

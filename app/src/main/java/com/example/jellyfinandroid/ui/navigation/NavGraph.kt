@@ -390,6 +390,11 @@ fun JellyfinNavGraph(
                         movie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
                 }.take(10)
 
+                // Cast preview: show artwork on Cast device when opening detail
+                LaunchedEffect(movie.id) {
+                    mainViewModel.sendCastPreview(movie)
+                }
+
                 MovieDetailScreen(
                     movie = movie,
                     getImageUrl = { item -> mainViewModel.getImageUrl(item) },
@@ -536,6 +541,11 @@ fun JellyfinNavGraph(
                             viewModel.toggleFavorite(episodeItem)
                         },
                     )
+
+                    // Cast preview for episode
+                    LaunchedEffect(episode.id) {
+                        viewModel.sendCastPreview(episode)
+                    }
                 }
                 appState.isLoading -> {
                     // Still loading, show loading indicator

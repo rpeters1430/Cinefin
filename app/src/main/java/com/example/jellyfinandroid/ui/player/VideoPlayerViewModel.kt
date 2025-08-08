@@ -20,6 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -143,6 +144,16 @@ class VideoPlayerViewModel @Inject constructor(
 
                 // Initialize Cast support
                 castManager.initialize()
+
+                // Observe cast state updates (single collector lifecycle bound to player init)
+                launch {
+                    castManager.castState.collectLatest { castState ->
+                        _playerState.value = _playerState.value.copy(
+                            isCasting = castState.isCasting && castState.isConnected,
+                            castDeviceName = castState.deviceName,
+                        )
+                    }
+                }
 
                 // Load available qualities
                 loadAvailableQualities(itemId)

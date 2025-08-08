@@ -11,8 +11,12 @@ import com.google.android.gms.cast.framework.media.NotificationOptions
 class CastOptionsProvider : OptionsProvider {
 
     companion object {
-        // Jellyfin Default Cast Receiver ID - can be customized for specific Jellyfin setups
-        private const val CAST_RECEIVER_APP_ID = "CC1AD845" // Default Media Receiver
+    // Jellyfin / Default Cast Receiver ID - can be customized via future settings
+    // Made public so UI components (e.g., MediaRouteButton selector) can reuse it
+    const val DEFAULT_CAST_RECEIVER_APP_ID: String = "CC1AD845" // Default Media Receiver
+
+    @JvmStatic
+    fun getReceiverApplicationId(): String = DEFAULT_CAST_RECEIVER_APP_ID
     }
 
     override fun getCastOptions(context: Context): CastOptions {
@@ -29,7 +33,7 @@ class CastOptionsProvider : OptionsProvider {
 
         // Build and return Cast options
         return CastOptions.Builder()
-            .setReceiverApplicationId(CAST_RECEIVER_APP_ID)
+            .setReceiverApplicationId(getReceiverApplicationId())
             .setCastMediaOptions(mediaOptions)
             .setEnableReconnectionService(true)
             .setResumeSavedSession(true)
