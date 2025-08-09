@@ -3,6 +3,7 @@ package com.example.jellyfinandroid.ui.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.util.UnstableApi
 import com.example.jellyfinandroid.BuildConfig
 import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.data.repository.ApiResult
@@ -49,7 +50,7 @@ data class PaginatedItems(
 class MainAppViewModel @Inject constructor(
     private val repository: JellyfinRepository,
     private val credentialManager: SecureCredentialManager,
-    private val castManager: com.example.jellyfinandroid.ui.player.CastManager,
+    @UnstableApi private val castManager: com.example.jellyfinandroid.ui.player.CastManager,
 ) : ViewModel() {
 
     private val _appState = MutableStateFlow(MainAppState())
@@ -876,6 +877,7 @@ class MainAppViewModel @Inject constructor(
     /**
      * Sends a preview (artwork + metadata) to the Cast device if connected.
      */
+    @UnstableApi
     fun sendCastPreview(item: BaseItemDto) {
         // Initialize cast if not yet initialized (safe to call multiple times)
         castManager.initialize()

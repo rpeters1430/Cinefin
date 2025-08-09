@@ -6,6 +6,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
+import android.content.Context
 
 /**
  * Basic test suite for JellyfinRepository.
@@ -16,7 +17,8 @@ class JellyfinRepositoryTest {
 
     private val mockClientFactory = mockk<JellyfinClientFactory>()
     private val mockCredentialManager = mockk<SecureCredentialManager>()
-    private val repository = JellyfinRepository(mockClientFactory, mockCredentialManager)
+    private val mockContext = mockk<Context>(relaxed = true)
+    private val repository = JellyfinRepository(mockClientFactory, mockCredentialManager, mockContext)
 
     @Test
     fun `JellyfinRepository can be instantiated`() {

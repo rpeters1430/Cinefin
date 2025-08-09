@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.Forward10
@@ -163,7 +163,7 @@ private fun ExpressiveTopControls(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     ExpressiveIconButton(
-                        icon = Icons.Default.ArrowBack,
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         onClick = onBackClick,
                     )

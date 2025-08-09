@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.downloads
 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,7 +38,7 @@ fun DownloadsScreen(
             title = { Text("Downloads") },
             navigationIcon = {
                 IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
             },
             actions = {

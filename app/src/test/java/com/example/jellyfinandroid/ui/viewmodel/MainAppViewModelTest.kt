@@ -3,6 +3,7 @@ package com.example.jellyfinandroid.ui.viewmodel
 import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.data.repository.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
+import com.example.jellyfinandroid.ui.player.CastManager
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -28,7 +29,8 @@ class MainAppViewModelTest {
 
     private val mockRepository: JellyfinRepository = mockk(relaxed = true)
     private val mockCredentialManager: SecureCredentialManager = mockk(relaxed = true)
-    private val viewModel by lazy { MainAppViewModel(mockRepository, mockCredentialManager) }
+    private val mockCastManager: CastManager = mockk(relaxed = true)
+    private val viewModel by lazy { MainAppViewModel(mockRepository, mockCredentialManager, mockCastManager) }
     private val testDispatcher = StandardTestDispatcher()
 
     @Before

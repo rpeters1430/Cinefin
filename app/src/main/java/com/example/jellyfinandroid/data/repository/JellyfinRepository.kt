@@ -2,6 +2,7 @@ package com.example.jellyfinandroid.data.repository
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import com.example.jellyfinandroid.BuildConfig
 import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.data.JellyfinServer
@@ -117,6 +118,12 @@ class JellyfinRepository @Inject constructor(
 
     private fun getClient(serverUrl: String, accessToken: String? = null): ApiClient {
         return clientFactory.getClient(serverUrl, accessToken)
+    }
+
+    @VisibleForTesting
+    fun setCurrentServerForTest(server: JellyfinServer) {
+        _currentServer.value = server
+        _isConnected.value = server.isConnected
     }
 
     // ✅ FIX: Helper method to get current authenticated client
