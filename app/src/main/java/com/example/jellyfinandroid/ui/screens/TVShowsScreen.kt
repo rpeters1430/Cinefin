@@ -357,7 +357,7 @@ fun TVShowsScreen(
                     TVShowsContent(
                         tvShows = filteredAndSortedTVShows,
                         viewMode = viewMode,
-                        getImageUrl = { item -> viewModel.getImageUrl(item) },
+                        getImageUrl = { item -> viewModel.getBackdropUrl(item) },
                         onTVShowClick = onTVShowClick,
                         isLoadingMore = appState.isLoadingTVShows,
                         hasMoreItems = appState.hasMoreTVShows,

@@ -373,30 +373,33 @@ fun JellyfinNavGraph(
                 minActiveState = Lifecycle.State.STARTED,
             )
 
-            // Find the movie from the loaded items
+            // Find the movie from the loaded items or detail view model
             val movie = appState.allItems.find { it.id?.toString() == movieId }
+            val detailState by detailViewModel.state.collectAsStateWithLifecycle(lifecycle = lifecycleOwner.lifecycle)
 
             LaunchedEffect(movieId, movie) {
-                if (movie == null) {
+                if (movie == null && detailState.movie == null && !detailState.isLoading) {
                     detailViewModel.loadMovieDetails(movieId)
                 }
             }
 
-            if (movie != null) {
+            val resolvedMovie = movie ?: detailState.movie
+
+            if (resolvedMovie != null) {
                 // Get related items (movies from same genre or similar)
                 val relatedItems = appState.allItems.filter { item ->
                     item.id?.toString() != movieId &&
                         item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
-                        movie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
+                        resolvedMovie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
                 }.take(10)
 
                 // Cast preview: show artwork on Cast device when opening detail
-                LaunchedEffect(movie.id) {
-                    mainViewModel.sendCastPreview(movie)
+                LaunchedEffect(resolvedMovie.id) {
+                    mainViewModel.sendCastPreview(resolvedMovie)
                 }
 
                 MovieDetailScreen(
-                    movie = movie,
+                    movie = resolvedMovie,
                     getImageUrl = { item -> mainViewModel.getImageUrl(item) },
                     getBackdropUrl = { item -> mainViewModel.getBackdropUrl(item) },
                     onBackClick = { navController.popBackStack() },
@@ -419,13 +422,13 @@ fun JellyfinNavGraph(
                     },
                     relatedItems = relatedItems,
                 )
-            } else if (appState.isLoading) {
+            } else if (appState.isLoading || detailState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             } else {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(appState.errorMessage ?: "Movie not found")
+                    Text(detailState.errorMessage ?: appState.errorMessage ?: "Movie not found")
                 }
             }
         }

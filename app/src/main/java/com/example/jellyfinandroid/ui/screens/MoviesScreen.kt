@@ -362,7 +362,7 @@ fun MoviesScreen(
                     MoviesContent(
                         movies = filteredAndSortedMovies,
                         viewMode = viewMode,
-                        getImageUrl = { item -> viewModel.getImageUrl(item) },
+                        getImageUrl = { item -> viewModel.getBackdropUrl(item) },
                         onMovieClick = onMovieClick,
                         isLoadingMore = appState.isLoadingMovies,
                         hasMoreItems = appState.hasMoreMovies,
