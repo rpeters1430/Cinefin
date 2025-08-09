@@ -85,44 +85,12 @@ fun HomeScreen(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = currentServer?.name ?: stringResource(id = R.string.app_name),
-                        style = MaterialTheme.typography.titleLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                navigationIcon = {
-                    if (showBackButton) {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(id = R.string.navigate_up),
-                            )
-                        }
-                    } else {
-                        null
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onRefresh) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh",
-                        )
-                    }
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(id = R.string.settings),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
+            HomeTopBar(
+                currentServer = currentServer,
+                showBackButton = showBackButton,
+                onBackClick = onBackClick,
+                onRefresh = onRefresh,
+                onSettingsClick = onSettingsClick,
             )
         },
         modifier = modifier,
@@ -132,7 +100,6 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
-            // Show home content
             HomeContent(
                 appState = appState,
                 currentServer = currentServer,
@@ -145,6 +112,53 @@ fun HomeScreen(
             )
         }
     }
+}
+
+@Composable
+private fun HomeTopBar(
+    currentServer: JellyfinServer?,
+    showBackButton: Boolean,
+    onBackClick: () -> Unit,
+    onRefresh: () -> Unit,
+    onSettingsClick: () -> Unit,
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = currentServer?.name ?: stringResource(id = R.string.app_name),
+                style = MaterialTheme.typography.titleLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        navigationIcon = {
+            if (showBackButton) {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(id = R.string.navigate_up),
+                    )
+                }
+            }
+        },
+        actions = {
+            IconButton(onClick = onRefresh) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Refresh",
+                )
+            }
+            IconButton(onClick = onSettingsClick) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = stringResource(id = R.string.settings),
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+    )
 }
 
 @Composable
@@ -246,101 +260,21 @@ fun HomeContent(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        // Header Section
-        item {
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column {
-                        Text(
-                            text = "Welcome back!",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        currentServer?.let { server ->
-                            Text(
-                                text = "Connected to ${server.name}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        item { HomeHeader(currentServer) }
 
-        // Material 3 Carousel with Recently Added Movies
         val recentMovies = appState.recentlyAddedByTypes["Movies"]?.take(8) ?: emptyList()
-
-        if (BuildConfig.DEBUG) {
-            Log.d("HomeScreen", "HomeContent: Displaying ${recentMovies.size} recent movies in carousel")
-        }
-
         if (recentMovies.isNotEmpty()) {
             item {
-                Column {
-                    Text(
-                        text = "Recently Added Movies",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
-
-                    val carouselState = rememberCarouselState { recentMovies.size }
-
-                    HorizontalUncontainedCarousel(
-                        state = carouselState,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(240.dp),
-                        itemWidth = 280.dp,
-                        itemSpacing = 12.dp,
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                    ) { index ->
-                        val movie = recentMovies[index]
-                        CarouselMovieCard(
-                            movie = movie,
-                            getBackdropUrl = getBackdropUrl, // Use backdrop for horizontal cards
-                            onClick = onItemClick,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(16.dp)), // Ensure full rounding
-                        )
-                    }
-                }
+                HomeCarouselSection(recentMovies, getBackdropUrl, onItemClick)
             }
         }
 
-        // Top Libraries Section
         if (appState.libraries.isNotEmpty()) {
             item {
-                Column {
-                    Text(
-                        text = "Libraries",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                    ) {
-                        items(appState.libraries) { library ->
-                            HomeLibraryCard(
-                                library = library,
-                                getImageUrl = getImageUrl,
-                            )
-                        }
-                    }
-                }
+                HomeLibrariesSection(appState.libraries, getImageUrl)
             }
         }
 
-        // Library-Specific Recently Added Sections
         val libraryTypes = listOf(
             "Movies" to "Movies",
             "TV Shows" to "TV Shows",
@@ -348,56 +282,155 @@ fun HomeContent(
             "Music" to "Music",
             "Home Videos" to "Videos",
         )
-
         libraryTypes.forEach { (displayName, typeKey) ->
             val recentItems = appState.recentlyAddedByTypes[typeKey]?.take(15) ?: emptyList()
-
-            if (BuildConfig.DEBUG) {
-                Log.d("HomeScreen", "HomeContent: Processing $displayName - found ${recentItems.size} items from recentlyAddedByTypes")
-            }
-
             if (recentItems.isNotEmpty()) {
                 item {
-                    Column {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = "Recently Added $displayName",
-                                style = MaterialTheme.typography.headlineSmall,
-                            )
-                            IconButton(onClick = onRefresh) {
-                                Icon(
-                                    imageVector = Icons.Default.Refresh,
-                                    contentDescription = "Refresh $displayName",
-                                )
-                            }
-                        }
-
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                        ) {
-                            items(recentItems) { item ->
-                                if (BuildConfig.DEBUG) {
-                                    Log.d("HomeScreen", "HomeContent: Displaying $displayName item: '${item.name}' (${item.type})")
-                                }
-                                RecentlyAddedCard(
-                                    item = item,
-                                    getImageUrl = getImageUrl,
-                                    getSeriesImageUrl = getSeriesImageUrl,
-                                    onClick = onItemClick,
-                                )
-                            }
-                        }
-                    }
+                    HomeRecentSection(
+                        displayName = displayName,
+                        recentItems = recentItems,
+                        getImageUrl = getImageUrl,
+                        getSeriesImageUrl = getSeriesImageUrl,
+                        onItemClick = onItemClick,
+                        onRefresh = onRefresh,
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun HomeHeader(currentServer: JellyfinServer?) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text(
+                    text = "Welcome back!",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                currentServer?.let { server ->
+                    Text(
+                        text = "Connected to ${server.name}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeCarouselSection(
+    recentMovies: List<BaseItemDto>,
+    getBackdropUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+) {
+    Column {
+        Text(
+            text = "Recently Added Movies",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        val carouselState = rememberCarouselState { recentMovies.size }
+        HorizontalUncontainedCarousel(
+            state = carouselState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(240.dp),
+            itemWidth = 280.dp,
+            itemSpacing = 12.dp,
+            contentPadding = PaddingValues(horizontal = 16.dp),
+        ) { index ->
+            val movie = recentMovies[index]
+            CarouselMovieCard(
+                movie = movie,
+                getBackdropUrl = getBackdropUrl,
+                onClick = onItemClick,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(16.dp)),
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeLibrariesSection(
+    libraries: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+) {
+    Column {
+        Text(
+            text = "Libraries",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+        ) {
+            items(libraries) { library ->
+                HomeLibraryCard(
+                    library = library,
+                    getImageUrl = getImageUrl,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeRecentSection(
+    displayName: String,
+    recentItems: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    getSeriesImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    onRefresh: () -> Unit,
+) {
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Recently Added $displayName",
+                style = MaterialTheme.typography.headlineSmall,
+            )
+            IconButton(onClick = onRefresh) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Refresh $displayName",
+                )
+            }
+        }
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+        ) {
+            items(recentItems) { item ->
+                RecentlyAddedCard(
+                    item = item,
+                    getImageUrl = getImageUrl,
+                    getSeriesImageUrl = getSeriesImageUrl,
+                    onClick = onItemClick,
+                )
+            }
+        }
+    }
+}
 
         // Loading state
         if (appState.isLoading) {
