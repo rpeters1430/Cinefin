@@ -1,6 +1,5 @@
 package com.example.jellyfinandroid.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -55,7 +54,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
-import com.example.jellyfinandroid.BuildConfig
 import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.ui.components.MediaCard
