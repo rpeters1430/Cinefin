@@ -1,12 +1,12 @@
 package com.example.jellyfinandroid.data.repository
 
+import android.content.Context
 import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.di.JellyfinClientFactory
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
-import android.content.Context
 
 /**
  * Basic test suite for JellyfinRepository.
