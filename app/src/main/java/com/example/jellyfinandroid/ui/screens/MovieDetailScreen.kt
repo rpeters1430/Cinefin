@@ -457,7 +457,7 @@ fun MovieDetailScreen(
             movie.people?.takeIf { it.isNotEmpty() }?.let { people ->
                 // Separate cast and crew
                 val cast = people.filter { it.type?.name == "Actor" }
-                val crew = people.filter { 
+                val crew = people.filter {
                     val typeName = it.type?.name
                     typeName in listOf("Director", "Producer", "Writer", "Executive Producer")
                 }
@@ -482,15 +482,15 @@ fun MovieDetailScreen(
                                 items(cast.take(10)) { person ->
                                     PersonCard(
                                         person = person,
-                                        getImageUrl = { id, tag -> 
+                                        getImageUrl = { id, tag ->
                                             // Create a temporary BaseItemDto for the person to use with existing getImageUrl
                                             val personItem = BaseItemDto(
-                                                id = id, 
+                                                id = id,
                                                 type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
-                                                imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) }
+                                                imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) },
                                             )
                                             getImageUrl(personItem)
-                                        }
+                                        },
                                     )
                                 }
                             }
@@ -518,15 +518,15 @@ fun MovieDetailScreen(
                                 items(crew.take(8)) { person ->
                                     PersonCard(
                                         person = person,
-                                        getImageUrl = { id, tag -> 
+                                        getImageUrl = { id, tag ->
                                             // Create a temporary BaseItemDto for the person to use with existing getImageUrl
                                             val personItem = BaseItemDto(
-                                                id = id, 
+                                                id = id,
                                                 type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
-                                                imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) }
+                                                imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) },
                                             )
                                             getImageUrl(personItem)
-                                        }
+                                        },
                                     )
                                 }
                             }
@@ -576,7 +576,7 @@ private fun PersonCard(
     person: org.jellyfin.sdk.model.api.BaseItemPerson,
     getImageUrl: (java.util.UUID, String?) -> String?,
     modifier: Modifier = Modifier,
-    ) {
+) {
     Card(
         modifier = modifier.width(100.dp),
         colors = CardDefaults.cardColors(
@@ -632,7 +632,7 @@ private fun PersonCard(
                 person.type?.name?.isNotBlank() == true -> person.type.name
                 else -> null
             }
-            
+
             displayText?.let { text ->
                 Text(
                     text = text,

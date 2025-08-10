@@ -985,8 +985,8 @@ class JellyfinRepository @Inject constructor(
                     ItemFields.DATE_CREATED,
                     ItemFields.STUDIOS,
                     ItemFields.TAGS,
-                    ItemFields.CHAPTERS
-                )
+                    ItemFields.CHAPTERS,
+                ),
             )
             val item = response.content.items?.firstOrNull()
             if (item != null) {
