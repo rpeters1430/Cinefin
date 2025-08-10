@@ -112,6 +112,7 @@ fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeTopBar(
     currentServer: JellyfinServer?,
@@ -324,6 +325,7 @@ private fun HomeHeader(currentServer: JellyfinServer?) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeCarouselSection(
     recentMovies: List<BaseItemDto>,
