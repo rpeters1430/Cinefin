@@ -72,10 +72,10 @@ class MainAppViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Starting to load all data")
             }
-            
+
             // ✅ FIX: Clear any previously loaded library type flags for fresh start
             clearLoadedLibraryTypes()
-            
+
             _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
 
             // Load libraries
@@ -179,7 +179,7 @@ class MainAppViewModel @Inject constructor(
 
             // ✅ FIX: Only load essential data initially, load library-specific data on-demand
             // This prevents the double loading issue when navigating to library type screens
-            
+
             _appState.value = _appState.value.copy(isLoading = false)
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Completed loading essential data. Library-specific data will load on-demand.")
@@ -886,7 +886,7 @@ class MainAppViewModel @Inject constructor(
     fun loadLibraryTypeData(libraryType: LibraryType, forceRefresh: Boolean = false) {
         viewModelScope.launch {
             val typeKey = libraryType.name
-            
+
             // Skip loading if already loaded and not forcing refresh
             if (!forceRefresh && loadedLibraryTypes.contains(typeKey)) {
                 if (BuildConfig.DEBUG) {
