@@ -41,6 +41,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +56,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 
 /**
  * Generic library screen used by multiple library types.
+ * ✅ FIX: Uses on-demand loading to prevent double refresh issue
  */
 @Composable
 fun LibraryTypeScreen(
@@ -67,11 +69,18 @@ fun LibraryTypeScreen(
     var viewMode by remember { mutableStateOf(ViewMode.GRID) }
     var selectedFilter by remember { mutableStateOf(FilterType.getDefault()) }
 
-    val filteredItems = remember(appState.allItems, libraryType) {
-        appState.allItems.filter { libraryType.itemKinds.contains(it.type) }
+    // ✅ FIX: Use library-specific data instead of generic allItems
+    val libraryItems = remember(libraryType, appState.allMovies, appState.allTVShows, appState.allItems) {
+        viewModel.getLibraryTypeData(libraryType)
     }
-    val displayItems = remember(filteredItems, selectedFilter) {
-        applyFilter(filteredItems, selectedFilter)
+    
+    val displayItems = remember(libraryItems, selectedFilter) {
+        applyFilter(libraryItems, selectedFilter)
+    }
+
+    // ✅ FIX: Load data on-demand when screen is first composed
+    LaunchedEffect(libraryType) {
+        viewModel.loadLibraryTypeData(libraryType, forceRefresh = false)
     }
 
     Scaffold(
@@ -117,7 +126,10 @@ fun LibraryTypeScreen(
                             }
                         }
                     }
-                    IconButton(onClick = { viewModel.refreshLibraryItems() }) {
+                    IconButton(onClick = { 
+                        // ✅ FIX: Use library-type specific refresh
+                        viewModel.loadLibraryTypeData(libraryType, forceRefresh = true) 
+                    }) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 },

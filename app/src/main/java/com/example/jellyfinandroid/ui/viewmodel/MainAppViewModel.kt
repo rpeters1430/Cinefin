@@ -8,6 +8,7 @@ import com.example.jellyfinandroid.BuildConfig
 import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.data.repository.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
+import com.example.jellyfinandroid.ui.screens.LibraryType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -59,6 +60,9 @@ class MainAppViewModel @Inject constructor(
     val currentServer = repository.currentServer
     val isConnected = repository.isConnected
 
+    // ✅ FIX: Track which library types have been loaded to prevent double loading
+    private val loadedLibraryTypes = mutableSetOf<String>()
+
     init {
         loadInitialData()
     }
@@ -68,6 +72,10 @@ class MainAppViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Starting to load all data")
             }
+            
+            // ✅ FIX: Clear any previously loaded library type flags for fresh start
+            clearLoadedLibraryTypes()
+            
             _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
 
             // Load libraries
@@ -169,26 +177,12 @@ class MainAppViewModel @Inject constructor(
                 }
             }
 
-            // Load initial page of items for library type screens
-            if (BuildConfig.DEBUG) {
-                Log.d("MainAppViewModel", "loadInitialData: Loading library items page")
-            }
-            loadLibraryItemsPage(reset = true)
-
-            // Load all movies and TV shows for their respective screens
-            if (BuildConfig.DEBUG) {
-                Log.d("MainAppViewModel", "loadInitialData: Loading all movies")
-            }
-            loadAllMovies(reset = true)
-
-            if (BuildConfig.DEBUG) {
-                Log.d("MainAppViewModel", "loadInitialData: Loading all TV shows")
-            }
-            loadAllTVShows(reset = true)
-
+            // ✅ FIX: Only load essential data initially, load library-specific data on-demand
+            // This prevents the double loading issue when navigating to library type screens
+            
             _appState.value = _appState.value.copy(isLoading = false)
             if (BuildConfig.DEBUG) {
-                Log.d("MainAppViewModel", "loadInitialData: Completed loading all data")
+                Log.d("MainAppViewModel", "loadInitialData: Completed loading essential data. Library-specific data will load on-demand.")
             }
         }
     }
@@ -853,6 +847,16 @@ class MainAppViewModel @Inject constructor(
     }
 
     /**
+     * ✅ FIX: Clear loaded library types when user state changes
+     */
+    fun clearLoadedLibraryTypes() {
+        loadedLibraryTypes.clear()
+        if (BuildConfig.DEBUG) {
+            Log.d("MainAppViewModel", "clearLoadedLibraryTypes: Cleared all loaded library type flags")
+        }
+    }
+
+    /**
      * Adds or updates an item in the main app state
      */
     fun addOrUpdateItem(item: BaseItemDto) {
@@ -872,6 +876,67 @@ class MainAppViewModel @Inject constructor(
         }
 
         _appState.value = _appState.value.copy(allItems = currentItems)
+    }
+
+    /**
+     * ✅ FIX: Load library type data on-demand to prevent double loading
+     * This method checks if data for a specific library type is already loaded
+     * and only loads it if necessary, preventing the double refresh issue.
+     */
+    fun loadLibraryTypeData(libraryType: LibraryType, forceRefresh: Boolean = false) {
+        viewModelScope.launch {
+            val typeKey = libraryType.name
+            
+            // Skip loading if already loaded and not forcing refresh
+            if (!forceRefresh && loadedLibraryTypes.contains(typeKey)) {
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "loadLibraryTypeData: $typeKey already loaded, skipping")
+                }
+                return@launch
+            }
+
+            when (libraryType) {
+                LibraryType.MOVIES -> {
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadLibraryTypeData: Loading movies data")
+                    }
+                    loadAllMovies(reset = true)
+                    loadedLibraryTypes.add(typeKey)
+                }
+                LibraryType.TV_SHOWS -> {
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadLibraryTypeData: Loading TV shows data")
+                    }
+                    loadAllTVShows(reset = true)
+                    loadedLibraryTypes.add(typeKey)
+                }
+                LibraryType.MUSIC, LibraryType.STUFF -> {
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadLibraryTypeData: Loading general library items for $typeKey")
+                    }
+                    // For music and other types, use the general library items
+                    if (!loadedLibraryTypes.contains("GENERAL_ITEMS") || forceRefresh) {
+                        loadLibraryItemsPage(reset = true)
+                        loadedLibraryTypes.add("GENERAL_ITEMS")
+                    }
+                    loadedLibraryTypes.add(typeKey)
+                }
+            }
+        }
+    }
+
+    /**
+     * ✅ FIX: Get library type specific data to prevent stale data display
+     */
+    fun getLibraryTypeData(libraryType: LibraryType): List<BaseItemDto> {
+        return when (libraryType) {
+            LibraryType.MOVIES -> _appState.value.allMovies
+            LibraryType.TV_SHOWS -> _appState.value.allTVShows
+            LibraryType.MUSIC, LibraryType.STUFF -> {
+                // Filter from allItems for music and other types
+                _appState.value.allItems.filter { libraryType.itemKinds.contains(it.type) }
+            }
+        }
     }
 
     /**
