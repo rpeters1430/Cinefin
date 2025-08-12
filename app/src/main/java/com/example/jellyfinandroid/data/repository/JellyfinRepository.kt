@@ -9,9 +9,11 @@ import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.data.model.QuickConnectResult
 import com.example.jellyfinandroid.data.model.QuickConnectState
+import com.example.jellyfinandroid.data.utils.RepositoryUtils
 import com.example.jellyfinandroid.di.JellyfinClientFactory
 import com.example.jellyfinandroid.ui.utils.ErrorHandler
 import com.example.jellyfinandroid.ui.utils.OfflineManager
+import com.example.jellyfinandroid.utils.Constants
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,13 +67,12 @@ class JellyfinRepository @Inject constructor(
     private val streamRepository: JellyfinStreamRepository,
 ) {
     companion object {
-        // Token validity constants
-        private const val TOKEN_VALIDITY_DURATION_MINUTES = 50
-        private const val TOKEN_VALIDITY_DURATION_MS = TOKEN_VALIDITY_DURATION_MINUTES * 60 * 1000L
+        // ✅ PHASE 4: Use centralized constants
+        private const val TOKEN_VALIDITY_DURATION_MS = Constants.TOKEN_VALIDITY_DURATION_MS
 
         // API retry constants
-        private const val DEFAULT_MAX_RETRIES = 2
-        private const val RE_AUTH_DELAY_MS = 1000L
+        private const val DEFAULT_MAX_RETRIES = Constants.MAX_RETRY_ATTEMPTS - 1 // Convert to retry count
+        private const val RE_AUTH_DELAY_MS = Constants.RE_AUTH_DELAY_MS
 
         // Stream quality constants
         private const val DEFAULT_MAX_BITRATE = 140_000_000
@@ -86,8 +87,8 @@ class JellyfinRepository @Inject constructor(
         // API pagination constants
         private const val DEFAULT_LIMIT = 100
         private const val DEFAULT_START_INDEX = 0
-        private const val RECENTLY_ADDED_LIMIT = 20
-        private const val RECENTLY_ADDED_BY_TYPE_LIMIT = 10
+        private const val RECENTLY_ADDED_LIMIT = Constants.RECENTLY_ADDED_LIMIT
+        private const val RECENTLY_ADDED_BY_TYPE_LIMIT = Constants.RECENTLY_ADDED_BY_TYPE_LIMIT
         private const val SEARCH_LIMIT = 50
 
         // Default codecs
@@ -135,78 +136,13 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
-    // ✅ FIX: Helper to safely handle exceptions while preserving cancellation
+    // ✅ PHASE 4: Simplified error handling using centralized utilities
     private fun <T> handleExceptionSafely(e: Exception, defaultMessage: String = getString(R.string.error_occurred)): ApiResult.Error<T> {
         // Let cancellation exceptions bubble up instead of converting to ApiResult.Error
         if (e is java.util.concurrent.CancellationException || e is kotlinx.coroutines.CancellationException) {
             throw e
         }
-
         return handleException(e, defaultMessage)
-    }
-
-    private fun getErrorType(e: Throwable): ErrorType {
-        return when (e) {
-            is java.util.concurrent.CancellationException, is kotlinx.coroutines.CancellationException -> ErrorType.OPERATION_CANCELLED
-            is java.net.UnknownHostException, is java.net.ConnectException, is java.net.SocketTimeoutException -> ErrorType.NETWORK
-            is HttpException -> when (e.code()) {
-                401 -> ErrorType.UNAUTHORIZED
-                403 -> ErrorType.FORBIDDEN
-                404 -> ErrorType.NOT_FOUND
-                in 500..599 -> ErrorType.SERVER_ERROR
-                else -> ErrorType.UNKNOWN
-            }
-            is org.jellyfin.sdk.api.client.exception.InvalidStatusException -> {
-                // More robust status code extraction for better error classification
-                val statusCode = extractStatusCode(e)
-                logDebug("InvalidStatusException: status code = $statusCode, message = ${e.message}")
-
-                when (statusCode) {
-                    401 -> ErrorType.UNAUTHORIZED
-                    403 -> ErrorType.FORBIDDEN
-                    404 -> ErrorType.NOT_FOUND
-                    in 500..599 -> ErrorType.SERVER_ERROR
-                    else -> {
-                        // If we can't determine the status code but message contains 401, still treat as UNAUTHORIZED
-                        if (e.message?.contains("401") == true) {
-                            Log.w("JellyfinRepository", "Detected 401 error from message content, treating as UNAUTHORIZED")
-                            ErrorType.UNAUTHORIZED
-                        } else {
-                            ErrorType.UNKNOWN
-                        }
-                    }
-                }
-            }
-            else -> ErrorType.UNKNOWN
-        }
-    }
-
-    /**
-     * Extracts HTTP status code from InvalidStatusException message
-     */
-    private fun extractStatusCode(e: org.jellyfin.sdk.api.client.exception.InvalidStatusException): Int? {
-        return try {
-            // Try multiple patterns to extract status code
-            val message = e.message ?: return null
-
-            // Pattern 1: "Invalid HTTP status in response: 401"
-            val pattern1 = """Invalid HTTP status in response:\s*(\d{3})""".toRegex()
-            pattern1.find(message)?.groupValues?.get(1)?.toIntOrNull()?.let { return it }
-
-            // Pattern 2: Any 3-digit number that looks like an HTTP status
-            val pattern2 = """\b([4-5]\d{2})\b""".toRegex()
-            pattern2.find(message)?.groupValues?.get(1)?.toIntOrNull()?.let { return it }
-
-            // Pattern 3: Generic 3-digit number extraction
-            val pattern3 = """\b(\d{3})\b""".toRegex()
-            val matches = pattern3.findAll(message).map { it.groupValues[1].toIntOrNull() }.filterNotNull()
-
-            // Return the first match that looks like an HTTP status code
-            matches.firstOrNull { it in 400..599 }
-        } catch (e: Exception) {
-            Log.w("JellyfinRepository", "Failed to extract status code from exception", e)
-            null
-        }
     }
 
     private fun <T> handleException(e: Exception, defaultMessage: String = getString(R.string.error_occurred)): ApiResult.Error<T> {
@@ -264,7 +200,7 @@ class JellyfinRepository @Inject constructor(
                 ),
             )
         } catch (e: Exception) {
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to initiate Quick Connect: ${e.message}", e, errorType)
         }
     }
@@ -278,9 +214,8 @@ class JellyfinRepository @Inject constructor(
             val state = if (result.authenticated) "Approved" else "Pending"
             ApiResult.Success(QuickConnectState(state = state))
         } catch (e: Exception) {
-            val errorType = getErrorType(e)
-
-            if (errorType == ErrorType.NOT_FOUND) {
+                val errorType = RepositoryUtils.getErrorType(e)
+                if (errorType == ErrorType.NOT_FOUND) {
                 ApiResult.Success(QuickConnectState(state = "Expired"))
             } else {
                 ApiResult.Error("Failed to get Quick Connect state: ${e.message}", e, errorType)
@@ -327,7 +262,7 @@ class JellyfinRepository @Inject constructor(
 
             ApiResult.Success(authResult)
         } catch (e: Exception) {
-            var errorType = getErrorType(e)
+            var errorType = RepositoryUtils.getErrorType(e)
             if (errorType == ErrorType.UNAUTHORIZED) {
                 errorType = ErrorType.AUTHENTICATION
             }
@@ -357,7 +292,7 @@ class JellyfinRepository @Inject constructor(
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to load libraries: ${e.message}", e, errorType)
         }
     }
@@ -398,7 +333,7 @@ class JellyfinRepository @Inject constructor(
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to load items: ${e.message}", e, errorType)
         }
     }
@@ -464,7 +399,7 @@ class JellyfinRepository @Inject constructor(
             }
 
             Log.e("JellyfinRepository", "getRecentlyAdded: Failed to load items", e)
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to load recently added items: ${e.message}", e, errorType)
         }
     }
@@ -556,8 +491,7 @@ class JellyfinRepository @Inject constructor(
                 }
 
                 // If it's a 401 error and we have saved credentials, try to re-authenticate
-                val is401Error = (e is HttpException && e.code() == 401) ||
-                    (e is org.jellyfin.sdk.api.client.exception.InvalidStatusException && e.message?.contains("401") == true)
+                val is401Error = RepositoryUtils.is401Error(e)
                 if (is401Error && attempt < maxRetries) {
                     Log.w("JellyfinRepository", "Got 401 error on attempt ${attempt + 1}, attempting to re-authenticate")
 
@@ -648,7 +582,7 @@ class JellyfinRepository @Inject constructor(
                     throw e
                 }
 
-                val errorType = getErrorType(e)
+                val errorType = RepositoryUtils.getErrorType(e)
                 Log.w("JellyfinRepository", "$operationName: Exception on attempt ${attempt + 1}: ${e.message} (type: $errorType)")
 
                 // Check for 401 in exception and retry with re-authentication
@@ -836,7 +770,7 @@ class JellyfinRepository @Inject constructor(
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
         }
     }
@@ -872,7 +806,7 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "getSeasonsForSeries: Failed to fetch seasons for seriesId=$seriesId", e)
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to load seasons: ${e.message}", e, errorType)
         }
     }
@@ -908,7 +842,7 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "getEpisodesForSeason: Failed to fetch episodes for seasonId=$seasonId", e)
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to load episodes: ${e.message}", e, errorType)
         }
     }
@@ -954,7 +888,7 @@ class JellyfinRepository @Inject constructor(
                 ApiResult.Error("$itemTypeName not found", errorType = ErrorType.NOT_FOUND)
             }
         } catch (e: Exception) {
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to load $itemTypeName details: ${e.message}", e, errorType)
         }
     }
@@ -1012,7 +946,7 @@ class JellyfinRepository @Inject constructor(
             )
             ApiResult.Success(response.content.items ?: emptyList())
         } catch (e: Exception) {
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Search failed: ${e.message}", e, errorType)
         }
     }
@@ -1102,7 +1036,7 @@ class JellyfinRepository @Inject constructor(
             }
             ApiResult.Success(!isFavorite) // Return the new state
         } catch (e: Exception) {
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to toggle favorite: ${e.message}", e, errorType)
         }
     }
@@ -1128,7 +1062,7 @@ class JellyfinRepository @Inject constructor(
             client.playStateApi.markPlayedItem(itemId = itemUuid, userId = userUuid)
             ApiResult.Success(true)
         } catch (e: Exception) {
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to mark as watched: ${e.message}", e, errorType)
         }
     }
@@ -1154,7 +1088,7 @@ class JellyfinRepository @Inject constructor(
             client.playStateApi.markUnplayedItem(itemId = itemUuid, userId = userUuid)
             ApiResult.Success(true)
         } catch (e: Exception) {
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to mark as unwatched: ${e.message}", e, errorType)
         }
     }
@@ -1175,7 +1109,7 @@ class JellyfinRepository @Inject constructor(
             client.libraryApi.deleteItem(itemId = itemUuid)
             ApiResult.Success(true)
         } catch (e: Exception) {
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
         }
     }
@@ -1193,7 +1127,7 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Success(user.policy?.isAdministrator == true || user.policy?.enableContentDeletion == true)
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "Failed to verify admin permissions: ${e.message}", e)
-            ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, getErrorType(e))
+            ApiResult.Error("Failed to verify admin permissions: ${e.message}", e, RepositoryUtils.getErrorType(e))
         }
     }
 
@@ -1224,7 +1158,7 @@ class JellyfinRepository @Inject constructor(
             client.libraryApi.deleteItem(itemId = itemUuid)
             ApiResult.Success(true)
         } catch (e: Exception) {
-            val errorType = getErrorType(e)
+            val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to delete item: ${e.message}", e, errorType)
         }
     }
@@ -1300,20 +1234,7 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
-    private fun validateServer(): JellyfinServer {
-        val server = _currentServer.value
-            ?: throw IllegalStateException("Server is not available")
-
-        if (server.accessToken == null || server.userId == null) {
-            throw IllegalStateException("Not authenticated")
-        }
-
-        return server
-    }
-
-    private fun parseUuid(id: String, idType: String): UUID {
-        return runCatching { UUID.fromString(id) }.getOrElse {
-            throw IllegalArgumentException("Invalid $idType ID")
-        }
-    }
+    // ✅ PHASE 4: Utility methods replaced with centralized utilities
+    private fun validateServer(): JellyfinServer = RepositoryUtils.validateServer(_currentServer.value)
+    private fun parseUuid(id: String, idType: String): UUID = RepositoryUtils.parseUuid(id, idType)
 }

@@ -43,6 +43,17 @@ object Constants {
     const val HTTP_NOT_FOUND = 404
     const val HTTP_SERVER_ERROR = 500
 
+    // Retry settings
+    const val MAX_RETRY_ATTEMPTS = 3
+    const val RETRY_INITIAL_DELAY_MS = 1000L
+    const val RE_AUTH_DELAY_MS = 2000L
+    const val QUICK_CONNECT_POLL_INTERVAL_MS = 2000L
+
+    // API limits
+    const val RECENTLY_ADDED_LIMIT = 20
+    const val RECENTLY_ADDED_BY_TYPE_LIMIT = 15
+    const val CONTINUE_WATCHING_LIMIT = 10
+
     // Player settings
     const val PLAYER_CONTROLS_TIMEOUT_MS = 3000L
     const val PLAYER_SEEK_INCREMENT_MS = 10_000L
