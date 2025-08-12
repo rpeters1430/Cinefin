@@ -46,13 +46,15 @@ object RepositoryUtils {
      */
     fun getErrorType(e: Throwable): ErrorType {
         return when (e) {
-            is java.util.concurrent.CancellationException, 
-            is kotlinx.coroutines.CancellationException -> ErrorType.OPERATION_CANCELLED
-            
-            is java.net.UnknownHostException, 
-            is java.net.ConnectException, 
-            is java.net.SocketTimeoutException -> ErrorType.NETWORK
-            
+            is java.util.concurrent.CancellationException,
+            is kotlinx.coroutines.CancellationException,
+            -> ErrorType.OPERATION_CANCELLED
+
+            is java.net.UnknownHostException,
+            is java.net.ConnectException,
+            is java.net.SocketTimeoutException,
+            -> ErrorType.NETWORK
+
             is HttpException -> when (e.code()) {
                 401 -> ErrorType.UNAUTHORIZED
                 403 -> ErrorType.FORBIDDEN
@@ -60,7 +62,7 @@ object RepositoryUtils {
                 in 500..599 -> ErrorType.SERVER_ERROR
                 else -> ErrorType.UNKNOWN
             }
-            
+
             is InvalidStatusException -> {
                 val statusCode = extractStatusCode(e)
                 when (statusCode) {
@@ -78,7 +80,7 @@ object RepositoryUtils {
                     }
                 }
             }
-            
+
             else -> ErrorType.UNKNOWN
         }
     }
@@ -122,6 +124,6 @@ object RepositoryUtils {
      */
     fun is401Error(e: Exception): Boolean {
         return (e is HttpException && e.code() == 401) ||
-                (e is InvalidStatusException && e.message?.contains("401") == true)
+            (e is InvalidStatusException && e.message?.contains("401") == true)
     }
 }

@@ -214,8 +214,8 @@ class JellyfinRepository @Inject constructor(
             val state = if (result.authenticated) "Approved" else "Pending"
             ApiResult.Success(QuickConnectState(state = state))
         } catch (e: Exception) {
-                val errorType = RepositoryUtils.getErrorType(e)
-                if (errorType == ErrorType.NOT_FOUND) {
+            val errorType = RepositoryUtils.getErrorType(e)
+            if (errorType == ErrorType.NOT_FOUND) {
                 ApiResult.Success(QuickConnectState(state = "Expired"))
             } else {
                 ApiResult.Error("Failed to get Quick Connect state: ${e.message}", e, errorType)
