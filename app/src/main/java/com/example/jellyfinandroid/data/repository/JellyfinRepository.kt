@@ -15,7 +15,6 @@ import com.example.jellyfinandroid.ui.utils.OfflineManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jellyfin.sdk.api.client.ApiClient
@@ -26,11 +25,9 @@ import org.jellyfin.sdk.api.client.extensions.quickConnectApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
-import org.jellyfin.sdk.model.api.AuthenticateUserByName
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
@@ -102,7 +99,7 @@ class JellyfinRepository @Inject constructor(
     // ===== STATE FLOWS - Delegated to JellyfinAuthRepository =====
     val currentServer: Flow<JellyfinServer?> = authRepository.currentServer
     val isConnected: Flow<Boolean> = authRepository.isConnected
-    
+
     // Internal state flows for backward compatibility in remaining methods
     private val _currentServer = MutableStateFlow<JellyfinServer?>(null)
     private val _isConnected = MutableStateFlow(false)
@@ -232,7 +229,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     // ===== AUTHENTICATION METHODS - Delegated to JellyfinAuthRepository =====
-    
+
     suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> =
         authRepository.testServerConnection(serverUrl)
 
@@ -243,11 +240,11 @@ class JellyfinRepository @Inject constructor(
     ): ApiResult<AuthenticationResult> {
         // Delegate to auth repository and also update local state for backward compatibility
         val result = authRepository.authenticateUser(serverUrl, username, password)
-        
+
         // Sync local state with auth repository state for methods that still use local state
         _currentServer.value = authRepository.getCurrentServer()
         _isConnected.value = authRepository.isUserAuthenticated()
-        
+
         return result
     }
 
@@ -339,7 +336,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     // ===== LIBRARY METHODS - Simplified for better maintainability =====
-    
+
     suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> {
         // Simplified implementation - delegate complex auth logic to auth repository
         val server = authRepository.getCurrentServer()
@@ -947,8 +944,8 @@ class JellyfinRepository @Inject constructor(
                     ItemFields.DATE_CREATED,
                     ItemFields.STUDIOS,
                     ItemFields.TAGS,
-                    ItemFields.CHAPTERS
-                )
+                    ItemFields.CHAPTERS,
+                ),
             )
             val item = response.content.items?.firstOrNull()
             if (item != null) {
@@ -975,7 +972,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     // ===== SEARCH METHODS - Simplified implementation =====
-    
+
     suspend fun searchItems(
         query: String,
         includeItemTypes: List<BaseItemKind>? = null,
@@ -1021,7 +1018,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     // ===== IMAGE METHODS - Delegated to JellyfinStreamRepository =====
-    
+
     fun getImageUrl(itemId: String, imageType: String = "Primary", tag: String? = null): String? =
         streamRepository.getImageUrl(itemId, imageType, tag)
 
@@ -1233,7 +1230,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     // ===== STREAMING METHODS - Delegated to JellyfinStreamRepository =====
-    
+
     fun getStreamUrl(itemId: String): String? =
         streamRepository.getStreamUrl(itemId)
 
@@ -1253,7 +1250,7 @@ class JellyfinRepository @Inject constructor(
             maxHeight = maxHeight,
             videoCodec = videoCodec,
             audioCodec = audioCodec,
-            container = container
+            container = container,
         )
 
     fun getHlsStreamUrl(itemId: String): String? =
