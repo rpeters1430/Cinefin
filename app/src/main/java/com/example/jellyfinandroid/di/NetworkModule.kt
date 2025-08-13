@@ -70,8 +70,10 @@ class JellyfinClientFactory @Inject constructor(
     // Use volatile to ensure thread-safe visibility across coroutines
     @Volatile
     private var currentClient: org.jellyfin.sdk.api.client.ApiClient? = null
+
     @Volatile
     private var currentBaseUrl: String? = null
+
     @Volatile
     private var currentToken: String? = null
 
