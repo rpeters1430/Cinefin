@@ -67,28 +67,40 @@ object NetworkModule {
 class JellyfinClientFactory @Inject constructor(
     private val jellyfin: Jellyfin,
 ) {
+    // Use volatile to ensure thread-safe visibility across coroutines
+    @Volatile
     private var currentClient: org.jellyfin.sdk.api.client.ApiClient? = null
+    @Volatile
     private var currentBaseUrl: String? = null
+    @Volatile
     private var currentToken: String? = null
+
+    // Synchronization object for thread-safe client creation
+    private val clientLock = Any()
 
     fun getClient(baseUrl: String, accessToken: String? = null): org.jellyfin.sdk.api.client.ApiClient {
         val normalizedUrl = baseUrl.trimEnd('/') + "/"
 
-        if (currentToken != accessToken || currentBaseUrl != normalizedUrl || currentClient == null) {
-            currentClient = jellyfin.createApi(
-                baseUrl = normalizedUrl,
-                accessToken = accessToken,
-            )
-            currentBaseUrl = normalizedUrl
-            currentToken = accessToken
-        }
+        // Use synchronized block to prevent race conditions during client creation
+        synchronized(clientLock) {
+            if (currentToken != accessToken || currentBaseUrl != normalizedUrl || currentClient == null) {
+                currentClient = jellyfin.createApi(
+                    baseUrl = normalizedUrl,
+                    accessToken = accessToken,
+                )
+                currentBaseUrl = normalizedUrl
+                currentToken = accessToken
+            }
 
-        return currentClient ?: throw IllegalStateException("Failed to create Jellyfin API client for URL: $normalizedUrl")
+            return currentClient ?: throw IllegalStateException("Failed to create Jellyfin API client for URL: $normalizedUrl")
+        }
     }
 
     fun invalidateClient() {
-        currentClient = null
-        currentBaseUrl = null
-        currentToken = null
+        synchronized(clientLock) {
+            currentClient = null
+            currentBaseUrl = null
+            currentToken = null
+        }
     }
 }
