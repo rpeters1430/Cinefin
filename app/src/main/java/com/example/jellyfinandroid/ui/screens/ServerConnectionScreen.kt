@@ -146,7 +146,7 @@ fun ServerConnectionScreen(
                     ) {
                         Text("Auto Login")
                     }
-                    
+
                     // Biometric login button if available
                     if (isBiometricAuthAvailable) {
                         Spacer(modifier = Modifier.height(8.dp))
