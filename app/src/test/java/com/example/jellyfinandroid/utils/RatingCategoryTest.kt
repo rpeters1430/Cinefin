@@ -40,7 +40,7 @@ class RatingCategoryTest {
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             communityRating = 9.0f,
-            name = "Test Item"
+            name = "Test Item",
         )
         assertEquals(RatingCategory.EXCELLENT, itemExcellent.getRatingCategory())
 
@@ -48,7 +48,7 @@ class RatingCategoryTest {
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             communityRating = 8.0f,
-            name = "Test Item"
+            name = "Test Item",
         )
         assertEquals(RatingCategory.HIGH, itemHigh.getRatingCategory())
 
@@ -56,7 +56,7 @@ class RatingCategoryTest {
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             communityRating = 6.5f,
-            name = "Test Item"
+            name = "Test Item",
         )
         assertEquals(RatingCategory.GOOD, itemGood.getRatingCategory())
 
@@ -64,7 +64,7 @@ class RatingCategoryTest {
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             communityRating = 5.5f,
-            name = "Test Item"
+            name = "Test Item",
         )
         assertEquals(RatingCategory.AVERAGE, itemAverage.getRatingCategory())
 
@@ -72,7 +72,7 @@ class RatingCategoryTest {
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             communityRating = 3.0f,
-            name = "Test Item"
+            name = "Test Item",
         )
         assertEquals(RatingCategory.POOR, itemPoor.getRatingCategory())
     }

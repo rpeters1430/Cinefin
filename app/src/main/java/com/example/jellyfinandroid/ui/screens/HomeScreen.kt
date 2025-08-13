@@ -381,7 +381,7 @@ private fun HomeLibrariesSection(
         ) {
             items(
                 items = libraries,
-                key = { library -> library.getItemKey() }
+                key = { library -> library.getItemKey() },
             ) { library ->
                 HomeLibraryCard(
                     library = library,
@@ -426,7 +426,7 @@ private fun HomeRecentSection(
         ) {
             items(
                 items = recentItems,
-                key = { item -> item.getItemKey() }
+                key = { item -> item.getItemKey() },
             ) { item ->
                 RecentlyAddedCard(
                     item = item,
@@ -527,7 +527,7 @@ fun SearchResultsContent(
 
             items(
                 items = items.chunked(2),
-                key = { rowItems -> rowItems.firstOrNull()?.getItemKey() ?: "" }
+                key = { rowItems -> rowItems.firstOrNull()?.getItemKey() ?: "" },
             ) { rowItems ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),

@@ -11,7 +11,7 @@ class PerformanceOptimizationsTest {
     @Test
     fun `ImageLoadingConfig has correct default values`() {
         val config = ImageLoadingConfig()
-        
+
         assertEquals(400, config.maxWidth.value.toInt())
         assertEquals(600, config.maxHeight.value.toInt())
         assertEquals(85, config.quality)
@@ -36,13 +36,13 @@ class PerformanceOptimizationsTest {
     fun `AdaptivePerformance calculates correct image quality`() {
         // Test low power mode and metered connection
         assertEquals(60, AdaptivePerformance.getOptimalImageQuality(true, true))
-        
+
         // Test low power mode only
         assertEquals(75, AdaptivePerformance.getOptimalImageQuality(true, false))
-        
+
         // Test metered connection only
         assertEquals(75, AdaptivePerformance.getOptimalImageQuality(false, true))
-        
+
         // Test normal conditions
         assertEquals(85, AdaptivePerformance.getOptimalImageQuality(false, false))
     }
@@ -51,10 +51,10 @@ class PerformanceOptimizationsTest {
     fun `AdaptivePerformance calculates correct cache size`() {
         // Test low memory
         assertEquals(25, AdaptivePerformance.getOptimalCacheSize(256))
-        
+
         // Test medium memory
         assertEquals(50, AdaptivePerformance.getOptimalCacheSize(768))
-        
+
         // Test high memory
         assertEquals(100, AdaptivePerformance.getOptimalCacheSize(2048))
     }
@@ -75,7 +75,7 @@ class PerformanceOptimizationsTest {
     @Test
     fun `PreloadConfig has correct default values`() {
         val config = PreloadConfig()
-        
+
         assertTrue(config.strategy is PreloadStrategy.Moderate)
         assertEquals(5, config.bufferSize)
         assertTrue(config.enablePrefetch)

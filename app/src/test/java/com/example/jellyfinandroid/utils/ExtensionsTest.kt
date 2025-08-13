@@ -18,7 +18,7 @@ class ExtensionsTest {
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             communityRating = 8.5f,
-            name = "Test Item"
+            name = "Test Item",
         )
         assertEquals(8.5, item.getRatingAsDouble(), 0.01)
     }
@@ -29,7 +29,7 @@ class ExtensionsTest {
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             communityRating = null,
-            name = "Test Item"
+            name = "Test Item",
         )
         assertEquals(0.0, item.getRatingAsDouble(), 0.01)
     }
@@ -40,7 +40,7 @@ class ExtensionsTest {
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             communityRating = "invalid",
-            name = "Test Item"
+            name = "Test Item",
         )
         assertEquals(0.0, item.getRatingAsDouble(), 0.01)
     }
@@ -51,7 +51,7 @@ class ExtensionsTest {
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             communityRating = 7.5f,
-            name = "Test Item"
+            name = "Test Item",
         )
         assertTrue(item.hasHighRating())
     }
@@ -62,7 +62,7 @@ class ExtensionsTest {
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             communityRating = 6.5f,
-            name = "Test Item"
+            name = "Test Item",
         )
         assertFalse(item.hasHighRating())
     }
@@ -73,7 +73,7 @@ class ExtensionsTest {
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             communityRating = null,
-            name = "Test Item"
+            name = "Test Item",
         )
         assertFalse(item.hasHighRating())
     }
@@ -84,10 +84,10 @@ class ExtensionsTest {
         val item = BaseItemDto(
             id = itemId,
             type = BaseItemKind.MOVIE,
-            name = "Test Item"
+            name = "Test Item",
         )
         val key = item.getItemKey()
-        
+
         assertTrue(key.isNotEmpty())
         assertTrue(key.contains("MOVIE"))
         assertTrue(key.contains(itemId.toString()))
@@ -114,12 +114,12 @@ class ExtensionsTest {
                 isFavorite = null,
                 likes = null,
                 lastPlayedDate = null,
-                playedOrPausedDate = null
+                playedOrPausedDate = null,
             ),
-            name = "Test Item"
+            name = "Test Item",
         )
         assertTrue(watchedItem.isWatched())
-        
+
         // Test unwatched item
         val unwatchedItem = BaseItemDto(
             id = UUID.randomUUID(),
@@ -133,18 +133,18 @@ class ExtensionsTest {
                 isFavorite = null,
                 likes = null,
                 lastPlayedDate = null,
-                playedOrPausedDate = null
+                playedOrPausedDate = null,
             ),
-            name = "Test Item"
+            name = "Test Item",
         )
         assertFalse(unwatchedItem.isWatched())
-        
+
         // Test item with no userData
         val noDataItem = BaseItemDto(
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             userData = null,
-            name = "Test Item"
+            name = "Test Item",
         )
         assertFalse(noDataItem.isWatched())
     }
@@ -156,25 +156,25 @@ class ExtensionsTest {
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             runTimeTicks = 72000000000, // 2 hours
-            name = "Test Item"
+            name = "Test Item",
         )
         assertEquals("2h 0m", itemWithHours.getFormattedDuration())
-        
+
         // Test with minutes only
         val itemWithMinutes = BaseItemDto(
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             runTimeTicks = 18000000000, // 30 minutes
-            name = "Test Item"
+            name = "Test Item",
         )
         assertEquals("30m", itemWithMinutes.getFormattedDuration())
-        
+
         // Test with null runTimeTicks
         val itemWithoutDuration = BaseItemDto(
             id = UUID.randomUUID(),
             type = BaseItemKind.MOVIE,
             runTimeTicks = null,
-            name = "Test Item"
+            name = "Test Item",
         )
         assertNull(itemWithoutDuration.getFormattedDuration())
     }

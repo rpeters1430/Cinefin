@@ -233,7 +233,7 @@ private fun GridContent(
     ) {
         items(
             items = items,
-            key = { item -> item.getItemKey() }
+            key = { item -> item.getItemKey() },
         ) { item ->
             LibraryItemCard(
                 item = item,
@@ -268,7 +268,7 @@ private fun ListContent(
     ) {
         items(
             items = items,
-            key = { item -> item.getItemKey() }
+            key = { item -> item.getItemKey() },
         ) { item ->
             LibraryItemCard(
                 item = item,
