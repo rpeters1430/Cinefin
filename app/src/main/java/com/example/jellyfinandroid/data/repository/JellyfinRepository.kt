@@ -454,10 +454,10 @@ class JellyfinRepository @Inject constructor(
                     )
                     _currentServer.value = updatedServer
                     authRepository.updateCurrentServer(updatedServer)
-                    
+
                     // Clear client factory again to ensure fresh token is used
                     clientFactory.invalidateClient()
-                    
+
                     return@withLock true
                 }
                 is ApiResult.Error -> {
