@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.jellyfinandroid.data.SecureCredentialManager
@@ -39,6 +40,7 @@ data class ConnectionState(
     val isQuickConnectPolling: Boolean = false,
     val quickConnectStatus: String = "",
     val hasSavedPassword: Boolean = false,
+    val isBiometricAuthAvailable: Boolean = false, // New field for biometric auth status
 )
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "login_preferences")
@@ -47,6 +49,7 @@ object PreferencesKeys {
     val SERVER_URL = stringPreferencesKey("server_url")
     val USERNAME = stringPreferencesKey("username")
     val REMEMBER_LOGIN = booleanPreferencesKey("remember_login")
+    val BIOMETRIC_AUTH_ENABLED = booleanPreferencesKey("biometric_auth_enabled") // New preference
 }
 
 @HiltViewModel
@@ -68,6 +71,7 @@ class ServerConnectionViewModel @Inject constructor(
             val savedServerUrl = preferences[PreferencesKeys.SERVER_URL] ?: ""
             val savedUsername = preferences[PreferencesKeys.USERNAME] ?: ""
             val rememberLogin = preferences[PreferencesKeys.REMEMBER_LOGIN] ?: false
+            val isBiometricAuthEnabled = preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] ?: false
 
             // ✅ FIX: Handle suspend function calls properly
             val hasSavedPassword = if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
@@ -81,14 +85,19 @@ class ServerConnectionViewModel @Inject constructor(
                 savedUsername = savedUsername,
                 rememberLogin = rememberLogin,
                 hasSavedPassword = hasSavedPassword,
+                isBiometricAuthAvailable = secureCredentialManager.isBiometricAuthAvailable(), // Check biometric availability
+                // We don't set biometric auth enabled here because we want to check it separately
             )
 
             // Auto-login if we have saved credentials and remember login is enabled
             if (rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
-                val savedPassword = secureCredentialManager.getPassword(savedServerUrl, savedUsername)
-                if (savedPassword != null) {
-                    // Auto-login with saved credentials
-                    connectToServer(savedServerUrl, savedUsername, savedPassword)
+                // We don't auto-login if biometric auth is enabled, user needs to trigger it manually
+                if (!isBiometricAuthEnabled) {
+                    val savedPassword = secureCredentialManager.getPassword(savedServerUrl, savedUsername)
+                    if (savedPassword != null) {
+                        // Auto-login with saved credentials
+                        connectToServer(savedServerUrl, savedUsername, savedPassword)
+                    }
                 }
             }
         }
@@ -217,13 +226,37 @@ class ServerConnectionViewModel @Inject constructor(
         }
     }
 
-    suspend fun getSavedPassword(): String? {
+    /**
+     * Sets whether biometric authentication is enabled for accessing saved credentials
+     */
+    fun setBiometricAuthEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            context.dataStore.edit { preferences ->
+                preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] = enabled
+            }
+            _connectionState.value = _connectionState.value.copy(
+                isBiometricAuthAvailable = enabled && secureCredentialManager.isBiometricAuthAvailable()
+            )
+        }
+    }
+
+    /**
+     * Gets a saved password with optional biometric authentication
+     */
+    suspend fun getSavedPassword(activity: FragmentActivity? = null): String? {
         val currentState = _connectionState.value
         return if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
-            secureCredentialManager.getPassword(currentState.savedServerUrl, currentState.savedUsername)
+            secureCredentialManager.getPassword(currentState.savedServerUrl, currentState.savedUsername, activity)
         } else {
             null
         }
+    }
+
+    /**
+     * Gets a saved password without biometric authentication (for backward compatibility)
+     */
+    suspend fun getSavedPassword(): String? {
+        return getSavedPassword(null)
     }
 
     fun autoLogin() {
@@ -231,6 +264,25 @@ class ServerConnectionViewModel @Inject constructor(
         if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
             viewModelScope.launch {
                 val savedPassword = getSavedPassword()
+                if (savedPassword != null) {
+                    connectToServer(
+                        currentState.savedServerUrl,
+                        currentState.savedUsername,
+                        savedPassword,
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Auto-login with biometric authentication if enabled
+     */
+    fun autoLoginWithBiometric(activity: FragmentActivity) {
+        val currentState = _connectionState.value
+        if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
+            viewModelScope.launch {
+                val savedPassword = getSavedPassword(activity)
                 if (savedPassword != null) {
                     connectToServer(
                         currentState.savedServerUrl,

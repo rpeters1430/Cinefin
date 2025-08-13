@@ -84,6 +84,7 @@ dependencies {
 
     // Security for encrypted storage
     implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.biometric)
 
     // Jellyfin SDK
     implementation(libs.jellyfin.sdk)

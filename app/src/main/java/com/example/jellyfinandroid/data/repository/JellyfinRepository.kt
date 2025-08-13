@@ -967,7 +967,8 @@ class JellyfinRepository @Inject constructor(
             return operation()
         } catch (e: HttpException) {
             if (e.code() == 401) {
-                Log.w("JellyfinRepository", "401 Unauthorized detected. Server: ${_currentServer.value?.url}, Endpoint: ${e.response()?.raw()?.request?.url}")
+                // Log only non-sensitive information for debugging
+                Log.w("JellyfinRepository", "401 Unauthorized detected. Server ID: ${_currentServer.value?.id?.take(8)}, Endpoint path: ${e.response()?.raw()?.request?.url?.encodedPath}")
                 logout() // Clear session and redirect to login
                 throw e
             }
@@ -985,7 +986,8 @@ class JellyfinRepository @Inject constructor(
         val isExpired = (currentTime - loginTimestamp) > TOKEN_VALIDITY_DURATION_MS
 
         if (isExpired) {
-            Log.w("JellyfinRepository", "Token expired. Login timestamp: $loginTimestamp, current: $currentTime, duration: ${currentTime - loginTimestamp}ms")
+            // Log only non-sensitive information for debugging
+            Log.w("JellyfinRepository", "Token expired. Server ID: ${server.id?.take(8)}")
         }
 
         return isExpired

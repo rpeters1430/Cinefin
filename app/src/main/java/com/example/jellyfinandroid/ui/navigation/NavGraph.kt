@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -69,6 +70,7 @@ fun JellyfinNavGraph(
         composable(Screen.ServerConnection.route) {
             val viewModel: ServerConnectionViewModel = hiltViewModel()
             val connectionState by viewModel.connectionState.collectAsStateWithLifecycle()
+            val context = LocalContext.current
 
             ServerConnectionScreen(
                 onConnect = { serverUrl, username, password ->
@@ -83,8 +85,19 @@ fun JellyfinNavGraph(
                 savedUsername = connectionState.savedUsername,
                 rememberLogin = connectionState.rememberLogin,
                 hasSavedPassword = connectionState.hasSavedPassword,
+                isBiometricAuthAvailable = connectionState.isBiometricAuthAvailable,
                 onRememberLoginChange = { viewModel.setRememberLogin(it) },
                 onAutoLogin = { viewModel.autoLogin() },
+                onBiometricLogin = { 
+                    // For biometric auth, we need to convert context to FragmentActivity
+                    // This is a simplified approach - in a real app you might want to handle this differently
+                    if (context is androidx.fragment.app.FragmentActivity) {
+                        viewModel.autoLoginWithBiometric(context)
+                    } else {
+                        // Fallback to regular auto-login if we can't get the activity
+                        viewModel.autoLogin()
+                    }
+                },
             )
         }
 

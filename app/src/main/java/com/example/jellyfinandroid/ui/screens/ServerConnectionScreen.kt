@@ -65,8 +65,10 @@ fun ServerConnectionScreen(
     savedUsername: String = "",
     rememberLogin: Boolean = false,
     hasSavedPassword: Boolean = false,
+    isBiometricAuthAvailable: Boolean = false, // New parameter
     onRememberLoginChange: (Boolean) -> Unit = {},
     onAutoLogin: () -> Unit = {},
+    onBiometricLogin: () -> Unit = {}, // New parameter
     modifier: Modifier = Modifier,
 ) {
     var serverUrl by remember { mutableStateOf(savedServerUrl) }
@@ -143,6 +145,18 @@ fun ServerConnectionScreen(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text("Auto Login")
+                    }
+                    
+                    // Biometric login button if available
+                    if (isBiometricAuthAvailable) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = onBiometricLogin,
+                            enabled = !isConnecting,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Login with Biometric")
+                        }
                     }
                 }
             }
