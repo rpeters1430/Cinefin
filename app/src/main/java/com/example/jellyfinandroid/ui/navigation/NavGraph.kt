@@ -88,7 +88,7 @@ fun JellyfinNavGraph(
                 isBiometricAuthAvailable = connectionState.isBiometricAuthAvailable,
                 onRememberLoginChange = { viewModel.setRememberLogin(it) },
                 onAutoLogin = { viewModel.autoLogin() },
-                onBiometricLogin = { 
+                onBiometricLogin = {
                     // For biometric auth, we need to convert context to FragmentActivity
                     // This is a simplified approach - in a real app you might want to handle this differently
                     if (context is androidx.fragment.app.FragmentActivity) {

@@ -42,7 +42,7 @@ class BiometricAuthManager(private val context: Context) {
         activity: FragmentActivity,
         title: String = "Biometric Authentication",
         subtitle: String = "Authenticate to access your credentials",
-        description: String = "Confirm your identity using your biometric credential"
+        description: String = "Confirm your identity using your biometric credential",
     ): Boolean = suspendCancellableCoroutine { continuation ->
         // Check if biometric auth is available
         if (!isBiometricAuthAvailable()) {
@@ -51,7 +51,9 @@ class BiometricAuthManager(private val context: Context) {
         }
 
         val executor = ContextCompat.getMainExecutor(context)
-        val biometricPrompt = BiometricPrompt(activity, executor,
+        val biometricPrompt = BiometricPrompt(
+            activity,
+            executor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
@@ -70,7 +72,8 @@ class BiometricAuthManager(private val context: Context) {
                     // Authentication failed (e.g., incorrect fingerprint)
                     // Don't resume here as the user might try again
                 }
-            })
+            },
+        )
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
@@ -81,7 +84,7 @@ class BiometricAuthManager(private val context: Context) {
             .build()
 
         biometricPrompt.authenticate(promptInfo)
-        
+
         // Allow cancellation of the coroutine
         continuation.invokeOnCancellation {
             biometricPrompt.cancelAuthentication()
@@ -96,12 +99,12 @@ class BiometricAuthManager(private val context: Context) {
     private fun getAuthenticators(): Int {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // On Android 11+ (API 30+) use both biometric and device credential
-            BiometricManager.Authenticators.BIOMETRIC_STRONG or 
-            BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                BiometricManager.Authenticators.DEVICE_CREDENTIAL
         } else {
             // On older versions, use biometric or device credential
-            BiometricManager.Authenticators.BIOMETRIC_WEAK or 
-            BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            BiometricManager.Authenticators.BIOMETRIC_WEAK or
+                BiometricManager.Authenticators.DEVICE_CREDENTIAL
         }
     }
 }

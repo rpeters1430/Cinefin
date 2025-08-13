@@ -235,7 +235,7 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] = enabled
             }
             _connectionState.value = _connectionState.value.copy(
-                isBiometricAuthAvailable = enabled && secureCredentialManager.isBiometricAuthAvailable()
+                isBiometricAuthAvailable = enabled && secureCredentialManager.isBiometricAuthAvailable(),
             )
         }
     }

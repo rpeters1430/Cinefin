@@ -44,7 +44,7 @@ class SecureCredentialManager @Inject constructor(
             load(null)
         }
     }
-    
+
     // Biometric authentication manager
     private val biometricAuthManager by lazy { BiometricAuthManager(context) }
 
@@ -69,7 +69,7 @@ class SecureCredentialManager @Inject constructor(
      */
     private fun getOrCreateSecretKey(forceNew: Boolean = false): SecretKey {
         val currentAlias = getKeyAlias()
-        
+
         // Check if we should rotate the key (force new key or key doesn't exist)
         if (forceNew || !keyStore.containsAlias(currentAlias)) {
             // Remove old keys (keep only the most recent ones)
@@ -84,7 +84,7 @@ class SecureCredentialManager @Inject constructor(
                     }
                 }
             }
-            
+
             val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
             val keyGenParameterSpec = KeyGenParameterSpec.Builder(
                 currentAlias,
@@ -98,7 +98,7 @@ class SecureCredentialManager @Inject constructor(
             keyGenerator.init(keyGenParameterSpec)
             return keyGenerator.generateKey()
         }
-        
+
         return keyStore.getKey(currentAlias, null) as SecretKey
     }
 
@@ -176,9 +176,9 @@ class SecureCredentialManager @Inject constructor(
      * @return The decrypted password or null if not found or auth failed
      */
     suspend fun getPassword(
-        serverUrl: String, 
-        username: String, 
-        activity: FragmentActivity? = null
+        serverUrl: String,
+        username: String,
+        activity: FragmentActivity? = null,
     ): String? {
         // If activity is provided and biometric auth is available, request auth
         if (activity != null && biometricAuthManager.isBiometricAuthAvailable()) {
@@ -186,15 +186,15 @@ class SecureCredentialManager @Inject constructor(
                 activity = activity,
                 title = "Access Credentials",
                 subtitle = "Authenticate to access your saved credentials",
-                description = "Confirm your identity to retrieve saved login information"
+                description = "Confirm your identity to retrieve saved login information",
             )
-            
+
             // If biometric auth failed, return null
             if (!authSuccess) {
                 return null
             }
         }
-        
+
         // Get the password as usual
         val key = generateKey(serverUrl, username)
         val encryptedPassword = context.secureCredentialsDataStore.data.map { preferences ->
@@ -238,7 +238,7 @@ class SecureCredentialManager @Inject constructor(
         val digest = MessageDigest.getInstance("SHA-256")
         val input = "$serverUrl::$username::${AppConstants.Security.KEY_ALIAS}".toByteArray()
         val hash = digest.digest(input)
-        
+
         // Take first 16 bytes and encode as hex for the key
         val keyBytes = hash.sliceArray(0 until 16)
         return "pwd_${keyBytes.joinToString("") { "%02x".format(it) }}"
