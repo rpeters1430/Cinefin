@@ -73,7 +73,7 @@ fun LibraryTypeScreen(
     val libraryItems = remember(libraryType, appState.allMovies, appState.allTVShows, appState.allItems) {
         viewModel.getLibraryTypeData(libraryType)
     }
-    
+
     val displayItems = remember(libraryItems, selectedFilter) {
         applyFilter(libraryItems, selectedFilter)
     }
@@ -126,9 +126,9 @@ fun LibraryTypeScreen(
                             }
                         }
                     }
-                    IconButton(onClick = { 
+                    IconButton(onClick = {
                         // ✅ FIX: Use library-type specific refresh
-                        viewModel.loadLibraryTypeData(libraryType, forceRefresh = true) 
+                        viewModel.loadLibraryTypeData(libraryType, forceRefresh = true)
                     }) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh")
                     }
