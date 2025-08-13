@@ -273,27 +273,32 @@ class JellyfinRepository @Inject constructor(
     // ===== LIBRARY METHODS - Simplified for better maintainability =====
 
     suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> {
-        // Simplified implementation - delegate complex auth logic to auth repository
-        val server = authRepository.getCurrentServer()
-        if (server?.accessToken == null || server.userId == null) {
-            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+        // ✅ FIX: Validate token before making requests
+        if (isTokenExpired()) {
+            Log.w("JellyfinRepository", "getUserLibraries: Token expired, attempting proactive refresh")
+            if (!reAuthenticate()) {
+                return ApiResult.Error("Authentication expired", errorType = ErrorType.AUTHENTICATION)
+            }
         }
 
-        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
-        if (userUuid == null) {
-            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
-        }
+        return executeWithAuthRetry("getUserLibraries") {
+            // Use current server from auth repository for consistency
+            val server = authRepository.getCurrentServer()
+            if (server?.accessToken == null || server.userId == null) {
+                return@executeWithAuthRetry ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+            }
 
-        return try {
+            val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+            if (userUuid == null) {
+                return@executeWithAuthRetry ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+            }
+
             val client = getClient(server.url, server.accessToken)
             val response = client.itemsApi.getItems(
                 userId = userUuid,
                 includeItemTypes = listOf(org.jellyfin.sdk.model.api.BaseItemKind.COLLECTION_FOLDER),
             )
             ApiResult.Success(response.content.items ?: emptyList())
-        } catch (e: Exception) {
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("Failed to load libraries: ${e.message}", e, errorType)
         }
     }
 
@@ -339,6 +344,14 @@ class JellyfinRepository @Inject constructor(
     }
 
     suspend fun getRecentlyAdded(limit: Int = RECENTLY_ADDED_LIMIT): ApiResult<List<BaseItemDto>> {
+        // ✅ FIX: Validate token before making requests
+        if (isTokenExpired()) {
+            Log.w("JellyfinRepository", "getRecentlyAdded: Token expired, attempting proactive refresh")
+            if (!reAuthenticate()) {
+                return ApiResult.Error("Authentication expired", errorType = ErrorType.AUTHENTICATION)
+            }
+        }
+
         val server = _currentServer.value
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
@@ -404,8 +417,8 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
-    private suspend fun reAuthenticate(): Boolean {
-        val server = _currentServer.value ?: return false
+    private suspend fun reAuthenticate(): Boolean = authMutex.withLock {
+        val server = _currentServer.value ?: return@withLock false
 
         if (BuildConfig.DEBUG) {
             Log.d("JellyfinRepository", "reAuthenticate: Starting re-authentication for user ${server.username} on ${server.url}")
@@ -421,45 +434,50 @@ class JellyfinRepository @Inject constructor(
                 Log.w("JellyfinRepository", "reAuthenticate: No saved password found for user ${server.username}")
                 // If we can't re-authenticate, logout the user
                 logout()
-                return false
+                return@withLock false
             }
 
             if (BuildConfig.DEBUG) {
                 Log.d("JellyfinRepository", "reAuthenticate: Found saved credentials, attempting authentication")
             }
 
-            // Re-authenticate using saved credentials
-            when (val authResult = authenticateUser(server.url, server.username ?: "", savedPassword)) {
+            // Re-authenticate using saved credentials - delegate to auth repository for consistency
+            when (val authResult = authRepository.authenticateUser(server.url, server.username ?: "", savedPassword)) {
                 is ApiResult.Success -> {
                     if (BuildConfig.DEBUG) {
                         Log.d("JellyfinRepository", "reAuthenticate: Successfully re-authenticated user ${server.username}")
                     }
-                    // Update the current server with the new token and login timestamp
+                    // Update both local state and auth repository state
                     val updatedServer = server.copy(
                         accessToken = authResult.data.accessToken,
                         loginTimestamp = System.currentTimeMillis(),
                     )
                     _currentServer.value = updatedServer
-                    return true
+                    authRepository.updateCurrentServer(updatedServer)
+                    
+                    // Clear client factory again to ensure fresh token is used
+                    clientFactory.invalidateClient()
+                    
+                    return@withLock true
                 }
                 is ApiResult.Error -> {
                     Log.w("JellyfinRepository", "reAuthenticate: Failed to re-authenticate: ${authResult.message}")
                     // If re-authentication fails, logout the user
                     logout()
-                    return false
+                    return@withLock false
                 }
                 is ApiResult.Loading -> {
                     if (BuildConfig.DEBUG) {
                         Log.d("JellyfinRepository", "reAuthenticate: Authentication in progress")
                     }
-                    return false
+                    return@withLock false
                 }
             }
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "reAuthenticate: Exception during re-authentication", e)
             // If there's an exception during re-auth, logout to prevent further errors
             logout()
-            return false
+            return@withLock false
         }
     }
 
@@ -495,13 +513,11 @@ class JellyfinRepository @Inject constructor(
                 if (is401Error && attempt < maxRetries) {
                     Log.w("JellyfinRepository", "Got 401 error on attempt ${attempt + 1}, attempting to re-authenticate")
 
-                    // Try to re-authenticate
+                    // Try to re-authenticate with proper synchronization
                     if (reAuthenticate()) {
                         if (BuildConfig.DEBUG) {
                             Log.d("JellyfinRepository", "Re-authentication successful, retrying operation")
                         }
-                        // ✅ FIX: Invalidate client factory to ensure new token is used
-                        clientFactory.invalidateClient()
                         // Additional delay to ensure token propagation
                         kotlinx.coroutines.delay(RE_AUTH_DELAY_MS)
                         continue
@@ -558,8 +574,8 @@ class JellyfinRepository @Inject constructor(
                                 if (BuildConfig.DEBUG) {
                                     Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
                                 }
-                                clientFactory.invalidateClient()
-                                kotlinx.coroutines.delay(RE_AUTH_DELAY_MS) // Longer delay for token propagation
+                                // Additional delay for token propagation
+                                kotlinx.coroutines.delay(RE_AUTH_DELAY_MS)
                                 continue
                             } else {
                                 Log.w("JellyfinRepository", "$operationName: Re-authentication failed")
@@ -593,8 +609,8 @@ class JellyfinRepository @Inject constructor(
                         if (BuildConfig.DEBUG) {
                             Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
                         }
-                        clientFactory.invalidateClient()
-                        kotlinx.coroutines.delay(RE_AUTH_DELAY_MS) // Longer delay for token propagation
+                        // Additional delay for token propagation
+                        kotlinx.coroutines.delay(RE_AUTH_DELAY_MS)
                         continue
                     } else {
                         Log.w("JellyfinRepository", "$operationName: Re-authentication failed")
