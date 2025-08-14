@@ -4,13 +4,13 @@ import android.content.Context
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.di.JellyfinClientFactory
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import io.mockk.mockk
-import io.mockk.every
-import org.junit.Assert.assertEquals
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
