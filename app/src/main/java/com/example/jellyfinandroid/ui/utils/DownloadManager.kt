@@ -2,9 +2,13 @@ package com.example.jellyfinandroid.ui.utils
 
 import android.app.DownloadManager
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Environment
 import android.util.Log
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import android.Manifest
 import com.example.jellyfinandroid.BuildConfig
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.io.File
@@ -30,6 +34,11 @@ object MediaDownloadManager {
      */
     fun downloadMedia(context: Context, item: BaseItemDto, streamUrl: String): Long? {
         return try {
+            if (!hasStoragePermission(context, item)) {
+                Log.w(TAG, "Missing storage permission for ${item.name}")
+                return null
+            }
+
             val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
             // Create download request
@@ -40,7 +49,12 @@ object MediaDownloadManager {
                 // Set destination in Downloads directory with organized folder structure
                 val fileName = generateFileName(item)
                 val subPath = generateSubPath(item)
-                setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "$DOWNLOADS_FOLDER/$subPath/$fileName")
+                val subFolder = "$DOWNLOADS_FOLDER/$subPath/$fileName"
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, subFolder)
+                } else {
+                    setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, subFolder)
+                }
 
                 // Allow download only over WiFi by default for large media files
                 setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI)
@@ -80,10 +94,14 @@ object MediaDownloadManager {
      */
     fun isDownloaded(context: Context, item: BaseItemDto): Boolean {
         return try {
+            if (!hasStoragePermission(context, item)) {
+                Log.w(TAG, "Missing storage permission for ${item.name}")
+                return false
+            }
             val fileName = generateFileName(item)
             val subPath = generateSubPath(item)
             val file = File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                getDownloadBaseDir(context),
                 "$DOWNLOADS_FOLDER/$subPath/$fileName",
             )
 
@@ -103,10 +121,14 @@ object MediaDownloadManager {
      */
     fun getLocalFilePath(context: Context, item: BaseItemDto): String? {
         return try {
+            if (!hasStoragePermission(context, item)) {
+                Log.w(TAG, "Missing storage permission for ${item.name}")
+                return null
+            }
             val fileName = generateFileName(item)
             val subPath = generateSubPath(item)
             val file = File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                getDownloadBaseDir(context),
                 "$DOWNLOADS_FOLDER/$subPath/$fileName",
             )
 
@@ -130,10 +152,14 @@ object MediaDownloadManager {
      */
     fun deleteDownload(context: Context, item: BaseItemDto): Boolean {
         return try {
+            if (!hasStoragePermission(context, item)) {
+                Log.w(TAG, "Missing storage permission for ${item.name}")
+                return false
+            }
             val fileName = generateFileName(item)
             val subPath = generateSubPath(item)
             val file = File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                getDownloadBaseDir(context),
                 "$DOWNLOADS_FOLDER/$subPath/$fileName",
             )
 
@@ -209,8 +235,12 @@ object MediaDownloadManager {
      */
     fun getTotalDownloadSize(context: Context): Long {
         return try {
+            if (!hasLegacyStoragePermission(context)) {
+                Log.w(TAG, "Missing storage permission for downloads directory")
+                return 0L
+            }
             val downloadsDir = File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                getDownloadBaseDir(context),
                 DOWNLOADS_FOLDER,
             )
 
@@ -233,8 +263,12 @@ object MediaDownloadManager {
      */
     fun clearAllDownloads(context: Context): Boolean {
         return try {
+            if (!hasLegacyStoragePermission(context)) {
+                Log.w(TAG, "Missing storage permission for downloads directory")
+                return false
+            }
             val downloadsDir = File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                getDownloadBaseDir(context),
                 DOWNLOADS_FOLDER,
             )
 
@@ -250,6 +284,52 @@ object MediaDownloadManager {
     }
 
     // Helper methods
+
+    internal fun getDownloadBaseDir(context: Context, sdkInt: Int = Build.VERSION.SDK_INT): File {
+        return if (sdkInt >= Build.VERSION_CODES.Q) {
+            context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                ?: context.filesDir
+        } else {
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        }
+    }
+
+    private fun hasStoragePermission(context: Context, item: BaseItemDto): Boolean {
+        return when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> true
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
+                val permission = when (item.type?.name) {
+                    "AUDIO" -> Manifest.permission.READ_MEDIA_AUDIO
+                    "MOVIE", "EPISODE", "MUSIC_VIDEO" -> Manifest.permission.READ_MEDIA_VIDEO
+                    else -> Manifest.permission.READ_MEDIA_IMAGES
+                }
+                ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+            }
+            else -> {
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                ) == PackageManager.PERMISSION_GRANTED
+            }
+        }
+    }
+
+    private fun hasLegacyStoragePermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            true
+        } else {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+            ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+    }
 
     private fun generateFileName(item: BaseItemDto): String {
         val baseName = (item.name ?: "Unknown").replace(Regex("[^a-zA-Z0-9._-]"), "_")
