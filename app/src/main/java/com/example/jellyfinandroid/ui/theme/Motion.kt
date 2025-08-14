@@ -9,7 +9,7 @@ import androidx.compose.animation.core.tween
  * Following Material Design 3 motion principles
  */
 object MotionTokens {
-    
+
     // Material 3 Easing curves
     val EmphasizedEasing: Easing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
     val StandardEasing: Easing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
@@ -37,21 +37,21 @@ object MotionTokens {
     // Common animation specs
     val emphasizedEnter = tween<Float>(
         durationMillis = DurationMedium2,
-        easing = EmphasizedEasing
+        easing = EmphasizedEasing,
     )
-    
+
     val emphasizedExit = tween<Float>(
         durationMillis = DurationShort4,
-        easing = EmphasizedEasing
+        easing = EmphasizedEasing,
     )
-    
+
     val standardEnter = tween<Float>(
         durationMillis = DurationMedium1,
-        easing = StandardEasing
+        easing = StandardEasing,
     )
-    
+
     val standardExit = tween<Float>(
         durationMillis = DurationShort2,
-        easing = StandardEasing
+        easing = StandardEasing,
     )
 }

@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
  * Following Material Design 3 shape tokens for visual hierarchy
  */
 object ShapeTokens {
-    
+
     // Corner radius tokens
     val CornerExtraSmall = 4.dp
     val CornerSmall = 8.dp
@@ -18,7 +18,7 @@ object ShapeTokens {
     val CornerLarge = 16.dp
     val CornerExtraLarge = 28.dp
     val CornerFull = 50.dp
-    
+
     // Shape families
     val ExtraSmall: CornerBasedShape = RoundedCornerShape(CornerExtraSmall)
     val Small: CornerBasedShape = RoundedCornerShape(CornerSmall)
@@ -26,7 +26,7 @@ object ShapeTokens {
     val Large: CornerBasedShape = RoundedCornerShape(CornerLarge)
     val ExtraLarge: CornerBasedShape = RoundedCornerShape(CornerExtraLarge)
     val Full: CornerBasedShape = RoundedCornerShape(CornerFull)
-    
+
     // Component-specific shapes
     val ButtonShape = Small
     val CardShape = Medium
@@ -35,7 +35,7 @@ object ShapeTokens {
     val ChipShape = Small
     val BottomSheetShape = ExtraLarge
     val ModalShape = ExtraLarge
-    
+
     // Media content shapes
     val PosterShape = Medium // For movie/TV posters
     val ThumbnailShape = Small // For episode thumbnails
@@ -51,5 +51,5 @@ val JellyfinShapes = Shapes(
     small = ShapeTokens.Small,
     medium = ShapeTokens.Medium,
     large = ShapeTokens.Large,
-    extraLarge = ShapeTokens.ExtraLarge
+    extraLarge = ShapeTokens.ExtraLarge,
 )
