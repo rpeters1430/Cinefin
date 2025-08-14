@@ -296,7 +296,6 @@ object MediaDownloadManager {
 
     private fun hasStoragePermission(context: Context, item: BaseItemDto): Boolean {
         return when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> true
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
                 val permission = when (item.type?.name) {
                     "AUDIO" -> Manifest.permission.READ_MEDIA_AUDIO
