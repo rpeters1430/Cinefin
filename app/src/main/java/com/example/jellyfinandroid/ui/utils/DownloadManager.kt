@@ -1,5 +1,6 @@
 package com.example.jellyfinandroid.ui.utils
 
+import android.Manifest
 import android.app.DownloadManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -8,7 +9,6 @@ import android.os.Environment
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import android.Manifest
 import com.example.jellyfinandroid.BuildConfig
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.io.File
