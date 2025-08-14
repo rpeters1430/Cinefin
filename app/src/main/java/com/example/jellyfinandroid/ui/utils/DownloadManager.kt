@@ -314,7 +314,38 @@ object MediaDownloadManager {
                     context,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
                 ) == PackageManager.PERMISSION_GRANTED
+    private fun hasStoragePermission(context: Context, item: BaseItemDto, targetFile: File? = null): Boolean {
+        val sdkInt = Build.VERSION.SDK_INT
+        if (sdkInt >= Build.VERSION_CODES.Q) {
+            // If accessing app's own external files directory, no permission needed
+            val appExternalDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+            if (targetFile != null && appExternalDir != null &&
+                targetFile.absolutePath.startsWith(appExternalDir.absolutePath)
+            ) {
+                return true
             }
+            // Otherwise, check for appropriate READ_MEDIA_* permission
+            val permission = when (item.type?.name) {
+                "AUDIO" -> Manifest.permission.READ_MEDIA_AUDIO
+                "MOVIE", "EPISODE", "MUSIC_VIDEO" -> Manifest.permission.READ_MEDIA_VIDEO
+                else -> Manifest.permission.READ_MEDIA_IMAGES
+            }
+            return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+        } else if (sdkInt >= Build.VERSION_CODES.TIRAMISU) {
+            val permission = when (item.type?.name) {
+                "AUDIO" -> Manifest.permission.READ_MEDIA_AUDIO
+                "MOVIE", "EPISODE", "MUSIC_VIDEO" -> Manifest.permission.READ_MEDIA_VIDEO
+                else -> Manifest.permission.READ_MEDIA_IMAGES
+            }
+            return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+        } else {
+            return ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+            ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            ) == PackageManager.PERMISSION_GRANTED
         }
     }
 
