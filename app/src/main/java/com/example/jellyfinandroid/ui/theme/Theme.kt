@@ -105,6 +105,7 @@ fun JellyfinAndroidTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = JellyfinShapes,
         content = content,
     )
 }

@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.DockedSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -94,25 +96,26 @@ fun SearchScreen(
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = {
-                    searchQuery = it
-                },
+            SearchBar(
+                query = searchQuery,
+                onQueryChange = { searchQuery = it },
+                onSearch = { /* Search is handled by LaunchedEffect with debouncing */ },
+                active = false,
+                onActiveChange = { },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = stringResource(id = R.string.search),
                     )
                 },
-                label = { Text(stringResource(id = R.string.search)) },
                 placeholder = { Text(stringResource(id = R.string.search_hint)) },
-                singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
                     .focusRequester(focusRequester),
-            )
+            ) {
+                // Empty content - search results are shown below
+            }
 
             SearchResultsContent(
                 searchResults = appState.searchResults,
