@@ -299,7 +299,9 @@ object MediaDownloadManager {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
                 val permission = when (item.type?.name) {
                     "AUDIO" -> Manifest.permission.READ_MEDIA_AUDIO
-                    "MOVIE", "EPISODE", "MUSIC_VIDEO" -> Manifest.permission.READ_MEDIA_VIDEO
+                val permission = when (item.type) {
+                    BaseItemKind.AUDIO -> Manifest.permission.READ_MEDIA_AUDIO
+                    BaseItemKind.MOVIE, BaseItemKind.EPISODE, BaseItemKind.MUSIC_VIDEO -> Manifest.permission.READ_MEDIA_VIDEO
                     else -> Manifest.permission.READ_MEDIA_IMAGES
                 }
                 ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
