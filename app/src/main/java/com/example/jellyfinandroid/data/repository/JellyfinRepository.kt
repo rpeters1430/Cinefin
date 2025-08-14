@@ -2,7 +2,6 @@ package com.example.jellyfinandroid.data.repository
 
 import android.content.Context
 import android.util.Log
-import androidx.annotation.VisibleForTesting
 import com.example.jellyfinandroid.BuildConfig
 import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.data.JellyfinServer
@@ -16,15 +15,12 @@ import com.example.jellyfinandroid.ui.utils.OfflineManager
 import com.example.jellyfinandroid.utils.Constants
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.playStateApi
-import org.jellyfin.sdk.api.client.extensions.quickConnectApi
-import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.api.AuthenticationResult
@@ -34,7 +30,6 @@ import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.PublicSystemInfo
-import org.jellyfin.sdk.model.api.QuickConnectDto
 import org.jellyfin.sdk.model.api.SortOrder
 import retrofit2.HttpException
 import java.util.UUID
@@ -101,10 +96,6 @@ class JellyfinRepository @Inject constructor(
     val currentServer: Flow<JellyfinServer?> = authRepository.currentServer
     val isConnected: Flow<Boolean> = authRepository.isConnected
 
-    // Internal state flows for backward compatibility in remaining methods
-    private val _currentServer = MutableStateFlow<JellyfinServer?>(null)
-    private val _isConnected = MutableStateFlow(false)
-
     // Mutex to prevent race conditions in authentication
     private val authMutex = Mutex()
 
@@ -122,15 +113,9 @@ class JellyfinRepository @Inject constructor(
         return clientFactory.getClient(serverUrl, accessToken)
     }
 
-    @VisibleForTesting
-    fun setCurrentServerForTest(server: JellyfinServer) {
-        _currentServer.value = server
-        _isConnected.value = server.isConnected
-    }
-
     // ✅ FIX: Helper method to get current authenticated client
     private fun getCurrentAuthenticatedClient(): ApiClient? {
-        val currentServer = _currentServer.value
+        val currentServer = authRepository.getCurrentServer()
         return currentServer?.let {
             getClient(it.url, it.accessToken)
         }
@@ -149,7 +134,7 @@ class JellyfinRepository @Inject constructor(
         val processedError = ErrorHandler.processError(e, operation = defaultMessage)
 
         // Log error analytics
-        val currentServer = _currentServer.value
+        val currentServer = authRepository.getCurrentServer()
         ErrorHandler.logErrorAnalytics(
             error = processedError,
             operation = defaultMessage,
@@ -174,101 +159,21 @@ class JellyfinRepository @Inject constructor(
         username: String,
         password: String,
     ): ApiResult<AuthenticationResult> {
-        // Delegate to auth repository and also update local state for backward compatibility
-        val result = authRepository.authenticateUser(serverUrl, username, password)
-
-        // Sync local state with auth repository state for methods that still use local state
-        _currentServer.value = authRepository.getCurrentServer()
-        _isConnected.value = authRepository.isUserAuthenticated()
-
-        return result
+        // Delegate to auth repository
+        return authRepository.authenticateUser(serverUrl, username, password)
     }
 
-    /**
-     * Start a new Quick Connect session by calling the server API.
-     */
-    suspend fun initiateQuickConnect(serverUrl: String): ApiResult<QuickConnectResult> {
-        return try {
-            val client = getClient(serverUrl)
-            val response = client.quickConnectApi.initiateQuickConnect()
-            val result = response.content
+    suspend fun initiateQuickConnect(serverUrl: String): ApiResult<QuickConnectResult> =
+        authRepository.initiateQuickConnect(serverUrl)
 
-            ApiResult.Success(
-                QuickConnectResult(
-                    code = result.code,
-                    secret = result.secret,
-                ),
-            )
-        } catch (e: Exception) {
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("Failed to initiate Quick Connect: ${e.message}", e, errorType)
-        }
-    }
-
-    suspend fun getQuickConnectState(serverUrl: String, secret: String): ApiResult<QuickConnectState> {
-        return try {
-            val client = getClient(serverUrl)
-            val response = client.quickConnectApi.getQuickConnectState(secret)
-            val result = response.content
-
-            val state = if (result.authenticated) "Approved" else "Pending"
-            ApiResult.Success(QuickConnectState(state = state))
-        } catch (e: Exception) {
-            val errorType = RepositoryUtils.getErrorType(e)
-            if (errorType == ErrorType.NOT_FOUND) {
-                ApiResult.Success(QuickConnectState(state = "Expired"))
-            } else {
-                ApiResult.Error("Failed to get Quick Connect state: ${e.message}", e, errorType)
-            }
-        }
-    }
+    suspend fun getQuickConnectState(serverUrl: String, secret: String): ApiResult<QuickConnectState> =
+        authRepository.getQuickConnectState(serverUrl, secret)
 
     suspend fun authenticateWithQuickConnect(
         serverUrl: String,
         secret: String,
-    ): ApiResult<AuthenticationResult> = authMutex.withLock {
-        return try {
-            val client = getClient(serverUrl)
-            val request = QuickConnectDto(secret = secret)
-            val response = client.userApi.authenticateWithQuickConnect(request)
-            val authResult = response.content
-
-            val systemInfo = try {
-                getClient(serverUrl, authResult.accessToken)
-                    .systemApi.getPublicSystemInfo().content
-            } catch (e: Exception) {
-                Log.e("JellyfinRepository", "Failed to fetch public system info: ${e.message}", e)
-                null
-            }
-
-            if (systemInfo == null) {
-                return ApiResult.Error("Failed to fetch public system info")
-            }
-
-            val server = JellyfinServer(
-                id = authResult.serverId ?: "",
-                name = systemInfo.serverName ?: "Unknown Server",
-                url = serverUrl.trimEnd('/'),
-                isConnected = true,
-                version = systemInfo.version,
-                userId = authResult.user?.id?.toString(),
-                username = authResult.user?.name,
-                accessToken = authResult.accessToken,
-                loginTimestamp = System.currentTimeMillis(),
-            )
-
-            _currentServer.value = server
-            _isConnected.value = true
-
-            ApiResult.Success(authResult)
-        } catch (e: Exception) {
-            var errorType = RepositoryUtils.getErrorType(e)
-            if (errorType == ErrorType.UNAUTHORIZED) {
-                errorType = ErrorType.AUTHENTICATION
-            }
-            ApiResult.Error("Quick Connect authentication failed: ${e.message}", e, errorType)
-        }
-    }
+    ): ApiResult<AuthenticationResult> =
+        authRepository.authenticateWithQuickConnect(serverUrl, secret)
 
     // ===== LIBRARY METHODS - Simplified for better maintainability =====
 
@@ -308,7 +213,7 @@ class JellyfinRepository @Inject constructor(
         startIndex: Int = DEFAULT_START_INDEX,
         limit: Int = DEFAULT_LIMIT,
     ): ApiResult<List<BaseItemDto>> {
-        val server = _currentServer.value
+        val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
@@ -352,7 +257,7 @@ class JellyfinRepository @Inject constructor(
             }
         }
 
-        val server = _currentServer.value
+        val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
@@ -367,7 +272,7 @@ class JellyfinRepository @Inject constructor(
 
             val items = executeWithRetry {
                 // ✅ FIX: Always get current server state inside the retry closure to use fresh token
-                val currentServer = _currentServer.value
+                val currentServer = authRepository.getCurrentServer()
                     ?: throw IllegalStateException("Server not available")
                 val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
                     ?: throw IllegalStateException("Invalid user ID")
@@ -418,7 +323,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     private suspend fun reAuthenticate(): Boolean = authMutex.withLock {
-        val server = _currentServer.value ?: return@withLock false
+        val server = authRepository.getCurrentServer() ?: return@withLock false
 
         if (BuildConfig.DEBUG) {
             Log.d("JellyfinRepository", "reAuthenticate: Starting re-authentication for user ${server.username} on ${server.url}")
@@ -447,12 +352,11 @@ class JellyfinRepository @Inject constructor(
                     if (BuildConfig.DEBUG) {
                         Log.d("JellyfinRepository", "reAuthenticate: Successfully re-authenticated user ${server.username}")
                     }
-                    // Update both local state and auth repository state
+                    // Update auth repository state
                     val updatedServer = server.copy(
                         accessToken = authResult.data.accessToken,
                         loginTimestamp = System.currentTimeMillis(),
                     )
-                    _currentServer.value = updatedServer
                     authRepository.updateCurrentServer(updatedServer)
 
                     // Clear client factory again to ensure fresh token is used
@@ -483,9 +387,6 @@ class JellyfinRepository @Inject constructor(
 
     suspend fun logout() {
         authRepository.logout()
-        // Clear local state for backward compatibility
-        _currentServer.value = null
-        _isConnected.value = false
     }
 
     private suspend fun <T> executeWithRetry(
@@ -629,7 +530,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     suspend fun getRecentlyAddedByType(itemType: BaseItemKind, limit: Int = RECENTLY_ADDED_BY_TYPE_LIMIT): ApiResult<List<BaseItemDto>> {
-        val server = _currentServer.value
+        val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
@@ -644,7 +545,7 @@ class JellyfinRepository @Inject constructor(
         }
 
         return executeWithAuthRetry("getRecentlyAddedByType") {
-            val currentServer = _currentServer.value
+            val currentServer = authRepository.getCurrentServer()
                 ?: return@executeWithAuthRetry ApiResult.Error("Server not available", errorType = ErrorType.AUTHENTICATION)
             val client = getClient(currentServer.url, currentServer.accessToken)
             val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
@@ -680,7 +581,7 @@ class JellyfinRepository @Inject constructor(
         libraryId: String,
         limit: Int = 10,
     ): ApiResult<List<BaseItemDto>> {
-        val server = _currentServer.value
+        val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
@@ -766,7 +667,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     suspend fun getFavorites(): ApiResult<List<BaseItemDto>> {
-        val server = _currentServer.value
+        val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
@@ -864,7 +765,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     private suspend fun getItemDetailsById(itemId: String, itemTypeName: String): ApiResult<BaseItemDto> {
-        val server = _currentServer.value
+        val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
@@ -984,7 +885,7 @@ class JellyfinRepository @Inject constructor(
         } catch (e: HttpException) {
             if (e.code() == 401) {
                 // Log only non-sensitive information for debugging
-                Log.w("JellyfinRepository", "401 Unauthorized detected. Server ID: ${_currentServer.value?.id?.take(8)}, Endpoint path: ${e.response()?.raw()?.request?.url?.encodedPath}")
+                Log.w("JellyfinRepository", "401 Unauthorized detected. Server ID: ${authRepository.getCurrentServer()?.id?.take(8)}, Endpoint path: ${e.response()?.raw()?.request?.url?.encodedPath}")
                 logout() // Clear session and redirect to login
                 throw e
             }
@@ -993,7 +894,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     private fun isTokenExpired(): Boolean {
-        val server = _currentServer.value ?: return true
+        val server = authRepository.getCurrentServer() ?: return true
         val loginTimestamp = server.loginTimestamp ?: return true
         val currentTime = System.currentTimeMillis()
 
@@ -1030,7 +931,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     suspend fun toggleFavorite(itemId: String, isFavorite: Boolean): ApiResult<Boolean> {
-        val server = _currentServer.value
+        val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
@@ -1060,7 +961,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     suspend fun markAsWatched(itemId: String): ApiResult<Boolean> {
-        val server = _currentServer.value
+        val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
@@ -1086,7 +987,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     suspend fun markAsUnwatched(itemId: String): ApiResult<Boolean> {
-        val server = _currentServer.value
+        val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
@@ -1112,7 +1013,7 @@ class JellyfinRepository @Inject constructor(
     }
 
     suspend fun deleteItem(itemId: String): ApiResult<Boolean> {
-        val server = _currentServer.value
+        val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
@@ -1153,7 +1054,7 @@ class JellyfinRepository @Inject constructor(
      * Deletes an item only if the current user has administrator permissions.
      */
     suspend fun deleteItemAsAdmin(itemId: String): ApiResult<Boolean> {
-        val server = _currentServer.value
+        val server = authRepository.getCurrentServer()
         if (server?.accessToken == null || server.userId == null) {
             return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
         }
@@ -1253,6 +1154,6 @@ class JellyfinRepository @Inject constructor(
     }
 
     // ✅ PHASE 4: Utility methods replaced with centralized utilities
-    private fun validateServer(): JellyfinServer = RepositoryUtils.validateServer(_currentServer.value)
+    private fun validateServer(): JellyfinServer = RepositoryUtils.validateServer(authRepository.getCurrentServer())
     private fun parseUuid(id: String, idType: String): UUID = RepositoryUtils.parseUuid(id, idType)
 }
