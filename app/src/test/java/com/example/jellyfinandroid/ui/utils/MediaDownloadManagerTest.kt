@@ -30,7 +30,7 @@ class MediaDownloadManagerTest {
         val context = mockk<Context>()
         every { context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) } returns baseDir
 
-        val item = BaseItemDto(name = "Video", type = BaseItemKind.MOVIE)
+        val item = BaseItemDto(id = java.util.UUID.randomUUID(), name = "Video", type = BaseItemKind.MOVIE)
         val file = File(baseDir, "JellyfinAndroid/Movies/Video.mp4")
         file.parentFile?.mkdirs()
         file.writeText("data")

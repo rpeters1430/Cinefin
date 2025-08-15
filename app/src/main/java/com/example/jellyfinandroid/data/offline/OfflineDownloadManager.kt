@@ -43,7 +43,8 @@ class OfflineDownloadManager @Inject constructor(
     val downloadProgress: StateFlow<Map<String, DownloadProgress>> = _downloadProgress.asStateFlow()
 
     private val downloadJobs = ConcurrentHashMap<String, Job>()
-    private val downloadScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val supervisorJob = SupervisorJob()
+    private val downloadScope = CoroutineScope(Dispatchers.IO + supervisorJob)
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -96,20 +97,6 @@ class OfflineDownloadManager @Inject constructor(
         }
     }
 
-    fun cancelDownload(downloadId: String) {
-        downloadJobs[downloadId]?.cancel()
-        downloadJobs.remove(downloadId)
-
-        downloadScope.launch {
-            val download = _downloads.value.find { it.id == downloadId }
-            download?.let {
-                // Delete partial file
-                deleteDownloadFile(it)
-                // Update status
-                updateDownloadStatus(downloadId, DownloadStatus.CANCELLED)
-            }
-        }
-    }
 
     fun deleteDownload(downloadId: String) {
         downloadScope.launch {
@@ -351,9 +338,51 @@ class OfflineDownloadManager @Inject constructor(
         _downloadProgress.value = _downloadProgress.value + (progress.downloadId to progress)
     }
 
+    /**
+     * Clean up all resources and cancel ongoing downloads.
+     * Should be called when the application is terminating or when the manager is no longer needed.
+     */
     fun cleanup() {
-        downloadJobs.values.forEach { it.cancel() }
+        // Cancel all ongoing download jobs
+        downloadJobs.values.forEach { job ->
+            if (job.isActive) {
+                job.cancel("OfflineDownloadManager cleanup")
+            }
+        }
         downloadJobs.clear()
-        downloadScope.cancel()
+        
+        // Clear progress state
+        _downloadProgress.value = emptyMap()
+        
+        // Cancel the supervisor job and scope
+        supervisorJob.cancel("OfflineDownloadManager cleanup")
+    }
+    
+    /**
+     * Cancel a specific download and clean up its resources.
+     */
+    fun cancelDownload(downloadId: String) {
+        downloadJobs[downloadId]?.let { job ->
+            if (job.isActive) {
+                job.cancel("Download cancelled by user")
+            }
+            downloadJobs.remove(downloadId)
+        }
+        
+        // Remove from progress tracking
+        _downloadProgress.value = _downloadProgress.value - downloadId
+        
+        // Update download status to cancelled
+        _downloads.value = _downloads.value.map { download ->
+            if (download.id == downloadId) {
+                download.copy(status = DownloadStatus.CANCELLED)
+            } else {
+                download
+            }
+        }
+        
+        downloadScope.launch {
+            saveDownloads()
+        }
     }
 }

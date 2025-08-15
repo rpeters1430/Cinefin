@@ -233,6 +233,15 @@
 -dontwarn java.lang.ClassValue
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
 
+# Suppress warnings for Google API client dependencies
+-dontwarn com.google.api.client.http.**
+-dontwarn java.lang.management.**
+-dontwarn org.joda.time.**
+-dontwarn com.google.crypto.tink.util.**
+
+# Suppress warnings for Ktor dependencies
+-dontwarn io.ktor.util.debug.**
+
 # ================================================================================
 # TESTING INSTRUCTIONS
 # ================================================================================

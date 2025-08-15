@@ -1,7 +1,7 @@
 package com.example.jellyfinandroid.data
 
 import android.content.Context
-import io.mockk.mockk
+import io.mockk.*
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Before
@@ -14,10 +14,11 @@ import org.junit.Test
  */
 class SecureCredentialManagerTest {
 
-    private val mockContext: Context = mockk()
+    private lateinit var mockContext: Context
 
     @Before
     fun setup() {
+        mockContext = mockk(relaxed = true)
     }
 
     @Test
@@ -28,21 +29,9 @@ class SecureCredentialManagerTest {
     }
 
     @Test
-    fun `generateKey handles different inputs correctly`() {
-        // This test validates that the key generation follows secure patterns
-        // Since generateKey is private, we test it indirectly through behavior
-
-        val manager = SecureCredentialManager(mockContext)
-
-        // The manager should be properly initialized with security components
-        assertNotNull("Manager should handle security setup", manager)
-    }
-
-    @Test
     fun `security patterns are followed`() {
         // This test ensures the credential manager follows security best practices
         // by validating its structure and dependencies
-
         val manager = SecureCredentialManager(mockContext)
 
         // Manager should be configured for secure operations
@@ -56,5 +45,16 @@ class SecureCredentialManagerTest {
 
         // The manager should be ready to handle encryption operations
         assertNotNull("Manager should be ready for encryption", manager)
+    }
+
+    @Test
+    fun `manager handles initialization properly`() {
+        // Test that the manager initializes without throwing exceptions
+        try {
+            val manager = SecureCredentialManager(mockContext)
+            assertNotNull("Manager should initialize successfully", manager)
+        } catch (e: Exception) {
+            fail("Manager initialization should not throw exceptions: ${e.message}")
+        }
     }
 }

@@ -1,5 +1,9 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(./gradlew:*)",
+      "Bash(sed:*)"
+    ],
     "defaultMode": "acceptEdits"
   }
 }

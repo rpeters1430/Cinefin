@@ -11,6 +11,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.example.jellyfinandroid.BuildConfig
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 import java.io.File
 
 /**
@@ -294,17 +295,29 @@ object MediaDownloadManager {
         }
     }
 
-    private fun hasStoragePermission(context: Context, item: BaseItemDto): Boolean {
+    private fun hasStoragePermission(context: Context, item: BaseItemDto, targetFile: File? = null): Boolean {
         return when {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
-                val permission = when (item.type?.name) {
-                    "AUDIO" -> Manifest.permission.READ_MEDIA_AUDIO
                 val permission = when (item.type) {
                     BaseItemKind.AUDIO -> Manifest.permission.READ_MEDIA_AUDIO
                     BaseItemKind.MOVIE, BaseItemKind.EPISODE, BaseItemKind.MUSIC_VIDEO -> Manifest.permission.READ_MEDIA_VIDEO
                     else -> Manifest.permission.READ_MEDIA_IMAGES
                 }
                 ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+            }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                // If accessing app's own external files directory, no permission needed
+                val appExternalDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                if (targetFile != null && appExternalDir != null &&
+                    targetFile.absolutePath.startsWith(appExternalDir.absolutePath)
+                ) {
+                    true
+                } else {
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.READ_EXTERNAL_STORAGE,
+                    ) == PackageManager.PERMISSION_GRANTED
+                }
             }
             else -> {
                 ContextCompat.checkSelfPermission(
@@ -314,38 +327,7 @@ object MediaDownloadManager {
                     context,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
                 ) == PackageManager.PERMISSION_GRANTED
-    private fun hasStoragePermission(context: Context, item: BaseItemDto, targetFile: File? = null): Boolean {
-        val sdkInt = Build.VERSION.SDK_INT
-        if (sdkInt >= Build.VERSION_CODES.Q) {
-            // If accessing app's own external files directory, no permission needed
-            val appExternalDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-            if (targetFile != null && appExternalDir != null &&
-                targetFile.absolutePath.startsWith(appExternalDir.absolutePath)
-            ) {
-                return true
             }
-            // Otherwise, check for appropriate READ_MEDIA_* permission
-            val permission = when (item.type?.name) {
-                "AUDIO" -> Manifest.permission.READ_MEDIA_AUDIO
-                "MOVIE", "EPISODE", "MUSIC_VIDEO" -> Manifest.permission.READ_MEDIA_VIDEO
-                else -> Manifest.permission.READ_MEDIA_IMAGES
-            }
-            return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-        } else if (sdkInt >= Build.VERSION_CODES.TIRAMISU) {
-            val permission = when (item.type?.name) {
-                "AUDIO" -> Manifest.permission.READ_MEDIA_AUDIO
-                "MOVIE", "EPISODE", "MUSIC_VIDEO" -> Manifest.permission.READ_MEDIA_VIDEO
-                else -> Manifest.permission.READ_MEDIA_IMAGES
-            }
-            return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-        } else {
-            return ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-            ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            ) == PackageManager.PERMISSION_GRANTED
         }
     }
 
@@ -370,29 +352,29 @@ object MediaDownloadManager {
     }
 
     private fun generateSubPath(item: BaseItemDto): String {
-        return when (item.type?.name) {
-            "MOVIE" -> "Movies"
-            "EPISODE" -> "TV Shows/${item.seriesName ?: "Unknown Series"}"
-            "AUDIO" -> "Music/${item.albumArtist ?: "Unknown Artist"}"
-            "MUSIC_VIDEO" -> "Music Videos"
+        return when (item.type) {
+            BaseItemKind.MOVIE -> "Movies"
+            BaseItemKind.EPISODE -> "TV Shows/${item.seriesName ?: "Unknown Series"}"
+            BaseItemKind.AUDIO -> "Music/${item.albumArtist ?: "Unknown Artist"}"
+            BaseItemKind.MUSIC_VIDEO -> "Music Videos"
             else -> "Other"
         }.replace(Regex("[^a-zA-Z0-9._/ -]"), "_")
     }
 
     private fun getFileExtension(item: BaseItemDto): String {
         // Default extensions based on media type
-        return when (item.type?.name) {
-            "MOVIE", "EPISODE" -> "mp4"
-            "AUDIO" -> "mp3"
-            "MUSIC_VIDEO" -> "mp4"
+        return when (item.type) {
+            BaseItemKind.MOVIE, BaseItemKind.EPISODE -> "mp4"
+            BaseItemKind.AUDIO -> "mp3"
+            BaseItemKind.MUSIC_VIDEO -> "mp4"
             else -> "bin"
         }
     }
 
     private fun getMimeType(item: BaseItemDto): String? {
-        return when (item.type?.name) {
-            "MOVIE", "EPISODE", "MUSIC_VIDEO" -> "video/mp4"
-            "AUDIO" -> "audio/mpeg"
+        return when (item.type) {
+            BaseItemKind.MOVIE, BaseItemKind.EPISODE, BaseItemKind.MUSIC_VIDEO -> "video/mp4"
+            BaseItemKind.AUDIO -> "audio/mpeg"
             else -> null
         }
     }

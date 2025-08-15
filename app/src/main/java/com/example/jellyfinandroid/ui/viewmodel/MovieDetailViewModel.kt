@@ -56,4 +56,10 @@ class MovieDetailViewModel @Inject constructor(
     fun clearError() {
         _state.value = _state.value.copy(errorMessage = null)
     }
+    
+    override fun onCleared() {
+        super.onCleared()
+        // Clear any loaded movie data to prevent memory leaks
+        _state.value = MovieDetailState()
+    }
 }

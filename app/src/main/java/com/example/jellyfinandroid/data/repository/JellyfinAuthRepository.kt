@@ -1,6 +1,7 @@
 package com.example.jellyfinandroid.data.repository
 
 import android.util.Log
+import com.example.jellyfinandroid.utils.SecureLogger
 import com.example.jellyfinandroid.BuildConfig
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.data.SecureCredentialManager
@@ -285,7 +286,7 @@ class JellyfinAuthRepository @Inject constructor(
         val isExpired = (currentTime - loginTimestamp) > TOKEN_VALIDITY_DURATION_MS
 
         if (isExpired) {
-            Log.w("JellyfinAuthRepository", "Token expired. Login timestamp: $loginTimestamp, current: $currentTime, duration: ${currentTime - loginTimestamp}ms")
+            SecureLogger.w("JellyfinAuthRepository", "Token expired after ${(currentTime - loginTimestamp) / 1000 / 60} minutes")
         }
 
         return isExpired
@@ -296,13 +297,11 @@ class JellyfinAuthRepository @Inject constructor(
      */
     suspend fun validateAndRefreshToken() {
         if (isTokenExpired()) {
-            Log.w("JellyfinAuthRepository", "Token expired, attempting proactive refresh")
+            SecureLogger.w("JellyfinAuthRepository", "Token expired, attempting proactive refresh")
             if (reAuthenticate()) {
-                if (BuildConfig.DEBUG) {
-                    Log.d("JellyfinAuthRepository", "Proactive token refresh successful")
-                }
+                SecureLogger.auth("JellyfinAuthRepository", "Proactive token refresh successful", true)
             } else {
-                Log.w("JellyfinAuthRepository", "Proactive token refresh failed, user will be logged out")
+                SecureLogger.auth("JellyfinAuthRepository", "Proactive token refresh failed, user will be logged out", false)
             }
         }
     }
