@@ -4,9 +4,9 @@ import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.di.JellyfinClientFactory
 import io.mockk.*
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
-import org.junit.Assert.*
 
 class JellyfinAuthRepositoryTest {
 
@@ -68,7 +68,7 @@ class JellyfinAuthRepositoryTest {
             val result = authRepository.authenticateUser(
                 "https://demo.jellyfin.org",
                 "testuser",
-                "testpass"
+                "testpass",
             )
             // The result might be an error due to mocking, but the method should exist
             assertNotNull("AuthenticateUser should return a result", result)
