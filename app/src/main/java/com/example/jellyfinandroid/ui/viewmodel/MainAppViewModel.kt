@@ -950,7 +950,7 @@ class MainAppViewModel @Inject constructor(
         val backdrop = getBackdropUrl(item)
         castManager.loadPreview(item, imageUrl = image, backdropUrl = backdrop)
     }
-    
+
     /**
      * Clear accumulated state to prevent memory leaks.
      * Should be called when navigating away from screens that load large datasets.
@@ -959,7 +959,7 @@ class MainAppViewModel @Inject constructor(
         _appState.value = MainAppState()
         loadedLibraryTypes.clear()
     }
-    
+
     /**
      * Clear specific library type data to manage memory usage.
      */
@@ -977,13 +977,13 @@ class MainAppViewModel @Inject constructor(
                 _appState.value = _appState.value.copy(
                     allItems = _appState.value.allItems.filterNot { item ->
                         typesToRemove.contains(item.type)
-                    }
+                    },
                 )
             }
         }
         loadedLibraryTypes.remove(libraryType.toString())
     }
-    
+
     override fun onCleared() {
         super.onCleared()
         // ViewModel is being destroyed, clean up resources
