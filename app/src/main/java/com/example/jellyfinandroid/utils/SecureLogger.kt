@@ -6,7 +6,7 @@ import java.util.regex.Pattern
 
 /**
  * Secure logging utility that prevents sensitive information from being logged.
- * 
+ *
  * Features:
  * - Automatic sanitization of tokens, passwords, and API keys
  * - Debug-only logging to prevent production data leaks
@@ -14,9 +14,9 @@ import java.util.regex.Pattern
  * - Support for exception logging with stack traces
  */
 object SecureLogger {
-    
+
     private const val MAX_LOG_LENGTH = 4000 // Android Log limit
-    
+
     // Patterns to identify and sanitize sensitive data
     private val SENSITIVE_PATTERNS = listOf(
         // Authentication tokens
@@ -28,11 +28,11 @@ object SecureLogger {
         // Session IDs
         Pattern.compile("(sessionid|session_id|jsessionid)([\"\\s=:]+)([^\\s&\"\\}]+)", Pattern.CASE_INSENSITIVE),
         // User credentials in URLs
-        Pattern.compile("(https?://[^:/]+):([^@]+)@", Pattern.CASE_INSENSITIVE)
+        Pattern.compile("(https?://[^:/]+):([^@]+)@", Pattern.CASE_INSENSITIVE),
     )
-    
+
     private const val REPLACEMENT = "$1$2***"
-    
+
     /**
      * Log debug message with automatic sanitization.
      */
@@ -44,7 +44,7 @@ object SecureLogger {
             logChunked(Log.DEBUG, tag, fullMessage)
         }
     }
-    
+
     /**
      * Log info message with automatic sanitization.
      */
@@ -54,7 +54,7 @@ object SecureLogger {
         val fullMessage = if (sanitizedData.isNotEmpty()) "$sanitizedMessage | Data: $sanitizedData" else sanitizedMessage
         logChunked(Log.INFO, tag, fullMessage)
     }
-    
+
     /**
      * Log warning message with automatic sanitization.
      */
@@ -66,7 +66,7 @@ object SecureLogger {
             logChunked(Log.WARN, tag, sanitizedMessage)
         }
     }
-    
+
     /**
      * Log error message with automatic sanitization.
      */
@@ -78,7 +78,7 @@ object SecureLogger {
             logChunked(Log.ERROR, tag, sanitizedMessage)
         }
     }
-    
+
     /**
      * Log authentication-related messages with extra security.
      */
@@ -89,7 +89,7 @@ object SecureLogger {
             d(tag, "AUTH [$status]: $sanitizedMessage")
         }
     }
-    
+
     /**
      * Log API requests with automatic URL sanitization.
      */
@@ -100,7 +100,7 @@ object SecureLogger {
             d(tag, "API [$method]: $sanitizedUrl$response")
         }
     }
-    
+
     /**
      * Log network errors with sanitized details.
      */
@@ -109,27 +109,27 @@ object SecureLogger {
         val sanitizedUrl = url?.let { " | URL: ${sanitizeUrl(it)}" } ?: ""
         e(tag, "NETWORK ERROR: $sanitizedError$sanitizedUrl", throwable)
     }
-    
+
     /**
      * Sanitize sensitive information from log messages.
      */
     private fun sanitizeForLogging(text: String): String {
         var sanitized = text
-        
+
         // Apply all sensitive patterns
         SENSITIVE_PATTERNS.forEach { pattern ->
             sanitized = pattern.matcher(sanitized).replaceAll(REPLACEMENT)
         }
-        
+
         // Additional sanitization for common JWT tokens
         sanitized = sanitized.replace(Regex("eyJ[A-Za-z0-9+/=._-]{20,}"), "eyJ***")
-        
+
         // Sanitize UUID-like strings that might be session IDs
         sanitized = sanitized.replace(
             Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", RegexOption.IGNORE_CASE),
-            "UUID-***"
+            "UUID-***",
         )
-        
+
         // Limit length to prevent oversized logs
         return if (sanitized.length > MAX_LOG_LENGTH) {
             sanitized.take(MAX_LOG_LENGTH - 3) + "..."
@@ -137,21 +137,21 @@ object SecureLogger {
             sanitized
         }
     }
-    
+
     /**
      * Sanitize URLs by removing credentials and sensitive query parameters.
      */
     private fun sanitizeUrl(url: String): String {
         // Remove user credentials from URLs
         val withoutCredentials = url.replace(Regex("(https?://)[^:/]+:[^@]+@"), "$1***:***@")
-        
+
         // Sanitize common sensitive query parameters
         return withoutCredentials.replace(
             Regex("([?&])(token|api_key|apikey|password|auth)=([^&]+)", RegexOption.IGNORE_CASE),
-            "$1$2=***"
+            "$1$2=***",
         )
     }
-    
+
     /**
      * Log long messages in chunks to avoid Android's log limit.
      */
@@ -160,7 +160,7 @@ object SecureLogger {
             Log.println(priority, tag, message)
             return
         }
-        
+
         var index = 0
         while (index < message.length) {
             val end = minOf(index + MAX_LOG_LENGTH, message.length)

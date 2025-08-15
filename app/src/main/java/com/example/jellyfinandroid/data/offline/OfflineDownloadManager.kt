@@ -97,7 +97,6 @@ class OfflineDownloadManager @Inject constructor(
         }
     }
 
-
     fun deleteDownload(downloadId: String) {
         downloadScope.launch {
             val download = _downloads.value.find { it.id == downloadId }
@@ -350,14 +349,14 @@ class OfflineDownloadManager @Inject constructor(
             }
         }
         downloadJobs.clear()
-        
+
         // Clear progress state
         _downloadProgress.value = emptyMap()
-        
+
         // Cancel the supervisor job and scope
         supervisorJob.cancel("OfflineDownloadManager cleanup")
     }
-    
+
     /**
      * Cancel a specific download and clean up its resources.
      */
@@ -368,10 +367,10 @@ class OfflineDownloadManager @Inject constructor(
             }
             downloadJobs.remove(downloadId)
         }
-        
+
         // Remove from progress tracking
         _downloadProgress.value = _downloadProgress.value - downloadId
-        
+
         // Update download status to cancelled
         _downloads.value = _downloads.value.map { download ->
             if (download.id == downloadId) {
@@ -380,7 +379,7 @@ class OfflineDownloadManager @Inject constructor(
                 download
             }
         }
-        
+
         downloadScope.launch {
             saveDownloads()
         }
