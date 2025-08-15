@@ -1,7 +1,7 @@
 package com.example.jellyfinandroid.utils
 
-import org.junit.Test
 import org.junit.Assert.*
+import org.junit.Test
 
 /**
  * Test suite for SecureLogger utility.
@@ -36,7 +36,7 @@ class SecureLoggerTest {
     fun `extension functions are available`() {
         // Test that extension functions can be accessed
         val testObject = object {}
-        
+
         try {
             testObject.logDebug("Test debug message")
             testObject.logInfo("Test info message")
