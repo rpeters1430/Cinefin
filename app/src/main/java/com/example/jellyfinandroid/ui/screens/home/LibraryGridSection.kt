@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,23 +47,24 @@ fun LibraryGridSection(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             items(libraries, key = { it.id ?: it.name ?: "" }) { library ->
                 LibraryCard(
                     library = library,
                     getImageUrl = getImageUrl,
                     onClick = onLibraryClick,
-                    modifier = Modifier.padding(end = 12.dp)
+                    modifier = Modifier.padding(end = 12.dp),
                 )
             }
         }
     }
 }
+
 @Composable
 private fun LibraryCard(
     library: BaseItemDto,
@@ -76,7 +77,7 @@ private fun LibraryCard(
         modifier = modifier.width(200.dp).clickable { onClick(library) },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column {
             Box {
@@ -86,7 +87,7 @@ private fun LibraryCard(
                     loading = {
                         ShimmerBox(
                             modifier = Modifier.fillMaxWidth().height(120.dp),
-                            cornerRadius = 12
+                            cornerRadius = 12,
                         )
                     },
                     error = {
@@ -94,19 +95,19 @@ private fun LibraryCard(
                             modifier = Modifier.fillMaxWidth().height(120.dp)
                                 .background(contentTypeColor.copy(alpha = 0.1f))
                                 .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Folder,
                                 contentDescription = "Library",
                                 modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     },
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxWidth().height(120.dp)
-                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
                 )
             }
             Column(modifier = Modifier.padding(12.dp)) {
@@ -116,7 +117,7 @@ private fun LibraryCard(
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 library.type?.let { type ->
                     Text(
@@ -124,13 +125,14 @@ private fun LibraryCard(
                             .replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = 4.dp),
                     )
                 }
             }
         }
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 private fun LibraryGridSectionPreview() {
@@ -138,6 +140,6 @@ private fun LibraryGridSectionPreview() {
         libraries = listOf(BaseItemDto(name = "Library")),
         getImageUrl = { null },
         onLibraryClick = {},
-        title = "Libraries"
+        title = "Libraries",
     )
 }

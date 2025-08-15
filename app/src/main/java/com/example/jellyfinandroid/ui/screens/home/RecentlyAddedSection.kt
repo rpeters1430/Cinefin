@@ -15,8 +15,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.jellyfinandroid.ui.components.RecentlyAddedCard
@@ -38,7 +38,7 @@ fun RecentlyAddedSection(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(text = title, style = MaterialTheme.typography.headlineSmall)
             IconButton(onClick = onRefresh) {
@@ -47,7 +47,7 @@ fun RecentlyAddedSection(
         }
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             items(items, key = { it.id ?: it.name ?: "" }) { item ->
                 RecentlyAddedCard(
@@ -55,12 +55,13 @@ fun RecentlyAddedSection(
                     getImageUrl = getImageUrl,
                     getSeriesImageUrl = getSeriesImageUrl,
                     onClick = onItemClick,
-                    modifier = Modifier.padding(end = 12.dp)
+                    modifier = Modifier.padding(end = 12.dp),
                 )
             }
         }
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 private fun RecentlyAddedSectionPreview() {
@@ -70,6 +71,6 @@ private fun RecentlyAddedSectionPreview() {
         getImageUrl = { null },
         getSeriesImageUrl = { null },
         onItemClick = {},
-        onRefresh = {}
+        onRefresh = {},
     )
 }

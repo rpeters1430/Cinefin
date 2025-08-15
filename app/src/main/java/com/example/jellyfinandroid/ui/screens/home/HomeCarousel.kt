@@ -44,7 +44,7 @@ fun HomeCarousel(
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
         val carouselState = rememberCarouselState { movies.size }
         HorizontalUncontainedCarousel(
@@ -54,7 +54,7 @@ fun HomeCarousel(
                 .height(240.dp),
             itemWidth = 280.dp,
             itemSpacing = 12.dp,
-            contentPadding = PaddingValues(horizontal = 16.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp),
         ) { index ->
             val movie = movies[index]
             CarouselMovieCard(
@@ -63,7 +63,7 @@ fun HomeCarousel(
                 onClick = onItemClick,
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(16.dp)),
             )
         }
     }
@@ -81,8 +81,8 @@ private fun CarouselMovieCard(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
@@ -94,7 +94,7 @@ private fun CarouselMovieCard(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
             )
             movie.communityRating?.let { rating ->
                 Surface(
@@ -103,13 +103,13 @@ private fun CarouselMovieCard(
                         .padding(12.dp),
                     shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.95f),
-                    shadowElevation = 4.dp
+                    shadowElevation = 4.dp,
                 ) {
                     Text(
                         text = "★ ${String.format(java.util.Locale.ROOT, "%.1f", rating)}",
                         style = MaterialTheme.typography.labelMedium,
                         color = Color.White,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                 }
             }
@@ -117,13 +117,13 @@ private fun CarouselMovieCard(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(16.dp)
+                    .padding(16.dp),
             ) {
                 Text(
                     text = movie.name ?: "Unknown Movie",
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White,
-                    maxLines = 2
+                    maxLines = 2,
                 )
             }
         }
@@ -137,7 +137,6 @@ private fun HomeCarouselPreview() {
         movies = listOf(BaseItemDto(name = "Movie 1"), BaseItemDto(name = "Movie 2")),
         getBackdropUrl = { null },
         onItemClick = {},
-        title = "Recently Added Movies"
+        title = "Recently Added Movies",
     )
 }
-
