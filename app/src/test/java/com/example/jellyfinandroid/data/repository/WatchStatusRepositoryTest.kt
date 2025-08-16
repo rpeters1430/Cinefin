@@ -18,7 +18,7 @@ class WatchStatusRepositoryTest {
     private val credentialManager = mockk<SecureCredentialManager>(relaxed = true)
     private val context = mockk<Context>(relaxed = true)
 
-    private fun createRepositoryWithServer(): JellyfinRepository {
+    private fun createRepositoryWithServer(): JellyfinUserRepository {
         val server = JellyfinServer(
             id = "a4b6-4a3e-8b0a-0a8b0a0a8b0a",
             name = "Test",
@@ -32,8 +32,7 @@ class WatchStatusRepositoryTest {
             every { currentServer } returns MutableStateFlow(server)
             every { isConnected } returns MutableStateFlow(true)
         }
-        val streamRepository = mockk<JellyfinStreamRepository>(relaxed = true)
-        return JellyfinRepository(clientFactory, credentialManager, context, authRepository, streamRepository)
+        return JellyfinUserRepository(authRepository, clientFactory)
     }
 
     @Test
@@ -44,8 +43,7 @@ class WatchStatusRepositoryTest {
             every { getCurrentServer() } returns null
             every { isUserAuthenticated() } returns false
         }
-        val streamRepository = mockk<JellyfinStreamRepository>(relaxed = true)
-        val repository = JellyfinRepository(clientFactory, credentialManager, context, authRepository, streamRepository)
+        val repository = JellyfinUserRepository(authRepository, clientFactory)
         assertNotNull(repository)
     }
 

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.jellyfinandroid.data.repository.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
+import com.example.jellyfinandroid.data.repository.JellyfinMediaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +23,7 @@ data class TVSeasonState(
 @HiltViewModel
 class TVSeasonViewModel @Inject constructor(
     private val repository: JellyfinRepository,
+    private val mediaRepository: JellyfinMediaRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TVSeasonState())
@@ -47,7 +49,7 @@ class TVSeasonViewModel @Inject constructor(
             }
 
             // Load seasons
-            when (val seasonsResult = repository.getSeasonsForSeries(seriesId)) {
+            when (val seasonsResult = mediaRepository.getSeasonsForSeries(seriesId)) {
                 is ApiResult.Success -> {
                     _state.value = _state.value.copy(
                         seasons = seasonsResult.data,

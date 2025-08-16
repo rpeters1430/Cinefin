@@ -8,6 +8,9 @@ import com.example.jellyfinandroid.BuildConfig
 import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.data.repository.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
+import com.example.jellyfinandroid.data.repository.JellyfinMediaRepository
+import com.example.jellyfinandroid.data.repository.JellyfinUserRepository
+import com.example.jellyfinandroid.data.repository.JellyfinStreamRepository
 import com.example.jellyfinandroid.ui.screens.LibraryType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,6 +53,9 @@ data class PaginatedItems(
 @HiltViewModel
 class MainAppViewModel @Inject constructor(
     private val repository: JellyfinRepository,
+    private val mediaRepository: JellyfinMediaRepository,
+    private val userRepository: JellyfinUserRepository,
+    private val streamRepository: JellyfinStreamRepository,
     private val credentialManager: SecureCredentialManager,
     @UnstableApi private val castManager: com.example.jellyfinandroid.ui.player.CastManager,
 ) : ViewModel() {
@@ -82,7 +88,7 @@ class MainAppViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Loading libraries")
             }
-            when (val result = repository.getUserLibraries()) {
+            when (val result = mediaRepository.getUserLibraries()) {
                 is ApiResult.Success -> {
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "loadInitialData: Loaded ${result.data.size} libraries")
@@ -111,7 +117,7 @@ class MainAppViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Loading recently added items")
             }
-            when (val result = repository.getRecentlyAdded()) {
+            when (val result = mediaRepository.getRecentlyAdded()) {
                 is ApiResult.Success -> {
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "loadInitialData: Loaded ${result.data.size} recently added items")
@@ -143,7 +149,7 @@ class MainAppViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Loading recently added items by types")
             }
-            when (val result = repository.getRecentlyAddedByTypes(limit = 20)) {
+            when (val result = mediaRepository.getRecentlyAddedByTypes(limit = 20)) {
                 is ApiResult.Success -> {
                     val totalItems = result.data.values.sumOf { it.size }
                     if (BuildConfig.DEBUG) {
@@ -217,7 +223,7 @@ class MainAppViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
-            repository.logout()
+            userRepository.logout()
             // Clear saved credentials on logout
             credentialManager.clearCredentials()
         }
@@ -246,15 +252,15 @@ class MainAppViewModel @Inject constructor(
     }
 
     fun getImageUrl(item: BaseItemDto): String? {
-        return repository.getImageUrl(item.id.toString(), "Primary", null)
+        return streamRepository.getImageUrl(item.id.toString(), "Primary", null)
     }
 
     fun getBackdropUrl(item: BaseItemDto): String? {
-        return repository.getBackdropUrl(item)
+        return streamRepository.getBackdropUrl(item)
     }
 
     fun getSeriesImageUrl(item: BaseItemDto): String? {
-        return repository.getSeriesImageUrl(item)
+        return streamRepository.getSeriesImageUrl(item)
     }
 
     fun search(query: String) {
@@ -324,7 +330,7 @@ class MainAppViewModel @Inject constructor(
             }
 
             when (
-                val result = repository.getLibraryItems(
+                val result = mediaRepository.getLibraryItems(
                     startIndex = startIndex,
                     limit = pageSize,
                 )
@@ -388,7 +394,7 @@ class MainAppViewModel @Inject constructor(
     fun toggleFavorite(item: BaseItemDto) {
         viewModelScope.launch {
             val currentFavoriteState = item.userData?.isFavorite ?: false
-            when (val result = repository.toggleFavorite(item.id.toString(), !currentFavoriteState)) {
+            when (val result = userRepository.toggleFavorite(item.id.toString(), !currentFavoriteState)) {
                 is ApiResult.Success -> {
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "Successfully toggled favorite for ${item.name}")
@@ -411,7 +417,7 @@ class MainAppViewModel @Inject constructor(
 
     fun markAsWatched(item: BaseItemDto) {
         viewModelScope.launch {
-            when (val result = repository.markAsWatched(item.id.toString())) {
+            when (val result = userRepository.markAsWatched(item.id.toString())) {
                 is ApiResult.Success -> {
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "Successfully marked ${item.name} as watched")
@@ -434,7 +440,7 @@ class MainAppViewModel @Inject constructor(
 
     fun markAsUnwatched(item: BaseItemDto) {
         viewModelScope.launch {
-            when (val result = repository.markAsUnwatched(item.id.toString())) {
+            when (val result = userRepository.markAsUnwatched(item.id.toString())) {
                 is ApiResult.Success -> {
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "Successfully marked ${item.name} as unwatched")
@@ -457,7 +463,7 @@ class MainAppViewModel @Inject constructor(
 
     fun deleteItem(item: BaseItemDto, onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
         viewModelScope.launch {
-            when (val result = repository.deleteItemAsAdmin(item.id.toString())) {
+            when (val result = userRepository.deleteItemAsAdmin(item.id.toString())) {
                 is ApiResult.Success -> {
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "Successfully deleted ${item.name}")
@@ -490,7 +496,7 @@ class MainAppViewModel @Inject constructor(
     }
 
     fun getStreamUrl(item: BaseItemDto): String? {
-        return repository.getStreamUrl(item.id.toString())
+        return streamRepository.getStreamUrl(item.id.toString())
     }
 
     /**
@@ -498,14 +504,14 @@ class MainAppViewModel @Inject constructor(
      * This URL can be used with DownloadManager for offline storage.
      */
     fun getDownloadUrl(item: BaseItemDto): String? {
-        return repository.getDownloadUrl(item.id.toString())
+        return streamRepository.getDownloadUrl(item.id.toString())
     }
 
     /**
      * Gets a direct stream URL optimized for downloads.
      */
     fun getDirectStreamUrl(item: BaseItemDto, container: String? = null): String? {
-        return repository.getDirectStreamUrl(item.id.toString(), container)
+        return streamRepository.getDirectStreamUrl(item.id.toString(), container)
     }
 
     fun getMovieDetails(movieId: String) {
@@ -696,7 +702,7 @@ class MainAppViewModel @Inject constructor(
             }
 
             when (
-                val result = repository.getLibraryItems(
+                val result = mediaRepository.getLibraryItems(
                     itemTypes = "Movie",
                     startIndex = startIndex,
                     limit = pageSize,
@@ -789,7 +795,7 @@ class MainAppViewModel @Inject constructor(
             }
 
             when (
-                val result = repository.getLibraryItems(
+                val result = mediaRepository.getLibraryItems(
                     itemTypes = "Series",
                     startIndex = startIndex,
                     limit = pageSize,
