@@ -19,7 +19,7 @@ import kotlin.system.measureTimeMillis
 
 /**
  * Phase 4: Performance Monitoring System
- * 
+ *
  * Real-time performance analytics and automatic optimization
  * Monitors app performance and provides insights for optimization
  */
@@ -35,13 +35,13 @@ class PerformanceMonitor @Inject constructor() {
     // Performance metrics
     private val _frameRate = MutableStateFlow(60f)
     val frameRate: StateFlow<Float> = _frameRate.asStateFlow()
-    
+
     private val _memoryUsage = MutableStateFlow(0L)
     val memoryUsage: StateFlow<Long> = _memoryUsage.asStateFlow()
-    
+
     private val _networkLatency = MutableStateFlow(0L)
     val networkLatency: StateFlow<Long> = _networkLatency.asStateFlow()
-    
+
     private val _performanceScore = MutableStateFlow(100f)
     val performanceScore: StateFlow<Float> = _performanceScore.asStateFlow()
 
@@ -61,9 +61,9 @@ class PerformanceMonitor @Inject constructor() {
      * Device performance tiers for adaptive UI
      */
     enum class DeviceTier {
-        LOW_END,     // < 4GB RAM, older CPU
-        MID_RANGE,   // 4-8GB RAM, decent CPU
-        HIGH_END     // > 8GB RAM, powerful CPU
+        LOW_END, // < 4GB RAM, older CPU
+        MID_RANGE, // 4-8GB RAM, decent CPU
+        HIGH_END, // > 8GB RAM, powerful CPU
     }
 
     /**
@@ -74,7 +74,7 @@ class PerformanceMonitor @Inject constructor() {
         val frameRate: Float,
         val memoryUsage: Long,
         val cpuUsage: Float,
-        val networkLatency: Long
+        val networkLatency: Long,
     )
 
     /**
@@ -82,19 +82,19 @@ class PerformanceMonitor @Inject constructor() {
      */
     suspend fun <T> measureOperation(
         operationName: String,
-        operation: suspend () -> T
+        operation: suspend () -> T,
     ): T {
         val result: T
         val executionTime = measureTimeMillis {
             result = operation()
         }
-        
+
         recordOperationTime(operationName, executionTime)
-        
+
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Operation '$operationName' took ${executionTime}ms")
         }
-        
+
         return result
     }
 
@@ -104,7 +104,7 @@ class PerformanceMonitor @Inject constructor() {
     private fun recordOperationTime(operationName: String, timeMs: Long) {
         val times = operationTimes.getOrPut(operationName) { mutableListOf() }
         times.add(timeMs)
-        
+
         // Keep only recent samples
         if (times.size > 50) {
             times.removeAt(0)
@@ -137,21 +137,21 @@ class PerformanceMonitor @Inject constructor() {
         val runtime = Runtime.getRuntime()
         val usedMemory = runtime.totalMemory() - runtime.freeMemory()
         _memoryUsage.value = usedMemory
-        
+
         // Calculate performance score
         calculatePerformanceScore()
-        
+
         // Store sample
         val sample = PerformanceSample(
             timestamp = System.currentTimeMillis(),
             frameRate = _frameRate.value,
             memoryUsage = usedMemory,
             cpuUsage = 0f, // Would need native code to get real CPU usage
-            networkLatency = _networkLatency.value
+            networkLatency = _networkLatency.value,
         )
-        
+
         addPerformanceSample(sample)
-        
+
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Performance update - Memory: ${usedMemory / 1024 / 1024}MB, Score: ${_performanceScore.value}")
         }
@@ -162,7 +162,7 @@ class PerformanceMonitor @Inject constructor() {
      */
     private fun addPerformanceSample(sample: PerformanceSample) {
         performanceSamples.add(sample)
-        
+
         // Keep only recent samples
         if (performanceSamples.size > MAX_PERFORMANCE_SAMPLES) {
             performanceSamples.removeAt(0)
@@ -174,24 +174,24 @@ class PerformanceMonitor @Inject constructor() {
      */
     private fun calculatePerformanceScore() {
         var score = 100f
-        
+
         // Memory pressure penalty
         val runtime = Runtime.getRuntime()
         val memoryUsageRatio = (runtime.totalMemory() - runtime.freeMemory()).toFloat() / runtime.maxMemory()
         if (memoryUsageRatio > 0.8f) {
             score -= (memoryUsageRatio - 0.8f) * 100f // Penalty for high memory usage
         }
-        
+
         // Frame rate penalty
         if (_frameRate.value < 30f) {
             score -= (30f - _frameRate.value) * 2f
         }
-        
+
         // Network latency penalty
         if (_networkLatency.value > 1000L) {
             score -= (_networkLatency.value - 1000L) / 100f
         }
-        
+
         _performanceScore.value = score.coerceIn(0f, 100f)
     }
 
@@ -201,15 +201,15 @@ class PerformanceMonitor @Inject constructor() {
     private fun determineDeviceTier() {
         val runtime = Runtime.getRuntime()
         val maxMemory = runtime.maxMemory() / 1024 / 1024 // MB
-        
+
         val tier = when {
             maxMemory > 6144 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N -> DeviceTier.HIGH_END
             maxMemory > 3072 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> DeviceTier.MID_RANGE
             else -> DeviceTier.LOW_END
         }
-        
+
         _deviceTier.value = tier
-        
+
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Device tier determined: $tier (${maxMemory}MB RAM)")
         }
@@ -221,24 +221,24 @@ class PerformanceMonitor @Inject constructor() {
     fun getPerformanceRecommendations(): List<String> {
         val recommendations = mutableListOf<String>()
         val score = _performanceScore.value
-        
+
         if (score < 70f) {
             recommendations.add("Consider reducing image quality for better performance")
         }
-        
+
         if (_memoryUsage.value > Runtime.getRuntime().maxMemory() * 0.8) {
             recommendations.add("High memory usage detected - consider clearing cache")
         }
-        
+
         if (_networkLatency.value > 2000L) {
             recommendations.add("Slow network detected - enable offline mode")
         }
-        
+
         val avgLoadTime = getAverageOperationTime("loadLibraries")
         if (avgLoadTime > 3000L) {
             recommendations.add("Library loading is slow - consider pagination")
         }
-        
+
         return recommendations
     }
 
@@ -252,21 +252,21 @@ class PerformanceMonitor @Inject constructor() {
                 "maxConcurrentLoads" to 2,
                 "enableAnimations" to false,
                 "prefetchEnabled" to false,
-                "maxCacheSize" to 50 * 1024 * 1024 // 50MB
+                "maxCacheSize" to 50 * 1024 * 1024, // 50MB
             )
             DeviceTier.MID_RANGE -> mapOf(
                 "imageQuality" to "medium",
                 "maxConcurrentLoads" to 4,
                 "enableAnimations" to true,
                 "prefetchEnabled" to true,
-                "maxCacheSize" to 100 * 1024 * 1024 // 100MB
+                "maxCacheSize" to 100 * 1024 * 1024, // 100MB
             )
             DeviceTier.HIGH_END -> mapOf(
                 "imageQuality" to "high",
                 "maxConcurrentLoads" to 8,
                 "enableAnimations" to true,
                 "prefetchEnabled" to true,
-                "maxCacheSize" to 200 * 1024 * 1024 // 200MB
+                "maxCacheSize" to 200 * 1024 * 1024, // 200MB
             )
         }
     }
@@ -296,7 +296,7 @@ class PerformanceMonitor @Inject constructor() {
             "frameRate" to _frameRate.value,
             "networkLatency" to _networkLatency.value,
             "totalSamples" to performanceSamples.size,
-            "recommendations" to getPerformanceRecommendations()
+            "recommendations" to getPerformanceRecommendations(),
         )
     }
 }
@@ -308,20 +308,20 @@ class PerformanceMonitor @Inject constructor() {
 fun PerformanceTracker(
     operationName: String,
     performanceMonitor: PerformanceMonitor,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     var startTime by remember { mutableStateOf(0L) }
-    
+
     LaunchedEffect(Unit) {
         startTime = System.currentTimeMillis()
     }
-    
+
     content()
-    
+
     LaunchedEffect(Unit) {
         val endTime = System.currentTimeMillis()
         val duration = endTime - startTime
-        
+
         if (duration > 0) {
             // Record composition time
             performanceMonitor.recordOperationTime(operationName, duration)

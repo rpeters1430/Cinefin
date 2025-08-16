@@ -1,19 +1,16 @@
 package com.example.jellyfinandroid.di
 
-import android.content.Context
-import com.example.jellyfinandroid.data.cache.JellyfinCache
 import com.example.jellyfinandroid.ui.utils.PerformanceMonitor
 import com.example.jellyfinandroid.ui.viewmodel.common.SharedAppStateManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
  * Phase 4: Performance & Scalability Enhancements - Dependency Injection Module
- * 
+ *
  * Provides all Phase 4 components for dependency injection including:
  * - Shared state management
  * - Performance monitoring

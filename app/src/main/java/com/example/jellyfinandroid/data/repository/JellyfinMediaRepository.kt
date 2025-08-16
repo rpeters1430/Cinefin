@@ -1,8 +1,8 @@
 package com.example.jellyfinandroid.data.repository
 
+import com.example.jellyfinandroid.data.cache.JellyfinCache
 import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.data.repository.common.BaseJellyfinRepository
-import com.example.jellyfinandroid.data.cache.JellyfinCache
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -26,7 +26,7 @@ class JellyfinMediaRepository @Inject constructor(
     suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> = executeWithCache(
         operationName = "getUserLibraries",
         cacheKey = "user_libraries",
-        cacheTtlMs = 60 * 60 * 1000L // 1 hour
+        cacheTtlMs = 60 * 60 * 1000L, // 1 hour
     ) {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
@@ -71,7 +71,7 @@ class JellyfinMediaRepository @Inject constructor(
     suspend fun getRecentlyAdded(limit: Int = 20): ApiResult<List<BaseItemDto>> = executeWithCache(
         operationName = "getRecentlyAdded",
         cacheKey = "recently_added_$limit",
-        cacheTtlMs = 30 * 60 * 1000L // 30 minutes
+        cacheTtlMs = 30 * 60 * 1000L, // 30 minutes
     ) {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
@@ -155,7 +155,7 @@ class JellyfinMediaRepository @Inject constructor(
     suspend fun refreshUserLibraries(): ApiResult<List<BaseItemDto>> = executeRefreshWithCache(
         operationName = "refreshUserLibraries",
         cacheKey = "user_libraries",
-        cacheTtlMs = 60 * 60 * 1000L
+        cacheTtlMs = 60 * 60 * 1000L,
     ) {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
@@ -170,7 +170,7 @@ class JellyfinMediaRepository @Inject constructor(
     suspend fun refreshRecentlyAdded(limit: Int = 20): ApiResult<List<BaseItemDto>> = executeRefreshWithCache(
         operationName = "refreshRecentlyAdded",
         cacheKey = "recently_added_$limit",
-        cacheTtlMs = 30 * 60 * 1000L
+        cacheTtlMs = 30 * 60 * 1000L,
     ) {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")

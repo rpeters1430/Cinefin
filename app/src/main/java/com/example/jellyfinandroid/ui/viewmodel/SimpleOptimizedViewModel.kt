@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 /**
  * Phase 4: Simple Optimized ViewModel Demonstration
- * 
+ *
  * A simplified demonstration of Phase 4 concepts that actually builds:
  * - Uses existing BaseJellyfinViewModel for error handling
  * - Demonstrates performance-aware loading
@@ -22,13 +22,13 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class SimpleOptimizedViewModel @Inject constructor(
-    private val mediaRepository: JellyfinMediaRepository
+    private val mediaRepository: JellyfinMediaRepository,
 ) : BaseJellyfinViewModel() {
 
     // Optimized state management
     private val _optimizedData = MutableStateFlow<List<BaseItemDto>>(emptyList())
     val optimizedData: StateFlow<List<BaseItemDto>> = _optimizedData.asStateFlow()
-    
+
     private val _performanceMetrics = MutableStateFlow(PerformanceMetrics())
     val performanceMetrics: StateFlow<PerformanceMetrics> = _performanceMetrics.asStateFlow()
 
@@ -39,7 +39,7 @@ class SimpleOptimizedViewModel @Inject constructor(
         val cacheHits: Int = 0,
         val apiCalls: Int = 0,
         val memoryUsage: Long = 0L,
-        val averageLoadTime: Long = 0L
+        val averageLoadTime: Long = 0L,
     )
 
     init {
@@ -54,15 +54,15 @@ class SimpleOptimizedViewModel @Inject constructor(
             operationName = "loadOptimizedData",
             operation = {
                 val startTime = System.currentTimeMillis()
-                
+
                 // Increment API call counter
                 updateMetrics { it.copy(apiCalls = it.apiCalls + 1) }
-                
+
                 // Get libraries first (this uses existing, working code)
                 when (val result = mediaRepository.getUserLibraries()) {
                     is ApiResult.Success -> {
                         val loadTime = System.currentTimeMillis() - startTime
-                        
+
                         // Cache items for future use
                         result.data.forEach { item ->
                             val itemId = item.id?.toString()
@@ -70,15 +70,15 @@ class SimpleOptimizedViewModel @Inject constructor(
                                 itemCache[itemId] = item
                             }
                         }
-                        
+
                         // Update performance metrics
                         updateMetrics { metrics ->
                             metrics.copy(
                                 averageLoadTime = (metrics.averageLoadTime + loadTime) / 2,
-                                memoryUsage = estimateMemoryUsage()
+                                memoryUsage = estimateMemoryUsage(),
                             )
                         }
-                        
+
                         ApiResult.Success(result.data)
                     }
                     is ApiResult.Error -> result
@@ -87,7 +87,7 @@ class SimpleOptimizedViewModel @Inject constructor(
             },
             onSuccess = { libraries ->
                 _optimizedData.value = libraries
-            }
+            },
         )
     }
 
@@ -109,7 +109,7 @@ class SimpleOptimizedViewModel @Inject constructor(
     fun smartRefresh() {
         viewModelScope.launch {
             val metrics = _performanceMetrics.value
-            
+
             // Only refresh if performance is good and cache hit rate is low
             if (metrics.averageLoadTime < 2000 && metrics.cacheHits < metrics.apiCalls) {
                 loadOptimizedData()
@@ -123,9 +123,9 @@ class SimpleOptimizedViewModel @Inject constructor(
     fun getAdaptivePageSize(): Int {
         val avgLoadTime = _performanceMetrics.value.averageLoadTime
         return when {
-            avgLoadTime > 3000 -> 10  // Slow connection - smaller pages
-            avgLoadTime > 1000 -> 20  // Medium connection
-            else -> 50               // Fast connection - larger pages
+            avgLoadTime > 3000 -> 10 // Slow connection - smaller pages
+            avgLoadTime > 1000 -> 20 // Medium connection
+            else -> 50 // Fast connection - larger pages
         }
     }
 
@@ -135,19 +135,19 @@ class SimpleOptimizedViewModel @Inject constructor(
     fun getPerformanceRecommendations(): List<String> {
         val metrics = _performanceMetrics.value
         val recommendations = mutableListOf<String>()
-        
+
         if (metrics.averageLoadTime > 2000) {
             recommendations.add("Consider reducing image quality for better performance")
         }
-        
+
         if (metrics.cacheHits < metrics.apiCalls * 0.5) {
             recommendations.add("Cache hit rate is low - consider preloading content")
         }
-        
+
         if (metrics.memoryUsage > 50 * 1024 * 1024) { // 50MB
             recommendations.add("High memory usage detected - consider clearing cache")
         }
-        
+
         return recommendations
     }
 
@@ -182,11 +182,13 @@ class SimpleOptimizedViewModel @Inject constructor(
             "cachedItems" to itemCache.size,
             "cacheHitRate" to if (metrics.apiCalls > 0) {
                 (metrics.cacheHits.toFloat() / metrics.apiCalls.toFloat() * 100).toInt()
-            } else 0,
+            } else {
+                0
+            },
             "averageLoadTimeMs" to metrics.averageLoadTime,
             "memoryUsageMB" to metrics.memoryUsage / 1024 / 1024,
             "adaptivePageSize" to getAdaptivePageSize(),
-            "recommendations" to getPerformanceRecommendations()
+            "recommendations" to getPerformanceRecommendations(),
         )
     }
 }

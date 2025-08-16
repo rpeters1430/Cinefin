@@ -31,9 +31,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.jellyfinandroid.BuildConfig
+import com.example.jellyfinandroid.ui.screens.EnhancedHomeScreen
 import com.example.jellyfinandroid.ui.screens.FavoritesScreen
 import com.example.jellyfinandroid.ui.screens.HomeScreen
-import com.example.jellyfinandroid.ui.screens.EnhancedHomeScreen
 import com.example.jellyfinandroid.ui.screens.LibraryScreen
 import com.example.jellyfinandroid.ui.screens.MovieDetailScreen
 import com.example.jellyfinandroid.ui.screens.MoviesScreen
@@ -49,11 +49,11 @@ import com.example.jellyfinandroid.ui.screens.TVShowsScreen
 import com.example.jellyfinandroid.ui.utils.MediaDownloadManager
 import com.example.jellyfinandroid.ui.utils.MediaPlayerUtils
 import com.example.jellyfinandroid.ui.utils.ShareUtils
+import com.example.jellyfinandroid.ui.viewmodel.EnhancedHomeViewModel
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import com.example.jellyfinandroid.ui.viewmodel.MovieDetailViewModel
 import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesViewModel
 import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
-import com.example.jellyfinandroid.ui.viewmodel.EnhancedHomeViewModel
 
 @androidx.media3.common.util.UnstableApi
 @Composable
@@ -128,7 +128,7 @@ fun JellyfinNavGraph(
             val enhancedViewModel: EnhancedHomeViewModel = hiltViewModel()
             val mainViewModel: MainAppViewModel = hiltViewModel()
             val lifecycleOwner = LocalLifecycleOwner.current
-            
+
             EnhancedHomeScreen(
                 viewModel = enhancedViewModel,
                 onNavigateToLibrary = { libraryId, libraryName ->
@@ -143,7 +143,7 @@ fun JellyfinNavGraph(
                 onNavigateToItem = { itemId ->
                     // This would need context about the item type, but for now navigate to movie detail
                     navController.navigate(Screen.MovieDetail.createRoute(itemId))
-                }
+                },
             )
         }
 

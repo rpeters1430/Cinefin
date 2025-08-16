@@ -1,9 +1,9 @@
 package com.example.jellyfinandroid.data.repository.common
 
 import com.example.jellyfinandroid.data.JellyfinServer
+import com.example.jellyfinandroid.data.cache.JellyfinCache
 import com.example.jellyfinandroid.data.repository.JellyfinAuthRepository
 import com.example.jellyfinandroid.data.utils.RepositoryUtils
-import com.example.jellyfinandroid.data.cache.JellyfinCache
 import com.example.jellyfinandroid.di.JellyfinClientFactory
 import com.example.jellyfinandroid.ui.utils.RetryManager
 import org.jellyfin.sdk.api.client.ApiClient
@@ -119,7 +119,7 @@ open class BaseJellyfinRepository @Inject constructor(
     ): ApiResult<List<BaseItemDto>> {
         // Invalidate existing cache
         cache.invalidateCache(cacheKey)
-        
+
         // Execute with retry and cache result
         return executeWithRetryAndCircuitBreaker(operationName, maxAttempts, cacheKey) {
             val result = block()

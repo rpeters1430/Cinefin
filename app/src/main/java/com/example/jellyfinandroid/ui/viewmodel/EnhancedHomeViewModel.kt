@@ -1,6 +1,5 @@
 package com.example.jellyfinandroid.ui.viewmodel
 
-import androidx.lifecycle.viewModelScope
 import com.example.jellyfinandroid.data.repository.JellyfinMediaRepository
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
 import com.example.jellyfinandroid.ui.viewmodel.common.BaseJellyfinViewModel
@@ -8,7 +7,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
 
@@ -18,7 +16,7 @@ import javax.inject.Inject
  * - Intelligent caching with offline support
  * - Enhanced error handling with user-friendly messages
  * - Seamless loading state management
- * 
+ *
  * This is a demonstration of how to use the new BaseJellyfinViewModel.
  */
 @HiltViewModel
@@ -49,7 +47,7 @@ class EnhancedHomeViewModel @Inject constructor(
             operation = { mediaRepository.getUserLibraries() },
             onSuccess = { libraries ->
                 _homeState.value = _homeState.value.copy(libraries = libraries)
-            }
+            },
         )
 
         // Load recently added content with cache and retry
@@ -59,7 +57,7 @@ class EnhancedHomeViewModel @Inject constructor(
             operation = { mediaRepository.getRecentlyAdded(limit = 20) },
             onSuccess = { items ->
                 _homeState.value = _homeState.value.copy(recentlyAdded = items)
-            }
+            },
         )
     }
 
@@ -73,15 +71,15 @@ class EnhancedHomeViewModel @Inject constructor(
             operation = { mediaRepository.refreshUserLibraries() },
             onSuccess = { libraries ->
                 _homeState.value = _homeState.value.copy(libraries = libraries)
-            }
+            },
         )
 
         executeRefresh(
-            operationName = "refreshRecentlyAdded", 
+            operationName = "refreshRecentlyAdded",
             operation = { mediaRepository.refreshRecentlyAdded(limit = 20) },
             onSuccess = { items ->
                 _homeState.value = _homeState.value.copy(recentlyAdded = items)
-            }
+            },
         )
     }
 
@@ -100,7 +98,7 @@ class EnhancedHomeViewModel @Inject constructor(
         executeOperation(
             operationName = "loadLibrary_$libraryId",
             showLoading = true,
-            operation = { 
+            operation = {
                 // This would typically be implemented in mediaRepository
                 mediaRepository.getUserLibraries() // Placeholder
             },
@@ -108,7 +106,7 @@ class EnhancedHomeViewModel @Inject constructor(
                 // Handle successful load
                 _homeState.value = _homeState.value.copy(
                     selectedLibraryContent = items,
-                    selectedLibraryName = libraryName
+                    selectedLibraryName = libraryName,
                 )
             },
             onError = { error ->
@@ -116,10 +114,10 @@ class EnhancedHomeViewModel @Inject constructor(
                 if (error.errorType.name.contains("NOT_FOUND")) {
                     // Show specific message for missing library
                     _homeState.value = _homeState.value.copy(
-                        customErrorMessage = "Library '$libraryName' was not found. It may have been removed or you may not have access."
+                        customErrorMessage = "Library '$libraryName' was not found. It may have been removed or you may not have access.",
                     )
                 }
-            }
+            },
         )
     }
 
@@ -134,10 +132,10 @@ class EnhancedHomeViewModel @Inject constructor(
                 // For demo purposes, just combine the two main calls
                 val librariesResult = mediaRepository.getUserLibraries()
                 val recentResult = mediaRepository.getRecentlyAdded(limit = 20)
-                
+
                 when {
                     librariesResult is com.example.jellyfinandroid.data.repository.common.ApiResult.Success &&
-                    recentResult is com.example.jellyfinandroid.data.repository.common.ApiResult.Success -> {
+                        recentResult is com.example.jellyfinandroid.data.repository.common.ApiResult.Success -> {
                         val allItems = librariesResult.data + recentResult.data
                         com.example.jellyfinandroid.data.repository.common.ApiResult.Success(allItems)
                     }
@@ -149,9 +147,9 @@ class EnhancedHomeViewModel @Inject constructor(
             onSuccess = { allItems ->
                 // Update state with all loaded content
                 _homeState.value = _homeState.value.copy(
-                    allContent = allItems
+                    allContent = allItems,
                 )
-            }
+            },
         )
     }
 

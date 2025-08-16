@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.jellyfinandroid.ui.components.*
 import com.example.jellyfinandroid.ui.viewmodel.EnhancedHomeViewModel
 
@@ -21,7 +20,7 @@ import com.example.jellyfinandroid.ui.viewmodel.EnhancedHomeViewModel
  * - Beautiful loading states with skeleton screens
  * - Offline indicators and graceful degradation
  * - Retry mechanisms with user feedback
- * 
+ *
  * This screen showcases the new error handling and UX improvements.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,7 +39,7 @@ fun EnhancedHomeScreen(
     val isConnected by viewModel.isConnected.collectAsState(initial = false)
 
     Column(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
     ) {
         // Top App Bar with refresh action
         TopAppBar(
@@ -48,21 +47,21 @@ fun EnhancedHomeScreen(
             actions = {
                 IconButton(
                     onClick = { viewModel.refreshHomeData() },
-                    enabled = !isRefreshing
+                    enabled = !isRefreshing,
                 ) {
                     if (isRefreshing) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
+                            strokeWidth = 2.dp,
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh"
+                            contentDescription = "Refresh",
                         )
                     }
                 }
-            }
+            },
         )
 
         // Error Banner (slides in when there's an error)
@@ -70,15 +69,17 @@ fun EnhancedHomeScreen(
             error = errorState,
             onRetry = if (viewModel.isCurrentErrorRetryable()) {
                 { viewModel.retryLastFailedOperation() }
-            } else null,
-            onDismiss = { viewModel.clearError() }
+            } else {
+                null
+            },
+            onDismiss = { viewModel.clearError() },
         )
 
         // Offline Indicator
         OfflineIndicator(
             isVisible = !isConnected,
             hasOfflineContent = false, // This would come from OfflineManager
-            onViewOfflineContent = { /* Navigate to offline content */ }
+            onViewOfflineContent = { /* Navigate to offline content */ },
         )
 
         // Custom error message (for specific errors)
@@ -88,9 +89,9 @@ fun EnhancedHomeScreen(
                     userMessage = customError,
                     errorType = com.example.jellyfinandroid.data.repository.common.ErrorType.NOT_FOUND,
                     isRetryable = false,
-                    suggestedAction = "Contact your administrator"
+                    suggestedAction = "Contact your administrator",
                 ),
-                onRetry = null
+                onRetry = null,
             )
         }
 
@@ -102,30 +103,30 @@ fun EnhancedHomeScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 // Libraries Section
                 item {
                     SectionHeader(
                         title = "Your Libraries",
                         isLoading = isLoading && homeState.libraries.isEmpty(),
-                        onRefresh = { viewModel.refreshHomeData() }
+                        onRefresh = { viewModel.refreshHomeData() },
                     )
                 }
 
                 if (homeState.libraries.isNotEmpty()) {
                     items(
                         items = homeState.libraries,
-                        key = { it.id ?: it.name ?: "" }
+                        key = { it.id ?: it.name ?: "" },
                     ) { library ->
                         LibraryCard(
                             library = library,
-                            onClick = { 
+                            onClick = {
                                 onNavigateToLibrary(
                                     library.id?.toString() ?: "",
-                                    library.name ?: "Unknown Library"
+                                    library.name ?: "Unknown Library",
                                 )
-                            }
+                            },
                         )
                     }
                 } else if (!isLoading) {
@@ -134,7 +135,7 @@ fun EnhancedHomeScreen(
                             title = "No Libraries Found",
                             message = "Your Jellyfin server doesn't have any libraries configured.",
                             actionText = "Refresh",
-                            onAction = { viewModel.refreshHomeData() }
+                            onAction = { viewModel.refreshHomeData() },
                         )
                     }
                 }
@@ -144,18 +145,18 @@ fun EnhancedHomeScreen(
                     SectionHeader(
                         title = "Recently Added",
                         isLoading = isLoading && homeState.recentlyAdded.isEmpty(),
-                        onRefresh = { viewModel.refreshHomeData() }
+                        onRefresh = { viewModel.refreshHomeData() },
                     )
                 }
 
                 if (homeState.recentlyAdded.isNotEmpty()) {
                     items(
                         items = homeState.recentlyAdded,
-                        key = { it.id ?: it.name ?: "" }
+                        key = { it.id ?: it.name ?: "" },
                     ) { item ->
                         RecentlyAddedCard(
                             item = item,
-                            onClick = { onNavigateToItem(item.id?.toString() ?: "") }
+                            onClick = { onNavigateToItem(item.id?.toString() ?: "") },
                         )
                     }
                 } else if (!isLoading && homeState.libraries.isNotEmpty()) {
@@ -164,7 +165,7 @@ fun EnhancedHomeScreen(
                             title = "No Recent Content",
                             message = "No recently added content found in your libraries.",
                             actionText = "Load All Content",
-                            onAction = { viewModel.loadAllContentTypes() }
+                            onAction = { viewModel.loadAllContentTypes() },
                         )
                     }
                 }
@@ -176,28 +177,28 @@ fun EnhancedHomeScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        ),
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
                                 text = "Enhanced Features Demo",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
-                            
+
                             Text(
                                 text = "This demonstrates parallel loading, smart retries, and enhanced error handling.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                             )
 
                             Button(
                                 onClick = { viewModel.loadAllContentTypes() },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Text("Load All Content Types (Parallel)")
                             }
@@ -221,23 +222,23 @@ private fun SectionHeader(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall
+            style = MaterialTheme.typography.headlineSmall,
         )
 
         if (isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(20.dp),
-                strokeWidth = 2.dp
+                strokeWidth = 2.dp,
             )
         } else {
             IconButton(onClick = onRefresh) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
-                    contentDescription = "Refresh $title"
+                    contentDescription = "Refresh $title",
                 )
             }
         }
@@ -255,20 +256,20 @@ private fun LibraryCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Text(
                 text = library.name ?: "Unknown Library",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
             )
-            
+
             Text(
                 text = library.type?.name ?: "Library",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
         }
     }
@@ -285,18 +286,18 @@ private fun RecentlyAddedCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // Placeholder for thumbnail
             Card(
                 modifier = Modifier.size(60.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
             ) {
                 Box(modifier = Modifier.fillMaxSize())
             }
@@ -304,13 +305,13 @@ private fun RecentlyAddedCard(
             Column {
                 Text(
                     text = item.name ?: "Unknown Item",
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
-                
+
                 Text(
                     text = item.type?.name ?: "Media",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 )
             }
         }
@@ -330,24 +331,24 @@ private fun EmptyStateCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
     ) {
         Column(
             modifier = Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            
+
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
             )
 
             Button(onClick = onAction) {

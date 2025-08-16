@@ -14,7 +14,7 @@ import javax.inject.Singleton
 
 /**
  * Phase 4: Shared State Management System
- * 
+ *
  * Centralized state manager that reduces memory usage by sharing common data
  * across ViewModels and provides intelligent caching and state synchronization.
  */
@@ -31,24 +31,24 @@ class SharedAppStateManager @Inject constructor() {
     private val itemCache = ConcurrentHashMap<String, BaseItemDto>()
     private val libraryCache = ConcurrentHashMap<String, List<BaseItemDto>>()
     private val imageUrlCache = ConcurrentHashMap<String, String>()
-    
+
     // State flows for reactive updates
     private val _sharedItems = MutableStateFlow<Map<String, BaseItemDto>>(emptyMap())
     val sharedItems: StateFlow<Map<String, BaseItemDto>> = _sharedItems.asStateFlow()
-    
+
     private val _libraries = MutableStateFlow<List<BaseItemDto>>(emptyList())
     val libraries: StateFlow<List<BaseItemDto>> = _libraries.asStateFlow()
-    
+
     private val _recentlyViewed = MutableStateFlow<List<BaseItemDto>>(emptyList())
     val recentlyViewed: StateFlow<List<BaseItemDto>> = _recentlyViewed.asStateFlow()
-    
+
     private val _favorites = MutableStateFlow<List<BaseItemDto>>(emptyList())
     val favorites: StateFlow<List<BaseItemDto>> = _favorites.asStateFlow()
 
     // Performance metrics
     private val _memoryUsage = MutableStateFlow(0L)
     val memoryUsage: StateFlow<Long> = _memoryUsage.asStateFlow()
-    
+
     private val _cacheHitRate = MutableStateFlow(0f)
     val cacheHitRate: StateFlow<Float> = _cacheHitRate.asStateFlow()
 
@@ -63,15 +63,15 @@ class SharedAppStateManager @Inject constructor() {
     suspend fun addOrUpdateItem(item: BaseItemDto) {
         stateMutex.withLock {
             val itemId = item.id?.toString() ?: return
-            
+
             itemCache[itemId] = item
-            
+
             // Update state flow
             _sharedItems.value = itemCache.toMap()
-            
+
             // Manage memory
             manageMemory()
-            
+
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Added/Updated item: ${item.name} (ID: $itemId)")
             }
@@ -89,11 +89,11 @@ class SharedAppStateManager @Inject constructor() {
                     itemCache[itemId] = item
                 }
             }
-            
+
             // Single state update for better performance
             _sharedItems.value = itemCache.toMap()
             manageMemory()
-            
+
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Added/Updated ${items.size} items")
             }
@@ -105,13 +105,13 @@ class SharedAppStateManager @Inject constructor() {
      */
     fun getItem(itemId: String): BaseItemDto? {
         val item = itemCache[itemId]
-        
+
         if (item != null) {
             cacheHits++
         } else {
             cacheMisses++
         }
-        
+
         updateCacheHitRate()
         return item
     }
@@ -129,7 +129,7 @@ class SharedAppStateManager @Inject constructor() {
     suspend fun updateLibraries(libraries: List<BaseItemDto>) {
         stateMutex.withLock {
             _libraries.value = libraries
-            
+
             // Cache libraries by ID for quick access
             libraries.forEach { library ->
                 val libraryId = library.id?.toString()
@@ -137,7 +137,7 @@ class SharedAppStateManager @Inject constructor() {
                     libraryCache[libraryId] = listOf(library)
                 }
             }
-            
+
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Updated ${libraries.size} libraries")
             }
@@ -150,7 +150,7 @@ class SharedAppStateManager @Inject constructor() {
     suspend fun updateRecentlyViewed(items: List<BaseItemDto>) {
         stateMutex.withLock {
             _recentlyViewed.value = items.take(20) // Limit to 20 recent items
-            
+
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Updated ${items.size} recently viewed items")
             }
@@ -163,7 +163,7 @@ class SharedAppStateManager @Inject constructor() {
     suspend fun updateFavorites(items: List<BaseItemDto>) {
         stateMutex.withLock {
             _favorites.value = items
-            
+
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Updated ${items.size} favorite items")
             }
@@ -189,12 +189,12 @@ class SharedAppStateManager @Inject constructor() {
      */
     fun searchItems(query: String): List<BaseItemDto> {
         if (query.isBlank()) return emptyList()
-        
+
         val lowercaseQuery = query.lowercase()
         return itemCache.values.filter { item ->
             item.name?.lowercase()?.contains(lowercaseQuery) == true ||
-            item.overview?.lowercase()?.contains(lowercaseQuery) == true ||
-            item.genres?.any { it.lowercase().contains(lowercaseQuery) } == true
+                item.overview?.lowercase()?.contains(lowercaseQuery) == true ||
+                item.genres?.any { it.lowercase().contains(lowercaseQuery) } == true
         }.take(50) // Limit search results
     }
 
@@ -208,7 +208,7 @@ class SharedAppStateManager @Inject constructor() {
             "cacheHitRate" to _cacheHitRate.value,
             "totalLibraries" to _libraries.value.size,
             "recentlyViewedCount" to _recentlyViewed.value.size,
-            "favoritesCount" to _favorites.value.size
+            "favoritesCount" to _favorites.value.size,
         )
     }
 
@@ -220,17 +220,17 @@ class SharedAppStateManager @Inject constructor() {
             itemCache.clear()
             libraryCache.clear()
             imageUrlCache.clear()
-            
+
             _sharedItems.value = emptyMap()
             _libraries.value = emptyList()
             _recentlyViewed.value = emptyList()
             _favorites.value = emptyList()
             _memoryUsage.value = 0L
-            
+
             cacheHits = 0L
             cacheMisses = 0L
             _cacheHitRate.value = 0f
-            
+
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Cache cleared")
             }
@@ -244,11 +244,11 @@ class SharedAppStateManager @Inject constructor() {
         stateMutex.withLock {
             val currentTime = System.currentTimeMillis()
             val initialSize = itemCache.size
-            
+
             // Remove old items (this is simplified - in real implementation you'd track timestamp)
             // For now, just manage by size
             manageMemory()
-            
+
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Cleanup completed. Removed ${initialSize - itemCache.size} items")
             }
@@ -263,16 +263,16 @@ class SharedAppStateManager @Inject constructor() {
             // Simple LRU - remove oldest entries
             val itemsToRemove = itemCache.size - (MAX_CACHED_ITEMS * 0.8).toInt()
             val keysToRemove = itemCache.keys.take(itemsToRemove)
-            
+
             keysToRemove.forEach { key ->
                 itemCache.remove(key)
             }
-            
+
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Memory management: removed $itemsToRemove items")
             }
         }
-        
+
         // Estimate memory usage (simplified calculation)
         val estimatedMemory = itemCache.size * 2048L // Rough estimate per item
         _memoryUsage.value = estimatedMemory
@@ -293,7 +293,7 @@ class SharedAppStateManager @Inject constructor() {
      */
     suspend fun preloadItems(items: List<BaseItemDto>) {
         addOrUpdateItems(items)
-        
+
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Preloaded ${items.size} items for better performance")
         }

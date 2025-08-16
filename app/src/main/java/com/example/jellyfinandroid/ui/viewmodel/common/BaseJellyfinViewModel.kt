@@ -5,15 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.jellyfinandroid.BuildConfig
 import com.example.jellyfinandroid.data.repository.common.ApiResult
-import com.example.jellyfinandroid.data.repository.common.ErrorType
-import com.example.jellyfinandroid.ui.utils.ProcessedError
 import com.example.jellyfinandroid.ui.utils.ErrorHandler
+import com.example.jellyfinandroid.ui.utils.ProcessedError
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 
 /**
  * Enhanced base ViewModel that provides common functionality for error handling,
@@ -82,7 +81,7 @@ abstract class BaseJellyfinViewModel : ViewModel() {
                     is ApiResult.Error -> {
                         val processedError = ErrorHandler.processError(
                             result.cause ?: Exception(result.message),
-                            operation = operationName
+                            operation = operationName,
                         )
 
                         Log.w(TAG, "Operation failed: $operationName - ${processedError.userMessage}")
@@ -93,7 +92,7 @@ abstract class BaseJellyfinViewModel : ViewModel() {
                         // Log error analytics
                         ErrorHandler.logErrorAnalytics(
                             error = processedError,
-                            operation = operationName
+                            operation = operationName,
                         )
                     }
 
@@ -149,7 +148,7 @@ abstract class BaseJellyfinViewModel : ViewModel() {
                     is ApiResult.Error -> {
                         val processedError = ErrorHandler.processError(
                             result.cause ?: Exception(result.message),
-                            operation = operationName
+                            operation = operationName,
                         )
 
                         Log.w(TAG, "Refresh failed: $operationName - ${processedError.userMessage}")
@@ -238,7 +237,7 @@ abstract class BaseJellyfinViewModel : ViewModel() {
             is ApiResult.Error -> {
                 val processedError = ErrorHandler.processError(
                     cause ?: Exception(message),
-                    operation = "API Call"
+                    operation = "API Call",
                 )
                 onError(processedError)
             }

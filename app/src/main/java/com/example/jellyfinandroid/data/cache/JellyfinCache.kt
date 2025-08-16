@@ -20,7 +20,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class JellyfinCache @Inject constructor(
-    private val context: Context
+    private val context: Context,
 ) {
 
     companion object {
@@ -33,14 +33,14 @@ class JellyfinCache @Inject constructor(
         private const val FAVORITES_KEY = "favorites"
     }
 
-    private val json = Json { 
+    private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
     }
 
     // In-memory cache for quick access
     private val memoryCache = ConcurrentHashMap<String, CacheEntry<*>>()
-    
+
     // Cache statistics
     private val _cacheStats = MutableStateFlow(CacheStats())
     val cacheStats: StateFlow<CacheStats> = _cacheStats.asStateFlow()
@@ -65,25 +65,25 @@ class JellyfinCache @Inject constructor(
     suspend fun cacheItems(
         key: String,
         items: List<BaseItemDto>,
-        ttlMs: Long = MAX_CACHE_AGE_MS
+        ttlMs: Long = MAX_CACHE_AGE_MS,
     ): Boolean {
         return try {
             val cacheData = CacheData(
                 items = items,
                 timestamp = System.currentTimeMillis(),
-                ttlMs = ttlMs
+                ttlMs = ttlMs,
             )
 
             val cacheEntry = CacheEntry(
                 data = cacheData,
-                expiresAt = System.currentTimeMillis() + ttlMs
+                expiresAt = System.currentTimeMillis() + ttlMs,
             )
 
             // Store in memory cache
             memoryCache[key] = cacheEntry
 
             // Store on disk
-            val file = File(cacheDir, "${key}.json")
+            val file = File(cacheDir, "$key.json")
             file.writeText(json.encodeToString(CacheData.serializer(), cacheData))
 
             if (BuildConfig.DEBUG) {
@@ -121,7 +121,7 @@ class JellyfinCache @Inject constructor(
             }
 
             // Check disk cache
-            val file = File(cacheDir, "${key}.json")
+            val file = File(cacheDir, "$key.json")
             if (file.exists()) {
                 val cacheData = json.decodeFromString<CacheData>(file.readText())
                 val isValid = (System.currentTimeMillis() - cacheData.timestamp) < cacheData.ttlMs
@@ -130,7 +130,7 @@ class JellyfinCache @Inject constructor(
                     // Add back to memory cache
                     val cacheEntry = CacheEntry(
                         data = cacheData,
-                        expiresAt = cacheData.timestamp + cacheData.ttlMs
+                        expiresAt = cacheData.timestamp + cacheData.ttlMs,
                     )
                     memoryCache[key] = cacheEntry
 
@@ -168,7 +168,7 @@ class JellyfinCache @Inject constructor(
         }
 
         // Check disk cache
-        val file = File(cacheDir, "${key}.json")
+        val file = File(cacheDir, "$key.json")
         if (file.exists()) {
             try {
                 val cacheData = json.decodeFromString<CacheData>(file.readText())
@@ -189,7 +189,7 @@ class JellyfinCache @Inject constructor(
      */
     suspend fun invalidateCache(key: String) {
         memoryCache.remove(key)
-        val file = File(cacheDir, "${key}.json")
+        val file = File(cacheDir, "$key.json")
         if (file.exists()) {
             file.delete()
             if (BuildConfig.DEBUG) {
@@ -204,13 +204,13 @@ class JellyfinCache @Inject constructor(
      */
     suspend fun clearAllCache() {
         memoryCache.clear()
-        
+
         cacheDir.listFiles()?.forEach { file ->
             if (file.isFile && file.name.endsWith(".json")) {
                 file.delete()
             }
         }
-        
+
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Cleared all cache")
         }
@@ -235,12 +235,12 @@ class JellyfinCache @Inject constructor(
     private fun cleanupOldEntries() {
         try {
             val currentTime = System.currentTimeMillis()
-            
+
             // Clean memory cache
             val expiredKeys = memoryCache.entries
                 .filter { !it.value.isValid() }
                 .map { it.key }
-            
+
             expiredKeys.forEach { key ->
                 memoryCache.remove(key)
             }
@@ -251,7 +251,7 @@ class JellyfinCache @Inject constructor(
                     try {
                         val cacheData = json.decodeFromString<CacheData>(file.readText())
                         val isExpired = (currentTime - cacheData.timestamp) >= cacheData.ttlMs
-                        
+
                         if (isExpired) {
                             file.delete()
                             if (BuildConfig.DEBUG) {
@@ -269,7 +269,7 @@ class JellyfinCache @Inject constructor(
             // Check if we need to free up space
             val cacheSize = getCacheSizeBytes()
             val maxCacheSizeBytes = MAX_CACHE_SIZE_MB * 1024 * 1024
-            
+
             if (cacheSize > maxCacheSizeBytes) {
                 evictOldestEntries(maxCacheSizeBytes)
             }
@@ -297,11 +297,11 @@ class JellyfinCache @Inject constructor(
 
             for (file in files) {
                 if (currentSize <= maxSizeBytes) break
-                
+
                 currentSize -= file.length()
                 file.delete()
                 deletedCount++
-                
+
                 // Remove from memory cache too
                 val key = file.nameWithoutExtension
                 memoryCache.remove(key)
@@ -322,7 +322,7 @@ class JellyfinCache @Inject constructor(
         try {
             val diskEntries = cacheDir.listFiles()
                 ?.count { it.isFile && it.name.endsWith(".json") } ?: 0
-            
+
             val memoryEntries = memoryCache.size
             val totalSizeBytes = getCacheSizeBytes()
             val totalSizeMB = totalSizeBytes / (1024.0 * 1024.0)
@@ -331,7 +331,7 @@ class JellyfinCache @Inject constructor(
                 totalEntries = diskEntries,
                 memoryEntries = memoryEntries,
                 totalSizeBytes = totalSizeBytes,
-                totalSizeMB = totalSizeMB
+                totalSizeMB = totalSizeMB,
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error updating cache stats", e)
@@ -375,12 +375,12 @@ class JellyfinCache @Inject constructor(
 private data class CacheData(
     val items: List<BaseItemDto>,
     val timestamp: Long,
-    val ttlMs: Long
+    val ttlMs: Long,
 )
 
 private data class CacheEntry<T>(
     val data: T,
-    val expiresAt: Long
+    val expiresAt: Long,
 ) {
     fun isValid(): Boolean = System.currentTimeMillis() < expiresAt
 }
@@ -389,5 +389,5 @@ data class CacheStats(
     val totalEntries: Int = 0,
     val memoryEntries: Int = 0,
     val totalSizeBytes: Long = 0L,
-    val totalSizeMB: Double = 0.0
+    val totalSizeMB: Double = 0.0,
 )

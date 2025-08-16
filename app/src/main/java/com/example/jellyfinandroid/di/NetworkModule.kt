@@ -2,6 +2,7 @@ package com.example.jellyfinandroid.di
 
 import android.content.Context
 import com.example.jellyfinandroid.BuildConfig
+import com.example.jellyfinandroid.data.cache.JellyfinCache
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -16,7 +17,6 @@ import org.jellyfin.sdk.model.DeviceInfo
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.example.jellyfinandroid.data.cache.JellyfinCache
 
 @Module
 @InstallIn(SingletonComponent::class)
