@@ -9,7 +9,7 @@ sealed class ApiResult<out T> {
     data class Error<T>(
         val message: String,
         val cause: Throwable? = null,
-        val errorType: ErrorType = ErrorType.UNKNOWN
+        val errorType: ErrorType = ErrorType.UNKNOWN,
     ) : ApiResult<T>()
     class Loading<T>(val message: String = "") : ApiResult<T>()
 }
