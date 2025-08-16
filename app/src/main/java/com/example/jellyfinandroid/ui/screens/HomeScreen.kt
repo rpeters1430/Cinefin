@@ -1,27 +1,17 @@
 package com.example.jellyfinandroid.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
@@ -32,34 +22,22 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
-import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import coil.compose.SubcomposeAsyncImage
-import coil.request.ImageRequest
 import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.ui.components.MediaCard
-import com.example.jellyfinandroid.ui.components.RecentlyAddedCard
-import com.example.jellyfinandroid.ui.components.ShimmerBox
-import com.example.jellyfinandroid.ui.theme.getContentTypeColor
+import com.example.jellyfinandroid.ui.screens.home.HomeCarousel
+import com.example.jellyfinandroid.ui.screens.home.LibraryGridSection
+import com.example.jellyfinandroid.ui.screens.home.RecentlyAddedSection
 import com.example.jellyfinandroid.ui.viewmodel.MainAppState
 import com.example.jellyfinandroid.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -161,89 +139,6 @@ private fun HomeTopBar(
     )
 }
 
-@Composable
-fun HomeLibraryCard(
-    library: BaseItemDto,
-    getImageUrl: (BaseItemDto) -> String?,
-    modifier: Modifier = Modifier,
-) {
-    val contentTypeColor = getContentTypeColor(library.type?.toString())
-
-    Card(
-        modifier = modifier
-            .width(200.dp) // Increased width for horizontal aspect
-            .clickable { },
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-    ) {
-        Column {
-            Box {
-                SubcomposeAsyncImage(
-                    model = getImageUrl(library),
-                    contentDescription = library.name ?: "Library",
-                    loading = {
-                        ShimmerBox(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp), // Reduced height for horizontal aspect
-                            cornerRadius = 12,
-                        )
-                    },
-                    error = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp) // Reduced height for horizontal aspect
-                                .background(contentTypeColor.copy(alpha = 0.1f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Folder,
-                                contentDescription = "Library",
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    },
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp) // Reduced height for horizontal aspect (16:10 ratio)
-                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
-                )
-            }
-
-            // Content Information
-            Column(
-                modifier = Modifier.padding(12.dp),
-            ) {
-                Text(
-                    text = library.name ?: "Unknown Library",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-
-                // Show library type if available
-                library.type?.let { type ->
-                    Text(
-                        text = type.toString().replace("_", " ").lowercase()
-                            .replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun HomeContent(
@@ -265,13 +160,23 @@ fun HomeContent(
         val recentMovies = appState.recentlyAddedByTypes["Movies"]?.take(8) ?: emptyList()
         if (recentMovies.isNotEmpty()) {
             item {
-                HomeCarouselSection(recentMovies, getBackdropUrl, onItemClick)
+                HomeCarousel(
+                    movies = recentMovies,
+                    getBackdropUrl = getBackdropUrl,
+                    onItemClick = onItemClick,
+                    title = "Recently Added Movies",
+                )
             }
         }
 
         if (appState.libraries.isNotEmpty()) {
             item {
-                HomeLibrariesSection(appState.libraries, getImageUrl)
+                LibraryGridSection(
+                    libraries = appState.libraries,
+                    getImageUrl = getImageUrl,
+                    onLibraryClick = onItemClick,
+                    title = "Libraries",
+                )
             }
         }
 
@@ -286,9 +191,9 @@ fun HomeContent(
             val recentItems = appState.recentlyAddedByTypes[typeKey]?.take(15) ?: emptyList()
             if (recentItems.isNotEmpty()) {
                 item {
-                    HomeRecentSection(
-                        displayName = displayName,
-                        recentItems = recentItems,
+                    RecentlyAddedSection(
+                        title = "Recently Added $displayName",
+                        items = recentItems,
                         getImageUrl = getImageUrl,
                         getSeriesImageUrl = getSeriesImageUrl,
                         onItemClick = onItemClick,
@@ -321,119 +226,6 @@ private fun HomeHeader(currentServer: JellyfinServer?) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HomeCarouselSection(
-    recentMovies: List<BaseItemDto>,
-    getBackdropUrl: (BaseItemDto) -> String?,
-    onItemClick: (BaseItemDto) -> Unit,
-) {
-    Column {
-        Text(
-            text = "Recently Added Movies",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-        val carouselState = rememberCarouselState { recentMovies.size }
-        HorizontalUncontainedCarousel(
-            state = carouselState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(240.dp),
-            itemWidth = 280.dp,
-            itemSpacing = 12.dp,
-            contentPadding = PaddingValues(horizontal = 16.dp),
-        ) { index ->
-            val movie = recentMovies[index]
-            CarouselMovieCard(
-                movie = movie,
-                getBackdropUrl = getBackdropUrl,
-                onClick = onItemClick,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp)),
-            )
-        }
-    }
-}
-
-@Composable
-private fun HomeLibrariesSection(
-    libraries: List<BaseItemDto>,
-    getImageUrl: (BaseItemDto) -> String?,
-) {
-    Column {
-        Text(
-            text = "Libraries",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-        ) {
-            items(
-                items = libraries,
-                key = { library -> library.getItemKey() },
-            ) { library ->
-                HomeLibraryCard(
-                    library = library,
-                    getImageUrl = getImageUrl,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeRecentSection(
-    displayName: String,
-    recentItems: List<BaseItemDto>,
-    getImageUrl: (BaseItemDto) -> String?,
-    getSeriesImageUrl: (BaseItemDto) -> String?,
-    onItemClick: (BaseItemDto) -> Unit,
-    onRefresh: () -> Unit,
-) {
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "Recently Added $displayName",
-                style = MaterialTheme.typography.headlineSmall,
-            )
-            IconButton(onClick = onRefresh) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = "Refresh $displayName",
-                )
-            }
-        }
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-        ) {
-            items(
-                items = recentItems,
-                key = { item -> item.getItemKey() },
-            ) { item ->
-                RecentlyAddedCard(
-                    item = item,
-                    getImageUrl = getImageUrl,
-                    getSeriesImageUrl = getSeriesImageUrl,
-                    onClick = onItemClick,
-                )
             }
         }
     }
@@ -504,20 +296,19 @@ fun SearchResultsContent(
             }
         }
 
-        // Group results by type
         val groupedResults = searchResults.groupBy { it.type }
         groupedResults.forEach { (type, items) ->
             item {
                 Text(
                     text = when (type) {
-                        org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> "Movies"
-                        org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> "TV Shows"
-                        org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> "Episodes"
-                        org.jellyfin.sdk.model.api.BaseItemKind.AUDIO -> "Music"
-                        org.jellyfin.sdk.model.api.BaseItemKind.MUSIC_ALBUM -> "Albums"
-                        org.jellyfin.sdk.model.api.BaseItemKind.MUSIC_ARTIST -> "Artists"
-                        org.jellyfin.sdk.model.api.BaseItemKind.BOOK -> "Books"
-                        org.jellyfin.sdk.model.api.BaseItemKind.AUDIO_BOOK -> "Audiobooks"
+                        BaseItemKind.MOVIE -> "Movies"
+                        BaseItemKind.SERIES -> "TV Shows"
+                        BaseItemKind.EPISODE -> "Episodes"
+                        BaseItemKind.AUDIO -> "Music"
+                        BaseItemKind.MUSIC_ALBUM -> "Albums"
+                        BaseItemKind.MUSIC_ARTIST -> "Artists"
+                        BaseItemKind.BOOK -> "Books"
+                        BaseItemKind.AUDIO_BOOK -> "Audiobooks"
                         else -> type?.toString() ?: "Other"
                     },
                     style = MaterialTheme.typography.headlineSmall,
@@ -540,118 +331,8 @@ fun SearchResultsContent(
                             modifier = Modifier.weight(1f),
                         )
                     }
-                    // Fill remaining space if odd number of items
                     if (rowItems.size == 1) {
                         Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CarouselMovieCard(
-    movie: BaseItemDto,
-    getBackdropUrl: (BaseItemDto) -> String?,
-    onClick: (BaseItemDto) -> Unit = {},
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier.clickable { onClick(movie) },
-        shape = RoundedCornerShape(16.dp), // Fully rounded
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(getBackdropUrl(movie) ?: "")
-                    .crossfade(true)
-                    .build(),
-                contentDescription = movie.name ?: "Movie backdrop",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(16.dp)), // Clip image to card shape
-                contentScale = ContentScale.Crop,
-            )
-
-            // Enhanced gradient overlay with multiple stops
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.3f),
-                                Color.Black.copy(alpha = 0.8f),
-                            ),
-                            startY = 0f,
-                            endY = Float.POSITIVE_INFINITY,
-                        ),
-                    ),
-            )
-
-            // ✅ FIX: Enhanced rating badge with better positioning and styling
-            movie.communityRating?.let { rating ->
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(12.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.95f),
-                    shadowElevation = 4.dp,
-                ) {
-                    Text(
-                        text = "★ ${String.format(java.util.Locale.ROOT, "%.1f", rating)}",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
-                }
-            }
-
-            // Movie info at the bottom
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(16.dp),
-            ) {
-                Text(
-                    text = movie.name ?: "Unknown Movie",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    maxLines = 2,
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    movie.productionYear?.let { year ->
-                        Text(
-                            text = year.toString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.8f),
-                        )
-                    }
-                    movie.runTimeTicks?.let { ticks ->
-                        val minutes = (ticks / 10_000_000 / 60).toInt()
-                        val hours = minutes / 60
-                        val remainingMinutes = minutes % 60
-                        val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
-                        Text(
-                            text = "• $runtime",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.8f),
-                        )
                     }
                 }
             }
