@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.example.jellyfinandroid.BuildConfig
-import com.example.jellyfinandroid.data.repository.ApiResult
+import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job

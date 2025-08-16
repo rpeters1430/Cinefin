@@ -2,7 +2,7 @@ package com.example.jellyfinandroid.ui.utils
 
 import android.content.Context
 import android.util.Log
-import com.example.jellyfinandroid.data.repository.ErrorType
+import com.example.jellyfinandroid.data.repository.common.ErrorType
 import retrofit2.HttpException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -214,6 +214,7 @@ object ErrorHandler {
             ErrorType.FORBIDDEN -> false // Don't retry permission errors
             ErrorType.NOT_FOUND -> false // Don't retry 404s
             ErrorType.OPERATION_CANCELLED -> false // User cancelled
+            ErrorType.TIMEOUT -> true // Retry timeout errors
         }
     }
 

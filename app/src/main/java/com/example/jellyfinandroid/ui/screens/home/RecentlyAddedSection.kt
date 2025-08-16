@@ -67,7 +67,7 @@ fun RecentlyAddedSection(
 private fun RecentlyAddedSectionPreview() {
     RecentlyAddedSection(
         title = "Recently Added Movies",
-        items = listOf(BaseItemDto(name = "Item")),
+        items = emptyList(),
         getImageUrl = { null },
         getSeriesImageUrl = { null },
         onItemClick = {},

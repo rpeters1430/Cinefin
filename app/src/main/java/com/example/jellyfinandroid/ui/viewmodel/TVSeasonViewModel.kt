@@ -2,7 +2,7 @@ package com.example.jellyfinandroid.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.jellyfinandroid.data.repository.ApiResult
+import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinMediaRepository
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel

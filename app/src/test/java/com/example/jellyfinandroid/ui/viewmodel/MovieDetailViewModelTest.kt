@@ -1,6 +1,6 @@
 package com.example.jellyfinandroid.ui.viewmodel
 
-import com.example.jellyfinandroid.data.repository.ApiResult
+import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
 import io.mockk.coEvery
 import io.mockk.mockk

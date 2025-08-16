@@ -6,7 +6,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
 import com.example.jellyfinandroid.BuildConfig
 import com.example.jellyfinandroid.data.SecureCredentialManager
-import com.example.jellyfinandroid.data.repository.ApiResult
+import com.example.jellyfinandroid.data.repository.common.ApiResult
+import com.example.jellyfinandroid.data.repository.common.ErrorType
 import com.example.jellyfinandroid.data.repository.JellyfinMediaRepository
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
 import com.example.jellyfinandroid.data.repository.JellyfinStreamRepository
@@ -97,7 +98,7 @@ class MainAppViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     // ✅ FIX: Don't show error messages for cancelled operations (navigation/lifecycle)
-                    if (result.errorType == com.example.jellyfinandroid.data.repository.ErrorType.OPERATION_CANCELLED) {
+                    if (result.errorType == ErrorType.OPERATION_CANCELLED) {
                         if (BuildConfig.DEBUG) {
                             Log.d("MainAppViewModel", "loadInitialData: Library loading was cancelled (navigation)")
                         }
@@ -126,7 +127,7 @@ class MainAppViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     // ✅ FIX: Don't show error messages for cancelled operations
-                    if (result.errorType == com.example.jellyfinandroid.data.repository.ErrorType.OPERATION_CANCELLED) {
+                    if (result.errorType == ErrorType.OPERATION_CANCELLED) {
                         if (BuildConfig.DEBUG) {
                             Log.d("MainAppViewModel", "loadInitialData: Recent items loading was cancelled (navigation)")
                         }
@@ -164,7 +165,7 @@ class MainAppViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     // ✅ FIX: Don't show error messages for cancelled operations
-                    if (result.errorType == com.example.jellyfinandroid.data.repository.ErrorType.OPERATION_CANCELLED) {
+                    if (result.errorType == ErrorType.OPERATION_CANCELLED) {
                         if (BuildConfig.DEBUG) {
                             Log.d("MainAppViewModel", "loadInitialData: Recent items by type loading was cancelled (navigation)")
                         }
@@ -569,7 +570,7 @@ class MainAppViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     Log.e("MainAppViewModel", "loadTVShowDetails: Failed to load series details: ${result.message}")
-                    if (result.errorType != com.example.jellyfinandroid.data.repository.ErrorType.OPERATION_CANCELLED) {
+                    if (result.errorType != ErrorType.OPERATION_CANCELLED) {
                         _appState.value = _appState.value.copy(
                             errorMessage = "Failed to load series details: ${result.message}",
                         )

@@ -13,7 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalUncontainedCarousel
+import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -134,7 +134,7 @@ private fun CarouselMovieCard(
 @Composable
 private fun HomeCarouselPreview() {
     HomeCarousel(
-        movies = listOf(BaseItemDto(name = "Movie 1"), BaseItemDto(name = "Movie 2")),
+        movies = emptyList(),
         getBackdropUrl = { null },
         onItemClick = {},
         title = "Recently Added Movies",

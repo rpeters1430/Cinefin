@@ -10,6 +10,8 @@ import com.example.jellyfinandroid.data.model.QuickConnectResult
 import com.example.jellyfinandroid.data.model.QuickConnectState
 import com.example.jellyfinandroid.data.utils.RepositoryUtils
 import com.example.jellyfinandroid.di.JellyfinClientFactory
+import com.example.jellyfinandroid.data.repository.common.ApiResult
+import com.example.jellyfinandroid.data.repository.common.ErrorType
 import com.example.jellyfinandroid.ui.utils.ErrorHandler
 import com.example.jellyfinandroid.ui.utils.OfflineManager
 import com.example.jellyfinandroid.utils.Constants
@@ -35,23 +37,6 @@ import retrofit2.HttpException
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-
-sealed class ApiResult<T> {
-    data class Success<T>(val data: T) : ApiResult<T>()
-    data class Error<T>(val message: String, val cause: Throwable? = null, val errorType: ErrorType = ErrorType.UNKNOWN) : ApiResult<T>()
-    data class Loading<T>(val message: String = "") : ApiResult<T>() // Default empty, will be set by context
-}
-
-enum class ErrorType {
-    NETWORK,
-    AUTHENTICATION,
-    SERVER_ERROR,
-    NOT_FOUND,
-    UNAUTHORIZED,
-    FORBIDDEN,
-    OPERATION_CANCELLED,
-    UNKNOWN,
-}
 
 @Singleton
 class JellyfinRepository @Inject constructor(

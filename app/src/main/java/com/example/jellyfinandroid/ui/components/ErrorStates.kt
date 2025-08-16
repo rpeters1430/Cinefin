@@ -45,7 +45,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.jellyfinandroid.data.model.ErrorType
+import com.example.jellyfinandroid.data.repository.common.ErrorType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

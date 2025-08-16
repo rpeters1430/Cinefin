@@ -2,8 +2,8 @@ package com.example.jellyfinandroid.ui.utils
 
 import android.util.Log
 import com.example.jellyfinandroid.BuildConfig
-import com.example.jellyfinandroid.data.repository.ApiResult
-import com.example.jellyfinandroid.data.repository.ErrorType
+import com.example.jellyfinandroid.data.repository.common.ApiResult
+import com.example.jellyfinandroid.data.repository.common.ErrorType
 import kotlinx.coroutines.delay
 import kotlin.coroutines.cancellation.CancellationException
 

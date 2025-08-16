@@ -1,4 +1,4 @@
-package com.example.jellyfinandroid.data.repository
+package com.example.jellyfinandroid.data.repository.common
 
 /**
  * Represents a simple result wrapper for repository operations.
@@ -26,5 +26,6 @@ enum class ErrorType {
     UNAUTHORIZED,
     FORBIDDEN,
     OPERATION_CANCELLED,
+    TIMEOUT,
     UNKNOWN,
 }

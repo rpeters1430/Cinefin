@@ -1,7 +1,7 @@
 package com.example.jellyfinandroid.data.repository.common
 
 import com.example.jellyfinandroid.data.JellyfinServer
-import com.example.jellyfinandroid.data.repository.ApiResult
+import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinAuthRepository
 import com.example.jellyfinandroid.data.utils.RepositoryUtils
 import com.example.jellyfinandroid.di.JellyfinClientFactory

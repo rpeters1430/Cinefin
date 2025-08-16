@@ -137,7 +137,7 @@ private fun LibraryCard(
 @Composable
 private fun LibraryGridSectionPreview() {
     LibraryGridSection(
-        libraries = listOf(BaseItemDto(name = "Library")),
+        libraries = emptyList(),
         getImageUrl = { null },
         onLibraryClick = {},
         title = "Libraries",

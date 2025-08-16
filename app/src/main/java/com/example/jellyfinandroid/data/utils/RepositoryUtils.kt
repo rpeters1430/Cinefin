@@ -2,7 +2,7 @@ package com.example.jellyfinandroid.data.utils
 
 import android.util.Log
 import com.example.jellyfinandroid.data.JellyfinServer
-import com.example.jellyfinandroid.data.repository.ErrorType
+import com.example.jellyfinandroid.data.repository.common.ErrorType
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import retrofit2.HttpException
 import java.util.*

@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.jellyfinandroid.data.repository.ErrorType
+import com.example.jellyfinandroid.data.repository.common.ErrorType
 import com.example.jellyfinandroid.ui.utils.ProcessedError
 
 /**
@@ -281,6 +281,7 @@ private fun getErrorIcon(errorType: ErrorType) = when (errorType) {
     ErrorType.NOT_FOUND -> Icons.Default.Warning
     ErrorType.SERVER_ERROR -> Icons.Default.Error
     ErrorType.OPERATION_CANCELLED -> Icons.Default.Warning
+    ErrorType.TIMEOUT -> Icons.Default.Warning
     ErrorType.UNKNOWN -> Icons.Default.Error
 }
 
@@ -292,6 +293,7 @@ private fun getErrorTitle(errorType: ErrorType) = when (errorType) {
     ErrorType.NOT_FOUND -> "Not Found"
     ErrorType.SERVER_ERROR -> "Server Error"
     ErrorType.OPERATION_CANCELLED -> "Operation Cancelled"
+    ErrorType.TIMEOUT -> "Request Timeout"
     ErrorType.UNKNOWN -> "Unexpected Error"
 }
 
