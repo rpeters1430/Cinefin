@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(./gradlew:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(.gradlew assembleDebug)",
+      "Bash(rm:*)"
     ],
     "defaultMode": "acceptEdits"
   }
