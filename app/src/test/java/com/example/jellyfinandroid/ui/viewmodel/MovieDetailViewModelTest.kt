@@ -1,7 +1,7 @@
 package com.example.jellyfinandroid.ui.viewmodel
 
-import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
+import com.example.jellyfinandroid.data.repository.common.ApiResult
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
