@@ -8,10 +8,10 @@ import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.data.model.QuickConnectResult
 import com.example.jellyfinandroid.data.model.QuickConnectState
-import com.example.jellyfinandroid.data.utils.RepositoryUtils
-import com.example.jellyfinandroid.di.JellyfinClientFactory
 import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.data.repository.common.ErrorType
+import com.example.jellyfinandroid.data.utils.RepositoryUtils
+import com.example.jellyfinandroid.di.JellyfinClientFactory
 import com.example.jellyfinandroid.ui.utils.ErrorHandler
 import com.example.jellyfinandroid.ui.utils.OfflineManager
 import com.example.jellyfinandroid.utils.Constants

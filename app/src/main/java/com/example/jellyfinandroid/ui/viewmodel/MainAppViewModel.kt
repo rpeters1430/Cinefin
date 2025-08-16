@@ -6,12 +6,12 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
 import com.example.jellyfinandroid.BuildConfig
 import com.example.jellyfinandroid.data.SecureCredentialManager
-import com.example.jellyfinandroid.data.repository.common.ApiResult
-import com.example.jellyfinandroid.data.repository.common.ErrorType
 import com.example.jellyfinandroid.data.repository.JellyfinMediaRepository
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
 import com.example.jellyfinandroid.data.repository.JellyfinStreamRepository
 import com.example.jellyfinandroid.data.repository.JellyfinUserRepository
+import com.example.jellyfinandroid.data.repository.common.ApiResult
+import com.example.jellyfinandroid.data.repository.common.ErrorType
 import com.example.jellyfinandroid.ui.screens.LibraryType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
