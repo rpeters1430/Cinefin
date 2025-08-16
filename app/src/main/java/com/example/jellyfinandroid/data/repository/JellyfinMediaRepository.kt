@@ -102,7 +102,7 @@ class JellyfinMediaRepository @Inject constructor(
         limit: Int = 20,
     ): ApiResult<List<BaseItemDto>> = executeWithRetry(
         operationName = "getRecentlyAddedByType_${itemType.name}",
-        maxAttempts = 3
+        maxAttempts = 3,
     ) {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
@@ -120,7 +120,7 @@ class JellyfinMediaRepository @Inject constructor(
 
     suspend fun getRecentlyAddedByTypes(limit: Int = 20): ApiResult<Map<String, List<BaseItemDto>>> = executeWithRetry(
         operationName = "getRecentlyAddedByTypes",
-        maxAttempts = 3
+        maxAttempts = 3,
     ) {
         val types = listOf(
             BaseItemKind.MOVIE,
