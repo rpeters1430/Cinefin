@@ -14,6 +14,7 @@ sealed class Screen(val route: String) {
 
     // Main app flow
     object Home : Screen("home")
+    object EnhancedHome : Screen("enhanced_home")
     object Library : Screen("library")
     object Movies : Screen("movies")
     object TVShows : Screen("tv_shows")

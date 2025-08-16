@@ -2,6 +2,7 @@ package com.example.jellyfinandroid.data.repository
 
 import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.data.repository.common.BaseJellyfinRepository
+import com.example.jellyfinandroid.data.cache.JellyfinCache
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -19,9 +20,14 @@ import javax.inject.Singleton
 class JellyfinMediaRepository @Inject constructor(
     authRepository: JellyfinAuthRepository,
     clientFactory: com.example.jellyfinandroid.di.JellyfinClientFactory,
-) : BaseJellyfinRepository(authRepository, clientFactory) {
+    cache: JellyfinCache,
+) : BaseJellyfinRepository(authRepository, clientFactory, cache) {
 
-    suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> = execute {
+    suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> = executeWithCache(
+        operationName = "getUserLibraries",
+        cacheKey = "user_libraries",
+        cacheTtlMs = 60 * 60 * 1000L // 1 hour
+    ) {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
@@ -62,7 +68,11 @@ class JellyfinMediaRepository @Inject constructor(
         response.content.items ?: emptyList()
     }
 
-    suspend fun getRecentlyAdded(limit: Int = 20): ApiResult<List<BaseItemDto>> = execute {
+    suspend fun getRecentlyAdded(limit: Int = 20): ApiResult<List<BaseItemDto>> = executeWithCache(
+        operationName = "getRecentlyAdded",
+        cacheKey = "recently_added_$limit",
+        cacheTtlMs = 30 * 60 * 1000L // 30 minutes
+    ) {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
@@ -134,6 +144,54 @@ class JellyfinMediaRepository @Inject constructor(
             includeItemTypes = listOf(BaseItemKind.SEASON),
             sortBy = listOf(ItemSortBy.SORT_NAME),
             sortOrder = listOf(SortOrder.ASCENDING),
+        )
+        response.content.items ?: emptyList()
+    }
+
+    /**
+     * Refresh methods that force cache invalidation and fetch fresh data.
+     */
+
+    suspend fun refreshUserLibraries(): ApiResult<List<BaseItemDto>> = executeRefreshWithCache(
+        operationName = "refreshUserLibraries",
+        cacheKey = "user_libraries",
+        cacheTtlMs = 60 * 60 * 1000L
+    ) {
+        val server = validateServer()
+        val userUuid = parseUuid(server.userId ?: "", "user")
+        val client = getClient(server.url, server.accessToken)
+        val response = client.itemsApi.getItems(
+            userId = userUuid,
+            includeItemTypes = listOf(BaseItemKind.COLLECTION_FOLDER),
+        )
+        response.content.items ?: emptyList()
+    }
+
+    suspend fun refreshRecentlyAdded(limit: Int = 20): ApiResult<List<BaseItemDto>> = executeRefreshWithCache(
+        operationName = "refreshRecentlyAdded",
+        cacheKey = "recently_added_$limit",
+        cacheTtlMs = 30 * 60 * 1000L
+    ) {
+        val server = validateServer()
+        val userUuid = parseUuid(server.userId ?: "", "user")
+        val client = getClient(server.url, server.accessToken)
+        val response = client.itemsApi.getItems(
+            userId = userUuid,
+            recursive = true,
+            includeItemTypes = listOf(
+                BaseItemKind.MOVIE,
+                BaseItemKind.SERIES,
+                BaseItemKind.EPISODE,
+                BaseItemKind.AUDIO,
+                BaseItemKind.MUSIC_ALBUM,
+                BaseItemKind.MUSIC_ARTIST,
+                BaseItemKind.BOOK,
+                BaseItemKind.AUDIO_BOOK,
+                BaseItemKind.VIDEO,
+            ),
+            sortBy = listOf(ItemSortBy.DATE_CREATED),
+            sortOrder = listOf(SortOrder.DESCENDING),
+            limit = limit,
         )
         response.content.items ?: emptyList()
     }

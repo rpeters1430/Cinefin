@@ -16,6 +16,7 @@ import org.jellyfin.sdk.model.DeviceInfo
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.example.jellyfinandroid.data.cache.JellyfinCache
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -60,6 +61,12 @@ object NetworkModule {
     @Singleton
     fun provideJellyfinClientFactory(jellyfin: Jellyfin): JellyfinClientFactory {
         return JellyfinClientFactory(jellyfin)
+    }
+
+    @Provides
+    @Singleton
+    fun provideJellyfinCache(@ApplicationContext context: Context): JellyfinCache {
+        return JellyfinCache(context)
     }
 }
 
