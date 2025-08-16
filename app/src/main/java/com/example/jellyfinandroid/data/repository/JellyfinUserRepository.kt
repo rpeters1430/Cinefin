@@ -1,10 +1,10 @@
 package com.example.jellyfinandroid.data.repository
 
-import com.example.jellyfinandroid.data.repository.common.BaseJellyfinRepository
 import com.example.jellyfinandroid.data.repository.common.ApiResult
-import org.jellyfin.sdk.api.client.extensions.userLibraryApi
-import org.jellyfin.sdk.api.client.extensions.playStateApi
+import com.example.jellyfinandroid.data.repository.common.BaseJellyfinRepository
 import org.jellyfin.sdk.api.client.extensions.libraryApi
+import org.jellyfin.sdk.api.client.extensions.playStateApi
+import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import javax.inject.Inject
 import javax.inject.Singleton
 

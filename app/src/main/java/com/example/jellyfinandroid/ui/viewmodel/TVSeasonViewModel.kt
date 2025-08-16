@@ -2,9 +2,9 @@ package com.example.jellyfinandroid.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.data.repository.JellyfinMediaRepository
 import com.example.jellyfinandroid.data.repository.JellyfinRepository
+import com.example.jellyfinandroid.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

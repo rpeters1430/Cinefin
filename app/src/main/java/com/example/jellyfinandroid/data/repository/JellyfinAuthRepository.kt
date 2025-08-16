@@ -6,9 +6,9 @@ import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.data.model.QuickConnectResult
 import com.example.jellyfinandroid.data.model.QuickConnectState
-import com.example.jellyfinandroid.di.JellyfinClientFactory
 import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.data.repository.common.ErrorType
+import com.example.jellyfinandroid.di.JellyfinClientFactory
 import com.example.jellyfinandroid.utils.SecureLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
