@@ -6,18 +6,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,23 +23,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.tv.material3.Card as TvCard
-import androidx.tv.material3.CardDefaults as TvCardDefaults
-import androidx.tv.material3.CardGlow
-import androidx.tv.material3.MaterialTheme as TvMaterialTheme
-import androidx.tv.material3.Text as TvText
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.jellyfinandroid.ui.components.MediaCard
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
+import androidx.tv.material3.Card as TvCard
+import androidx.tv.material3.CardDefaults as TvCardDefaults
+import androidx.tv.material3.MaterialTheme as TvMaterialTheme
+import androidx.tv.material3.Text as TvText
 
 @Composable
 fun TvContentCarousel(
@@ -75,7 +65,7 @@ fun TvContentCarousel(
             horizontalArrangement = Arrangement.spacedBy(24.dp),
             modifier = Modifier
                 .focusRequester(focusRequester)
-                .focusable()
+                .focusable(),
         ) {
             items(items, key = { it.id?.toString() ?: "" }) { item ->
                 TvContentCard(
@@ -126,7 +116,7 @@ fun TvContentCard(
                 }
             },
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TvCard(
             onClick = { onItemSelect() },
@@ -137,9 +127,9 @@ fun TvContentCard(
             glow = TvCardDefaults.glow(
                 focusedGlow = androidx.tv.material3.Glow(
                     elevationColor = if (isFocused) TvMaterialTheme.colorScheme.primary else TvMaterialTheme.colorScheme.surface,
-                    elevation = if (isFocused) 16.dp else 0.dp
-                )
-            )
+                    elevation = if (isFocused) 16.dp else 0.dp,
+                ),
+            ),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 val imageUrl = if (item.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE) {
@@ -147,7 +137,7 @@ fun TvContentCard(
                 } else {
                     getImageUrl(item)
                 }
-                
+
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(imageUrl)
@@ -159,7 +149,7 @@ fun TvContentCard(
                 )
             }
         }
-        
+
         // Title below the card
         TvText(
             text = item.name ?: "Unknown",
@@ -168,7 +158,7 @@ fun TvContentCard(
             overflow = TextOverflow.Ellipsis,
             color = TvMaterialTheme.colorScheme.onSurface,
         )
-        
+
         // Subtitle
         item.productionYear?.let { year ->
             TvText(

@@ -146,7 +146,7 @@ fun EnhancedContentCarousel(
     modifier: Modifier = Modifier,
 ) {
     if (items.isEmpty()) return
-    
+
     Column(modifier = modifier) {
         Text(
             text = title,
@@ -203,7 +203,7 @@ private fun CarouselContentCard(
                 "Series" -> getSeriesImageUrl(item) ?: getBackdropUrl(item) ?: getImageUrl(item)
                 else -> getBackdropUrl(item) ?: getImageUrl(item)
             }
-            
+
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(imageUrl ?: "")
@@ -215,7 +215,7 @@ private fun CarouselContentCard(
                     .clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop,
             )
-            
+
             // Rating badge
             item.communityRating?.let { rating ->
                 Surface(
@@ -234,7 +234,7 @@ private fun CarouselContentCard(
                     )
                 }
             }
-            
+
             // Content overlay with title and additional info
             Column(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -248,7 +248,7 @@ private fun CarouselContentCard(
                     color = Color.White,
                     maxLines = 2,
                 )
-                
+
                 // Additional info based on content type
                 when (item.type?.toString()) {
                     "Episode" -> {

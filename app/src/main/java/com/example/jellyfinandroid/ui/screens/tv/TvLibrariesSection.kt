@@ -21,10 +21,9 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
-import androidx.tv.material3.CardGlow
+import org.jellyfin.sdk.model.api.BaseItemDto
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
-import org.jellyfin.sdk.model.api.BaseItemDto
 
 @Composable
 fun TvLibrariesSection(
@@ -47,12 +46,12 @@ fun TvLibrariesSection(
         horizontalArrangement = Arrangement.spacedBy(24.dp),
         modifier = modifier
             .focusRequester(focusRequester)
-            .focusable()
+            .focusable(),
     ) {
         items(libraries, key = { it.id?.toString() ?: "" }) { library ->
             TvLibraryCard(
                 library = library,
-                onLibrarySelect = { id -> onLibrarySelect(id) }
+                onLibrarySelect = { id -> onLibrarySelect(id) },
             )
         }
     }
@@ -81,16 +80,16 @@ fun TvLibraryCard(
         glow = CardDefaults.glow(
             focusedGlow = androidx.tv.material3.Glow(
                 elevationColor = if (isFocused) TvMaterialTheme.colorScheme.primary else TvMaterialTheme.colorScheme.surface,
-                elevation = if (isFocused) 16.dp else 0.dp
-            )
+                elevation = if (isFocused) 16.dp else 0.dp,
+            ),
         ),
-        onClick = { 
-            library.id?.let { onLibrarySelect(it.toString()) } 
-        }
+        onClick = {
+            library.id?.let { onLibrarySelect(it.toString()) }
+        },
     ) {
         androidx.compose.foundation.layout.Box(
             modifier = Modifier.fillMaxWidth(),
-            contentAlignment = androidx.compose.ui.Alignment.Center
+            contentAlignment = androidx.compose.ui.Alignment.Center,
         ) {
             TvText(
                 text = library.name ?: "Library",

@@ -9,20 +9,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.tv.material3.MaterialTheme as TvMaterialTheme
-import androidx.tv.material3.Text as TvText
 import com.example.jellyfinandroid.ui.components.tv.TvContentCarousel
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
+import androidx.tv.material3.MaterialTheme as TvMaterialTheme
+import androidx.tv.material3.Text as TvText
 
 @Composable
 fun TvHomeScreen(
@@ -33,11 +31,11 @@ fun TvHomeScreen(
 ) {
     val appState by viewModel.appState.collectAsState()
     val focusManager = LocalFocusManager.current
-    
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(TvMaterialTheme.colorScheme.surface)
+            .background(TvMaterialTheme.colorScheme.surface),
     ) {
         Column(
             modifier = Modifier
@@ -50,9 +48,9 @@ fun TvHomeScreen(
             TvHomeHeader(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 56.dp, vertical = 24.dp)
+                    .padding(horizontal = 56.dp, vertical = 24.dp),
             )
-            
+
             // Recently added movies
             val recentMovies = appState.recentlyAddedByTypes["MOVIE"]?.take(10) ?: emptyList()
             if (recentMovies.isNotEmpty()) {
@@ -60,12 +58,12 @@ fun TvHomeScreen(
                     items = recentMovies,
                     title = "Recently Added Movies",
                     onItemFocus = { /* Handle focus if needed */ },
-                    onItemSelect = { item -> 
-                        item.id?.let { onItemSelect(it.toString()) } 
-                    }
+                    onItemSelect = { item ->
+                        item.id?.let { onItemSelect(it.toString()) }
+                    },
                 )
             }
-            
+
             // TV Shows
             val recentTvShows = appState.recentlyAddedByTypes["SERIES"]?.take(10) ?: emptyList()
             if (recentTvShows.isNotEmpty()) {
@@ -73,18 +71,18 @@ fun TvHomeScreen(
                     items = recentTvShows,
                     title = "Recently Added TV Shows",
                     onItemFocus = { /* Handle focus if needed */ },
-                    onItemSelect = { item -> 
-                        item.id?.let { onItemSelect(it.toString()) } 
-                    }
+                    onItemSelect = { item ->
+                        item.id?.let { onItemSelect(it.toString()) }
+                    },
                 )
             }
-            
+
             // Libraries
             if (appState.libraries.isNotEmpty()) {
                 TvLibrariesSection(
                     libraries = appState.libraries,
                     onLibrarySelect = onLibrarySelect,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
@@ -96,18 +94,18 @@ fun TvHomeHeader(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TvText(
             text = "Welcome to Jellyfin",
             style = TvMaterialTheme.typography.headlineMedium,
-            color = TvMaterialTheme.colorScheme.onSurface
+            color = TvMaterialTheme.colorScheme.onSurface,
         )
-        
+
         TvText(
             text = "Browse your media collection",
             style = TvMaterialTheme.typography.bodyLarge,
-            color = TvMaterialTheme.colorScheme.onSurfaceVariant
+            color = TvMaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

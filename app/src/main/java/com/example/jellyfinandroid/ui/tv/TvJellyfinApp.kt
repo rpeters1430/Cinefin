@@ -20,11 +20,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
-import androidx.tv.material3.MaterialTheme as TvMaterialTheme
-import androidx.tv.material3.Text as TvText
 import com.example.jellyfinandroid.ui.screens.tv.TvHomeScreen
 import com.example.jellyfinandroid.ui.theme.JellyfinAndroidTheme
 import com.example.jellyfinandroid.ui.viewmodel.ServerConnectionViewModel
+import androidx.tv.material3.MaterialTheme as TvMaterialTheme
+import androidx.tv.material3.Text as TvText
 
 @Composable
 fun TvJellyfinApp(onLogout: () -> Unit = {}) {
@@ -45,13 +45,13 @@ fun TvJellyfinApp(onLogout: () -> Unit = {}) {
             // For TV, we'll simplify the navigation and use a more direct approach
             if (connectionState.isConnected) {
                 TvHomeScreen(
-                    onItemSelect = { itemId -> 
+                    onItemSelect = { itemId ->
                         // Handle item selection
                     },
-                    onLibrarySelect = { libraryId -> 
+                    onLibrarySelect = { libraryId ->
                         // Handle library selection
                     },
-                    modifier = Modifier.padding(innerPadding)
+                    modifier = Modifier.padding(innerPadding),
                 )
             } else {
                 TvServerConnectionScreen(
@@ -81,7 +81,7 @@ fun TvServerConnectionScreen(
     var username by remember { mutableStateOf(savedUsername ?: "") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
-    
+
     // Update local state when saved values change
     LaunchedEffect(savedServerUrl, savedUsername) {
         serverUrl = savedServerUrl ?: ""
@@ -92,7 +92,7 @@ fun TvServerConnectionScreen(
         modifier = modifier
             .fillMaxSize()
             .padding(48.dp),
-        contentAlignment = androidx.compose.ui.Alignment.Center
+        contentAlignment = androidx.compose.ui.Alignment.Center,
     ) {
         androidx.tv.material3.Card(
             onClick = { /* No-op, card is not clickable */ },
@@ -101,14 +101,14 @@ fun TvServerConnectionScreen(
                 .padding(24.dp),
             colors = androidx.tv.material3.CardDefaults.colors(
                 containerColor = TvMaterialTheme.colorScheme.surface,
-            )
+            ),
         ) {
             androidx.compose.foundation.layout.Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(32.dp),
                 horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(24.dp)
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(24.dp),
             ) {
                 // Header
                 TvText(
@@ -116,7 +116,7 @@ fun TvServerConnectionScreen(
                     style = TvMaterialTheme.typography.displayMedium,
                     color = TvMaterialTheme.colorScheme.primary,
                 )
-                
+
                 TvText(
                     text = "Connect to your Jellyfin server",
                     style = TvMaterialTheme.typography.bodyLarge,
@@ -150,13 +150,14 @@ fun TvServerConnectionScreen(
                     value = password,
                     onValueChange = { password = it },
                     label = { androidx.compose.material3.Text("Password") },
-                    visualTransformation = if (showPassword) 
-                        androidx.compose.ui.text.input.VisualTransformation.None 
-                    else 
-                        androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    visualTransformation = if (showPassword) {
+                        androidx.compose.ui.text.input.VisualTransformation.None
+                    } else {
+                        androidx.compose.ui.text.input.PasswordVisualTransformation()
+                    },
                     trailingIcon = {
                         androidx.compose.material3.IconButton(
-                            onClick = { showPassword = !showPassword }
+                            onClick = { showPassword = !showPassword },
                         ) {
                             androidx.compose.material3.Icon(
                                 imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,

@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
         imageLoaderInitializer.initialize()
 
         val deviceType = DeviceTypeUtils.getDeviceType(this)
-        
+
         setContent {
             when (deviceType) {
                 DeviceTypeUtils.DeviceType.TV -> TvJellyfinApp()

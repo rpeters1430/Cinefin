@@ -3,8 +3,8 @@ package com.example.jellyfinandroid.data.repository
 import android.content.Context
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.data.SecureCredentialManager
-import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.data.cache.JellyfinCache
+import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.di.JellyfinClientFactory
 import io.mockk.every
 import io.mockk.mockk
