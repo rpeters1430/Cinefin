@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -48,9 +50,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.ui.components.ShimmerBox
@@ -257,6 +261,86 @@ private fun TVSeasonContent(
                 }
             }
         }
+
+        // Cast and Crew Section (if available)
+        state.seriesDetails?.people?.takeIf { it.isNotEmpty() }?.let { people ->
+            // Separate cast and crew
+            val cast = people.filter { it.type?.name == "Actor" }
+            val crew = people.filter {
+                val typeName = it.type?.name
+                typeName in listOf("Director", "Producer", "Writer", "Executive Producer")
+            }
+
+            // Cast section
+            if (cast.isNotEmpty()) {
+                item {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(
+                            text = "Cast",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp),
+                        ) {
+                            items(cast.take(10)) { person ->
+                                PersonCard(
+                                    person = person,
+                                    getImageUrl = { id, tag ->
+                                        // Create a temporary BaseItemDto for the person to use with existing getImageUrl
+                                        val personItem = BaseItemDto(
+                                            id = id,
+                                            type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
+                                            imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) },
+                                        )
+                                        getImageUrl(personItem)
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Crew section (Directors, Producers, etc.)
+            if (crew.isNotEmpty()) {
+                item {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(
+                            text = "Crew",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp),
+                        ) {
+                            items(crew.take(8)) { person ->
+                                PersonCard(
+                                    person = person,
+                                    getImageUrl = { id, tag ->
+                                        // Create a temporary BaseItemDto for the person to use with existing getImageUrl
+                                        val personItem = BaseItemDto(
+                                            id = id,
+                                            type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
+                                            imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) },
+                                        )
+                                        getImageUrl(personItem)
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -309,15 +393,16 @@ private fun SeriesDetailsHeader(
                     .clip(RoundedCornerShape(16.dp)),
             )
 
-            // Gradient Overlay
+            // Enhanced Gradient Overlay for better text readability
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.7f),
+                                Color.Black.copy(alpha = 0.3f),
+                                Color.Black.copy(alpha = 0.6f),
+                                Color.Black.copy(alpha = 0.9f),
                             ),
                             startY = 0f,
                             endY = Float.POSITIVE_INFINITY,
@@ -535,6 +620,82 @@ fun ErrorContent(
             ),
         ) {
             Text("Retry")
+        }
+    }
+}
+
+@Composable
+private fun PersonCard(
+    person: org.jellyfin.sdk.model.api.BaseItemPerson,
+    getImageUrl: (java.util.UUID, String?) -> String?,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.width(100.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            // Actor photo or initials
+            if (person.primaryImageTag != null) {
+                AsyncImage(
+                    model = getImageUrl(person.id, person.primaryImageTag),
+                    contentDescription = person.name,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                            CircleShape,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = person.name?.take(2)?.uppercase() ?: "??",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+
+            Text(
+                text = person.name ?: "Unknown",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
+
+            // Show role for actors or type for crew
+            val displayText = when {
+                !person.role.isNullOrBlank() -> person.role
+                person.type?.name?.isNotBlank() == true -> person.type.name
+                else -> null
+            }
+
+            displayText?.let { text ->
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }

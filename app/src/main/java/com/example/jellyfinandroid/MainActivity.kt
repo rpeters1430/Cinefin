@@ -5,6 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.example.jellyfinandroid.ui.JellyfinApp
+import com.example.jellyfinandroid.ui.tv.TvJellyfinApp
+import com.example.jellyfinandroid.utils.DeviceTypeUtils
 import com.example.jellyfinandroid.utils.ImageLoaderInitializer
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -32,8 +34,13 @@ class MainActivity : ComponentActivity() {
         ).imageLoaderInitializer()
         imageLoaderInitializer.initialize()
 
+        val deviceType = DeviceTypeUtils.getDeviceType(this)
+        
         setContent {
-            JellyfinApp()
+            when (deviceType) {
+                DeviceTypeUtils.DeviceType.TV -> TvJellyfinApp()
+                else -> JellyfinApp()
+            }
         }
     }
 }
