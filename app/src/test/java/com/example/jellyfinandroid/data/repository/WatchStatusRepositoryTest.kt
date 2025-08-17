@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.data.SecureCredentialManager
 import com.example.jellyfinandroid.data.repository.common.ApiResult
+import com.example.jellyfinandroid.data.cache.JellyfinCache
 import com.example.jellyfinandroid.di.JellyfinClientFactory
 import io.mockk.every
 import io.mockk.mockk
@@ -18,6 +19,7 @@ class WatchStatusRepositoryTest {
     private val clientFactory = mockk<JellyfinClientFactory>(relaxed = true)
     private val credentialManager = mockk<SecureCredentialManager>(relaxed = true)
     private val context = mockk<Context>(relaxed = true)
+    private val cache = mockk<JellyfinCache>(relaxed = true)
 
     private fun createRepositoryWithServer(): JellyfinUserRepository {
         val server = JellyfinServer(
@@ -33,7 +35,7 @@ class WatchStatusRepositoryTest {
             every { currentServer } returns MutableStateFlow(server)
             every { isConnected } returns MutableStateFlow(true)
         }
-        return JellyfinUserRepository(authRepository, clientFactory)
+        return JellyfinUserRepository(authRepository, clientFactory, cache)
     }
 
     @Test
@@ -44,7 +46,7 @@ class WatchStatusRepositoryTest {
             every { getCurrentServer() } returns null
             every { isUserAuthenticated() } returns false
         }
-        val repository = JellyfinUserRepository(authRepository, clientFactory)
+        val repository = JellyfinUserRepository(authRepository, clientFactory, cache)
         assertNotNull(repository)
     }
 

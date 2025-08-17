@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.ui.components.MediaCard
+import com.example.jellyfinandroid.ui.screens.home.EnhancedContentCarousel
 import com.example.jellyfinandroid.ui.screens.home.HomeCarousel
 import com.example.jellyfinandroid.ui.screens.home.LibraryGridSection
 import com.example.jellyfinandroid.ui.screens.home.RecentlyAddedSection
@@ -158,12 +159,14 @@ fun HomeContent(
     ) {
         item { HomeHeader(currentServer) }
 
-        val recentMovies = appState.recentlyAddedByTypes["Movies"]?.take(8) ?: emptyList()
+        val recentMovies = appState.recentlyAddedByTypes["MOVIE"]?.take(8) ?: emptyList()
         if (recentMovies.isNotEmpty()) {
             item {
-                HomeCarousel(
-                    movies = recentMovies,
+                EnhancedContentCarousel(
+                    items = recentMovies,
+                    getImageUrl = getImageUrl,
                     getBackdropUrl = getBackdropUrl,
+                    getSeriesImageUrl = getSeriesImageUrl,
                     onItemClick = onItemClick,
                     title = "Recently Added Movies",
                 )
@@ -182,23 +185,23 @@ fun HomeContent(
         }
 
         val libraryTypes = listOf(
-            "Movies" to "Movies",
-            "TV Shows" to "TV Shows",
-            "TV Episodes" to "Episodes",
-            "Music" to "Music",
-            "Home Videos" to "Videos",
+            "Movies" to "MOVIE",
+            "TV Shows" to "SERIES",
+            "TV Episodes" to "EPISODE",
+            "Music" to "AUDIO",
+            "Home Videos" to "VIDEO",
         )
         libraryTypes.forEach { (displayName, typeKey) ->
             val recentItems = appState.recentlyAddedByTypes[typeKey]?.take(15) ?: emptyList()
             if (recentItems.isNotEmpty()) {
                 item {
-                    RecentlyAddedSection(
-                        title = "Recently Added $displayName",
+                    EnhancedContentCarousel(
                         items = recentItems,
                         getImageUrl = getImageUrl,
+                        getBackdropUrl = getBackdropUrl,
                         getSeriesImageUrl = getSeriesImageUrl,
                         onItemClick = onItemClick,
-                        onRefresh = onRefresh,
+                        title = "Recently Added $displayName",
                     )
                 }
             }

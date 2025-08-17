@@ -32,6 +32,7 @@ slf4jAndroid = "1.7.36"
 mockk = "1.14.5"
 kotlinxCoroutinesTest = "1.10.2"
 androidxArchCoreTest = "2.2.0"
+androidxTvMaterial = "1.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -90,10 +91,11 @@ dagger-hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", ve
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigation" }
 slf4j-android = { module = "org.slf4j:slf4j-android", version.ref = "slf4jAndroid" }
 
-# Testing Libraries
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 androidx-arch-core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "androidxArchCoreTest" }
+# Android TV Compose
+androidx-tv-material = { group = "androidx.tv", name = "tv-material", version.ref = "androidxTvMaterial" }
 
 
 [plugins]

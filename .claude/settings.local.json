@@ -4,7 +4,8 @@
       "Bash(./gradlew:*)",
       "Bash(sed:*)",
       "Bash(.gradlew assembleDebug)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "WebSearch"
     ],
     "defaultMode": "acceptEdits"
   }
