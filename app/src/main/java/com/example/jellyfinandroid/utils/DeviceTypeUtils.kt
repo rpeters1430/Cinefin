@@ -8,7 +8,7 @@ object DeviceTypeUtils {
     enum class DeviceType {
         MOBILE,
         TV,
-        TABLET
+        TABLET,
     }
 
     fun getDeviceType(context: Context): DeviceType {
@@ -21,15 +21,16 @@ object DeviceTypeUtils {
         // Check if touchscreen is available (TVs typically don't have touchscreens)
         val hasTouchscreen = context.packageManager.hasSystemFeature("android.hardware.touchscreen")
         val hasLeanback = context.packageManager.hasSystemFeature("android.software.leanback")
-        
+
         if (!hasTouchscreen && hasLeanback) {
             return DeviceType.TV
         }
 
         // Check screen size for tablet detection
         val screenSize = context.resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK
-        if (screenSize == Configuration.SCREENLAYOUT_SIZE_LARGE || 
-            screenSize == Configuration.SCREENLAYOUT_SIZE_XLARGE) {
+        if (screenSize == Configuration.SCREENLAYOUT_SIZE_LARGE ||
+            screenSize == Configuration.SCREENLAYOUT_SIZE_XLARGE
+        ) {
             return DeviceType.TABLET
         }
 

@@ -120,7 +120,7 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
 
     // Android TV Compose
-    implementation(libs.androidx.tv.material) 
+    implementation(libs.androidx.tv.material)
 
     // Testing
     testImplementation(libs.junit)

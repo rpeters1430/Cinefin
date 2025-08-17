@@ -37,9 +37,7 @@ import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.ui.components.MediaCard
 import com.example.jellyfinandroid.ui.screens.home.EnhancedContentCarousel
-import com.example.jellyfinandroid.ui.screens.home.HomeCarousel
 import com.example.jellyfinandroid.ui.screens.home.LibraryGridSection
-import com.example.jellyfinandroid.ui.screens.home.RecentlyAddedSection
 import com.example.jellyfinandroid.ui.viewmodel.MainAppState
 import com.example.jellyfinandroid.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
