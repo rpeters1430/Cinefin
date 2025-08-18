@@ -48,7 +48,7 @@ class JellyfinMediaRepository @Inject constructor(
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
         val parent = parentId?.let { parseUuid(it, "parent") }
-        
+
         val itemKinds = itemTypes?.split(",")?.mapNotNull { type ->
             when (type.trim()) {
                 "Movie" -> BaseItemKind.MOVIE
@@ -58,7 +58,7 @@ class JellyfinMediaRepository @Inject constructor(
                 else -> null
             }
         }
-        
+
         val response = client.itemsApi.getItems(
             userId = userUuid,
             parentId = parent,
@@ -78,7 +78,7 @@ class JellyfinMediaRepository @Inject constructor(
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
-        
+
         val response = client.itemsApi.getItems(
             userId = userUuid,
             recursive = true,
@@ -108,7 +108,7 @@ class JellyfinMediaRepository @Inject constructor(
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
-        
+
         val response = client.itemsApi.getItems(
             userId = userUuid,
             recursive = true,
@@ -141,7 +141,7 @@ class JellyfinMediaRepository @Inject constructor(
         val userUuid = parseUuid(server.userId ?: "", "user")
         val seriesUuid = parseUuid(seriesId, "series")
         val client = getClient(server.url, server.accessToken)
-        
+
         val response = client.itemsApi.getItems(
             userId = userUuid,
             parentId = seriesUuid,
@@ -151,7 +151,7 @@ class JellyfinMediaRepository @Inject constructor(
             fields = listOf(
                 org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
                 org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
-                org.jellyfin.sdk.model.api.ItemFields.OVERVIEW
+                org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
             ),
         )
         response.content.items ?: emptyList()
@@ -166,7 +166,7 @@ class JellyfinMediaRepository @Inject constructor(
         val userUuid = parseUuid(server.userId ?: "", "user")
         val seasonUuid = parseUuid(seasonId, "season")
         val client = getClient(server.url, server.accessToken)
-        
+
         val response = client.itemsApi.getItems(
             userId = userUuid,
             parentId = seasonUuid,
@@ -176,7 +176,7 @@ class JellyfinMediaRepository @Inject constructor(
             fields = listOf(
                 org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
                 org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
-                org.jellyfin.sdk.model.api.ItemFields.OVERVIEW
+                org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
             ),
         )
         response.content.items ?: emptyList()
@@ -187,7 +187,7 @@ class JellyfinMediaRepository @Inject constructor(
         val userUuid = parseUuid(server.userId ?: "", "user")
         val itemUuid = parseUuid(itemId, itemTypeName)
         val client = getClient(server.url, server.accessToken)
-        
+
         val response = client.itemsApi.getItems(
             userId = userUuid,
             ids = listOf(itemUuid),
@@ -204,8 +204,8 @@ class JellyfinMediaRepository @Inject constructor(
                 org.jellyfin.sdk.model.api.ItemFields.CHAPTERS,
             ),
         )
-        
-        return response.content.items?.firstOrNull() 
+
+        return response.content.items?.firstOrNull()
             ?: throw IllegalStateException("$itemTypeName not found")
     }
 }

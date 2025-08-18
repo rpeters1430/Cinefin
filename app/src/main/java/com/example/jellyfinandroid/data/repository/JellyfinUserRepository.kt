@@ -66,7 +66,7 @@ class JellyfinUserRepository @Inject constructor(
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
-        
+
         val response = client.itemsApi.getItems(
             userId = userUuid,
             recursive = true,
@@ -87,13 +87,13 @@ class JellyfinUserRepository @Inject constructor(
     suspend fun deleteItemAsAdmin(itemId: String): ApiResult<Boolean> = execute {
         val server = validateServer()
         val itemUuid = parseUuid(itemId, "item")
-        
+
         // Check admin permissions first
         val hasPermission = hasAdminDeletePermission(server)
         if (!hasPermission) {
             throw SecurityException("Administrator permissions required")
         }
-        
+
         val client = getClient(server.url, server.accessToken)
         client.libraryApi.deleteItem(itemId = itemUuid)
         true
