@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 import javax.inject.Inject
 
 data class MainAppState(
@@ -150,39 +151,35 @@ class MainAppViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Loading recently added items by types")
             }
-            when (val result = mediaRepository.getRecentlyAddedByTypes(limit = 20)) {
-                is ApiResult.Success -> {
-                    val totalItems = result.data.values.sumOf { it.size }
-                    if (BuildConfig.DEBUG) {
-                        Log.d("MainAppViewModel", "loadInitialData: Loaded $totalItems items across ${result.data.size} types: ${result.data.keys.joinToString(", ")}")
-                    }
-                    result.data.forEach { (type, items) ->
+            // Load recently added content by type using the new MediaRepository
+            val types = listOf(
+                BaseItemKind.MOVIE to "Movies",
+                BaseItemKind.SERIES to "TV Shows", 
+                BaseItemKind.AUDIO to "Music"
+            )
+            
+            val recentlyAddedByTypes = mutableMapOf<String, List<BaseItemDto>>()
+            for ((itemType, displayName) in types) {
+                when (val result = mediaRepository.getRecentlyAddedByType(itemType, limit = 20)) {
+                    is ApiResult.Success -> {
+                        recentlyAddedByTypes[displayName] = result.data
                         if (BuildConfig.DEBUG) {
-                            Log.d("MainAppViewModel", "loadInitialData: $type: ${items.size} items")
+                            Log.d("MainAppViewModel", "loadInitialData: $displayName: ${result.data.size} items")
                         }
                     }
-                    _appState.value = _appState.value.copy(recentlyAddedByTypes = result.data)
-                }
-                is ApiResult.Error -> {
-                    // ✅ FIX: Don't show error messages for cancelled operations
-                    if (result.errorType == ErrorType.OPERATION_CANCELLED) {
+                    is ApiResult.Error -> {
                         if (BuildConfig.DEBUG) {
-                            Log.d("MainAppViewModel", "loadInitialData: Recent items by type loading was cancelled (navigation)")
-                        }
-                    } else {
-                        Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items by type: ${result.message}")
-                        // Don't override other errors, just log this
-                        if (_appState.value.errorMessage == null) {
-                            _appState.value = _appState.value.copy(
-                                errorMessage = "Failed to load recent items by type: ${result.message}",
-                            )
+                            Log.e("MainAppViewModel", "loadInitialData: Failed to load recent $displayName: ${result.message}")
                         }
                     }
-                }
-                is ApiResult.Loading -> {
-                    // Already handled
+                    is ApiResult.Loading -> {
+                        // Ignore loading state for this
+                    }
                 }
             }
+            
+            // Update state with the collected data
+            _appState.value = _appState.value.copy(recentlyAddedByTypes = recentlyAddedByTypes)
 
             // ✅ FIX: Only load essential data initially, load library-specific data on-demand
             // This prevents the double loading issue when navigating to library type screens

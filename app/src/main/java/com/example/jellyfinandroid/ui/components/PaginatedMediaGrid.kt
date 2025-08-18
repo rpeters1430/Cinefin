@@ -33,6 +33,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 @Composable
 fun PaginatedMediaGrid(
     viewModel: LibraryBrowserViewModel,
+    getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
     columns: GridCells = GridCells.Adaptive(minSize = 150.dp),
@@ -59,6 +60,7 @@ fun PaginatedMediaGrid(
 
     PaginatedMediaGridContent(
         lazyPagingItems = lazyPagingItems,
+        getImageUrl = getImageUrl,
         onItemClick = onItemClick,
         modifier = modifier,
         columns = columns,
@@ -69,6 +71,7 @@ fun PaginatedMediaGrid(
 @Composable
 private fun PaginatedMediaGridContent(
     lazyPagingItems: LazyPagingItems<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
     columns: GridCells = GridCells.Adaptive(minSize = 150.dp),
@@ -89,6 +92,7 @@ private fun PaginatedMediaGridContent(
             if (item != null) {
                 MediaCard(
                     item = item,
+                    getImageUrl = getImageUrl,
                     onClick = { onItemClick(item) },
                     modifier = Modifier.fillMaxWidth(),
                 )
