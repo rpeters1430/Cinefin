@@ -53,7 +53,7 @@ class LibraryBrowserViewModel @Inject constructor(
      */
     fun getLibraryItemsPagingFlow(): Flow<PagingData<BaseItemDto>>? {
         val state = _browserState.value
-        
+
         if (state.currentLibraryId == null) {
             return null
         }
@@ -64,20 +64,20 @@ class LibraryBrowserViewModel @Inject constructor(
                 pageSize = PAGE_SIZE,
                 prefetchDistance = PREFETCH_DISTANCE,
                 maxSize = MAX_SIZE,
-                enablePlaceholders = false
+                enablePlaceholders = false,
             ),
             pagingSourceFactory = {
                 LibraryItemPagingSource(
                     mediaRepository = mediaRepository,
                     parentId = state.currentLibraryId,
                     itemTypes = state.selectedContentTypes.takeIf { it.isNotEmpty() }?.toList(),
-                    pageSize = PAGE_SIZE
+                    pageSize = PAGE_SIZE,
                 )
-            }
+            },
         ).flow.cachedIn(viewModelScope)
 
         currentPager = pager
-        
+
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Created paging flow for library: ${state.currentLibraryName}")
         }
@@ -96,7 +96,7 @@ class LibraryBrowserViewModel @Inject constructor(
         _browserState.value = _browserState.value.copy(
             currentLibraryId = libraryId,
             currentLibraryName = libraryName,
-            errorMessage = null
+            errorMessage = null,
         )
     }
 
@@ -110,7 +110,7 @@ class LibraryBrowserViewModel @Inject constructor(
 
         _browserState.value = _browserState.value.copy(
             selectedContentTypes = contentTypes,
-            errorMessage = null
+            errorMessage = null,
         )
     }
 
@@ -232,7 +232,7 @@ class LibraryBrowserViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         currentPager = null
-        
+
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "LibraryBrowserViewModel cleared")
         }
