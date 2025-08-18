@@ -15,9 +15,9 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import kotlin.test.assertFalse
 
 class JellyfinUserRepositoryTest {
 
@@ -138,7 +138,7 @@ class JellyfinUserRepositoryTest {
                 coEvery { name } returns "Favorite Series"
                 coEvery { type } returns BaseItemKind.SERIES
                 coEvery { userData?.isFavorite } returns true
-            }
+            },
         )
 
         coEvery {
@@ -254,7 +254,7 @@ class JellyfinUserRepositoryTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Cached Favorite"
                 coEvery { type } returns BaseItemKind.MOVIE
-            }
+            },
         )
 
         // First call

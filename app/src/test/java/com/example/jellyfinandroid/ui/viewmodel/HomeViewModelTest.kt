@@ -17,13 +17,13 @@ import kotlinx.coroutines.test.setMain
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.junit.After
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class HomeViewModelTest {
@@ -76,7 +76,7 @@ class HomeViewModelTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "TV Shows"
                 coEvery { type } returns BaseItemKind.COLLECTION_FOLDER
-            }
+            },
         )
 
         coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Success(mockLibraries)
@@ -122,7 +122,7 @@ class HomeViewModelTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Recent Episode"
                 coEvery { type } returns BaseItemKind.EPISODE
-            }
+            },
         )
 
         coEvery { mediaRepository.getRecentlyAdded(50) } returns ApiResult.Success(mockRecentItems)
@@ -147,7 +147,7 @@ class HomeViewModelTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Recent Movie"
                 coEvery { type } returns BaseItemKind.MOVIE
-            }
+            },
         )
 
         val mockSeries = listOf(
@@ -155,7 +155,7 @@ class HomeViewModelTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Recent Series"
                 coEvery { type } returns BaseItemKind.SERIES
-            }
+            },
         )
 
         coEvery { mediaRepository.getRecentlyAddedByType(BaseItemKind.MOVIE, 20) } returns ApiResult.Success(mockMovies)
@@ -168,17 +168,17 @@ class HomeViewModelTest {
         // Then
         val state = viewModel.homeState.first()
         assertFalse(state.isLoading)
-        
+
         val moviesList = state.recentlyAddedByTypes["Movies"]
         val seriesList = state.recentlyAddedByTypes["TV Shows"]
         val musicList = state.recentlyAddedByTypes["Music"]
-        
+
         assertEquals(1, moviesList?.size)
         assertEquals("Recent Movie", moviesList?.get(0)?.name)
-        
+
         assertEquals(1, seriesList?.size)
         assertEquals("Recent Series", seriesList?.get(0)?.name)
-        
+
         assertTrue(musicList?.isEmpty() == true)
         assertNull(state.errorMessage)
     }
@@ -191,7 +191,7 @@ class HomeViewModelTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Movies"
                 coEvery { type } returns BaseItemKind.COLLECTION_FOLDER
-            }
+            },
         )
 
         val mockRecentItems = listOf(
@@ -199,7 +199,7 @@ class HomeViewModelTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Recent Movie"
                 coEvery { type } returns BaseItemKind.MOVIE
-            }
+            },
         )
 
         coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Success(mockLibraries)
@@ -269,7 +269,7 @@ class HomeViewModelTest {
         // Given
         val libraryError = "Library error"
         val recentError = "Recent items error"
-        
+
         coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error(libraryError, "LIBRARY_ERROR")
         coEvery { mediaRepository.getRecentlyAdded(50) } returns ApiResult.Error(recentError, "RECENT_ERROR")
 

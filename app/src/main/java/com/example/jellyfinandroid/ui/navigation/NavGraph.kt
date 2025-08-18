@@ -121,7 +121,6 @@ fun JellyfinNavGraph(
             )
         }
 
-
         // Main app flow
         composable(Screen.Home.route) {
             val viewModel: MainAppViewModel = hiltViewModel()

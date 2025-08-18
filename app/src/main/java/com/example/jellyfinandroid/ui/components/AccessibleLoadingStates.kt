@@ -35,7 +35,7 @@ fun AccessibleLoadingState(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .semantics { 
+            .semantics {
                 liveRegion = LiveRegionMode.Polite
             },
         contentAlignment = Alignment.Center,
@@ -50,7 +50,7 @@ fun AccessibleLoadingState(
                     .progressSemantics(message),
                 color = MaterialTheme.colorScheme.primary,
             )
-            
+
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
@@ -115,7 +115,7 @@ fun ProgressLoadingState(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .semantics { 
+            .semantics {
                 liveRegion = LiveRegionMode.Polite
             },
         contentAlignment = Alignment.Center,
@@ -129,10 +129,10 @@ fun ProgressLoadingState(
                 progress = { progress },
                 modifier = Modifier.progressSemantics(
                     description = message,
-                    progress = progress
+                    progress = progress,
                 ),
             )
-            
+
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
@@ -140,7 +140,7 @@ fun ProgressLoadingState(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 16.dp),
             )
-            
+
             Text(
                 text = "${(progress * 100).toInt()}%",
                 style = MaterialTheme.typography.bodySmall,
@@ -175,7 +175,7 @@ fun RefreshLoadingState(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .semantics { 
+            .semantics {
                 liveRegion = LiveRegionMode.Polite
             },
         contentAlignment = Alignment.TopCenter,
@@ -190,7 +190,7 @@ fun RefreshLoadingState(
                     .progressSemantics("Refreshing $contentType"),
                 strokeWidth = 3.dp,
             )
-            
+
             Text(
                 text = "Refreshing $contentType",
                 style = MaterialTheme.typography.bodySmall,

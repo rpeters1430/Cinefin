@@ -41,13 +41,13 @@ fun AccessibleNavigationBar(
     NavigationBar(
         modifier = modifier.semantics {
             contentDescription = "Main navigation"
-        }
+        },
     ) {
         items.forEach { item ->
             AccessibleNavigationBarItem(
                 item = item,
                 isSelected = currentRoute == item.route,
-                onClick = { onNavigate(item.route) }
+                onClick = { onNavigate(item.route) },
             )
         }
     }
@@ -63,27 +63,27 @@ private fun RowScope.AccessibleNavigationBarItem(
     onClick: () -> Unit,
 ) {
     val description = item.contentDescription ?: item.label
-    
+
     NavigationBarItem(
         icon = {
             androidx.compose.material3.Icon(
                 imageVector = item.icon,
                 contentDescription = null, // We handle this at the item level
-                modifier = Modifier.clearAndSetSemantics { }
+                modifier = Modifier.clearAndSetSemantics { },
             )
         },
         label = {
             Text(
                 text = item.label,
-                modifier = Modifier.clearAndSetSemantics { }
+                modifier = Modifier.clearAndSetSemantics { },
             )
         },
         selected = isSelected,
         onClick = onClick,
         modifier = Modifier.navigationSemantics(
             label = description,
-            isSelected = isSelected
-        )
+            isSelected = isSelected,
+        ),
     )
 }
 
@@ -100,13 +100,13 @@ fun AccessibleNavigationRail(
     NavigationRail(
         modifier = modifier.semantics {
             contentDescription = "Navigation rail"
-        }
+        },
     ) {
         items.forEach { item ->
             AccessibleNavigationRailItem(
                 item = item,
                 isSelected = currentRoute == item.route,
-                onClick = { onNavigate(item.route) }
+                onClick = { onNavigate(item.route) },
             )
         }
     }
@@ -122,26 +122,26 @@ private fun AccessibleNavigationRailItem(
     onClick: () -> Unit,
 ) {
     val description = item.contentDescription ?: item.label
-    
+
     NavigationRailItem(
         icon = {
             androidx.compose.material3.Icon(
                 imageVector = item.icon,
                 contentDescription = null, // We handle this at the item level
-                modifier = Modifier.clearAndSetSemantics { }
+                modifier = Modifier.clearAndSetSemantics { },
             )
         },
         label = {
             Text(
                 text = item.label,
-                modifier = Modifier.clearAndSetSemantics { }
+                modifier = Modifier.clearAndSetSemantics { },
             )
         },
         selected = isSelected,
         onClick = onClick,
         modifier = Modifier.navigationSemantics(
             label = description,
-            isSelected = isSelected
-        )
+            isSelected = isSelected,
+        ),
     )
 }

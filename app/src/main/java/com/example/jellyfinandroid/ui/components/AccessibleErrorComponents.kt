@@ -45,7 +45,7 @@ fun AccessibleErrorState(
         modifier = modifier
             .fillMaxSize()
             .padding(32.dp)
-            .semantics { 
+            .semantics {
                 liveRegion = LiveRegionMode.Polite
             },
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -59,9 +59,9 @@ fun AccessibleErrorState(
                 .imageSemantics(null, isDecorative = true),
             tint = MaterialTheme.colorScheme.error,
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text(
             text = title,
             style = MaterialTheme.typography.headlineMedium,
@@ -69,23 +69,23 @@ fun AccessibleErrorState(
             textAlign = TextAlign.Center,
             modifier = Modifier.headingSemantics(level = 1),
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         Text(
             text = message,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
-        
+
         if (onRetry != null) {
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Button(
                 onClick = onRetry,
                 modifier = Modifier.buttonSemantics(
-                    description = "$retryText. Double tap to reload content"
+                    description = "$retryText. Double tap to reload content",
                 ),
             ) {
                 Icon(
@@ -135,7 +135,7 @@ fun ServerErrorState(
     } else {
         "Unable to connect to the Jellyfin server. Please check your server configuration."
     }
-    
+
     AccessibleErrorState(
         title = "Server Unavailable",
         message = message,
@@ -187,23 +187,23 @@ fun AccessibleEmptyState(
             textAlign = TextAlign.Center,
             modifier = Modifier.headingSemantics(level = 1),
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         Text(
             text = message,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        
+
         if (actionText != null && onAction != null) {
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Button(
                 onClick = onAction,
                 modifier = Modifier.buttonSemantics(
-                    description = "$actionText. Double tap to $actionText"
+                    description = "$actionText. Double tap to $actionText",
                 ),
             ) {
                 Text(text = actionText)

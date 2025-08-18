@@ -10,11 +10,11 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import org.junit.Before
-import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
 
 class LibraryItemPagingSourceTest {
 
@@ -30,7 +30,7 @@ class LibraryItemPagingSourceTest {
             mediaRepository = mediaRepository,
             parentId = "library-123",
             itemTypes = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
-            pageSize = 20
+            pageSize = 20,
         )
     }
 
@@ -47,7 +47,7 @@ class LibraryItemPagingSourceTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Movie 2"
                 coEvery { type } returns BaseItemKind.MOVIE
-            }
+            },
         )
 
         coEvery {
@@ -55,7 +55,7 @@ class LibraryItemPagingSourceTest {
                 parentId = "library-123",
                 itemTypes = "Movie,Series",
                 startIndex = 0,
-                limit = 20
+                limit = 20,
             )
         } returns ApiResult.Success(mockItems)
 
@@ -64,8 +64,8 @@ class LibraryItemPagingSourceTest {
             PagingSource.LoadParams.Refresh(
                 key = null,
                 loadSize = 20,
-                placeholdersEnabled = false
-            )
+                placeholdersEnabled = false,
+            ),
         )
 
         // Then
@@ -87,7 +87,7 @@ class LibraryItemPagingSourceTest {
                 parentId = "library-123",
                 itemTypes = "Movie,Series",
                 startIndex = 0,
-                limit = 20
+                limit = 20,
             )
         } returns ApiResult.Error(errorMessage, "NETWORK_ERROR")
 
@@ -96,8 +96,8 @@ class LibraryItemPagingSourceTest {
             PagingSource.LoadParams.Refresh(
                 key = null,
                 loadSize = 20,
-                placeholdersEnabled = false
-            )
+                placeholdersEnabled = false,
+            ),
         )
 
         // Then
@@ -122,7 +122,7 @@ class LibraryItemPagingSourceTest {
                 parentId = "library-123",
                 itemTypes = "Movie,Series",
                 startIndex = 20, // Second page
-                limit = 20
+                limit = 20,
             )
         } returns ApiResult.Success(mockItems)
 
@@ -131,8 +131,8 @@ class LibraryItemPagingSourceTest {
             PagingSource.LoadParams.Append(
                 key = 1,
                 loadSize = 20,
-                placeholdersEnabled = false
-            )
+                placeholdersEnabled = false,
+            ),
         )
 
         // Then
@@ -151,7 +151,7 @@ class LibraryItemPagingSourceTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Last Movie"
                 coEvery { type } returns BaseItemKind.MOVIE
-            }
+            },
         )
 
         coEvery {
@@ -159,7 +159,7 @@ class LibraryItemPagingSourceTest {
                 parentId = "library-123",
                 itemTypes = "Movie,Series",
                 startIndex = 0,
-                limit = 20
+                limit = 20,
             )
         } returns ApiResult.Success(mockItems)
 
@@ -168,8 +168,8 @@ class LibraryItemPagingSourceTest {
             PagingSource.LoadParams.Refresh(
                 key = null,
                 loadSize = 20,
-                placeholdersEnabled = false
-            )
+                placeholdersEnabled = false,
+            ),
         )
 
         // Then
@@ -188,7 +188,7 @@ class LibraryItemPagingSourceTest {
                 parentId = "library-123",
                 itemTypes = "Movie,Series",
                 startIndex = 0,
-                limit = 20
+                limit = 20,
             )
         } returns ApiResult.Success(emptyList())
 
@@ -197,8 +197,8 @@ class LibraryItemPagingSourceTest {
             PagingSource.LoadParams.Refresh(
                 key = null,
                 loadSize = 20,
-                placeholdersEnabled = false
-            )
+                placeholdersEnabled = false,
+            ),
         )
 
         // Then
@@ -217,7 +217,7 @@ class LibraryItemPagingSourceTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Movie 1"
                 coEvery { type } returns BaseItemKind.MOVIE
-            }
+            },
         )
 
         coEvery {
@@ -225,7 +225,7 @@ class LibraryItemPagingSourceTest {
                 parentId = "library-123",
                 itemTypes = "Movie,Series",
                 startIndex = 0, // First page before current
-                limit = 20
+                limit = 20,
             )
         } returns ApiResult.Success(mockItems)
 
@@ -234,8 +234,8 @@ class LibraryItemPagingSourceTest {
             PagingSource.LoadParams.Prepend(
                 key = 0,
                 loadSize = 20,
-                placeholdersEnabled = false
-            )
+                placeholdersEnabled = false,
+            ),
         )
 
         // Then
@@ -285,7 +285,7 @@ class LibraryItemPagingSourceTest {
             mediaRepository = mediaRepository,
             parentId = "library-123",
             itemTypes = listOf(BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM, BaseItemKind.MUSIC_ARTIST),
-            pageSize = 20
+            pageSize = 20,
         )
 
         val mockItems = emptyList<BaseItemDto>()
@@ -294,7 +294,7 @@ class LibraryItemPagingSourceTest {
                 parentId = "library-123",
                 itemTypes = "Audio,MusicAlbum,MusicArtist",
                 startIndex = 0,
-                limit = 20
+                limit = 20,
             )
         } returns ApiResult.Success(mockItems)
 
@@ -303,8 +303,8 @@ class LibraryItemPagingSourceTest {
             PagingSource.LoadParams.Refresh(
                 key = null,
                 loadSize = 20,
-                placeholdersEnabled = false
-            )
+                placeholdersEnabled = false,
+            ),
         )
 
         // Then - verify the correct itemTypes string was passed
@@ -324,8 +324,8 @@ class LibraryItemPagingSourceTest {
             PagingSource.LoadParams.Refresh(
                 key = null,
                 loadSize = 20,
-                placeholdersEnabled = false
-            )
+                placeholdersEnabled = false,
+            ),
         )
 
         // Then

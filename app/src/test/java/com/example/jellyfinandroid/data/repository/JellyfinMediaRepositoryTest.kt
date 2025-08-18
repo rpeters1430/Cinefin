@@ -5,7 +5,6 @@ import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.di.JellyfinClientFactory
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -15,10 +14,10 @@ import org.jellyfin.sdk.api.operations.ItemsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemDtoQueryResult
 import org.jellyfin.sdk.model.api.BaseItemKind
-import org.junit.Before
-import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
 
 class JellyfinMediaRepositoryTest {
 
@@ -61,7 +60,7 @@ class JellyfinMediaRepositoryTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "TV Shows"
                 coEvery { type } returns BaseItemKind.COLLECTION_FOLDER
-            }
+            },
         )
 
         val mockResult = mockk<BaseItemDtoQueryResult> {
@@ -69,7 +68,7 @@ class JellyfinMediaRepositoryTest {
         }
 
         // Mock repository methods via executeWithCache
-        coEvery { 
+        coEvery {
             repository.getUserLibraries()
         } returns ApiResult.Success(mockLibraries)
 
@@ -94,7 +93,7 @@ class JellyfinMediaRepositoryTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Test Movie"
                 coEvery { type } returns BaseItemKind.MOVIE
-            }
+            },
         )
 
         coEvery {
@@ -102,7 +101,7 @@ class JellyfinMediaRepositoryTest {
                 parentId = parentId,
                 itemTypes = itemTypes,
                 startIndex = 0,
-                limit = 100
+                limit = 100,
             )
         } returns ApiResult.Success(mockMovies)
 
@@ -111,7 +110,7 @@ class JellyfinMediaRepositoryTest {
             parentId = parentId,
             itemTypes = itemTypes,
             startIndex = 0,
-            limit = 100
+            limit = 100,
         )
 
         // Then
@@ -134,7 +133,7 @@ class JellyfinMediaRepositoryTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Recent Episode"
                 coEvery { type } returns BaseItemKind.EPISODE
-            }
+            },
         )
 
         coEvery {
@@ -165,7 +164,7 @@ class JellyfinMediaRepositoryTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Recent Movie 2"
                 coEvery { type } returns BaseItemKind.MOVIE
-            }
+            },
         )
 
         coEvery {
@@ -222,7 +221,7 @@ class JellyfinMediaRepositoryTest {
                 coEvery { name } returns "Season 2"
                 coEvery { type } returns BaseItemKind.SEASON
                 coEvery { indexNumber } returns 2
-            }
+            },
         )
 
         coEvery {
@@ -255,7 +254,7 @@ class JellyfinMediaRepositoryTest {
                 coEvery { name } returns "Episode 2"
                 coEvery { type } returns BaseItemKind.EPISODE
                 coEvery { indexNumber } returns 2
-            }
+            },
         )
 
         coEvery {
@@ -276,7 +275,7 @@ class JellyfinMediaRepositoryTest {
     fun `repository handles API errors gracefully`() = runTest {
         // Given
         val errorMessage = "Network error occurred"
-        
+
         coEvery {
             repository.getUserLibraries()
         } returns ApiResult.Error(errorMessage, "NETWORK_ERROR")
