@@ -154,10 +154,10 @@ class MainAppViewModel @Inject constructor(
             // Load recently added content by type using the new MediaRepository
             val types = listOf(
                 BaseItemKind.MOVIE to "Movies",
-                BaseItemKind.SERIES to "TV Shows", 
-                BaseItemKind.AUDIO to "Music"
+                BaseItemKind.SERIES to "TV Shows",
+                BaseItemKind.AUDIO to "Music",
             )
-            
+
             val recentlyAddedByTypes = mutableMapOf<String, List<BaseItemDto>>()
             for ((itemType, displayName) in types) {
                 when (val result = mediaRepository.getRecentlyAddedByType(itemType, limit = 20)) {
@@ -177,7 +177,7 @@ class MainAppViewModel @Inject constructor(
                     }
                 }
             }
-            
+
             // Update state with the collected data
             _appState.value = _appState.value.copy(recentlyAddedByTypes = recentlyAddedByTypes)
 

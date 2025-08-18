@@ -2,20 +2,16 @@ package com.example.jellyfinandroid.ui.image
 
 import android.content.Context
 import android.graphics.drawable.ColorDrawable
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -43,12 +39,12 @@ import java.io.File
  * Image size presets for different use cases.
  */
 enum class ImageSize(val width: Int, val height: Int) {
-    THUMBNAIL(150, 225),        // Small thumbnails
-    CARD(300, 450),            // Media cards
-    BANNER(1920, 1080),        // Banners and backdrops
-    POSTER(600, 900),          // Large posters
-    AVATAR(100, 100),          // User avatars
-    ICON(48, 48)               // Small icons
+    THUMBNAIL(150, 225), // Small thumbnails
+    CARD(300, 450), // Media cards
+    BANNER(1920, 1080), // Banners and backdrops
+    POSTER(600, 900), // Large posters
+    AVATAR(100, 100), // User avatars
+    ICON(48, 48), // Small icons
 }
 
 /**
@@ -58,18 +54,18 @@ enum class ImageQuality(val quality: Int, val maxSize: ImageSize) {
     LOW(70, ImageSize.THUMBNAIL),
     MEDIUM(85, ImageSize.CARD),
     HIGH(95, ImageSize.POSTER),
-    ORIGINAL(100, ImageSize.BANNER)
+    ORIGINAL(100, ImageSize.BANNER),
 }
 
 /**
  * Configuration for the optimized image loader.
  */
 data class ImageLoaderConfig(
-    val memoryPercent: Double = 0.25,  // 25% of available memory
-    val diskCacheSizeMB: Long = 100,   // 100MB disk cache
+    val memoryPercent: Double = 0.25, // 25% of available memory
+    val diskCacheSizeMB: Long = 100, // 100MB disk cache
     val networkCachePolicy: CachePolicy = CachePolicy.ENABLED,
     val diskCachePolicy: CachePolicy = CachePolicy.ENABLED,
-    val memoryCachePolicy: CachePolicy = CachePolicy.ENABLED
+    val memoryCachePolicy: CachePolicy = CachePolicy.ENABLED,
 )
 
 /**
@@ -106,11 +102,11 @@ fun OptimizedImage(
     cornerRadius: Dp = 0.dp,
     placeholder: @Composable (() -> Unit)? = null,
     error: @Composable (() -> Unit)? = null,
-    loading: @Composable (() -> Unit)? = null
+    loading: @Composable (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val backgroundColor = MaterialTheme.colorScheme.surfaceVariant.toArgb()
-    
+
     val imageRequest = remember(imageUrl, size, quality) {
         ImageRequest.Builder(context)
             .data(imageUrl)
@@ -127,7 +123,7 @@ fun OptimizedImage(
             }
             .build()
     }
-    
+
     SubcomposeAsyncImage(
         model = imageRequest,
         contentDescription = contentDescription,
@@ -136,22 +132,22 @@ fun OptimizedImage(
         loading = {
             loading?.invoke() ?: Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 ShimmerBox(
                     modifier = Modifier.fillMaxSize(),
-                    shape = RoundedCornerShape(cornerRadius)
+                    shape = RoundedCornerShape(cornerRadius),
                 )
             }
         },
         error = {
             error?.invoke() ?: Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 placeholder?.invoke()
             }
-        }
+        },
     )
 }
 
@@ -165,7 +161,7 @@ fun MediaImage(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
     cornerRadius: Dp = 8.dp,
-    showPlaceholder: Boolean = true
+    showPlaceholder: Boolean = true,
 ) {
     val imageSize = when (item.type) {
         BaseItemKind.MOVIE, BaseItemKind.SERIES -> ImageSize.POSTER
@@ -174,9 +170,9 @@ fun MediaImage(
         BaseItemKind.MUSIC_ARTIST -> ImageSize.CARD
         else -> ImageSize.CARD
     }
-    
+
     val quality = ImageQuality.MEDIUM
-    
+
     OptimizedImage(
         imageUrl = getImageUrl(item),
         contentDescription = "${item.name} ${item.type?.name?.lowercase()} image",
@@ -189,10 +185,12 @@ fun MediaImage(
             {
                 MediaPlaceholder(
                     itemType = item.type,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
-        } else null
+        } else {
+            null
+        },
     )
 }
 
@@ -204,7 +202,7 @@ fun AvatarImage(
     imageUrl: String?,
     userName: String,
     modifier: Modifier = Modifier,
-    size: Dp = 40.dp
+    size: Dp = 40.dp,
 ) {
     OptimizedImage(
         imageUrl = imageUrl,
@@ -217,9 +215,9 @@ fun AvatarImage(
         placeholder = {
             UserAvatarPlaceholder(
                 userName = userName,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
-        }
+        },
     )
 }
 
@@ -232,7 +230,7 @@ fun BackdropImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
-    overlay: @Composable (() -> Unit)? = null
+    overlay: @Composable (() -> Unit)? = null,
 ) {
     Box(modifier = modifier) {
         OptimizedImage(
@@ -245,11 +243,11 @@ fun BackdropImage(
             loading = {
                 ShimmerBox(
                     modifier = Modifier.fillMaxSize(),
-                    shape = RoundedCornerShape(0.dp)
+                    shape = RoundedCornerShape(0.dp),
                 )
-            }
+            },
         )
-        
+
         overlay?.invoke()
     }
 }
@@ -260,19 +258,19 @@ fun BackdropImage(
 @Composable
 private fun MediaPlaceholder(
     itemType: BaseItemKind?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val backgroundColor = MaterialTheme.colorScheme.surfaceVariant
     val iconColor = MaterialTheme.colorScheme.onSurfaceVariant
-    
+
     Box(
         modifier = modifier,
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         // You could add type-specific icons here
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             // Simple colored background for now
             // In a real implementation, you'd show type-specific icons
@@ -286,22 +284,22 @@ private fun MediaPlaceholder(
 @Composable
 private fun UserAvatarPlaceholder(
     userName: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val initials = userName.split(" ")
         .mapNotNull { it.firstOrNull()?.uppercaseChar() }
         .take(2)
         .joinToString("")
         .ifEmpty { "U" }
-    
+
     Box(
         modifier = modifier,
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         androidx.compose.material3.Text(
             text = initials,
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onPrimary
+            color = MaterialTheme.colorScheme.onPrimary,
         )
     }
 }
@@ -320,14 +318,14 @@ fun rememberImagePreloader(): ImagePreloader {
  */
 class ImagePreloader(private val context: Context) {
     private val imageLoader = createOptimizedImageLoader(context)
-    
+
     /**
      * Preload a list of image URLs in the background.
      */
     suspend fun preloadImages(
         imageUrls: List<String>,
         size: ImageSize = ImageSize.CARD,
-        priority: Priority = Priority.LOW
+        priority: Priority = Priority.LOW,
     ) {
         imageUrls.forEach { url ->
             val request = ImageRequest.Builder(context)
@@ -336,11 +334,11 @@ class ImagePreloader(private val context: Context) {
                 .memoryCachePolicy(CachePolicy.ENABLED)
                 .diskCachePolicy(CachePolicy.ENABLED)
                 .build()
-                
+
             imageLoader.enqueue(request)
         }
     }
-    
+
     enum class Priority {
         LOW, NORMAL, HIGH
     }

@@ -39,7 +39,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.ui.ShimmerBox
-import com.example.jellyfinandroid.ui.accessibility.getAccessibilityDescription
 import com.example.jellyfinandroid.ui.accessibility.mediaCardSemantics
 import com.example.jellyfinandroid.ui.theme.RatingBronze
 import com.example.jellyfinandroid.ui.theme.RatingGold

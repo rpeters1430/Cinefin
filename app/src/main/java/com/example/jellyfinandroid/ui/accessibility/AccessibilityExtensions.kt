@@ -1,6 +1,5 @@
 package com.example.jellyfinandroid.ui.accessibility
 
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -35,29 +34,29 @@ fun BaseItemDto.getAccessibilityDescription(): String {
         BaseItemKind.COLLECTION_FOLDER -> "Library"
         else -> "Media item"
     }
-    
+
     val name = this.name ?: "Unknown title"
     val description = StringBuilder("$itemType: $name")
-    
+
     // Add production year if available
     this.productionYear?.let { year ->
         description.append(", from $year")
     }
-    
+
     // Add runtime for movies/episodes
     if (this.type == BaseItemKind.MOVIE || this.type == BaseItemKind.EPISODE) {
         this.runTimeTicks?.let { ticks ->
             val minutes = (ticks / 600000000L).toInt()
             val hours = minutes / 60
             val remainingMinutes = minutes % 60
-            
+
             when {
                 hours > 0 -> description.append(", $hours hours and $remainingMinutes minutes")
                 minutes > 0 -> description.append(", $minutes minutes")
             }
         }
     }
-    
+
     // Add episode information
     if (this.type == BaseItemKind.EPISODE) {
         val seasonNumber = this.parentIndexNumber
@@ -66,12 +65,12 @@ fun BaseItemDto.getAccessibilityDescription(): String {
             description.append(", Season $seasonNumber Episode $episodeNumber")
         }
     }
-    
+
     // Add community rating if available
     this.communityRating?.let { rating ->
         description.append(", rated ${String.format("%.1f", rating)} stars")
     }
-    
+
     // Add played/unplayed status
     val isWatched = this.userData?.played == true
     if (isWatched) {
@@ -79,7 +78,7 @@ fun BaseItemDto.getAccessibilityDescription(): String {
     } else {
         description.append(", unwatched")
     }
-    
+
     return description.toString()
 }
 
@@ -120,11 +119,11 @@ fun getLoadingAccessibilityDescription(contentType: String): String {
  */
 fun Modifier.mediaCardSemantics(
     item: BaseItemDto,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ): Modifier = this.semantics(mergeDescendants = true) {
     contentDescription = item.getAccessibilityDescription()
     role = Role.Button
-    
+
     // Add action descriptions
     val itemType = when (item.type) {
         BaseItemKind.MOVIE, BaseItemKind.EPISODE, BaseItemKind.VIDEO -> "Play"
@@ -148,7 +147,7 @@ fun Modifier.headingSemantics(level: Int = 1): Modifier = this.semantics {
  */
 fun Modifier.buttonSemantics(
     description: String,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ): Modifier = this.semantics {
     contentDescription = description
     role = Role.Button
@@ -163,7 +162,7 @@ fun Modifier.buttonSemantics(
 fun Modifier.toggleSemantics(
     description: String,
     isToggled: Boolean,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ): Modifier = this.semantics {
     contentDescription = description
     role = Role.Switch
@@ -178,7 +177,7 @@ fun Modifier.toggleSemantics(
  */
 fun Modifier.searchSemantics(
     placeholder: String,
-    currentQuery: String
+    currentQuery: String,
 ): Modifier = this.semantics {
     contentDescription = if (currentQuery.isEmpty()) {
         "Search field, $placeholder"
@@ -193,9 +192,9 @@ fun Modifier.searchSemantics(
  */
 fun Modifier.progressSemantics(
     description: String,
-    progress: Float? = null
+    progress: Float? = null,
 ): Modifier = this.semantics {
-    contentDescription = progress?.let { 
+    contentDescription = progress?.let {
         "$description, ${(it * 100).toInt()}% complete"
     } ?: description
     // Note: ProgressBar role is not available in current Compose version
@@ -207,7 +206,7 @@ fun Modifier.progressSemantics(
  */
 fun Modifier.imageSemantics(
     contentDescription: String?,
-    isDecorative: Boolean = false
+    isDecorative: Boolean = false,
 ): Modifier = if (isDecorative) {
     this.clearAndSetSemantics { }
 } else {
@@ -221,7 +220,7 @@ fun Modifier.imageSemantics(
  */
 fun Modifier.navigationSemantics(
     label: String,
-    isSelected: Boolean = false
+    isSelected: Boolean = false,
 ): Modifier = this.semantics {
     contentDescription = label
     role = Role.Tab

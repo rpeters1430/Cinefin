@@ -24,58 +24,59 @@ enum class JellyfinErrorType(val code: String) {
     CONNECTION_TIMEOUT("NETWORK_002"),
     SSL_ERROR("NETWORK_003"),
     UNKNOWN_HOST("NETWORK_004"),
-    
+
     // Server errors
     SERVER_UNAVAILABLE("SERVER_001"),
     SERVER_ERROR("SERVER_002"),
     SERVER_TIMEOUT("SERVER_003"),
-    
+
     // Authentication errors
     UNAUTHORIZED("AUTH_001"),
     FORBIDDEN("AUTH_002"),
     SESSION_EXPIRED("AUTH_003"),
     INVALID_CREDENTIALS("AUTH_004"),
-    
+
     // Client errors
     BAD_REQUEST("CLIENT_001"),
     NOT_FOUND("CLIENT_002"),
     CONFLICT("CLIENT_003"),
-    
+
     // Application errors
     PARSING_ERROR("APP_001"),
     CACHE_ERROR("APP_002"),
     CONFIGURATION_ERROR("APP_003"),
     OPERATION_CANCELLED("APP_004"),
-    
+
     // Unknown errors
-    UNKNOWN("UNKNOWN_001");
-    
+    UNKNOWN("UNKNOWN_001"),
+    ;
+
     /**
      * Convert JellyfinErrorType to ErrorType for ApiResult compatibility
      */
     fun toErrorType(): com.example.jellyfinandroid.data.repository.common.ErrorType {
         return when (this) {
-            NETWORK_UNREACHABLE, CONNECTION_TIMEOUT, UNKNOWN_HOST, SSL_ERROR -> 
+            NETWORK_UNREACHABLE, CONNECTION_TIMEOUT, UNKNOWN_HOST, SSL_ERROR ->
                 com.example.jellyfinandroid.data.repository.common.ErrorType.NETWORK
-            
-            UNAUTHORIZED, SESSION_EXPIRED, INVALID_CREDENTIALS -> 
+
+            UNAUTHORIZED, SESSION_EXPIRED, INVALID_CREDENTIALS ->
                 com.example.jellyfinandroid.data.repository.common.ErrorType.UNAUTHORIZED
-            
-            FORBIDDEN -> 
+
+            FORBIDDEN ->
                 com.example.jellyfinandroid.data.repository.common.ErrorType.FORBIDDEN
-            
-            NOT_FOUND -> 
+
+            NOT_FOUND ->
                 com.example.jellyfinandroid.data.repository.common.ErrorType.NOT_FOUND
-            
-            SERVER_UNAVAILABLE, SERVER_ERROR, SERVER_TIMEOUT -> 
+
+            SERVER_UNAVAILABLE, SERVER_ERROR, SERVER_TIMEOUT ->
                 com.example.jellyfinandroid.data.repository.common.ErrorType.SERVER_ERROR
-            
-            CONNECTION_TIMEOUT, SERVER_TIMEOUT -> 
+
+            CONNECTION_TIMEOUT, SERVER_TIMEOUT ->
                 com.example.jellyfinandroid.data.repository.common.ErrorType.TIMEOUT
-            
-            OPERATION_CANCELLED -> 
+
+            OPERATION_CANCELLED ->
                 com.example.jellyfinandroid.data.repository.common.ErrorType.OPERATION_CANCELLED
-            
+
             BAD_REQUEST, CONFLICT, PARSING_ERROR, CACHE_ERROR, CONFIGURATION_ERROR, UNKNOWN ->
                 com.example.jellyfinandroid.data.repository.common.ErrorType.UNKNOWN
         }
@@ -91,7 +92,7 @@ data class JellyfinError(
     val userMessage: String,
     val cause: Throwable? = null,
     val timestamp: Long = System.currentTimeMillis(),
-    val context: Map<String, Any> = emptyMap()
+    val context: Map<String, Any> = emptyMap(),
 )
 
 /**
@@ -99,7 +100,7 @@ data class JellyfinError(
  */
 object ErrorHandler {
     private const val TAG = "ErrorHandler"
-    
+
     /**
      * Handle and classify exceptions into JellyfinError.
      */
@@ -111,75 +112,75 @@ object ErrorHandler {
                     message = "Operation was cancelled",
                     userMessage = "Operation cancelled",
                     cause = exception,
-                    context = context
+                    context = context,
                 )
             }
-            
+
             is UnknownHostException -> {
                 JellyfinError(
                     type = JellyfinErrorType.UNKNOWN_HOST,
                     message = "Unable to resolve host: ${exception.message}",
                     userMessage = "Unable to connect to server. Please check your network connection.",
                     cause = exception,
-                    context = context
+                    context = context,
                 )
             }
-            
+
             is ConnectException -> {
                 JellyfinError(
                     type = JellyfinErrorType.NETWORK_UNREACHABLE,
                     message = "Connection failed: ${exception.message}",
                     userMessage = "Unable to connect to server. Please check your network connection.",
                     cause = exception,
-                    context = context
+                    context = context,
                 )
             }
-            
+
             is SocketTimeoutException -> {
                 JellyfinError(
                     type = JellyfinErrorType.CONNECTION_TIMEOUT,
                     message = "Connection timed out: ${exception.message}",
                     userMessage = "Connection timed out. Please try again.",
                     cause = exception,
-                    context = context
+                    context = context,
                 )
             }
-            
+
             is SSLException -> {
                 JellyfinError(
                     type = JellyfinErrorType.SSL_ERROR,
                     message = "SSL error: ${exception.message}",
                     userMessage = "Secure connection failed. Please check your server configuration.",
                     cause = exception,
-                    context = context
+                    context = context,
                 )
             }
-            
+
             is IOException -> {
                 JellyfinError(
                     type = JellyfinErrorType.NETWORK_UNREACHABLE,
                     message = "Network I/O error: ${exception.message}",
                     userMessage = "Network error occurred. Please check your connection.",
                     cause = exception,
-                    context = context
+                    context = context,
                 )
             }
-            
+
             else -> {
                 JellyfinError(
                     type = JellyfinErrorType.UNKNOWN,
                     message = "Unexpected error: ${exception.message}",
                     userMessage = "An unexpected error occurred. Please try again.",
                     cause = exception,
-                    context = context
+                    context = context,
                 )
             }
         }
-        
+
         logError(error)
         return error
     }
-    
+
     /**
      * Handle HTTP errors from API responses.
      */
@@ -189,104 +190,109 @@ object ErrorHandler {
                 type = JellyfinErrorType.UNAUTHORIZED,
                 message = "Unauthorized access: $message",
                 userMessage = "Authentication failed. Please log in again.",
-                context = context
+                context = context,
             )
-            
+
             403 -> JellyfinError(
                 type = JellyfinErrorType.FORBIDDEN,
                 message = "Access forbidden: $message",
                 userMessage = "You don't have permission to access this content.",
-                context = context
+                context = context,
             )
-            
+
             404 -> JellyfinError(
                 type = JellyfinErrorType.NOT_FOUND,
                 message = "Resource not found: $message",
                 userMessage = "The requested content was not found.",
-                context = context
+                context = context,
             )
-            
+
             400 -> JellyfinError(
                 type = JellyfinErrorType.BAD_REQUEST,
                 message = "Bad request: $message",
                 userMessage = "Invalid request. Please try again.",
-                context = context
+                context = context,
             )
-            
+
             409 -> JellyfinError(
                 type = JellyfinErrorType.CONFLICT,
                 message = "Conflict: $message",
                 userMessage = "A conflict occurred. Please try again.",
-                context = context
+                context = context,
             )
-            
+
             in 500..599 -> JellyfinError(
                 type = JellyfinErrorType.SERVER_ERROR,
                 message = "Server error ($code): $message",
                 userMessage = "The server encountered an error. Please try again later.",
-                context = context
+                context = context,
             )
-            
+
             else -> JellyfinError(
                 type = JellyfinErrorType.UNKNOWN,
                 message = "HTTP error ($code): $message",
                 userMessage = "An error occurred. Please try again.",
-                context = context
+                context = context,
             )
         }
-        
+
         logError(error)
         return error
     }
-    
+
     /**
      * Convert JellyfinError to ApiResult.Error.
      */
     fun <T> toApiResult(error: JellyfinError): ApiResult.Error<T> {
         return ApiResult.Error(
             message = error.userMessage,
-            errorType = error.type.toErrorType()
+            errorType = error.type.toErrorType(),
         )
     }
-    
+
     /**
      * Log error information with appropriate log level.
      */
     private fun logError(error: JellyfinError) {
         val contextInfo = if (error.context.isNotEmpty()) {
             "Context: ${error.context}"
-        } else ""
-        
+        } else {
+            ""
+        }
+
         when (error.type) {
             JellyfinErrorType.OPERATION_CANCELLED -> {
                 if (BuildConfig.DEBUG) {
                     Log.d(TAG, "[${error.type.code}] ${error.message} $contextInfo")
                 }
             }
-            
+
             JellyfinErrorType.NETWORK_UNREACHABLE,
             JellyfinErrorType.CONNECTION_TIMEOUT,
-            JellyfinErrorType.UNKNOWN_HOST -> {
+            JellyfinErrorType.UNKNOWN_HOST,
+            -> {
                 Log.w(TAG, "[${error.type.code}] ${error.message} $contextInfo", error.cause)
             }
-            
+
             JellyfinErrorType.SSL_ERROR,
             JellyfinErrorType.UNAUTHORIZED,
-            JellyfinErrorType.FORBIDDEN -> {
+            JellyfinErrorType.FORBIDDEN,
+            -> {
                 Log.w(TAG, "[${error.type.code}] ${error.message} $contextInfo", error.cause)
             }
-            
+
             JellyfinErrorType.SERVER_ERROR,
-            JellyfinErrorType.UNKNOWN -> {
+            JellyfinErrorType.UNKNOWN,
+            -> {
                 Log.e(TAG, "[${error.type.code}] ${error.message} $contextInfo", error.cause)
             }
-            
+
             else -> {
                 Log.i(TAG, "[${error.type.code}] ${error.message} $contextInfo", error.cause)
             }
         }
     }
-    
+
     /**
      * Check if an error is recoverable (user can retry).
      */
@@ -296,20 +302,22 @@ object ErrorHandler {
             JellyfinErrorType.CONNECTION_TIMEOUT,
             JellyfinErrorType.SERVER_UNAVAILABLE,
             JellyfinErrorType.SERVER_TIMEOUT,
-            JellyfinErrorType.UNKNOWN_HOST -> true
-            
+            JellyfinErrorType.UNKNOWN_HOST,
+            -> true
+
             JellyfinErrorType.OPERATION_CANCELLED,
             JellyfinErrorType.UNAUTHORIZED,
             JellyfinErrorType.FORBIDDEN,
             JellyfinErrorType.NOT_FOUND,
             JellyfinErrorType.BAD_REQUEST,
             JellyfinErrorType.SSL_ERROR,
-            JellyfinErrorType.INVALID_CREDENTIALS -> false
-            
+            JellyfinErrorType.INVALID_CREDENTIALS,
+            -> false
+
             else -> false
         }
     }
-    
+
     /**
      * Get user-friendly title for error type.
      */
@@ -317,30 +325,35 @@ object ErrorHandler {
         return when (error.type) {
             JellyfinErrorType.NETWORK_UNREACHABLE,
             JellyfinErrorType.CONNECTION_TIMEOUT,
-            JellyfinErrorType.UNKNOWN_HOST -> "Connection Error"
-            
+            JellyfinErrorType.UNKNOWN_HOST,
+            -> "Connection Error"
+
             JellyfinErrorType.SSL_ERROR -> "Security Error"
-            
+
             JellyfinErrorType.SERVER_UNAVAILABLE,
             JellyfinErrorType.SERVER_ERROR,
-            JellyfinErrorType.SERVER_TIMEOUT -> "Server Error"
-            
+            JellyfinErrorType.SERVER_TIMEOUT,
+            -> "Server Error"
+
             JellyfinErrorType.UNAUTHORIZED,
             JellyfinErrorType.FORBIDDEN,
             JellyfinErrorType.SESSION_EXPIRED,
-            JellyfinErrorType.INVALID_CREDENTIALS -> "Authentication Error"
-            
+            JellyfinErrorType.INVALID_CREDENTIALS,
+            -> "Authentication Error"
+
             JellyfinErrorType.NOT_FOUND -> "Not Found"
-            
+
             JellyfinErrorType.BAD_REQUEST,
-            JellyfinErrorType.CONFLICT -> "Request Error"
-            
+            JellyfinErrorType.CONFLICT,
+            -> "Request Error"
+
             JellyfinErrorType.PARSING_ERROR,
             JellyfinErrorType.CACHE_ERROR,
-            JellyfinErrorType.CONFIGURATION_ERROR -> "Application Error"
-            
+            JellyfinErrorType.CONFIGURATION_ERROR,
+            -> "Application Error"
+
             JellyfinErrorType.OPERATION_CANCELLED -> "Cancelled"
-            
+
             JellyfinErrorType.UNKNOWN -> "Unknown Error"
         }
     }
