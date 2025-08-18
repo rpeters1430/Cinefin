@@ -54,7 +54,7 @@ class UserPreferencesViewModel @Inject constructor(
 
             _userState.value = _userState.value.copy(
                 isLoadingFavorites = true,
-                errorMessage = null
+                errorMessage = null,
             )
 
             when (val result = userRepository.getFavorites()) {
@@ -62,20 +62,20 @@ class UserPreferencesViewModel @Inject constructor(
                     if (BuildConfig.DEBUG) {
                         Log.d(TAG, "Loaded ${result.data.size} favorites")
                     }
-                    
+
                     _userState.value = _userState.value.copy(
                         favorites = result.data,
-                        isLoadingFavorites = false
+                        isLoadingFavorites = false,
                     )
                 }
                 is ApiResult.Error -> {
                     if (BuildConfig.DEBUG) {
                         Log.w(TAG, "Failed to load favorites: ${result.message}")
                     }
-                    
+
                     _userState.value = _userState.value.copy(
                         isLoadingFavorites = false,
-                        errorMessage = "Failed to load favorites: ${result.message}"
+                        errorMessage = "Failed to load favorites: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -96,7 +96,7 @@ class UserPreferencesViewModel @Inject constructor(
 
             _userState.value = _userState.value.copy(
                 isUpdatingFavorite = true,
-                errorMessage = null
+                errorMessage = null,
             )
 
             val isFavorite = item.userData?.isFavorite ?: false
@@ -111,7 +111,7 @@ class UserPreferencesViewModel @Inject constructor(
                     val updatedFavorites = if (result.data) {
                         // Item was added to favorites
                         _userState.value.favorites + item.copy(
-                            userData = item.userData?.copy(isFavorite = true)
+                            userData = item.userData?.copy(isFavorite = true),
                         )
                     } else {
                         // Item was removed from favorites
@@ -121,7 +121,7 @@ class UserPreferencesViewModel @Inject constructor(
                     _userState.value = _userState.value.copy(
                         favorites = updatedFavorites,
                         isUpdatingFavorite = false,
-                        successMessage = if (result.data) "Added to favorites" else "Removed from favorites"
+                        successMessage = if (result.data) "Added to favorites" else "Removed from favorites",
                     )
 
                     onResult(true, null)
@@ -133,7 +133,7 @@ class UserPreferencesViewModel @Inject constructor(
 
                     _userState.value = _userState.value.copy(
                         isUpdatingFavorite = false,
-                        errorMessage = "Failed to update favorite: ${result.message}"
+                        errorMessage = "Failed to update favorite: ${result.message}",
                     )
 
                     onResult(false, result.message)
@@ -156,7 +156,7 @@ class UserPreferencesViewModel @Inject constructor(
 
             _userState.value = _userState.value.copy(
                 isUpdatingWatchStatus = true,
-                errorMessage = null
+                errorMessage = null,
             )
 
             when (val result = userRepository.markAsWatched(item.id.toString())) {
@@ -167,7 +167,7 @@ class UserPreferencesViewModel @Inject constructor(
 
                     _userState.value = _userState.value.copy(
                         isUpdatingWatchStatus = false,
-                        successMessage = "Marked as watched"
+                        successMessage = "Marked as watched",
                     )
 
                     onResult(true, null)
@@ -179,7 +179,7 @@ class UserPreferencesViewModel @Inject constructor(
 
                     _userState.value = _userState.value.copy(
                         isUpdatingWatchStatus = false,
-                        errorMessage = "Failed to mark as watched: ${result.message}"
+                        errorMessage = "Failed to mark as watched: ${result.message}",
                     )
 
                     onResult(false, result.message)
@@ -202,7 +202,7 @@ class UserPreferencesViewModel @Inject constructor(
 
             _userState.value = _userState.value.copy(
                 isUpdatingWatchStatus = true,
-                errorMessage = null
+                errorMessage = null,
             )
 
             when (val result = userRepository.markAsUnwatched(item.id.toString())) {
@@ -213,7 +213,7 @@ class UserPreferencesViewModel @Inject constructor(
 
                     _userState.value = _userState.value.copy(
                         isUpdatingWatchStatus = false,
-                        successMessage = "Marked as unwatched"
+                        successMessage = "Marked as unwatched",
                     )
 
                     onResult(true, null)
@@ -225,7 +225,7 @@ class UserPreferencesViewModel @Inject constructor(
 
                     _userState.value = _userState.value.copy(
                         isUpdatingWatchStatus = false,
-                        errorMessage = "Failed to mark as unwatched: ${result.message}"
+                        errorMessage = "Failed to mark as unwatched: ${result.message}",
                     )
 
                     onResult(false, result.message)
@@ -254,10 +254,10 @@ class UserPreferencesViewModel @Inject constructor(
 
                     // Remove from favorites if it was there
                     val updatedFavorites = _userState.value.favorites.filter { it.id != item.id }
-                    
+
                     _userState.value = _userState.value.copy(
                         favorites = updatedFavorites,
-                        successMessage = "Item deleted successfully"
+                        successMessage = "Item deleted successfully",
                     )
 
                     onResult(true, null)
@@ -268,7 +268,7 @@ class UserPreferencesViewModel @Inject constructor(
                     }
 
                     _userState.value = _userState.value.copy(
-                        errorMessage = "Failed to delete item: ${result.message}"
+                        errorMessage = "Failed to delete item: ${result.message}",
                     )
 
                     onResult(false, result.message)
@@ -302,7 +302,7 @@ class UserPreferencesViewModel @Inject constructor(
     fun clearMessages() {
         _userState.value = _userState.value.copy(
             errorMessage = null,
-            successMessage = null
+            successMessage = null,
         )
     }
 

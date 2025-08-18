@@ -49,15 +49,17 @@ class LibraryItemPagingSource(
                 }
             }
 
-            when (val result = mediaRepository.getLibraryItems(
-                parentId = parentId,
-                itemTypes = itemTypesString,
-                startIndex = startIndex,
-                limit = params.loadSize
-            )) {
+            when (
+                val result = mediaRepository.getLibraryItems(
+                    parentId = parentId,
+                    itemTypes = itemTypesString,
+                    startIndex = startIndex,
+                    limit = params.loadSize,
+                )
+            ) {
                 is ApiResult.Success -> {
                     val items = result.data
-                    
+
                     if (BuildConfig.DEBUG) {
                         Log.d(TAG, "Loaded ${items.size} items for page $pageIndex")
                     }
@@ -65,7 +67,7 @@ class LibraryItemPagingSource(
                     LoadResult.Page(
                         data = items,
                         prevKey = if (pageIndex == STARTING_PAGE_INDEX) null else pageIndex - 1,
-                        nextKey = if (items.isEmpty() || items.size < params.loadSize) null else pageIndex + 1
+                        nextKey = if (items.isEmpty() || items.size < params.loadSize) null else pageIndex + 1,
                     )
                 }
                 is ApiResult.Error -> {

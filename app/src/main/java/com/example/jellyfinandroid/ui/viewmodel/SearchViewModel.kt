@@ -34,7 +34,7 @@ data class SearchState(
         BaseItemKind.MOVIE,
         BaseItemKind.SERIES,
         BaseItemKind.AUDIO,
-        BaseItemKind.BOOK
+        BaseItemKind.BOOK,
     ),
     val hasSearched: Boolean = false,
 )
@@ -83,10 +83,10 @@ class SearchViewModel @Inject constructor(
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Search query updated: $query")
         }
-        
+
         _searchState.value = _searchState.value.copy(
             searchQuery = query,
-            errorMessage = null
+            errorMessage = null,
         )
 
         // Clear results if query is empty
@@ -94,7 +94,7 @@ class SearchViewModel @Inject constructor(
             _searchState.value = _searchState.value.copy(
                 searchResults = emptyList(),
                 isSearching = false,
-                hasSearched = false
+                hasSearched = false,
             )
         }
     }
@@ -119,32 +119,32 @@ class SearchViewModel @Inject constructor(
             _searchState.value = _searchState.value.copy(
                 isSearching = true,
                 errorMessage = null,
-                hasSearched = true
+                hasSearched = true,
             )
 
             try {
                 val contentTypes = _searchState.value.selectedContentTypes.toList()
-                
+
                 when (val result = searchRepository.searchItems(query, contentTypes, SEARCH_LIMIT)) {
                     is ApiResult.Success -> {
                         if (BuildConfig.DEBUG) {
                             Log.d(TAG, "Search completed: ${result.data.size} results")
                         }
-                        
+
                         _searchState.value = _searchState.value.copy(
                             searchResults = result.data,
-                            isSearching = false
+                            isSearching = false,
                         )
                     }
                     is ApiResult.Error -> {
                         if (BuildConfig.DEBUG) {
                             Log.w(TAG, "Search failed: ${result.message}")
                         }
-                        
+
                         _searchState.value = _searchState.value.copy(
                             searchResults = emptyList(),
                             isSearching = false,
-                            errorMessage = result.message
+                            errorMessage = result.message,
                         )
                     }
                     is ApiResult.Loading -> {
@@ -155,11 +155,11 @@ class SearchViewModel @Inject constructor(
                 if (BuildConfig.DEBUG) {
                     Log.e(TAG, "Search error", e)
                 }
-                
+
                 _searchState.value = _searchState.value.copy(
                     searchResults = emptyList(),
                     isSearching = false,
-                    errorMessage = "Search failed: ${e.message}"
+                    errorMessage = "Search failed: ${e.message}",
                 )
             }
         }
@@ -170,15 +170,15 @@ class SearchViewModel @Inject constructor(
      */
     fun clearSearch() {
         searchJob?.cancel()
-        
+
         _searchState.value = _searchState.value.copy(
             searchQuery = "",
             searchResults = emptyList(),
             isSearching = false,
             errorMessage = null,
-            hasSearched = false
+            hasSearched = false,
         )
-        
+
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Search cleared")
         }
@@ -189,20 +189,20 @@ class SearchViewModel @Inject constructor(
      */
     fun toggleContentType(contentType: BaseItemKind) {
         val currentTypes = _searchState.value.selectedContentTypes.toMutableSet()
-        
+
         if (currentTypes.contains(contentType)) {
             currentTypes.remove(contentType)
         } else {
             currentTypes.add(contentType)
         }
-        
+
         _searchState.value = _searchState.value.copy(selectedContentTypes = currentTypes)
-        
+
         // Re-search if we have a query
         if (_searchState.value.searchQuery.isNotBlank()) {
             performSearch()
         }
-        
+
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Content type filter updated: ${currentTypes.map { it.name }}")
         }
@@ -214,19 +214,19 @@ class SearchViewModel @Inject constructor(
     fun searchMovies(query: String) {
         viewModelScope.launch {
             _searchState.value = _searchState.value.copy(isSearching = true)
-            
+
             when (val result = searchRepository.searchMovies(query)) {
                 is ApiResult.Success -> {
                     _searchState.value = _searchState.value.copy(
                         searchResults = result.data,
                         isSearching = false,
-                        hasSearched = true
+                        hasSearched = true,
                     )
                 }
                 is ApiResult.Error -> {
                     _searchState.value = _searchState.value.copy(
                         isSearching = false,
-                        errorMessage = result.message
+                        errorMessage = result.message,
                     )
                 }
                 is ApiResult.Loading -> {
@@ -242,19 +242,19 @@ class SearchViewModel @Inject constructor(
     fun searchTVShows(query: String) {
         viewModelScope.launch {
             _searchState.value = _searchState.value.copy(isSearching = true)
-            
+
             when (val result = searchRepository.searchTVShows(query)) {
                 is ApiResult.Success -> {
                     _searchState.value = _searchState.value.copy(
                         searchResults = result.data,
                         isSearching = false,
-                        hasSearched = true
+                        hasSearched = true,
                     )
                 }
                 is ApiResult.Error -> {
                     _searchState.value = _searchState.value.copy(
                         isSearching = false,
-                        errorMessage = result.message
+                        errorMessage = result.message,
                     )
                 }
                 is ApiResult.Loading -> {
@@ -277,7 +277,7 @@ class SearchViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         searchJob?.cancel()
-        
+
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "SearchViewModel cleared")
         }
