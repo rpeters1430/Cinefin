@@ -68,7 +68,7 @@ class HomeViewModel @Inject constructor(
                 }
                 _homeState.value = _homeState.value.copy(
                     isLoading = false,
-                    errorMessage = "Failed to load home screen data"
+                    errorMessage = "Failed to load home screen data",
                 )
             } finally {
                 _homeState.value = _homeState.value.copy(isLoading = false)
@@ -82,7 +82,7 @@ class HomeViewModel @Inject constructor(
     fun refreshHomeData() {
         viewModelScope.launch {
             _homeState.value = _homeState.value.copy(isRefreshing = true)
-            
+
             try {
                 // Force refresh by clearing cache first (would need cache invalidation)
                 loadLibraries()
@@ -110,7 +110,7 @@ class HomeViewModel @Inject constructor(
                     Log.w(TAG, "Failed to load libraries: ${result.message}")
                 }
                 _homeState.value = _homeState.value.copy(
-                    errorMessage = "Failed to load libraries: ${result.message}"
+                    errorMessage = "Failed to load libraries: ${result.message}",
                 )
             }
             is ApiResult.Loading -> {
@@ -188,7 +188,7 @@ class HomeViewModel @Inject constructor(
         }
 
         _homeState.value = _homeState.value.copy(recentlyAddedByTypes = results)
-        
+
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Loaded recently added by types: ${results.keys.joinToString()}")
         }

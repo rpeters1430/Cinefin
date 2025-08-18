@@ -36,7 +36,7 @@ class JellyfinSearchRepository @Inject constructor(
             val server = validateServer()
             val userUuid = parseUuid(server.userId ?: "", "user")
             val client = getClient(server.url, server.accessToken)
-            
+
             val response = client.itemsApi.getItems(
                 userId = userUuid,
                 searchTerm = query.trim(),
@@ -78,7 +78,7 @@ class JellyfinSearchRepository @Inject constructor(
         return searchItems(
             query,
             listOf(BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM, BaseItemKind.MUSIC_ARTIST),
-            limit
+            limit,
         )
     }
 

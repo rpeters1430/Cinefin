@@ -39,30 +39,30 @@ fun PaginatedMediaGrid(
     contentPadding: PaddingValues = PaddingValues(16.dp),
 ) {
     val pagingFlow = viewModel.getLibraryItemsPagingFlow()
-    
+
     if (pagingFlow == null) {
         // No library selected
         Box(
             modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = "Select a library to browse",
                 style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
         }
         return
     }
-    
+
     val lazyPagingItems = pagingFlow.collectAsLazyPagingItems()
-    
+
     PaginatedMediaGridContent(
         lazyPagingItems = lazyPagingItems,
         onItemClick = onItemClick,
         modifier = modifier,
         columns = columns,
-        contentPadding = contentPadding
+        contentPadding = contentPadding,
     )
 }
 
@@ -83,21 +83,21 @@ private fun PaginatedMediaGridContent(
     ) {
         items(
             count = lazyPagingItems.itemCount,
-            key = lazyPagingItems.itemKey { it.id.toString() }
+            key = lazyPagingItems.itemKey { it.id.toString() },
         ) { index ->
             val item = lazyPagingItems[index]
             if (item != null) {
                 MediaCard(
                     item = item,
                     onClick = { onItemClick(item) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             } else {
                 // Placeholder for loading items
                 MediaCardPlaceholder()
             }
         }
-        
+
         // Handle different load states
         when (val loadState = lazyPagingItems.loadState.append) {
             is LoadState.Loading -> {
@@ -109,7 +109,7 @@ private fun PaginatedMediaGridContent(
                 item {
                     ErrorItem(
                         error = loadState.error,
-                        onRetry = { lazyPagingItems.retry() }
+                        onRetry = { lazyPagingItems.retry() },
                     )
                 }
             }
@@ -117,7 +117,7 @@ private fun PaginatedMediaGridContent(
                 // No additional items to load or loading completed
             }
         }
-        
+
         // Handle refresh state
         when (val refreshState = lazyPagingItems.loadState.refresh) {
             is LoadState.Loading -> {
@@ -132,7 +132,7 @@ private fun PaginatedMediaGridContent(
                     item {
                         InitialErrorState(
                             error = refreshState.error,
-                            onRetry = { lazyPagingItems.refresh() }
+                            onRetry = { lazyPagingItems.refresh() },
                         )
                     }
                 }
@@ -149,13 +149,13 @@ private fun MediaCardPlaceholder() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(4.dp)
+            .padding(4.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             CircularProgressIndicator()
         }
@@ -168,7 +168,7 @@ private fun LoadingIndicator() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator()
     }
@@ -181,13 +181,13 @@ private fun InitialLoadingIndicator() {
             .fillMaxSize()
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         CircularProgressIndicator()
         Text(
             text = "Loading library...",
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.padding(top = 16.dp),
         )
     }
 }
@@ -200,28 +200,28 @@ private fun ErrorItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = "Error loading more items",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.error,
             )
             Text(
                 text = error.message ?: "Unknown error",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 4.dp),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
             Button(
                 onClick = onRetry,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 8.dp),
             ) {
                 Text("Retry")
             }
@@ -239,22 +239,22 @@ private fun InitialErrorState(
             .fillMaxSize()
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = "Failed to load library",
             style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.error
+            color = MaterialTheme.colorScheme.error,
         )
         Text(
             text = error.message ?: "Unknown error occurred",
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = 8.dp),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
         Button(
             onClick = onRetry,
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.padding(top = 16.dp),
         ) {
             Text("Retry")
         }
