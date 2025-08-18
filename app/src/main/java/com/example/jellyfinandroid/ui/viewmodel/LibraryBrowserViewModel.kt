@@ -39,7 +39,7 @@ class LibraryBrowserViewModel @Inject constructor(
     private val _browserState = MutableStateFlow(LibraryBrowserState())
     val browserState: StateFlow<LibraryBrowserState> = _browserState.asStateFlow()
 
-    private var currentPager: Pager<Int, BaseItemDto>? = null
+    // Note: We don't need to store the pager reference anymore
 
     companion object {
         private const val TAG = "LibraryBrowserViewModel"
@@ -59,7 +59,7 @@ class LibraryBrowserViewModel @Inject constructor(
         }
 
         // Create new pager with current filters
-        val pager = Pager(
+        val pagingFlow = Pager(
             config = PagingConfig(
                 pageSize = PAGE_SIZE,
                 prefetchDistance = PREFETCH_DISTANCE,
@@ -76,13 +76,11 @@ class LibraryBrowserViewModel @Inject constructor(
             },
         ).flow.cachedIn(viewModelScope)
 
-        currentPager = pager
-
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Created paging flow for library: ${state.currentLibraryName}")
         }
 
-        return pager
+        return pagingFlow
     }
 
     /**
@@ -223,7 +221,6 @@ class LibraryBrowserViewModel @Inject constructor(
         }
 
         _browserState.value = LibraryBrowserState()
-        currentPager = null
     }
 
     /**
@@ -231,7 +228,6 @@ class LibraryBrowserViewModel @Inject constructor(
      */
     override fun onCleared() {
         super.onCleared()
-        currentPager = null
 
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "LibraryBrowserViewModel cleared")

@@ -31,7 +31,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.jellyfinandroid.BuildConfig
-import com.example.jellyfinandroid.ui.screens.EnhancedHomeScreen
 import com.example.jellyfinandroid.ui.screens.FavoritesScreen
 import com.example.jellyfinandroid.ui.screens.HomeScreen
 import com.example.jellyfinandroid.ui.screens.LibraryScreen
@@ -49,7 +48,6 @@ import com.example.jellyfinandroid.ui.screens.TVShowsScreen
 import com.example.jellyfinandroid.ui.utils.MediaDownloadManager
 import com.example.jellyfinandroid.ui.utils.MediaPlayerUtils
 import com.example.jellyfinandroid.ui.utils.ShareUtils
-import com.example.jellyfinandroid.ui.viewmodel.EnhancedHomeViewModel
 import com.example.jellyfinandroid.ui.viewmodel.MainAppViewModel
 import com.example.jellyfinandroid.ui.viewmodel.MovieDetailViewModel
 import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesViewModel
@@ -123,29 +121,6 @@ fun JellyfinNavGraph(
             )
         }
 
-        // Enhanced Home Screen (Phase 2 Demonstration)
-        composable(Screen.EnhancedHome.route) {
-            val enhancedViewModel: EnhancedHomeViewModel = hiltViewModel()
-            val mainViewModel: MainAppViewModel = hiltViewModel()
-            val lifecycleOwner = LocalLifecycleOwner.current
-
-            EnhancedHomeScreen(
-                viewModel = enhancedViewModel,
-                onNavigateToLibrary = { libraryId, libraryName ->
-                    // Navigate to appropriate screen based on library name/type
-                    when (libraryName.lowercase()) {
-                        "movies" -> navController.navigate(Screen.Movies.route)
-                        "tv shows", "tvshows" -> navController.navigate(Screen.TVShows.route)
-                        "music" -> navController.navigate(Screen.Music.route)
-                        else -> navController.navigate(Screen.Movies.route)
-                    }
-                },
-                onNavigateToItem = { itemId ->
-                    // This would need context about the item type, but for now navigate to movie detail
-                    navController.navigate(Screen.MovieDetail.createRoute(itemId))
-                },
-            )
-        }
 
         // Main app flow
         composable(Screen.Home.route) {
