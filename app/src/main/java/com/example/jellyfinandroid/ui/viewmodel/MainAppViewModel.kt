@@ -153,21 +153,33 @@ class MainAppViewModel @Inject constructor(
             }
             // Load recently added content by type using the new MediaRepository
             val types = listOf(
-                BaseItemKind.MOVIE to "Movies",
-                BaseItemKind.SERIES to "TV Shows",
-                BaseItemKind.AUDIO to "Music",
+                BaseItemKind.MOVIE to "MOVIE",
+                BaseItemKind.SERIES to "SERIES",
+                BaseItemKind.AUDIO to "AUDIO",
             )
 
             val recentlyAddedByTypes = mutableMapOf<String, List<BaseItemDto>>()
-            for ((itemType, displayName) in types) {
+            for ((itemType, typeKey) in types) {
                 when (val result = mediaRepository.getRecentlyAddedByType(itemType, limit = 20)) {
                     is ApiResult.Success -> {
-                        recentlyAddedByTypes[displayName] = result.data
+                        recentlyAddedByTypes[typeKey] = result.data
+                        val displayName = when(typeKey) {
+                            "MOVIE" -> "Movies"
+                            "SERIES" -> "TV Shows" 
+                            "AUDIO" -> "Music"
+                            else -> typeKey
+                        }
                         if (BuildConfig.DEBUG) {
                             Log.d("MainAppViewModel", "loadInitialData: $displayName: ${result.data.size} items")
                         }
                     }
                     is ApiResult.Error -> {
+                        val displayName = when(typeKey) {
+                            "MOVIE" -> "Movies"
+                            "SERIES" -> "TV Shows" 
+                            "AUDIO" -> "Music"
+                            else -> typeKey
+                        }
                         if (BuildConfig.DEBUG) {
                             Log.e("MainAppViewModel", "loadInitialData: Failed to load recent $displayName: ${result.message}")
                         }
