@@ -160,7 +160,7 @@ fun HomeContent(
         val recentMovies = appState.recentlyAddedByTypes["MOVIE"]?.take(8) ?: emptyList()
         val recentTVShows = appState.recentlyAddedByTypes["SERIES"]?.take(8) ?: emptyList()
         val featuredItems = (recentMovies + recentTVShows).take(10)
-        
+
         if (featuredItems.isNotEmpty()) {
             item {
                 EnhancedContentCarousel(

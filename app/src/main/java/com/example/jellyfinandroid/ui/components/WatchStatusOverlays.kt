@@ -26,10 +26,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.BaseItemKind
 import com.example.jellyfinandroid.utils.*
 import com.example.jellyfinandroid.utils.AppConstants
+import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 
 @Composable
 fun UnwatchedEpisodeCountOverlay(
@@ -41,7 +41,7 @@ fun UnwatchedEpisodeCountOverlay(
         val unwatchedCount = item.getUnwatchedEpisodeCount()
         val totalEpisodes = item.childCount ?: 0
         val isNotCompletelyWatched = !item.isCompletelyWatched()
-        
+
         val displayText = when {
             unwatchedCount > 0 -> {
                 when {
@@ -59,7 +59,7 @@ fun UnwatchedEpisodeCountOverlay(
             }
             else -> null
         }
-        
+
         displayText?.let { text ->
             Card(
                 modifier = modifier,
@@ -93,7 +93,7 @@ fun WatchedIndicatorOverlay(
                     .size(32.dp)
                     .clip(CircleShape)
                     .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.95f)
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.95f),
                     ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -112,7 +112,7 @@ fun WatchedIndicatorOverlay(
                     .size(32.dp)
                     .clip(CircleShape)
                     .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.95f)
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.95f),
                     ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -135,7 +135,7 @@ fun WatchedIndicatorOverlay(
                     .size(32.dp)
                     .clip(CircleShape)
                     .background(
-                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.95f)
+                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.95f),
                     ),
                 contentAlignment = Alignment.Center,
             ) {
@@ -156,25 +156,25 @@ fun WatchProgressBar(
     modifier: Modifier = Modifier,
 ) {
     val watchedPercentage = item.getWatchedPercentage()
-    
+
     // Only show progress bar for partially watched content (not fully watched)
     if (watchedPercentage > 0.0 && watchedPercentage < AppConstants.Playback.WATCHED_THRESHOLD_PERCENT && !item.isWatched()) {
         Box(
             modifier = modifier
                 .background(
                     Color.Black.copy(alpha = 0.7f),
-                    RoundedCornerShape(2.dp)
+                    RoundedCornerShape(2.dp),
                 )
-                .padding(1.dp)
+                .padding(1.dp),
         ) {
             Box(
                 modifier = Modifier
                     .background(
                         MaterialTheme.colorScheme.primary,
-                        RoundedCornerShape(1.dp)
+                        RoundedCornerShape(1.dp),
                     )
                     .fillMaxWidth(watchedPercentage.toFloat() / 100f)
-                    .height(4.dp)
+                    .height(4.dp),
             )
         }
     }
@@ -209,9 +209,11 @@ fun InteractiveWatchStatusButton(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.95f)
                         } else {
                             Color.Black.copy(alpha = 0.6f)
-                        }
+                        },
                     )
-                } else Modifier
+                } else {
+                    Modifier
+                },
             )
             .clickable { onToggleWatchStatus(item) },
         contentAlignment = Alignment.Center,
@@ -238,7 +240,7 @@ fun SeriesWatchStatusChip(
     if (series.type == BaseItemKind.SERIES) {
         val isCompletelyWatched = series.isCompletelyWatched()
         val unwatchedCount = series.getUnwatchedEpisodeCount()
-        
+
         Card(
             modifier = modifier
                 .clickable { onToggleSeriesWatchStatus(series) },

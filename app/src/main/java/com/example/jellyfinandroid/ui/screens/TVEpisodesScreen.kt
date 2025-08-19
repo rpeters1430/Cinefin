@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.example.jellyfinandroid.ui.components.WatchedIndicatorOverlay
-import com.example.jellyfinandroid.ui.components.WatchProgressBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
@@ -50,6 +48,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.ui.components.ShimmerBox
+import com.example.jellyfinandroid.ui.components.WatchProgressBar
+import com.example.jellyfinandroid.ui.components.WatchedIndicatorOverlay
 import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 

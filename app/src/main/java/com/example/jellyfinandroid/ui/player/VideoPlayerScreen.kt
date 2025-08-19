@@ -53,10 +53,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import androidx.mediarouter.app.MediaRouteButton
-import androidx.mediarouter.media.MediaRouteSelector
-import com.google.android.gms.cast.CastMediaControlIntent
-import com.google.android.gms.cast.framework.CastButtonFactory
 import kotlinx.coroutines.delay
 
 @UnstableApi
@@ -248,7 +244,7 @@ private fun VideoControlsOverlay(
                 // TODO: Fix MediaRouteButton transparent color issue and restore native Cast device selection
                 IconButton(
                     onClick = onCastClick,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(40.dp),
                 ) {
                     Icon(
                         imageVector = if (playerState.isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
