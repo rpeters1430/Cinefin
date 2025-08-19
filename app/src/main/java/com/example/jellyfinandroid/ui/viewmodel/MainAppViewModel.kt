@@ -163,9 +163,9 @@ class MainAppViewModel @Inject constructor(
                 when (val result = mediaRepository.getRecentlyAddedByType(itemType, limit = 20)) {
                     is ApiResult.Success -> {
                         recentlyAddedByTypes[typeKey] = result.data
-                        val displayName = when(typeKey) {
+                        val displayName = when (typeKey) {
                             "MOVIE" -> "Movies"
-                            "SERIES" -> "TV Shows" 
+                            "SERIES" -> "TV Shows"
                             "AUDIO" -> "Music"
                             else -> typeKey
                         }
@@ -174,9 +174,9 @@ class MainAppViewModel @Inject constructor(
                         }
                     }
                     is ApiResult.Error -> {
-                        val displayName = when(typeKey) {
+                        val displayName = when (typeKey) {
                             "MOVIE" -> "Movies"
-                            "SERIES" -> "TV Shows" 
+                            "SERIES" -> "TV Shows"
                             "AUDIO" -> "Music"
                             else -> typeKey
                         }
