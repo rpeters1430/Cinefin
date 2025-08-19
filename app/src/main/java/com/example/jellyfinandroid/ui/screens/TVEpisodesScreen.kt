@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.jellyfinandroid.ui.components.WatchedIndicatorOverlay
+import com.example.jellyfinandroid.ui.components.WatchProgressBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
@@ -230,22 +232,41 @@ private fun EpisodeRow(
             modifier = Modifier.padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SubcomposeAsyncImage(
-                model = getImageUrl(episode),
-                contentDescription = episode.name,
-                loading = {
-                    ShimmerBox(
-                        modifier = Modifier
-                            .width(80.dp)
-                            .height(120.dp),
-                        cornerRadius = 8,
-                    )
-                },
-                modifier = Modifier
-                    .width(80.dp)
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-            )
+            Box {
+                SubcomposeAsyncImage(
+                    model = getImageUrl(episode),
+                    contentDescription = episode.name,
+                    loading = {
+                        ShimmerBox(
+                            modifier = Modifier
+                                .width(80.dp)
+                                .height(120.dp),
+                            cornerRadius = 8,
+                        )
+                    },
+                    modifier = Modifier
+                        .width(80.dp)
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                )
+
+                // Watch status indicator for episode
+                WatchedIndicatorOverlay(
+                    item = episode,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp),
+                )
+
+                // Watch progress bar for episode
+                WatchProgressBar(
+                    item = episode,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                )
+            }
 
             Column(
                 modifier = Modifier.weight(1f),

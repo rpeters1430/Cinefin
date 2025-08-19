@@ -141,6 +141,30 @@ fun MediaCard(
                 )
             }
 
+            // Watch status overlays
+            UnwatchedEpisodeCountOverlay(
+                item = item,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(8.dp),
+            )
+
+            WatchedIndicatorOverlay(
+                item = item,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp),
+            )
+
+            // Watch progress bar at the bottom
+            WatchProgressBar(
+                item = item,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            )
+
             // Gradient Overlay
             Box(
                 modifier = Modifier
@@ -361,6 +385,30 @@ fun RecentlyAddedCard(
                         )
                     }
                 }
+
+                // Watch status overlays for RecentlyAddedCard
+                UnwatchedEpisodeCountOverlay(
+                    item = item,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp),
+                )
+
+                WatchedIndicatorOverlay(
+                    item = item,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp),
+                )
+
+                // Watch progress bar for RecentlyAddedCard
+                WatchProgressBar(
+                    item = item,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                )
             }
 
             Column(modifier = Modifier.padding(12.dp)) {

@@ -95,6 +95,58 @@ fun BaseItemDto.canResume(): Boolean {
 fun BaseItemDto.getWatchedPercentage(): Double = userData?.playedPercentage ?: 0.0
 
 /**
+ * ✅ PHASE 3: Enhanced Watch status utilities for TV Shows
+ */
+fun BaseItemDto.getUnwatchedEpisodeCount(): Int {
+    return when {
+        type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+            // Use userData.unplayedItemCount if available, fallback to calculation
+            userData?.unplayedItemCount ?: run {
+                val totalCount = childCount ?: 0
+                val playedCount = userData?.playedPercentage?.let { percentage ->
+                    if (percentage >= AppConstants.Playback.WATCHED_THRESHOLD_PERCENT) totalCount else 0
+                } ?: 0
+                maxOf(0, totalCount - playedCount)
+            }
+        }
+        else -> 0
+    }
+}
+
+fun BaseItemDto.hasUnwatchedEpisodes(): Boolean {
+    return when {
+        type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> getUnwatchedEpisodeCount() > 0
+        else -> false
+    }
+}
+
+fun BaseItemDto.isCompletelyWatched(): Boolean {
+    return when {
+        type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+            // Series is completely watched if userData.played is true OR unplayedItemCount is 0
+            userData?.played == true || (userData?.unplayedItemCount ?: getUnwatchedEpisodeCount()) == 0
+        }
+        type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> isWatched()
+        type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> isWatched()
+        else -> isWatched()
+    }
+}
+
+fun BaseItemDto.getNextUpInfo(): String? {
+    return when {
+        type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES && hasUnwatchedEpisodes() -> {
+            val unwatchedCount = getUnwatchedEpisodeCount()
+            when {
+                unwatchedCount == 1 -> "1 new episode"
+                unwatchedCount > 99 -> "99+ new"
+                else -> "$unwatchedCount new"
+            }
+        }
+        else -> null
+    }
+}
+
+/**
  * ✅ PHASE 3: Enhanced key generation for lists
  */
 fun BaseItemDto.getItemKey(): String =

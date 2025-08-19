@@ -155,7 +155,9 @@ class MainAppViewModel @Inject constructor(
             val types = listOf(
                 BaseItemKind.MOVIE to "MOVIE",
                 BaseItemKind.SERIES to "SERIES",
+                BaseItemKind.EPISODE to "EPISODE",
                 BaseItemKind.AUDIO to "AUDIO",
+                BaseItemKind.VIDEO to "VIDEO",
             )
 
             val recentlyAddedByTypes = mutableMapOf<String, List<BaseItemDto>>()
@@ -166,7 +168,9 @@ class MainAppViewModel @Inject constructor(
                         val displayName = when (typeKey) {
                             "MOVIE" -> "Movies"
                             "SERIES" -> "TV Shows"
+                            "EPISODE" -> "TV Episodes"
                             "AUDIO" -> "Music"
+                            "VIDEO" -> "Home Videos"
                             else -> typeKey
                         }
                         if (BuildConfig.DEBUG) {
@@ -177,7 +181,9 @@ class MainAppViewModel @Inject constructor(
                         val displayName = when (typeKey) {
                             "MOVIE" -> "Movies"
                             "SERIES" -> "TV Shows"
+                            "EPISODE" -> "TV Episodes"
                             "AUDIO" -> "Music"
+                            "VIDEO" -> "Home Videos"
                             else -> typeKey
                         }
                         if (BuildConfig.DEBUG) {

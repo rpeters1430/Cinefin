@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Pause
@@ -243,36 +244,17 @@ private fun VideoControlsOverlay(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Cast button
-                // Native MediaRouteButton for device selection + fallback icon button action
-                Box {
-                    AndroidView(
-                        factory = { context ->
-                            MediaRouteButton(context).apply {
-                                // Attach the framework factories
-                                CastButtonFactory.setUpMediaRouteButton(context, this)
-                                val selector = MediaRouteSelector.Builder()
-                                    .addControlCategory(
-                                        CastMediaControlIntent.categoryForCast(CastOptionsProvider.getReceiverApplicationId()),
-                                    )
-                                    .build()
-                                routeSelector = selector
-                                contentDescription = "Select Cast Device"
-                            }
-                        },
-                        modifier = Modifier.size(40.dp),
+                // Cast button - Using fallback implementation to prevent MediaRouteButton crash
+                // TODO: Fix MediaRouteButton transparent color issue and restore native Cast device selection
+                IconButton(
+                    onClick = onCastClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = if (playerState.isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
+                        contentDescription = if (playerState.isCasting) "Disconnect Cast" else "Cast",
+                        tint = if (playerState.isCasting) Color.Green else Color.White,
                     )
-                    // Overlay state indicator (optional highlight when casting)
-                    if (playerState.isCasting) {
-                        Icon(
-                            imageVector = Icons.Default.CastConnected,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .size(18.dp),
-                        )
-                    }
                 }
 
                 // Quality settings
