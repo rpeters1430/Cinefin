@@ -1,11 +1,11 @@
 package com.example.jellyfinandroid.core
 
+import android.os.Environment
 import android.util.Log
 import com.example.jellyfinandroid.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import android.os.Environment
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
