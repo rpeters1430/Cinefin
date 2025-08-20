@@ -47,7 +47,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,6 +56,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.R
+import com.example.jellyfinandroid.core.LogCategory
+import com.example.jellyfinandroid.core.Logger
 import com.example.jellyfinandroid.ui.components.ShimmerBox
 import com.example.jellyfinandroid.ui.theme.SeriesBlue
 import com.example.jellyfinandroid.ui.viewmodel.TVSeasonState
@@ -79,13 +80,11 @@ fun TVSeasonScreen(
         viewModel.loadSeriesData(seriesId)
     }
 
-    val context = LocalContext.current
-
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let { error ->
             // For now, we'll just log the error
             // In a production app, you might want to show a Snackbar or other UI feedback
-            println("TVSeasonScreen error: $error")
+            Logger.e(LogCategory.UI, "TVSeasonScreen", error)
         }
     }
 
