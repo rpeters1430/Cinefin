@@ -46,12 +46,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.R
+import com.example.jellyfinandroid.core.LogCategory
+import com.example.jellyfinandroid.core.Logger
 import com.example.jellyfinandroid.ui.components.ShimmerBox
 import com.example.jellyfinandroid.ui.components.WatchProgressBar
 import com.example.jellyfinandroid.ui.components.WatchedIndicatorBadge
 import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesViewModel
-import com.example.jellyfinandroid.core.LogCategory
-import com.example.jellyfinandroid.core.Logger
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @Composable
