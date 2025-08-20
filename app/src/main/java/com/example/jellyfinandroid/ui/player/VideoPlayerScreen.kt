@@ -8,7 +8,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -29,6 +28,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,7 +40,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -208,7 +207,7 @@ fun VideoPlayerScreen(
                 }
             }
         }
-        
+
         // Subtitle Selection Dialog
         if (playerState.showSubtitleDialog) {
             AlertDialog(
@@ -219,23 +218,23 @@ fun VideoPlayerScreen(
                         // Option to disable subtitles
                         TextButton(
                             onClick = { onSubtitleTrackSelect(null) },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text(
                                 text = "Off",
-                                fontWeight = if (playerState.selectedSubtitleTrack == null) FontWeight.Bold else FontWeight.Normal
+                                fontWeight = if (playerState.selectedSubtitleTrack == null) FontWeight.Bold else FontWeight.Normal,
                             )
                         }
-                        
+
                         // List available subtitle tracks
                         playerState.availableSubtitleTracks.forEach { track ->
                             TextButton(
                                 onClick = { onSubtitleTrackSelect(track) },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Text(
                                     text = track.displayName,
-                                    fontWeight = if (track.isSelected) FontWeight.Bold else FontWeight.Normal
+                                    fontWeight = if (track.isSelected) FontWeight.Bold else FontWeight.Normal,
                                 )
                             }
                         }
@@ -245,10 +244,10 @@ fun VideoPlayerScreen(
                     TextButton(onClick = onSubtitleDialogDismiss) {
                         Text("Close")
                     }
-                }
+                },
             )
         }
-        
+
         // Cast Device Selection Dialog
         if (playerState.showCastDialog) {
             AlertDialog(
@@ -262,7 +261,7 @@ fun VideoPlayerScreen(
                             playerState.availableCastDevices.forEach { device ->
                                 TextButton(
                                     onClick = { onCastDeviceSelect(device) },
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
                                 ) {
                                     Text(device)
                                 }
@@ -274,7 +273,7 @@ fun VideoPlayerScreen(
                     TextButton(onClick = onCastDialogDismiss) {
                         Text("Cancel")
                     }
-                }
+                },
             )
         }
     }

@@ -40,7 +40,7 @@ data class TrackInfo(
     val trackIndex: Int,
     val format: androidx.media3.common.Format,
     val isSelected: Boolean,
-    val displayName: String
+    val displayName: String,
 )
 
 @UnstableApi
@@ -281,14 +281,14 @@ class VideoPlayerViewModel @Inject constructor(
             Log.e("VideoPlayerViewModel", "Failed to show cast dialog", e)
         }
     }
-    
+
     fun hideCastDialog() {
         _playerState.value = _playerState.value.copy(showCastDialog = false)
     }
-    
+
     fun selectCastDevice(deviceName: String) {
         try {
-            // This is a simplified implementation - in reality you'd need to 
+            // This is a simplified implementation - in reality you'd need to
             // interface with the Cast framework to connect to specific devices
             startCasting()
             _playerState.value = _playerState.value.copy(showCastDialog = false)
@@ -306,7 +306,7 @@ class VideoPlayerViewModel @Inject constructor(
                 // Get current track groups and selections
                 val trackGroups = exoPlayer?.currentTracks
                 val subtitleTracks = mutableListOf<TrackInfo>()
-                
+
                 trackGroups?.groups?.forEachIndexed { groupIndex, trackGroup ->
                     if (trackGroup.type == androidx.media3.common.C.TRACK_TYPE_TEXT) {
                         for (i in 0 until trackGroup.length) {
@@ -318,19 +318,19 @@ class VideoPlayerViewModel @Inject constructor(
                                     trackIndex = i,
                                     format = format,
                                     isSelected = isSelected,
-                                    displayName = format.label ?: format.language ?: "Track ${i + 1}"
-                                )
+                                    displayName = format.label ?: format.language ?: "Track ${i + 1}",
+                                ),
                             )
                         }
                     }
                 }
-                
+
                 // Update state with available subtitle tracks
                 _playerState.value = _playerState.value.copy(
                     availableSubtitleTracks = subtitleTracks,
-                    showSubtitleDialog = true
+                    showSubtitleDialog = true,
                 )
-                
+
                 if (BuildConfig.DEBUG) {
                     Log.d("VideoPlayerViewModel", "Found ${subtitleTracks.size} subtitle tracks")
                 }
@@ -339,12 +339,12 @@ class VideoPlayerViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun selectSubtitleTrack(trackInfo: TrackInfo?) {
         trackSelector?.let { selector ->
             try {
                 val parametersBuilder = selector.parameters.buildUpon()
-                
+
                 if (trackInfo != null) {
                     // Enable the selected track
                     parametersBuilder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, false)
@@ -352,15 +352,15 @@ class VideoPlayerViewModel @Inject constructor(
                     // Disable all subtitle tracks
                     parametersBuilder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, true)
                 }
-                
+
                 selector.setParameters(parametersBuilder.build())
-                
+
                 // Update UI state
                 _playerState.value = _playerState.value.copy(
                     showSubtitleDialog = false,
-                    selectedSubtitleTrack = trackInfo
+                    selectedSubtitleTrack = trackInfo,
                 )
-                
+
                 if (BuildConfig.DEBUG) {
                     Log.d("VideoPlayerViewModel", "Selected subtitle track: ${trackInfo?.displayName ?: "None"}")
                 }
@@ -369,7 +369,7 @@ class VideoPlayerViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun hideSubtitleDialog() {
         _playerState.value = _playerState.value.copy(showSubtitleDialog = false)
     }
