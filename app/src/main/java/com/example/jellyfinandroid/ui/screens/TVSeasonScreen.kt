@@ -84,7 +84,7 @@ fun TVSeasonScreen(
         state.errorMessage?.let { error ->
             // For now, we'll just log the error
             // In a production app, you might want to show a Snackbar or other UI feedback
-            Logger.e(LogCategory.UI, "TVSeasonScreen", "Error: $error")
+            Logger.e(LogCategory.UI, "TVSeasonScreen", error)
         }
     }
 
