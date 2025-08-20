@@ -219,7 +219,13 @@ object Logger {
                     }
                     logFile.renameTo(backupFile)
                     logFile.createNewFile()
-                }
+                    val created = logFile.createNewFile()
+                    if (!created && !logFile.exists()) {
+                        if (BuildConfig.DEBUG) {
+                            println("FILE_LOG_ERROR: Failed to create new log file: ${logFile.absolutePath}")
+                        }
+                        return@launch
+                    }
 
                 BufferedWriter(FileWriter(logFile, true)).use { writer ->
                     writer.appendLine(logLine)
