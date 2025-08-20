@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.ClosedCaption
@@ -27,7 +28,6 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator

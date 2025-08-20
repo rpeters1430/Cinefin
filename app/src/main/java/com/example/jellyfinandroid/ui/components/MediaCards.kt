@@ -19,8 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -135,7 +133,7 @@ fun MediaCard(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(8.dp)
+                    .padding(8.dp),
             ) {
                 // Favorite indicator
                 if (item.userData?.isFavorite == true) {
@@ -146,14 +144,14 @@ fun MediaCard(
                         modifier = Modifier.size(20.dp),
                     )
                 }
-                
+
                 // Watch status badges in top right
                 Box {
                     UnwatchedEpisodeCountBadge(
                         item = item,
                         modifier = Modifier.align(Alignment.TopEnd),
                     )
-                    
+
                     WatchedIndicatorBadge(
                         item = item,
                         modifier = Modifier.align(Alignment.BottomEnd),
@@ -395,7 +393,7 @@ fun RecentlyAddedCard(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(8.dp)
+                        .padding(8.dp),
                 ) {
                     // Watch status badges positioned with stacking
                     Box {
@@ -403,7 +401,7 @@ fun RecentlyAddedCard(
                             item = item,
                             modifier = Modifier.align(Alignment.TopEnd),
                         )
-                        
+
                         WatchedIndicatorBadge(
                             item = item,
                             modifier = Modifier.align(Alignment.BottomEnd),

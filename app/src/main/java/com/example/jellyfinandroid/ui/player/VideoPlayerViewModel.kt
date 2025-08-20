@@ -31,7 +31,7 @@ enum class AspectRatioMode(val label: String, val resizeMode: Int) {
     FILL("Fill", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FILL),
     ZOOM("Zoom", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM),
     FIXED_WIDTH("Fixed Width", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH),
-    FIXED_HEIGHT("Fixed Height", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT)
+    FIXED_HEIGHT("Fixed Height", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT),
 }
 
 @UnstableApi
@@ -250,7 +250,7 @@ class VideoPlayerViewModel @Inject constructor(
             // Try to show cast dialog through Cast framework
             val castContext = com.google.android.gms.cast.framework.CastContext.getSharedInstance(context)
             val sessionManager = castContext.sessionManager
-            
+
             if (sessionManager.currentCastSession?.isConnected == true) {
                 // If already connected, disconnect
                 sessionManager.endCurrentSession(true)
