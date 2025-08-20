@@ -65,11 +65,7 @@ fun DownloadButton(
             else -> {
                 // No download in progress or pending
                 StartDownloadButton(
-                    onDownload = {
-                        // This would need to be connected to the download manager
-                        // For now, we'll just log
-                        println("Start download for ${item.name}")
-                    },
+                    onDownload = { downloadsViewModel.startDownload(item) },
                     showText = showText,
                 )
             }
