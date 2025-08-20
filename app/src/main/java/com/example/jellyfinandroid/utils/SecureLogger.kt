@@ -2,159 +2,170 @@ package com.example.jellyfinandroid.utils
 
 import android.util.Log
 import com.example.jellyfinandroid.BuildConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.regex.Pattern
 
 /**
- * Secure logging utility that prevents sensitive information from being logged.
+ * Unified logging utility that merges structured logging with secure sanitisation.
  *
  * Features:
- * - Automatic sanitization of tokens, passwords, and API keys
- * - Debug-only logging to prevent production data leaks
- * - Structured logging levels with consistent formatting
- * - Support for exception logging with stack traces
+ * - Structured log levels and categories
+ * - Automatic sanitisation of sensitive data
+ * - Optional file logging and crash reporting hooks
  */
+
+/** Log levels for filtering and categorisation. */
+enum class LogLevel(val priority: Int, val tag: String) {
+    VERBOSE(Log.VERBOSE, "V"),
+    DEBUG(Log.DEBUG, "D"),
+    INFO(Log.INFO, "I"),
+    WARN(Log.WARN, "W"),
+    ERROR(Log.ERROR, "E"),
+}
+
+/** Log categories for better organisation. */
+enum class LogCategory(val tag: String) {
+    NETWORK("Network"),
+    DATABASE("Database"),
+    UI("UI"),
+    AUTH("Auth"),
+    MEDIA("Media"),
+    CACHE("Cache"),
+    PERFORMANCE("Performance"),
+    LIFECYCLE("Lifecycle"),
+    GENERAL("General"),
+}
+
+/** Structured log entry kept in memory for later export or diagnostics. */
+data class LogEntry(
+    val timestamp: Long,
+    val level: LogLevel,
+    val category: LogCategory,
+    val tag: String,
+    val message: String,
+    val throwable: Throwable? = null,
+)
+
 object SecureLogger {
-
     private const val MAX_LOG_LENGTH = 4000 // Android Log limit
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
+    private val logQueue = ConcurrentLinkedQueue<LogEntry>()
+    private val maxLogEntries = 1000
 
-    // Patterns to identify and sanitize sensitive data
+    // Configuration
+    var minLogLevel: LogLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.INFO
+    var enableFileLogging: Boolean = BuildConfig.DEBUG
+    var enableCrashReporting: Boolean = !BuildConfig.DEBUG
+
+    // Patterns to identify and sanitise sensitive data
     private val SENSITIVE_PATTERNS = listOf(
-        // Authentication tokens
         Pattern.compile("(token|access_token|refresh_token|api_key|apikey)([\"\\s=:]+)([^\\s&\"\\}]+)", Pattern.CASE_INSENSITIVE),
-        // Passwords
         Pattern.compile("(password|pwd|passwd)([\"\\s=:]+)([^\\s&\"\\}]+)", Pattern.CASE_INSENSITIVE),
-        // Authorization headers
         Pattern.compile("(authorization|auth)([\"\\s=:]+)([^\\s&\"\\}]+)", Pattern.CASE_INSENSITIVE),
-        // Session IDs
         Pattern.compile("(sessionid|session_id|jsessionid)([\"\\s=:]+)([^\\s&\"\\}]+)", Pattern.CASE_INSENSITIVE),
-        // User credentials in URLs
         Pattern.compile("(https?://[^:/]+):([^@]+)@", Pattern.CASE_INSENSITIVE),
     )
+    private const val REPLACEMENT = "\$1\$2***"
 
-    private const val REPLACEMENT = "$1$2***"
-
-    /**
-     * Log debug message with automatic sanitization.
-     */
-    fun d(tag: String, message: String, data: Any? = null) {
-        if (BuildConfig.DEBUG) {
-            val sanitizedMessage = sanitizeForLogging(message)
-            val sanitizedData = data?.let { sanitizeForLogging(it.toString()) } ?: ""
-            val fullMessage = if (sanitizedData.isNotEmpty()) "$sanitizedMessage | Data: $sanitizedData" else sanitizedMessage
-            logChunked(Log.DEBUG, tag, fullMessage)
-        }
+    // region Public logging API
+    fun v(tag: String, message: String, data: Any? = null, category: LogCategory = LogCategory.GENERAL) {
+        log(LogLevel.VERBOSE, category, tag, message, data)
     }
 
-    /**
-     * Log info message with automatic sanitization.
-     */
-    fun i(tag: String, message: String, data: Any? = null) {
-        val sanitizedMessage = sanitizeForLogging(message)
-        val sanitizedData = data?.let { sanitizeForLogging(it.toString()) } ?: ""
-        val fullMessage = if (sanitizedData.isNotEmpty()) "$sanitizedMessage | Data: $sanitizedData" else sanitizedMessage
-        logChunked(Log.INFO, tag, fullMessage)
+    fun d(tag: String, message: String, data: Any? = null, category: LogCategory = LogCategory.GENERAL) {
+        log(LogLevel.DEBUG, category, tag, message, data)
     }
 
-    /**
-     * Log warning message with automatic sanitization.
-     */
-    fun w(tag: String, message: String, throwable: Throwable? = null) {
-        val sanitizedMessage = sanitizeForLogging(message)
-        if (throwable != null) {
-            Log.w(tag, sanitizedMessage, throwable)
-        } else {
-            logChunked(Log.WARN, tag, sanitizedMessage)
-        }
+    fun i(tag: String, message: String, data: Any? = null, category: LogCategory = LogCategory.GENERAL) {
+        log(LogLevel.INFO, category, tag, message, data)
     }
 
-    /**
-     * Log error message with automatic sanitization.
-     */
-    fun e(tag: String, message: String, throwable: Throwable? = null) {
-        val sanitizedMessage = sanitizeForLogging(message)
-        if (throwable != null) {
-            Log.e(tag, sanitizedMessage, throwable)
-        } else {
-            logChunked(Log.ERROR, tag, sanitizedMessage)
-        }
+    fun w(tag: String, message: String, throwable: Throwable? = null, category: LogCategory = LogCategory.GENERAL) {
+        log(LogLevel.WARN, category, tag, message, throwable = throwable)
     }
 
-    /**
-     * Log authentication-related messages with extra security.
-     */
+    fun e(tag: String, message: String, throwable: Throwable? = null, category: LogCategory = LogCategory.GENERAL) {
+        log(LogLevel.ERROR, category, tag, message, throwable = throwable)
+    }
+
     fun auth(tag: String, message: String, success: Boolean = true) {
-        if (BuildConfig.DEBUG) {
-            val status = if (success) "SUCCESS" else "FAILURE"
-            val sanitizedMessage = sanitizeForLogging(message)
-            d(tag, "AUTH [$status]: $sanitizedMessage")
-        }
+        val status = if (success) "SUCCESS" else "FAILURE"
+        d(tag, "AUTH [$status]: $message", category = LogCategory.AUTH)
     }
 
-    /**
-     * Log API requests with automatic URL sanitization.
-     */
     fun api(tag: String, method: String, url: String, responseCode: Int? = null) {
-        if (BuildConfig.DEBUG) {
-            val sanitizedUrl = sanitizeUrl(url)
-            val response = responseCode?.let { " | Response: $it" } ?: ""
-            d(tag, "API [$method]: $sanitizedUrl$response")
-        }
+        val sanitizedUrl = sanitizeUrl(url)
+        val response = responseCode?.let { " | Response: $it" } ?: ""
+        d(tag, "API [$method]: $sanitizedUrl$response", category = LogCategory.NETWORK)
     }
 
-    /**
-     * Log network errors with sanitized details.
-     */
     fun networkError(tag: String, error: String, url: String? = null, throwable: Throwable? = null) {
         val sanitizedError = sanitizeForLogging(error)
         val sanitizedUrl = url?.let { " | URL: ${sanitizeUrl(it)}" } ?: ""
-        e(tag, "NETWORK ERROR: $sanitizedError$sanitizedUrl", throwable)
+        e(tag, "NETWORK ERROR: $sanitizedError$sanitizedUrl", throwable, category = LogCategory.NETWORK)
     }
+    // endregion
 
-    /**
-     * Sanitize sensitive information from log messages.
-     */
-    private fun sanitizeForLogging(text: String): String {
-        var sanitized = text
+    // region Core logging
+    private fun log(
+        level: LogLevel,
+        category: LogCategory,
+        tag: String,
+        message: String,
+        data: Any? = null,
+        throwable: Throwable? = null,
+    ) {
+        if (level.priority < minLogLevel.priority) return
 
-        // Apply all sensitive patterns
-        SENSITIVE_PATTERNS.forEach { pattern ->
-            sanitized = pattern.matcher(sanitized).replaceAll(REPLACEMENT)
-        }
+        val sanitizedMessage = sanitizeForLogging(message)
+        val sanitizedData = data?.let { sanitizeForLogging(it.toString()) }
+        val fullMessage = if (!sanitizedData.isNullOrEmpty()) "$sanitizedMessage | Data: $sanitizedData" else sanitizedMessage
 
-        // Additional sanitization for common JWT tokens
-        sanitized = sanitized.replace(Regex("eyJ[A-Za-z0-9+/=._-]{20,}"), "eyJ***")
-
-        // Sanitize UUID-like strings that might be session IDs
-        sanitized = sanitized.replace(
-            Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", RegexOption.IGNORE_CASE),
-            "UUID-***",
+        val entry = LogEntry(
+            timestamp = System.currentTimeMillis(),
+            level = level,
+            category = category,
+            tag = tag,
+            message = fullMessage,
+            throwable = throwable,
         )
 
-        // Limit length to prevent oversized logs
-        return if (sanitized.length > MAX_LOG_LENGTH) {
-            sanitized.take(MAX_LOG_LENGTH - 3) + "..."
-        } else {
-            sanitized
+        addToQueue(entry)
+        logToAndroidLog(entry)
+
+        if (enableFileLogging) {
+            logToFile(entry)
+        }
+
+        if (enableCrashReporting && level == LogLevel.ERROR) {
+            reportToCrashService(entry)
         }
     }
 
-    /**
-     * Sanitize URLs by removing credentials and sensitive query parameters.
-     */
-    private fun sanitizeUrl(url: String): String {
-        // Remove user credentials from URLs
-        val withoutCredentials = url.replace(Regex("(https?://)[^:/]+:[^@]+@"), "$1***:***@")
-
-        // Sanitize common sensitive query parameters
-        return withoutCredentials.replace(
-            Regex("([?&])(token|api_key|apikey|password|auth)=([^&]+)", RegexOption.IGNORE_CASE),
-            "$1$2=***",
-        )
+    private fun addToQueue(entry: LogEntry) {
+        logQueue.offer(entry)
+        while (logQueue.size > maxLogEntries) {
+            logQueue.poll()
+        }
     }
 
-    /**
-     * Log long messages in chunks to avoid Android's log limit.
-     */
+    private fun logToAndroidLog(entry: LogEntry) {
+        val fullTag = "${entry.category.tag}_${entry.tag}"
+        when (entry.level) {
+            LogLevel.VERBOSE -> logChunked(Log.VERBOSE, fullTag, entry.message)
+            LogLevel.DEBUG -> logChunked(Log.DEBUG, fullTag, entry.message)
+            LogLevel.INFO -> logChunked(Log.INFO, fullTag, entry.message)
+            LogLevel.WARN -> entry.throwable?.let { Log.w(fullTag, entry.message, it) } ?: logChunked(Log.WARN, fullTag, entry.message)
+            LogLevel.ERROR -> entry.throwable?.let { Log.e(fullTag, entry.message, it) } ?: logChunked(Log.ERROR, fullTag, entry.message)
+        }
+    }
+
     private fun logChunked(priority: Int, tag: String, message: String) {
         if (message.length <= MAX_LOG_LENGTH) {
             Log.println(priority, tag, message)
@@ -170,25 +181,108 @@ object SecureLogger {
             index = end
         }
     }
+
+    private fun logToFile(entry: LogEntry) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val timestamp = dateFormat.format(Date(entry.timestamp))
+            val logLine = "[$timestamp] [${entry.level.tag}] [${entry.category.tag}] ${entry.tag}: ${entry.message}"
+            // TODO: Implement actual file writing
+            if (BuildConfig.DEBUG) {
+                println("FILE_LOG: $logLine")
+            }
+        }
+    }
+
+    private fun reportToCrashService(entry: LogEntry) {
+        if (BuildConfig.DEBUG) {
+            println("CRASH_REPORT: ${entry.level.tag} - ${entry.message}")
+        }
+    }
+    // endregion
+
+    // region Log retrieval helpers
+    fun getRecentLogs(maxEntries: Int = 100): List<LogEntry> {
+        return logQueue.toList().takeLast(maxEntries)
+    }
+
+    fun clearLogs() {
+        logQueue.clear()
+    }
+
+    fun getLogsByCategory(category: LogCategory, maxEntries: Int = 100): List<LogEntry> {
+        return logQueue.toList().filter { it.category == category }.takeLast(maxEntries)
+    }
+
+    fun getLogsByLevel(level: LogLevel, maxEntries: Int = 100): List<LogEntry> {
+        return logQueue.toList().filter { it.level == level }.takeLast(maxEntries)
+    }
+
+    fun exportLogs(maxEntries: Int = 500): String {
+        val logs = getRecentLogs(maxEntries)
+        val builder = StringBuilder()
+        builder.appendLine("=== Jellyfin Android Logs ===")
+        builder.appendLine("Generated: ${dateFormat.format(Date())}")
+        builder.appendLine("Total entries: ${logs.size}")
+        builder.appendLine("")
+
+        logs.forEach { entry ->
+            val timestamp = dateFormat.format(Date(entry.timestamp))
+            builder.appendLine("[$timestamp] [${entry.level.tag}] [${entry.category.tag}] ${entry.tag}: ${entry.message}")
+            entry.throwable?.let { throwable ->
+                builder.appendLine("  Exception: ${throwable.javaClass.simpleName}: ${throwable.message}")
+                throwable.stackTrace.take(5).forEach { stackElement ->
+                    builder.appendLine("    at $stackElement")
+                }
+            }
+        }
+
+        return builder.toString()
+    }
+    // endregion
+
+    // region Sanitisation helpers
+    private fun sanitizeForLogging(text: String): String {
+        var sanitized = text
+        SENSITIVE_PATTERNS.forEach { pattern ->
+            sanitized = pattern.matcher(sanitized).replaceAll(REPLACEMENT)
+        }
+        sanitized = sanitized.replace(Regex("eyJ[A-Za-z0-9+/=._-]{20,}"), "eyJ***")
+        sanitized = sanitized.replace(
+            Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", RegexOption.IGNORE_CASE),
+            "UUID-***",
+        )
+        return if (sanitized.length > MAX_LOG_LENGTH) {
+            sanitized.take(MAX_LOG_LENGTH - 3) + "..."
+        } else {
+            sanitized
+        }
+    }
+
+    private fun sanitizeUrl(url: String): String {
+        val withoutCredentials = url.replace(Regex("(https?://)[^:/]+:[^@]+@"), "\$1***:***@")
+        return withoutCredentials.replace(
+            Regex("([?&])(token|api_key|apikey|password|auth)=([^&]+)", RegexOption.IGNORE_CASE),
+            "\$1\$2=***",
+        )
+    }
+    // endregion
 }
 
-/**
- * Extension functions for easier logging in classes.
- */
-inline fun <reified T> T.logDebug(message: String, data: Any? = null) {
-    SecureLogger.d(T::class.java.simpleName, message, data)
+// region Extension helpers
+inline fun <reified T> T.logDebug(message: String, data: Any? = null, category: LogCategory = LogCategory.GENERAL) {
+    SecureLogger.d(T::class.java.simpleName, message, data, category)
 }
 
-inline fun <reified T> T.logInfo(message: String, data: Any? = null) {
-    SecureLogger.i(T::class.java.simpleName, message, data)
+inline fun <reified T> T.logInfo(message: String, data: Any? = null, category: LogCategory = LogCategory.GENERAL) {
+    SecureLogger.i(T::class.java.simpleName, message, data, category)
 }
 
-inline fun <reified T> T.logWarning(message: String, throwable: Throwable? = null) {
-    SecureLogger.w(T::class.java.simpleName, message, throwable)
+inline fun <reified T> T.logWarning(message: String, throwable: Throwable? = null, category: LogCategory = LogCategory.GENERAL) {
+    SecureLogger.w(T::class.java.simpleName, message, throwable, category)
 }
 
-inline fun <reified T> T.logError(message: String, throwable: Throwable? = null) {
-    SecureLogger.e(T::class.java.simpleName, message, throwable)
+inline fun <reified T> T.logError(message: String, throwable: Throwable? = null, category: LogCategory = LogCategory.GENERAL) {
+    SecureLogger.e(T::class.java.simpleName, message, throwable, category)
 }
 
 inline fun <reified T> T.logAuth(message: String, success: Boolean = true) {
@@ -202,3 +296,5 @@ inline fun <reified T> T.logApi(method: String, url: String, responseCode: Int? 
 inline fun <reified T> T.logNetworkError(error: String, url: String? = null, throwable: Throwable? = null) {
     SecureLogger.networkError(T::class.java.simpleName, error, url, throwable)
 }
+// endregion
+
