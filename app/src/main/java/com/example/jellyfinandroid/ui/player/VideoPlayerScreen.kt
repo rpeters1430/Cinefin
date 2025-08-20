@@ -21,11 +21,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
+import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -62,7 +64,9 @@ fun VideoPlayerScreen(
     onPlayPause: () -> Unit,
     onSeek: (Long) -> Unit,
     onQualityChange: (VideoQuality) -> Unit,
+    onAspectRatioChange: (AspectRatioMode) -> Unit,
     onCastClick: () -> Unit,
+    onSubtitlesClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     onBackClick: () -> Unit,
     onOrientationToggle: () -> Unit,
@@ -71,6 +75,7 @@ fun VideoPlayerScreen(
 ) {
     var controlsVisible by remember { mutableStateOf(true) }
     var showQualityMenu by remember { mutableStateOf(false) }
+    var showAspectRatioMenu by remember { mutableStateOf(false) }
 
     // Auto-hide controls after 3 seconds
     LaunchedEffect(controlsVisible) {
@@ -97,11 +102,13 @@ fun VideoPlayerScreen(
                     player = exoPlayer
                     useController = false // We'll use custom controls
                     setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
+                    resizeMode = playerState.selectedAspectRatio.resizeMode
                 }
             },
-            modifier = Modifier
-                .fillMaxSize()
-                .aspectRatio(playerState.aspectRatio),
+            update = { playerView ->
+                playerView.resizeMode = playerState.selectedAspectRatio.resizeMode
+            },
+            modifier = Modifier.fillMaxSize(),
         )
 
         // Loading indicator
@@ -150,12 +157,16 @@ fun VideoPlayerScreen(
                 onPlayPause = onPlayPause,
                 onSeek = onSeek,
                 onQualityChange = onQualityChange,
+                onAspectRatioChange = onAspectRatioChange,
                 onCastClick = onCastClick,
+                onSubtitlesClick = onSubtitlesClick,
                 onPictureInPictureClick = onPictureInPictureClick,
                 onBackClick = onBackClick,
                 onOrientationToggle = onOrientationToggle,
                 showQualityMenu = showQualityMenu,
                 onShowQualityMenu = { showQualityMenu = it },
+                showAspectRatioMenu = showAspectRatioMenu,
+                onShowAspectRatioMenu = { showAspectRatioMenu = it },
             )
         }
 
@@ -200,12 +211,16 @@ private fun VideoControlsOverlay(
     onPlayPause: () -> Unit,
     onSeek: (Long) -> Unit,
     onQualityChange: (VideoQuality) -> Unit,
+    onAspectRatioChange: (AspectRatioMode) -> Unit,
     onCastClick: () -> Unit,
+    onSubtitlesClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     onBackClick: () -> Unit,
     onOrientationToggle: () -> Unit,
     showQualityMenu: Boolean,
     onShowQualityMenu: (Boolean) -> Unit,
+    showAspectRatioMenu: Boolean,
+    onShowAspectRatioMenu: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -240,19 +255,6 @@ private fun VideoControlsOverlay(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Cast button - Using fallback implementation to prevent MediaRouteButton crash
-                // TODO: Fix MediaRouteButton transparent color issue and restore native Cast device selection
-                IconButton(
-                    onClick = onCastClick,
-                    modifier = Modifier.size(40.dp),
-                ) {
-                    Icon(
-                        imageVector = if (playerState.isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
-                        contentDescription = if (playerState.isCasting) "Disconnect Cast" else "Cast",
-                        tint = if (playerState.isCasting) Color.Green else Color.White,
-                    )
-                }
-
                 // Quality settings
                 Box {
                     IconButton(onClick = { onShowQualityMenu(true) }) {
@@ -287,6 +289,56 @@ private fun VideoControlsOverlay(
                         }
                     }
                 }
+
+                // Aspect ratio settings
+                Box {
+                    IconButton(onClick = { onShowAspectRatioMenu(true) }) {
+                        Icon(
+                            imageVector = Icons.Default.AspectRatio,
+                            contentDescription = "Aspect Ratio Settings",
+                            tint = Color.White,
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showAspectRatioMenu,
+                        onDismissRequest = { onShowAspectRatioMenu(false) },
+                    ) {
+                        playerState.availableAspectRatios.forEach { aspectRatio ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = aspectRatio.label,
+                                        fontWeight = if (aspectRatio == playerState.selectedAspectRatio) {
+                                            FontWeight.Bold
+                                        } else {
+                                            FontWeight.Normal
+                                        },
+                                    )
+                                },
+                                onClick = {
+                                    onAspectRatioChange(aspectRatio)
+                                    onShowAspectRatioMenu(false)
+                                },
+                            )
+                        }
+                    }
+                }
+
+                // Subtitles button
+                IconButton(onClick = onSubtitlesClick) {
+                    Icon(
+                        imageVector = Icons.Default.ClosedCaption,
+                        contentDescription = "Subtitles",
+                        tint = Color.White,
+                    )
+                }
+
+                // Cast button with device selection
+                CastButton(
+                    isCasting = playerState.isCasting,
+                    onClick = onCastClick,
+                )
 
                 // Picture in Picture
                 IconButton(onClick = onPictureInPictureClick) {
@@ -388,6 +440,24 @@ private fun VideoControlsOverlay(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CastButton(
+    isCasting: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier.size(40.dp),
+    ) {
+        Icon(
+            imageVector = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
+            contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
+            tint = if (isCasting) Color.Green else Color.White,
+        )
     }
 }
 

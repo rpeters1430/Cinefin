@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
+import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Pause
@@ -56,7 +57,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.util.UnstableApi
 
+@UnstableApi
 @Composable
 fun ExpressiveVideoControls(
     playerState: VideoPlayerState,
@@ -65,6 +68,7 @@ fun ExpressiveVideoControls(
     onSeekBy: (Long) -> Unit,
     onQualityClick: () -> Unit,
     onCastClick: () -> Unit,
+    onSubtitlesClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     onBackClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
@@ -103,6 +107,7 @@ fun ExpressiveVideoControls(
                     onBackClick = onBackClick,
                     onQualityClick = onQualityClick,
                     onCastClick = onCastClick,
+                    onSubtitlesClick = onSubtitlesClick,
                     onPictureInPictureClick = onPictureInPictureClick,
                     onFullscreenToggle = onFullscreenToggle,
                 )
@@ -130,12 +135,14 @@ fun ExpressiveVideoControls(
     }
 }
 
+@UnstableApi
 @Composable
 private fun ExpressiveTopControls(
     playerState: VideoPlayerState,
     onBackClick: () -> Unit,
     onQualityClick: () -> Unit,
     onCastClick: () -> Unit,
+    onSubtitlesClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
     modifier: Modifier = Modifier,
@@ -196,13 +203,19 @@ private fun ExpressiveTopControls(
                         onClick = onQualityClick,
                     )
 
+                    ExpressiveIconButton(
+                        icon = Icons.Default.ClosedCaption,
+                        contentDescription = "Subtitles",
+                        onClick = onSubtitlesClick,
+                    )
+
                     AnimatedContent(
                         targetState = playerState.isCasting,
                         label = "cast_button",
                     ) { isCasting ->
                         ExpressiveIconButton(
                             icon = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
-                            contentDescription = "Cast",
+                            contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
                             onClick = onCastClick,
                             isActive = isCasting,
                         )
@@ -268,6 +281,7 @@ private fun ExpressiveCenterControls(
     }
 }
 
+@UnstableApi
 @Composable
 private fun ExpressiveBottomControls(
     playerState: VideoPlayerState,
