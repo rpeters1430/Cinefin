@@ -49,7 +49,7 @@ import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.ui.components.ShimmerBox
 import com.example.jellyfinandroid.ui.components.WatchProgressBar
-import com.example.jellyfinandroid.ui.components.WatchedIndicatorOverlay
+import com.example.jellyfinandroid.ui.components.WatchedIndicatorBadge
 import com.example.jellyfinandroid.ui.viewmodel.SeasonEpisodesViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -250,8 +250,8 @@ private fun EpisodeRow(
                         .clip(RoundedCornerShape(8.dp)),
                 )
 
-                // Watch status indicator for episode
-                WatchedIndicatorOverlay(
+                // Watch status badge for episode
+                WatchedIndicatorBadge(
                     item = episode,
                     modifier = Modifier
                         .align(Alignment.TopEnd)

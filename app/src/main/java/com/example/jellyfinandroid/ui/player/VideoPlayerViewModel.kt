@@ -25,6 +25,16 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@UnstableApi
+enum class AspectRatioMode(val label: String, val resizeMode: Int) {
+    FIT("Fit", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT),
+    FILL("Fill", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FILL),
+    ZOOM("Zoom", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM),
+    FIXED_WIDTH("Fixed Width", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH),
+    FIXED_HEIGHT("Fixed Height", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT)
+}
+
+@UnstableApi
 data class VideoPlayerState(
     val isPlaying: Boolean = false,
     val isLoading: Boolean = false,
@@ -41,6 +51,8 @@ data class VideoPlayerState(
     val itemId: String = "",
     val itemName: String = "",
     val aspectRatio: Float = 16f / 9f,
+    val selectedAspectRatio: AspectRatioMode = AspectRatioMode.FIT,
+    val availableAspectRatios: List<AspectRatioMode> = AspectRatioMode.values().toList(),
 )
 
 data class VideoQuality(
@@ -230,6 +242,54 @@ class VideoPlayerViewModel @Inject constructor(
                     error = "Failed to change quality: ${e.message}",
                 )
             }
+        }
+    }
+
+    fun showCastDialog() {
+        try {
+            // Try to show cast dialog through Cast framework
+            val castContext = com.google.android.gms.cast.framework.CastContext.getSharedInstance(context)
+            val sessionManager = castContext.sessionManager
+            
+            if (sessionManager.currentCastSession?.isConnected == true) {
+                // If already connected, disconnect
+                sessionManager.endCurrentSession(true)
+                if (BuildConfig.DEBUG) {
+                    Log.d("VideoPlayerViewModel", "Disconnected from Cast device")
+                }
+            } else {
+                // Show device selection dialog by attempting to start a session
+                // This is handled by the Cast framework
+                startCasting()
+                if (BuildConfig.DEBUG) {
+                    Log.d("VideoPlayerViewModel", "Cast dialog requested")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VideoPlayerViewModel", "Failed to show cast dialog", e)
+        }
+    }
+
+    fun showSubtitleDialog() {
+        // This will show subtitle/audio track selection
+        trackSelector?.let { selector ->
+            try {
+                // This would open a track selection dialog
+                // For now, log the action
+                if (BuildConfig.DEBUG) {
+                    Log.d("VideoPlayerViewModel", "Subtitle dialog requested")
+                }
+                // TODO: Implement track selection dialog using ExoPlayer's track selection
+            } catch (e: Exception) {
+                Log.e("VideoPlayerViewModel", "Failed to show subtitle dialog", e)
+            }
+        }
+    }
+
+    fun changeAspectRatio(aspectRatioMode: AspectRatioMode) {
+        _playerState.value = _playerState.value.copy(selectedAspectRatio = aspectRatioMode)
+        if (BuildConfig.DEBUG) {
+            Log.d("VideoPlayerViewModel", "Changed aspect ratio to: ${aspectRatioMode.label}")
         }
     }
 

@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -129,32 +131,35 @@ fun MediaCard(
                 )
             }
 
-            // Add favorite indicator if applicable
-            if (item.userData?.isFavorite == true) {
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "Favorite",
-                    tint = Color.Yellow,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp),
-                )
+            // Top right badges container
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+            ) {
+                // Favorite indicator
+                if (item.userData?.isFavorite == true) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Favorite",
+                        tint = Color.Yellow,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                
+                // Watch status badges in top right
+                Box {
+                    UnwatchedEpisodeCountBadge(
+                        item = item,
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    )
+                    
+                    WatchedIndicatorBadge(
+                        item = item,
+                        modifier = Modifier.align(Alignment.BottomEnd),
+                    )
+                }
             }
-
-            // Watch status overlays
-            UnwatchedEpisodeCountOverlay(
-                item = item,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(8.dp),
-            )
-
-            WatchedIndicatorOverlay(
-                item = item,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(8.dp),
-            )
 
             // Watch progress bar at the bottom
             WatchProgressBar(
@@ -386,20 +391,25 @@ fun RecentlyAddedCard(
                     }
                 }
 
-                // Watch status overlays for RecentlyAddedCard
-                UnwatchedEpisodeCountOverlay(
-                    item = item,
+                // Top right badges container for RecentlyAddedCard
+                Box(
                     modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(8.dp),
-                )
-
-                WatchedIndicatorOverlay(
-                    item = item,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(8.dp),
-                )
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    // Watch status badges positioned with stacking
+                    Box {
+                        UnwatchedEpisodeCountBadge(
+                            item = item,
+                            modifier = Modifier.align(Alignment.TopEnd),
+                        )
+                        
+                        WatchedIndicatorBadge(
+                            item = item,
+                            modifier = Modifier.align(Alignment.BottomEnd),
+                        )
+                    }
+                }
 
                 // Watch progress bar for RecentlyAddedCard
                 WatchProgressBar(

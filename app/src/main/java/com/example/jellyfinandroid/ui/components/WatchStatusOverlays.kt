@@ -14,6 +14,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Circle
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -32,7 +34,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
 @Composable
-fun UnwatchedEpisodeCountOverlay(
+fun UnwatchedEpisodeCountBadge(
     item: BaseItemDto,
     modifier: Modifier = Modifier,
 ) {
@@ -45,35 +47,30 @@ fun UnwatchedEpisodeCountOverlay(
         val displayText = when {
             unwatchedCount > 0 -> {
                 when {
-                    unwatchedCount == 1 -> "1 new"
-                    unwatchedCount > 99 -> "99+ new"
-                    else -> "$unwatchedCount new"
+                    unwatchedCount == 1 -> "1"
+                    unwatchedCount > 99 -> "99+"
+                    else -> unwatchedCount.toString()
                 }
             }
             totalEpisodes > 0 && isNotCompletelyWatched -> {
                 when {
-                    totalEpisodes == 1 -> "1 episode"
-                    totalEpisodes > 99 -> "99+ episodes"
-                    else -> "$totalEpisodes episodes"
+                    totalEpisodes == 1 -> "1"
+                    totalEpisodes > 99 -> "99+"
+                    else -> totalEpisodes.toString()
                 }
             }
             else -> null
         }
 
         displayText?.let { text ->
-            Card(
+            Badge(
                 modifier = modifier,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.95f),
-                ),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
                 Text(
                     text = text,
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 )
             }
         }
@@ -81,40 +78,31 @@ fun UnwatchedEpisodeCountOverlay(
 }
 
 @Composable
-fun WatchedIndicatorOverlay(
+fun WatchedIndicatorBadge(
     item: BaseItemDto,
     modifier: Modifier = Modifier,
 ) {
     when {
         // Series completely watched indicator
         item.type == BaseItemKind.SERIES && item.isCompletelyWatched() -> {
-            Box(
-                modifier = modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.95f),
-                    ),
-                contentAlignment = Alignment.Center,
+            Badge(
+                modifier = modifier,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = "Series completely watched",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }
         // Movie/Episode watched indicator
         (item.type == BaseItemKind.MOVIE || item.type == BaseItemKind.EPISODE) && item.isWatched() -> {
-            Box(
-                modifier = modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.95f),
-                    ),
-                contentAlignment = Alignment.Center,
+            Badge(
+                modifier = modifier,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
@@ -123,27 +111,21 @@ fun WatchedIndicatorOverlay(
                         BaseItemKind.EPISODE -> "Episode watched"
                         else -> "Watched"
                     },
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }
         // Resume indicator for partially watched content
         item.canResume() -> {
-            Box(
-                modifier = modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(
-                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.95f),
-                    ),
-                contentAlignment = Alignment.Center,
+            Badge(
+                modifier = modifier,
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary,
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
                     contentDescription = "Resume watching",
-                    tint = MaterialTheme.colorScheme.onSecondary,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }
@@ -232,7 +214,7 @@ fun InteractiveWatchStatusButton(
 }
 
 @Composable
-fun SeriesWatchStatusChip(
+fun SeriesWatchStatusBadge(
     series: BaseItemDto,
     onToggleSeriesWatchStatus: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
@@ -241,35 +223,53 @@ fun SeriesWatchStatusChip(
         val isCompletelyWatched = series.isCompletelyWatched()
         val unwatchedCount = series.getUnwatchedEpisodeCount()
 
-        Card(
+        Badge(
             modifier = modifier
                 .clickable { onToggleSeriesWatchStatus(series) },
-            colors = CardDefaults.cardColors(
-                containerColor = if (isCompletelyWatched) {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.95f)
-                } else {
-                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.95f)
-                },
-            ),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            containerColor = if (isCompletelyWatched) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.secondary
+            },
+            contentColor = if (isCompletelyWatched) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSecondary
+            },
         ) {
             Text(
                 text = if (isCompletelyWatched) {
-                    "Complete"
+                    "✓"
                 } else if (unwatchedCount > 0) {
-                    "$unwatchedCount left"
+                    unwatchedCount.toString()
                 } else {
-                    "Start"
+                    "▶"
                 },
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = if (isCompletelyWatched) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSecondary
-                },
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             )
         }
     }
 }
+
+// Backwards compatibility aliases
+@Composable
+@Deprecated("Use UnwatchedEpisodeCountBadge instead", ReplaceWith("UnwatchedEpisodeCountBadge(item, modifier)"))
+fun UnwatchedEpisodeCountOverlay(
+    item: BaseItemDto,
+    modifier: Modifier = Modifier,
+) = UnwatchedEpisodeCountBadge(item, modifier)
+
+@Composable
+@Deprecated("Use WatchedIndicatorBadge instead", ReplaceWith("WatchedIndicatorBadge(item, modifier)"))
+fun WatchedIndicatorOverlay(
+    item: BaseItemDto,
+    modifier: Modifier = Modifier,
+) = WatchedIndicatorBadge(item, modifier)
+
+@Composable
+@Deprecated("Use SeriesWatchStatusBadge instead", ReplaceWith("SeriesWatchStatusBadge(series, onToggleSeriesWatchStatus, modifier)"))
+fun SeriesWatchStatusChip(
+    series: BaseItemDto,
+    onToggleSeriesWatchStatus: (BaseItemDto) -> Unit,
+    modifier: Modifier = Modifier,
+) = SeriesWatchStatusBadge(series, onToggleSeriesWatchStatus, modifier)
