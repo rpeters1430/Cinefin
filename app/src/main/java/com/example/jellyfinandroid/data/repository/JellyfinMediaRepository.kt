@@ -43,7 +43,7 @@ class JellyfinMediaRepository @Inject constructor(
         itemTypes: String? = null,
         startIndex: Int = 0,
         limit: Int = 100,
-    ): ApiResult<List<BaseItemDto>> = execute {
+    ): ApiResult<List<BaseItemDto>> = execute("getLibraryItems") {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
@@ -120,15 +120,15 @@ class JellyfinMediaRepository @Inject constructor(
         response.content.items ?: emptyList()
     }
 
-    suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> = execute {
+    suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> = execute("getMovieDetails") {
         getItemDetailsById(movieId, "movie")
     }
 
-    suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> = execute {
+    suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> = execute("getSeriesDetails") {
         getItemDetailsById(seriesId, "series")
     }
 
-    suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> = execute {
+    suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> = execute("getEpisodeDetails") {
         getItemDetailsById(episodeId, "episode")
     }
 

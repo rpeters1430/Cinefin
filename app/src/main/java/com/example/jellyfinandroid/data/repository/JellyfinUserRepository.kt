@@ -27,7 +27,7 @@ class JellyfinUserRepository @Inject constructor(
         authRepository.logout()
     }
 
-    suspend fun toggleFavorite(itemId: String, isFavorite: Boolean): ApiResult<Boolean> = execute {
+    suspend fun toggleFavorite(itemId: String, isFavorite: Boolean): ApiResult<Boolean> = execute("toggleFavorite") {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val itemUuid = parseUuid(itemId, "item")
@@ -40,7 +40,7 @@ class JellyfinUserRepository @Inject constructor(
         !isFavorite
     }
 
-    suspend fun markAsWatched(itemId: String): ApiResult<Boolean> = execute {
+    suspend fun markAsWatched(itemId: String): ApiResult<Boolean> = execute("markAsWatched") {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val itemUuid = parseUuid(itemId, "item")
@@ -49,7 +49,7 @@ class JellyfinUserRepository @Inject constructor(
         true
     }
 
-    suspend fun markAsUnwatched(itemId: String): ApiResult<Boolean> = execute {
+    suspend fun markAsUnwatched(itemId: String): ApiResult<Boolean> = execute("markAsUnwatched") {
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val itemUuid = parseUuid(itemId, "item")
@@ -76,7 +76,7 @@ class JellyfinUserRepository @Inject constructor(
         response.content.items ?: emptyList()
     }
 
-    suspend fun deleteItem(itemId: String): ApiResult<Boolean> = execute {
+    suspend fun deleteItem(itemId: String): ApiResult<Boolean> = execute("deleteItem") {
         val server = validateServer()
         val itemUuid = parseUuid(itemId, "item")
         val client = getClient(server.url, server.accessToken)
@@ -84,7 +84,7 @@ class JellyfinUserRepository @Inject constructor(
         true
     }
 
-    suspend fun deleteItemAsAdmin(itemId: String): ApiResult<Boolean> = execute {
+    suspend fun deleteItemAsAdmin(itemId: String): ApiResult<Boolean> = execute("deleteItemAsAdmin") {
         val server = validateServer()
         val itemUuid = parseUuid(itemId, "item")
 
