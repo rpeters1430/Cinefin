@@ -39,7 +39,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.SubcomposeAsyncImage
 import com.example.jellyfinandroid.R
+import com.example.jellyfinandroid.core.LogCategory
+import com.example.jellyfinandroid.core.Logger
 import com.example.jellyfinandroid.ui.components.ShimmerBox
 import com.example.jellyfinandroid.ui.components.WatchProgressBar
 import com.example.jellyfinandroid.ui.components.WatchedIndicatorBadge
@@ -62,7 +63,6 @@ fun TVEpisodesScreen(
     viewModel: SeasonEpisodesViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(seasonId) {
@@ -71,7 +71,7 @@ fun TVEpisodesScreen(
 
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let { error ->
-            println("TVEpisodesScreen error: $error")
+            Logger.e(LogCategory.UI, "TVEpisodesScreen", error)
         }
     }
 
