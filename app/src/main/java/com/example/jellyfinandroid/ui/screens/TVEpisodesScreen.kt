@@ -71,7 +71,7 @@ fun TVEpisodesScreen(
 
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let { error ->
-            Logger.e(LogCategory.UI, "TVEpisodesScreen", "Error: $error")
+            Logger.e(LogCategory.UI, "TVEpisodesScreen", error)
         }
     }
 
