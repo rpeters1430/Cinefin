@@ -7,3 +7,7 @@ plugins {
     alias(libs.plugins.dagger.hilt.android) apply false
     alias(libs.plugins.ksp) apply false
 }
+
+tasks.register("ciTest") {
+    dependsOn(":app:testDebugUnitTest", ":app:connectedDebugAndroidTest")
+}
