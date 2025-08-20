@@ -6,6 +6,8 @@ import com.example.jellyfinandroid.data.repository.JellyfinAuthRepository
 import com.example.jellyfinandroid.data.utils.RepositoryUtils
 import com.example.jellyfinandroid.di.JellyfinClientFactory
 import com.example.jellyfinandroid.ui.utils.RetryManager
+import com.example.jellyfinandroid.core.LogCategory
+import com.example.jellyfinandroid.core.Logger
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
@@ -34,10 +36,19 @@ open class BaseJellyfinRepository @Inject constructor(
      * Wraps a suspend block returning [ApiResult]. Any thrown exception
      * is converted to an [ApiResult.Error] with a best-effort error type.
      */
-    protected suspend fun <T> execute(block: suspend () -> T): ApiResult<T> =
+    protected suspend fun <T> execute(
+        operationName: String,
+        block: suspend () -> T,
+    ): ApiResult<T> =
         try {
             ApiResult.Success(block())
         } catch (e: Exception) {
+            Logger.e(
+                LogCategory.NETWORK,
+                javaClass.simpleName,
+                "Error executing $operationName",
+                e,
+            )
             val error = RepositoryUtils.getErrorType(e)
             ApiResult.Error(e.message ?: "Unknown error", e, error)
         }
@@ -55,6 +66,12 @@ open class BaseJellyfinRepository @Inject constructor(
             try {
                 ApiResult.Success(block())
             } catch (e: Exception) {
+                Logger.e(
+                    LogCategory.NETWORK,
+                    javaClass.simpleName,
+                    "Error executing $operationName on attempt $attempt",
+                    e,
+                )
                 val error = RepositoryUtils.getErrorType(e)
                 ApiResult.Error(e.message ?: "Unknown error", e, error)
             }
@@ -75,6 +92,12 @@ open class BaseJellyfinRepository @Inject constructor(
             try {
                 ApiResult.Success(block())
             } catch (e: Exception) {
+                Logger.e(
+                    LogCategory.NETWORK,
+                    javaClass.simpleName,
+                    "Error executing $operationName on attempt $attempt",
+                    e,
+                )
                 val error = RepositoryUtils.getErrorType(e)
                 ApiResult.Error(e.message ?: "Unknown error", e, error)
             }
