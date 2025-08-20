@@ -5,6 +5,11 @@ import com.example.jellyfinandroid.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import android.os.Environment
+import java.io.BufferedWriter
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -61,6 +66,8 @@ object Logger {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
     private val logQueue = ConcurrentLinkedQueue<LogEntry>()
     private val maxLogEntries = 1000
+    private const val LOG_FILE_NAME = "jellyfin.log"
+    private const val MAX_LOG_FILE_SIZE = 1024 * 1024 // 1 MB
 
     // Configuration
     var minLogLevel: LogLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.INFO
@@ -188,18 +195,39 @@ object Logger {
     }
 
     /**
-     * Log to file (placeholder for file logging implementation).
+     * Log to a file in app-specific external storage.
      */
     private fun logToFile(entry: LogEntry) {
-        // In a real implementation, this would write to a file
-        // For now, we'll use a coroutine to simulate async file operations
         CoroutineScope(Dispatchers.IO).launch {
             val timestamp = dateFormat.format(Date(entry.timestamp))
             val logLine = "[$timestamp] [${entry.level.tag}] [${entry.category.tag}] ${entry.tag}: ${formatMessage(entry)}"
 
-            // TODO: Implement actual file writing
-            if (BuildConfig.DEBUG) {
-                println("FILE_LOG: $logLine")
+            try {
+                val logDir = File(
+                    Environment.getExternalStorageDirectory(),
+                    "Android/data/${BuildConfig.APPLICATION_ID}/files",
+                )
+                if (!logDir.exists()) {
+                    logDir.mkdirs()
+                }
+                val logFile = File(logDir, LOG_FILE_NAME)
+
+                if (logFile.exists() && logFile.length() > MAX_LOG_FILE_SIZE) {
+                    val backupFile = File(logDir, "$LOG_FILE_NAME.bak")
+                    if (backupFile.exists()) {
+                        backupFile.delete()
+                    }
+                    logFile.renameTo(backupFile)
+                    logFile.createNewFile()
+                }
+
+                BufferedWriter(FileWriter(logFile, true)).use { writer ->
+                    writer.appendLine(logLine)
+                }
+            } catch (e: IOException) {
+                if (BuildConfig.DEBUG) {
+                    println("FILE_LOG_ERROR: ${e.message}")
+                }
             }
         }
     }
