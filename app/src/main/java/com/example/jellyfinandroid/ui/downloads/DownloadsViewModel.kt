@@ -10,6 +10,7 @@ import com.example.jellyfinandroid.data.offline.OfflineDownload
 import com.example.jellyfinandroid.data.offline.OfflineDownloadManager
 import com.example.jellyfinandroid.data.offline.OfflinePlaybackManager
 import com.example.jellyfinandroid.data.offline.OfflineStorageInfo
+import com.example.jellyfinandroid.data.offline.VideoQuality
 import com.example.jellyfinandroid.ui.player.VideoPlayerActivity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
 
 @androidx.media3.common.util.UnstableApi
@@ -44,6 +46,14 @@ class DownloadsViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = null,
     )
+
+    fun startDownload(
+        item: BaseItemDto,
+        quality: VideoQuality? = null,
+        downloadUrl: String? = null,
+    ): String {
+        return downloadManager.startDownload(item, quality, downloadUrl)
+    }
 
     fun pauseDownload(downloadId: String) {
         downloadManager.pauseDownload(downloadId)

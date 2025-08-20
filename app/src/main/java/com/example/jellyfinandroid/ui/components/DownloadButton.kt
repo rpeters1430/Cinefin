@@ -13,8 +13,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.jellyfinandroid.core.LogCategory
-import com.example.jellyfinandroid.core.Logger
 import com.example.jellyfinandroid.data.offline.DownloadStatus
 import com.example.jellyfinandroid.ui.downloads.DownloadsViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -67,11 +65,7 @@ fun DownloadButton(
             else -> {
                 // No download in progress or pending
                 StartDownloadButton(
-                    onDownload = {
-                        // This would need to be connected to the download manager
-                        // For now, we'll just log
-                        Logger.d(LogCategory.UI, "DownloadButton", "Start download for ${item.name}")
-                    },
+                    onDownload = { downloadsViewModel.startDownload(item) },
                     showText = showText,
                 )
             }
