@@ -147,7 +147,7 @@ dependencies {
     kspTest("com.google.dagger:hilt-compiler:${libs.versions.hilt.get()}")
     
     // Turbine for testing StateFlow
-    testImplementation("app.cash.turbine:turbine:1.1.0")
+    testImplementation("app.cash.turbine:turbine:1.2.1")
     
     // MockWebServer for network testing
     testImplementation("com.squareup.okhttp3:mockwebserver:${libs.versions.okhttp.get()}")
