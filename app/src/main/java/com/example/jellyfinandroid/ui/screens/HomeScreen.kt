@@ -37,10 +37,9 @@ import com.example.jellyfinandroid.R
 import com.example.jellyfinandroid.data.JellyfinServer
 import com.example.jellyfinandroid.ui.components.MediaCard
 import com.example.jellyfinandroid.ui.screens.home.EnhancedContentCarousel
-import com.example.jellyfinandroid.ui.components.PerformanceOptimizedCarousel
-import com.example.jellyfinandroid.utils.PerformanceTracker
 import com.example.jellyfinandroid.ui.screens.home.LibraryGridSection
 import com.example.jellyfinandroid.ui.viewmodel.MainAppState
+import com.example.jellyfinandroid.utils.PerformanceTracker
 import com.example.jellyfinandroid.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -77,9 +76,9 @@ fun HomeScreen(
         // Performance monitoring
         PerformanceTracker(
             enabled = com.example.jellyfinandroid.BuildConfig.DEBUG,
-            intervalMs = 30000 // 30 seconds
+            intervalMs = 30000, // 30 seconds
         )
-        
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
