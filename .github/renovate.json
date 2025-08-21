@@ -6,10 +6,36 @@
       "matchDatasources": ["maven"],
       "matchPackageNames": [
         "/androidx\\.compose\\..*/",
-        "/androidx\\.media3\\..*/"
+        "/androidx\\.media3\\..*/",
+        "/androidx\\..*/"
       ],
       "rangeStrategy": "bump",
-      "versioning": "loose"
+      "versioning": "loose",
+      "ignoreUnstable": false
+    },
+    {
+      "matchDatasources": ["maven"],
+      "matchPackageNames": [
+        "com.google.android.material:material",
+        "/com\\.google\\.accompanist\\..*/",
+        "/io\\.coil-kt\\..*/",
+        "/com\\.squareup\\.okhttp3\\..*/",
+        "/com\\.squareup\\.retrofit2\\..*/",
+        "/org\\.jetbrains\\.kotlinx\\..*/",
+        "/com\\.google\\.dagger\\..*/",
+        "/androidx\\.hilt\\..*/",
+        "/androidx\\.lifecycle\\..*/",
+        "/androidx\\.navigation\\..*/",
+        "/androidx\\.room\\..*/",
+        "/androidx\\.work\\..*/",
+        "/androidx\\.datastore\\..*/",
+        "/androidx\\.paging\\..*/",
+        "/com\\.android\\.tools\\.build\\..*/",
+        "com.android.tools.build:gradle"
+      ],
+      "rangeStrategy": "bump",
+      "versioning": "loose",
+      "ignoreUnstable": false
     }
   ],
   "labels": ["dependencies"],
