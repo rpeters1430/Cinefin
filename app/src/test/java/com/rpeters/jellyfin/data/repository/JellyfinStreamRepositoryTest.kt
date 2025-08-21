@@ -7,7 +7,6 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -30,7 +29,7 @@ class JellyfinStreamRepositoryTest {
         url = "https://demo.jellyfin.org",
         userId = "test-user-id",
         accessToken = "test-access-token",
-        serverName = "Test Server"
+        serverName = "Test Server",
     )
 
     @Before
@@ -121,7 +120,7 @@ class JellyfinStreamRepositoryTest {
             maxHeight = 1080,
             videoCodec = "h264",
             audioCodec = "aac",
-            container = "mp4"
+            container = "mp4",
         )
 
         // Then
@@ -342,7 +341,7 @@ class JellyfinStreamRepositoryTest {
         assertNull("Download URL should be null", streamRepository.getDownloadUrl(itemId))
         assertNull("Direct stream URL should be null", streamRepository.getDirectStreamUrl(itemId))
         assertNull("Image URL should be null", streamRepository.getImageUrl(itemId))
-        
+
         val mockItem = mockk<BaseItemDto> {
             every { id } returns UUID.randomUUID()
         }

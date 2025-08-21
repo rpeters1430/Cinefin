@@ -47,13 +47,13 @@ class MainAppViewModelTest {
     fun setup() {
         MockKAnnotations.init(this)
         Dispatchers.setMain(testDispatcher)
-        
+
         // Set up default mock responses
         coEvery { authRepository.isAuthenticated() } returns true
         coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Success(emptyList())
         coEvery { mediaRepository.getRecentlyAdded(any()) } returns ApiResult.Success(emptyList())
         coEvery { mediaRepository.getRecentlyAddedByType(any(), any()) } returns ApiResult.Success(emptyList())
-        
+
         viewModel = MainAppViewModel(authRepository, mediaRepository)
     }
 
@@ -108,7 +108,7 @@ class MainAppViewModelTest {
     fun `initial state is correct`() = runTest {
         viewModel.uiState.test {
             val initialState = awaitItem()
-            
+
             assertFalse("Should not be loading initially", initialState.isLoading)
             assertTrue("Libraries should be empty initially", initialState.libraries.isEmpty())
             assertTrue("Recently added should be empty initially", initialState.recentlyAdded.isEmpty())
@@ -124,9 +124,9 @@ class MainAppViewModelTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Movies"
                 coEvery { type } returns BaseItemKind.COLLECTION_FOLDER
-            }
+            },
         )
-        
+
         coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Success(mockLibraries)
 
         // When & Then
@@ -156,7 +156,7 @@ class MainAppViewModelTest {
         // When & Then
         viewModel.uiState.test {
             skipItems(1) // Skip initial state
-            
+
             viewModel.loadData()
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -174,9 +174,9 @@ class MainAppViewModelTest {
         // When & Then
         viewModel.uiState.test {
             skipItems(1) // Skip initial state
-            
+
             viewModel.updateSearchQuery("test query")
-            
+
             val updatedState = awaitItem()
             assertEquals("Search query should be updated", "test query", updatedState.searchQuery)
         }
@@ -186,20 +186,20 @@ class MainAppViewModelTest {
     fun `clearError removes error message`() = runTest {
         // Given - first set an error
         coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error("Test error", "TEST_ERROR")
-        
+
         viewModel.uiState.test {
             skipItems(1) // Skip initial state
-            
+
             viewModel.loadData()
             testDispatcher.scheduler.advanceUntilIdle()
-            
+
             skipItems(1) // Skip loading state
             val errorState = awaitItem()
             assertEquals("Error should be set", "Test error", errorState.errorMessage)
-            
+
             // When
             viewModel.clearError()
-            
+
             // Then
             val clearedState = awaitItem()
             assertNull("Error should be cleared", clearedState.errorMessage)
@@ -214,15 +214,15 @@ class MainAppViewModelTest {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Recent Movie"
                 coEvery { type } returns BaseItemKind.MOVIE
-            }
+            },
         )
-        
+
         val mockSeries = listOf(
             mockk<BaseItemDto> {
                 coEvery { id } returns java.util.UUID.randomUUID()
                 coEvery { name } returns "Recent Series"
                 coEvery { type } returns BaseItemKind.SERIES
-            }
+            },
         )
 
         coEvery { mediaRepository.getRecentlyAddedByType(BaseItemKind.MOVIE, 20) } returns ApiResult.Success(mockMovies)
@@ -231,13 +231,13 @@ class MainAppViewModelTest {
         // When & Then
         viewModel.uiState.test {
             skipItems(1) // Skip initial state
-            
+
             viewModel.loadData()
             testDispatcher.scheduler.advanceUntilIdle()
 
             skipItems(1) // Skip loading state
             val finalState = awaitItem()
-            
+
             assertFalse("Should not be loading", finalState.isLoading)
             assertTrue("Should have recently added content", finalState.recentlyAdded.isNotEmpty())
         }
