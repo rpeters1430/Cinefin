@@ -9,12 +9,12 @@ plugins {
 
 android {
     namespace = "com.example.jellyfinandroid"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.jellyfinandroid"
         minSdk = 26 // Android 8.0+ (was 31) - Broader device compatibility
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
