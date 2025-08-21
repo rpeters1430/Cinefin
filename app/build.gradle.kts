@@ -19,11 +19,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "com.example.jellyfinandroid.testing.HiltTestRunner"
-        
+
         // Test configuration
         testInstrumentationRunnerArguments += mapOf(
             "clearPackageData" to "true",
-            "useTestStorageService" to "true"
+            "useTestStorageService" to "true",
         )
     }
 
@@ -141,28 +141,28 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.arch.core.testing)
-    
+
     // Hilt testing
     testImplementation("com.google.dagger:hilt-android-testing:${libs.versions.hilt.get()}")
     kspTest("com.google.dagger:hilt-compiler:${libs.versions.hilt.get()}")
-    
+
     // Turbine for testing StateFlow
-    testImplementation("app.cash.turbine:turbine:1.1.0")
-    
+    testImplementation("app.cash.turbine:turbine:1.2.1")
+
     // MockWebServer for network testing
     testImplementation("com.squareup.okhttp3:mockwebserver:${libs.versions.okhttp.get()}")
-    
+
     // Instrumentation Testing
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.navigation.testing)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    
+
     // Hilt instrumentation testing
     androidTestImplementation("com.google.dagger:hilt-android-testing:${libs.versions.hilt.get()}")
     kspAndroidTest("com.google.dagger:hilt-compiler:${libs.versions.hilt.get()}")
-    
+
     // Debug Tools
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
@@ -173,13 +173,13 @@ dependencies {
 // Test coverage configuration
 tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn("testDebugUnitTest", "createDebugCoverageReport")
-    
+
     reports {
         xml.required.set(true)
         html.required.set(true)
         csv.required.set(false)
     }
-    
+
     val fileFilter = listOf(
         "**/R.class",
         "**/R$*.class",
@@ -188,21 +188,23 @@ tasks.register<JacocoReport>("jacocoTestReport") {
         "**/*Test*.*",
         "android/**/*.*",
         "**/data/model/*.*",
-        "**/di/*.*"
+        "**/di/*.*",
     )
-    
+
     val debugTree = fileTree("${layout.buildDirectory.asFile.get()}/tmp/kotlin-classes/debug") {
         exclude(fileFilter)
     }
-    
+
     val mainSrc = "${project.projectDir}/src/main/java"
-    
+
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(debugTree))
-    executionData.setFrom(fileTree(layout.buildDirectory.asFile.get()) {
-        include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
-        include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
-    })
+    executionData.setFrom(
+        fileTree(layout.buildDirectory.asFile.get()) {
+            include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
+            include("outputs/code_coverage/debugAndroidTest/connected/*/coverage.ec")
+        },
+    )
 }
 
 // Ensure jacoco agent is applied for coverage
