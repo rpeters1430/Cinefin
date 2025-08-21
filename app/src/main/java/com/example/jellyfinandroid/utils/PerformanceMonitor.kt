@@ -17,7 +17,7 @@ import kotlin.system.measureTimeMillis
  */
 object PerformanceMonitor {
     private const val TAG = "PerformanceMonitor"
-    
+
     data class MemoryInfo(
         val usedMemoryMB: Long,
         val totalMemoryMB: Long,
@@ -25,14 +25,14 @@ object PerformanceMonitor {
         val maxMemoryMB: Long,
         val usagePercentage: Float,
     )
-    
+
     data class PerformanceMetrics(
         val memory: MemoryInfo,
         val renderTimeMs: Long,
         val frameDrops: Int,
         val timestamp: Long = System.currentTimeMillis(),
     )
-    
+
     /**
      * Get current memory usage information.
      */
@@ -42,13 +42,13 @@ object PerformanceMonitor {
         val totalMemory = runtime.totalMemory()
         val freeMemory = runtime.freeMemory()
         val usedMemory = totalMemory - freeMemory
-        
+
         val usedMemoryMB = usedMemory / (1024 * 1024)
         val totalMemoryMB = totalMemory / (1024 * 1024)
         val freeMemoryMB = freeMemory / (1024 * 1024)
         val maxMemoryMB = maxMemory / (1024 * 1024)
         val usagePercentage = (usedMemory.toFloat() / maxMemory.toFloat()) * 100f
-        
+
         return MemoryInfo(
             usedMemoryMB = usedMemoryMB,
             totalMemoryMB = totalMemoryMB,
@@ -57,16 +57,19 @@ object PerformanceMonitor {
             usagePercentage = usagePercentage,
         )
     }
-    
+
     /**
      * Log memory usage with optional custom message.
      */
     fun logMemoryUsage(message: String = "Memory Usage") {
         val memoryInfo = getMemoryInfo()
-        Log.d(TAG, "$message - Used: ${memoryInfo.usedMemoryMB}MB (${String.format("%.1f", memoryInfo.usagePercentage)}%), " +
-                "Free: ${memoryInfo.freeMemoryMB}MB, Max: ${memoryInfo.maxMemoryMB}MB")
+        Log.d(
+            TAG,
+            "$message - Used: ${memoryInfo.usedMemoryMB}MB (${String.format("%.1f", memoryInfo.usagePercentage)}%), " +
+                "Free: ${memoryInfo.freeMemoryMB}MB, Max: ${memoryInfo.maxMemoryMB}MB",
+        )
     }
-    
+
     /**
      * Measure execution time of a block of code.
      */
@@ -78,38 +81,38 @@ object PerformanceMonitor {
         Log.d(TAG, "$tag executed in ${executionTime}ms")
         return result
     }
-    
+
     /**
      * Force garbage collection and log memory before/after.
      */
     fun forceGarbageCollection(reason: String) {
         val beforeMemory = getMemoryInfo()
         Log.d(TAG, "GC Request ($reason) - Before: ${beforeMemory.usedMemoryMB}MB")
-        
+
         System.gc()
-        
+
         // Small delay to allow GC to complete
         Thread.sleep(100)
-        
+
         val afterMemory = getMemoryInfo()
         val freedMB = beforeMemory.usedMemoryMB - afterMemory.usedMemoryMB
         Log.d(TAG, "GC Request ($reason) - After: ${afterMemory.usedMemoryMB}MB (Freed: ${freedMB}MB)")
     }
-    
+
     /**
      * Check if memory usage is high and suggest garbage collection.
      */
     fun checkMemoryPressure(): Boolean {
         val memoryInfo = getMemoryInfo()
         val isHighUsage = memoryInfo.usagePercentage > 80f
-        
+
         if (isHighUsage) {
             Log.w(TAG, "High memory usage detected: ${String.format("%.1f", memoryInfo.usagePercentage)}%")
         }
-        
+
         return isHighUsage
     }
-    
+
     /**
      * Get native heap information (API 23+).
      */
@@ -123,7 +126,7 @@ object PerformanceMonitor {
             null
         }
     }
-    
+
     /**
      * Performance metrics collection helper.
      */
@@ -146,26 +149,27 @@ fun PerformanceTracker(
     onMetricsCollected: (PerformanceMonitor.PerformanceMetrics) -> Unit = {},
 ) {
     var lastCollectionTime by remember { mutableLongStateOf(0L) }
-    
+
     LaunchedEffect(enabled) {
         if (!enabled) return@LaunchedEffect
-        
+
         while (true) {
             delay(intervalMs)
-            
+
             val currentTime = System.currentTimeMillis()
             val renderTime = currentTime - lastCollectionTime
             lastCollectionTime = currentTime
-            
+
             val metrics = PerformanceMonitor.collectPerformanceMetrics(renderTime)
             onMetricsCollected(metrics)
-            
+
             // Log metrics
-            Log.d("PerformanceTracker", 
+            Log.d(
+                "PerformanceTracker",
                 "Memory: ${metrics.memory.usedMemoryMB}MB (${String.format("%.1f", metrics.memory.usagePercentage)}%), " +
-                "Render: ${metrics.renderTimeMs}ms"
+                    "Render: ${metrics.renderTimeMs}ms",
             )
-            
+
             // Auto-GC if memory usage is very high
             if (metrics.memory.usagePercentage > 90f) {
                 PerformanceMonitor.forceGarbageCollection("High memory pressure")

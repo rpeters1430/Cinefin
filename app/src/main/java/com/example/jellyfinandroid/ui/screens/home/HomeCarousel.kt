@@ -24,14 +24,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.example.jellyfinandroid.ui.image.OptimizedImage
-import com.example.jellyfinandroid.ui.image.ImageSize
 import com.example.jellyfinandroid.ui.image.ImageQuality
+import com.example.jellyfinandroid.ui.image.ImageSize
+import com.example.jellyfinandroid.ui.image.OptimizedImage
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @OptIn(ExperimentalMaterial3Api::class)
