@@ -14,12 +14,12 @@ import com.example.jellyfinandroid.data.repository.common.ApiResult
 import com.example.jellyfinandroid.data.repository.common.ErrorType
 import com.example.jellyfinandroid.ui.screens.LibraryType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import javax.inject.Inject
@@ -92,10 +92,10 @@ class MainAppViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Loading libraries and recently added in parallel")
             }
-            
+
             val librariesDeferred = async { mediaRepository.getUserLibraries() }
             val recentlyAddedDeferred = async { mediaRepository.getRecentlyAdded() }
-            
+
             // Process libraries result
             when (val librariesResult = librariesDeferred.await()) {
                 is ApiResult.Success -> {
@@ -155,7 +155,7 @@ class MainAppViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadInitialData: Loading recently added items by types (parallel)")
             }
-            
+
             // Launch all API calls concurrently
             val types = listOf(
                 BaseItemKind.MOVIE to "MOVIE",
@@ -166,14 +166,14 @@ class MainAppViewModel @Inject constructor(
             )
 
             val contentTypeDeferreds = types.map { (itemType, typeKey) ->
-                async { 
+                async {
                     typeKey to mediaRepository.getRecentlyAddedByType(itemType, limit = 20)
                 }
             }
 
             // Await all results concurrently
             val contentTypeResults = contentTypeDeferreds.awaitAll()
-            
+
             // Process results
             val recentlyAddedByTypes = mutableMapOf<String, List<BaseItemDto>>()
             contentTypeResults.forEach { (typeKey, result) ->

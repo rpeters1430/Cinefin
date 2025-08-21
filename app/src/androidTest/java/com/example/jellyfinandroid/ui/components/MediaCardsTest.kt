@@ -60,7 +60,7 @@ class MediaCardsTest {
                 MediaCard(
                     item = testMovie,
                     getImageUrl = mockGetImageUrl,
-                    onClick = { }
+                    onClick = { },
                 )
             }
         }
@@ -84,7 +84,7 @@ class MediaCardsTest {
                 MediaCard(
                     item = testSeries,
                     getImageUrl = mockGetImageUrl,
-                    onClick = { }
+                    onClick = { },
                 )
             }
         }
@@ -108,7 +108,7 @@ class MediaCardsTest {
                 MediaCard(
                     item = testMovie,
                     getImageUrl = mockGetImageUrl,
-                    onClick = mockOnClick
+                    onClick = mockOnClick,
                 )
             }
         }
@@ -130,7 +130,7 @@ class MediaCardsTest {
                 MediaCard(
                     item = testMovie,
                     getImageUrl = mockGetImageUrl,
-                    onClick = { }
+                    onClick = { },
                 )
             }
         }
@@ -151,7 +151,7 @@ class MediaCardsTest {
                 MediaCard(
                     item = testMovie,
                     getImageUrl = mockGetImageUrl,
-                    onClick = { }
+                    onClick = { },
                 )
             }
         }
@@ -174,7 +174,7 @@ class MediaCardsTest {
                     item = testMovie,
                     getImageUrl = mockGetImageUrl,
                     getSeriesImageUrl = mockGetSeriesImageUrl,
-                    onClick = { }
+                    onClick = { },
                 )
             }
         }
@@ -206,7 +206,7 @@ class MediaCardsTest {
                     item = testEpisode,
                     getImageUrl = mockGetImageUrl,
                     getSeriesImageUrl = mockGetSeriesImageUrl,
-                    onClick = { }
+                    onClick = { },
                 )
             }
         }
@@ -231,7 +231,7 @@ class MediaCardsTest {
                     item = testMovie,
                     getImageUrl = mockGetImageUrl,
                     getSeriesImageUrl = mockGetSeriesImageUrl,
-                    onClick = mockOnClick
+                    onClick = mockOnClick,
                 )
             }
         }
@@ -253,7 +253,7 @@ class MediaCardsTest {
                 MediaCard(
                     item = testMovie,
                     getImageUrl = mockGetImageUrl,
-                    onClick = { }
+                    onClick = { },
                 )
             }
         }
