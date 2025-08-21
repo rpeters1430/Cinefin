@@ -1,20 +1,8 @@
 package com.example.jellyfinandroid.ui.player.enhanced
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,37 +14,27 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Battery1Bar
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.HeadsetOff
 import androidx.compose.material.icons.filled.Hearing
-import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.SurroundSound
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryTabRow
@@ -66,24 +44,19 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -104,7 +77,7 @@ data class AudioTrack(
     val isDescriptive: Boolean = false,
     val isCommentary: Boolean = false,
     val channelLayout: String = "", // e.g., "5.1", "7.1", "Stereo"
-    val quality: AudioQuality = AudioQuality.STANDARD
+    val quality: AudioQuality = AudioQuality.STANDARD,
 )
 
 enum class AudioQuality {
@@ -127,7 +100,7 @@ data class AudioSettings(
     val nightMode: Boolean = false,
     val audioNormalization: Boolean = true,
     val skipSilence: Boolean = false,
-    val audioProfile: AudioProfile = AudioProfile.BALANCED
+    val audioProfile: AudioProfile = AudioProfile.BALANCED,
 )
 
 enum class AudioProfile {
@@ -136,7 +109,7 @@ enum class AudioProfile {
 
 data class EqualizerBand(
     val frequency: String,
-    val gain: Float
+    val gain: Float,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -149,10 +122,10 @@ fun EnhancedAudioManager(
     onDismiss: () -> Unit,
     onTrackSelect: (AudioTrack) -> Unit,
     onSettingsChange: (AudioSettings) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val bottomSheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
+        skipPartiallyExpanded = true,
     )
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -161,12 +134,12 @@ fun EnhancedAudioManager(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = bottomSheetState,
-        modifier = modifier
+        modifier = modifier,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 32.dp)
+                .padding(bottom = 32.dp),
         ) {
             // Header
             Row(
@@ -174,18 +147,18 @@ fun EnhancedAudioManager(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "Audio Settings",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
 
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Close"
+                        contentDescription = "Close",
                     )
                 }
             }
@@ -193,13 +166,13 @@ fun EnhancedAudioManager(
             // Tabs
             PrimaryTabRow(
                 selectedTabIndex = selectedTabIndex,
-                modifier = Modifier.padding(horizontal = 24.dp)
+                modifier = Modifier.padding(horizontal = 24.dp),
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTabIndex == index,
                         onClick = { selectedTabIndex = index },
-                        text = { Text(title) }
+                        text = { Text(title) },
                     )
                 }
             }
@@ -213,19 +186,19 @@ fun EnhancedAudioManager(
                     currentTrack = currentTrack,
                     audioSettings = audioSettings,
                     onTrackSelect = onTrackSelect,
-                    onSettingsChange = onSettingsChange
+                    onSettingsChange = onSettingsChange,
                 )
                 1 -> EqualizerTab(
                     audioSettings = audioSettings,
-                    onSettingsChange = onSettingsChange
+                    onSettingsChange = onSettingsChange,
                 )
                 2 -> AudioEnhancementTab(
                     audioSettings = audioSettings,
-                    onSettingsChange = onSettingsChange
+                    onSettingsChange = onSettingsChange,
                 )
                 3 -> AdvancedAudioSettingsTab(
                     audioSettings = audioSettings,
-                    onSettingsChange = onSettingsChange
+                    onSettingsChange = onSettingsChange,
                 )
             }
         }
@@ -239,13 +212,13 @@ private fun AudioTracksTab(
     audioSettings: AudioSettings,
     onTrackSelect: (AudioTrack) -> Unit,
     onSettingsChange: (AudioSettings) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // Volume control
         item {
@@ -257,7 +230,7 @@ private fun AudioTracksTab(
                 },
                 onMuteToggle = { muted ->
                     onSettingsChange(audioSettings.copy(isMuted = muted))
-                }
+                },
             )
         }
 
@@ -266,7 +239,7 @@ private fun AudioTracksTab(
             AudioTrackCard(
                 track = track,
                 isSelected = track.id == currentTrack?.id,
-                onSelect = { onTrackSelect(track) }
+                onSelect = { onTrackSelect(track) },
             )
         }
     }
@@ -278,21 +251,21 @@ private fun VolumeControlCard(
     isMuted: Boolean,
     onVolumeChange: (Float) -> Unit,
     onMuteToggle: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = when {
@@ -300,13 +273,13 @@ private fun VolumeControlCard(
                         volume < 0.3f -> Icons.Default.VolumeDown
                         else -> Icons.Default.VolumeUp
                     },
-                    contentDescription = null
+                    contentDescription = null,
                 )
 
                 Text(
                     text = "Volume",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -314,13 +287,13 @@ private fun VolumeControlCard(
                 Text(
                     text = if (isMuted) "Muted" else "${(volume * 100).toInt()}%",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 IconButton(
                     onClick = { onMuteToggle(!isMuted) },
@@ -328,13 +301,13 @@ private fun VolumeControlCard(
                         .size(40.dp)
                         .background(
                             if (isMuted) MaterialTheme.colorScheme.error else Color.Transparent,
-                            CircleShape
-                        )
+                            CircleShape,
+                        ),
                 ) {
                     Icon(
                         imageVector = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeDown,
                         contentDescription = if (isMuted) "Unmute" else "Mute",
-                        tint = if (isMuted) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface
+                        tint = if (isMuted) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface,
                     )
                 }
 
@@ -349,14 +322,14 @@ private fun VolumeControlCard(
                     modifier = Modifier.weight(1f),
                     colors = SliderDefaults.colors(
                         thumbColor = if (isMuted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                        activeTrackColor = if (isMuted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                    )
+                        activeTrackColor = if (isMuted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    ),
                 )
 
                 Icon(
                     imageVector = Icons.Default.VolumeUp,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -368,7 +341,7 @@ private fun AudioTrackCard(
     track: AudioTrack,
     isSelected: Boolean,
     onSelect: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier
@@ -379,21 +352,21 @@ private fun AudioTrackCard(
                 MaterialTheme.colorScheme.primaryContainer
             } else {
                 MaterialTheme.colorScheme.surface
-            }
+            },
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 4.dp else 1.dp
-        )
+            defaultElevation = if (isSelected) 4.dp else 1.dp,
+        ),
     ) {
         ListItem(
             headlineContent = {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = track.title,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                     )
 
                     if (track.isDefault) {
@@ -403,10 +376,10 @@ private fun AudioTrackCard(
                             selected = false,
                             colors = FilterChipDefaults.filterChipColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
-                                labelColor = MaterialTheme.colorScheme.onPrimary
+                                labelColor = MaterialTheme.colorScheme.onPrimary,
                             ),
                             enabled = false,
-                            modifier = Modifier.height(24.dp)
+                            modifier = Modifier.height(24.dp),
                         )
                     }
 
@@ -417,10 +390,10 @@ private fun AudioTrackCard(
                             selected = false,
                             colors = FilterChipDefaults.filterChipColors(
                                 containerColor = MaterialTheme.colorScheme.secondary,
-                                labelColor = MaterialTheme.colorScheme.onSecondary
+                                labelColor = MaterialTheme.colorScheme.onSecondary,
                             ),
                             enabled = false,
-                            modifier = Modifier.height(24.dp)
+                            modifier = Modifier.height(24.dp),
                         )
                     }
 
@@ -431,10 +404,10 @@ private fun AudioTrackCard(
                             selected = false,
                             colors = FilterChipDefaults.filterChipColors(
                                 containerColor = MaterialTheme.colorScheme.tertiary,
-                                labelColor = MaterialTheme.colorScheme.onTertiary
+                                labelColor = MaterialTheme.colorScheme.onTertiary,
                             ),
                             enabled = false,
-                            modifier = Modifier.height(24.dp)
+                            modifier = Modifier.height(24.dp),
                         )
                     }
 
@@ -447,25 +420,25 @@ private fun AudioTrackCard(
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = "${track.codec} • ${track.channels}ch",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
 
                         Text(
                             text = "${track.sampleRate / 1000}kHz",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
 
                         if (track.bitrate > 0) {
                             Text(
                                 text = formatBitrate(track.bitrate),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -474,7 +447,7 @@ private fun AudioTrackCard(
                         Text(
                             text = track.channelLayout,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }
@@ -482,12 +455,12 @@ private fun AudioTrackCard(
             leadingContent = {
                 RadioButton(
                     selected = isSelected,
-                    onClick = onSelect
+                    onClick = onSelect,
                 )
             },
             trailingContent = {
                 AudioTrackIcon(track = track)
-            }
+            },
         )
     }
 }
@@ -495,7 +468,7 @@ private fun AudioTrackCard(
 @Composable
 private fun AudioQualityBadge(
     quality: AudioQuality,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val (text, color) = when (quality) {
         AudioQuality.STANDARD -> "Standard" to MaterialTheme.colorScheme.outline
@@ -510,17 +483,17 @@ private fun AudioQualityBadge(
         selected = false,
         colors = FilterChipDefaults.filterChipColors(
             containerColor = color,
-            labelColor = Color.White
+            labelColor = Color.White,
         ),
         enabled = false,
-        modifier = modifier.height(24.dp)
+        modifier = modifier.height(24.dp),
     )
 }
 
 @Composable
 private fun AudioTrackIcon(
     track: AudioTrack,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val icon = when {
         track.quality == AudioQuality.SPATIAL -> Icons.Default.SurroundSound
@@ -540,7 +513,7 @@ private fun AudioTrackIcon(
         imageVector = icon,
         contentDescription = null,
         tint = color,
-        modifier = modifier.size(24.dp)
+        modifier = modifier.size(24.dp),
     )
 }
 
@@ -548,11 +521,11 @@ private fun AudioTrackIcon(
 private fun EqualizerTab(
     audioSettings: AudioSettings,
     onSettingsChange: (AudioSettings) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val equalizerBands = listOf(
         "32Hz", "64Hz", "125Hz", "250Hz", "500Hz",
-        "1kHz", "2kHz", "4kHz", "8kHz", "16kHz"
+        "1kHz", "2kHz", "4kHz", "8kHz", "16kHz",
     )
 
     Column(
@@ -560,7 +533,7 @@ private fun EqualizerTab(
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Equalizer enable/disable
         Card(
@@ -569,8 +542,8 @@ private fun EqualizerTab(
                     MaterialTheme.colorScheme.primaryContainer
                 } else {
                     MaterialTheme.colorScheme.surface
-                }
-            )
+                },
+            ),
         ) {
             ListItem(
                 headlineContent = { Text("Equalizer") },
@@ -583,7 +556,7 @@ private fun EqualizerTab(
                             MaterialTheme.colorScheme.primary
                         } else {
                             MaterialTheme.colorScheme.onSurface
-                        }
+                        },
                     )
                 },
                 trailingContent = {
@@ -591,9 +564,9 @@ private fun EqualizerTab(
                         checked = audioSettings.equalizerEnabled,
                         onCheckedChange = { enabled ->
                             onSettingsChange(audioSettings.copy(equalizerEnabled = enabled))
-                        }
+                        },
                     )
-                }
+                },
             )
         }
 
@@ -603,24 +576,24 @@ private fun EqualizerTab(
                 currentProfile = audioSettings.audioProfile,
                 onProfileChange = { profile ->
                     onSettingsChange(audioSettings.copy(audioProfile = profile))
-                }
+                },
             )
 
             // Equalizer bands
             Card {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
                         text = "Frequency Bands",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                        horizontalArrangement = Arrangement.SpaceEvenly,
                     ) {
                         equalizerBands.forEachIndexed { index, frequency ->
                             EqualizerBandSlider(
@@ -637,7 +610,7 @@ private fun EqualizerTab(
                                         newBands[index] = gain
                                     }
                                     onSettingsChange(audioSettings.copy(equalizerBands = newBands))
-                                }
+                                },
                             )
                         }
                     }
@@ -645,7 +618,7 @@ private fun EqualizerTab(
                     // Reset button
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.Center,
                     ) {
                         FilterChip(
                             onClick = {
@@ -653,8 +626,8 @@ private fun EqualizerTab(
                                 onSettingsChange(
                                     audioSettings.copy(
                                         equalizerBands = resetBands,
-                                        audioProfile = AudioProfile.BALANCED
-                                    )
+                                        audioProfile = AudioProfile.BALANCED,
+                                    ),
                                 )
                             },
                             label = { Text("Reset") },
@@ -663,9 +636,9 @@ private fun EqualizerTab(
                                 Icon(
                                     imageVector = Icons.Default.GraphicEq,
                                     contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(16.dp),
                                 )
-                            }
+                            },
                         )
                     }
                 }
@@ -678,38 +651,38 @@ private fun EqualizerTab(
 private fun AudioProfileSelector(
     currentProfile: AudioProfile,
     onProfileChange: (AudioProfile) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val profiles = AudioProfile.values()
 
     Card(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = "Audio Presets",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
 
             SingleChoiceSegmentedButtonRow(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 profiles.forEach { profile ->
                     SegmentedButton(
                         shape = SegmentedButtonDefaults.itemShape(
                             index = profile.ordinal,
-                            count = profiles.size
+                            count = profiles.size,
                         ),
                         onClick = { onProfileChange(profile) },
-                        selected = currentProfile == profile
+                        selected = currentProfile == profile,
                     ) {
                         Text(
                             text = profile.name.lowercase().replaceFirstChar { it.uppercase() },
-                            fontSize = 12.sp
+                            fontSize = 12.sp,
                         )
                     }
                 }
@@ -720,7 +693,7 @@ private fun AudioProfileSelector(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -731,17 +704,17 @@ private fun EqualizerBandSlider(
     frequency: String,
     gain: Float,
     onGainChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.width(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = "${gain.toInt()}dB",
             style = MaterialTheme.typography.bodySmall,
             fontSize = 10.sp,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Slider(
@@ -751,8 +724,8 @@ private fun EqualizerBandSlider(
             modifier = Modifier.height(120.dp),
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary
-            )
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+            ),
         )
 
         Text(
@@ -760,7 +733,7 @@ private fun EqualizerBandSlider(
             style = MaterialTheme.typography.bodySmall,
             fontSize = 9.sp,
             textAlign = TextAlign.Center,
-            lineHeight = 10.sp
+            lineHeight = 10.sp,
         )
     }
 }
@@ -769,13 +742,13 @@ private fun EqualizerBandSlider(
 private fun AudioEnhancementTab(
     audioSettings: AudioSettings,
     onSettingsChange: (AudioSettings) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
             EnhancementCard(
@@ -785,7 +758,7 @@ private fun AudioEnhancementTab(
                 value = audioSettings.dialogueEnhancement,
                 onValueChange = { value ->
                     onSettingsChange(audioSettings.copy(dialogueEnhancement = value))
-                }
+                },
             )
         }
 
@@ -797,7 +770,7 @@ private fun AudioEnhancementTab(
                 value = audioSettings.bassBoost,
                 onValueChange = { value ->
                     onSettingsChange(audioSettings.copy(bassBoost = value))
-                }
+                },
             )
         }
 
@@ -809,7 +782,7 @@ private fun AudioEnhancementTab(
                 value = audioSettings.virtualizerStrength,
                 onValueChange = { value ->
                     onSettingsChange(audioSettings.copy(virtualizerStrength = value))
-                }
+                },
             )
         }
 
@@ -821,7 +794,7 @@ private fun AudioEnhancementTab(
                     leadingContent = {
                         Icon(
                             imageVector = Icons.Default.VolumeUp,
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     },
                     trailingContent = {
@@ -829,9 +802,9 @@ private fun AudioEnhancementTab(
                             checked = audioSettings.loudnessEnhancer,
                             onCheckedChange = { enabled ->
                                 onSettingsChange(audioSettings.copy(loudnessEnhancer = enabled))
-                            }
+                            },
                         )
-                    }
+                    },
                 )
             }
         }
@@ -844,7 +817,7 @@ private fun AudioEnhancementTab(
                     leadingContent = {
                         Icon(
                             imageVector = Icons.Default.Hearing,
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     },
                     trailingContent = {
@@ -852,9 +825,9 @@ private fun AudioEnhancementTab(
                             checked = audioSettings.nightMode,
                             onCheckedChange = { enabled ->
                                 onSettingsChange(audioSettings.copy(nightMode = enabled))
-                            }
+                            },
                         )
-                    }
+                    },
                 )
             }
         }
@@ -868,49 +841,49 @@ private fun EnhancementCard(
     icon: ImageVector,
     value: Float,
     onValueChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
                 Text(
                     text = "${(value * 100).toInt()}%",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             Slider(
                 value = value,
                 onValueChange = onValueChange,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -920,13 +893,13 @@ private fun EnhancementCard(
 private fun AdvancedAudioSettingsTab(
     audioSettings: AudioSettings,
     onSettingsChange: (AudioSettings) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
             Card {
@@ -938,9 +911,9 @@ private fun AdvancedAudioSettingsTab(
                             checked = audioSettings.audioNormalization,
                             onCheckedChange = { enabled ->
                                 onSettingsChange(audioSettings.copy(audioNormalization = enabled))
-                            }
+                            },
                         )
-                    }
+                    },
                 )
             }
         }
@@ -955,9 +928,9 @@ private fun AdvancedAudioSettingsTab(
                             checked = audioSettings.skipSilence,
                             onCheckedChange = { enabled ->
                                 onSettingsChange(audioSettings.copy(skipSilence = enabled))
-                            }
+                            },
                         )
-                    }
+                    },
                 )
             }
         }
@@ -972,9 +945,9 @@ private fun AdvancedAudioSettingsTab(
                             checked = audioSettings.downmixSurround,
                             onCheckedChange = { enabled ->
                                 onSettingsChange(audioSettings.copy(downmixSurround = enabled))
-                            }
+                            },
                         )
-                    }
+                    },
                 )
             }
         }
@@ -984,7 +957,7 @@ private fun AdvancedAudioSettingsTab(
                 audioDelay = audioSettings.audioDelay,
                 onDelayChange = { delay ->
                     onSettingsChange(audioSettings.copy(audioDelay = delay))
-                }
+                },
             )
         }
     }
@@ -994,37 +967,37 @@ private fun AdvancedAudioSettingsTab(
 private fun AudioDelayCard(
     audioDelay: Long,
     onDelayChange: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column {
                     Text(
                         text = "Audio Delay",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                     Text(
                         text = "Synchronize audio with video",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
                 Text(
                     text = "${audioDelay}ms",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -1033,22 +1006,22 @@ private fun AudioDelayCard(
                 onValueChange = { delay -> onDelayChange(delay.toLong()) },
                 valueRange = -1000f..1000f,
                 steps = 39, // 50ms increments
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
                     text = "-1000ms",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = "+1000ms",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

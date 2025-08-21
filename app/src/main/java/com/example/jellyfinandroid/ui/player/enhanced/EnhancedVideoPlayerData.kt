@@ -1,8 +1,7 @@
 package com.example.jellyfinandroid.ui.player.enhanced
 
-import androidx.compose.ui.graphics.Color
-import com.example.jellyfinandroid.ui.player.VideoQuality
 import com.example.jellyfinandroid.ui.player.AspectRatioMode
+import com.example.jellyfinandroid.ui.player.VideoQuality
 
 /**
  * Enhanced player data classes - main definitions
@@ -14,7 +13,7 @@ data class Chapter(
     val title: String,
     val startTime: Long,
     val endTime: Long,
-    val thumbnailUrl: String? = null
+    val thumbnailUrl: String? = null,
 )
 
 // Subtitle support
@@ -26,7 +25,7 @@ data class SubtitleTrack(
     val isDefault: Boolean = false,
     val isForced: Boolean = false,
     val format: String,
-    val url: String
+    val url: String,
 )
 
 enum class SubtitlePosition {
@@ -38,7 +37,7 @@ data class ExternalSubtitle(
     val language: String,
     val url: String,
     val format: String,
-    val subtitlePosition: SubtitlePosition = SubtitlePosition.BOTTOM
+    val subtitlePosition: SubtitlePosition = SubtitlePosition.BOTTOM,
 )
 
 // Cast support
@@ -51,7 +50,7 @@ data class CastDevice(
     val signalStrength: Int = 100, // 0-100
     val supportsAudio: Boolean = true,
     val supportsVideo: Boolean = true,
-    val iconUrl: String? = null
+    val iconUrl: String? = null,
 )
 
 // Enhanced player state that matches the EnhancedVideoPlayerScreen expectations
@@ -79,5 +78,5 @@ data class EnhancedVideoPlayerState(
     val isLoading: Boolean = false,
     val isMinimized: Boolean = false,
     val availableSpeeds: List<Float> = listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f),
-    val error: String? = null
+    val error: String? = null,
 )

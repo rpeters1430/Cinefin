@@ -1,17 +1,7 @@
 package com.example.jellyfinandroid.ui.player.enhanced
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,31 +11,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DataUsage
-import androidx.compose.material.icons.filled.DeviceHub
 import androidx.compose.material.icons.filled.HighQuality
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.NetworkCell
-import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.VideoSettings
 import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -58,37 +35,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.util.UnstableApi
-import com.example.jellyfinandroid.ui.player.VideoQuality
 
 data class EnhancedVideoQuality(
     val id: String,
@@ -104,7 +68,7 @@ data class EnhancedVideoQuality(
     val isAdaptive: Boolean = false,
     val audioChannels: String? = null,
     val audioCodec: String? = null,
-    val hdrFormat: String? = null // HDR10, DolbyVision, etc.
+    val hdrFormat: String? = null, // HDR10, DolbyVision, etc.
 )
 
 data class NetworkInfo(
@@ -113,7 +77,7 @@ data class NetworkInfo(
     val currentBandwidth: Long, // bps
     val latency: Int, // ms
     val signalStrength: Int, // 0-100
-    val isMetered: Boolean = false
+    val isMetered: Boolean = false,
 )
 
 data class PlaybackStatistics(
@@ -123,7 +87,7 @@ data class PlaybackStatistics(
     val averageBitrate: Long = 0L,
     val codecInfo: String = "",
     val resolution: String = "",
-    val frameRate: Float = 0f
+    val frameRate: Float = 0f,
 )
 
 data class EnhancedPlayerSettings(
@@ -139,7 +103,7 @@ data class EnhancedPlayerSettings(
     val preferredSubtitleLanguage: String = "en",
     val hardwareDecodingEnabled: Boolean = true,
     val saveDataMode: Boolean = false,
-    val preloadNextEpisode: Boolean = true
+    val preloadNextEpisode: Boolean = true,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -154,10 +118,10 @@ fun EnhancedPlayerSettingsDialog(
     onDismiss: () -> Unit,
     onQualitySelect: (EnhancedVideoQuality) -> Unit,
     onSettingsChange: (EnhancedPlayerSettings) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val bottomSheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
+        skipPartiallyExpanded = true,
     )
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -166,12 +130,12 @@ fun EnhancedPlayerSettingsDialog(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = bottomSheetState,
-        modifier = modifier
+        modifier = modifier,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 32.dp)
+                .padding(bottom = 32.dp),
         ) {
             // Header
             Row(
@@ -179,18 +143,18 @@ fun EnhancedPlayerSettingsDialog(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "Video Settings",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
 
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Close"
+                        contentDescription = "Close",
                     )
                 }
             }
@@ -198,13 +162,13 @@ fun EnhancedPlayerSettingsDialog(
             // Tabs
             PrimaryTabRow(
                 selectedTabIndex = selectedTabIndex,
-                modifier = Modifier.padding(horizontal = 24.dp)
+                modifier = Modifier.padding(horizontal = 24.dp),
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTabIndex == index,
                         onClick = { selectedTabIndex = index },
-                        text = { Text(title) }
+                        text = { Text(title) },
                     )
                 }
             }
@@ -219,19 +183,19 @@ fun EnhancedPlayerSettingsDialog(
                     networkInfo = networkInfo,
                     settings = settings,
                     onQualitySelect = onQualitySelect,
-                    onSettingsChange = onSettingsChange
+                    onSettingsChange = onSettingsChange,
                 )
                 1 -> NetworkInfoTab(
                     networkInfo = networkInfo,
-                    playbackStats = playbackStats
+                    playbackStats = playbackStats,
                 )
                 2 -> AdvancedSettingsTab(
                     settings = settings,
-                    onSettingsChange = onSettingsChange
+                    onSettingsChange = onSettingsChange,
                 )
                 3 -> PlaybackStatsTab(
                     stats = playbackStats,
-                    currentQuality = currentQuality
+                    currentQuality = currentQuality,
                 )
             }
         }
@@ -246,13 +210,13 @@ private fun QualitySelectionTab(
     settings: EnhancedPlayerSettings,
     onQualitySelect: (EnhancedVideoQuality) -> Unit,
     onSettingsChange: (EnhancedPlayerSettings) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // Adaptive streaming toggle
         item {
@@ -262,13 +226,13 @@ private fun QualitySelectionTab(
                         MaterialTheme.colorScheme.primaryContainer
                     } else {
                         MaterialTheme.colorScheme.surface
-                    }
-                )
+                    },
+                ),
             ) {
                 ListItem(
                     headlineContent = { Text("Adaptive Streaming") },
-                    supportingContent = { 
-                        Text("Automatically adjust quality based on network conditions") 
+                    supportingContent = {
+                        Text("Automatically adjust quality based on network conditions")
                     },
                     leadingContent = {
                         Icon(
@@ -278,7 +242,7 @@ private fun QualitySelectionTab(
                                 MaterialTheme.colorScheme.primary
                             } else {
                                 MaterialTheme.colorScheme.onSurface
-                            }
+                            },
                         )
                     },
                     trailingContent = {
@@ -286,9 +250,9 @@ private fun QualitySelectionTab(
                             checked = settings.adaptiveStreamingEnabled,
                             onCheckedChange = { enabled ->
                                 onSettingsChange(settings.copy(adaptiveStreamingEnabled = enabled))
-                            }
+                            },
                         )
-                    }
+                    },
                 )
             }
         }
@@ -298,7 +262,7 @@ private fun QualitySelectionTab(
             item {
                 QualityRecommendationCard(
                     networkInfo = networkInfo,
-                    availableQualities = availableQualities
+                    availableQualities = availableQualities,
                 )
             }
         }
@@ -312,7 +276,7 @@ private fun QualitySelectionTab(
                     isRecommended = isQualityRecommended(quality, networkInfo),
                     isDisabled = settings.adaptiveStreamingEnabled,
                     networkInfo = networkInfo,
-                    onSelect = { onQualitySelect(quality) }
+                    onSelect = { onQualitySelect(quality) },
                 )
             }
         }
@@ -323,25 +287,25 @@ private fun QualitySelectionTab(
 private fun QualityRecommendationCard(
     networkInfo: NetworkInfo,
     availableQualities: List<EnhancedVideoQuality>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val recommendedQuality = getRecommendedQuality(networkInfo, availableQualities)
 
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-        )
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+        ),
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onTertiaryContainer
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
             )
 
             Column {
@@ -349,19 +313,19 @@ private fun QualityRecommendationCard(
                     text = "Recommended Quality",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
 
                 Text(
                     text = recommendedQuality?.label ?: "Auto",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
 
                 Text(
                     text = "Based on ${networkInfo.connectionType} connection (${formatBandwidth(networkInfo.currentBandwidth)})",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
                 )
             }
         }
@@ -376,7 +340,7 @@ private fun QualityOptionCard(
     isDisabled: Boolean,
     networkInfo: NetworkInfo,
     onSelect: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val canStream = quality.estimatedBandwidth <= networkInfo.currentBandwidth
     val effectivelyDisabled = isDisabled || !canStream
@@ -391,21 +355,21 @@ private fun QualityOptionCard(
                 isSelected -> MaterialTheme.colorScheme.primaryContainer
                 isRecommended -> MaterialTheme.colorScheme.secondaryContainer
                 else -> MaterialTheme.colorScheme.surface
-            }
+            },
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 4.dp else 1.dp
-        )
+            defaultElevation = if (isSelected) 4.dp else 1.dp,
+        ),
     ) {
         ListItem(
             headlineContent = {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = quality.label,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                     )
 
                     if (quality.isOriginal) {
@@ -415,10 +379,10 @@ private fun QualityOptionCard(
                             selected = false,
                             colors = FilterChipDefaults.filterChipColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
-                                labelColor = MaterialTheme.colorScheme.onPrimary
+                                labelColor = MaterialTheme.colorScheme.onPrimary,
                             ),
                             enabled = false,
-                            modifier = Modifier.height(24.dp)
+                            modifier = Modifier.height(24.dp),
                         )
                     }
 
@@ -429,10 +393,10 @@ private fun QualityOptionCard(
                             selected = false,
                             colors = FilterChipDefaults.filterChipColors(
                                 containerColor = MaterialTheme.colorScheme.secondary,
-                                labelColor = MaterialTheme.colorScheme.onSecondary
+                                labelColor = MaterialTheme.colorScheme.onSecondary,
                             ),
                             enabled = false,
-                            modifier = Modifier.height(24.dp)
+                            modifier = Modifier.height(24.dp),
                         )
                     }
 
@@ -443,10 +407,10 @@ private fun QualityOptionCard(
                             selected = false,
                             colors = FilterChipDefaults.filterChipColors(
                                 containerColor = MaterialTheme.colorScheme.tertiary,
-                                labelColor = MaterialTheme.colorScheme.onTertiary
+                                labelColor = MaterialTheme.colorScheme.onTertiary,
                             ),
                             enabled = false,
-                            modifier = Modifier.height(24.dp)
+                            modifier = Modifier.height(24.dp),
                         )
                     }
                 }
@@ -457,19 +421,19 @@ private fun QualityOptionCard(
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = "Bitrate: ${formatBitrate(quality.bitrate)}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
 
                         quality.fileSize?.let { size ->
                             Text(
                                 text = "Size: ${formatFileSize(size)}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -477,25 +441,25 @@ private fun QualityOptionCard(
                     // Network compatibility indicator
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
                             imageVector = if (canStream) Icons.Default.Wifi else Icons.Default.NetworkCell,
                             contentDescription = null,
                             tint = if (canStream) Color.Green else Color(0xFFFF9800),
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
 
                         Text(
                             text = if (canStream) "Compatible" else "May buffer",
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (canStream) Color.Green else Color(0xFFFF9800)
+                            color = if (canStream) Color.Green else Color(0xFFFF9800),
                         )
 
                         Text(
                             text = "Needs ${formatBandwidth(quality.estimatedBandwidth)}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -504,12 +468,12 @@ private fun QualityOptionCard(
                 RadioButton(
                     selected = isSelected,
                     onClick = onSelect,
-                    enabled = !effectivelyDisabled
+                    enabled = !effectivelyDisabled,
                 )
             },
             trailingContent = {
                 QualityIndicatorIcon(quality = quality)
-            }
+            },
         )
     }
 }
@@ -517,7 +481,7 @@ private fun QualityOptionCard(
 @Composable
 private fun QualityIndicatorIcon(
     quality: EnhancedVideoQuality,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val icon = when {
         quality.isOriginal -> Icons.Default.HighQuality
@@ -537,7 +501,7 @@ private fun QualityIndicatorIcon(
         imageVector = icon,
         contentDescription = null,
         tint = color,
-        modifier = modifier.size(24.dp)
+        modifier = modifier.size(24.dp),
     )
 }
 
@@ -545,13 +509,13 @@ private fun QualityIndicatorIcon(
 private fun NetworkInfoTab(
     networkInfo: NetworkInfo,
     playbackStats: PlaybackStatistics,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
             NetworkStatusCard(networkInfo = networkInfo)
@@ -560,7 +524,7 @@ private fun NetworkInfoTab(
         item {
             BandwidthUsageCard(
                 networkInfo = networkInfo,
-                playbackStats = playbackStats
+                playbackStats = playbackStats,
             )
         }
 
@@ -573,52 +537,52 @@ private fun NetworkInfoTab(
 @Composable
 private fun NetworkStatusCard(
     networkInfo: NetworkInfo,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = when (networkInfo.connectionType) {
                         "WiFi" -> Icons.Default.Wifi
                         else -> Icons.Default.NetworkCell
                     },
-                    contentDescription = null
+                    contentDescription = null,
                 )
 
                 Text(
                     text = "Network Status",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
 
             // Connection type and signal
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
                     Text(
                         text = "Connection",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = networkInfo.connectionType,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                 }
 
@@ -626,12 +590,12 @@ private fun NetworkStatusCard(
                     Text(
                         text = "Signal",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = "${networkInfo.signalStrength}%",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                 }
             }
@@ -639,18 +603,18 @@ private fun NetworkStatusCard(
             // Bandwidth info
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
                     Text(
                         text = "Available Bandwidth",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = formatBandwidth(networkInfo.availableBandwidth),
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                 }
 
@@ -658,12 +622,12 @@ private fun NetworkStatusCard(
                     Text(
                         text = "Latency",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = "${networkInfo.latency}ms",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
                 }
             }
@@ -671,18 +635,18 @@ private fun NetworkStatusCard(
             if (networkInfo.isMetered) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         imageVector = Icons.Default.DataUsage,
                         contentDescription = null,
                         tint = Color(0xFFFF9800),
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                     Text(
                         text = "Metered Connection - Data usage will be monitored",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFFFF9800)
+                        color = Color(0xFFFF9800),
                     )
                 }
             }
@@ -694,40 +658,42 @@ private fun NetworkStatusCard(
 private fun BandwidthUsageCard(
     networkInfo: NetworkInfo,
     playbackStats: PlaybackStatistics,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = "Bandwidth Usage",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
 
             // Current usage vs available
             val usagePercentage = if (networkInfo.availableBandwidth > 0) {
                 (playbackStats.averageBitrate.toFloat() / networkInfo.availableBandwidth.toFloat()).coerceIn(0f, 1f)
-            } else 0f
+            } else {
+                0f
+            }
 
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
                         text = "Current Usage",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = "${(usagePercentage * 100).toInt()}%",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
@@ -738,20 +704,20 @@ private fun BandwidthUsageCard(
                         usagePercentage > 0.8f -> Color.Red
                         usagePercentage > 0.6f -> Color(0xFFFF9800)
                         else -> MaterialTheme.colorScheme.primary
-                    }
+                    },
                 )
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
                         text = formatBandwidth(playbackStats.averageBitrate),
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
                     )
                     Text(
                         text = formatBandwidth(networkInfo.availableBandwidth),
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
                     )
                 }
             }
@@ -762,7 +728,7 @@ private fun BandwidthUsageCard(
 @Composable
 private fun BufferHealthCard(
     playbackStats: PlaybackStatistics,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -771,17 +737,17 @@ private fun BufferHealthCard(
                 playbackStats.bufferHealth > 0.7f -> MaterialTheme.colorScheme.primaryContainer
                 playbackStats.bufferHealth > 0.3f -> MaterialTheme.colorScheme.tertiaryContainer
                 else -> MaterialTheme.colorScheme.errorContainer
-            }
-        )
+            },
+        ),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = "Buffer Health",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
 
             LinearProgressIndicator(
@@ -791,7 +757,7 @@ private fun BufferHealthCard(
                     playbackStats.bufferHealth > 0.7f -> Color.Green
                     playbackStats.bufferHealth > 0.3f -> Color(0xFFFF9800)
                     else -> Color.Red
-                }
+                },
             )
 
             Text(
@@ -800,7 +766,7 @@ private fun BufferHealthCard(
                     playbackStats.bufferHealth > 0.3f -> "Good - Minor buffering possible"
                     else -> "Poor - Buffering likely"
                 },
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
     }
@@ -810,18 +776,18 @@ private fun BufferHealthCard(
 private fun AdvancedSettingsTab(
     settings: EnhancedPlayerSettings,
     onSettingsChange: (EnhancedPlayerSettings) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
             SettingsSection(
                 title = "Quality & Performance",
-                icon = Icons.Default.HighQuality
+                icon = Icons.Default.HighQuality,
             ) {
                 SettingItem(
                     title = "Prefer Higher Quality",
@@ -829,11 +795,11 @@ private fun AdvancedSettingsTab(
                     trailing = {
                         Switch(
                             checked = settings.preferHigherQuality,
-                            onCheckedChange = { 
+                            onCheckedChange = {
                                 onSettingsChange(settings.copy(preferHigherQuality = it))
-                            }
+                            },
                         )
-                    }
+                    },
                 )
 
                 SettingItem(
@@ -842,11 +808,11 @@ private fun AdvancedSettingsTab(
                     trailing = {
                         Switch(
                             checked = settings.hardwareDecodingEnabled,
-                            onCheckedChange = { 
+                            onCheckedChange = {
                                 onSettingsChange(settings.copy(hardwareDecodingEnabled = it))
-                            }
+                            },
                         )
-                    }
+                    },
                 )
 
                 SettingItem(
@@ -855,11 +821,11 @@ private fun AdvancedSettingsTab(
                     trailing = {
                         Switch(
                             checked = settings.saveDataMode,
-                            onCheckedChange = { 
+                            onCheckedChange = {
                                 onSettingsChange(settings.copy(saveDataMode = it))
-                            }
+                            },
                         )
-                    }
+                    },
                 )
             }
         }
@@ -867,7 +833,7 @@ private fun AdvancedSettingsTab(
         item {
             SettingsSection(
                 title = "Audio",
-                icon = Icons.Default.Speed
+                icon = Icons.Default.Speed,
             ) {
                 SettingItem(
                     title = "Skip Silence",
@@ -875,11 +841,11 @@ private fun AdvancedSettingsTab(
                     trailing = {
                         Switch(
                             checked = settings.skipSilence,
-                            onCheckedChange = { 
+                            onCheckedChange = {
                                 onSettingsChange(settings.copy(skipSilence = it))
-                            }
+                            },
                         )
-                    }
+                    },
                 )
 
                 SettingItem(
@@ -888,11 +854,11 @@ private fun AdvancedSettingsTab(
                     trailing = {
                         Switch(
                             checked = settings.normalizeAudio,
-                            onCheckedChange = { 
+                            onCheckedChange = {
                                 onSettingsChange(settings.copy(normalizeAudio = it))
-                            }
+                            },
                         )
-                    }
+                    },
                 )
 
                 SettingItem(
@@ -901,11 +867,11 @@ private fun AdvancedSettingsTab(
                     trailing = {
                         Switch(
                             checked = settings.enhanceDialogue,
-                            onCheckedChange = { 
+                            onCheckedChange = {
                                 onSettingsChange(settings.copy(enhanceDialogue = it))
-                            }
+                            },
                         )
-                    }
+                    },
                 )
             }
         }
@@ -917,31 +883,31 @@ private fun SettingsSection(
     title: String,
     icon: ImageVector,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
-                
+
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
 
@@ -957,16 +923,16 @@ private fun SettingItem(
     title: String,
     subtitle: String? = null,
     trailing: @Composable () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     ListItem(
         headlineContent = { Text(title) },
         supportingContent = subtitle?.let { { Text(it) } },
         trailingContent = trailing,
         colors = ListItemDefaults.colors(
-            containerColor = Color.Transparent
+            containerColor = Color.Transparent,
         ),
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -974,18 +940,18 @@ private fun SettingItem(
 private fun PlaybackStatsTab(
     stats: PlaybackStatistics,
     currentQuality: EnhancedVideoQuality?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
             PlaybackInfoCard(
                 stats = stats,
-                currentQuality = currentQuality
+                currentQuality = currentQuality,
             )
         }
 
@@ -999,22 +965,22 @@ private fun PlaybackStatsTab(
 private fun PlaybackInfoCard(
     stats: PlaybackStatistics,
     currentQuality: EnhancedVideoQuality?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = "Current Playback Info",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
 
             currentQuality?.let { quality ->
@@ -1033,11 +999,13 @@ private fun PlaybackInfoCard(
 @Composable
 private fun PerformanceStatsCard(
     stats: PlaybackStatistics,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val dropRate = if (stats.totalFrames > 0) {
         (stats.droppedFrames.toFloat() / stats.totalFrames.toFloat() * 100)
-    } else 0f
+    } else {
+        0f
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -1046,17 +1014,17 @@ private fun PerformanceStatsCard(
                 MaterialTheme.colorScheme.errorContainer
             } else {
                 MaterialTheme.colorScheme.surface
-            }
-        )
+            },
+        ),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = "Performance Stats",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
 
             StatsRow("Dropped Frames", "${stats.droppedFrames}/${stats.totalFrames}")
@@ -1067,7 +1035,7 @@ private fun PerformanceStatsCard(
                 Text(
                     text = "⚠️ High frame drop rate detected. Consider lowering quality.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
         }
@@ -1078,21 +1046,21 @@ private fun PerformanceStatsCard(
 private fun StatsRow(
     label: String,
     value: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
         )
     }
 }
@@ -1103,12 +1071,12 @@ private fun isQualityRecommended(quality: EnhancedVideoQuality, networkInfo: Net
 
 private fun getRecommendedQuality(
     networkInfo: NetworkInfo,
-    availableQualities: List<EnhancedVideoQuality>
+    availableQualities: List<EnhancedVideoQuality>,
 ): EnhancedVideoQuality? {
     val suitableQualities = availableQualities.filter { quality ->
         quality.estimatedBandwidth <= networkInfo.currentBandwidth * 0.8
     }
-    
+
     return suitableQualities.maxByOrNull { it.height }
 }
 
