@@ -3,8 +3,6 @@ package com.example.jellyfinandroid.ui.player.enhanced
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.Color
-import com.example.jellyfinandroid.ui.player.VideoQuality
-import com.example.jellyfinandroid.ui.player.AspectRatioMode
 
 /**
  * Additional data classes and enums for enhanced video player components
@@ -20,7 +18,7 @@ data class CastQueueItem(
     val thumbnailUrl: String? = null,
     val isCurrentlyPlaying: Boolean = false,
     val mediaUrl: String,
-    val mediaType: String = "video"
+    val mediaType: String = "video",
 )
 
 // Subtitle settings - unique to this file
@@ -30,7 +28,7 @@ data class SubtitleSettings(
     val fontColor: Color = Color.White,
     val backgroundColor: Color = Color.Black.copy(alpha = 0.8f),
     val subtitlePosition: SubtitlePosition = SubtitlePosition.BOTTOM,
-    val fontFamily: String = "Default"
+    val fontFamily: String = "Default",
 )
 
 // Cast state - unique to this file
@@ -43,7 +41,7 @@ data class MediaQueueItem(
     val id: String,
     val title: String,
     val duration: Long,
-    val thumbnailUrl: String? = null
+    val thumbnailUrl: String? = null,
 )
 
 // Basic player state - unique to this file
@@ -52,7 +50,7 @@ data class PlayerState(
     val currentPosition: Long = 0L,
     val duration: Long = 0L,
     val bufferedPosition: Long = 0L,
-    val playbackState: PlaybackState = PlaybackState.IDLE
+    val playbackState: PlaybackState = PlaybackState.IDLE,
 )
 
 enum class PlaybackState {

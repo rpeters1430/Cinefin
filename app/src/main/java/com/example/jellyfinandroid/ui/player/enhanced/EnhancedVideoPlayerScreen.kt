@@ -1,18 +1,14 @@
 package com.example.jellyfinandroid.ui.player.enhanced
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,22 +29,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BrightnessHigh
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Forward10
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Replay10
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -63,14 +52,11 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProgressIndicatorDefaults
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -78,27 +64,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.example.jellyfinandroid.ui.player.AspectRatioMode
-import com.example.jellyfinandroid.ui.player.VideoPlayerState
 import com.example.jellyfinandroid.ui.player.VideoQuality
 import kotlinx.coroutines.delay
 
@@ -124,12 +104,12 @@ fun EnhancedVideoPlayerScreen(
     modifier: Modifier = Modifier,
 ) {
     val hapticFeedback = LocalHapticFeedback.current
-    
+
     var controlsVisible by remember { mutableStateOf(true) }
     var gestureOverlayVisible by remember { mutableStateOf(false) }
     var gestureIcon by remember { mutableStateOf<ImageVector?>(null) }
     var gestureText by remember { mutableStateOf("") }
-    
+
     // Auto-hide controls
     LaunchedEffect(controlsVisible, playerState.isPlaying) {
         if (controlsVisible && playerState.isPlaying && !playerState.showSettings) {
@@ -152,14 +132,14 @@ fun EnhancedVideoPlayerScreen(
             .background(Color.Black)
             .pointerInput(Unit) {
                 detectTapGestures(
-                    onTap = { 
+                    onTap = {
                         controlsVisible = !controlsVisible
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     },
                     onDoubleTap = { offset ->
                         val screenWidth = size.width
                         val isRightSide = offset.x > screenWidth / 2
-                        
+
                         if (isRightSide) {
                             onSeekBy(10000) // 10 seconds forward
                             gestureIcon = Icons.Default.Forward10
@@ -169,16 +149,16 @@ fun EnhancedVideoPlayerScreen(
                             gestureIcon = Icons.Default.Replay10
                             gestureText = "-10s"
                         }
-                        
+
                         gestureOverlayVisible = true
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                    }
+                    },
                 )
             }
             .pointerInput(Unit) {
                 var initialVolume = 0f
                 var initialBrightness = 0f
-                
+
                 detectDragGestures(
                     onDragStart = { offset ->
                         initialVolume = playerState.volume
@@ -189,27 +169,27 @@ fun EnhancedVideoPlayerScreen(
                         val screenWidth = size.width
                         val isLeftSide = change.position.x < screenWidth / 2
                         val deltaY = -dragAmount.y / screenHeight // Negative for natural gesture
-                        
+
                         if (isLeftSide) {
                             // Left side - brightness control
                             val newBrightness = (initialBrightness + deltaY).coerceIn(0f, 1f)
                             onBrightnessChange(newBrightness)
-                            
+
                             gestureIcon = Icons.Default.BrightnessHigh
                             gestureText = "${(newBrightness * 100).toInt()}%"
                         } else {
                             // Right side - volume control
                             val newVolume = (initialVolume + deltaY).coerceIn(0f, 1f)
                             onVolumeChange(newVolume)
-                            
+
                             gestureIcon = Icons.Default.VolumeUp
                             gestureText = "${(newVolume * 100).toInt()}%"
                         }
-                        
+
                         gestureOverlayVisible = true
-                    }
+                    },
                 )
-            }
+            },
     ) {
         // Video Player View
         AndroidView(
@@ -224,7 +204,7 @@ fun EnhancedVideoPlayerScreen(
             update = { playerView ->
                 playerView.resizeMode = playerState.selectedAspectRatio.resizeMode
             },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         )
 
         // Minimized Player Mode
@@ -233,7 +213,7 @@ fun EnhancedVideoPlayerScreen(
                 playerState = playerState,
                 onPlayPause = onPlayPause,
                 onClose = { /* Handle close */ },
-                onExpand = { /* Handle expand */ }
+                onExpand = { /* Handle expand */ },
             )
         }
 
@@ -251,11 +231,11 @@ fun EnhancedVideoPlayerScreen(
         AnimatedVisibility(
             visible = gestureOverlayVisible,
             enter = scaleIn(spring(stiffness = Spring.StiffnessHigh)) + fadeIn(),
-            exit = scaleOut(spring(stiffness = Spring.StiffnessHigh)) + fadeOut()
+            exit = scaleOut(spring(stiffness = Spring.StiffnessHigh)) + fadeOut(),
         ) {
             GestureOverlay(
                 icon = gestureIcon,
-                text = gestureText
+                text = gestureText,
             )
         }
 
@@ -263,7 +243,7 @@ fun EnhancedVideoPlayerScreen(
         AnimatedVisibility(
             visible = controlsVisible && !playerState.isMinimized,
             enter = fadeIn(tween(300)),
-            exit = fadeOut(tween(300))
+            exit = fadeOut(tween(300)),
         ) {
             EnhancedVideoControls(
                 playerState = playerState,
@@ -278,7 +258,7 @@ fun EnhancedVideoPlayerScreen(
                 onPictureInPictureClick = onPictureInPictureClick,
                 onBackClick = onBackClick,
                 onFullscreenToggle = onFullscreenToggle,
-                onSettingsClick = onSettingsClick
+                onSettingsClick = onSettingsClick,
             )
         }
 
@@ -288,7 +268,7 @@ fun EnhancedVideoPlayerScreen(
                 playerState = playerState,
                 onCastClick = onCastClick,
                 onPictureInPictureClick = onPictureInPictureClick,
-                modifier = Modifier.align(Alignment.BottomEnd)
+                modifier = Modifier.align(Alignment.BottomEnd),
             )
         }
 
@@ -296,7 +276,7 @@ fun EnhancedVideoPlayerScreen(
         if (playerState.isCasting) {
             CastStatusIndicator(
                 deviceName = playerState.castDeviceName ?: "Unknown Device",
-                modifier = Modifier.align(Alignment.TopCenter)
+                modifier = Modifier.align(Alignment.TopCenter),
             )
         }
     }
@@ -308,7 +288,7 @@ private fun MinimizedPlayerOverlay(
     onPlayPause: () -> Unit,
     onClose: () -> Unit,
     onExpand: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier
@@ -316,31 +296,31 @@ private fun MinimizedPlayerOverlay(
             .height(80.dp)
             .clickable { onExpand() },
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 8.dp
+        shadowElevation = 8.dp,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 // Thumbnail or play indicator
                 FilledIconButton(
                     onClick = onPlayPause,
                     modifier = Modifier.size(48.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ),
                 ) {
                     Icon(
                         imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (playerState.isPlaying) "Pause" else "Play"
+                        contentDescription = if (playerState.isPlaying) "Pause" else "Play",
                     )
                 }
 
@@ -348,9 +328,9 @@ private fun MinimizedPlayerOverlay(
                     Text(
                         text = playerState.itemName,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
                     )
-                    
+
                     LinearProgressIndicator(
                         progress = {
                             if (playerState.duration > 0) {
@@ -363,7 +343,7 @@ private fun MinimizedPlayerOverlay(
                             .fillMaxWidth()
                             .padding(top = 4.dp),
                         color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.primaryContainer
+                        trackColor = MaterialTheme.colorScheme.primaryContainer,
                     )
                 }
             }
@@ -371,7 +351,7 @@ private fun MinimizedPlayerOverlay(
             IconButtonWithHaptics(
                 icon = Icons.Default.ClosedCaption,
                 contentDescription = "Close",
-                onClick = onClose
+                onClick = onClose,
             )
         }
     }
@@ -379,35 +359,35 @@ private fun MinimizedPlayerOverlay(
 
 @Composable
 private fun EnhancedLoadingIndicator(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Card(
             modifier = Modifier.padding(24.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(48.dp),
                     color = MaterialTheme.colorScheme.primary,
                     strokeWidth = 4.dp,
-                    strokeCap = ProgressIndicatorDefaults.CircularIndeterminateStrokeCap
+                    strokeCap = ProgressIndicatorDefaults.CircularIndeterminateStrokeCap,
                 )
-                
+
                 Text(
                     text = "Loading video...",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
@@ -417,36 +397,36 @@ private fun EnhancedLoadingIndicator(
 @Composable
 private fun ErrorDisplay(
     error: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer
+                containerColor = MaterialTheme.colorScheme.errorContainer,
             ),
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = "Playback Error",
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onErrorContainer,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Text(
                     text = error,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
         }
@@ -457,31 +437,31 @@ private fun ErrorDisplay(
 private fun GestureOverlay(
     icon: ImageVector?,
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = Color.Black.copy(alpha = 0.7f),
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 icon?.let {
                     Icon(
                         imageVector = it,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(48.dp),
                     )
                 }
-                
+
                 Text(
                     text = text,
                     color = Color.White,
@@ -490,9 +470,9 @@ private fun GestureOverlay(
                         shadow = Shadow(
                             color = Color.Black,
                             offset = Offset(2f, 2f),
-                            blurRadius = 4f
-                        )
-                    )
+                            blurRadius = 4f,
+                        ),
+                    ),
                 )
             }
         }
@@ -505,29 +485,29 @@ private fun QuickActionFABs(
     playerState: EnhancedVideoPlayerState,
     onCastClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalAlignment = Alignment.End
+        horizontalAlignment = Alignment.End,
     ) {
         // Cast FAB with badge if connected
         BadgedBox(
             badge = {
                 if (playerState.isCasting) {
                     Badge(
-                        containerColor = MaterialTheme.colorScheme.primary
+                        containerColor = MaterialTheme.colorScheme.primary,
                     )
                 }
-            }
+            },
         ) {
             ExtendedFloatingActionButton(
                 onClick = onCastClick,
                 icon = {
                     Icon(
                         imageVector = if (playerState.isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
-                        contentDescription = "Cast"
+                        contentDescription = "Cast",
                     )
                 },
                 text = { Text(if (playerState.isCasting) "Casting" else "Cast") },
@@ -535,7 +515,7 @@ private fun QuickActionFABs(
                     MaterialTheme.colorScheme.primary
                 } else {
                     MaterialTheme.colorScheme.primaryContainer
-                }
+                },
             )
         }
 
@@ -545,10 +525,10 @@ private fun QuickActionFABs(
             icon = {
                 Icon(
                     imageVector = Icons.Default.PictureInPicture,
-                    contentDescription = "Picture in Picture"
+                    contentDescription = "Picture in Picture",
                 )
             },
-            text = { Text("PiP") }
+            text = { Text("PiP") },
         )
     }
 }
@@ -556,36 +536,36 @@ private fun QuickActionFABs(
 @Composable
 private fun CastStatusIndicator(
     deviceName: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = true,
         enter = slideInVertically { -it },
         exit = slideOutVertically { -it },
-        modifier = modifier.padding(16.dp)
+        modifier = modifier.padding(16.dp),
     ) {
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = MaterialTheme.colorScheme.primary,
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Row(
                 modifier = Modifier.padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.CastConnected,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary
+                    tint = MaterialTheme.colorScheme.onPrimary,
                 )
-                
+
                 Text(
                     text = "Casting to $deviceName",
                     color = MaterialTheme.colorScheme.onPrimary,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
         }
@@ -599,29 +579,29 @@ private fun IconButtonWithHaptics(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    tint: Color = Color.White
+    tint: Color = Color.White,
 ) {
     val hapticFeedback = LocalHapticFeedback.current
-    
+
     Surface(
         modifier = modifier
             .clip(CircleShape)
             .clickable(
                 enabled = enabled,
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null
+                indication = null,
             ) {
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                 onClick()
             },
         color = Color.White.copy(alpha = 0.1f),
-        shape = CircleShape
+        shape = CircleShape,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = tint,
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(12.dp),
         )
     }
 }

@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -22,6 +21,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.util.UnstableApi
+import com.example.jellyfinandroid.ui.player.AspectRatioMode
+import com.example.jellyfinandroid.ui.player.VideoQuality
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,12 +30,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.example.jellyfinandroid.ui.player.VideoQuality
-import com.example.jellyfinandroid.ui.player.AspectRatioMode
 
 /**
  * Enhanced Video Player Integration Screen
- * 
+ *
  * This composable integrates all the enhanced video player components:
  * - Enhanced video player with gesture controls and haptic feedback
  * - Advanced video controls with Material 3 Expressive components
@@ -52,11 +51,11 @@ fun IntegratedEnhancedVideoPlayer(
     subtitle: String = "",
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: EnhancedVideoPlayerViewModel = viewModel()
+    viewModel: EnhancedVideoPlayerViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    
+
     var showQualitySettings by remember { mutableStateOf(false) }
     var showSubtitleManager by remember { mutableStateOf(false) }
     var showCastManager by remember { mutableStateOf(false) }
@@ -78,7 +77,7 @@ fun IntegratedEnhancedVideoPlayer(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color.Black),
     ) {
         // Main video player screen
         EnhancedVideoPlayerScreen(
@@ -97,14 +96,14 @@ fun IntegratedEnhancedVideoPlayer(
             onBackClick = onBack,
             onFullscreenToggle = { viewModel.toggleFullscreen() },
             onSettingsClick = { showQualitySettings = true },
-            exoPlayer = viewModel.exoPlayer
+            exoPlayer = viewModel.exoPlayer,
         )
 
         // Enhanced controls overlay
         AnimatedVisibility(
             visible = uiState.showControls && !uiState.isMinimized,
             enter = fadeIn(),
-            exit = fadeOut()
+            exit = fadeOut(),
         ) {
             EnhancedVideoControls(
                 playerState = uiState.enhancedPlayerState,
@@ -119,7 +118,7 @@ fun IntegratedEnhancedVideoPlayer(
                 onPictureInPictureClick = { viewModel.togglePictureInPicture() },
                 onBackClick = onBack,
                 onFullscreenToggle = { viewModel.toggleFullscreen() },
-                onSettingsClick = { showQualitySettings = true }
+                onSettingsClick = { showQualitySettings = true },
             )
         }
 
@@ -133,7 +132,7 @@ fun IntegratedEnhancedVideoPlayer(
                     title = title,
                     subtitle = subtitle,
                     hasNext = uiState.hasNext,
-                    hasPrevious = uiState.hasPrevious
+                    hasPrevious = uiState.hasPrevious,
                 ),
                 isVisible = true,
                 onPlayPause = { viewModel.togglePlayPause() },
@@ -142,7 +141,7 @@ fun IntegratedEnhancedVideoPlayer(
                 onSkipPrevious = { viewModel.playPrevious() },
                 onSkipNext = { viewModel.playNext() },
                 onEnterFullscreen = { viewModel.toggleMinimizedMode() },
-                onClose = onBack
+                onClose = onBack,
             )
         }
 
@@ -156,7 +155,7 @@ fun IntegratedEnhancedVideoPlayer(
                 settings = uiState.playerSettings,
                 onDismiss = { showQualitySettings = false },
                 onQualitySelect = { quality -> viewModel.selectQuality(quality) },
-                onSettingsChange = { settings -> viewModel.updatePlayerSettings(settings) }
+                onSettingsChange = { settings -> viewModel.updatePlayerSettings(settings) },
             )
         }
 
@@ -182,7 +181,7 @@ fun IntegratedEnhancedVideoPlayer(
                 audioSettings = uiState.audioSettings,
                 onDismiss = { showAudioManager = false },
                 onTrackSelect = { track -> viewModel.selectAudioTrack(track) },
-                onSettingsChange = { settings -> viewModel.updateAudioSettings(settings) }
+                onSettingsChange = { settings -> viewModel.updateAudioSettings(settings) },
             )
         }
 
@@ -196,12 +195,12 @@ fun IntegratedEnhancedVideoPlayer(
                 title = title,
                 subtitle = subtitle,
                 hasNext = uiState.hasNext,
-                hasPrevious = uiState.hasPrevious
+                hasPrevious = uiState.hasPrevious,
             ),
             configuration = PiPConfiguration(
                 enableAutoEnterOnUserLeave = uiState.playerSettings.preloadNextEpisode,
                 enableSeekBar = true,
-                showTitle = true
+                showTitle = true,
             ),
             onEnterPiP = { isInPiPMode = true },
             onExitPiP = { isInPiPMode = false },
@@ -210,14 +209,14 @@ fun IntegratedEnhancedVideoPlayer(
             onPrevious = { viewModel.playPrevious() },
             onSeekForward = { viewModel.seekForward() },
             onSeekBackward = { viewModel.seekBackward() },
-            onClose = onBack
+            onClose = onBack,
         )
     }
 }
 
 /**
  * Enhanced Video Player View Model
- * 
+ *
  * Manages the state and business logic for the enhanced video player.
  * Integrates with ExoPlayer, Cast framework, and device capabilities.
  */
@@ -251,7 +250,7 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(
                     isLoading = true,
-                    error = null
+                    error = null,
                 )
 
                 // TODO: Initialize ExoPlayer with video URL
@@ -267,7 +266,7 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
                         duration = 3600000L, // 1 hour example
                         currentPosition = 0L,
                         bufferedPosition = 0L,
-                        selectedQuality = VideoQuality("1080p", "1080p HD", 8000000, 1920, 1080)
+                        selectedQuality = VideoQuality("1080p", "1080p HD", 8000000, 1920, 1080),
                     ),
                     // Add mock data for demonstration
                     availableQualities = listOf(
@@ -279,7 +278,7 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
                             height = 1080,
                             fps = 24f,
                             codec = "H.264",
-                            estimatedBandwidth = 10_000_000L
+                            estimatedBandwidth = 10_000_000L,
                         ),
                         EnhancedVideoQuality(
                             id = "720p",
@@ -289,8 +288,8 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
                             height = 720,
                             fps = 24f,
                             codec = "H.264",
-                            estimatedBandwidth = 5_000_000L
-                        )
+                            estimatedBandwidth = 5_000_000L,
+                        ),
                     ),
                     availableSubtitles = listOf(
                         SubtitleTrack(
@@ -301,8 +300,8 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
                             isDefault = true,
                             isForced = false,
                             format = "SRT",
-                            url = ""
-                        )
+                            url = "",
+                        ),
                     ),
                     audioTracks = listOf(
                         AudioTrack(
@@ -314,14 +313,14 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
                             channels = 2,
                             sampleRate = 48000,
                             bitrate = 128000L,
-                            isDefault = true
-                        )
-                    )
+                            isDefault = true,
+                        ),
+                    ),
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = e.message
+                    error = e.message,
                 )
             }
         }
@@ -330,7 +329,7 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
     fun togglePlayPause() {
         val currentState = _uiState.value.enhancedPlayerState
         _uiState.value = _uiState.value.copy(
-            enhancedPlayerState = currentState.copy(isPlaying = !currentState.isPlaying)
+            enhancedPlayerState = currentState.copy(isPlaying = !currentState.isPlaying),
         )
         // TODO: Implement actual ExoPlayer play/pause
     }
@@ -338,7 +337,7 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
     fun seekTo(position: Long) {
         val currentState = _uiState.value.enhancedPlayerState
         _uiState.value = _uiState.value.copy(
-            enhancedPlayerState = currentState.copy(currentPosition = position)
+            enhancedPlayerState = currentState.copy(currentPosition = position),
         )
         // TODO: Implement actual ExoPlayer seek
     }
@@ -359,7 +358,7 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
     fun changePlaybackSpeed(speed: Float) {
         val currentState = _uiState.value.enhancedPlayerState
         _uiState.value = _uiState.value.copy(
-            enhancedPlayerState = currentState.copy(playbackSpeed = speed)
+            enhancedPlayerState = currentState.copy(playbackSpeed = speed),
         )
         // TODO: Implement actual playback speed change
     }
@@ -367,7 +366,7 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
     fun setVolume(volume: Float) {
         val currentState = _uiState.value.enhancedPlayerState
         _uiState.value = _uiState.value.copy(
-            enhancedPlayerState = currentState.copy(volume = volume)
+            enhancedPlayerState = currentState.copy(volume = volume),
         )
         // TODO: Implement volume control
     }
@@ -375,7 +374,7 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
     fun setBrightness(brightness: Float) {
         val currentState = _uiState.value.enhancedPlayerState
         _uiState.value = _uiState.value.copy(
-            enhancedPlayerState = currentState.copy(brightness = brightness)
+            enhancedPlayerState = currentState.copy(brightness = brightness),
         )
         // TODO: Implement brightness control
     }
@@ -383,7 +382,7 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
     fun changeQuality(quality: VideoQuality) {
         val currentState = _uiState.value.enhancedPlayerState
         _uiState.value = _uiState.value.copy(
-            enhancedPlayerState = currentState.copy(selectedQuality = quality)
+            enhancedPlayerState = currentState.copy(selectedQuality = quality),
         )
         // TODO: Implement quality switching
     }
@@ -391,7 +390,7 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
     fun changeAspectRatio(aspectRatio: AspectRatioMode) {
         val currentState = _uiState.value.enhancedPlayerState
         _uiState.value = _uiState.value.copy(
-            enhancedPlayerState = currentState.copy(selectedAspectRatio = aspectRatio)
+            enhancedPlayerState = currentState.copy(selectedAspectRatio = aspectRatio),
         )
         // TODO: Implement aspect ratio change
     }
@@ -402,7 +401,7 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
 
     fun toggleMinimizedMode() {
         _uiState.value = _uiState.value.copy(
-            isMinimized = !_uiState.value.isMinimized
+            isMinimized = !_uiState.value.isMinimized,
         )
     }
 
@@ -453,7 +452,7 @@ class EnhancedVideoPlayerViewModel @Inject constructor(
     fun toggleSubtitles(enabled: Boolean) {
         val currentSettings = _uiState.value.subtitleSettings
         _uiState.value = _uiState.value.copy(
-            subtitleSettings = currentSettings.copy(enabled = enabled)
+            subtitleSettings = currentSettings.copy(enabled = enabled),
         )
     }
 
@@ -522,7 +521,7 @@ data class EnhancedVideoPlayerUiState(
     val showControls: Boolean = true,
     val isMinimized: Boolean = false,
     val playbackSpeed: Float = 1.0f,
-    
+
     // Quality and Network
     val currentQuality: EnhancedVideoQuality? = null,
     val availableQualities: List<EnhancedVideoQuality> = emptyList(),
@@ -531,28 +530,28 @@ data class EnhancedVideoPlayerUiState(
         availableBandwidth = 50_000_000L,
         currentBandwidth = 45_000_000L,
         latency = 20,
-        signalStrength = 85
+        signalStrength = 85,
     ),
     val playbackStats: PlaybackStatistics = PlaybackStatistics(),
     val playerSettings: EnhancedPlayerSettings = EnhancedPlayerSettings(),
-    
+
     // Subtitles
     val availableSubtitles: List<SubtitleTrack> = emptyList(),
     val currentSubtitle: SubtitleTrack? = null,
     val subtitleSettings: SubtitleSettings = SubtitleSettings(),
-    
+
     // Audio
     val audioTracks: List<AudioTrack> = emptyList(),
     val currentAudioTrack: AudioTrack? = null,
     val audioSettings: AudioSettings = AudioSettings(),
-    
+
     // Cast
     val castState: CastState = CastState.DISCONNECTED,
     val castDevices: List<CastDevice> = emptyList(),
     val castQueue: List<MediaQueueItem> = emptyList(),
-    
+
     // Episodes/Playlist
     val chapters: List<Chapter> = emptyList(),
     val hasNext: Boolean = false,
-    val hasPrevious: Boolean = false
+    val hasPrevious: Boolean = false,
 )

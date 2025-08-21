@@ -5,11 +5,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -24,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -46,8 +42,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Replay30
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -59,16 +53,11 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.ProgressIndicatorDefaults
-import androidx.compose.material3.RangeSlider
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -78,7 +67,6 @@ import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -90,7 +78,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -120,7 +107,7 @@ fun EnhancedVideoControls(
     onBackClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
     onSettingsClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var showSpeedMenu by remember { mutableStateOf(false) }
     var showMoreMenu by remember { mutableStateOf(false) }
@@ -136,12 +123,12 @@ fun EnhancedVideoControls(
                             Color.Black.copy(alpha = 0.8f),
                             Color.Transparent,
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.9f)
+                            Color.Black.copy(alpha = 0.9f),
                         ),
                         startY = 0f,
-                        endY = Float.POSITIVE_INFINITY
-                    )
-                )
+                        endY = Float.POSITIVE_INFINITY,
+                    ),
+                ),
         )
 
         Column {
@@ -155,7 +142,7 @@ fun EnhancedVideoControls(
                 onFullscreenToggle = onFullscreenToggle,
                 onSettingsClick = onSettingsClick,
                 showMoreMenu = showMoreMenu,
-                onShowMoreMenu = { showMoreMenu = it }
+                onShowMoreMenu = { showMoreMenu = it },
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -167,7 +154,7 @@ fun EnhancedVideoControls(
                 onSeekBy = onSeekBy,
                 showSpeedMenu = showSpeedMenu,
                 onShowSpeedMenu = { showSpeedMenu = it },
-                onSpeedChange = onSpeedChange
+                onSpeedChange = onSpeedChange,
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -181,14 +168,14 @@ fun EnhancedVideoControls(
                     duration = playerState.duration,
                     onChapterSelect = { chapter ->
                         onSeek(chapter.startTime)
-                    }
+                    },
                 )
             }
 
             // Bottom Progress and Controls
             EnhancedBottomControlsBar(
                 playerState = playerState,
-                onSeek = onSeek
+                onSeek = onSeek,
             )
         }
     }
@@ -206,40 +193,40 @@ private fun EnhancedTopControlsBar(
     onSettingsClick: () -> Unit,
     showMoreMenu: Boolean,
     onShowMoreMenu: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = true,
         enter = slideInVertically { -it } + fadeIn(),
         exit = slideOutVertically { -it } + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Surface(
             color = Color.Transparent,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Left side - Back and title
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
                         tooltip = { PlainTooltip { Text("Go back") } },
-                        state = rememberTooltipState()
+                        state = rememberTooltipState(),
                     ) {
                         EnhancedIconButton(
                             icon = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            onClick = onBackClick
+                            onClick = onBackClick,
                         )
                     }
 
@@ -250,27 +237,27 @@ private fun EnhancedTopControlsBar(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
-                        
+
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             playerState.selectedQuality?.let { quality ->
                                 Text(
                                     text = quality.label,
                                     color = Color.White.copy(alpha = 0.7f),
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = MaterialTheme.typography.bodySmall,
                                 )
                             }
-                            
+
                             if (playerState.playbackSpeed != 1.0f) {
                                 Text(
                                     text = "${playerState.playbackSpeed}x",
                                     color = MaterialTheme.colorScheme.primary,
                                     style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
                                 )
                             }
                         }
@@ -280,18 +267,18 @@ private fun EnhancedTopControlsBar(
                 // Right side - Action buttons
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     // Subtitles with indicator
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
                         tooltip = { PlainTooltip { Text("Subtitles") } },
-                        state = rememberTooltipState()
+                        state = rememberTooltipState(),
                     ) {
                         EnhancedIconButton(
                             icon = Icons.Default.ClosedCaption,
                             contentDescription = "Subtitles",
-                            onClick = onSubtitlesClick
+                            onClick = onSubtitlesClick,
                         )
                     }
 
@@ -299,26 +286,26 @@ private fun EnhancedTopControlsBar(
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
                         tooltip = { PlainTooltip { Text(if (playerState.isCasting) "Disconnect Cast" else "Cast to Device") } },
-                        state = rememberTooltipState()
+                        state = rememberTooltipState(),
                     ) {
                         BadgedBox(
                             badge = {
                                 if (playerState.isCasting) {
                                     Badge(
-                                        containerColor = MaterialTheme.colorScheme.primary
+                                        containerColor = MaterialTheme.colorScheme.primary,
                                     )
                                 }
-                            }
+                            },
                         ) {
                             AnimatedContent(
                                 targetState = playerState.isCasting,
-                                label = "cast_button"
+                                label = "cast_button",
                             ) { isCasting ->
                                 EnhancedIconButton(
                                     icon = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
                                     contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
                                     onClick = onCastClick,
-                                    isActive = isCasting
+                                    isActive = isCasting,
                                 )
                             }
                         }
@@ -328,12 +315,12 @@ private fun EnhancedTopControlsBar(
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
                         tooltip = { PlainTooltip { Text("Picture in Picture") } },
-                        state = rememberTooltipState()
+                        state = rememberTooltipState(),
                     ) {
                         EnhancedIconButton(
                             icon = Icons.Default.PictureInPicture,
                             contentDescription = "Picture in Picture",
-                            onClick = onPictureInPictureClick
+                            onClick = onPictureInPictureClick,
                         )
                     }
 
@@ -341,16 +328,16 @@ private fun EnhancedTopControlsBar(
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
                         tooltip = { PlainTooltip { Text(if (playerState.isFullscreen) "Exit Fullscreen" else "Fullscreen") } },
-                        state = rememberTooltipState()
+                        state = rememberTooltipState(),
                     ) {
                         AnimatedContent(
                             targetState = playerState.isFullscreen,
-                            label = "fullscreen_button"
+                            label = "fullscreen_button",
                         ) { isFullscreen ->
                             EnhancedIconButton(
                                 icon = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
                                 contentDescription = if (isFullscreen) "Exit Fullscreen" else "Fullscreen",
-                                onClick = onFullscreenToggle
+                                onClick = onFullscreenToggle,
                             )
                         }
                     }
@@ -360,12 +347,12 @@ private fun EnhancedTopControlsBar(
                         EnhancedIconButton(
                             icon = Icons.Default.MoreVert,
                             contentDescription = "More options",
-                            onClick = { onShowMoreMenu(true) }
+                            onClick = { onShowMoreMenu(true) },
                         )
 
                         DropdownMenu(
                             expanded = showMoreMenu,
-                            onDismissRequest = { onShowMoreMenu(false) }
+                            onDismissRequest = { onShowMoreMenu(false) },
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Settings") },
@@ -375,9 +362,9 @@ private fun EnhancedTopControlsBar(
                                 },
                                 leadingIcon = {
                                     Icon(Icons.Default.Settings, contentDescription = null)
-                                }
+                                },
                             )
-                            
+
                             DropdownMenuItem(
                                 text = { Text("Add Bookmark") },
                                 onClick = {
@@ -386,7 +373,7 @@ private fun EnhancedTopControlsBar(
                                 },
                                 leadingIcon = {
                                     Icon(Icons.Default.BookmarkAdd, contentDescription = null)
-                                }
+                                },
                             )
                         }
                     }
@@ -404,24 +391,24 @@ private fun EnhancedCenterPlaybackControls(
     showSpeedMenu: Boolean,
     onShowSpeedMenu: (Boolean) -> Unit,
     onSpeedChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Main playback controls
         Row(
             horizontalArrangement = Arrangement.spacedBy(24.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Previous/Skip back 30s
             EnhancedSeekButton(
                 icon = Icons.Default.Replay30,
                 contentDescription = "Skip back 30s",
                 onClick = { onSeekBy(-30000) },
-                seekAmount = "-30s"
+                seekAmount = "-30s",
             )
 
             // Skip back 10s
@@ -429,14 +416,14 @@ private fun EnhancedCenterPlaybackControls(
                 icon = Icons.Default.Replay10,
                 contentDescription = "Skip back 10s",
                 onClick = { onSeekBy(-10000) },
-                seekAmount = "-10s"
+                seekAmount = "-10s",
             )
 
             // Main play/pause button
             EnhancedMainPlayButton(
                 isPlaying = playerState.isPlaying,
                 isLoading = playerState.isLoading,
-                onClick = onPlayPause
+                onClick = onPlayPause,
             )
 
             // Skip forward 10s
@@ -444,7 +431,7 @@ private fun EnhancedCenterPlaybackControls(
                 icon = Icons.Default.Forward10,
                 contentDescription = "Skip forward 10s",
                 onClick = { onSeekBy(10000) },
-                seekAmount = "+10s"
+                seekAmount = "+10s",
             )
 
             // Skip forward 30s
@@ -452,7 +439,7 @@ private fun EnhancedCenterPlaybackControls(
                 icon = Icons.Default.Forward30,
                 contentDescription = "Skip forward 30s",
                 onClick = { onSeekBy(30000) },
-                seekAmount = "+30s"
+                seekAmount = "+30s",
             )
         }
 
@@ -466,8 +453,8 @@ private fun EnhancedCenterPlaybackControls(
                         MaterialTheme.colorScheme.primary
                     } else {
                         Color.White.copy(alpha = 0.2f)
-                    }
-                )
+                    },
+                ),
             ) {
                 Icon(
                     imageVector = Icons.Default.Speed,
@@ -476,13 +463,13 @@ private fun EnhancedCenterPlaybackControls(
                         MaterialTheme.colorScheme.onPrimary
                     } else {
                         Color.White
-                    }
+                    },
                 )
             }
 
             DropdownMenu(
                 expanded = showSpeedMenu,
-                onDismissRequest = { onShowSpeedMenu(false) }
+                onDismissRequest = { onShowSpeedMenu(false) },
             ) {
                 playerState.availableSpeeds.forEach { speed ->
                     DropdownMenuItem(
@@ -498,13 +485,13 @@ private fun EnhancedCenterPlaybackControls(
                                     MaterialTheme.colorScheme.primary
                                 } else {
                                     MaterialTheme.colorScheme.onSurface
-                                }
+                                },
                             )
                         },
                         onClick = {
                             onSpeedChange(speed)
                             onShowSpeedMenu(false)
-                        }
+                        },
                     )
                 }
             }
@@ -519,42 +506,42 @@ private fun ChapterNavigationBar(
     currentPosition: Long,
     duration: Long,
     onChapterSelect: (Chapter) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = chapters.isNotEmpty(),
         enter = slideInVertically { it } + fadeIn(),
         exit = slideOutVertically { it } + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color.Black.copy(alpha = 0.7f)
-            )
+                containerColor = Color.Black.copy(alpha = 0.7f),
+            ),
         ) {
             Column(
-                modifier = Modifier.padding(12.dp)
+                modifier = Modifier.padding(12.dp),
             ) {
                 Text(
                     text = "Chapters",
                     color = Color.White,
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     items(chapters) { chapter ->
                         ChapterItem(
                             chapter = chapter,
                             isActive = chapter == currentChapter,
-                            onClick = { onChapterSelect(chapter) }
+                            onClick = { onChapterSelect(chapter) },
                         )
                     }
                 }
@@ -568,12 +555,12 @@ private fun ChapterItem(
     chapter: Chapter,
     isActive: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isActive) 1.05f else 1f,
         animationSpec = spring(stiffness = Spring.StiffnessHigh),
-        label = "chapter_scale"
+        label = "chapter_scale",
     )
 
     Surface(
@@ -586,11 +573,11 @@ private fun ChapterItem(
         } else {
             Color.White.copy(alpha = 0.1f)
         },
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
     ) {
         Column(
             modifier = Modifier.padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = chapter.title,
@@ -598,14 +585,14 @@ private fun ChapterItem(
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
-            
+
             Text(
                 text = formatTime(chapter.startTime),
                 color = Color.White.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodySmall,
-                fontSize = 10.sp
+                fontSize = 10.sp,
             )
         }
     }
@@ -615,22 +602,22 @@ private fun ChapterItem(
 private fun EnhancedBottomControlsBar(
     playerState: EnhancedVideoPlayerState,
     onSeek: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = true,
         enter = slideInVertically { it } + fadeIn(),
         exit = slideOutVertically { it } + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Surface(
             color = Color.Transparent,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
                 if (playerState.duration > 0) {
                     // Enhanced progress bar with preview
@@ -639,7 +626,7 @@ private fun EnhancedBottomControlsBar(
                         bufferedPosition = playerState.bufferedPosition,
                         duration = playerState.duration,
                         chapters = playerState.chapters,
-                        onSeek = onSeek
+                        onSeek = onSeek,
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -648,13 +635,13 @@ private fun EnhancedBottomControlsBar(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = formatTime(playerState.currentPosition),
                             color = Color.White,
                             style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
                         )
 
                         // Current chapter name (if available)
@@ -665,14 +652,14 @@ private fun EnhancedBottomControlsBar(
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
                             )
                         }
 
                         Text(
                             text = formatTime(playerState.duration),
                             color = Color.White.copy(alpha = 0.7f),
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
                         )
                     }
                 }
@@ -688,7 +675,7 @@ private fun EnhancedProgressBar(
     duration: Long,
     chapters: List<Chapter>,
     onSeek: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxWidth()) {
         // Buffer progress (background)
@@ -702,29 +689,29 @@ private fun EnhancedProgressBar(
             },
             modifier = Modifier.fillMaxWidth(),
             color = Color.White.copy(alpha = 0.3f),
-            trackColor = Color.White.copy(alpha = 0.1f)
+            trackColor = Color.White.copy(alpha = 0.1f),
         )
 
         // Chapter markers
         if (chapters.isNotEmpty() && duration > 0) {
             Row(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 chapters.forEach { chapter ->
                     val progress = chapter.startTime.toFloat() / duration.toFloat()
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(progress)
-                            .height(4.dp)
+                            .height(4.dp),
                     ) {
                         Box(
                             modifier = Modifier
                                 .size(2.dp, 12.dp)
                                 .background(
                                     MaterialTheme.colorScheme.primary,
-                                    RoundedCornerShape(1.dp)
+                                    RoundedCornerShape(1.dp),
                                 )
-                                .align(Alignment.CenterEnd)
+                                .align(Alignment.CenterEnd),
                         )
                     }
                 }
@@ -746,8 +733,8 @@ private fun EnhancedProgressBar(
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = Color.Transparent
-            )
+                inactiveTrackColor = Color.Transparent,
+            ),
         )
     }
 }
@@ -758,13 +745,13 @@ private fun EnhancedIconButton(
     contentDescription: String?,
     onClick: () -> Unit,
     isActive: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     val scale by animateFloatAsState(
         targetValue = if (isActive) 1.1f else 1f,
         animationSpec = spring(stiffness = Spring.StiffnessHigh),
-        label = "icon_scale"
+        label = "icon_scale",
     )
 
     Surface(
@@ -773,7 +760,7 @@ private fun EnhancedIconButton(
             .clip(CircleShape)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null
+                indication = null,
             ) {
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                 onClick()
@@ -783,13 +770,13 @@ private fun EnhancedIconButton(
         } else {
             Color.White.copy(alpha = 0.1f)
         },
-        shape = CircleShape
+        shape = CircleShape,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = if (isActive) MaterialTheme.colorScheme.primary else Color.White,
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(12.dp),
         )
     }
 }
@@ -799,13 +786,13 @@ private fun EnhancedMainPlayButton(
     isPlaying: Boolean,
     isLoading: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     val scale by animateFloatAsState(
         targetValue = if (isLoading) 0.9f else 1f,
         animationSpec = spring(stiffness = Spring.StiffnessHigh),
-        label = "main_button_scale"
+        label = "main_button_scale",
     )
 
     FilledIconButton(
@@ -818,29 +805,29 @@ private fun EnhancedMainPlayButton(
             .scale(scale),
         colors = IconButtonDefaults.filledIconButtonColors(
             containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        )
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        ),
     ) {
         AnimatedContent(
             targetState = isLoading to isPlaying,
-            label = "main_button_content"
+            label = "main_button_content",
         ) { (loading, playing) ->
             when {
                 loading -> CircularProgressIndicator(
                     modifier = Modifier.size(32.dp),
                     color = MaterialTheme.colorScheme.onPrimary,
                     strokeWidth = 3.dp,
-                    strokeCap = ProgressIndicatorDefaults.CircularIndeterminateStrokeCap
+                    strokeCap = ProgressIndicatorDefaults.CircularIndeterminateStrokeCap,
                 )
                 playing -> Icon(
                     imageVector = Icons.Default.Pause,
                     contentDescription = "Pause",
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(40.dp),
                 )
                 else -> Icon(
                     imageVector = Icons.Default.PlayArrow,
                     contentDescription = "Play",
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(40.dp),
                 )
             }
         }
@@ -853,7 +840,7 @@ private fun EnhancedSeekButton(
     contentDescription: String?,
     onClick: () -> Unit,
     seekAmount: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     var isPressed by remember { mutableStateOf(false) }
@@ -861,7 +848,7 @@ private fun EnhancedSeekButton(
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 1.2f else 1f,
         animationSpec = spring(stiffness = Spring.StiffnessHigh),
-        label = "seek_button_scale"
+        label = "seek_button_scale",
     )
 
     Surface(
@@ -870,25 +857,25 @@ private fun EnhancedSeekButton(
             .clip(CircleShape)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null
+                indication = null,
             ) {
                 isPressed = true
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                 onClick()
             },
         color = Color.White.copy(alpha = 0.15f),
-        shape = CircleShape
+        shape = CircleShape,
     ) {
         Box(
             modifier = Modifier.padding(16.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = contentDescription,
-                tint = Color.White
+                tint = Color.White,
             )
-            
+
             // Seek amount indicator
             Text(
                 text = seekAmount,
@@ -898,12 +885,12 @@ private fun EnhancedSeekButton(
                     shadow = Shadow(
                         color = Color.Black,
                         offset = androidx.compose.ui.geometry.Offset(1f, 1f),
-                        blurRadius = 2f
-                    )
+                        blurRadius = 2f,
+                    ),
                 ),
                 modifier = Modifier
                     .padding(top = 28.dp)
-                    .alpha(0.8f)
+                    .alpha(0.8f),
             )
         }
     }
