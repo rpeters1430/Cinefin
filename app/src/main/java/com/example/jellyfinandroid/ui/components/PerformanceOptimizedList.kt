@@ -2,7 +2,6 @@ package com.example.jellyfinandroid.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -15,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -39,39 +37,41 @@ fun PerformanceOptimizedLazyColumn(
     content: @Composable (item: BaseItemDto, index: Int, isVisible: Boolean) -> Unit,
 ) {
     // Limit items for performance
-    val optimizedItems = remember(items) { 
+    val optimizedItems = remember(items) {
         if (items.size > maxVisibleItems) {
             items.take(maxVisibleItems)
         } else {
             items
         }
     }
-    
+
     // Track visible range for performance optimization
     val firstVisibleIndex by remember {
         derivedStateOf { state.firstVisibleItemIndex }
     }
-    
+
     val visibleItemCount by remember {
         derivedStateOf { state.layoutInfo.visibleItemsInfo.size }
     }
-    
+
     val visibleRange = remember(firstVisibleIndex, visibleItemCount) {
         val start = (firstVisibleIndex - preloadOffset).coerceAtLeast(0)
         val end = (firstVisibleIndex + visibleItemCount + preloadOffset).coerceAtMost(optimizedItems.size)
         start until end
     }
-    
+
     // Performance monitoring
     LaunchedEffect(optimizedItems.size) {
         if (optimizedItems.size != items.size) {
             PerformanceMonitor.measureExecutionTime("ItemLimiting") {
-                android.util.Log.d("PerformanceOptimizedList", 
-                    "Limited ${items.size} items to ${optimizedItems.size} for performance")
+                android.util.Log.d(
+                    "PerformanceOptimizedList",
+                    "Limited ${items.size} items to ${optimizedItems.size} for performance",
+                )
             }
         }
     }
-    
+
     LazyColumn(
         modifier = modifier,
         state = state,
@@ -80,7 +80,7 @@ fun PerformanceOptimizedLazyColumn(
     ) {
         itemsIndexed(
             items = optimizedItems,
-            key = { _, item -> item.id?.toString() ?: "" }
+            key = { _, item -> item.id?.toString() ?: "" },
         ) { index, item ->
             val isVisible = index in visibleRange
             content(item, index, isVisible)
@@ -104,29 +104,29 @@ fun PerformanceOptimizedLazyRow(
     content: @Composable (item: BaseItemDto, index: Int, isVisible: Boolean) -> Unit,
 ) {
     // Limit items for performance
-    val optimizedItems = remember(items) { 
+    val optimizedItems = remember(items) {
         if (items.size > maxVisibleItems) {
             items.take(maxVisibleItems)
         } else {
             items
         }
     }
-    
+
     // Track visible range
     val firstVisibleIndex by remember {
         derivedStateOf { state.firstVisibleItemIndex }
     }
-    
+
     val visibleItemCount by remember {
         derivedStateOf { state.layoutInfo.visibleItemsInfo.size }
     }
-    
+
     val visibleRange = remember(firstVisibleIndex, visibleItemCount) {
         val start = firstVisibleIndex.coerceAtLeast(0)
         val end = (firstVisibleIndex + visibleItemCount + 5).coerceAtMost(optimizedItems.size)
         start until end
     }
-    
+
     // Image preloading
     val imagePreloader = rememberImagePreloader()
     LaunchedEffect(optimizedItems, preloadImages) {
@@ -135,7 +135,7 @@ fun PerformanceOptimizedLazyRow(
             imagePreloader.preloadImages(imagesToPreload)
         }
     }
-    
+
     LazyRow(
         modifier = modifier,
         state = state,
@@ -144,7 +144,7 @@ fun PerformanceOptimizedLazyRow(
     ) {
         itemsIndexed(
             items = optimizedItems,
-            key = { _, item -> item.id?.toString() ?: "" }
+            key = { _, item -> item.id?.toString() ?: "" },
         ) { index, item ->
             val isVisible = index in visibleRange
             content(item, index, isVisible)
@@ -166,15 +166,15 @@ fun PerformanceOptimizedLazyGrid(
     maxVisibleItems: Int = 200,
     content: @Composable (item: BaseItemDto, index: Int) -> Unit,
 ) {
-    // Limit items for performance  
-    val optimizedItems = remember(items) { 
+    // Limit items for performance
+    val optimizedItems = remember(items) {
         if (items.size > maxVisibleItems) {
             items.take(maxVisibleItems)
         } else {
             items
         }
     }
-    
+
     LazyVerticalGrid(
         columns = columns,
         modifier = modifier,
@@ -184,7 +184,7 @@ fun PerformanceOptimizedLazyGrid(
     ) {
         itemsIndexed(
             items = optimizedItems,
-            key = { _, item -> item.id?.toString() ?: "" }
+            key = { _, item -> item.id?.toString() ?: "" },
         ) { index, item ->
             content(item, index)
         }
@@ -200,7 +200,7 @@ fun rememberPerformanceSettings(): PerformanceSettings {
         val runtime = Runtime.getRuntime()
         val maxMemoryMB = runtime.maxMemory() / 1024 / 1024
         val availableProcessors = runtime.availableProcessors()
-        
+
         when {
             maxMemoryMB > 512 && availableProcessors >= 8 -> {
                 // High-end device
@@ -258,16 +258,18 @@ fun rememberMemoryAwareItemLimit(
     return remember(totalItems) {
         val memoryInfo = PerformanceMonitor.getMemoryInfo()
         val availableMemoryMB = (memoryInfo.maxMemoryMB - memoryInfo.usedMemoryMB).coerceAtLeast(50)
-        
+
         // Use max 10% of available memory for list items
         val memoryForItemsMB = availableMemoryMB / 10
         val maxItemsByMemory = (memoryForItemsMB * 1024) / itemSizeEstimateKB
-        
+
         val limit = minOf(totalItems, maxItemsByMemory.toInt(), 500) // Cap at 500 items max
-        
-        android.util.Log.d("MemoryAwareLimit", 
-            "Limited $totalItems items to $limit based on ${availableMemoryMB}MB available memory")
-        
+
+        android.util.Log.d(
+            "MemoryAwareLimit",
+            "Limited $totalItems items to $limit based on ${availableMemoryMB}MB available memory",
+        )
+
         limit
     }
 }

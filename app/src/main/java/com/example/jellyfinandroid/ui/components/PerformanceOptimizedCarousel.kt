@@ -21,7 +21,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,17 +55,17 @@ fun PerformanceOptimizedCarousel(
 
     // Limit items to prevent memory issues
     val limitedItems = remember(items) { items.take(maxVisibleItems) }
-    
+
     Column(modifier = modifier) {
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
-        
+
         val listState = rememberLazyListState()
         val imagePreloader = rememberImagePreloader()
-        
+
         // Preload visible images
         LaunchedEffect(limitedItems) {
             val imagesToPreload = limitedItems.take(10).mapNotNull { item ->
@@ -74,7 +73,7 @@ fun PerformanceOptimizedCarousel(
             }
             imagePreloader.preloadImages(imagesToPreload, ImageSize.CARD)
         }
-        
+
         LazyRow(
             state = listState,
             modifier = Modifier.fillMaxWidth(),
@@ -83,7 +82,7 @@ fun PerformanceOptimizedCarousel(
         ) {
             itemsIndexed(
                 items = limitedItems,
-                key = { _, item -> item.id ?: "" }
+                key = { _, item -> item.id ?: "" },
             ) { index, item ->
                 OptimizedCarouselCard(
                     item = item,
@@ -125,7 +124,7 @@ private fun OptimizedCarouselCard(
             // Only load image if visible to save memory
             if (isVisible) {
                 val imageUrl = getOptimalImageUrl(item, getImageUrl, getBackdropUrl, getSeriesImageUrl)
-                
+
                 OptimizedImage(
                     imageUrl = imageUrl,
                     contentDescription = "${item.name} image",
@@ -136,7 +135,7 @@ private fun OptimizedCarouselCard(
                     cornerRadius = 12.dp,
                 )
             }
-            
+
             // Content type badge
             Surface(
                 modifier = Modifier
@@ -152,7 +151,7 @@ private fun OptimizedCarouselCard(
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                 )
             }
-            
+
             // Rating badge
             item.communityRating?.let { rating ->
                 Surface(
@@ -170,7 +169,7 @@ private fun OptimizedCarouselCard(
                     )
                 }
             }
-            
+
             // Title overlay
             Surface(
                 modifier = Modifier
@@ -190,7 +189,7 @@ private fun OptimizedCarouselCard(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    
+
                     // Additional info based on content type
                     when (item.type) {
                         BaseItemKind.EPISODE -> {
