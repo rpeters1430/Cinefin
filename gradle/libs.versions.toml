@@ -34,6 +34,7 @@ kotlinxCoroutinesTest = "1.10.2"
 androidxArchCoreTest = "2.2.0"
 androidxTvMaterial = "1.1.0-alpha01"
 paging = "3.4.0-alpha02"
+sdk = "35"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
