@@ -32,7 +32,7 @@ slf4jAndroid = "1.7.36"
 mockk = "1.14.5"
 kotlinxCoroutinesTest = "1.10.2"
 androidxArchCoreTest = "2.2.0"
-androidxTvMaterial = "1.0.1"
+androidxTvMaterial = "1.1.0-alpha01"
 paging = "3.3.6"
 
 [libraries]
