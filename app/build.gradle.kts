@@ -8,17 +8,17 @@ plugins {
 }
 
 android {
-    namespace = "com.example.jellyfinandroid"
+    namespace = "com.rpeters.jellyfin"
     compileSdk = libs.versions.sdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.example.jellyfinandroid"
+        applicationId = "com.rpeters.jellyfin"
         minSdk = 26 // Android 8.0+ (was 31) - Broader device compatibility
         targetSdk = libs.versions.sdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "com.example.jellyfinandroid.testing.HiltTestRunner"
+        testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
         // Test configuration
         testInstrumentationRunnerArguments += mapOf(

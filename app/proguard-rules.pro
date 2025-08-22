@@ -204,8 +204,8 @@
 # SERIALIZATION SUPPORT
 # ================================
 # Keep classes that might be serialized
--keep class com.example.jellyfinandroid.data.** { *; }
--keep class com.example.jellyfinandroid.network.** { *; }
+-keep class com.rpeters.jellyfin.data.** { *; }
+-keep class com.rpeters.jellyfin.network.** { *; }
 
 # Keep model classes used for API communication
 -keep class * implements java.io.Serializable { *; }
@@ -214,13 +214,13 @@
 # APPLICATION SPECIFIC
 # ================================
 # Keep Application class
--keep class com.example.jellyfinandroid.JellyfinApplication { *; }
+-keep class com.rpeters.jellyfin.JellyfinApplication { *; }
 
 # Keep main activity
--keep class com.example.jellyfinandroid.MainActivity { *; }
+-keep class com.rpeters.jellyfin.MainActivity { *; }
 
 # Keep ViewModels
--keep class com.example.jellyfinandroid.ui.viewmodel.** { *; }
+-keep class com.rpeters.jellyfin.ui.viewmodel.** { *; }
 
 # ================================
 # WARNINGS SUPPRESSION
