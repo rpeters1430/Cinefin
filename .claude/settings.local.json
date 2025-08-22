@@ -6,7 +6,9 @@
       "Bash(.gradlew assembleDebug)",
       "Bash(rm:*)",
       "WebSearch",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(gh pr:*)"
     ],
     "defaultMode": "acceptEdits"
   }
