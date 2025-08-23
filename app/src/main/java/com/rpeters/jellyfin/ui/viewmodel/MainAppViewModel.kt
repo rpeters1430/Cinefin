@@ -16,9 +16,9 @@ import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.utils.PerformanceMonitor
 import com.rpeters.jellyfin.utils.measureSuspendTime
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -114,8 +114,8 @@ dependencies {
 
     // Media3 for video playback
     implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.exoplayer.hls)   // HLS playback (master.m3u8)
-    implementation(libs.androidx.media3.exoplayer.dash)  // DASH playback (stream.mpd)
+    implementation(libs.androidx.media3.exoplayer.hls) // HLS playback (master.m3u8)
+    implementation(libs.androidx.media3.exoplayer.dash) // DASH playback (stream.mpd)
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.common)
     implementation(libs.androidx.media3.cast)

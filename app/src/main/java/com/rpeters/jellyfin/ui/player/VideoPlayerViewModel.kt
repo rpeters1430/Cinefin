@@ -170,7 +170,7 @@ class VideoPlayerViewModel @Inject constructor(
                     Log.w("VideoPlayerViewModel", "Failed to load external subtitles", e)
                     emptyList<SubtitleSpec>()
                 }
-                
+
                 // Store for later use in casting
                 currentSubtitleSpecs = sideLoadedSubs
 
@@ -183,7 +183,7 @@ class VideoPlayerViewModel @Inject constructor(
                         videoUrl = streamUrl,
                         title = itemName,
                         sideLoadedSubs = sideLoadedSubs,
-                        mimeTypeHint = mimeTypeHint
+                        mimeTypeHint = mimeTypeHint,
                     )
                 }
 
@@ -201,8 +201,8 @@ class VideoPlayerViewModel @Inject constructor(
                                     .setUserAgent("JellyfinAndroid/1.0.0")
                                     .setConnectTimeoutMs(30_000)
                                     .setReadTimeoutMs(60_000)
-                                    .setAllowCrossProtocolRedirects(true)
-                            )
+                                    .setAllowCrossProtocolRedirects(true),
+                            ),
                     )
                     .build()
                     .apply {
@@ -210,7 +210,7 @@ class VideoPlayerViewModel @Inject constructor(
                         setMediaItem(mediaItem)
                         seekTo(startPosition)
                         prepare()
-                        
+
                         // Enable scrubbing mode for smoother seeks (Media3 1.8.0 feature)
                         setScrubbingModeEnabled(true)
                     }
@@ -295,7 +295,7 @@ class VideoPlayerViewModel @Inject constructor(
                         val mediaItem = MediaItemFactory.build(
                             videoUrl = url,
                             title = _playerState.value.itemName,
-                            mimeTypeHint = MediaItemFactory.inferMimeType(url)
+                            mimeTypeHint = MediaItemFactory.inferMimeType(url),
                         )
                         setMediaItem(mediaItem)
                         seekTo(currentPosition)

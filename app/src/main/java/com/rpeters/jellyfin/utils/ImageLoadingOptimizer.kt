@@ -34,7 +34,7 @@ object ImageLoadingOptimizer {
                     .diskCache {
                         DiskCache.Builder()
                             .directory(getCacheDirectory(context))
-                            .maxSizePercent(0.015) // Reduce to 1.5% to prevent disk issues  
+                            .maxSizePercent(0.015) // Reduce to 1.5% to prevent disk issues
                             .cleanupDispatcher(Dispatchers.IO)
                             .build()
                     }
