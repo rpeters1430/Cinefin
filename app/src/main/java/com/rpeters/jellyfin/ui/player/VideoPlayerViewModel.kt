@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @UnstableApi
@@ -64,6 +63,8 @@ data class VideoPlayerState(
     val aspectRatio: Float = 16f / 9f,
     val selectedAspectRatio: AspectRatioMode = AspectRatioMode.FILL,
     val availableAspectRatios: List<AspectRatioMode> = AspectRatioMode.values().toList(),
+    val availableAudioTracks: List<TrackInfo> = emptyList(),
+    val selectedAudioTrack: TrackInfo? = null,
     val showSubtitleDialog: Boolean = false,
     val availableSubtitleTracks: List<TrackInfo> = emptyList(),
     val selectedSubtitleTrack: TrackInfo? = null,
@@ -92,6 +93,7 @@ class VideoPlayerViewModel @Inject constructor(
     val playerState: StateFlow<VideoPlayerState> = _playerState.asStateFlow()
 
     private var trackSelector: DefaultTrackSelector? = null
+    private var trackSelectionManager: TrackSelectionManager? = null
     private var currentMediaItem: MediaItem? = null
     private var currentJellyfinItem: org.jellyfin.sdk.model.api.BaseItemDto? = null
     private var currentSubtitleSpecs: List<SubtitleSpec> = emptyList()
@@ -111,28 +113,32 @@ class VideoPlayerViewModel @Inject constructor(
             _playerState.value = _playerState.value.copy(isPlaying = isPlaying)
         }
 
+        override fun onTracksChanged(tracks: Player.Tracks) {
+            trackSelectionManager?.updateAvailableTracks()
+        }
+
         override fun onPlayerError(error: PlaybackException) {
             Log.e("VideoPlayerViewModel", "Playback error: ${error.message}", error)
-            
+
             // Provide more specific error messages based on error type
             val errorMessage = when {
-                error.cause is java.net.SocketTimeoutException -> 
+                error.cause is java.net.SocketTimeoutException ->
                     "Network timeout - check your connection to the Jellyfin server"
-                error.cause is javax.net.ssl.SSLException -> 
+                error.cause is javax.net.ssl.SSLException ->
                     "SSL connection failed - check server certificate"
-                error.cause is java.net.UnknownHostException -> 
+                error.cause is java.net.UnknownHostException ->
                     "Cannot reach Jellyfin server - check server URL"
-                error.cause?.message?.contains("401") == true -> 
+                error.cause?.message?.contains("401") == true ->
                     "Authentication failed - please log in again"
-                error.cause?.message?.contains("403") == true -> 
+                error.cause?.message?.contains("403") == true ->
                     "Access denied - insufficient permissions"
-                error.cause?.message?.contains("404") == true -> 
+                error.cause?.message?.contains("404") == true ->
                     "Media not found on server"
-                error.cause?.message?.contains("HTTP") == true -> 
+                error.cause?.message?.contains("HTTP") == true ->
                     "Server error: ${error.cause?.message}"
                 else -> "Playback error: ${error.message}"
             }
-            
+
             _playerState.value = _playerState.value.copy(
                 error = errorMessage,
                 isLoading = false,
@@ -231,8 +237,8 @@ class VideoPlayerViewModel @Inject constructor(
                         mapOf(
                             "X-MediaBrowser-Token" to token,
                             "Accept" to "*/*",
-                            "Accept-Encoding" to "identity"
-                        )
+                            "Accept-Encoding" to "identity",
+                        ),
                     )
                 }
 
@@ -252,6 +258,30 @@ class VideoPlayerViewModel @Inject constructor(
                         // Enable scrubbing mode for smoother seeks (Media3 1.8.0 feature)
                         setScrubbingModeEnabled(true)
                     }
+
+                trackSelectionManager = TrackSelectionManager(exoPlayer!!, selector)
+                trackSelectionManager?.updateAvailableTracks()
+
+                launch {
+                    trackSelectionManager?.trackSelectionState?.collectLatest { state ->
+                        val audioTracks = state.audioTracks.mapIndexed { index, track ->
+                            TrackInfo(
+                                groupIndex = 0,
+                                trackIndex = index,
+                                format = androidx.media3.common.Format.Builder()
+                                    .setId(track.id)
+                                    .setLanguage(track.language)
+                                    .build(),
+                                isSelected = track.isSelected,
+                                displayName = track.label,
+                            )
+                        }
+                        _playerState.value = _playerState.value.copy(
+                            availableAudioTracks = audioTracks,
+                            selectedAudioTrack = audioTracks.find { it.isSelected },
+                        )
+                    }
+                }
 
                 // Load Jellyfin item for Cast metadata
                 loadJellyfinItem(itemId)
@@ -321,6 +351,13 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun seekTo(positionMs: Long) {
         exoPlayer?.seekTo(positionMs)
+    }
+
+    fun selectAudioTrack(trackInfo: TrackInfo) {
+        trackInfo.format.id?.let { id ->
+            trackSelectionManager?.selectAudioTrack(id)
+            _playerState.value = _playerState.value.copy(selectedAudioTrack = trackInfo)
+        }
     }
 
     fun changeQuality(quality: VideoQuality) {
@@ -519,6 +556,7 @@ class VideoPlayerViewModel @Inject constructor(
         exoPlayer?.removeListener(playerListener)
         exoPlayer?.release()
         exoPlayer = null
+        trackSelectionManager = null
         castManager.release()
     }
 
