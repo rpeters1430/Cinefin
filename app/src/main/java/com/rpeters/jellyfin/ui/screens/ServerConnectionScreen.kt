@@ -19,12 +19,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -122,7 +121,7 @@ fun ServerConnectionScreen(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                 ),
                 elevation = CardDefaults.elevatedCardElevation(
-                    defaultElevation = 8.dp
+                    defaultElevation = 8.dp,
                 ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -265,7 +264,7 @@ fun ServerConnectionScreen(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 ),
                 elevation = CardDefaults.elevatedCardElevation(
-                    defaultElevation = 4.dp
+                    defaultElevation = 4.dp,
                 ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -286,7 +285,7 @@ fun ServerConnectionScreen(
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                 ),
                 elevation = CardDefaults.elevatedCardElevation(
-                    defaultElevation = 6.dp
+                    defaultElevation = 6.dp,
                 ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -440,7 +439,7 @@ fun QuickConnectScreen(
                     },
                 ),
                 elevation = CardDefaults.elevatedCardElevation(
-                    defaultElevation = if (isPolling) 6.dp else 4.dp
+                    defaultElevation = if (isPolling) 6.dp else 4.dp,
                 ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -465,7 +464,7 @@ fun QuickConnectScreen(
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 ),
                 elevation = CardDefaults.elevatedCardElevation(
-                    defaultElevation = 8.dp
+                    defaultElevation = 8.dp,
                 ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -503,7 +502,7 @@ fun QuickConnectScreen(
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                 ),
                 elevation = CardDefaults.elevatedCardElevation(
-                    defaultElevation = 6.dp
+                    defaultElevation = 6.dp,
                 ),
                 modifier = Modifier.fillMaxWidth(),
             ) {

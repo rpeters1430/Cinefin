@@ -67,13 +67,13 @@ fun ExpressiveMediaCard(
     onFavoriteClick: () -> Unit = {},
     onMoreClick: () -> Unit = {},
     modifier: Modifier = Modifier,
-    cardType: ExpressiveCardType = ExpressiveCardType.ELEVATED
+    cardType: ExpressiveCardType = ExpressiveCardType.ELEVATED,
 ) {
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1.0f,
         animationSpec = MotionTokens.expressiveEnter,
-        label = "card_scale"
+        label = "card_scale",
     )
 
     val cardModifier = modifier
@@ -86,10 +86,10 @@ fun ExpressiveMediaCard(
             ElevatedCard(
                 modifier = cardModifier,
                 colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
                 elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
             ) {
                 MediaCardContent(
                     title = title,
@@ -101,7 +101,7 @@ fun ExpressiveMediaCard(
                     onPlayClick = onPlayClick,
                     onFavoriteClick = onFavoriteClick,
                     onMoreClick = onMoreClick,
-                    onPressedChange = { isPressed = it }
+                    onPressedChange = { isPressed = it },
                 )
             }
         }
@@ -110,9 +110,9 @@ fun ExpressiveMediaCard(
             ElevatedCard(
                 modifier = cardModifier,
                 colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                 ),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
             ) {
                 MediaCardContent(
                     title = title,
@@ -124,7 +124,7 @@ fun ExpressiveMediaCard(
                     onPlayClick = onPlayClick,
                     onFavoriteClick = onFavoriteClick,
                     onMoreClick = onMoreClick,
-                    onPressedChange = { isPressed = it }
+                    onPressedChange = { isPressed = it },
                 )
             }
         }
@@ -132,12 +132,12 @@ fun ExpressiveMediaCard(
             OutlinedCard(
                 modifier = cardModifier,
                 colors = CardDefaults.outlinedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.surface,
                 ),
                 border = CardDefaults.outlinedCardBorder().copy(
-                    width = 1.dp
+                    width = 1.dp,
                 ),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
             ) {
                 MediaCardContent(
                     title = title,
@@ -149,7 +149,7 @@ fun ExpressiveMediaCard(
                     onPlayClick = onPlayClick,
                     onFavoriteClick = onFavoriteClick,
                     onMoreClick = onMoreClick,
-                    onPressedChange = { isPressed = it }
+                    onPressedChange = { isPressed = it },
                 )
             }
         }
@@ -167,7 +167,7 @@ private fun MediaCardContent(
     onPlayClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     onMoreClick: () -> Unit,
-    onPressedChange: (Boolean) -> Unit
+    onPressedChange: (Boolean) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -175,16 +175,16 @@ private fun MediaCardContent(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClickLabel = "Open $title"
-            ) { 
-                onCardClick() 
-            }
+                onClickLabel = "Open $title",
+            ) {
+                onCardClick()
+            },
     ) {
         // Image with overlay controls
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp)
+                .height(220.dp),
         ) {
             AsyncImage(
                 model = imageUrl,
@@ -192,7 +192,7 @@ private fun MediaCardContent(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
             )
 
             // Gradient overlay for better text visibility
@@ -203,11 +203,11 @@ private fun MediaCardContent(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.4f)
+                                Color.Black.copy(alpha = 0.4f),
                             ),
-                            startY = 120f
-                        )
-                    )
+                            startY = 120f,
+                        ),
+                    ),
             )
 
             // Top action bar
@@ -215,29 +215,29 @@ private fun MediaCardContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 // Rating
                 if (rating != null) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = Color.Black.copy(alpha = 0.6f)
+                        color = Color.Black.copy(alpha = 0.6f),
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = null,
                                 tint = Color(0xFFFFD700),
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(14.dp),
                             )
                             Text(
                                 text = rating.toString(),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.White,
-                                modifier = Modifier.padding(start = 2.dp)
+                                modifier = Modifier.padding(start = 2.dp),
                             )
                         }
                     }
@@ -248,7 +248,7 @@ private fun MediaCardContent(
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "More actions",
-                        tint = Color.White
+                        tint = Color.White,
                     )
                 }
             }
@@ -260,13 +260,13 @@ private fun MediaCardContent(
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
                 modifier = Modifier
                     .size(56.dp)
-                    .align(Alignment.Center)
+                    .align(Alignment.Center),
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
                     contentDescription = "Play",
                     tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(8.dp),
                 )
             }
         }
@@ -276,7 +276,7 @@ private fun MediaCardContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Column {
                 Text(
@@ -285,7 +285,7 @@ private fun MediaCardContent(
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 if (subtitle.isNotEmpty()) {
@@ -295,7 +295,7 @@ private fun MediaCardContent(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = 4.dp),
                     )
                 }
             }
@@ -303,7 +303,7 @@ private fun MediaCardContent(
             // Bottom actions
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.End,
             ) {
                 val favoriteColor by animateColorAsState(
                     targetValue = if (isFavorite) {
@@ -311,14 +311,14 @@ private fun MediaCardContent(
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     },
-                    label = "favorite_color"
+                    label = "favorite_color",
                 )
 
                 IconButton(onClick = onFavoriteClick) {
                     Icon(
                         imageVector = Icons.Default.Favorite,
                         contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                        tint = favoriteColor
+                        tint = favoriteColor,
                     )
                 }
             }
@@ -337,22 +337,22 @@ fun ExpressiveCompactCard(
     onClick: () -> Unit,
     leadingIcon: ImageVector? = null,
     trailingContent: @Composable (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Image
             AsyncImage(
@@ -361,14 +361,14 @@ fun ExpressiveCompactCard(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(60.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(8.dp)),
             )
 
             // Content
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 12.dp)
+                    .padding(horizontal = 12.dp),
             ) {
                 Text(
                     text = title,
@@ -376,7 +376,7 @@ fun ExpressiveCompactCard(
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 if (subtitle.isNotEmpty()) {
@@ -386,7 +386,7 @@ fun ExpressiveCompactCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 2.dp)
+                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
             }
@@ -399,7 +399,7 @@ fun ExpressiveCompactCard(
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .padding(end = 8.dp)
-                        .size(20.dp)
+                        .size(20.dp),
                 )
             }
 
@@ -412,5 +412,5 @@ fun ExpressiveCompactCard(
 enum class ExpressiveCardType {
     ELEVATED,
     FILLED,
-    OUTLINED
+    OUTLINED,
 }
