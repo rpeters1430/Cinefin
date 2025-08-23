@@ -20,26 +20,26 @@ class JellyfinApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        
+
         // Initialize Logger with application context for file logging
         Logger.appContext = this
-        
+
         // Enable StrictMode for debug builds to detect policy violations
         if (BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(
                 StrictMode.ThreadPolicy.Builder()
                     .detectAll()
                     .penaltyLog()
-                    .build()
+                    .build(),
             )
             StrictMode.setVmPolicy(
                 StrictMode.VmPolicy.Builder()
                     .detectAll()
                     .penaltyLog()
-                    .build()
+                    .build(),
             )
         }
-        
+
         setupUncaughtExceptionHandler()
         SecureLogger.i(TAG, "Application started")
     }

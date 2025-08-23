@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.model.QuickConnectResult
@@ -14,7 +15,6 @@ import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.di.JellyfinClientFactory
 import com.rpeters.jellyfin.ui.utils.ErrorHandler
 import com.rpeters.jellyfin.ui.utils.OfflineManager
-import com.rpeters.jellyfin.core.constants.Constants
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
