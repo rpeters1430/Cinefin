@@ -15,10 +15,19 @@ import com.rpeters.jellyfin.ui.navigation.Screen
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 
+/**
+ * Root composable for the phone experience.
+ *
+ * @param onLogout callback when the user logs out.
+ * @param useDynamicColor whether to apply dynamic colors on Android 12+ devices. Enabled by default.
+ */
 @androidx.media3.common.util.UnstableApi
 @Composable
-fun JellyfinApp(onLogout: () -> Unit = {}) {
-    JellyfinAndroidTheme(dynamicColor = true) {
+fun JellyfinApp(
+    onLogout: () -> Unit = {},
+    useDynamicColor: Boolean = true,
+) {
+    JellyfinAndroidTheme(dynamicColor = useDynamicColor) {
         val navController = rememberNavController()
         val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
         val connectionState by connectionViewModel.connectionState.collectAsState()
