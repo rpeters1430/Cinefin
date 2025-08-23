@@ -40,7 +40,7 @@ object NetworkModule {
                     android.net.TrafficStats.clearThreadStatsTag()
                 }
             }
-            
+
             if (BuildConfig.DEBUG) {
                 addInterceptor(
                     HttpLoggingInterceptor().apply {
