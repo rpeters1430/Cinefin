@@ -202,8 +202,8 @@ private fun MediaCardContent(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.4f),
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0f),
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                             ),
                             startY = 120f,
                         ),
@@ -221,7 +221,7 @@ private fun MediaCardContent(
                 if (rating != null) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = Color.Black.copy(alpha = 0.6f),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -230,13 +230,13 @@ private fun MediaCardContent(
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = null,
-                                tint = Color(0xFFFFD700),
+                                tint = MaterialTheme.colorScheme.secondary,
                                 modifier = Modifier.size(14.dp),
                             )
                             Text(
                                 text = rating.toString(),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(start = 2.dp),
                             )
                         }
@@ -248,7 +248,7 @@ private fun MediaCardContent(
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "More actions",
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
@@ -307,7 +307,7 @@ private fun MediaCardContent(
             ) {
                 val favoriteColor by animateColorAsState(
                     targetValue = if (isFavorite) {
-                        Color.Red
+                        MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     },
