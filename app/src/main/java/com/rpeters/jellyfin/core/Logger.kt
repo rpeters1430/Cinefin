@@ -214,7 +214,7 @@ object Logger {
                     }
                     return@launch
                 }
-                
+
                 val logFile = File(dir, LOG_FILE_NAME)
 
                 if (logFile.exists() && logFile.length() > MAX_LOG_FILE_SIZE) {
