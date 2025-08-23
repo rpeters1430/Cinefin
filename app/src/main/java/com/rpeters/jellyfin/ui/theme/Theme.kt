@@ -85,10 +85,17 @@ private val JellyfinExpressiveDarkColorScheme = darkColorScheme(
     inversePrimary = Color(0xFF6750A4),
 )
 
+/**
+ * Jellyfin application's Material 3 theme.
+ *
+ * @param darkTheme whether to use the dark color scheme.
+ * @param dynamicColor whether to use dynamic color on Android 12+ devices. Enabled by default;
+ * when disabled or unsupported the expressive color scheme is used.
+ * @param content composable content to display inside the theme.
+ */
 @Composable
 fun JellyfinAndroidTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+ and works great with Expressive theming
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit,
 ) {
