@@ -89,6 +89,7 @@ class VideoPlayerActivity : ComponentActivity() {
                         onSubtitlesClick = playerViewModel::showSubtitleDialog,
                         onPictureInPictureClick = ::enterPictureInPictureModeCustom,
                         onOrientationToggle = ::toggleOrientation,
+                        onAudioTrackSelect = playerViewModel::selectAudioTrack,
                         onSubtitleTrackSelect = playerViewModel::selectSubtitleTrack,
                         onSubtitleDialogDismiss = playerViewModel::hideSubtitleDialog,
                         onCastDeviceSelect = playerViewModel::selectCastDevice,

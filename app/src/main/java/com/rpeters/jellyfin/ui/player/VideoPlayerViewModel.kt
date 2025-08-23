@@ -63,6 +63,8 @@ data class VideoPlayerState(
     val aspectRatio: Float = 16f / 9f,
     val selectedAspectRatio: AspectRatioMode = AspectRatioMode.FILL,
     val availableAspectRatios: List<AspectRatioMode> = AspectRatioMode.values().toList(),
+    val availableAudioTracks: List<TrackInfo> = emptyList(),
+    val selectedAudioTrack: TrackInfo? = null,
     val showSubtitleDialog: Boolean = false,
     val availableSubtitleTracks: List<TrackInfo> = emptyList(),
     val selectedSubtitleTrack: TrackInfo? = null,
@@ -91,6 +93,7 @@ class VideoPlayerViewModel @Inject constructor(
     val playerState: StateFlow<VideoPlayerState> = _playerState.asStateFlow()
 
     private var trackSelector: DefaultTrackSelector? = null
+    private var trackSelectionManager: TrackSelectionManager? = null
     private var currentMediaItem: MediaItem? = null
     private var currentJellyfinItem: org.jellyfin.sdk.model.api.BaseItemDto? = null
     private var currentSubtitleSpecs: List<SubtitleSpec> = emptyList()
@@ -108,6 +111,10 @@ class VideoPlayerViewModel @Inject constructor(
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             _playerState.value = _playerState.value.copy(isPlaying = isPlaying)
+        }
+
+        override fun onTracksChanged(tracks: Player.Tracks) {
+            trackSelectionManager?.updateAvailableTracks()
         }
 
         override fun onPlayerError(error: PlaybackException) {
@@ -252,6 +259,30 @@ class VideoPlayerViewModel @Inject constructor(
                         setScrubbingModeEnabled(true)
                     }
 
+                trackSelectionManager = TrackSelectionManager(exoPlayer!!, selector)
+                trackSelectionManager?.updateAvailableTracks()
+
+                launch {
+                    trackSelectionManager?.trackSelectionState?.collectLatest { state ->
+                        val audioTracks = state.audioTracks.mapIndexed { index, track ->
+                            TrackInfo(
+                                groupIndex = 0,
+                                trackIndex = index,
+                                format = androidx.media3.common.Format.Builder()
+                                    .setId(track.id)
+                                    .setLanguage(track.language)
+                                    .build(),
+                                isSelected = track.isSelected,
+                                displayName = track.label,
+                            )
+                        }
+                        _playerState.value = _playerState.value.copy(
+                            availableAudioTracks = audioTracks,
+                            selectedAudioTrack = audioTracks.find { it.isSelected },
+                        )
+                    }
+                }
+
                 // Load Jellyfin item for Cast metadata
                 loadJellyfinItem(itemId)
 
@@ -320,6 +351,13 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun seekTo(positionMs: Long) {
         exoPlayer?.seekTo(positionMs)
+    }
+
+    fun selectAudioTrack(trackInfo: TrackInfo) {
+        trackInfo.format.id?.let { id ->
+            trackSelectionManager?.selectAudioTrack(id)
+            _playerState.value = _playerState.value.copy(selectedAudioTrack = trackInfo)
+        }
     }
 
     fun changeQuality(quality: VideoQuality) {
@@ -518,6 +556,7 @@ class VideoPlayerViewModel @Inject constructor(
         exoPlayer?.removeListener(playerListener)
         exoPlayer?.release()
         exoPlayer = null
+        trackSelectionManager = null
         castManager.release()
     }
 
