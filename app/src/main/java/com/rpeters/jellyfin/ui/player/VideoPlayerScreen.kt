@@ -324,6 +324,7 @@ private fun VideoControlsOverlay(
     onQualityChange: (VideoQuality) -> Unit,
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onCastClick: () -> Unit,
+    onAudioTracksClick: () -> Unit,
     onSubtitlesClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     onOrientationToggle: () -> Unit,
@@ -495,44 +496,30 @@ private fun VideoControlsOverlay(
                         }
                     }
                     if (playerState.availableAudioTracks.size > 1) {
-                        IconButton(onClick = onAudioTracksClick) {
-                            Icon(
-                                imageVector = Icons.Default.Audiotrack,
-                                contentDescription = "Audio Tracks",
-                                tint = Color.White,
-                            )
-                        }
+                        ControlButton(
+                            onClick = onAudioTracksClick,
+                            imageVector = Icons.Default.Audiotrack,
+                            contentDescription = "Audio Tracks",
+                        )
                     }
 
-                    // Cast button with device selection
-                    CastButton(
-                        isCasting = playerState.isCasting,
-                        onClick = onCastClick,
-                    )
-                }
+                    if (playerState.availableSubtitleTracks.isNotEmpty()) {
+                        ControlButton(
+                            onClick = onSubtitlesClick,
+                            imageVector = Icons.Default.ClosedCaption,
+                            contentDescription = "Subtitles",
+                        )
+                    }
 
-                // Orientation toggle that also enables pop-up mode when exiting fullscreen
-                IconButton(onClick = {
-                    onOrientationToggle()
-                    onPictureInPictureClick()
-                }) {
-                    Icon(
+                    ControlButton(
+                        onClick = onOrientationToggle,
                         imageVector = Icons.Default.Fullscreen,
                         contentDescription = "Toggle Orientation",
                     )
-
-                    if (playerState.availableSubtitleTracks.isNotEmpty()) {
-                        IconButton(onClick = onSubtitlesClick) {
-                            Icon(
-                                imageVector = Icons.Default.ClosedCaption,
-                                contentDescription = "Subtitles",
-                                tint = Color.White,
-                            )
-                        }
-                    }
                 }
             }
 
+            // Bottom row for Cast and PiP controls
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -545,13 +532,11 @@ private fun VideoControlsOverlay(
                     onClick = onCastClick,
                 )
 
-                IconButton(onClick = onPictureInPictureClick) {
-                    Icon(
-                        imageVector = Icons.Default.PictureInPicture,
-                        contentDescription = "Picture in Picture",
-                        tint = Color.White,
-                    )
-                }
+                ControlButton(
+                    onClick = onPictureInPictureClick,
+                    imageVector = Icons.Default.PictureInPicture,
+                    contentDescription = "Picture in Picture",
+                )
             }
         }
     }
