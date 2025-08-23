@@ -202,7 +202,7 @@ private fun MediaCardContent(
                         Brush.verticalGradient(
                             colors = listOf(
                                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0f),
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                Color.Transparent,
                             ),
                             startY = 120f,
                         ),
