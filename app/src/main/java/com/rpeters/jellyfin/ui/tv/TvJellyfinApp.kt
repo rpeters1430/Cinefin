@@ -30,7 +30,7 @@ import androidx.tv.material3.Text as TvText
  * Root composable for the Android TV experience.
  *
  * @param onLogout callback when the user logs out.
- * @param useDynamicColor whether to apply dynamic colors when supported. Enabled by default.
+ * @param useDynamicColor whether to apply dynamic colors on Android 12+ devices. Enabled by default.
  */
 @Composable
 fun TvJellyfinApp(
