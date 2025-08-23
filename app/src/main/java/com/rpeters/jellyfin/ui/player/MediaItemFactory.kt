@@ -13,7 +13,7 @@ import androidx.media3.common.util.UnstableApi
  */
 @UnstableApi
 object MediaItemFactory {
-    
+
     /**
      * Build a MediaItem with optional side-loaded subtitle tracks and MIME type hint
      */
@@ -21,14 +21,14 @@ object MediaItemFactory {
         videoUrl: String,
         title: String?,
         sideLoadedSubs: List<SubtitleSpec> = emptyList(),
-        mimeTypeHint: String? = null
+        mimeTypeHint: String? = null,
     ): MediaItem {
         val builder = MediaItem.Builder()
             .setUri(videoUrl)
             .setMediaMetadata(
                 MediaMetadata.Builder()
                     .setTitle(title)
-                    .build()
+                    .build(),
             )
 
         // If you know it's HLS or DASH, set the correct MIME type
@@ -49,7 +49,7 @@ object MediaItemFactory {
 
         return builder.build()
     }
-    
+
     /**
      * Infer MIME type from URL for proper Media3 pipeline selection
      */
@@ -65,10 +65,10 @@ object MediaItemFactory {
  */
 data class SubtitleSpec(
     val url: String,
-    val mimeType: String,     // MimeTypes.TEXT_VTT, APPLICATION_SUBRIP, TEXT_SSA, APPLICATION_TTML
+    val mimeType: String, // MimeTypes.TEXT_VTT, APPLICATION_SUBRIP, TEXT_SSA, APPLICATION_TTML
     val language: String?,
     val label: String? = null,
-    val isForced: Boolean = false
+    val isForced: Boolean = false,
 ) {
     companion object {
         /**
@@ -81,25 +81,25 @@ data class SubtitleSpec(
             "ttml" -> MimeTypes.APPLICATION_TTML
             else -> MimeTypes.TEXT_VTT // default to WebVTT
         }
-        
+
         /**
          * Create SubtitleSpec from URL with automatic MIME type detection
          */
         fun fromUrl(
-            url: String, 
-            language: String?, 
-            label: String? = null, 
-            isForced: Boolean = false
+            url: String,
+            language: String?,
+            label: String? = null,
+            isForced: Boolean = false,
         ): SubtitleSpec {
             val extension = url.substringAfterLast('.', "")
             val mimeType = mimeTypeFromExtension(extension)
-            
+
             return SubtitleSpec(
                 url = url,
                 mimeType = mimeType,
                 language = language,
                 label = label,
-                isForced = isForced
+                isForced = isForced,
             )
         }
     }

@@ -166,9 +166,9 @@ class CastManager @Inject constructor(
      * Infer proper content type from URL for Cast receiver compatibility
      */
     private fun inferContentType(uri: String): String = when {
-        uri.endsWith(".m3u8", ignoreCase = true) -> "application/x-mpegURL"   // HLS
-        uri.endsWith(".mpd", ignoreCase = true) -> "application/dash+xml"    // DASH
-        else -> "video/mp4"                                                   // default
+        uri.endsWith(".m3u8", ignoreCase = true) -> "application/x-mpegURL" // HLS
+        uri.endsWith(".mpd", ignoreCase = true) -> "application/dash+xml" // DASH
+        else -> "video/mp4" // default
     }
 
     /**
@@ -176,7 +176,8 @@ class CastManager @Inject constructor(
      */
     private fun SubtitleSpec.toCastTrack(id: Long): com.google.android.gms.cast.MediaTrack {
         val builder = com.google.android.gms.cast.MediaTrack.Builder(
-            id, com.google.android.gms.cast.MediaTrack.TYPE_TEXT
+            id,
+            com.google.android.gms.cast.MediaTrack.TYPE_TEXT,
         )
             .setContentId(this.url)
             .setLanguage(this.language)
@@ -187,7 +188,8 @@ class CastManager @Inject constructor(
             androidx.media3.common.MimeTypes.TEXT_VTT -> com.google.android.gms.cast.MediaTrack.SUBTYPE_SUBTITLES
             androidx.media3.common.MimeTypes.APPLICATION_SUBRIP -> com.google.android.gms.cast.MediaTrack.SUBTYPE_SUBTITLES
             androidx.media3.common.MimeTypes.TEXT_SSA,
-            androidx.media3.common.MimeTypes.APPLICATION_TTML -> com.google.android.gms.cast.MediaTrack.SUBTYPE_CAPTIONS
+            androidx.media3.common.MimeTypes.APPLICATION_TTML,
+            -> com.google.android.gms.cast.MediaTrack.SUBTYPE_CAPTIONS
             else -> com.google.android.gms.cast.MediaTrack.SUBTYPE_UNKNOWN
         }
         builder.setSubtype(subtype)
@@ -200,7 +202,7 @@ class CastManager @Inject constructor(
             if (castSession?.isConnected == true) {
                 val mediaUrl = mediaItem.localConfiguration?.uri.toString()
                 val contentType = inferContentType(mediaUrl)
-                
+
                 // Build Cast media metadata
                 val metadata = CastMediaMetadata(CastMediaMetadata.MEDIA_TYPE_MOVIE).apply {
                     putString(CastMediaMetadata.KEY_TITLE, item.name ?: "Unknown Title")
@@ -212,8 +214,8 @@ class CastManager @Inject constructor(
                 }
 
                 // Build subtitle tracks for Cast
-                val tracks = sideLoadedSubs.mapIndexed { idx, sub -> 
-                    sub.toCastTrack(idx + 1L) 
+                val tracks = sideLoadedSubs.mapIndexed { idx, sub ->
+                    sub.toCastTrack(idx + 1L)
                 }
 
                 // Build media info with proper content type and tracks
@@ -244,7 +246,7 @@ class CastManager @Inject constructor(
                 castSession.remoteMediaClient?.load(request)
 
                 if (BuildConfig.DEBUG) {
-                    Log.d("CastManager", "Started casting: ${item.name} (${contentType}) with ${tracks.size} subtitle tracks")
+                    Log.d("CastManager", "Started casting: ${item.name} ($contentType) with ${tracks.size} subtitle tracks")
                 }
             } else {
                 Log.w("CastManager", "No active Cast session")
