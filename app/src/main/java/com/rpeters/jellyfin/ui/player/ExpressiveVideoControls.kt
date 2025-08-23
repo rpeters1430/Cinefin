@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
+import com.rpeters.jellyfin.ui.theme.MotionTokens
 
 @UnstableApi
 @Composable
@@ -77,8 +78,8 @@ fun ExpressiveVideoControls(
 ) {
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn(animationSpec = tween(300)),
-        exit = fadeOut(animationSpec = tween(300)),
+        enter = fadeIn(animationSpec = MotionTokens.mediaControlsEnter),
+        exit = fadeOut(animationSpec = MotionTokens.mediaControlsExit),
         modifier = modifier,
     ) {
         Box {
@@ -377,7 +378,7 @@ private fun ExpressiveIconButton(
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isActive) 1.1f else 1f,
-        animationSpec = tween(200),
+        animationSpec = MotionTokens.expressiveEnter,
         label = "icon_scale",
     )
 
@@ -416,7 +417,7 @@ private fun ExpressiveMainButton(
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isLoading) 0.9f else 1f,
-        animationSpec = tween(200),
+        animationSpec = MotionTokens.mediaPlayEasing,
         label = "main_button_scale",
     )
 
@@ -462,7 +463,7 @@ private fun ExpressiveSeekButton(
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 1.2f else 1f,
-        animationSpec = tween(150),
+        animationSpec = MotionTokens.mediaSeekEasing,
         label = "seek_button_scale",
     )
 

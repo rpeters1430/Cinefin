@@ -10,7 +10,11 @@
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(gh pr:*)",
       "Bash(.gradlew assembleDebug --stacktrace)",
-      "Bash(.gradlew build)"
+      "Bash(.gradlew build)",
+      "WebFetch(domain:m3.material.io)",
+      "Bash(.\\gradlew.bat:*)",
+      "Bash(git checkout:*)",
+      "Bash(.\\gradlew.bat build:*)"
     ],
     "defaultMode": "acceptEdits"
   }

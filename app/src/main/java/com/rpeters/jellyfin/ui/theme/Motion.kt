@@ -5,16 +5,22 @@ import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.tween
 
 /**
- * Material 3 Motion tokens for consistent animations across the app
- * Following Material Design 3 motion principles
+ * Material 3 Expressive Motion tokens for consistent animations across the app
+ * Following Material Design 3 Expressive motion principles (2024-2025)
  */
 object MotionTokens {
 
-    // Material 3 Easing curves
-    val EmphasizedEasing: Easing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
+    // Material 3 Expressive Easing curves (updated for 2025)
+    val ExpressiveEasing: Easing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
+    val EmphasizedEasing: Easing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f) 
     val StandardEasing: Easing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
     val AccelerateEasing: Easing = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
     val DecelerateEasing: Easing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
+    
+    // New Expressive motion curves for media interactions
+    val MediaPlayEasing: Easing = CubicBezierEasing(0.0f, 0.0f, 0.2f, 1.0f)
+    val MediaSeekEasing: Easing = CubicBezierEasing(0.4f, 0.0f, 0.2f, 1.0f)
+    val CarouselScrollEasing: Easing = CubicBezierEasing(0.1f, 0.0f, 0.1f, 1.0f)
 
     // Duration tokens
     const val DurationShort1 = 50
@@ -53,5 +59,52 @@ object MotionTokens {
     val standardExit = tween<Float>(
         durationMillis = DurationShort2,
         easing = StandardEasing,
+    )
+    
+    // Material 3 Expressive motion patterns (2024-2025)
+    val expressiveEnter = tween<Float>(
+        durationMillis = DurationMedium3,
+        easing = ExpressiveEasing,
+    )
+    
+    val expressiveExit = tween<Float>(
+        durationMillis = DurationMedium1,
+        easing = ExpressiveEasing,
+    )
+    
+    // Media-specific motion patterns
+    val mediaControlsEnter = tween<Float>(
+        durationMillis = DurationShort4,
+        easing = MediaPlayEasing,
+    )
+    
+    val mediaControlsExit = tween<Float>(
+        durationMillis = DurationShort3,
+        easing = MediaPlayEasing,
+    )
+    
+    val mediaPlayEasing = tween<Float>(
+        durationMillis = DurationShort4,
+        easing = MediaPlayEasing,
+    )
+    
+    val mediaSeekEasing = tween<Float>(
+        durationMillis = DurationShort3,
+        easing = MediaSeekEasing,
+    )
+    
+    val carouselScroll = tween<Float>(
+        durationMillis = DurationMedium2,
+        easing = CarouselScrollEasing,
+    )
+    
+    val fabMenuExpand = tween<Float>(
+        durationMillis = DurationMedium1,
+        easing = EmphasizedEasing,
+    )
+    
+    val fabMenuCollapse = tween<Float>(
+        durationMillis = DurationShort4,
+        easing = AccelerateEasing,
     )
 }

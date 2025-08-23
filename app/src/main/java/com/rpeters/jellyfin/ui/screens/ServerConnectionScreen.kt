@@ -21,6 +21,8 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -115,9 +117,12 @@ fun ServerConnectionScreen(
 
         // Auto-login button if we have saved credentials
         if (hasSavedPassword && rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+            ElevatedCard(
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                ),
+                elevation = CardDefaults.elevatedCardElevation(
+                    defaultElevation = 8.dp
                 ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -139,7 +144,7 @@ fun ServerConnectionScreen(
                         textAlign = TextAlign.Center,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    Button(
+                    FilledTonalButton(
                         onClick = onAutoLogin,
                         enabled = !isConnecting,
                         modifier = Modifier.fillMaxWidth(),
@@ -255,9 +260,12 @@ fun ServerConnectionScreen(
 
         // Show helper text when saved credentials are available but no password
         if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank() && rememberLogin && !hasSavedPassword) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
+            ElevatedCard(
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                ),
+                elevation = CardDefaults.elevatedCardElevation(
+                    defaultElevation = 4.dp
                 ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -273,9 +281,12 @@ fun ServerConnectionScreen(
 
         // Error message
         if (errorMessage != null) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f),
+            ElevatedCard(
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                ),
+                elevation = CardDefaults.elevatedCardElevation(
+                    defaultElevation = 6.dp
                 ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -420,13 +431,16 @@ fun QuickConnectScreen(
 
         // Status message
         if (status.isNotBlank()) {
-            Card(
-                colors = CardDefaults.cardColors(
+            ElevatedCard(
+                colors = CardDefaults.elevatedCardColors(
                     containerColor = if (isPolling) {
                         MaterialTheme.colorScheme.primaryContainer
                     } else {
                         MaterialTheme.colorScheme.secondaryContainer
                     },
+                ),
+                elevation = CardDefaults.elevatedCardElevation(
+                    defaultElevation = if (isPolling) 6.dp else 4.dp
                 ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -446,9 +460,12 @@ fun QuickConnectScreen(
 
         // Quick Connect Code display
         if (code.isNotBlank()) {
-            Card(
-                colors = CardDefaults.cardColors(
+            ElevatedCard(
+                colors = CardDefaults.elevatedCardColors(
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                ),
+                elevation = CardDefaults.elevatedCardElevation(
+                    defaultElevation = 8.dp
                 ),
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -481,9 +498,12 @@ fun QuickConnectScreen(
 
         // Error message
         if (errorMessage != null) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f),
+            ElevatedCard(
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                ),
+                elevation = CardDefaults.elevatedCardElevation(
+                    defaultElevation = 6.dp
                 ),
                 modifier = Modifier.fillMaxWidth(),
             ) {

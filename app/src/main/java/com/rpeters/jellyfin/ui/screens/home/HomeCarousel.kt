@@ -26,6 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
+import com.rpeters.jellyfin.ui.components.ExpressiveCardType
 import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
@@ -156,21 +158,32 @@ fun EnhancedContentCarousel(
             state = carouselState,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(240.dp),
-            itemWidth = 280.dp,
-            itemSpacing = 12.dp,
+                .height(360.dp),
+            itemWidth = 220.dp,
+            itemSpacing = 16.dp,
             contentPadding = PaddingValues(horizontal = 16.dp),
         ) { index ->
             val item = items[index]
-            CarouselContentCard(
-                item = item,
-                getImageUrl = getImageUrl,
-                getBackdropUrl = getBackdropUrl,
-                getSeriesImageUrl = getSeriesImageUrl,
-                onClick = onItemClick,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp)),
+            ExpressiveMediaCard(
+                title = item.name ?: "Unknown Title",
+                subtitle = when (item.type?.toString()) {
+                    "Episode" -> item.seriesName ?: ""
+                    "Series" -> item.productionYear?.toString() ?: ""
+                    "Audio" -> item.artists?.firstOrNull() ?: ""
+                    "Movie" -> item.productionYear?.toString() ?: ""
+                    else -> ""
+                },
+                imageUrl = when (item.type?.toString()) {
+                    "Episode" -> getSeriesImageUrl(item) ?: getImageUrl(item) ?: ""
+                    "Audio", "MusicAlbum" -> getImageUrl(item) ?: ""
+                    "Series" -> getSeriesImageUrl(item) ?: getBackdropUrl(item) ?: getImageUrl(item) ?: ""
+                    else -> getBackdropUrl(item) ?: getImageUrl(item) ?: ""
+                },
+                rating = item.communityRating?.toFloat(),
+                onCardClick = { onItemClick(item) },
+                onPlayClick = { onItemClick(item) },
+                cardType = ExpressiveCardType.ELEVATED,
+                modifier = Modifier.fillMaxSize()
             )
         }
     }

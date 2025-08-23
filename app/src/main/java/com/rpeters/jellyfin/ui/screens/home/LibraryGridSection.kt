@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.screens.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +16,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -30,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
+import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
 import com.rpeters.jellyfin.ui.components.ShimmerBox
 import com.rpeters.jellyfin.ui.theme.getContentTypeColor
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -49,16 +54,25 @@ fun LibraryGridSection(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            modifier = Modifier.fillMaxWidth(),
+        
+        // Use a vertical arrangement for compact cards
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(libraries, key = { it.id ?: it.name ?: "" }) { library ->
-                LibraryCard(
-                    library = library,
-                    getImageUrl = getImageUrl,
-                    onClick = onLibraryClick,
-                    modifier = Modifier.padding(end = 12.dp),
+            libraries.forEach { library ->
+                ExpressiveCompactCard(
+                    title = library.name ?: "Unknown Library",
+                    subtitle = library.type?.toString()?.replace("_", " ")?.lowercase()
+                        ?.replaceFirstChar { it.uppercase() } ?: "",
+                    imageUrl = getImageUrl(library) ?: "",
+                    onClick = { onLibraryClick(library) },
+                    leadingIcon = when (library.type?.toString()?.lowercase()) {
+                        "movies" -> Icons.Default.Movie
+                        "tvshows" -> Icons.Default.Tv
+                        "music" -> Icons.Default.MusicNote
+                        else -> Icons.Default.Folder
+                    }
                 )
             }
         }
