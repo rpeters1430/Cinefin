@@ -4,9 +4,8 @@ import android.app.Application
 import android.os.StrictMode
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
-import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.NetworkOptimizer
-import com.rpeters.jellyfin.utils.PerformanceOptimizer
+import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +18,7 @@ class JellyfinApplication : Application() {
 
     @Inject
     lateinit var offlineDownloadManager: OfflineDownloadManager
-    
+
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     companion object {
@@ -50,26 +49,26 @@ class JellyfinApplication : Application() {
         SecureLogger.w(TAG, "Low memory warning - cleaning up caches")
         // Could trigger cache cleanup here if needed
     }
-    
+
     private fun initializePerformanceOptimizations() {
         applicationScope.launch {
             try {
                 // Initialize network optimizations for StrictMode compliance
                 NetworkOptimizer.initialize(this@JellyfinApplication)
-                
+
                 // Configure StrictMode with network optimizations
                 NetworkOptimizer.configureNetworkStrictMode()
-                
+
                 SecureLogger.i(TAG, "Performance optimizations initialized")
             } catch (e: Exception) {
                 SecureLogger.e(TAG, "Failed to initialize performance optimizations", e)
-                
+
                 // Fallback to basic StrictMode if optimizations fail
                 if (BuildConfig.DEBUG) {
                     StrictMode.setThreadPolicy(
                         StrictMode.ThreadPolicy.Builder()
                             .detectDiskReads()
-                            .detectDiskWrites() 
+                            .detectDiskWrites()
                             .detectNetwork()
                             .penaltyLog()
                             .build(),

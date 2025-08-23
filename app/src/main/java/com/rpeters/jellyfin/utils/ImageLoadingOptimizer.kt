@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 @OptIn(ExperimentalCoilApi::class)
 object ImageLoadingOptimizer {
     private const val TAG = "ImageLoadingOptimizer"
-    
+
     fun initializeCoil(context: Context, okHttpClient: OkHttpClient) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -59,23 +59,22 @@ object ImageLoadingOptimizer {
                         }
                     }
                     .build()
-                
+
                 // Set as singleton image loader
                 Coil.setImageLoader(imageLoader)
                 Log.d(TAG, "Coil image loader initialized successfully")
-                
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize Coil image loader", e)
             }
         }
     }
-    
+
     private fun getCacheDirectory(context: Context): File {
         return File(context.cacheDir, "image_cache").apply {
             mkdirs()
         }
     }
-    
+
     fun clearImageCache(context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
             try {

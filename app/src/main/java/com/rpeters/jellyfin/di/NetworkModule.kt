@@ -43,7 +43,7 @@ object NetworkModule {
                     android.net.TrafficStats.clearThreadStatsTag()
                 }
             }
-            
+
             // Add connection pool to optimize connections
             addInterceptor { chain ->
                 val request = chain.request().newBuilder()

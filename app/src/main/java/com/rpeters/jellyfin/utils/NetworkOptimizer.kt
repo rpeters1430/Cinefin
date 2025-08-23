@@ -14,18 +14,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
-import okhttp3.Response
 import java.io.IOException
-import java.net.Socket
 import java.util.concurrent.TimeUnit
 
 /**
  * Optimizes network operations for StrictMode compliance and performance
  */
 object NetworkOptimizer {
-    private const val TAG = "NetworkOptimizer" 
+    private const val TAG = "NetworkOptimizer"
     private const val NETWORK_TAG = "jellyfin_network"
-    
+
     /**
      * Initialize network optimizations for the entire application
      */
@@ -34,17 +32,17 @@ object NetworkOptimizer {
             try {
                 // Configure Coil image loading with proper network tagging
                 setupCoilImageLoader(application)
-                
+
                 // Set global traffic stats tagging for untagged operations
                 setupGlobalNetworkTagging()
-                
+
                 Log.d(TAG, "Network optimizations initialized successfully")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize network optimizations", e)
             }
         }
     }
-    
+
     private fun setupCoilImageLoader(context: Context) {
         val imageLoader = ImageLoader.Builder(context)
             .memoryCache {
@@ -84,37 +82,37 @@ object NetworkOptimizer {
                 }
             }
             .build()
-            
+
         // Set as default image loader
         Coil.setImageLoader(imageLoader)
     }
-    
+
     private fun setupGlobalNetworkTagging() {
         // Create a thread-local tag for network operations
         val networkTag = NETWORK_TAG.hashCode()
-        
+
         // This helps with ExoPlayer and other libraries that might not tag their sockets
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             Log.w(TAG, "Uncaught exception in thread ${thread.name}", throwable)
-            
+
             // Clear any lingering traffic stats tags
             try {
                 TrafficStats.clearThreadStatsTag()
             } catch (e: Exception) {
                 // Ignore cleanup errors
             }
-            
+
             // Call the original handler if any
             Thread.getDefaultUncaughtExceptionHandler()?.uncaughtException(thread, throwable)
         }
     }
-    
+
     /**
      * Execute network operation with proper tagging
      */
     suspend fun <T> executeTaggedNetworkOperation(
         tag: String = NETWORK_TAG,
-        operation: suspend () -> T
+        operation: suspend () -> T,
     ): T {
         return PerformanceOptimizer.executeNetworkOperation {
             TrafficStats.setThreadStatsTag(tag.hashCode())
@@ -125,7 +123,7 @@ object NetworkOptimizer {
             }
         }
     }
-    
+
     /**
      * Create a properly configured OkHttpClient for ExoPlayer data sources
      */
@@ -146,7 +144,7 @@ object NetworkOptimizer {
             .retryOnConnectionFailure(true)
             .build()
     }
-    
+
     /**
      * Properly close network resources to prevent leaks
      */
@@ -159,7 +157,7 @@ object NetworkOptimizer {
             }
         }
     }
-    
+
     /**
      * Configure StrictMode for network optimizations
      */
@@ -173,9 +171,9 @@ object NetworkOptimizer {
                     .detectResourceMismatches()
                     .detectCustomSlowCalls()
                     .penaltyLog()
-                    .build()
+                    .build(),
             )
-            
+
             StrictMode.setVmPolicy(
                 StrictMode.VmPolicy.Builder()
                     .detectLeakedSqlLiteObjects()
@@ -184,7 +182,7 @@ object NetworkOptimizer {
                     .detectActivityLeaks()
                     .detectUntaggedSockets()
                     .penaltyLog()
-                    .build()
+                    .build(),
             )
         }
     }
