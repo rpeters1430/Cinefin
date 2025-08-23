@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.components
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
@@ -12,7 +11,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -59,30 +57,30 @@ fun ExpressiveFABMenu(
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 45f else 0f,
         animationSpec = MotionTokens.fabMenuExpand,
-        label = "fab_rotation"
+        label = "fab_rotation",
     )
 
     AnimatedVisibility(
         visible = isVisible,
         enter = scaleIn(MotionTokens.fabMenuExpand) + fadeIn(),
         exit = scaleOut(MotionTokens.fabMenuCollapse) + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Box {
             // FAB Menu Items
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = slideInVertically(
-                    initialOffsetY = { it }
+                    initialOffsetY = { it },
                 ) + fadeIn(),
                 exit = slideOutVertically(
-                    targetOffsetY = { it }
-                ) + fadeOut()
+                    targetOffsetY = { it },
+                ) + fadeOut(),
             ) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalAlignment = Alignment.End,
-                    modifier = Modifier.padding(bottom = 72.dp)
+                    modifier = Modifier.padding(bottom = 72.dp),
                 ) {
                     ExpressiveFABMenuItem(
                         icon = Icons.Default.PlayArrow,
@@ -90,34 +88,34 @@ fun ExpressiveFABMenu(
                         onClick = {
                             onPlayClick()
                             isExpanded = false
-                        }
+                        },
                     )
-                    
+
                     ExpressiveFABMenuItem(
                         icon = Icons.Default.Queue,
                         label = "Add to Queue",
                         onClick = {
                             onQueueClick()
                             isExpanded = false
-                        }
+                        },
                     )
-                    
+
                     ExpressiveFABMenuItem(
                         icon = Icons.Default.Download,
                         label = "Download",
                         onClick = {
                             onDownloadClick()
                             isExpanded = false
-                        }
+                        },
                     )
-                    
+
                     ExpressiveFABMenuItem(
                         icon = Icons.Default.Favorite,
                         label = "Add to Favorites",
                         onClick = {
                             onFavoriteClick()
                             isExpanded = false
-                        }
+                        },
                     )
                 }
             }
@@ -127,12 +125,12 @@ fun ExpressiveFABMenu(
                 onClick = { isExpanded = !isExpanded },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                shape = CircleShape
+                shape = CircleShape,
             ) {
                 Icon(
                     imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Add,
                     contentDescription = if (isExpanded) "Close menu" else "Open menu",
-                    modifier = Modifier.rotate(rotation)
+                    modifier = Modifier.rotate(rotation),
                 )
             }
         }
@@ -144,24 +142,24 @@ private fun ExpressiveFABMenuItem(
     icon: ImageVector,
     label: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         onClick = onClick,
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 6.dp,
-        modifier = modifier
+        modifier = modifier,
     ) {
         SmallFloatingActionButton(
             onClick = onClick,
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
         }
     }
@@ -176,7 +174,7 @@ fun ExpressiveExtendedFAB(
     icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    expanded: Boolean = true
+    expanded: Boolean = true,
 ) {
     ExtendedFloatingActionButton(
         onClick = onClick,
@@ -184,17 +182,17 @@ fun ExpressiveExtendedFAB(
         icon = {
             Icon(
                 imageVector = icon,
-                contentDescription = null
+                contentDescription = null,
             )
         },
         text = {
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelLarge
+                style = MaterialTheme.typography.labelLarge,
             )
         },
         containerColor = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
-        modifier = modifier
+        modifier = modifier,
     )
 }

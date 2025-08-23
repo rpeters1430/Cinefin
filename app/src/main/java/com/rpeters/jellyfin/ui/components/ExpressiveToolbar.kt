@@ -7,8 +7,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -33,10 +31,8 @@ import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -59,17 +55,17 @@ fun ExpressiveFloatingToolbar(
     onShareClick: () -> Unit,
     onMoreClick: () -> Unit,
     modifier: Modifier = Modifier,
-    primaryAction: ToolbarAction = ToolbarAction.PLAY
+    primaryAction: ToolbarAction = ToolbarAction.PLAY,
 ) {
     AnimatedVisibility(
         visible = isVisible,
         enter = slideInVertically(
-            initialOffsetY = { it }
+            initialOffsetY = { it },
         ) + fadeIn(),
         exit = slideOutVertically(
-            targetOffsetY = { it }
+            targetOffsetY = { it },
         ) + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Surface(
             modifier = Modifier
@@ -77,18 +73,18 @@ fun ExpressiveFloatingToolbar(
                 .padding(16.dp)
                 .shadow(
                     elevation = 8.dp,
-                    shape = RoundedCornerShape(28.dp)
+                    shape = RoundedCornerShape(28.dp),
                 ),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainer,
-            tonalElevation = 3.dp
+            tonalElevation = 3.dp,
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Primary action (larger FAB)
                 when (primaryAction) {
@@ -97,12 +93,12 @@ fun ExpressiveFloatingToolbar(
                             onClick = onPlayClick,
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(56.dp)
+                            modifier = Modifier.size(56.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,
                                 contentDescription = "Play",
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp),
                             )
                         }
                     }
@@ -111,12 +107,12 @@ fun ExpressiveFloatingToolbar(
                             onClick = onDownloadClick,
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(56.dp)
+                            modifier = Modifier.size(56.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Download,
                                 contentDescription = "Download",
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp),
                             )
                         }
                     }
@@ -125,12 +121,12 @@ fun ExpressiveFloatingToolbar(
                             onClick = onFavoriteClick,
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(56.dp)
+                            modifier = Modifier.size(56.dp),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Favorite,
                                 contentDescription = "Favorite",
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp),
                             )
                         }
                     }
@@ -139,30 +135,30 @@ fun ExpressiveFloatingToolbar(
                 // Secondary actions
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ExpressiveToolbarButton(
                         icon = Icons.Default.Queue,
                         contentDescription = "Add to Queue",
-                        onClick = onQueueClick
+                        onClick = onQueueClick,
                     )
 
                     ExpressiveToolbarButton(
                         icon = Icons.Default.Cast,
                         contentDescription = "Cast",
-                        onClick = onCastClick
+                        onClick = onCastClick,
                     )
 
                     ExpressiveToolbarButton(
                         icon = Icons.Default.Share,
                         contentDescription = "Share",
-                        onClick = onShareClick
+                        onClick = onShareClick,
                     )
 
                     ExpressiveToolbarButton(
                         icon = Icons.Default.MoreVert,
                         contentDescription = "More options",
-                        onClick = onMoreClick
+                        onClick = onMoreClick,
                     )
                 }
             }
@@ -177,40 +173,40 @@ fun ExpressiveFloatingToolbar(
 fun ExpressiveCompactToolbar(
     isVisible: Boolean,
     actions: List<ToolbarActionItem>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = isVisible,
         enter = slideInVertically(
-            initialOffsetY = { it }
+            initialOffsetY = { it },
         ) + fadeIn(),
         exit = slideOutVertically(
-            targetOffsetY = { it }
+            targetOffsetY = { it },
         ) + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Surface(
             modifier = Modifier
                 .padding(16.dp)
                 .shadow(
                     elevation = 8.dp,
-                    shape = RoundedCornerShape(24.dp)
+                    shape = RoundedCornerShape(24.dp),
                 ),
             shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            tonalElevation = 3.dp
+            tonalElevation = 3.dp,
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 actions.forEach { action ->
                     ExpressiveToolbarButton(
                         icon = action.icon,
                         contentDescription = action.contentDescription,
                         onClick = action.onClick,
-                        isActive = action.isActive
+                        isActive = action.isActive,
                     )
                 }
             }
@@ -224,12 +220,12 @@ private fun ExpressiveToolbarButton(
     contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    isActive: Boolean = false
+    isActive: Boolean = false,
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isActive) 1.1f else 1.0f,
         animationSpec = MotionTokens.expressiveEnter,
-        label = "toolbar_button_scale"
+        label = "toolbar_button_scale",
     )
 
     Surface(
@@ -240,11 +236,11 @@ private fun ExpressiveToolbarButton(
             MaterialTheme.colorScheme.primaryContainer
         } else {
             Color.Transparent
-        }
+        },
     ) {
         IconButton(
             onClick = onClick,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(40.dp),
         ) {
             Icon(
                 imageVector = icon,
@@ -254,7 +250,7 @@ private fun ExpressiveToolbarButton(
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
         }
     }
@@ -272,17 +268,17 @@ fun ExpressiveVideoToolbar(
     onSkipNextClick: () -> Unit,
     onCastClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = isVisible,
         enter = slideInVertically(
-            initialOffsetY = { it }
+            initialOffsetY = { it },
         ) + fadeIn(),
         exit = slideOutVertically(
-            targetOffsetY = { it }
+            targetOffsetY = { it },
         ) + fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Box(
             modifier = Modifier
@@ -291,12 +287,12 @@ fun ExpressiveVideoToolbar(
                     Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.8f)
+                            Color.Black.copy(alpha = 0.8f),
                         ),
                         startY = 0f,
-                        endY = 200f
-                    )
-                )
+                        endY = 200f,
+                    ),
+                ),
         ) {
             Surface(
                 modifier = Modifier
@@ -305,27 +301,27 @@ fun ExpressiveVideoToolbar(
                     .padding(16.dp)
                     .shadow(
                         elevation = 8.dp,
-                        shape = RoundedCornerShape(28.dp)
+                        shape = RoundedCornerShape(28.dp),
                     ),
                 shape = RoundedCornerShape(28.dp),
-                color = Color.Black.copy(alpha = 0.6f)
+                color = Color.Black.copy(alpha = 0.6f),
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     // Skip Previous
                     SmallFloatingActionButton(
                         onClick = onSkipPreviousClick,
                         containerColor = Color.White.copy(alpha = 0.2f),
-                        contentColor = Color.White
+                        contentColor = Color.White,
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow, // Replace with skip previous
-                            contentDescription = "Skip Previous"
+                            contentDescription = "Skip Previous",
                         )
                     }
 
@@ -334,7 +330,7 @@ fun ExpressiveVideoToolbar(
                         onClick = onPlayPauseClick,
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(64.dp)
+                        modifier = Modifier.size(64.dp),
                     ) {
                         Icon(
                             imageVector = if (isPlaying) {
@@ -343,7 +339,7 @@ fun ExpressiveVideoToolbar(
                                 Icons.Default.PlayArrow
                             },
                             contentDescription = if (isPlaying) "Pause" else "Play",
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(32.dp),
                         )
                     }
 
@@ -351,11 +347,11 @@ fun ExpressiveVideoToolbar(
                     SmallFloatingActionButton(
                         onClick = onSkipNextClick,
                         containerColor = Color.White.copy(alpha = 0.2f),
-                        contentColor = Color.White
+                        contentColor = Color.White,
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow, // Replace with skip next
-                            contentDescription = "Skip Next"
+                            contentDescription = "Skip Next",
                         )
                     }
                 }
@@ -372,5 +368,5 @@ data class ToolbarActionItem(
     val icon: ImageVector,
     val contentDescription: String,
     val onClick: () -> Unit,
-    val isActive: Boolean = false
+    val isActive: Boolean = false,
 )

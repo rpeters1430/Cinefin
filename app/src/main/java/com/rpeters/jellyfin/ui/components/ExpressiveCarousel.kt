@@ -60,12 +60,12 @@ fun ExpressiveHeroCarousel(
     items: List<CarouselItem>,
     onItemClick: (CarouselItem) -> Unit,
     onPlayClick: (CarouselItem) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val pagerState = rememberPagerState(pageCount = { items.size })
 
     Column(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         // Hero Pager
         Box {
@@ -73,14 +73,14 @@ fun ExpressiveHeroCarousel(
                 state = pagerState,
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 pageSpacing = 8.dp,
-                modifier = Modifier.height(280.dp)
+                modifier = Modifier.height(280.dp),
             ) { page ->
                 val item = items[page]
                 ExpressiveHeroCard(
                     item = item,
                     onItemClick = { onItemClick(item) },
                     onPlayClick = { onPlayClick(item) },
-                    isActive = page == pagerState.currentPage
+                    isActive = page == pagerState.currentPage,
                 )
             }
 
@@ -89,7 +89,7 @@ fun ExpressiveHeroCarousel(
                 pagerState = pagerState,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = 16.dp),
             )
         }
     }
@@ -103,17 +103,17 @@ fun ExpressiveMediaCarousel(
     title: String,
     items: List<CarouselItem>,
     onItemClick: (CarouselItem) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
 
         val listState = rememberLazyListState()
@@ -121,12 +121,12 @@ fun ExpressiveMediaCarousel(
         LazyRow(
             state = listState,
             contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(items) { item ->
                 ExpressiveMediaCard(
                     item = item,
-                    onClick = { onItemClick(item) }
+                    onClick = { onItemClick(item) },
                 )
             }
         }
@@ -139,12 +139,12 @@ private fun ExpressiveHeroCard(
     onItemClick: () -> Unit,
     onPlayClick: () -> Unit,
     isActive: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isActive) 1.0f else 0.95f,
         animationSpec = MotionTokens.carouselScroll,
-        label = "hero_card_scale"
+        label = "hero_card_scale",
     )
 
     Card(
@@ -153,17 +153,17 @@ private fun ExpressiveHeroCard(
             .scale(scale)
             .animateContentSize(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isActive) 8.dp else 4.dp
+            defaultElevation = if (isActive) 8.dp else 4.dp,
         ),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clickable { onItemClick() }
+                .clickable { onItemClick() },
         ) {
             // Background Image
             AsyncImage(
@@ -172,7 +172,7 @@ private fun ExpressiveHeroCard(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(16.dp)),
             )
 
             // Gradient Overlay
@@ -183,18 +183,18 @@ private fun ExpressiveHeroCard(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.7f)
+                                Color.Black.copy(alpha = 0.7f),
                             ),
-                            startY = 200f
-                        )
-                    )
+                            startY = 200f,
+                        ),
+                    ),
             )
 
             // Content overlay
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(24.dp)
+                    .padding(24.dp),
             ) {
                 Text(
                     text = item.title,
@@ -202,7 +202,7 @@ private fun ExpressiveHeroCard(
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 if (item.subtitle.isNotEmpty()) {
@@ -212,25 +212,25 @@ private fun ExpressiveHeroCard(
                         color = Color.White.copy(alpha = 0.9f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = 4.dp),
                     )
                 }
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 12.dp)
+                    modifier = Modifier.padding(top = 12.dp),
                 ) {
                     Surface(
                         onClick = onPlayClick,
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(48.dp),
                     ) {
                         IconButton(onClick = onPlayClick) {
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,
                                 contentDescription = "Play",
-                                tint = MaterialTheme.colorScheme.onPrimary
+                                tint = MaterialTheme.colorScheme.onPrimary,
                             )
                         }
                     }
@@ -244,28 +244,28 @@ private fun ExpressiveHeroCard(
 private fun ExpressiveMediaCard(
     item: CarouselItem,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier
             .width(160.dp)
             .height(240.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .clickable { onClick() }
+                .clickable { onClick() },
         ) {
             // Image
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(180.dp),
             ) {
                 AsyncImage(
                     model = item.imageUrl,
@@ -273,7 +273,7 @@ private fun ExpressiveMediaCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
                 )
             }
 
@@ -282,7 +282,7 @@ private fun ExpressiveMediaCard(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(12.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
                     text = item.title,
@@ -290,7 +290,7 @@ private fun ExpressiveMediaCard(
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
 
                 if (item.subtitle.isNotEmpty()) {
@@ -299,7 +299,7 @@ private fun ExpressiveMediaCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -311,7 +311,7 @@ private fun ExpressiveMediaCard(
 @Composable
 private fun ExpressiveCarouselIndicators(
     pagerState: PagerState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val currentPage by remember {
         derivedStateOf { pagerState.currentPage }
@@ -319,21 +319,21 @@ private fun ExpressiveCarouselIndicators(
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         repeat(pagerState.pageCount) { index ->
             val isActive = index == currentPage
             Surface(
                 modifier = Modifier.size(
                     width = if (isActive) 24.dp else 8.dp,
-                    height = 8.dp
+                    height = 8.dp,
                 ),
                 shape = CircleShape,
                 color = if (isActive) {
                     MaterialTheme.colorScheme.primary
                 } else {
                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                }
+                },
             ) {}
         }
     }
@@ -347,7 +347,7 @@ data class CarouselItem(
     val title: String,
     val subtitle: String = "",
     val imageUrl: String,
-    val type: MediaType = MediaType.MOVIE
+    val type: MediaType = MediaType.MOVIE,
 )
 
 enum class MediaType {
