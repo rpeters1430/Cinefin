@@ -5,7 +5,7 @@ The TV Episode Detail screen was crashing with the error:
 ```
 java.lang.IllegalArgumentException: Cannot format given Object as a Date
 	at java.text.DateFormat.format(DateFormat.java:336)
-	at com.example.jellyfinandroid.ui.screens.TVEpisodeDetailScreenKt.EpisodeInfoCard$lambda$57(TVEpisodeDetailScreen.kt:380)
+	at com.rpeters.jellyfin.ui.screens.TVEpisodeDetailScreenKt.EpisodeInfoCard$lambda$57(TVEpisodeDetailScreen.kt:380)
 ```
 
 ## Root Cause
@@ -32,7 +32,7 @@ Updated the date formatting logic in `TVEpisodeDetailScreen.kt` to:
 3. **Compose-compatible error handling**: Moved try-catch blocks outside of composable function calls to comply with Compose constraints.
 
 ## Files Modified
-- `app/src/main/java/com/example/jellyfinandroid/ui/screens/TVEpisodeDetailScreen.kt`
+- `app/src/main/java/com.rpeters.jellyfin/ui/screens/TVEpisodeDetailScreen.kt`
   - Fixed `premiereDate` formatting (line ~380)
   - Fixed `lastPlayedDate` formatting (line ~430)
 

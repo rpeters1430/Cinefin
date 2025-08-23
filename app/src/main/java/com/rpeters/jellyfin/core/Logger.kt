@@ -1,6 +1,6 @@
 package com.rpeters.jellyfin.core
 
-import android.os.Environment
+import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import kotlinx.coroutines.CoroutineScope
@@ -68,6 +68,9 @@ object Logger {
     private val maxLogEntries = 1000
     private const val LOG_FILE_NAME = "jellyfin.log"
     private const val MAX_LOG_FILE_SIZE = 1024 * 1024 // 1 MB
+
+    // Context provider for file logging
+    var appContext: Context? = null
 
     // Configuration
     var minLogLevel: LogLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.INFO
@@ -203,17 +206,19 @@ object Logger {
             val logLine = "[$timestamp] [${entry.level.tag}] [${entry.category.tag}] ${entry.tag}: ${formatMessage(entry)}"
 
             try {
-                val logDir = File(
-                    Environment.getExternalStorageDirectory(),
-                    "Android/data/${BuildConfig.APPLICATION_ID}/files",
-                )
-                if (!logDir.exists()) {
-                    logDir.mkdirs()
+                // Use app-specific external storage, fallback to internal storage
+                val dir = appContext?.getExternalFilesDir(null) ?: appContext?.filesDir
+                if (dir == null) {
+                    if (BuildConfig.DEBUG) {
+                        println("FILE_LOG_ERROR: No context available for file logging")
+                    }
+                    return@launch
                 }
-                val logFile = File(logDir, LOG_FILE_NAME)
+                
+                val logFile = File(dir, LOG_FILE_NAME)
 
                 if (logFile.exists() && logFile.length() > MAX_LOG_FILE_SIZE) {
-                    val backupFile = File(logDir, "$LOG_FILE_NAME.bak")
+                    val backupFile = File(dir, "$LOG_FILE_NAME.bak")
                     if (backupFile.exists()) {
                         backupFile.delete()
                     }

@@ -162,6 +162,7 @@ dependencies {
     // Debug Tools
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    debugImplementation(libs.leakcanary.android)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

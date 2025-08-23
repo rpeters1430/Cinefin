@@ -1,6 +1,8 @@
 package com.rpeters.jellyfin
 
 import android.app.Application
+import android.os.StrictMode
+import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.HiltAndroidApp
@@ -18,6 +20,26 @@ class JellyfinApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        
+        // Initialize Logger with application context for file logging
+        Logger.appContext = this
+        
+        // Enable StrictMode for debug builds to detect policy violations
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(
+                StrictMode.ThreadPolicy.Builder()
+                    .detectAll()
+                    .penaltyLog()
+                    .build()
+            )
+            StrictMode.setVmPolicy(
+                StrictMode.VmPolicy.Builder()
+                    .detectAll()
+                    .penaltyLog()
+                    .build()
+            )
+        }
+        
         setupUncaughtExceptionHandler()
         SecureLogger.i(TAG, "Application started")
     }

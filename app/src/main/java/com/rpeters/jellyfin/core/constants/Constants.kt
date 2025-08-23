@@ -1,7 +1,8 @@
-package com.rpeters.jellyfin.utils
+package com.rpeters.jellyfin.core.constants
 
 /**
- * Application-wide constants
+ * Centralized application constants to prevent drift between multiple files.
+ * Replaces magic numbers and strings throughout the codebase.
  */
 object Constants {
 
@@ -62,4 +63,25 @@ object Constants {
     // Cache settings
     const val DISK_CACHE_SIZE_MB = 100
     const val MEMORY_CACHE_PERCENT = 0.25f // 25% of available memory
+
+    // Content Rating Thresholds
+    object Rating {
+        const val HIGH_RATING_THRESHOLD = 7.0
+        const val EXCELLENT_RATING_THRESHOLD = 8.5
+        const val GOOD_RATING_THRESHOLD = 6.0
+        const val AVERAGE_RATING_THRESHOLD = 5.0
+    }
+
+    // Security Constants
+    object Security {
+        const val KEY_ALIAS = "JellyfinCredentialKey"
+        const val ENCRYPTION_TRANSFORMATION = "AES/GCM/NoPadding"
+        const val IV_LENGTH = 12
+    }
+
+    // Playback Constants
+    object Playback {
+        const val RESUME_THRESHOLD_PERCENT = 5.0 // Resume if < 5% watched
+        const val WATCHED_THRESHOLD_PERCENT = 90.0 // Mark watched if > 90% watched
+    }
 }
