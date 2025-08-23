@@ -425,15 +425,6 @@ private fun VideoControlsOverlay(
                     }
                 }
 
-                // Subtitles button
-                IconButton(onClick = onSubtitlesClick) {
-                    Icon(
-                        imageVector = Icons.Default.ClosedCaption,
-                        contentDescription = "Subtitles",
-                        tint = Color.White,
-                    )
-                }
-
                 // Cast button with device selection
                 CastButton(
                     isCasting = playerState.isCasting,
@@ -537,6 +528,16 @@ private fun VideoControlsOverlay(
                         color = Color.White,
                         style = MaterialTheme.typography.bodySmall,
                     )
+
+                    if (playerState.availableSubtitleTracks.isNotEmpty()) {
+                        IconButton(onClick = onSubtitlesClick) {
+                            Icon(
+                                imageVector = Icons.Default.ClosedCaption,
+                                contentDescription = "Subtitles",
+                                tint = Color.White,
+                            )
+                        }
+                    }
                 }
             }
         }
