@@ -134,9 +134,8 @@ class CastManager @Inject constructor(
     }
 
     fun initialize() {
-        // Move Cast initialization to background thread to avoid StrictMode disk read violations
-        // The Cast framework loads modules dynamically which involves file I/O operations
-        CoroutineScope(Dispatchers.IO).launch {
+        // Cast framework requires main thread access for CastContext.getSharedInstance()
+        CoroutineScope(Dispatchers.Main).launch {
             try {
                 castContext = CastContext.getSharedInstance(context).apply {
                     sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)

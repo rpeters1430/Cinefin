@@ -113,8 +113,28 @@ class VideoPlayerViewModel @Inject constructor(
 
         override fun onPlayerError(error: PlaybackException) {
             Log.e("VideoPlayerViewModel", "Playback error: ${error.message}", error)
+            
+            // Provide more specific error messages based on error type
+            val errorMessage = when {
+                error.cause is java.net.SocketTimeoutException -> 
+                    "Network timeout - check your connection to the Jellyfin server"
+                error.cause is javax.net.ssl.SSLException -> 
+                    "SSL connection failed - check server certificate"
+                error.cause is java.net.UnknownHostException -> 
+                    "Cannot reach Jellyfin server - check server URL"
+                error.cause?.message?.contains("401") == true -> 
+                    "Authentication failed - please log in again"
+                error.cause?.message?.contains("403") == true -> 
+                    "Access denied - insufficient permissions"
+                error.cause?.message?.contains("404") == true -> 
+                    "Media not found on server"
+                error.cause?.message?.contains("HTTP") == true -> 
+                    "Server error: ${error.cause?.message}"
+                else -> "Playback error: ${error.message}"
+            }
+            
             _playerState.value = _playerState.value.copy(
-                error = "Playback error: ${error.message}",
+                error = errorMessage,
                 isLoading = false,
             )
         }
@@ -176,9 +196,15 @@ class VideoPlayerViewModel @Inject constructor(
 
                 // Create media item with subtitle support and proper MIME type
                 currentMediaItem = if (isOfflinePlayback && offlineMediaItem != null) {
+                    if (BuildConfig.DEBUG) {
+                        Log.d("VideoPlayerViewModel", "Using offline media item for $itemName")
+                    }
                     offlineMediaItem
                 } else {
                     val mimeTypeHint = MediaItemFactory.inferMimeType(streamUrl)
+                    if (BuildConfig.DEBUG) {
+                        Log.d("VideoPlayerViewModel", "Creating media item - URL: ${streamUrl.take(100)}..., MIME: $mimeTypeHint")
+                    }
                     MediaItemFactory.build(
                         videoUrl = streamUrl,
                         title = itemName,
@@ -191,18 +217,30 @@ class VideoPlayerViewModel @Inject constructor(
                 val selector = trackSelector ?: throw IllegalStateException("Track selector not initialized")
                 val mediaItem = currentMediaItem ?: throw IllegalStateException("Media item not created")
 
-                // Create ExoPlayer with properly configured network data source
+                // Create ExoPlayer with properly authenticated network data source
+                val currentServer = repository.getCurrentServer()
+                val httpDataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
+                    .setUserAgent("JellyfinAndroid/1.0.0")
+                    .setConnectTimeoutMs(30_000)
+                    .setReadTimeoutMs(60_000)
+                    .setAllowCrossProtocolRedirects(true)
+
+                // Add Jellyfin authentication headers if server is available
+                currentServer?.accessToken?.let { token ->
+                    httpDataSourceFactory.setDefaultRequestProperties(
+                        mapOf(
+                            "X-MediaBrowser-Token" to token,
+                            "Accept" to "*/*",
+                            "Accept-Encoding" to "identity"
+                        )
+                    )
+                }
+
                 exoPlayer = ExoPlayer.Builder(context)
                     .setTrackSelector(selector)
                     .setMediaSourceFactory(
                         androidx.media3.exoplayer.source.DefaultMediaSourceFactory(context)
-                            .setDataSourceFactory(
-                                androidx.media3.datasource.DefaultHttpDataSource.Factory()
-                                    .setUserAgent("JellyfinAndroid/1.0.0")
-                                    .setConnectTimeoutMs(30_000)
-                                    .setReadTimeoutMs(60_000)
-                                    .setAllowCrossProtocolRedirects(true),
-                            ),
+                            .setDataSourceFactory(httpDataSourceFactory),
                     )
                     .build()
                     .apply {
@@ -218,9 +256,13 @@ class VideoPlayerViewModel @Inject constructor(
                 // Load Jellyfin item for Cast metadata
                 loadJellyfinItem(itemId)
 
-                // Initialize Cast support on background thread to avoid StrictMode violations
-                launch(Dispatchers.IO) {
-                    castManager.initialize()
+                // Initialize Cast support on main thread (required by Cast framework)
+                launch(Dispatchers.Main) {
+                    try {
+                        castManager.initialize()
+                    } catch (e: Exception) {
+                        Log.w("VideoPlayerViewModel", "Cast initialization failed", e)
+                    }
                 }
 
                 // Observe cast state updates (single collector lifecycle bound to player init)
@@ -317,27 +359,23 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     fun showCastDialog() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Main) {
             try {
-                // Ensure Cast is initialized on background thread first
-                withContext(Dispatchers.IO) {
-                    val castContext = com.google.android.gms.cast.framework.CastContext.getSharedInstance(context)
-                    val sessionManager = castContext.sessionManager
+                // Cast framework requires main thread access
+                val castContext = com.google.android.gms.cast.framework.CastContext.getSharedInstance(context)
+                val sessionManager = castContext.sessionManager
 
-                    if (sessionManager.currentCastSession?.isConnected == true) {
-                        // If already connected, disconnect
-                        sessionManager.endCurrentSession(true)
-                        if (BuildConfig.DEBUG) {
-                            Log.d("VideoPlayerViewModel", "Disconnected from Cast device")
-                        }
-                    } else {
-                        // Show cast device selection dialog
-                        withContext(Dispatchers.Main) {
-                            _playerState.value = _playerState.value.copy(showCastDialog = true)
-                            if (BuildConfig.DEBUG) {
-                                Log.d("VideoPlayerViewModel", "Cast dialog requested")
-                            }
-                        }
+                if (sessionManager.currentCastSession?.isConnected == true) {
+                    // If already connected, disconnect
+                    sessionManager.endCurrentSession(true)
+                    if (BuildConfig.DEBUG) {
+                        Log.d("VideoPlayerViewModel", "Disconnected from Cast device")
+                    }
+                } else {
+                    // Show cast device selection dialog
+                    _playerState.value = _playerState.value.copy(showCastDialog = true)
+                    if (BuildConfig.DEBUG) {
+                        Log.d("VideoPlayerViewModel", "Cast dialog requested")
                     }
                 }
             } catch (e: Exception) {
