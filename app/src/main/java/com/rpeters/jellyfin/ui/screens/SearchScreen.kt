@@ -29,8 +29,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.core.constants.Constants
+import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.utils.rememberDebouncedState
 import org.jellyfin.sdk.model.api.BaseItemDto
 
