@@ -261,32 +261,32 @@ private fun CarouselContentCard(
                 when (item.type?.toString()) {
                     "Episode" -> {
                         item.seriesName?.let { seriesName ->
-                                Text(
-                                    text = seriesName,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                                    maxLines = 1,
-                                )
+                            Text(
+                                text = seriesName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                maxLines = 1,
+                            )
                         }
                     }
                     "Series" -> {
                         item.productionYear?.let { year ->
-                                Text(
-                                    text = year.toString(),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                                    maxLines = 1,
-                                )
+                            Text(
+                                text = year.toString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                maxLines = 1,
+                            )
                         }
                     }
                     "Audio" -> {
                         item.artists?.firstOrNull()?.let { artist ->
-                                Text(
-                                    text = artist,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                                    maxLines = 1,
-                                )
+                            Text(
+                                text = artist,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                maxLines = 1,
+                            )
                         }
                     }
                 }
