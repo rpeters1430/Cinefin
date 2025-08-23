@@ -494,21 +494,21 @@ private fun VideoControlsOverlay(
                             }
                         }
                     }
-                if (playerState.availableAudioTracks.size > 1) {
-                    IconButton(onClick = onAudioTracksClick) {
-                        Icon(
-                            imageVector = Icons.Default.Audiotrack,
-                            contentDescription = "Audio Tracks",
-                            tint = Color.White,
-                        )
+                    if (playerState.availableAudioTracks.size > 1) {
+                        IconButton(onClick = onAudioTracksClick) {
+                            Icon(
+                                imageVector = Icons.Default.Audiotrack,
+                                contentDescription = "Audio Tracks",
+                                tint = Color.White,
+                            )
+                        }
                     }
-                }
 
-                // Cast button with device selection
-                CastButton(
-                    isCasting = playerState.isCasting,
-                    onClick = onCastClick,
-                )
+                    // Cast button with device selection
+                    CastButton(
+                        isCasting = playerState.isCasting,
+                        onClick = onCastClick,
+                    )
                     ControlButton(
                         onClick = onPictureInPictureClick,
                         imageVector = Icons.Default.PictureInPicture,
