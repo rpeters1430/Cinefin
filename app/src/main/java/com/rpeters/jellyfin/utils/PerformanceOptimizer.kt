@@ -19,7 +19,7 @@ object PerformanceOptimizer {
      */
     suspend fun <T> executeOffMainThread(
         operation: suspend () -> T,
-        dispatcher: CoroutineDispatcher = Dispatchers.IO
+        dispatcher: CoroutineDispatcher = Dispatchers.IO,
     ): T {
         return if (isMainThread()) {
             withContext(dispatcher) {
