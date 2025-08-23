@@ -19,7 +19,7 @@ import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
  * Root composable for the phone experience.
  *
  * @param onLogout callback when the user logs out.
- * @param useDynamicColor whether to apply dynamic colors when supported. Enabled by default.
+ * @param useDynamicColor whether to apply dynamic colors on Android 12+ devices. Enabled by default.
  */
 @androidx.media3.common.util.UnstableApi
 @Composable
