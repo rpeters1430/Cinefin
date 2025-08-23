@@ -102,7 +102,7 @@ suspend fun getUserLibraries(): ApiResult<List<BaseItemDto>> {
 ```bash
 # Install and test the app
 adb install app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n com.example.jellyfinandroid/.MainActivity
+adb shell am start -n com.rpeters.jellyfin/.MainActivity
 # Monitor logs: adb logcat | grep -E "(JellyfinRepository|401)"
 ```
 

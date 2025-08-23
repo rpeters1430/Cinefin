@@ -8,7 +8,9 @@
       "WebSearch",
       "Bash(find:*)",
       "WebFetch(domain:docs.anthropic.com)",
-      "Bash(gh pr:*)"
+      "Bash(gh pr:*)",
+      "Bash(.gradlew assembleDebug --stacktrace)",
+      "Bash(.gradlew build)"
     ],
     "defaultMode": "acceptEdits"
   }

@@ -29,6 +29,7 @@ biometric = "1.4.0-alpha04"
 hilt = "2.57.1"
 hiltNavigation = "1.3.0-beta01"
 slf4jAndroid = "1.7.36"
+leakcanary = "2.14"
 mockk = "1.14.5"
 kotlinxCoroutinesTest = "1.10.2"
 androidxArchCoreTest = "2.2.0"
@@ -93,6 +94,9 @@ dagger-hilt-android = { group = "com.google.dagger", name = "hilt-android", vers
 dagger-hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigation" }
 slf4j-android = { module = "org.slf4j:slf4j-android", version.ref = "slf4jAndroid" }
+
+# Debug Tools  
+leakcanary-android = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }
 
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }

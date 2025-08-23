@@ -120,6 +120,14 @@
 -dontwarn androidx.media3.**
 
 # ================================
+# GOOGLE CAST FRAMEWORK
+# ================================
+# Essential for Chromecast functionality
+-keep class com.google.android.gms.cast.** { *; }
+-keep class com.google.android.gms.cast.framework.** { *; }
+-dontwarn com.google.android.gms.cast.**
+
+# ================================
 # COIL IMAGE LOADING
 # ================================
 # Prevent image loading failures

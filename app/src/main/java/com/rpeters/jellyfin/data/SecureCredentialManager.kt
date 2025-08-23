@@ -12,7 +12,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.fragment.app.FragmentActivity
-import com.rpeters.jellyfin.utils.AppConstants
+import com.rpeters.jellyfin.core.constants.Constants
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -61,7 +61,7 @@ class SecureCredentialManager @Inject constructor(
      * Generates a unique key alias that includes a version and timestamp to support key rotation
      */
     private fun getKeyAlias(timestamp: Long = System.currentTimeMillis()): String {
-        return "${AppConstants.Security.KEY_ALIAS}_$KEY_VERSION}_${timestamp / KEY_ROTATION_INTERVAL_MS}"
+        return "${Constants.Security.KEY_ALIAS}_$KEY_VERSION}_${timestamp / KEY_ROTATION_INTERVAL_MS}"
     }
 
     /**
@@ -76,7 +76,7 @@ class SecureCredentialManager @Inject constructor(
             val aliases = keyStore.aliases()
             while (aliases.hasMoreElements()) {
                 val alias = aliases.nextElement()
-                if (alias.startsWith(AppConstants.Security.KEY_ALIAS) && alias != currentAlias) {
+                if (alias.startsWith(Constants.Security.KEY_ALIAS) && alias != currentAlias) {
                     try {
                         keyStore.deleteEntry(alias)
                     } catch (e: Exception) {
@@ -107,7 +107,7 @@ class SecureCredentialManager @Inject constructor(
      */
     private fun encrypt(data: String): String {
         return try {
-            val cipher = Cipher.getInstance(AppConstants.Security.ENCRYPTION_TRANSFORMATION)
+            val cipher = Cipher.getInstance(Constants.Security.ENCRYPTION_TRANSFORMATION)
             cipher.init(Cipher.ENCRYPT_MODE, getOrCreateSecretKey())
 
             val iv = cipher.iv
@@ -128,10 +128,10 @@ class SecureCredentialManager @Inject constructor(
     private fun decrypt(encryptedData: String): String? {
         return try {
             val combined = Base64.decode(encryptedData, Base64.NO_WRAP)
-            val iv = combined.sliceArray(0 until AppConstants.Security.IV_LENGTH)
-            val cipherData = combined.sliceArray(AppConstants.Security.IV_LENGTH until combined.size)
+            val iv = combined.sliceArray(0 until Constants.Security.IV_LENGTH)
+            val cipherData = combined.sliceArray(Constants.Security.IV_LENGTH until combined.size)
 
-            val cipher = Cipher.getInstance(AppConstants.Security.ENCRYPTION_TRANSFORMATION)
+            val cipher = Cipher.getInstance(Constants.Security.ENCRYPTION_TRANSFORMATION)
             val spec = GCMParameterSpec(128, iv)
             cipher.init(Cipher.DECRYPT_MODE, getOrCreateSecretKey(), spec)
 
@@ -236,7 +236,7 @@ class SecureCredentialManager @Inject constructor(
 
         // Use SHA-256 for more secure key generation
         val digest = MessageDigest.getInstance("SHA-256")
-        val input = "$serverUrl::$username::${AppConstants.Security.KEY_ALIAS}".toByteArray()
+        val input = "$serverUrl::$username::${Constants.Security.KEY_ALIAS}".toByteArray()
         val hash = digest.digest(input)
 
         // Take first 16 bytes and encode as hex for the key

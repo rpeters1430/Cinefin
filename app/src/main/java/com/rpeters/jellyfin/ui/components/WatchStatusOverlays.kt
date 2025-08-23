@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.utils.*
-import com.rpeters.jellyfin.utils.AppConstants
+import com.rpeters.jellyfin.core.constants.Constants
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -137,7 +137,7 @@ fun WatchProgressBar(
     val watchedPercentage = item.getWatchedPercentage()
 
     // Only show progress bar for partially watched content (not fully watched)
-    if (watchedPercentage > 0.0 && watchedPercentage < AppConstants.Playback.WATCHED_THRESHOLD_PERCENT && !item.isWatched()) {
+    if (watchedPercentage > 0.0 && watchedPercentage < Constants.Playback.WATCHED_THRESHOLD_PERCENT && !item.isWatched()) {
         Box(
             modifier = modifier
                 .background(

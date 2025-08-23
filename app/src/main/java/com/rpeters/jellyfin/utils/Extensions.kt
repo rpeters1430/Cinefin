@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.utils
 
+import com.rpeters.jellyfin.core.constants.Constants
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 /**
@@ -17,21 +18,21 @@ fun BaseItemDto.getRatingAsDouble(): Double =
  * ✅ PHASE 3: Enhanced rating checks using centralized constants
  */
 fun BaseItemDto.hasHighRating(): Boolean =
-    getRatingAsDouble() >= AppConstants.Rating.HIGH_RATING_THRESHOLD
+    getRatingAsDouble() >= Constants.Rating.HIGH_RATING_THRESHOLD
 
 fun BaseItemDto.hasExcellentRating(): Boolean =
-    getRatingAsDouble() >= AppConstants.Rating.EXCELLENT_RATING_THRESHOLD
+    getRatingAsDouble() >= Constants.Rating.EXCELLENT_RATING_THRESHOLD
 
 fun BaseItemDto.hasGoodRating(): Boolean =
-    getRatingAsDouble() >= AppConstants.Rating.GOOD_RATING_THRESHOLD
+    getRatingAsDouble() >= Constants.Rating.GOOD_RATING_THRESHOLD
 
 fun BaseItemDto.getRatingCategory(): RatingCategory {
     val rating = getRatingAsDouble()
     return when {
-        rating >= AppConstants.Rating.EXCELLENT_RATING_THRESHOLD -> RatingCategory.EXCELLENT
-        rating >= AppConstants.Rating.HIGH_RATING_THRESHOLD -> RatingCategory.HIGH
-        rating >= AppConstants.Rating.GOOD_RATING_THRESHOLD -> RatingCategory.GOOD
-        rating >= AppConstants.Rating.AVERAGE_RATING_THRESHOLD -> RatingCategory.AVERAGE
+        rating >= Constants.Rating.EXCELLENT_RATING_THRESHOLD -> RatingCategory.EXCELLENT
+        rating >= Constants.Rating.HIGH_RATING_THRESHOLD -> RatingCategory.HIGH
+        rating >= Constants.Rating.GOOD_RATING_THRESHOLD -> RatingCategory.GOOD
+        rating >= Constants.Rating.AVERAGE_RATING_THRESHOLD -> RatingCategory.AVERAGE
         else -> RatingCategory.POOR
     }
 }
@@ -83,13 +84,13 @@ fun BaseItemDto.isWatched(): Boolean = userData?.played == true
 
 fun BaseItemDto.isPartiallyWatched(): Boolean {
     val percentage = userData?.playedPercentage ?: 0.0
-    return percentage > 0.0 && percentage < AppConstants.Playback.WATCHED_THRESHOLD_PERCENT
+    return percentage > 0.0 && percentage < Constants.Playback.WATCHED_THRESHOLD_PERCENT
 }
 
 fun BaseItemDto.canResume(): Boolean {
     val percentage = userData?.playedPercentage ?: 0.0
-    return percentage > AppConstants.Playback.RESUME_THRESHOLD_PERCENT &&
-        percentage < AppConstants.Playback.WATCHED_THRESHOLD_PERCENT
+    return percentage > Constants.Playback.RESUME_THRESHOLD_PERCENT &&
+        percentage < Constants.Playback.WATCHED_THRESHOLD_PERCENT
 }
 
 fun BaseItemDto.getWatchedPercentage(): Double = userData?.playedPercentage ?: 0.0
@@ -104,7 +105,7 @@ fun BaseItemDto.getUnwatchedEpisodeCount(): Int {
             userData?.unplayedItemCount ?: run {
                 val totalCount = childCount ?: 0
                 val playedCount = userData?.playedPercentage?.let { percentage ->
-                    if (percentage >= AppConstants.Playback.WATCHED_THRESHOLD_PERCENT) totalCount else 0
+                    if (percentage >= Constants.Playback.WATCHED_THRESHOLD_PERCENT) totalCount else 0
                 } ?: 0
                 maxOf(0, totalCount - playedCount)
             }
