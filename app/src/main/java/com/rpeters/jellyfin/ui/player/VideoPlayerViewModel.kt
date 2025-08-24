@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Tracks
@@ -204,10 +205,24 @@ class VideoPlayerViewModel @Inject constructor(
                     Log.d("VideoPlayerViewModel", "- MediaSources count: ${playbackInfo.mediaSources?.size ?: 0}")
                 }
 
-                // Step 2: Choose best MediaSource for direct play
-                val mediaSource = playbackInfo.mediaSources?.firstOrNull { source ->
-                    source.supportsDirectPlay == true
-                } ?: playbackInfo.mediaSources?.firstOrNull()
+                // Step 2: Choose best MediaSource (prioritize compatibility over direct play for emulator)
+                val isEmulator = android.os.Build.FINGERPRINT.contains("generic") || 
+                                android.os.Build.MODEL.contains("sdk") ||
+                                android.os.Build.PRODUCT.contains("emulator")
+                                
+                val mediaSource = if (isEmulator) {
+                    // For emulators, prefer transcoding for better compatibility
+                    playbackInfo.mediaSources?.firstOrNull { source ->
+                        source.supportsTranscoding == true && source.container?.lowercase() == "mp4"
+                    } ?: playbackInfo.mediaSources?.firstOrNull { source ->
+                        source.supportsDirectPlay == true && source.container?.lowercase() == "mp4"
+                    } ?: playbackInfo.mediaSources?.firstOrNull()
+                } else {
+                    // For real devices, prefer direct play first
+                    playbackInfo.mediaSources?.firstOrNull { source ->
+                        source.supportsDirectPlay == true
+                    } ?: playbackInfo.mediaSources?.firstOrNull()
+                }
 
                 if (mediaSource == null) {
                     Log.e("VideoPlayerViewModel", "No suitable media source found")
@@ -237,11 +252,32 @@ class VideoPlayerViewModel @Inject constructor(
                     return@launch
                 }
 
-                val streamUrl = "${server.url}/Videos/$itemId/stream?" +
-                        "static=true&" +
-                        "Container=${mediaSource.container}&" +
-                        "mediaSourceId=${mediaSource.id}&" +
-                        "playSessionId=${playbackInfo.playSessionId}"
+                // Decide between direct play and transcoding
+                val videoStream = mediaSource.mediaStreams?.firstOrNull { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
+                val videoWidth = videoStream?.width ?: 0
+                val videoHeight = videoStream?.height ?: 0
+                val useTranscoding = isEmulator && (mediaSource.container?.lowercase() != "mp4" || 
+                                   videoWidth > 1280 || videoHeight > 720)
+
+                val streamUrl = if (useTranscoding) {
+                    // Use transcoding for better compatibility
+                    "${server.url}/Videos/$itemId/stream?" +
+                            "VideoCodec=h264&" +
+                            "AudioCodec=aac&" +
+                            "Container=mp4&" +
+                            "MaxWidth=1280&" +
+                            "MaxHeight=720&" +
+                            "MaxStreamingBitrate=4000000&" +
+                            "mediaSourceId=${mediaSource.id}&" +
+                            "playSessionId=${playbackInfo.playSessionId}"
+                } else {
+                    // Use direct play
+                    "${server.url}/Videos/$itemId/stream?" +
+                            "static=true&" +
+                            "Container=${mediaSource.container}&" +
+                            "mediaSourceId=${mediaSource.id}&" +
+                            "playSessionId=${playbackInfo.playSessionId}"
+                }
 
                 if (BuildConfig.DEBUG) {
                     Log.d("VideoPlayerViewModel", "Constructed official stream URL:")
@@ -249,6 +285,9 @@ class VideoPlayerViewModel @Inject constructor(
                     Log.d("VideoPlayerViewModel", "- Container: ${mediaSource.container}")
                     Log.d("VideoPlayerViewModel", "- MediaSource ID: ${mediaSource.id}")
                     Log.d("VideoPlayerViewModel", "- PlaySession ID: ${playbackInfo.playSessionId}")
+                    Log.d("VideoPlayerViewModel", "- Using transcoding: $useTranscoding")
+                    Log.d("VideoPlayerViewModel", "- Is emulator: $isEmulator")
+                    Log.d("VideoPlayerViewModel", "- Video resolution: ${videoWidth}x${videoHeight}")
                 }
 
                 // Load user's preferred aspect ratio
@@ -300,9 +339,18 @@ class VideoPlayerViewModel @Inject constructor(
                     }
                     offlineMediaItem
                 } else {
-                    val mimeTypeHint = MediaItemFactory.inferMimeType(streamUrl)
+                    // Use container information from MediaSource for accurate MIME type
+                    val mimeTypeHint = if (useTranscoding) {
+                        // Transcoded streams are always MP4
+                        MimeTypes.VIDEO_MP4
+                    } else {
+                        // Use original container information
+                        MediaItemFactory.mimeTypeFromContainer(mediaSource.container)
+                            .takeIf { it != MimeTypes.VIDEO_UNKNOWN } 
+                            ?: MediaItemFactory.inferMimeType(streamUrl) // Fallback to URL-based detection
+                    }
                     if (BuildConfig.DEBUG) {
-                        Log.d("VideoPlayerViewModel", "Creating media item - URL: ${streamUrl.take(100)}..., MIME: $mimeTypeHint")
+                        Log.d("VideoPlayerViewModel", "Creating media item - URL: ${streamUrl.take(100)}..., Container: ${if (useTranscoding) "mp4 (transcoded)" else mediaSource.container}, MIME: $mimeTypeHint")
                     }
                     MediaItemFactory.build(
                         videoUrl = streamUrl,
@@ -371,9 +419,11 @@ class VideoPlayerViewModel @Inject constructor(
                     selector.apply {
                         setParameters(
                             parameters.buildUpon()
-                                .setMaxVideoSizeSd() // Prefer SD quality for compatibility
+                                .setMaxVideoSizeSd() // Prefer SD quality for compatibility on weaker devices
                                 .setForceHighestSupportedBitrate(false) // Don't force highest bitrate
-                                .setPreferredVideoMimeTypes("video/mp4", "video/avc") // Prefer MP4/H.264
+                                .setPreferredVideoMimeTypes("video/mp4", "video/avc", "video/x-matroska") // Support MP4/H.264 and MKV
+                                .setAllowVideoMixedMimeTypeAdaptiveness(true) // Allow switching between different formats
+                                .setAllowAudioMixedMimeTypeAdaptiveness(true) // Allow switching between audio formats
                                 .build(),
                         )
                     }

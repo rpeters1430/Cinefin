@@ -58,6 +58,25 @@ object MediaItemFactory {
         url.endsWith(".mpd", ignoreCase = true) -> MimeTypes.APPLICATION_MPD
         else -> MimeTypes.VIDEO_MP4 // safe default
     }
+
+    /**
+     * Get MIME type from Jellyfin container format for accurate Media3 pipeline selection
+     */
+    fun mimeTypeFromContainer(container: String?): String = when (container?.lowercase()) {
+        "mkv", "matroska" -> MimeTypes.VIDEO_MATROSKA
+        "mp4" -> MimeTypes.VIDEO_MP4
+        "avi" -> MimeTypes.VIDEO_UNKNOWN // Media3 doesn't have specific AVI support, let it auto-detect
+        "mov" -> MimeTypes.VIDEO_MP4 // MOV is similar to MP4
+        "webm" -> MimeTypes.VIDEO_WEBM
+        "m4v" -> MimeTypes.VIDEO_MP4
+        "3gp" -> MimeTypes.VIDEO_UNKNOWN
+        "flv" -> MimeTypes.VIDEO_UNKNOWN
+        "wmv" -> MimeTypes.VIDEO_UNKNOWN
+        "ts", "m2ts" -> MimeTypes.VIDEO_UNKNOWN // Let ExoPlayer auto-detect TS streams
+        "m3u8" -> MimeTypes.APPLICATION_M3U8
+        "mpd" -> MimeTypes.APPLICATION_MPD
+        else -> MimeTypes.VIDEO_UNKNOWN // Let ExoPlayer auto-detect unknown formats
+    }
 }
 
 /**

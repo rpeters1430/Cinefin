@@ -1131,7 +1131,7 @@ class JellyfinRepository @Inject constructor(
     suspend fun getPlaybackInfo(itemId: String): PlaybackInfoResponse {
         val server = authRepository.getCurrentServer()
             ?: throw IllegalStateException("No authenticated server available")
-        val client = clientFactory.getClient(server.url)
+        val client = clientFactory.getClient(server.url, server.accessToken)
         
         // Create playbook info DTO with direct play enabled
         val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
