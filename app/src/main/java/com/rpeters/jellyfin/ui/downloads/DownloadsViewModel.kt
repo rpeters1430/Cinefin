@@ -95,7 +95,6 @@ class DownloadsViewModel @Inject constructor(
                     context = context,
                     itemId = download.jellyfinItemId,
                     itemName = download.itemName,
-                    streamUrl = "file://${download.localFilePath}",
                     startPosition = withContext(Dispatchers.IO) {
                         com.rpeters.jellyfin.data.PlaybackPositionStore.getPlaybackPosition(context, download.jellyfinItemId)
                     },

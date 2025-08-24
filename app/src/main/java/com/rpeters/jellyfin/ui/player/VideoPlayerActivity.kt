@@ -33,20 +33,17 @@ class VideoPlayerActivity : ComponentActivity() {
     companion object {
         private const val EXTRA_ITEM_ID = "extra_item_id"
         private const val EXTRA_ITEM_NAME = "extra_item_name"
-        private const val EXTRA_STREAM_URL = "extra_stream_url"
         private const val EXTRA_START_POSITION = "extra_start_position"
 
         fun createIntent(
             context: Context,
             itemId: String,
             itemName: String,
-            streamUrl: String,
             startPosition: Long = 0L,
         ): Intent {
             return Intent(context, VideoPlayerActivity::class.java).apply {
                 putExtra(EXTRA_ITEM_ID, itemId)
                 putExtra(EXTRA_ITEM_NAME, itemName)
-                putExtra(EXTRA_STREAM_URL, streamUrl)
                 putExtra(EXTRA_START_POSITION, startPosition)
             }
         }
@@ -66,15 +63,7 @@ class VideoPlayerActivity : ComponentActivity() {
             // Extract intent data
             val itemId = intent.getStringExtra(EXTRA_ITEM_ID) ?: ""
             val itemName = intent.getStringExtra(EXTRA_ITEM_NAME) ?: ""
-            val streamUrl = intent.getStringExtra(EXTRA_STREAM_URL) ?: ""
             val startPosition = intent.getLongExtra(EXTRA_START_POSITION, 0L)
-
-            // Validate required data
-            if (itemId.isEmpty() || streamUrl.isEmpty()) {
-                android.util.Log.e("VideoPlayerActivity", "Missing required data: itemId=$itemId, streamUrl length=${streamUrl.length}")
-                finish()
-                return
-            }
 
             // Initialize player with error handling
             try {

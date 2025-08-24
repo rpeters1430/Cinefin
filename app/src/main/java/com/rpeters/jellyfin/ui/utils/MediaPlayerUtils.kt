@@ -32,7 +32,6 @@ object MediaPlayerUtils {
                 context = context,
                 itemId = itemId,
                 itemName = item.name ?: "Unknown Title",
-                streamUrl = streamUrl,
                 startPosition = resumePosition,
             )
 
@@ -110,7 +109,6 @@ object MediaPlayerUtils {
                 context = context,
                 itemId = item.id?.toString() ?: "",
                 itemName = item.name ?: "Unknown Title",
-                streamUrl = streamUrl,
                 startPosition = startPosition,
             )
 
