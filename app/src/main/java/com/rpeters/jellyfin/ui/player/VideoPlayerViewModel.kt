@@ -98,6 +98,8 @@ class VideoPlayerViewModel @Inject constructor(
     private var currentMediaItem: MediaItem? = null
     private var currentJellyfinItem: org.jellyfin.sdk.model.api.BaseItemDto? = null
     private var currentSubtitleSpecs: List<SubtitleSpec> = emptyList()
+    private var currentItemId: String? = null
+    private var currentItemName: String? = null
 
     var exoPlayer: ExoPlayer? = null
         private set
@@ -120,6 +122,17 @@ class VideoPlayerViewModel @Inject constructor(
 
         override fun onPlayerError(error: PlaybackException) {
             Log.e("VideoPlayerViewModel", "Playback error: ${error.message}", error)
+            Log.e("VideoPlayerViewModel", "Error cause: ${error.cause}")
+            Log.e("VideoPlayerViewModel", "Error stacktrace: ${error.stackTrace?.take(5)?.joinToString("\n")}")
+
+            // Try fallback stream URLs on authentication or network errors
+            if (currentItemId != null && shouldTryFallback(error)) {
+                Log.d("VideoPlayerViewModel", "Attempting fallback stream URL for item: $currentItemId")
+                viewModelScope.launch {
+                    tryFallbackStreamUrls(currentItemId!!, currentItemName ?: "Unknown")
+                }
+                return
+            }
 
             // Provide more specific error messages based on error type
             val errorMessage = when {
@@ -159,6 +172,18 @@ class VideoPlayerViewModel @Inject constructor(
     fun initializePlayer(itemId: String, itemName: String, streamUrl: String, startPosition: Long) {
         viewModelScope.launch {
             try {
+                // Store current item details for error handling
+                currentItemId = itemId
+                currentItemName = itemName
+                
+                // Add critical crash protection
+                if (BuildConfig.DEBUG) {
+                    Log.d("VideoPlayerViewModel", "=== STARTING PLAYER INITIALIZATION ===")
+                    Log.d("VideoPlayerViewModel", "Item: $itemName ($itemId)")
+                    Log.d("VideoPlayerViewModel", "Stream URL: ${streamUrl.take(100)}...")
+                    Log.d("VideoPlayerViewModel", "Start position: ${startPosition}ms")
+                }
+                
                 // Load user's preferred aspect ratio
                 val preferredAspectRatio = try {
                     val sharedPrefs = context.getSharedPreferences("video_player_prefs", android.content.Context.MODE_PRIVATE)
@@ -226,6 +251,13 @@ class VideoPlayerViewModel @Inject constructor(
 
                 // Create ExoPlayer with properly authenticated network data source
                 val currentServer = repository.getCurrentServer()
+                if (BuildConfig.DEBUG) {
+                    Log.d("VideoPlayerViewModel", "Current server: ${currentServer?.url}")
+                    Log.d("VideoPlayerViewModel", "Has access token: ${currentServer?.accessToken != null}")
+                    Log.d("VideoPlayerViewModel", "Stream URL: $streamUrl")
+                    Log.d("VideoPlayerViewModel", "Item ID: $itemId")
+                }
+
                 val httpDataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
                     .setUserAgent("JellyfinAndroid/1.0.0")
                     .setConnectTimeoutMs(30_000)
@@ -234,30 +266,70 @@ class VideoPlayerViewModel @Inject constructor(
 
                 // Add Jellyfin authentication headers if server is available
                 currentServer?.accessToken?.let { token ->
-                    httpDataSourceFactory.setDefaultRequestProperties(
-                        mapOf(
-                            "X-MediaBrowser-Token" to token,
-                            "Accept" to "*/*",
-                            "Accept-Encoding" to "identity",
-                        ),
+                    val headers = mapOf(
+                        "X-MediaBrowser-Token" to token,
+                        "Accept" to "*/*",
+                        "Accept-Encoding" to "identity",
+                        "Authorization" to "MediaBrowser Token=\"$token\"",
+                        "X-Emby-Authorization" to "MediaBrowser Token=\"$token\"",
+                        "User-Agent" to "JellyfinAndroid/1.0.0",
                     )
+                    httpDataSourceFactory.setDefaultRequestProperties(headers)
+                    
+                    if (BuildConfig.DEBUG) {
+                        Log.d("VideoPlayerViewModel", "Added authentication headers: ${headers.keys.joinToString(", ")}")
+                    }
                 }
 
-                exoPlayer = ExoPlayer.Builder(context)
-                    .setTrackSelector(selector)
-                    .setMediaSourceFactory(
-                        androidx.media3.exoplayer.source.DefaultMediaSourceFactory(context)
-                            .setDataSourceFactory(httpDataSourceFactory),
+                exoPlayer = try {
+                    if (BuildConfig.DEBUG) {
+                        Log.d("VideoPlayerViewModel", "Creating ExoPlayer with enhanced crash protection...")
+                    }
+                    
+                    ExoPlayer.Builder(context)
+                        .setTrackSelector(selector)
+                        .setMediaSourceFactory(
+                            androidx.media3.exoplayer.source.DefaultMediaSourceFactory(context)
+                                .setDataSourceFactory(httpDataSourceFactory),
+                        )
+                        .setLoadControl(
+                            androidx.media3.exoplayer.DefaultLoadControl.Builder()
+                                .setBufferDurationsMs(
+                                    15_000, // Min buffer
+                                    60_000, // Max buffer
+                                    5_000,  // Buffer for playback
+                                    10_000  // Buffer for playback after rebuffer
+                                )
+                                .build()
+                        )
+                        .build()
+                } catch (e: Exception) {
+                    Log.e("VideoPlayerViewModel", "CRITICAL: Failed to create ExoPlayer", e)
+                    _playerState.value = _playerState.value.copy(
+                        error = "Critical error initializing video player: ${e.message}",
+                        isLoading = false
                     )
-                    .build()
-                    .apply {
+                    return@launch
+                }
+                
+                exoPlayer?.apply {
                         addListener(playerListener)
+                        if (BuildConfig.DEBUG) {
+                            Log.d("VideoPlayerViewModel", "Setting media item and preparing player")
+                        }
                         setMediaItem(mediaItem)
                         seekTo(startPosition)
                         prepare()
+                        
+                        // Enable automatic playback start
+                        playWhenReady = true
 
                         // Enable scrubbing mode for smoother seeks (Media3 1.8.0 feature)
                         setScrubbingModeEnabled(true)
+                        
+                        if (BuildConfig.DEBUG) {
+                            Log.d("VideoPlayerViewModel", "ExoPlayer prepared successfully with playWhenReady = true")
+                        }
                     }
 
                 trackSelectionManager = TrackSelectionManager(exoPlayer!!, selector)
@@ -641,6 +713,64 @@ class VideoPlayerViewModel @Inject constructor(
     private fun stopPositionUpdates() {
         positionUpdateJob?.cancel()
         positionUpdateJob = null
+    }
+
+    private fun shouldTryFallback(error: PlaybackException): Boolean {
+        return when {
+            error.cause?.message?.contains("401") == true -> true
+            error.cause?.message?.contains("403") == true -> true  
+            error.cause?.message?.contains("HTTP") == true -> true
+            error.cause is java.net.SocketTimeoutException -> true
+            else -> false
+        }
+    }
+
+    private suspend fun tryFallbackStreamUrls(itemId: String, itemName: String) {
+        try {
+            // Try different stream URL formats as fallbacks
+            val fallbackUrls = listOf(
+                repository.getTranscodedStreamUrl(itemId, maxBitrate = 20_000_000),
+                repository.getDirectStreamUrl(itemId),
+                repository.getHlsStreamUrl(itemId),
+                repository.getDashStreamUrl(itemId)
+            ).filterNotNull()
+
+            if (BuildConfig.DEBUG) {
+                Log.d("VideoPlayerViewModel", "Trying ${fallbackUrls.size} fallback URLs for item $itemId")
+            }
+
+            for ((index, fallbackUrl) in fallbackUrls.withIndex()) {
+                if (BuildConfig.DEBUG) {
+                    Log.d("VideoPlayerViewModel", "Trying fallback URL #${index + 1}: ${fallbackUrl.take(100)}...")
+                }
+
+                try {
+                    // Release current player
+                    exoPlayer?.release()
+                    
+                    // Try this fallback URL
+                    initializePlayer(itemId, itemName, fallbackUrl, 0)
+                    
+                    // If we get here without error, the fallback worked
+                    if (BuildConfig.DEBUG) {
+                        Log.d("VideoPlayerViewModel", "Fallback URL #${index + 1} succeeded")
+                    }
+                    break
+                    
+                } catch (e: Exception) {
+                    if (BuildConfig.DEBUG) {
+                        Log.w("VideoPlayerViewModel", "Fallback URL #${index + 1} failed: ${e.message}")
+                    }
+                    continue
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VideoPlayerViewModel", "All fallback attempts failed", e)
+            _playerState.value = _playerState.value.copy(
+                error = "Unable to play video - tried multiple streaming formats",
+                isLoading = false,
+            )
+        }
     }
 
     override fun onCleared() {
