@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -108,7 +107,7 @@ private fun CarouselMovieCard(
                     Text(
                         text = "★ ${String.format(java.util.Locale.ROOT, "%.1f", rating)}",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                 }
@@ -122,7 +121,7 @@ private fun CarouselMovieCard(
                 Text(
                     text = movie.name ?: "Unknown Movie",
                     style = MaterialTheme.typography.titleLarge,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                 )
             }
@@ -238,7 +237,7 @@ private fun CarouselContentCard(
                     Text(
                         text = "★ ${String.format(java.util.Locale.ROOT, "%.1f", rating)}",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     )
                 }
@@ -254,7 +253,7 @@ private fun CarouselContentCard(
                 Text(
                     text = item.name ?: "Unknown Title",
                     style = MaterialTheme.typography.titleLarge,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                 )
 
@@ -265,7 +264,7 @@ private fun CarouselContentCard(
                             Text(
                                 text = seriesName,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.8f),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                                 maxLines = 1,
                             )
                         }
@@ -275,7 +274,7 @@ private fun CarouselContentCard(
                             Text(
                                 text = year.toString(),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.8f),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                                 maxLines = 1,
                             )
                         }
@@ -285,7 +284,7 @@ private fun CarouselContentCard(
                             Text(
                                 text = artist,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.8f),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                                 maxLines = 1,
                             )
                         }
