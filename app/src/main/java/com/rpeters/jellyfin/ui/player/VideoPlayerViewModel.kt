@@ -5,12 +5,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -101,7 +99,7 @@ class VideoPlayerViewModel @Inject constructor(
                 else -> "UNKNOWN($playbackState)"
             }
             Log.d("VideoPlayer", "State: $stateString, isPlaying: ${exoPlayer?.isPlaying}")
-            
+
             _playerState.value = _playerState.value.copy(
                 isLoading = playbackState == Player.STATE_BUFFERING,
                 isPlaying = exoPlayer?.isPlaying == true,
@@ -124,15 +122,15 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun initializePlayer(itemId: String, itemName: String, startPosition: Long) {
         Log.d("VideoPlayer", "Initializing player for: $itemName")
-        
+
         currentItemId = itemId
         currentItemName = itemName
-        
+
         _playerState.value = _playerState.value.copy(
             itemId = itemId,
             itemName = itemName,
             isLoading = true,
-            error = null
+            error = null,
         )
 
         viewModelScope.launch {
@@ -148,30 +146,29 @@ class VideoPlayerViewModel @Inject constructor(
                 withContext(Dispatchers.Main) {
                     // Create simple ExoPlayer
                     exoPlayer = ExoPlayer.Builder(context).build()
-                    
+
                     // Add listener
                     exoPlayer?.addListener(playerListener)
-                    
+
                     // Create media item
                     val mediaItem = MediaItem.fromUri(streamUrl)
-                    
+
                     // Set media and prepare
                     exoPlayer?.setMediaItem(mediaItem)
                     exoPlayer?.prepare()
-                    
+
                     // Seek to start position if specified
                     if (startPosition > 0) {
                         exoPlayer?.seekTo(startPosition)
                     }
-                    
+
                     Log.d("VideoPlayer", "Player prepared successfully")
                 }
-                
             } catch (e: Exception) {
                 Log.e("VideoPlayer", "Init failed: ${e.message}", e)
                 _playerState.value = _playerState.value.copy(
                     error = "Failed to initialize: ${e.message}",
-                    isLoading = false
+                    isLoading = false,
                 )
             }
         }
@@ -179,9 +176,9 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun togglePlayPause() {
         val player = exoPlayer ?: return
-        
+
         Log.d("VideoPlayer", "Toggle play/pause. Current state: playing=${player.isPlaying}, playWhenReady=${player.playWhenReady}")
-        
+
         if (player.isPlaying) {
             player.pause()
             Log.d("VideoPlayer", "Paused")

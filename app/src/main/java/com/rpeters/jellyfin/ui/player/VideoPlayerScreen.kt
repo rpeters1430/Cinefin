@@ -130,7 +130,7 @@ fun VideoPlayerScreen(
             },
             modifier = Modifier.fillMaxSize(),
         )
-        
+
         // Add DisposableEffect to ensure proper cleanup and attachment
         DisposableEffect(exoPlayer) {
             onDispose {
