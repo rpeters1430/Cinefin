@@ -3,7 +3,6 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -33,7 +32,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
@@ -65,7 +63,6 @@ import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
-import com.rpeters.jellyfin.ui.components.ShimmerBox
 import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.components.WatchedIndicatorBadge
 import com.rpeters.jellyfin.ui.theme.MotionTokens
@@ -150,22 +147,22 @@ fun TVEpisodesScreen(
             },
             transitionSpec = {
                 fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it / 4 } togetherWith
-                fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
+                    fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
             },
-            label = "episode_screen_content"
+            label = "episode_screen_content",
         ) { screenState ->
             when (screenState) {
                 EpisodeScreenState.LOADING -> {
                     ExpressiveFullScreenLoading(
                         message = "Loading Episodes...",
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
                 EpisodeScreenState.ERROR -> {
                     ExpressiveErrorState(
                         message = state.errorMessage ?: stringResource(id = R.string.unknown_error),
                         onRetry = { viewModel.loadEpisodes(seasonId) },
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
                 EpisodeScreenState.EMPTY -> {
@@ -174,7 +171,7 @@ fun TVEpisodesScreen(
                         title = stringResource(id = R.string.no_episodes_found),
                         subtitle = "This season doesn't have any episodes yet.",
                         iconTint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
                 EpisodeScreenState.CONTENT -> {
@@ -222,13 +219,16 @@ private fun ExpressiveEpisodeRow(
     val scale by animateFloatAsState(
         targetValue = 1.0f,
         animationSpec = MotionTokens.expressiveEnter,
-        label = "episode_card_scale"
+        label = "episode_card_scale",
     )
-    
+
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clickable { onClick(episode) },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
@@ -251,7 +251,7 @@ private fun ExpressiveEpisodeRow(
                                 .height(80.dp),
                             showTitle = false,
                             showSubtitle = false,
-                            imageHeight = 80.dp
+                            imageHeight = 80.dp,
                         )
                     },
                     error = {
@@ -260,17 +260,17 @@ private fun ExpressiveEpisodeRow(
                                 .width(120.dp)
                                 .height(80.dp),
                             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
+                                contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.PlayArrow,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(32.dp),
                                 )
                             }
                         }
@@ -297,7 +297,7 @@ private fun ExpressiveEpisodeRow(
                         .fillMaxWidth()
                         .padding(horizontal = 6.dp, vertical = 6.dp),
                 )
-                
+
                 // Play button overlay
                 Surface(
                     onClick = { onClick(episode) },
@@ -305,13 +305,13 @@ private fun ExpressiveEpisodeRow(
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
                     modifier = Modifier
                         .size(40.dp)
-                        .align(Alignment.Center)
+                        .align(Alignment.Center),
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
                         contentDescription = "Play Episode",
                         tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.padding(8.dp)
+                        modifier = Modifier.padding(8.dp),
                     )
                 }
             }
@@ -323,22 +323,22 @@ private fun ExpressiveEpisodeRow(
                 // Episode number and title
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     episode.indexNumber?.let { episodeNum ->
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer
+                            color = MaterialTheme.colorScheme.secondaryContainer,
                         ) {
                             Text(
                                 text = "E$episodeNum",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             )
                         }
                     }
-                    
+
                     Text(
                         text = episode.name ?: "Episode ${episode.indexNumber ?: ""}",
                         style = MaterialTheme.typography.titleMedium,
@@ -346,14 +346,14 @@ private fun ExpressiveEpisodeRow(
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                 }
-                
+
                 // Episode metadata
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     episode.runTimeTicks?.let { runtime ->
                         val minutes = (runtime / 600_000_000).toInt()
@@ -363,7 +363,7 @@ private fun ExpressiveEpisodeRow(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    
+
                     episode.communityRating?.let { rating ->
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -373,7 +373,7 @@ private fun ExpressiveEpisodeRow(
                                 imageVector = Icons.Default.Tv,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(12.dp)
+                                modifier = Modifier.size(12.dp),
                             )
                             Text(
                                 text = String.format(java.util.Locale.ROOT, "%.1f", rating),
@@ -392,7 +392,7 @@ private fun ExpressiveEpisodeRow(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 3,
                             overflow = TextOverflow.Ellipsis,
-                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.2
+                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.2,
                         )
                     }
                 }
@@ -406,7 +406,7 @@ enum class EpisodeScreenState {
     LOADING,
     ERROR,
     EMPTY,
-    CONTENT
+    CONTENT,
 }
 
 // Expressive Error State component
@@ -444,7 +444,7 @@ private fun ExpressiveErrorState(
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = message,
@@ -454,12 +454,12 @@ private fun ExpressiveErrorState(
                 )
                 Button(
                     onClick = onRetry,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Try Again")
@@ -490,12 +490,12 @@ private fun ExpressiveEmptyState(
             val scale by animateFloatAsState(
                 targetValue = 1.0f,
                 animationSpec = MotionTokens.expressiveEnter,
-                label = "empty_icon_scale"
+                label = "empty_icon_scale",
             )
-            
+
             Surface(
                 shape = CircleShape,
-                color = iconTint.copy(alpha = 0.1f)
+                color = iconTint.copy(alpha = 0.1f),
             ) {
                 Icon(
                     imageVector = icon,
@@ -503,17 +503,20 @@ private fun ExpressiveEmptyState(
                     modifier = Modifier
                         .size(96.dp)
                         .padding(24.dp)
-                        .graphicsLayer { scaleX = scale; scaleY = scale },
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                        },
                     tint = iconTint,
                 )
             }
-            
+
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             Text(
                 text = subtitle,
