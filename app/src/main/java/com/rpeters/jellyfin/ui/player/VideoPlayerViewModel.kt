@@ -194,7 +194,7 @@ class VideoPlayerViewModel @Inject constructor(
                     Log.e("VideoPlayerViewModel", "Failed to get playback info for item $itemId", e)
                     _playerState.value = _playerState.value.copy(
                         error = "Failed to get playback information: ${e.message}",
-                        isLoading = false
+                        isLoading = false,
                     )
                     return@launch
                 }
@@ -206,10 +206,10 @@ class VideoPlayerViewModel @Inject constructor(
                 }
 
                 // Step 2: Choose best MediaSource (prioritize compatibility over direct play for emulator)
-                val isEmulator = android.os.Build.FINGERPRINT.contains("generic") || 
-                                android.os.Build.MODEL.contains("sdk") ||
-                                android.os.Build.PRODUCT.contains("emulator")
-                                
+                val isEmulator = android.os.Build.FINGERPRINT.contains("generic") ||
+                    android.os.Build.MODEL.contains("sdk") ||
+                    android.os.Build.PRODUCT.contains("emulator")
+
                 val mediaSource = if (isEmulator) {
                     // For emulators, prefer transcoding for better compatibility
                     playbackInfo.mediaSources?.firstOrNull { source ->
@@ -228,7 +228,7 @@ class VideoPlayerViewModel @Inject constructor(
                     Log.e("VideoPlayerViewModel", "No suitable media source found")
                     _playerState.value = _playerState.value.copy(
                         error = "No playable media source available",
-                        isLoading = false
+                        isLoading = false,
                     )
                     return@launch
                 }
@@ -247,7 +247,7 @@ class VideoPlayerViewModel @Inject constructor(
                     Log.e("VideoPlayerViewModel", "No current server available")
                     _playerState.value = _playerState.value.copy(
                         error = "Server connection not available",
-                        isLoading = false
+                        isLoading = false,
                     )
                     return@launch
                 }
@@ -256,27 +256,29 @@ class VideoPlayerViewModel @Inject constructor(
                 val videoStream = mediaSource.mediaStreams?.firstOrNull { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
                 val videoWidth = videoStream?.width ?: 0
                 val videoHeight = videoStream?.height ?: 0
-                val useTranscoding = isEmulator && (mediaSource.container?.lowercase() != "mp4" || 
-                                   videoWidth > 1280 || videoHeight > 720)
+                val useTranscoding = isEmulator && (
+                    mediaSource.container?.lowercase() != "mp4" ||
+                        videoWidth > 1280 || videoHeight > 720
+                    )
 
                 val streamUrl = if (useTranscoding) {
                     // Use transcoding for better compatibility
                     "${server.url}/Videos/$itemId/stream?" +
-                            "VideoCodec=h264&" +
-                            "AudioCodec=aac&" +
-                            "Container=mp4&" +
-                            "MaxWidth=1280&" +
-                            "MaxHeight=720&" +
-                            "MaxStreamingBitrate=4000000&" +
-                            "mediaSourceId=${mediaSource.id}&" +
-                            "playSessionId=${playbackInfo.playSessionId}"
+                        "VideoCodec=h264&" +
+                        "AudioCodec=aac&" +
+                        "Container=mp4&" +
+                        "MaxWidth=1280&" +
+                        "MaxHeight=720&" +
+                        "MaxStreamingBitrate=4000000&" +
+                        "mediaSourceId=${mediaSource.id}&" +
+                        "playSessionId=${playbackInfo.playSessionId}"
                 } else {
                     // Use direct play
                     "${server.url}/Videos/$itemId/stream?" +
-                            "static=true&" +
-                            "Container=${mediaSource.container}&" +
-                            "mediaSourceId=${mediaSource.id}&" +
-                            "playSessionId=${playbackInfo.playSessionId}"
+                        "static=true&" +
+                        "Container=${mediaSource.container}&" +
+                        "mediaSourceId=${mediaSource.id}&" +
+                        "playSessionId=${playbackInfo.playSessionId}"
                 }
 
                 if (BuildConfig.DEBUG) {
@@ -287,7 +289,7 @@ class VideoPlayerViewModel @Inject constructor(
                     Log.d("VideoPlayerViewModel", "- PlaySession ID: ${playbackInfo.playSessionId}")
                     Log.d("VideoPlayerViewModel", "- Using transcoding: $useTranscoding")
                     Log.d("VideoPlayerViewModel", "- Is emulator: $isEmulator")
-                    Log.d("VideoPlayerViewModel", "- Video resolution: ${videoWidth}x${videoHeight}")
+                    Log.d("VideoPlayerViewModel", "- Video resolution: ${videoWidth}x$videoHeight")
                 }
 
                 // Load user's preferred aspect ratio
@@ -346,7 +348,7 @@ class VideoPlayerViewModel @Inject constructor(
                     } else {
                         // Use original container information
                         MediaItemFactory.mimeTypeFromContainer(mediaSource.container)
-                            .takeIf { it != MimeTypes.VIDEO_UNKNOWN } 
+                            .takeIf { it != MimeTypes.VIDEO_UNKNOWN }
                             ?: MediaItemFactory.inferMimeType(streamUrl) // Fallback to URL-based detection
                     }
                     if (BuildConfig.DEBUG) {
@@ -386,9 +388,9 @@ class VideoPlayerViewModel @Inject constructor(
                     val deviceInfo = "Android Device" // Could be enhanced with actual device model
                     val deviceId = "jellyfin-android-${android.os.Build.MODEL?.replace(" ", "-")?.lowercase()}"
                     val version = "1.0.0"
-                    
+
                     val mediaBrowserAuth = "MediaBrowser Client=\"$clientInfo\", Device=\"$deviceInfo\", DeviceId=\"$deviceId\", Version=\"$version\", Token=\"$token\""
-                    
+
                     val headers = mapOf(
                         "Authorization" to mediaBrowserAuth,
                         "Accept" to "*/*",
@@ -398,7 +400,7 @@ class VideoPlayerViewModel @Inject constructor(
                         "X-Emby-Device-Name" to deviceInfo,
                         "X-Emby-Device-Id" to deviceId,
                         "X-Emby-Client-Version" to version,
-                        "X-Emby-Token" to token
+                        "X-Emby-Token" to token,
                     )
                     httpDataSourceFactory.setDefaultRequestProperties(headers)
 
