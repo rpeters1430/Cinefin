@@ -3,7 +3,6 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,8 +30,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
@@ -72,10 +69,8 @@ import coil.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
-import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
-import com.rpeters.jellyfin.ui.components.ShimmerBox
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
@@ -164,22 +159,22 @@ fun TVSeasonScreen(
             },
             transitionSpec = {
                 fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it / 4 } togetherWith
-                fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
+                    fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
             },
-            label = "season_screen_content"
+            label = "season_screen_content",
         ) { screenState ->
             when (screenState) {
                 SeasonScreenState.LOADING -> {
                     ExpressiveFullScreenLoading(
                         message = "Loading TV Show...",
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
                 SeasonScreenState.ERROR -> {
                     ExpressiveErrorState(
                         message = state.errorMessage ?: stringResource(id = R.string.unknown_error),
                         onRetry = { viewModel.refresh() },
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
                 SeasonScreenState.EMPTY -> {
@@ -188,7 +183,7 @@ fun TVSeasonScreen(
                         title = stringResource(id = R.string.no_data_available),
                         subtitle = "Please check your connection and try again",
                         iconTint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
                 SeasonScreenState.CONTENT -> {
@@ -351,13 +346,16 @@ private fun SeriesDetailsHeader(
     val headerScale by animateFloatAsState(
         targetValue = 1.0f,
         animationSpec = MotionTokens.expressiveEnter,
-        label = "header_scale"
+        label = "header_scale",
     )
-    
+
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer { scaleX = headerScale; scaleY = headerScale },
+            .graphicsLayer {
+                scaleX = headerScale
+                scaleY = headerScale
+            },
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 12.dp),
         colors = CardDefaults.elevatedCardColors(
@@ -376,7 +374,7 @@ private fun SeriesDetailsHeader(
                             .height(240.dp),
                         showTitle = false,
                         showSubtitle = false,
-                        imageHeight = 240.dp
+                        imageHeight = 240.dp,
                     )
                 },
                 error = {
@@ -385,25 +383,25 @@ private fun SeriesDetailsHeader(
                             .fillMaxWidth()
                             .height(240.dp),
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
                     ) {
                         Column(
                             modifier = Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            verticalArrangement = Arrangement.Center,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Tv,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(64.dp)
+                                modifier = Modifier.size(64.dp),
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = series.name ?: "Unknown Series",
                                 style = MaterialTheme.typography.headlineMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
@@ -515,13 +513,16 @@ private fun ExpressiveSeasonCard(
     val scale by animateFloatAsState(
         targetValue = 1.0f,
         animationSpec = MotionTokens.expressiveEnter,
-        label = "season_card_scale"
+        label = "season_card_scale",
     )
-    
+
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clickable {
                 season.id?.let { seasonId ->
                     onClick(seasonId.toString())
@@ -549,7 +550,7 @@ private fun ExpressiveSeasonCard(
                                 .height(130.dp),
                             showTitle = false,
                             showSubtitle = false,
-                            imageHeight = 130.dp
+                            imageHeight = 130.dp,
                         )
                     },
                     error = {
@@ -558,25 +559,25 @@ private fun ExpressiveSeasonCard(
                                 .width(90.dp)
                                 .height(130.dp),
                             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxSize(),
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
+                                verticalArrangement = Arrangement.Center,
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Tv,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(32.dp),
                                 )
                                 Text(
                                     text = season.name ?: "Season",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     maxLines = 2,
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
                                 )
                             }
                         }
@@ -587,7 +588,7 @@ private fun ExpressiveSeasonCard(
                         .height(130.dp)
                         .clip(RoundedCornerShape(12.dp)),
                 )
-                
+
                 // Favorite indicator
                 if (season.userData?.isFavorite == true) {
                     Surface(
@@ -595,7 +596,7 @@ private fun ExpressiveSeasonCard(
                             .align(Alignment.TopEnd)
                             .padding(6.dp),
                         shape = CircleShape,
-                        color = Color.Black.copy(alpha = 0.6f)
+                        color = Color.Black.copy(alpha = 0.6f),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Star,
@@ -603,7 +604,7 @@ private fun ExpressiveSeasonCard(
                             tint = Color.Yellow,
                             modifier = Modifier
                                 .size(20.dp)
-                                .padding(4.dp)
+                                .padding(4.dp),
                         )
                     }
                 }
@@ -618,12 +619,12 @@ private fun ExpressiveSeasonCard(
                     text = season.name ?: "Unknown Season",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     season.productionYear?.let { year ->
                         Text(
@@ -632,22 +633,22 @@ private fun ExpressiveSeasonCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    
+
                     season.childCount?.let { count ->
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer
+                            color = MaterialTheme.colorScheme.secondaryContainer,
                         ) {
                             Text(
                                 text = "$count episodes",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             )
                         }
                     }
                 }
-                
+
                 // Rating if available
                 season.communityRating?.let { rating ->
                     Row(
@@ -801,7 +802,7 @@ enum class SeasonScreenState {
     LOADING,
     ERROR,
     EMPTY,
-    CONTENT
+    CONTENT,
 }
 
 // Expressive Error State component
@@ -839,7 +840,7 @@ private fun ExpressiveErrorState(
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = message,
@@ -849,12 +850,12 @@ private fun ExpressiveErrorState(
                 )
                 Button(
                     onClick = onRetry,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Try Again")
@@ -885,12 +886,12 @@ private fun ExpressiveEmptyState(
             val scale by animateFloatAsState(
                 targetValue = 1.0f,
                 animationSpec = MotionTokens.expressiveEnter,
-                label = "empty_icon_scale"
+                label = "empty_icon_scale",
             )
-            
+
             Surface(
                 shape = CircleShape,
-                color = iconTint.copy(alpha = 0.1f)
+                color = iconTint.copy(alpha = 0.1f),
             ) {
                 Icon(
                     imageVector = icon,
@@ -898,17 +899,20 @@ private fun ExpressiveEmptyState(
                     modifier = Modifier
                         .size(96.dp)
                         .padding(24.dp)
-                        .graphicsLayer { scaleX = scale; scaleY = scale },
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                        },
                     tint = iconTint,
                 )
             }
-            
+
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             Text(
                 text = subtitle,

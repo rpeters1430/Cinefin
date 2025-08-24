@@ -62,14 +62,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
-import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveDotsLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
-import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.MediaType
-import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.getItemKey
@@ -211,7 +210,7 @@ fun TVShowsScreen(
                             val scale by animateFloatAsState(
                                 targetValue = if (viewMode == mode) 1.1f else 1.0f,
                                 animationSpec = MotionTokens.expressiveEnter,
-                                label = "segmented_button_scale"
+                                label = "segmented_button_scale",
                             )
                             SegmentedButton(
                                 shape = SegmentedButtonDefaults.itemShape(
@@ -226,7 +225,7 @@ fun TVShowsScreen(
                                     inactiveContainerColor = MaterialTheme.colorScheme.surface,
                                     inactiveContentColor = MaterialTheme.colorScheme.onSurface,
                                 ),
-                                modifier = Modifier.padding(2.dp)
+                                modifier = Modifier.padding(2.dp),
                             ) {
                                 Icon(
                                     imageVector = when (mode) {
@@ -334,15 +333,15 @@ fun TVShowsScreen(
                 },
                 transitionSpec = {
                     fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it / 4 } togetherWith
-                    fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
+                        fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
                 },
-                label = "tv_shows_content"
+                label = "tv_shows_content",
             ) { contentState ->
                 when (contentState) {
                     TVShowContentState.LOADING -> {
                         ExpressiveFullScreenLoading(
                             message = "Loading TV Shows...",
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
 
@@ -350,7 +349,7 @@ fun TVShowsScreen(
                         ExpressiveErrorState(
                             message = appState.errorMessage ?: "Unknown error",
                             onRetry = { viewModel.refreshTVShows() },
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
 
@@ -360,7 +359,7 @@ fun TVShowsScreen(
                             title = stringResource(id = R.string.no_tv_shows_found),
                             subtitle = stringResource(id = R.string.adjust_tv_shows_filters_hint),
                             iconTint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
 
@@ -396,9 +395,9 @@ private fun TVShowsContent(
         targetState = viewMode,
         transitionSpec = {
             fadeIn(MotionTokens.expressiveEnter) togetherWith
-            fadeOut(MotionTokens.expressiveExit)
+                fadeOut(MotionTokens.expressiveExit)
         },
-        label = "view_mode_transition"
+        label = "view_mode_transition",
     ) { currentViewMode ->
         when (currentViewMode) {
             TVShowViewMode.GRID -> {
@@ -428,7 +427,7 @@ private fun TVShowsContent(
                                 tvShow.id?.let { seriesId ->
                                     onTVShowClick(seriesId.toString())
                                 }
-                            }
+                            },
                         )
                     }
 
@@ -467,7 +466,7 @@ private fun TVShowsContent(
                                     onTVShowClick(seriesId.toString())
                                 }
                             },
-                            leadingIcon = if (tvShow.userData?.isFavorite == true) Icons.Default.Star else null
+                            leadingIcon = if (tvShow.userData?.isFavorite == true) Icons.Default.Star else null,
                         )
                     }
 
@@ -491,7 +490,7 @@ private fun TVShowsContent(
                             title = tvShow.name ?: "Unknown",
                             subtitle = tvShow.productionYear?.toString() ?: "",
                             imageUrl = getImageUrl(tvShow) ?: "",
-                            type = MediaType.TV_SHOW
+                            type = MediaType.TV_SHOW,
                         )
                     }
                 }
@@ -502,7 +501,7 @@ private fun TVShowsContent(
                     onItemClick = { item ->
                         onTVShowClick(item.id)
                     },
-                    modifier = modifier
+                    modifier = modifier,
                 )
             }
         }
@@ -526,7 +525,7 @@ private fun TVShowsPaginationFooter(
         visible = isLoadingMore || !hasMoreItems,
         enter = fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it },
         exit = fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it },
-        modifier = modifier
+        modifier = modifier,
     ) {
         Box(
             modifier = Modifier
@@ -537,10 +536,10 @@ private fun TVShowsPaginationFooter(
             if (isLoadingMore) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     ExpressiveDotsLoading(
-                        modifier = Modifier.padding(8.dp)
+                        modifier = Modifier.padding(8.dp),
                     )
                     Text(
                         text = "Loading more TV Shows...",
@@ -564,7 +563,7 @@ enum class TVShowContentState {
     LOADING,
     ERROR,
     EMPTY,
-    CONTENT
+    CONTENT,
 }
 
 // Expressive Error State component
@@ -605,7 +604,7 @@ private fun ExpressiveErrorState(
                 )
                 IconButton(
                     onClick = onRetry,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
@@ -639,14 +638,17 @@ private fun ExpressiveEmptyState(
             val scale by animateFloatAsState(
                 targetValue = 1.0f,
                 animationSpec = MotionTokens.expressiveEnter,
-                label = "empty_icon_scale"
+                label = "empty_icon_scale",
             )
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier
                     .padding(32.dp)
-                    .graphicsLayer { scaleX = scale; scaleY = scale },
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    },
                 tint = iconTint.copy(alpha = 0.6f),
             )
             Text(
