@@ -61,7 +61,12 @@ class VideoPlayerActivity : ComponentActivity() {
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
             // Extract intent data
-            val itemId = intent.getStringExtra(EXTRA_ITEM_ID) ?: ""
+            val itemId = intent.getStringExtra(EXTRA_ITEM_ID)
+            if (itemId.isNullOrEmpty()) {
+                android.util.Log.e("VideoPlayerActivity", "Missing item ID")
+                finish()
+                return
+            }
             val itemName = intent.getStringExtra(EXTRA_ITEM_NAME) ?: ""
             val startPosition = intent.getLongExtra(EXTRA_START_POSITION, 0L)
 
