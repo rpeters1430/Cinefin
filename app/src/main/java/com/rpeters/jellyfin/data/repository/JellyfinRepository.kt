@@ -7,6 +7,7 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.model.JellyfinDeviceProfile
 import com.rpeters.jellyfin.data.model.QuickConnectResult
 import com.rpeters.jellyfin.data.model.QuickConnectState
 import com.rpeters.jellyfin.data.repository.common.ApiResult
@@ -1140,14 +1141,14 @@ class JellyfinRepository @Inject constructor(
 
         val playbackInfoDto = PlaybackInfoDto(
             userId = userUuid,
-            maxStreamingBitrate = 20_000_000, // 20Mbps
+            maxStreamingBitrate = 400_000_000, // 400Mbps for direct play
             startTimeTicks = null,
             audioStreamIndex = null,
             subtitleStreamIndex = null,
             maxAudioChannels = null,
             mediaSourceId = null,
             liveStreamId = null,
-            deviceProfile = null, // Let server use default device profile
+            deviceProfile = JellyfinDeviceProfile.createAndroidDeviceProfile(), // Custom profile with Vorbis support
             enableDirectPlay = true,
             enableDirectStream = true,
             enableTranscoding = true,

@@ -125,6 +125,7 @@ dependencies {
     implementation(libs.androidx.media3.common)
     implementation(libs.androidx.media3.cast)
     implementation(libs.androidx.media3.session)
+    implementation(libs.jellyfin.media3.ffmpeg.decoder)
     implementation(libs.google.cast.framework)
 
     // Hilt for dependency injection
