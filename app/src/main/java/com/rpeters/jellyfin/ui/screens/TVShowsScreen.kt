@@ -1,5 +1,13 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,9 +29,9 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.ViewCarousel
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,13 +56,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.ui.components.MediaCard
+import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
+import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveDotsLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
+import com.rpeters.jellyfin.ui.components.CarouselItem
+import com.rpeters.jellyfin.ui.components.MediaType
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
+import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import com.rpeters.jellyfin.utils.getRatingAsDouble
@@ -100,6 +116,7 @@ enum class TVShowSortOrder(val displayNameResId: Int) {
 enum class TVShowViewMode {
     GRID,
     LIST,
+    CAROUSEL,
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -188,9 +205,14 @@ fun TVShowsScreen(
                     }
                 },
                 actions = {
-                    // View mode toggle
+                    // View mode toggle with Expressive animation
                     SingleChoiceSegmentedButtonRow {
                         TVShowViewMode.entries.forEachIndexed { index, mode ->
+                            val scale by animateFloatAsState(
+                                targetValue = if (viewMode == mode) 1.1f else 1.0f,
+                                animationSpec = MotionTokens.expressiveEnter,
+                                label = "segmented_button_scale"
+                            )
                             SegmentedButton(
                                 shape = SegmentedButtonDefaults.itemShape(
                                     index = index,
@@ -199,16 +221,24 @@ fun TVShowsScreen(
                                 onClick = { viewMode = mode },
                                 selected = viewMode == mode,
                                 colors = SegmentedButtonDefaults.colors(
-                                    activeContainerColor = SeriesBlue.copy(alpha = 0.2f),
-                                    activeContentColor = SeriesBlue,
+                                    activeContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    activeContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    inactiveContainerColor = MaterialTheme.colorScheme.surface,
+                                    inactiveContentColor = MaterialTheme.colorScheme.onSurface,
                                 ),
+                                modifier = Modifier.padding(2.dp)
                             ) {
                                 Icon(
                                     imageVector = when (mode) {
                                         TVShowViewMode.GRID -> Icons.Default.GridView
                                         TVShowViewMode.LIST -> Icons.AutoMirrored.Filled.ViewList
+                                        TVShowViewMode.CAROUSEL -> Icons.Default.ViewCarousel
                                     },
-                                    contentDescription = if (mode == TVShowViewMode.GRID) stringResource(id = R.string.grid_view) else stringResource(id = R.string.list_view),
+                                    contentDescription = when (mode) {
+                                        TVShowViewMode.GRID -> stringResource(id = R.string.grid_view)
+                                        TVShowViewMode.LIST -> stringResource(id = R.string.list_view)
+                                        TVShowViewMode.CAROUSEL -> "Carousel view"
+                                    },
                                     modifier = Modifier.padding(2.dp),
                                 )
                             }
@@ -247,9 +277,10 @@ fun TVShowsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                     navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             )
         },
@@ -282,88 +313,68 @@ fun TVShowsScreen(
                             null
                         },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = SeriesBlue.copy(alpha = 0.2f),
-                            selectedLabelColor = SeriesBlue,
-                            selectedLeadingIconColor = SeriesBlue,
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         ),
                     )
                 }
             }
 
-            // Content
-            when {
-                appState.isLoadingTVShows && tvShowItems.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator(color = SeriesBlue)
+            // Content with Expressive animations
+            AnimatedContent(
+                targetState = when {
+                    appState.isLoadingTVShows && tvShowItems.isEmpty() -> TVShowContentState.LOADING
+                    appState.errorMessage != null -> TVShowContentState.ERROR
+                    filteredAndSortedTVShows.isEmpty() -> TVShowContentState.EMPTY
+                    else -> TVShowContentState.CONTENT
+                },
+                transitionSpec = {
+                    fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it / 4 } togetherWith
+                    fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
+                },
+                label = "tv_shows_content"
+            ) { contentState ->
+                when (contentState) {
+                    TVShowContentState.LOADING -> {
+                        ExpressiveFullScreenLoading(
+                            message = "Loading TV Shows...",
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
-                }
 
-                appState.errorMessage != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                        ) {
-                            Text(
-                                text = appState.errorMessage ?: "Unknown error",
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(16.dp),
-                                textAlign = TextAlign.Center,
-                            )
-                        }
+                    TVShowContentState.ERROR -> {
+                        ExpressiveErrorState(
+                            message = appState.errorMessage ?: "Unknown error",
+                            onRetry = { viewModel.refreshTVShows() },
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
-                }
 
-                filteredAndSortedTVShows.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Tv,
-                                contentDescription = null,
-                                modifier = Modifier.padding(32.dp),
-                                tint = SeriesBlue.copy(alpha = 0.6f),
-                            )
-                            Text(
-                                text = stringResource(id = R.string.no_tv_shows_found),
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Text(
-                                text = stringResource(id = R.string.adjust_tv_shows_filters_hint),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                    TVShowContentState.EMPTY -> {
+                        ExpressiveEmptyState(
+                            icon = Icons.Default.Tv,
+                            title = stringResource(id = R.string.no_tv_shows_found),
+                            subtitle = stringResource(id = R.string.adjust_tv_shows_filters_hint),
+                            iconTint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
-                }
 
-                else -> {
-                    TVShowsContent(
-                        tvShows = filteredAndSortedTVShows,
-                        viewMode = viewMode,
-                        getImageUrl = { item -> viewModel.getBackdropUrl(item) },
-                        onTVShowClick = onTVShowClick,
-                        isLoadingMore = appState.isLoadingTVShows,
-                        hasMoreItems = appState.hasMoreTVShows,
-                        onLoadMore = { viewModel.loadMoreTVShows() },
-                    )
+                    TVShowContentState.CONTENT -> {
+                        TVShowsContent(
+                            tvShows = filteredAndSortedTVShows,
+                            viewMode = viewMode,
+                            getImageUrl = { item -> viewModel.getBackdropUrl(item) },
+                            onTVShowClick = onTVShowClick,
+                            isLoadingMore = appState.isLoadingTVShows,
+                            hasMoreItems = appState.hasMoreTVShows,
+                            onLoadMore = { viewModel.loadMoreTVShows() },
+                        )
+                    }
                 }
             }
         }
@@ -381,73 +392,118 @@ private fun TVShowsContent(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    when (viewMode) {
-        TVShowViewMode.GRID -> {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 160.dp),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = modifier.fillMaxSize(),
-            ) {
-                items(
-                    items = tvShows,
-                    key = { tvShow -> tvShow.getItemKey() },
-                ) { tvShow ->
-                    MediaCard(
-                        item = tvShow,
-                        getImageUrl = getImageUrl,
-                        onClick = {
-                            tvShow.id?.let { seriesId ->
-                                onTVShowClick(seriesId.toString())
+    AnimatedContent(
+        targetState = viewMode,
+        transitionSpec = {
+            fadeIn(MotionTokens.expressiveEnter) togetherWith
+            fadeOut(MotionTokens.expressiveExit)
+        },
+        label = "view_mode_transition"
+    ) { currentViewMode ->
+        when (currentViewMode) {
+            TVShowViewMode.GRID -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 180.dp),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = modifier.fillMaxSize(),
+                ) {
+                    items(
+                        items = tvShows,
+                        key = { tvShow -> tvShow.getItemKey() },
+                    ) { tvShow ->
+                        ExpressiveMediaCard(
+                            title = tvShow.name ?: "Unknown",
+                            subtitle = tvShow.productionYear?.toString() ?: "",
+                            imageUrl = getImageUrl(tvShow) ?: "",
+                            rating = tvShow.communityRating?.toFloat(),
+                            isFavorite = tvShow.userData?.isFavorite == true,
+                            onCardClick = {
+                                tvShow.id?.let { seriesId ->
+                                    onTVShowClick(seriesId.toString())
+                                }
+                            },
+                            onPlayClick = {
+                                tvShow.id?.let { seriesId ->
+                                    onTVShowClick(seriesId.toString())
+                                }
                             }
-                        },
-                    )
-                }
-
-                if (hasMoreItems || isLoadingMore) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        TVShowsPaginationFooter(
-                            isLoadingMore = isLoadingMore,
-                            hasMoreItems = hasMoreItems,
-                            onLoadMore = onLoadMore,
                         )
+                    }
+
+                    if (hasMoreItems || isLoadingMore) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            TVShowsPaginationFooter(
+                                isLoadingMore = isLoadingMore,
+                                hasMoreItems = hasMoreItems,
+                                onLoadMore = onLoadMore,
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        TVShowViewMode.LIST -> {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(1),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = modifier.fillMaxSize(),
-            ) {
-                items(
-                    items = tvShows,
-                    key = { tvShow -> tvShow.getItemKey() },
-                ) { tvShow ->
-                    MediaCard(
-                        item = tvShow,
-                        getImageUrl = getImageUrl,
-                        onClick = {
-                            tvShow.id?.let { seriesId ->
-                                onTVShowClick(seriesId.toString())
-                            }
-                        },
-                    )
+            TVShowViewMode.LIST -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(1),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = modifier.fillMaxSize(),
+                ) {
+                    items(
+                        items = tvShows,
+                        key = { tvShow -> tvShow.getItemKey() },
+                    ) { tvShow ->
+                        ExpressiveCompactCard(
+                            title = tvShow.name ?: "Unknown",
+                            subtitle = buildString {
+                                tvShow.productionYear?.let { append("$it • ") }
+                                tvShow.childCount?.let { append("$it episodes") }
+                            },
+                            imageUrl = getImageUrl(tvShow) ?: "",
+                            onClick = {
+                                tvShow.id?.let { seriesId ->
+                                    onTVShowClick(seriesId.toString())
+                                }
+                            },
+                            leadingIcon = if (tvShow.userData?.isFavorite == true) Icons.Default.Star else null
+                        )
+                    }
+
+                    if (hasMoreItems || isLoadingMore) {
+                        item {
+                            TVShowsPaginationFooter(
+                                isLoadingMore = isLoadingMore,
+                                hasMoreItems = hasMoreItems,
+                                onLoadMore = onLoadMore,
+                            )
+                        }
+                    }
                 }
+            }
 
-                if (hasMoreItems || isLoadingMore) {
-                    item {
-                        TVShowsPaginationFooter(
-                            isLoadingMore = isLoadingMore,
-                            hasMoreItems = hasMoreItems,
-                            onLoadMore = onLoadMore,
+            TVShowViewMode.CAROUSEL -> {
+                val carouselItems = remember(tvShows) {
+                    tvShows.take(20).map { tvShow ->
+                        CarouselItem(
+                            id = tvShow.id.toString(),
+                            title = tvShow.name ?: "Unknown",
+                            subtitle = tvShow.productionYear?.toString() ?: "",
+                            imageUrl = getImageUrl(tvShow) ?: "",
+                            type = MediaType.TV_SHOW
                         )
                     }
                 }
+
+                ExpressiveMediaCarousel(
+                    title = "TV Shows",
+                    items = carouselItems,
+                    onItemClick = { item ->
+                        onTVShowClick(item.id)
+                    },
+                    modifier = modifier
+                )
             }
         }
     }
@@ -466,32 +522,144 @@ private fun TVShowsPaginationFooter(
         }
     }
 
-    Box(
+    AnimatedVisibility(
+        visible = isLoadingMore || !hasMoreItems,
+        enter = fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it },
+        exit = fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it },
         modifier = modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center,
     ) {
-        if (isLoadingMore) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                CircularProgressIndicator(
-                    color = SeriesBlue,
-                    modifier = Modifier.padding(8.dp),
-                )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (isLoadingMore) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ExpressiveDotsLoading(
+                        modifier = Modifier.padding(8.dp)
+                    )
+                    Text(
+                        text = "Loading more TV Shows...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else if (!hasMoreItems) {
                 Text(
-                    text = stringResource(id = R.string.loading_more_tv_shows),
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = stringResource(id = R.string.no_more_tv_shows),
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        } else if (!hasMoreItems) {
+        }
+    }
+}
+
+// Content state enum for animated transitions
+enum class TVShowContentState {
+    LOADING,
+    ERROR,
+    EMPTY,
+    CONTENT
+}
+
+// Expressive Error State component
+@Composable
+private fun ExpressiveErrorState(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Tv,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(16.dp),
+                )
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+                IconButton(
+                    onClick = onRetry,
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Retry",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Expressive Empty State component
+@Composable
+private fun ExpressiveEmptyState(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    iconTint: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(32.dp),
+        ) {
+            val scale by animateFloatAsState(
+                targetValue = 1.0f,
+                animationSpec = MotionTokens.expressiveEnter,
+                label = "empty_icon_scale"
+            )
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(32.dp)
+                    .graphicsLayer { scaleX = scale; scaleY = scale },
+                tint = iconTint.copy(alpha = 0.6f),
+            )
             Text(
-                text = stringResource(id = R.string.no_more_tv_shows),
-                style = MaterialTheme.typography.bodySmall,
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
         }
     }

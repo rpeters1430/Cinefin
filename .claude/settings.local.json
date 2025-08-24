@@ -14,6 +14,7 @@
       "WebFetch(domain:m3.material.io)",
       "Bash(.\\gradlew.bat:*)",
       "Bash(git checkout:*)",
+      "Bash(.\\gradlew.bat build:*)",
       "Bash(.\\gradlew.bat build:*)"
     ],
     "defaultMode": "acceptEdits"

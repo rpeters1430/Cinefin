@@ -2,6 +2,14 @@
 
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,17 +31,22 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -46,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -58,8 +72,11 @@ import coil.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
+import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
+import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.ShimmerBox
-import com.rpeters.jellyfin.ui.theme.SeriesBlue
+import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -129,7 +146,7 @@ fun TVSeasonScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                     navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
                     actionIconContentColor = MaterialTheme.colorScheme.onSurface,
@@ -138,68 +155,50 @@ fun TVSeasonScreen(
         },
         modifier = modifier,
     ) { innerPadding ->
-        when {
-            state.isLoading && state.seriesDetails == null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.primary,
+        AnimatedContent(
+            targetState = when {
+                state.isLoading && state.seriesDetails == null -> SeasonScreenState.LOADING
+                !state.errorMessage.isNullOrEmpty() -> SeasonScreenState.ERROR
+                state.seriesDetails == null -> SeasonScreenState.EMPTY
+                else -> SeasonScreenState.CONTENT
+            },
+            transitionSpec = {
+                fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it / 4 } togetherWith
+                fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
+            },
+            label = "season_screen_content"
+        ) { screenState ->
+            when (screenState) {
+                SeasonScreenState.LOADING -> {
+                    ExpressiveFullScreenLoading(
+                        message = "Loading TV Show...",
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
-            }
-            !state.errorMessage.isNullOrEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        Text(
-                            text = stringResource(id = R.string.error_loading_data),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
-                        Text(
-                            text = state.errorMessage ?: stringResource(id = R.string.unknown_error),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(bottom = 16.dp),
-                        )
-                        Button(
-                            onClick = { viewModel.refresh() },
-                            modifier = Modifier.align(Alignment.CenterHorizontally),
-                        ) {
-                            Text(stringResource(id = R.string.retry))
-                        }
-                    }
-                }
-            }
-            state.seriesDetails == null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = stringResource(id = R.string.no_data_available),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                SeasonScreenState.ERROR -> {
+                    ExpressiveErrorState(
+                        message = state.errorMessage ?: stringResource(id = R.string.unknown_error),
+                        onRetry = { viewModel.refresh() },
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
-            }
-            else -> {
-                TVSeasonContent(
-                    state = state,
-                    getImageUrl = getImageUrl,
-                    onSeasonClick = onSeasonClick,
-                    modifier = Modifier.padding(innerPadding),
-                )
+                SeasonScreenState.EMPTY -> {
+                    ExpressiveEmptyState(
+                        icon = Icons.Default.Tv,
+                        title = stringResource(id = R.string.no_data_available),
+                        subtitle = "Please check your connection and try again",
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                SeasonScreenState.CONTENT -> {
+                    TVSeasonContent(
+                        state = state,
+                        getImageUrl = getImageUrl,
+                        onSeasonClick = onSeasonClick,
+                        modifier = Modifier.padding(innerPadding),
+                    )
+                }
             }
         }
     }
@@ -238,7 +237,7 @@ private fun TVSeasonContent(
             }
 
             items(state.seasons) { season ->
-                SeasonCard(
+                ExpressiveSeasonCard(
                     season = season,
                     getImageUrl = getImageUrl,
                     onClick = { onSeasonClick(it) },
@@ -349,47 +348,71 @@ private fun SeriesDetailsHeader(
     getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+    val headerScale by animateFloatAsState(
+        targetValue = 1.0f,
+        animationSpec = MotionTokens.expressiveEnter,
+        label = "header_scale"
+    )
+    
+    ElevatedCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer { scaleX = headerScale; scaleY = headerScale },
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 12.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         ),
     ) {
         Box {
-            // Background Image
+            // Background Image with enhanced loading
             SubcomposeAsyncImage(
                 model = getImageUrl(series),
                 contentDescription = series.name,
                 loading = {
-                    ShimmerBox(
+                    ExpressiveLoadingCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp),
-                        cornerRadius = 16,
+                            .height(240.dp),
+                        showTitle = false,
+                        showSubtitle = false,
+                        imageHeight = 240.dp
                     )
                 },
                 error = {
-                    Box(
+                    Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp)
-                            .background(SeriesBlue.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center,
+                            .height(240.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
                     ) {
-                        Text(
-                            text = series.name ?: "Unknown Series",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = SeriesBlue,
-                        )
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Tv,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = series.name ?: "Unknown Series",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 },
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(16.dp)),
+                    .height(240.dp)
+                    .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
             )
 
             // Enhanced Gradient Overlay for better text readability
@@ -483,89 +506,166 @@ private fun SeriesDetailsHeader(
 }
 
 @Composable
-private fun SeasonCard(
+private fun ExpressiveSeasonCard(
     season: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     onClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    val scale by animateFloatAsState(
+        targetValue = 1.0f,
+        animationSpec = MotionTokens.expressiveEnter,
+        label = "season_card_scale"
+    )
+    
+    ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
+            .graphicsLayer { scaleX = scale; scaleY = scale }
             .clickable {
                 season.id?.let { seasonId ->
                     onClick(seasonId.toString())
                 }
             },
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Season Poster
-            SubcomposeAsyncImage(
-                model = getImageUrl(season),
-                contentDescription = season.name,
-                loading = {
-                    ShimmerBox(
+            // Season Poster with enhanced styling
+            Box {
+                SubcomposeAsyncImage(
+                    model = getImageUrl(season),
+                    contentDescription = season.name,
+                    loading = {
+                        ExpressiveLoadingCard(
+                            modifier = Modifier
+                                .width(90.dp)
+                                .height(130.dp),
+                            showTitle = false,
+                            showSubtitle = false,
+                            imageHeight = 130.dp
+                        )
+                    },
+                    error = {
+                        Surface(
+                            modifier = Modifier
+                                .width(90.dp)
+                                .height(130.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Tv,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                                Text(
+                                    text = season.name ?: "Season",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    maxLines = 2,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    },
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .width(90.dp)
+                        .height(130.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                )
+                
+                // Favorite indicator
+                if (season.userData?.isFavorite == true) {
+                    Surface(
                         modifier = Modifier
-                            .width(80.dp)
-                            .height(120.dp),
-                        cornerRadius = 8,
-                    )
-                },
-                error = {
-                    Box(
-                        modifier = Modifier
-                            .width(80.dp)
-                            .height(120.dp)
-                            .background(SeriesBlue.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center,
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp),
+                        shape = CircleShape,
+                        color = Color.Black.copy(alpha = 0.6f)
                     ) {
-                        Text(
-                            text = season.name ?: "Season",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = SeriesBlue,
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Favorite",
+                            tint = Color.Yellow,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .padding(4.dp)
                         )
                     }
-                },
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .width(80.dp)
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-            )
+                }
+            }
 
-            // Season Details
+            // Season Details with enhanced typography
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(
                     text = season.name ?: "Unknown Season",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
-                season.productionYear?.let { year ->
-                    Text(
-                        text = year.toString(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    season.productionYear?.let { year ->
+                        Text(
+                            text = year.toString(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    
+                    season.childCount?.let { count ->
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Text(
+                                text = "$count episodes",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
                 }
-
-                season.childCount?.let { count ->
-                    Text(
-                        text = "$count episodes",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = SeriesBlue,
-                    )
+                
+                // Rating if available
+                season.communityRating?.let { rating ->
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Text(
+                            text = String.format(java.util.Locale.ROOT, "%.1f", rating),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
                 }
 
                 season.overview?.let { overview ->
@@ -574,7 +674,7 @@ private fun SeasonCard(
                             text = overview,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
+                            maxLines = 3,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
@@ -614,9 +714,6 @@ fun ErrorContent(
 
         androidx.compose.material3.Button(
             onClick = onRetry,
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                containerColor = SeriesBlue,
-            ),
         ) {
             Text("Retry")
         }
@@ -695,6 +792,130 @@ private fun PersonCard(
                     textAlign = TextAlign.Center,
                 )
             }
+        }
+    }
+}
+
+// Content state enum for animated transitions
+enum class SeasonScreenState {
+    LOADING,
+    ERROR,
+    EMPTY,
+    CONTENT
+}
+
+// Expressive Error State component
+@Composable
+private fun ExpressiveErrorState(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        ElevatedCard(
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Tv,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(64.dp),
+                )
+                Text(
+                    text = "Error Loading TV Show",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+                Button(
+                    onClick = onRetry,
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Try Again")
+                }
+            }
+        }
+    }
+}
+
+// Expressive Empty State component
+@Composable
+private fun ExpressiveEmptyState(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    iconTint: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier.padding(48.dp),
+        ) {
+            val scale by animateFloatAsState(
+                targetValue = 1.0f,
+                animationSpec = MotionTokens.expressiveEnter,
+                label = "empty_icon_scale"
+            )
+            
+            Surface(
+                shape = CircleShape,
+                color = iconTint.copy(alpha = 0.1f)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(96.dp)
+                        .padding(24.dp)
+                        .graphicsLayer { scaleX = scale; scaleY = scale },
+                    tint = iconTint,
+                )
+            }
+            
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
