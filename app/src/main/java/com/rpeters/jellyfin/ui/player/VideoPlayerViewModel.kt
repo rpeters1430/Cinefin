@@ -8,8 +8,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.ExoPlayer
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -138,23 +138,23 @@ class VideoPlayerViewModel @Inject constructor(
             try {
                 // Get playback info with our device profile for direct play
                 val playbackInfo = repository.getPlaybackInfo(itemId)
-                
+
                 // Find the best media source for direct play
                 val mediaSource = playbackInfo.mediaSources?.find { source ->
                     source.supportsDirectPlay == true || source.supportsDirectStream == true
                 } ?: playbackInfo.mediaSources?.firstOrNull()
-                
+
                 if (mediaSource == null) {
                     throw Exception("No media source available")
                 }
-                
+
                 // Choose the best stream URL
                 val streamUrl = when {
                     // Direct play - use original file with static=true
                     mediaSource.supportsDirectPlay == true -> {
                         val container = mediaSource.container
                         Log.d("VideoPlayer", "Using direct play with container: $container")
-                        "${repository.getCurrentServer()?.url}/Videos/$itemId/stream.${container}?static=true&mediaSourceId=${mediaSource.id}&api_key=${repository.getCurrentServer()?.accessToken}"
+                        "${repository.getCurrentServer()?.url}/Videos/$itemId/stream.$container?static=true&mediaSourceId=${mediaSource.id}&api_key=${repository.getCurrentServer()?.accessToken}"
                     }
                     // Direct stream - server remuxes without transcoding
                     mediaSource.supportsDirectStream == true -> {
@@ -167,7 +167,7 @@ class VideoPlayerViewModel @Inject constructor(
                         repository.getStreamUrl(itemId)
                     }
                 }
-                
+
                 if (streamUrl.isNullOrEmpty()) {
                     throw Exception("No stream URL available")
                 }
@@ -180,7 +180,7 @@ class VideoPlayerViewModel @Inject constructor(
                     // Create ExoPlayer with FFmpeg extension renderer support for Vorbis
                     val renderersFactory = DefaultRenderersFactory(context)
                         .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
-                    
+
                     exoPlayer = ExoPlayer.Builder(context)
                         .setRenderersFactory(renderersFactory)
                         .build()
