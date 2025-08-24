@@ -55,49 +55,67 @@ class VideoPlayerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Set up full screen and landscape orientation
-        setupFullScreenMode()
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        try {
+            // Set up full screen and landscape orientation
+            setupFullScreenMode()
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
 
-        // Keep screen on during playback
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            // Keep screen on during playback
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        // Extract intent data
-        val itemId = intent.getStringExtra(EXTRA_ITEM_ID) ?: ""
-        val itemName = intent.getStringExtra(EXTRA_ITEM_NAME) ?: ""
-        val streamUrl = intent.getStringExtra(EXTRA_STREAM_URL) ?: ""
-        val startPosition = intent.getLongExtra(EXTRA_START_POSITION, 0L)
+            // Extract intent data
+            val itemId = intent.getStringExtra(EXTRA_ITEM_ID) ?: ""
+            val itemName = intent.getStringExtra(EXTRA_ITEM_NAME) ?: ""
+            val streamUrl = intent.getStringExtra(EXTRA_STREAM_URL) ?: ""
+            val startPosition = intent.getLongExtra(EXTRA_START_POSITION, 0L)
 
-        // Initialize player
-        playerViewModel.initializePlayer(itemId, itemName, streamUrl, startPosition)
+            // Validate required data
+            if (itemId.isEmpty() || streamUrl.isEmpty()) {
+                android.util.Log.e("VideoPlayerActivity", "Missing required data: itemId=$itemId, streamUrl length=${streamUrl.length}")
+                finish()
+                return
+            }
 
-        setContent {
-            JellyfinAndroidTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background,
-                ) {
-                    val playerState by playerViewModel.playerState.collectAsState()
+            // Initialize player with error handling
+            try {
+                playerViewModel.initializePlayer(itemId, itemName, streamUrl, startPosition)
+            } catch (e: Exception) {
+                android.util.Log.e("VideoPlayerActivity", "Failed to initialize player", e)
+                finish()
+                return
+            }
 
-                    VideoPlayerScreen(
-                        playerState = playerState,
-                        onPlayPause = playerViewModel::togglePlayPause,
-                        onSeek = playerViewModel::seekTo,
-                        onQualityChange = playerViewModel::changeQuality,
-                        onAspectRatioChange = playerViewModel::changeAspectRatio,
-                        onCastClick = playerViewModel::showCastDialog,
-                        onSubtitlesClick = playerViewModel::showSubtitleDialog,
-                        onPictureInPictureClick = ::enterPictureInPictureModeCustom,
-                        onOrientationToggle = ::toggleOrientation,
-                        onAudioTrackSelect = playerViewModel::selectAudioTrack,
-                        onSubtitleTrackSelect = playerViewModel::selectSubtitleTrack,
-                        onSubtitleDialogDismiss = playerViewModel::hideSubtitleDialog,
-                        onCastDeviceSelect = playerViewModel::selectCastDevice,
-                        onCastDialogDismiss = playerViewModel::hideCastDialog,
-                        exoPlayer = playerViewModel.exoPlayer,
-                    )
+            setContent {
+                JellyfinAndroidTheme {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background,
+                    ) {
+                        val playerState by playerViewModel.playerState.collectAsState()
+
+                        VideoPlayerScreen(
+                            playerState = playerState,
+                            onPlayPause = playerViewModel::togglePlayPause,
+                            onSeek = playerViewModel::seekTo,
+                            onQualityChange = playerViewModel::changeQuality,
+                            onAspectRatioChange = playerViewModel::changeAspectRatio,
+                            onCastClick = playerViewModel::showCastDialog,
+                            onSubtitlesClick = playerViewModel::showSubtitleDialog,
+                            onPictureInPictureClick = ::enterPictureInPictureModeCustom,
+                            onOrientationToggle = ::toggleOrientation,
+                            onAudioTrackSelect = playerViewModel::selectAudioTrack,
+                            onSubtitleTrackSelect = playerViewModel::selectSubtitleTrack,
+                            onSubtitleDialogDismiss = playerViewModel::hideSubtitleDialog,
+                            onCastDeviceSelect = playerViewModel::selectCastDevice,
+                            onCastDialogDismiss = playerViewModel::hideCastDialog,
+                            exoPlayer = playerViewModel.exoPlayer,
+                        )
+                    }
                 }
             }
+        } catch (e: Exception) {
+            android.util.Log.e("VideoPlayerActivity", "Critical error in onCreate", e)
+            finish()
         }
     }
 
@@ -114,14 +132,6 @@ class VideoPlayerActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         playerViewModel.releasePlayer()
-        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-    }
-
-    override fun onUserLeaveHint() {
-        super.onUserLeaveHint()
-        if (packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
-            enterPictureInPictureModeCustom()
-        }
     }
 
     private fun setupFullScreenMode() {
@@ -132,22 +142,19 @@ class VideoPlayerActivity : ComponentActivity() {
     }
 
     private fun enterPictureInPictureModeCustom() {
-        val aspectRatio = Rational(16, 9)
-        val params = PictureInPictureParams.Builder()
-            .setAspectRatio(aspectRatio)
-            .apply {
-                // setAutoEnterEnabled requires API 31+
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    setAutoEnterEnabled(true)
-                }
-            }
-            .build()
-        enterPictureInPictureMode(params)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+            val aspectRatio = Rational(16, 9)
+            val params = PictureInPictureParams.Builder()
+                .setAspectRatio(aspectRatio)
+                .build()
+            enterPictureInPictureMode(params)
+        }
     }
 
     private fun toggleOrientation() {
         requestedOrientation = when (requestedOrientation) {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
             else -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         }
     }
