@@ -1,5 +1,11 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,8 +53,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -58,10 +67,21 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
-import coil.request.ImageRequest
+import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.ShimmerBox
+import com.rpeters.jellyfin.ui.theme.PhotoYellow
+import com.rpeters.jellyfin.ui.theme.AudioBookOrange
+import com.rpeters.jellyfin.ui.theme.JellyfinBlue80
+import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
+import com.rpeters.jellyfin.ui.theme.MusicGreen
+import com.rpeters.jellyfin.ui.theme.MotionTokens
+import com.rpeters.jellyfin.ui.theme.MovieRed
 import com.rpeters.jellyfin.ui.theme.RatingGold
+import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.ui.theme.getContentTypeColor
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -86,37 +106,66 @@ fun MovieDetailScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = movie.name ?: "Movie Details",
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.padding(end = 16.dp),
+                    ) {
+                        Text(
+                            text = movie.name ?: "Movie Details",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    Surface(
+                        onClick = onBackClick,
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier.padding(start = 8.dp),
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(id = R.string.navigate_up),
+                            modifier = Modifier.padding(12.dp),
                         )
                     }
                 },
                 actions = {
-                    IconButton(
+                    Surface(
                         onClick = {
                             isFavorite = !isFavorite
                             onFavoriteClick(movie)
                         },
+                        shape = CircleShape,
+                        color = if (isFavorite) MovieRed.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
+                        shadowElevation = if (isFavorite) 8.dp else 4.dp,
+                        modifier = Modifier.padding(horizontal = 4.dp),
                     ) {
                         Icon(
                             imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                            tint = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface,
+                            tint = if (isFavorite) MovieRed else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(12.dp),
                         )
                     }
-                    IconButton(onClick = { onShareClick(movie) }) {
+                    Surface(
+                        onClick = { onShareClick(movie) },
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier.padding(end = 8.dp, start = 4.dp),
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = "Share",
+                            modifier = Modifier.padding(12.dp),
                         )
                     }
                 },
@@ -126,18 +175,41 @@ fun MovieDetailScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
+            val playButtonScale by animateFloatAsState(
+                targetValue = 1.0f,
+                animationSpec = MotionTokens.expressiveEnter,
+                label = "play_button_scale",
+            )
+            
+            Surface(
                 onClick = { onPlayClick(movie) },
-                icon = {
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.primary,
+                shadowElevation = 16.dp,
+                modifier = Modifier.graphicsLayer {
+                    scaleX = playButtonScale
+                    scaleY = playButtonScale
+                },
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
                         contentDescription = "Play",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(24.dp),
                     )
-                },
-                text = { Text("Play") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            )
+                    Text(
+                        text = "Play Movie",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                }
+            }
         },
     ) { paddingValues ->
         LazyColumn(
@@ -146,387 +218,62 @@ fun MovieDetailScreen(
                 .padding(paddingValues),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Hero Section with Backdrop
+            // Expressive Movie Hero Section
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp),
-                ) {
-                    // Backdrop Image
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(getBackdropUrl(movie))
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "${movie.name} backdrop",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)),
-                        contentScale = ContentScale.Crop,
-                    )
-
-                    // Gradient overlay for better text readability
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.3f),
-                                        Color.Black.copy(alpha = 0.8f),
-                                    ),
-                                ),
-                            )
-                            .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)),
-                    )
-
-                    // Movie Rating Badge
-                    movie.communityRating?.let { rating ->
-                        Surface(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(16.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            color = RatingGold.copy(alpha = 0.95f),
-                            shadowElevation = 8.dp,
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                                Text(
-                                    text = String.format(java.util.Locale.ROOT, "%.1f", rating),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                )
-                            }
-                        }
-                    }
-                }
+                ExpressiveMovieHero(
+                    movie = movie,
+                    getBackdropUrl = getBackdropUrl,
+                )
             }
 
-            // Movie Info Section
+            // Expressive Movie Info Card
             item {
-                ElevatedCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        // Movie Poster
-                        SubcomposeAsyncImage(
-                            model = getImageUrl(movie),
-                            contentDescription = "${movie.name} poster",
-                            loading = {
-                                ShimmerBox(
-                                    modifier = Modifier
-                                        .width(120.dp)
-                                        .aspectRatio(2f / 3f),
-                                    cornerRadius = 12,
-                                )
-                            },
-                            error = {
-                                Box(
-                                    modifier = Modifier
-                                        .width(120.dp)
-                                        .aspectRatio(2f / 3f)
-                                        .background(
-                                            getContentTypeColor(movie.type?.toString()).copy(alpha = 0.1f),
-                                            RoundedCornerShape(12.dp),
-                                        ),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.PlayArrow,
-                                        contentDescription = "No image",
-                                        modifier = Modifier.size(32.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            },
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .width(120.dp)
-                                .aspectRatio(2f / 3f)
-                                .clip(RoundedCornerShape(12.dp)),
-                        )
-
-                        // Movie Details
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = movie.name ?: "Unknown Title",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-
-                            // Year, Release Date and Runtime
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                movie.productionYear?.let { year ->
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = MaterialTheme.colorScheme.secondaryContainer,
-                                    ) {
-                                        Text(
-                                            text = year.toString(),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        )
-                                    }
-                                }
-
-                                movie.runTimeTicks?.let { ticks ->
-                                    val minutes = (ticks / 10_000_000 / 60).toInt()
-                                    val hours = minutes / 60
-                                    val remainingMinutes = minutes % 60
-                                    val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
-
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = MaterialTheme.colorScheme.tertiaryContainer,
-                                    ) {
-                                        Text(
-                                            text = runtime,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Release Date (if different from production year)
-                            movie.premiereDate?.let { premiereDate ->
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                ) {
-                                    Text(
-                                        text = "Released: ${premiereDate.toString().substring(0, 10)}", // Format as YYYY-MM-DD
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                            }
-
-                            // Genres
-                            movie.genres?.takeIf { it.isNotEmpty() }?.let { genres ->
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    items(genres.take(3)) { genre ->
-                                        Surface(
-                                            shape = RoundedCornerShape(16.dp),
-                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
-                                        ) {
-                                            Text(
-                                                text = genre,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            movie.mediaSources?.firstOrNull()?.let { source ->
-                                val videoStream = source.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
-                                val videoCodec = videoStream?.codec
-                                val audioCodec = source.mediaStreams?.find { it.type == MediaStreamType.AUDIO }?.codec
-                                val resolution = videoStream?.let { "${it.width}x${it.height}" }
-
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    videoCodec?.let { codec ->
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = MaterialTheme.colorScheme.secondaryContainer,
-                                        ) {
-                                            Text(
-                                                text = codec.uppercase(),
-                                                style = MaterialTheme.typography.labelMedium,
-                                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                            )
-                                        }
-                                    }
-                                    audioCodec?.let { codec ->
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = MaterialTheme.colorScheme.secondaryContainer,
-                                        ) {
-                                            Text(
-                                                text = codec.uppercase(),
-                                                style = MaterialTheme.typography.labelMedium,
-                                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                            )
-                                        }
-                                    }
-                                    source.container?.let { cont ->
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = MaterialTheme.colorScheme.tertiaryContainer,
-                                        ) {
-                                            Text(
-                                                text = cont.uppercase(),
-                                                style = MaterialTheme.typography.labelMedium,
-                                                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                            )
-                                        }
-                                    }
-                                    resolution?.let { res ->
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = MaterialTheme.colorScheme.tertiaryContainer,
-                                        ) {
-                                            Text(
-                                                text = res,
-                                                style = MaterialTheme.typography.labelMedium,
-                                                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                ExpressiveMovieInfoCard(
+                    movie = movie,
+                    getImageUrl = getImageUrl,
+                )
             }
 
-            // Overview Section
+            // Expressive Overview Section
             movie.overview?.let { overview ->
                 item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        ),
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = "Overview",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            Text(
-                                text = overview,
-                                style = MaterialTheme.typography.bodyMedium,
-                                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2,
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Cast and Crew (if available)
-            movie.people?.takeIf { it.isNotEmpty() }?.let { people ->
-                // Separate cast and crew
-                val cast = people.filter { it.type?.name == "Actor" }
-                val crew = people.filter {
-                    val typeName = it.type?.name
-                    typeName in listOf("Director", "Producer", "Writer", "Executive Producer")
-                }
-
-                // Cast section
-                if (cast.isNotEmpty()) {
-                    item {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Text(
-                                text = "Cast",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                contentPadding = PaddingValues(horizontal = 4.dp),
+                    AnimatedContent(
+                        targetState = overview.isNotBlank(),
+                        transitionSpec = {
+                            fadeIn() + slideInVertically { it / 2 } togetherWith fadeOut()
+                        },
+                        label = "overview_animation",
+                    ) { hasOverview ->
+                        if (hasOverview) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                shadowElevation = 8.dp,
                             ) {
-                                items(cast.take(10)) { person ->
-                                    PersonCard(
-                                        person = person,
-                                        getImageUrl = { id, tag ->
-                                            // Create a temporary BaseItemDto for the person to use with existing getImageUrl
-                                            val personItem = BaseItemDto(
-                                                id = id,
-                                                type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
-                                                imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) },
-                                            )
-                                            getImageUrl(personItem)
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Crew section (Directors, Producers, etc.)
-                if (crew.isNotEmpty()) {
-                    item {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Text(
-                                text = "Crew",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                contentPadding = PaddingValues(horizontal = 4.dp),
-                            ) {
-                                items(crew.take(8)) { person ->
-                                    PersonCard(
-                                        person = person,
-                                        getImageUrl = { id, tag ->
-                                            // Create a temporary BaseItemDto for the person to use with existing getImageUrl
-                                            val personItem = BaseItemDto(
-                                                id = id,
-                                                type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
-                                                imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) },
-                                            )
-                                            getImageUrl(personItem)
-                                        },
+                                Column(
+                                    modifier = Modifier.padding(20.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                    ) {
+                                        Text(
+                                            text = "Overview",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        )
+                                    }
+                                    Text(
+                                        text = overview,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                     )
                                 }
                             }
@@ -535,27 +282,49 @@ fun MovieDetailScreen(
                 }
             }
 
-            // Related Movies Section
+            // Related Movies Section with Expressive Cards
             if (relatedItems.isNotEmpty()) {
                 item {
                     Column(
                         modifier = Modifier.padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        Text(
-                            text = "You might also like",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                        )
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
+                        ) {
+                            Text(
+                                text = "You might also like",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                            )
+                        }
 
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
                             contentPadding = PaddingValues(horizontal = 4.dp),
                         ) {
                             items(relatedItems.take(10)) { relatedMovie ->
-                                RelatedMovieCard(
-                                    movie = relatedMovie,
-                                    getImageUrl = getImageUrl,
+                                val scale by animateFloatAsState(
+                                    targetValue = 1.0f,
+                                    animationSpec = MotionTokens.expressiveEnter,
+                                    label = "related_movie_scale",
+                                )
+
+                                ExpressiveMediaCard(
+                                    title = relatedMovie.name ?: "Unknown",
+                                    subtitle = relatedMovie.productionYear?.toString() ?: "",
+                                    imageUrl = getImageUrl(relatedMovie) ?: "",
+                                    rating = relatedMovie.communityRating?.toFloat(),
+                                    onCardClick = { /* Navigate to related movie */ },
+                                    modifier = Modifier
+                                        .width(160.dp)
+                                        .graphicsLayer {
+                                            scaleX = scale
+                                            scaleY = scale
+                                        },
                                 )
                             }
                         }
@@ -571,144 +340,365 @@ fun MovieDetailScreen(
     }
 }
 
+// Expressive Movie Hero Component
 @Composable
-private fun PersonCard(
-    person: org.jellyfin.sdk.model.api.BaseItemPerson,
-    getImageUrl: (java.util.UUID, String?) -> String?,
+private fun ExpressiveMovieHero(
+    movie: BaseItemDto,
+    getBackdropUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.width(100.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+    val heroScale by animateFloatAsState(
+        targetValue = 1.0f,
+        animationSpec = MotionTokens.expressiveEnter,
+        label = "hero_scale",
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(320.dp)
+            .graphicsLayer {
+                scaleX = heroScale
+                scaleY = heroScale
+            },
     ) {
-        Column(
-            modifier = Modifier.padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            // Actor photo or initials
-            if (person.primaryImageTag != null) {
-                AsyncImage(
-                    model = getImageUrl(person.id, person.primaryImageTag),
-                    contentDescription = person.name,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop,
+        // Enhanced backdrop with dynamic colors
+        coil.compose.SubcomposeAsyncImage(
+            model = coil.request.ImageRequest.Builder(LocalContext.current)
+                .data(getBackdropUrl(movie))
+                .crossfade(true)
+                .build(),
+            contentDescription = "${movie.name} backdrop",
+            loading = {
+                ShimmerBox(
+                    modifier = Modifier.fillMaxSize(),
+                    cornerRadius = 28,
                 )
-            } else {
+            },
+            error = {
                 Box(
                     modifier = Modifier
-                        .size(60.dp)
+                        .fillMaxSize()
                         .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                            CircleShape,
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    JellyfinBlue80.copy(alpha = 0.3f),
+                                    JellyfinTeal80.copy(alpha = 0.2f),
+                                ),
+                            ),
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        text = person.name?.take(2)?.uppercase() ?: "??",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "No backdrop",
+                            modifier = Modifier
+                                .size(80.dp)
+                                .padding(20.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
-            }
-            // ...existing code...
-            Text(
-                text = person.name ?: "Unknown",
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
+            },
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(28.dp)),
+        )
+
+        // Expressive gradient overlay
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.2f),
+                            Color.Black.copy(alpha = 0.6f),
+                        ),
+                        radius = 800f,
+                    ),
+                )
+                .clip(RoundedCornerShape(28.dp)),
+        )
+
+        // Rating badge with enhanced design
+        movie.communityRating?.let { rating ->
+            val ratingScale by animateFloatAsState(
+                targetValue = 1.0f,
+                animationSpec = MotionTokens.expressiveEnter,
+                label = "rating_scale",
             )
 
-            // Show role for actors or type for crew
-            val displayText = when {
-                !person.role.isNullOrBlank() -> person.role
-                person.type?.name?.isNotBlank() == true -> person.type.name
-                else -> null
-            }
-
-            displayText?.let { text ->
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                )
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(20.dp)
+                    .graphicsLayer {
+                        scaleX = ratingScale
+                        scaleY = ratingScale
+                    },
+                shape = RoundedCornerShape(20.dp),
+                color = RatingGold.copy(alpha = 0.95f),
+                shadowElevation = 12.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Text(
+                        text = String.format(java.util.Locale.ROOT, "%.1f", rating),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                }
             }
         }
     }
 }
 
+// Expressive Movie Info Card Component
 @Composable
-private fun RelatedMovieCard(
+private fun ExpressiveMovieInfoCard(
     movie: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.width(120.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    val cardScale by animateFloatAsState(
+        targetValue = 1.0f,
+        animationSpec = MotionTokens.expressiveEnter,
+        label = "info_card_scale",
+    )
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .graphicsLayer {
+                scaleX = cardScale
+                scaleY = cardScale
+            },
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 16.dp,
     ) {
-        Column {
-            SubcomposeAsyncImage(
+        Row(
+            modifier = Modifier.padding(20.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            // Enhanced Movie Poster
+            coil.compose.SubcomposeAsyncImage(
                 model = getImageUrl(movie),
-                contentDescription = movie.name,
+                contentDescription = "${movie.name} poster",
                 loading = {
-                    ShimmerBox(
+                    ExpressiveLoadingCard(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .width(140.dp)
                             .aspectRatio(2f / 3f),
                     )
                 },
                 error = {
-                    Box(
+                    Surface(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(2f / 3f)
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.Center,
+                            .width(140.dp)
+                            .aspectRatio(2f / 3f),
+                        shape = RoundedCornerShape(16.dp),
+                        color = getContentTypeColor(movie.type?.toString()).copy(alpha = 0.15f),
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "No image",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Box(
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "No poster",
+                                modifier = Modifier.size(40.dp),
+                                tint = getContentTypeColor(movie.type?.toString()),
+                            )
+                        }
                     }
                 },
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(2f / 3f),
+                    .width(140.dp)
+                    .aspectRatio(2f / 3f)
+                    .clip(RoundedCornerShape(16.dp)),
             )
 
+            // Movie Details with Expressive styling
             Column(
-                modifier = Modifier.padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                // Title with dynamic emphasis
                 Text(
-                    text = movie.name ?: "Unknown",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium,
+                    text = movie.name ?: "Unknown Title",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
-                movie.productionYear?.let { year ->
-                    Text(
-                        text = year.toString(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                // Production year and runtime with enhanced styling
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    movie.productionYear?.let { year ->
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = JellyfinBlue80.copy(alpha = 0.15f),
+                        ) {
+                            Text(
+                                text = year.toString(),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = JellyfinBlue80,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            )
+                        }
+                    }
+
+                    movie.runTimeTicks?.let { ticks ->
+                        val minutes = (ticks / 10_000_000 / 60).toInt()
+                        val hours = minutes / 60
+                        val remainingMinutes = minutes % 60
+                        val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
+
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MusicGreen.copy(alpha = 0.15f),
+                        ) {
+                            Text(
+                                text = runtime,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MusicGreen,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            )
+                        }
+                    }
+                }
+
+                // Genres with colorful design
+                movie.genres?.takeIf { it.isNotEmpty() }?.let { genres ->
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(genres.take(3)) { genre ->
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = JellyfinTeal80.copy(alpha = 0.15f),
+                            ) {
+                                Text(
+                                    text = genre,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = JellyfinTeal80,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Media info with resolution display
+                movie.mediaSources?.firstOrNull()?.let { source ->
+                    val videoStream = source.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
+                    val resolution = getMovieResolution(videoStream)
+                    
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        item {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = when (resolution) {
+                                    "SD" -> AudioBookOrange.copy(alpha = 0.15f)
+                                    "720p" -> MusicGreen.copy(alpha = 0.15f)
+                                    "1080p" -> JellyfinBlue80.copy(alpha = 0.15f)
+                                    "4K" -> MovieRed.copy(alpha = 0.15f)
+                                    else -> MaterialTheme.colorScheme.primaryContainer
+                                },
+                            ) {
+                                Text(
+                                    text = resolution,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = when (resolution) {
+                                        "SD" -> AudioBookOrange
+                                        "720p" -> MusicGreen
+                                        "1080p" -> JellyfinBlue80
+                                        "4K" -> MovieRed
+                                        else -> MaterialTheme.colorScheme.onPrimaryContainer
+                                    },
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                )
+                            }
+                        }
+                        
+                        videoStream?.codec?.let { codec ->
+                            item {
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                ) {
+                                    Text(
+                                        text = codec.uppercase(),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    )
+                                }
+                            }
+                        }
+                        
+                        source.container?.let { container ->
+                            item {
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                                ) {
+                                    Text(
+                                        text = container.uppercase(),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+// Helper function for movie resolution detection
+private fun getMovieResolution(videoStream: org.jellyfin.sdk.model.api.MediaStream?): String {
+    return when (videoStream?.height) {
+        null -> "Unknown"
+        in 1..719 -> "SD"
+        720 -> "720p"
+        in 721..1079 -> "HD"
+        1080 -> "1080p"
+        in 1081..2159 -> "QHD"
+        else -> "4K"
     }
 }

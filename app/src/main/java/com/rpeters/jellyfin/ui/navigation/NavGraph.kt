@@ -14,6 +14,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -206,15 +208,39 @@ fun JellyfinNavGraph(
         composable(Screen.Movies.route) {
             val viewModel = hiltViewModel<MainAppViewModel>()
             val lifecycleOwner = LocalLifecycleOwner.current
+            val appState by viewModel.appState.collectAsStateWithLifecycle()
+            
+            // Local state for filtering and sorting
+            var selectedFilter by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieFilter.ALL) }
+            var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
+            var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
+
+            // Load movies when first entering the screen
+            LaunchedEffect(Unit) {
+                if (appState.allMovies.isEmpty() && !appState.isLoadingMovies) {
+                    viewModel.loadAllMovies(reset = true)
+                }
+            }
 
             MoviesScreen(
-                onBackClick = { navController.popBackStack() },
+                movies = appState.allMovies,
+                isLoading = appState.isLoadingMovies,
+                isLoadingMore = appState.isLoadingMovies,
+                hasMoreItems = appState.hasMoreMovies,
+                selectedFilter = selectedFilter,
+                onFilterChange = { selectedFilter = it },
+                selectedSort = selectedSort,
+                onSortChange = { selectedSort = it },
+                viewMode = viewMode,
+                onViewModeChange = { viewMode = it },
                 onMovieClick = { movie ->
                     movie.id?.let { movieId ->
                         navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
                     }
                 },
-                viewModel = viewModel,
+                onRefresh = { viewModel.refreshMovies() },
+                onLoadMore = { viewModel.loadMoreMovies() },
+                getImageUrl = { movie -> viewModel.getImageUrl(movie) },
             )
         }
 

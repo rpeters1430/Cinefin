@@ -1,5 +1,12 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,12 +15,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
@@ -36,338 +45,225 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.ui.components.MediaCard
+import com.rpeters.jellyfin.data.models.LibraryType
+import com.rpeters.jellyfin.data.models.MovieFilter
+import com.rpeters.jellyfin.data.models.MovieSortOrder
+import com.rpeters.jellyfin.data.models.MovieViewMode
+import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
+import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
+import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.theme.MovieRed
-import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.utils.getItemKey
-import com.rpeters.jellyfin.utils.getRatingAsDouble
-import com.rpeters.jellyfin.utils.hasHighRating
 import org.jellyfin.sdk.model.api.BaseItemDto
-
-enum class MovieFilter(val displayNameResId: Int) {
-    ALL(R.string.filter_all_movies),
-    RECENT(R.string.filter_recent),
-    FAVORITES(R.string.filter_favorites),
-    DECADE_2020S(R.string.filter_2020s),
-    DECADE_2010S(R.string.filter_2010s),
-    DECADE_2000S(R.string.filter_2000s),
-    DECADE_1990S(R.string.filter_1990s),
-    HIGH_RATED(R.string.filter_high_rated),
-    UNWATCHED(R.string.filter_unwatched),
-    ;
-
-    companion object {
-        fun getAllFilters() = entries
-    }
-}
-
-enum class MovieSortOrder(val displayNameResId: Int) {
-    TITLE_ASC(R.string.sort_title_asc),
-    TITLE_DESC(R.string.sort_title_desc),
-    YEAR_DESC(R.string.sort_year_desc),
-    YEAR_ASC(R.string.sort_year_asc),
-    RATING_DESC(R.string.sort_rating_desc),
-    RATING_ASC(R.string.sort_rating_asc),
-    RUNTIME_DESC(R.string.sort_runtime_desc),
-    RUNTIME_ASC(R.string.sort_runtime_asc),
-    DATE_ADDED_DESC(R.string.sort_date_added_desc),
-    DATE_ADDED_ASC(R.string.sort_date_added_asc),
-    ;
-
-    companion object {
-        fun getDefault() = TITLE_ASC
-        fun getAllSortOrders() = entries
-    }
-}
-
-enum class MovieViewMode {
-    GRID,
-    LIST,
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoviesScreen(
-    onBackClick: () -> Unit = {},
-    onMovieClick: (BaseItemDto) -> Unit = {},
-    viewModel: MainAppViewModel = hiltViewModel(),
+    movies: List<BaseItemDto>,
+    isLoading: Boolean,
+    isLoadingMore: Boolean,
+    hasMoreItems: Boolean,
+    selectedFilter: MovieFilter,
+    onFilterChange: (MovieFilter) -> Unit,
+    selectedSort: MovieSortOrder,
+    onSortChange: (MovieSortOrder) -> Unit,
+    viewMode: MovieViewMode,
+    onViewModeChange: (MovieViewMode) -> Unit,
+    onMovieClick: (BaseItemDto) -> Unit,
+    onRefresh: () -> Unit,
+    onLoadMore: () -> Unit,
+    getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
 ) {
-    val appState by viewModel.appState.collectAsState()
-    var selectedFilter by remember { mutableStateOf(MovieFilter.ALL) }
-    var sortOrder by remember { mutableStateOf(MovieSortOrder.getDefault()) }
-    var viewMode by remember { mutableStateOf(MovieViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
-
-    // Load movies when screen is first displayed
-    LaunchedEffect(Unit) {
-        if (appState.allMovies.isEmpty() && !appState.isLoadingMovies) {
-            viewModel.loadAllMovies(reset = true)
+    
+    // Filter and sort movies
+    val filteredAndSortedMovies = movies.filter { movie ->
+        when (selectedFilter) {
+            MovieFilter.ALL -> true
+            MovieFilter.FAVORITES -> movie.userData?.isFavorite == true
+            MovieFilter.UNWATCHED -> movie.userData?.played != true
+            MovieFilter.WATCHED -> movie.userData?.played == true
         }
-    }
-
-    // Use allMovies list from the view model
-    val movieItems = remember(appState.allMovies) { appState.allMovies }
-
-    // Apply filtering and sorting
-    val filteredAndSortedMovies = remember(movieItems, selectedFilter, sortOrder) {
-        val filtered = when (selectedFilter) {
-            MovieFilter.ALL -> movieItems
-            MovieFilter.RECENT -> movieItems.filter {
-                ((it.productionYear as? Number)?.toInt() ?: 0) >= 2020
-            }
-            MovieFilter.FAVORITES -> movieItems.filter { it.userData?.isFavorite == true }
-            MovieFilter.DECADE_2020S -> movieItems.filter {
-                val year = (it.productionYear as? Number)?.toInt() ?: 0
-                year >= 2020 && year <= 2029
-            }
-            MovieFilter.DECADE_2010S -> movieItems.filter {
-                val year = (it.productionYear as? Number)?.toInt() ?: 0
-                year >= 2010 && year <= 2019
-            }
-            MovieFilter.DECADE_2000S -> movieItems.filter {
-                val year = (it.productionYear as? Number)?.toInt() ?: 0
-                year >= 2000 && year <= 2009
-            }
-            MovieFilter.DECADE_1990S -> movieItems.filter {
-                val year = (it.productionYear as? Number)?.toInt() ?: 0
-                year >= 1990 && year <= 1999
-            }
-            MovieFilter.HIGH_RATED -> movieItems.filter { it.hasHighRating() }
-            MovieFilter.UNWATCHED -> movieItems.filter {
-                it.userData?.played != true
-            }
-        }
-
-        when (sortOrder) {
-            MovieSortOrder.TITLE_ASC -> filtered.sortedBy { it.sortName ?: it.name }
-            MovieSortOrder.TITLE_DESC -> filtered.sortedByDescending { it.sortName ?: it.name }
-            MovieSortOrder.YEAR_DESC -> filtered.sortedByDescending {
-                (it.productionYear as? Number)?.toInt() ?: 0
-            }
-            MovieSortOrder.YEAR_ASC -> filtered.sortedBy {
-                (it.productionYear as? Number)?.toInt() ?: 0
-            }
-            MovieSortOrder.RATING_DESC -> filtered.sortedByDescending { it.getRatingAsDouble() }
-            MovieSortOrder.RATING_ASC -> filtered.sortedBy { it.getRatingAsDouble() }
-            MovieSortOrder.RUNTIME_DESC -> filtered.sortedByDescending {
-                it.runTimeTicks ?: 0L
-            }
-            MovieSortOrder.RUNTIME_ASC -> filtered.sortedBy {
-                it.runTimeTicks ?: 0L
-            }
-            MovieSortOrder.DATE_ADDED_DESC -> filtered.sortedByDescending { it.dateCreated }
-            MovieSortOrder.DATE_ADDED_ASC -> filtered.sortedBy { it.dateCreated }
+    }.sortedWith { movie1, movie2 ->
+        when (selectedSort) {
+            MovieSortOrder.NAME -> (movie1.name ?: "").compareTo(movie2.name ?: "")
+            MovieSortOrder.YEAR -> (movie2.productionYear ?: 0).compareTo(movie1.productionYear ?: 0)
+            MovieSortOrder.RATING -> (movie2.communityRating ?: 0f).compareTo(movie1.communityRating ?: 0f)
+            MovieSortOrder.RECENTLY_ADDED -> movie2.dateCreated?.compareTo(movie1.dateCreated ?: java.time.LocalDateTime.MIN) ?: 0
+            MovieSortOrder.RUNTIME -> (movie2.runTimeTicks ?: 0L).compareTo(movie1.runTimeTicks ?: 0L)
         }
     }
 
     Scaffold(
+        modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Movie,
-                            contentDescription = null,
+                        Text(
+                            text = "Movies",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                         )
                     }
                 },
                 actions = {
                     // View mode toggle
-                    SingleChoiceSegmentedButtonRow {
-                        MovieViewMode.entries.forEachIndexed { index, mode ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(
-                                    index = index,
-                                    count = MovieViewMode.entries.size,
-                                ),
-                                onClick = { viewMode = mode },
-                                selected = viewMode == mode,
-                                colors = SegmentedButtonDefaults.colors(
-                                    activeContainerColor = MovieRed.copy(alpha = 0.2f),
-                                    activeContentColor = MovieRed,
-                                ),
-                            ) {
-                                Icon(
-                                    imageVector = when (mode) {
-                                        MovieViewMode.GRID -> Icons.Default.GridView
-                                        MovieViewMode.LIST -> Icons.AutoMirrored.Filled.ViewList
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    ) {
+                        IconButton(
+                            onClick = {
+                                onViewModeChange(
+                                    when (viewMode) {
+                                        MovieViewMode.GRID -> MovieViewMode.LIST
+                                        MovieViewMode.LIST -> MovieViewMode.GRID
                                     },
-                                    contentDescription = mode.name,
-                                    modifier = Modifier.padding(2.dp),
                                 )
-                            }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = when (viewMode) {
+                                    MovieViewMode.GRID -> Icons.AutoMirrored.Filled.ViewList
+                                    MovieViewMode.LIST -> Icons.Default.GridView
+                                },
+                                contentDescription = "Toggle view mode",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
                         }
                     }
 
                     // Sort menu
-                    Box {
-                        IconButton(onClick = { showSortMenu = true }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Sort,
-                                contentDescription = stringResource(id = R.string.sort),
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showSortMenu,
-                            onDismissRequest = { showSortMenu = false },
-                        ) {
-                            MovieSortOrder.getAllSortOrders().forEach { order ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(id = order.displayNameResId)) },
-                                    onClick = {
-                                        sortOrder = order
-                                        showSortMenu = false
-                                    },
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    ) {
+                        Box {
+                            IconButton(onClick = { showSortMenu = true }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Sort,
+                                    contentDescription = "Sort",
+                                    tint = MaterialTheme.colorScheme.primary,
                                 )
+                            }
+                            DropdownMenu(
+                                expanded = showSortMenu,
+                                onDismissRequest = { showSortMenu = false },
+                            ) {
+                                MovieSortOrder.entries.forEach { sortOrder ->
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(id = sortOrder.displayNameResId)) },
+                                        onClick = {
+                                            onSortChange(sortOrder)
+                                            showSortMenu = false
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
 
-                    IconButton(onClick = { viewModel.refreshMovies() }) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = stringResource(id = R.string.refresh),
-                        )
+                    // Refresh button
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier.padding(end = 8.dp, start = 4.dp),
+                    ) {
+                        IconButton(onClick = onRefresh) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh",
+                                tint = MusicGreen,
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    containerColor = Color.Transparent,
                 ),
             )
         },
-        modifier = modifier,
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-        ) {
-            // Filter chips
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                items(MovieFilter.getAllFilters()) { filter ->
-                    FilterChip(
-                        onClick = { selectedFilter = filter },
-                        label = { Text(stringResource(id = filter.displayNameResId)) },
-                        selected = selectedFilter == filter,
-                        leadingIcon = if (filter == MovieFilter.FAVORITES) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(2.dp),
-                                )
-                            }
-                        } else {
-                            null
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MovieRed.copy(alpha = 0.2f),
-                            selectedLabelColor = MovieRed,
-                            selectedLeadingIconColor = MovieRed,
-                        ),
+        // Determine current screen state
+        val currentState = when {
+            isLoading && movies.isEmpty() -> MovieScreenState.LOADING
+            movies.isEmpty() && !isLoading -> MovieScreenState.EMPTY
+            else -> MovieScreenState.CONTENT
+        }
+
+        AnimatedContent(
+            targetState = currentState,
+            transitionSpec = {
+                fadeIn() + slideInVertically { it / 2 } togetherWith fadeOut() + slideOutVertically { it / 2 }
+            },
+            label = "movies_content_animation",
+        ) { state ->
+            when (state) {
+                MovieScreenState.LOADING -> {
+                    MoviesLoadingContent(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
                     )
                 }
-            }
-
-            // Content
-            when {
-                appState.isLoadingMovies && movieItems.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator(color = MovieRed)
-                    }
+                MovieScreenState.EMPTY -> {
+                    ExpressiveEmptyState(
+                        icon = Icons.Default.Movie,
+                        title = "No movies found",
+                        subtitle = "Try adjusting your filters or add some movies to your library",
+                        iconTint = MovieRed,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
+                    )
                 }
-
-                appState.errorMessage != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                        ) {
-                            Text(
-                                text = appState.errorMessage ?: "Unknown error",
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(16.dp),
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-                }
-
-                filteredAndSortedMovies.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Movie,
-                                contentDescription = null,
-                                modifier = Modifier.padding(32.dp),
-                                tint = MovieRed.copy(alpha = 0.6f),
-                            )
-                            Text(
-                                text = stringResource(id = R.string.no_movies_found),
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Text(
-                                text = stringResource(id = R.string.adjust_filters_hint),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-
-                else -> {
+                MovieScreenState.CONTENT -> {
                     MoviesContent(
-                        movies = filteredAndSortedMovies,
+                        filteredAndSortedMovies = filteredAndSortedMovies,
+                        selectedFilter = selectedFilter,
+                        onFilterChange = onFilterChange,
                         viewMode = viewMode,
-                        getImageUrl = { item -> viewModel.getBackdropUrl(item) },
                         onMovieClick = onMovieClick,
-                        isLoadingMore = appState.isLoadingMovies,
-                        hasMoreItems = appState.hasMoreMovies,
-                        onLoadMore = { viewModel.loadMoreMovies() },
+                        getImageUrl = getImageUrl,
+                        isLoadingMore = isLoadingMore,
+                        hasMoreItems = hasMoreItems,
+                        onLoadMore = onLoadMore,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
                     )
                 }
             }
@@ -376,75 +272,211 @@ fun MoviesScreen(
 }
 
 @Composable
+private fun MoviesLoadingContent(
+    modifier: Modifier = Modifier,
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(160.dp),
+        modifier = modifier,
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        items(20) {
+            ExpressiveLoadingCard(
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+// Content state enum for animated transitions
+enum class MovieScreenState {
+    LOADING,
+    EMPTY,
+    CONTENT,
+}
+
+@Composable
 private fun MoviesContent(
-    movies: List<BaseItemDto>,
+    filteredAndSortedMovies: List<BaseItemDto>,
+    selectedFilter: MovieFilter,
+    onFilterChange: (MovieFilter) -> Unit,
     viewMode: MovieViewMode,
-    getImageUrl: (BaseItemDto) -> String?,
     onMovieClick: (BaseItemDto) -> Unit,
+    getImageUrl: (BaseItemDto) -> String?,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    when (viewMode) {
-        MovieViewMode.GRID -> {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 160.dp),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = modifier.fillMaxSize(),
-            ) {
-                items(
-                    items = movies,
-                    key = { movie -> movie.getItemKey() },
-                ) { movie ->
-                    MediaCard(
-                        item = movie,
-                        getImageUrl = getImageUrl,
-                        onClick = onMovieClick,
-                    )
-                }
-
-                if (hasMoreItems || isLoadingMore) {
-                    item(span = { GridItemSpan(maxLineSpan) }) {
-                        MoviesPaginationFooter(
-                            isLoadingMore = isLoadingMore,
-                            hasMoreItems = hasMoreItems,
-                            onLoadMore = onLoadMore,
-                        )
-                    }
-                }
+    Column(modifier = modifier) {
+        // Filter chips with enhanced styling
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            items(MovieFilter.getAllFilters()) { filter ->
+                FilterChip(
+                    onClick = { onFilterChange(filter) },
+                    label = { 
+                        Text(
+                            text = stringResource(id = filter.displayNameResId),
+                            fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
+                        ) 
+                    },
+                    selected = selectedFilter == filter,
+                    leadingIcon = if (filter == MovieFilter.FAVORITES) {
+                        {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    } else {
+                        null
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+                )
             }
         }
 
-        MovieViewMode.LIST -> {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(1),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = modifier.fillMaxSize(),
-            ) {
-                items(
-                    items = movies,
-                    key = { movie -> movie.getItemKey() },
-                ) { movie ->
-                    MediaCard(
-                        item = movie,
-                        getImageUrl = getImageUrl,
-                        onClick = onMovieClick,
-                    )
-                }
+        // Movies grid/list with expressive animations
+        when (viewMode) {
+            MovieViewMode.GRID -> {
+                MoviesGrid(
+                    movies = filteredAndSortedMovies,
+                    onMovieClick = onMovieClick,
+                    getImageUrl = getImageUrl,
+                    isLoadingMore = isLoadingMore,
+                    hasMoreItems = hasMoreItems,
+                    onLoadMore = onLoadMore,
+                )
+            }
+            MovieViewMode.LIST -> {
+                MoviesList(
+                    movies = filteredAndSortedMovies,
+                    onMovieClick = onMovieClick,
+                    getImageUrl = getImageUrl,
+                    isLoadingMore = isLoadingMore,
+                    hasMoreItems = hasMoreItems,
+                    onLoadMore = onLoadMore,
+                )
+            }
+        }
+    }
+}
 
-                if (hasMoreItems || isLoadingMore) {
-                    item {
-                        MoviesPaginationFooter(
-                            isLoadingMore = isLoadingMore,
-                            hasMoreItems = hasMoreItems,
-                            onLoadMore = onLoadMore,
-                        )
+@Composable
+private fun MoviesGrid(
+    movies: List<BaseItemDto>,
+    onMovieClick: (BaseItemDto) -> Unit,
+    getImageUrl: (BaseItemDto) -> String?,
+    isLoadingMore: Boolean,
+    hasMoreItems: Boolean,
+    onLoadMore: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(160.dp),
+        modifier = modifier,
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        items(movies, key = { it.getItemKey() }) { movie ->
+            val scale by animateFloatAsState(
+                targetValue = 1.0f,
+                animationSpec = MotionTokens.expressiveEnter,
+                label = "movie_card_scale",
+            )
+            
+            ExpressiveMediaCard(
+                title = movie.name ?: "Unknown Movie",
+                subtitle = movie.productionYear?.toString() ?: "",
+                imageUrl = getImageUrl(movie) ?: "",
+                rating = movie.communityRating?.toFloat(),
+                isFavorite = movie.userData?.isFavorite == true,
+                onCardClick = { onMovieClick(movie) },
+                modifier = Modifier.graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
+            )
+        }
+        
+        // Loading/pagination footer
+        if (isLoadingMore || hasMoreItems) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                MoviesPaginationFooter(
+                    isLoadingMore = isLoadingMore,
+                    hasMoreItems = hasMoreItems,
+                    onLoadMore = onLoadMore,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MoviesList(
+    movies: List<BaseItemDto>,
+    onMovieClick: (BaseItemDto) -> Unit,
+    getImageUrl: (BaseItemDto) -> String?,
+    isLoadingMore: Boolean,
+    hasMoreItems: Boolean,
+    onLoadMore: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(1),
+        modifier = modifier,
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(movies, key = { it.getItemKey() }) { movie ->
+            val scale by animateFloatAsState(
+                targetValue = 1.0f,
+                animationSpec = MotionTokens.expressiveEnter,
+                label = "movie_list_card_scale",
+            )
+            
+            ExpressiveCompactCard(
+                title = movie.name ?: "Unknown Movie",
+                subtitle = buildString {
+                    movie.productionYear?.let { year ->
+                        append(year)
                     }
-                }
+                    movie.runTimeTicks?.let { ticks ->
+                        val minutes = (ticks / 10_000_000 / 60).toInt()
+                        val hours = minutes / 60
+                        val remainingMinutes = minutes % 60
+                        val runtime = if (hours > 0) " • ${hours}h ${remainingMinutes}m" else " • ${minutes}m"
+                        append(runtime)
+                    }
+                },
+                imageUrl = getImageUrl(movie) ?: "",
+                onClick = { onMovieClick(movie) },
+                modifier = Modifier.graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
+            )
+        }
+        
+        // Loading/pagination footer
+        if (isLoadingMore || hasMoreItems) {
+            item {
+                MoviesPaginationFooter(
+                    isLoadingMore = isLoadingMore,
+                    hasMoreItems = hasMoreItems,
+                    onLoadMore = onLoadMore,
+                )
             }
         }
     }
@@ -457,12 +489,6 @@ private fun MoviesPaginationFooter(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LaunchedEffect(Unit) {
-        if (hasMoreItems && !isLoadingMore) {
-            onLoadMore()
-        }
-    }
-
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -479,16 +505,79 @@ private fun MoviesPaginationFooter(
                     modifier = Modifier.padding(8.dp),
                 )
                 Text(
-                    text = stringResource(id = R.string.loading_more_movies),
+                    text = "Loading more movies...",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        } else if (!hasMoreItems) {
+        } else if (hasMoreItems) {
+            TextButton(onClick = onLoadMore) {
+                Text("Load more")
+            }
+        } else {
             Text(
-                text = stringResource(id = R.string.no_more_movies),
+                text = "No more movies",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+// Expressive Empty State component
+@Composable
+private fun ExpressiveEmptyState(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    iconTint: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier.padding(48.dp),
+        ) {
+            val scale by animateFloatAsState(
+                targetValue = 1.0f,
+                animationSpec = MotionTokens.expressiveEnter,
+                label = "empty_icon_scale",
+            )
+
+            Surface(
+                shape = CircleShape,
+                color = iconTint.copy(alpha = 0.1f),
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(96.dp)
+                        .padding(24.dp)
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                        },
+                    tint = iconTint,
+                )
+            }
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
         }
     }

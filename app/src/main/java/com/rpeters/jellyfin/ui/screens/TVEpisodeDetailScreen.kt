@@ -1,9 +1,17 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -21,10 +30,16 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.VideoSettings
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -35,6 +50,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -48,6 +64,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -56,13 +73,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.ShimmerBox
+import com.rpeters.jellyfin.ui.theme.MotionTokens
+import com.rpeters.jellyfin.ui.theme.Quality4K
+import com.rpeters.jellyfin.ui.theme.QualityHD
+import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.MediaStreamType
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TVEpisodeDetailScreen(
     episode: BaseItemDto,
@@ -88,6 +111,7 @@ fun TVEpisodeDetailScreen(
                         text = episode.name ?: "Episode",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleLarge,
                     )
                 },
                 navigationIcon = {
@@ -98,16 +122,30 @@ fun TVEpisodeDetailScreen(
                         )
                     }
                 },
+                actions = {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .padding(8.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 2.dp,
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             )
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { onPlayClick(episode) },
-                containerColor = SeriesBlue,
-                contentColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
@@ -119,213 +157,283 @@ fun TVEpisodeDetailScreen(
         },
         modifier = modifier,
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            // Hero Section with Episode Image
-            item {
-                EpisodeHeroSection(
-                    episode = episode,
-                    seriesInfo = seriesInfo,
-                    getBackdropUrl = getBackdropUrl,
-                    getImageUrl = getImageUrl,
-                )
-            }
+        AnimatedContent(
+            targetState = !isLoading,
+            transitionSpec = {
+                fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it / 4 } togetherWith
+                    fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
+            },
+            label = "episode_detail_content",
+        ) { showContent ->
+            if (showContent) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                ) {
+                    // Hero Section with Episode Image
+                    item {
+                        ExpressiveEpisodeHero(
+                            episode = episode,
+                            seriesInfo = seriesInfo,
+                            getBackdropUrl = getBackdropUrl,
+                            getImageUrl = getImageUrl,
+                        )
+                    }
 
-            // Episode Information Card
-            item {
-                EpisodeInfoCard(
-                    episode = episode,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
-            }
+                    // Episode Information Card
+                    item {
+                        ExpressiveEpisodeInfoCard(episode = episode)
+                    }
 
-            // Action Buttons
-            item {
-                EpisodeActionButtons(
-                    episode = episode,
-                    onDownloadClick = onDownloadClick,
-                    onDeleteClick = onDeleteClick,
-                    onMarkWatchedClick = onMarkWatchedClick,
-                    onMarkUnwatchedClick = onMarkUnwatchedClick,
-                    onFavoriteClick = onFavoriteClick,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
-            }
+                    // Action Buttons
+                    item {
+                        ExpressiveEpisodeActions(
+                            episode = episode,
+                            onDownloadClick = onDownloadClick,
+                            onDeleteClick = onDeleteClick,
+                            onMarkWatchedClick = onMarkWatchedClick,
+                            onMarkUnwatchedClick = onMarkUnwatchedClick,
+                            onFavoriteClick = onFavoriteClick,
+                        )
+                    }
 
-            // Episode Details
-            item {
-                EpisodeDetailsSection(
-                    episode = episode,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
-            }
+                    // Episode Details
+                    item {
+                        ExpressiveEpisodeOverview(episode = episode)
+                    }
 
-            // Series Information (if available)
-            seriesInfo?.let { series ->
-                item {
-                    SeriesInfoSection(
-                        series = series,
-                        getImageUrl = getImageUrl,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
+                    // Series Information (if available)
+                    seriesInfo?.let { series ->
+                        item {
+                            ExpressiveSeriesInfo(
+                                series = series,
+                                getImageUrl = getImageUrl,
+                            )
+                        }
+                    }
+
+                    // Extra spacing for FAB
+                    item {
+                        Spacer(modifier = Modifier.height(80.dp))
+                    }
                 }
-            }
-
-            // Extra spacing for FAB
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
             }
         }
     }
 }
 
 @Composable
-private fun EpisodeHeroSection(
+private fun ExpressiveEpisodeHero(
     episode: BaseItemDto,
     seriesInfo: BaseItemDto?,
     getBackdropUrl: (BaseItemDto) -> String?,
     getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
 ) {
-    Box(
+    val heroScale by animateFloatAsState(
+        targetValue = 1.0f,
+        animationSpec = MotionTokens.expressiveEnter,
+        label = "hero_scale",
+    )
+
+    ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .height(300.dp),
+            .height(360.dp)
+            .graphicsLayer {
+                scaleX = heroScale
+                scaleY = heroScale
+            },
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 12.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        ),
     ) {
-        // Background Image (episode or series backdrop)
-        val backdropUrl = getBackdropUrl(episode) ?: seriesInfo?.let { getBackdropUrl(it) }
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Background Image (episode or series backdrop)
+            val backdropUrl = getBackdropUrl(episode) ?: seriesInfo?.let { getBackdropUrl(it) }
 
-        SubcomposeAsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(backdropUrl)
-                .crossfade(true)
-                .build(),
-            contentDescription = episode.name,
-            loading = {
-                ShimmerBox(
-                    modifier = Modifier.fillMaxSize(),
-                )
-            },
-            error = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(SeriesBlue.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = episode.name ?: "Episode",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = SeriesBlue,
-                        textAlign = TextAlign.Center,
+            SubcomposeAsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(backdropUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = episode.name,
+                loading = {
+                    ExpressiveLoadingCard(
+                        modifier = Modifier.fillMaxSize(),
+                        showTitle = false,
+                        showSubtitle = false,
+                        imageHeight = 360.dp,
                     )
-                }
-            },
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-
-        // Gradient overlay
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.3f),
-                            Color.Black.copy(alpha = 0.8f),
-                        ),
-                    ),
-                ),
-        )
-
-        // Episode info overlay
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp),
-        ) {
-            seriesInfo?.name?.let { seriesName ->
-                Text(
-                    text = seriesName,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White.copy(alpha = 0.8f),
-                )
-            }
-
-            Text(
-                text = episode.name ?: "Unknown Episode",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+                },
+                error = {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(20.dp),
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Tv,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(80.dp),
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = episode.name ?: "Episode",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                textAlign = TextAlign.Center,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                },
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(20.dp)),
             )
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 8.dp),
+            // Enhanced gradient overlay for better text readability
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.2f),
+                                Color.Black.copy(alpha = 0.5f),
+                                Color.Black.copy(alpha = 0.8f),
+                                Color.Black.copy(alpha = 0.95f),
+                            ),
+                            startY = 0f,
+                            endY = Float.POSITIVE_INFINITY,
+                        ),
+                    ),
+            )
+
+            // Episode information overlay with enhanced typography
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                episode.indexNumber?.let { episodeNum ->
+                seriesInfo?.name?.let { seriesName ->
                     Text(
-                        text = "Episode $episodeNum",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.9f),
+                        text = seriesName,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontWeight = FontWeight.Medium,
                     )
                 }
 
-                episode.parentIndexNumber?.let { seasonNum ->
-                    Text(
-                        text = "Season $seasonNum",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.9f),
-                    )
-                }
+                Text(
+                    text = episode.name ?: "Unknown Episode",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
 
-                episode.communityRating?.let { rating ->
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = Color.Yellow,
-                            modifier = Modifier.size(16.dp),
-                        )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    episode.indexNumber?.let { episodeNum ->
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                        ) {
+                            Text(
+                                text = "EP $episodeNum",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+
+                    episode.parentIndexNumber?.let { seasonNum ->
                         Text(
-                            text = String.format(java.util.Locale.ROOT, "%.1f", rating),
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = "Season $seasonNum",
+                            style = MaterialTheme.typography.bodyLarge,
                             color = Color.White.copy(alpha = 0.9f),
+                            fontWeight = FontWeight.Medium,
                         )
                     }
-                }
-            }
 
-            // Play progress if available
-            episode.userData?.playedPercentage?.let { progress ->
-                if (progress > 0.0) {
-                    Column(modifier = Modifier.padding(top = 8.dp)) {
-                        Text(
-                            text = "${String.format(java.util.Locale.ROOT, "%.0f", progress)}% watched",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.8f),
-                        )
-                        LinearProgressIndicator(
-                            progress = { (progress / 100.0).toFloat() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp)),
-                            color = SeriesBlue,
-                            trackColor = Color.White.copy(alpha = 0.3f),
-                        )
+                    // Resolution badge
+                    getEpisodeResolution(episode)?.let { (resolution, color) ->
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = color.copy(alpha = 0.9f),
+                        ) {
+                            Text(
+                                text = resolution,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+
+                    episode.communityRating?.let { rating ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Text(
+                                text = String.format(java.util.Locale.ROOT, "%.1f", rating),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    }
+                }
+
+                // Play progress with enhanced styling
+                episode.userData?.playedPercentage?.let { progress ->
+                    if (progress > 0.0) {
+                        Column(modifier = Modifier.padding(top = 12.dp)) {
+                            Text(
+                                text = "${String.format(java.util.Locale.ROOT, "%.0f", progress)}% watched",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontWeight = FontWeight.Medium,
+                            )
+                            LinearProgressIndicator(
+                                progress = { (progress / 100.0).toFloat() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = Color.White.copy(alpha = 0.3f),
+                            )
+                        }
                     }
                 }
             }
@@ -334,126 +442,116 @@ private fun EpisodeHeroSection(
 }
 
 @Composable
-private fun EpisodeInfoCard(
+private fun ExpressiveEpisodeInfoCard(
     episode: BaseItemDto,
     modifier: Modifier = Modifier,
 ) {
+    val cardScale by animateFloatAsState(
+        targetValue = 1.0f,
+        animationSpec = MotionTokens.expressiveEnter,
+        label = "info_card_scale",
+    )
+
     ElevatedCard(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = cardScale
+                scaleY = cardScale
+            },
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
                 text = "Episode Information",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     episode.runTimeTicks?.let { ticks ->
                         val minutes = (ticks / 10_000_000 / 60).toInt()
                         val hours = minutes / 60
                         val remainingMinutes = minutes % 60
                         val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
 
-                        InfoRow(label = "Duration", value = runtime)
+                        ExpressiveInfoRow(
+                            label = "Duration",
+                            value = runtime,
+                            icon = Icons.Default.PlayArrow,
+                        )
                     }
 
                     episode.premiereDate?.let { date ->
-                        // Handle different date types from Jellyfin SDK
-                        val dateString = try {
-                            when {
-                                date is java.time.LocalDate -> {
-                                    val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
-                                    date.format(formatter)
-                                }
-                                date is java.time.OffsetDateTime -> {
-                                    val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
-                                    date.toLocalDate().format(formatter)
-                                }
-                                date is java.time.LocalDateTime -> {
-                                    val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
-                                    date.toLocalDate().format(formatter)
-                                }
-                                else -> {
-                                    // Fallback to string representation
-                                    date.toString().substringBefore('T').let { dateStr ->
-                                        try {
-                                            val localDate = java.time.LocalDate.parse(dateStr)
-                                            val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
-                                            localDate.format(formatter)
-                                        } catch (e: Exception) {
-                                            dateStr // Use raw date string if parsing fails
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (e: Exception) {
-                            // Fallback to simple string representation if all else fails
-                            date.toString().substringBefore('T')
-                        }
-                        InfoRow(label = "Air Date", value = dateString)
+                        val dateString = formatDate(date)
+                        ExpressiveInfoRow(
+                            label = "Air Date",
+                            value = dateString,
+                            icon = Icons.Default.Star,
+                        )
                     }
 
                     episode.productionYear?.let { year ->
-                        InfoRow(label = "Year", value = year.toString())
+                        ExpressiveInfoRow(
+                            label = "Year",
+                            value = year.toString(),
+                            icon = Icons.Default.Star,
+                        )
+                    }
+
+                    // Resolution information
+                    getEpisodeResolution(episode)?.let { (resolution, _) ->
+                        ExpressiveInfoRow(
+                            label = "Resolution",
+                            value = resolution,
+                            icon = Icons.Default.HighQuality,
+                        )
                     }
                 }
 
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     episode.userData?.let { userData ->
-                        InfoRow(
+                        ExpressiveInfoRow(
                             label = "Watched",
                             value = if (userData.played == true) "Yes" else "No",
+                            icon = if (userData.played == true) Icons.Default.CheckCircle else Icons.Default.VisibilityOff,
                         )
 
                         userData.playCount?.let { count ->
                             if (count > 0) {
-                                InfoRow(label = "Play Count", value = count.toString())
+                                ExpressiveInfoRow(
+                                    label = "Play Count",
+                                    value = count.toString(),
+                                    icon = Icons.Default.Refresh,
+                                )
                             }
                         }
 
                         userData.lastPlayedDate?.let { date ->
-                            // Handle different date types from Jellyfin SDK
-                            val dateString = try {
-                                when {
-                                    date is java.time.LocalDate -> {
-                                        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
-                                        date.format(formatter)
-                                    }
-                                    date is java.time.OffsetDateTime -> {
-                                        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
-                                        date.toLocalDate().format(formatter)
-                                    }
-                                    date is java.time.LocalDateTime -> {
-                                        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
-                                        date.toLocalDate().format(formatter)
-                                    }
-                                    else -> {
-                                        // Fallback to string representation
-                                        date.toString().substringBefore('T').let { dateStr ->
-                                            try {
-                                                val localDate = java.time.LocalDate.parse(dateStr)
-                                                val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
-                                                localDate.format(formatter)
-                                            } catch (e: Exception) {
-                                                dateStr // Use raw date string if parsing fails
-                                            }
-                                        }
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                // Fallback to simple string representation if all else fails
-                                date.toString().substringBefore('T')
-                            }
-                            InfoRow(label = "Last Played", value = dateString)
+                            val dateString = formatDate(date)
+                            ExpressiveInfoRow(
+                                label = "Last Played",
+                                value = dateString,
+                                icon = Icons.Default.Star,
+                            )
                         }
                     }
                 }
@@ -463,27 +561,110 @@ private fun EpisodeInfoCard(
 }
 
 @Composable
-private fun InfoRow(
+private fun ExpressiveInfoRow(
     label: String,
     value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.padding(vertical = 2.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-        )
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(24.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier
+                    .size(16.dp)
+                    .padding(4.dp),
+            )
+        }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+private fun formatDate(date: Any): String {
+    return try {
+        when {
+            date is java.time.LocalDate -> {
+                val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                date.format(formatter)
+            }
+            date is java.time.OffsetDateTime -> {
+                val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                date.toLocalDate().format(formatter)
+            }
+            date is java.time.LocalDateTime -> {
+                val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                date.toLocalDate().format(formatter)
+            }
+            else -> {
+                date.toString().substringBefore('T').let { dateStr ->
+                    try {
+                        val localDate = java.time.LocalDate.parse(dateStr)
+                        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                        localDate.format(formatter)
+                    } catch (e: Exception) {
+                        dateStr
+                    }
+                }
+            }
+        }
+    } catch (e: Exception) {
+        date.toString().substringBefore('T')
+    }
+}
+
+/**
+ * Get episode resolution label and color based on video height
+ * Requirements:
+ * - Under 720p -> SD
+ * - 720p -> 720p
+ * - 1080p -> 1080p  
+ * - Over 1080p -> 4K
+ */
+private fun getEpisodeResolution(episode: BaseItemDto): Pair<String, Color>? {
+    val mediaSource = episode.mediaSources?.firstOrNull() ?: return null
+    val videoStream = mediaSource.mediaStreams?.firstOrNull { 
+        it.type == MediaStreamType.VIDEO 
+    } ?: return null
+    
+    val height = videoStream.height ?: return null
+    
+    return when {
+        height > 1080 -> "4K" to Quality4K
+        height == 1080 -> "1080p" to QualityHD
+        height == 720 -> "720p" to QualityHD
+        height < 720 -> "SD" to QualitySD
+        else -> null
     }
 }
 
 @Composable
-private fun EpisodeActionButtons(
+private fun ExpressiveEpisodeActions(
     episode: BaseItemDto,
     onDownloadClick: (BaseItemDto) -> Unit,
     onDeleteClick: (BaseItemDto) -> Unit,
@@ -492,18 +673,34 @@ private fun EpisodeActionButtons(
     onFavoriteClick: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val actionsScale by animateFloatAsState(
+        targetValue = 1.0f,
+        animationSpec = MotionTokens.expressiveEnter,
+        label = "actions_scale",
+    )
+
     ElevatedCard(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = actionsScale
+                scaleY = actionsScale
+            },
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                text = "Actions",
+                text = "Quick Actions",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             // Primary Actions Row
@@ -514,6 +711,7 @@ private fun EpisodeActionButtons(
                 FilledTonalButton(
                     onClick = { onDownloadClick(episode) },
                     modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Download,
@@ -521,12 +719,16 @@ private fun EpisodeActionButtons(
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Download")
+                    Text(
+                        text = "Download",
+                        fontWeight = FontWeight.Medium,
+                    )
                 }
 
                 OutlinedButton(
                     onClick = { onDeleteClick(episode) },
                     modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
@@ -534,7 +736,10 @@ private fun EpisodeActionButtons(
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Delete")
+                    Text(
+                        text = "Delete",
+                        fontWeight = FontWeight.Medium,
+                    )
                 }
             }
 
@@ -549,6 +754,7 @@ private fun EpisodeActionButtons(
                     OutlinedButton(
                         onClick = { onMarkUnwatchedClick(episode) },
                         modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.VisibilityOff,
@@ -556,12 +762,16 @@ private fun EpisodeActionButtons(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Mark Unwatched")
+                        Text(
+                            text = "Mark Unwatched",
+                            fontWeight = FontWeight.Medium,
+                        )
                     }
                 } else {
                     FilledTonalButton(
                         onClick = { onMarkWatchedClick(episode) },
                         modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
@@ -569,23 +779,32 @@ private fun EpisodeActionButtons(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Mark Watched")
+                        Text(
+                            text = "Mark Watched",
+                            fontWeight = FontWeight.Medium,
+                        )
                     }
                 }
 
                 val isFavorite = episode.userData?.isFavorite == true
+                val favoriteColor = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface
+
                 OutlinedButton(
                     onClick = { onFavoriteClick(episode) },
                     modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = null,
-                        tint = if (isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface,
+                        tint = favoriteColor,
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(if (isFavorite) "Unfavorite" else "Favorite")
+                    Text(
+                        text = if (isFavorite) "Unfavorite" else "Favorite",
+                        fontWeight = FontWeight.Medium,
+                    )
                 }
             }
         }
@@ -593,28 +812,66 @@ private fun EpisodeActionButtons(
 }
 
 @Composable
-private fun EpisodeDetailsSection(
+private fun ExpressiveEpisodeOverview(
     episode: BaseItemDto,
     modifier: Modifier = Modifier,
 ) {
     episode.overview?.takeIf { it.isNotBlank() }?.let { overview ->
+        val overviewScale by animateFloatAsState(
+            targetValue = 1.0f,
+            animationSpec = MotionTokens.expressiveEnter,
+            label = "overview_scale",
+        )
+
         ElevatedCard(
-            modifier = modifier.fillMaxWidth(),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+            modifier = modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    scaleX = overviewScale
+                    scaleY = overviewScale
+                },
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            ),
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    text = "Synopsis",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(32.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Tv,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .padding(6.dp),
+                        )
+                    }
+
+                    Text(
+                        text = "Synopsis",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+
                 Text(
                     text = overview,
-                    style = MaterialTheme.typography.bodyMedium,
-                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight,
+                    style = MaterialTheme.typography.bodyLarge,
+                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
@@ -622,71 +879,127 @@ private fun EpisodeDetailsSection(
 }
 
 @Composable
-private fun SeriesInfoSection(
+private fun ExpressiveSeriesInfo(
     series: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
 ) {
+    val seriesScale by animateFloatAsState(
+        targetValue = 1.0f,
+        animationSpec = MotionTokens.expressiveEnter,
+        label = "series_scale",
+    )
+
     ElevatedCard(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = seriesScale
+                scaleY = seriesScale
+            },
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                text = "About the Series",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .padding(6.dp),
+                    )
+                }
+
+                Text(
+                    text = "About the Series",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.Top,
             ) {
-                // Series poster
+                // Series poster with enhanced styling
                 SubcomposeAsyncImage(
                     model = getImageUrl(series),
                     contentDescription = series.name,
                     loading = {
-                        ShimmerBox(
+                        ExpressiveLoadingCard(
                             modifier = Modifier
-                                .width(80.dp)
-                                .height(120.dp),
+                                .width(90.dp)
+                                .height(135.dp),
+                            showTitle = false,
+                            showSubtitle = false,
+                            imageHeight = 135.dp,
                         )
                     },
                     error = {
-                        Box(
+                        Surface(
                             modifier = Modifier
-                                .width(80.dp)
-                                .height(120.dp)
-                                .background(SeriesBlue.copy(alpha = 0.1f)),
-                            contentAlignment = Alignment.Center,
+                                .width(90.dp)
+                                .height(135.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(12.dp),
                         ) {
-                            Text(
-                                text = series.name ?: "Series",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = SeriesBlue,
-                                textAlign = TextAlign.Center,
-                            )
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Tv,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(40.dp),
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = series.name ?: "Series",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
                     },
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .width(80.dp)
-                        .height(120.dp)
-                        .clip(RoundedCornerShape(8.dp)),
+                        .width(90.dp)
+                        .height(135.dp)
+                        .clip(RoundedCornerShape(12.dp)),
                 )
 
-                // Series details
+                // Series details with enhanced layout
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
                         text = series.name ?: "Unknown Series",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
 
                     Row(
@@ -694,11 +1007,18 @@ private fun SeriesInfoSection(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         series.productionYear?.let { year ->
-                            Text(
-                                text = year.toString(),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                            ) {
+                                Text(
+                                    text = year.toString(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
                         }
 
                         series.communityRating?.let { rating ->
@@ -709,13 +1029,14 @@ private fun SeriesInfoSection(
                                 Icon(
                                     imageVector = Icons.Default.Star,
                                     contentDescription = null,
-                                    tint = Color.Yellow,
+                                    tint = Color(0xFFFFD700),
                                     modifier = Modifier.size(16.dp),
                                 )
                                 Text(
                                     text = String.format(java.util.Locale.ROOT, "%.1f", rating),
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Medium,
                                 )
                             }
                         }
@@ -724,18 +1045,20 @@ private fun SeriesInfoSection(
                     series.childCount?.let { count ->
                         Text(
                             text = "$count episodes",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = SeriesBlue,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium,
                         )
                     }
 
                     series.overview?.takeIf { it.isNotBlank() }?.let { overview ->
                         Text(
                             text = overview,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 3,
+                            maxLines = 4,
                             overflow = TextOverflow.Ellipsis,
+                            lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.1,
                         )
                     }
                 }
