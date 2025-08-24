@@ -193,7 +193,7 @@ class VideoPlayerViewModel @Inject constructor(
                     Log.e("VideoPlayerViewModel", "Failed to get playback info for item $itemId", e)
                     _playerState.value = _playerState.value.copy(
                         error = "Failed to get playback information: ${e.message}",
-                        isLoading = false
+                        isLoading = false,
                     )
                     return@launch
                 }
@@ -213,7 +213,7 @@ class VideoPlayerViewModel @Inject constructor(
                     Log.e("VideoPlayerViewModel", "No suitable media source found")
                     _playerState.value = _playerState.value.copy(
                         error = "No playable media source available",
-                        isLoading = false
+                        isLoading = false,
                     )
                     return@launch
                 }
@@ -232,16 +232,16 @@ class VideoPlayerViewModel @Inject constructor(
                     Log.e("VideoPlayerViewModel", "No current server available")
                     _playerState.value = _playerState.value.copy(
                         error = "Server connection not available",
-                        isLoading = false
+                        isLoading = false,
                     )
                     return@launch
                 }
 
                 val streamUrl = "${server.url}/Videos/$itemId/stream?" +
-                        "static=true&" +
-                        "Container=${mediaSource.container}&" +
-                        "mediaSourceId=${mediaSource.id}&" +
-                        "playSessionId=${playbackInfo.playSessionId}"
+                    "static=true&" +
+                    "Container=${mediaSource.container}&" +
+                    "mediaSourceId=${mediaSource.id}&" +
+                    "playSessionId=${playbackInfo.playSessionId}"
 
                 if (BuildConfig.DEBUG) {
                     Log.d("VideoPlayerViewModel", "Constructed official stream URL:")
@@ -338,9 +338,9 @@ class VideoPlayerViewModel @Inject constructor(
                     val deviceInfo = "Android Device" // Could be enhanced with actual device model
                     val deviceId = "jellyfin-android-${android.os.Build.MODEL?.replace(" ", "-")?.lowercase()}"
                     val version = "1.0.0"
-                    
+
                     val mediaBrowserAuth = "MediaBrowser Client=\"$clientInfo\", Device=\"$deviceInfo\", DeviceId=\"$deviceId\", Version=\"$version\", Token=\"$token\""
-                    
+
                     val headers = mapOf(
                         "Authorization" to mediaBrowserAuth,
                         "Accept" to "*/*",
@@ -350,7 +350,7 @@ class VideoPlayerViewModel @Inject constructor(
                         "X-Emby-Device-Name" to deviceInfo,
                         "X-Emby-Device-Id" to deviceId,
                         "X-Emby-Client-Version" to version,
-                        "X-Emby-Token" to token
+                        "X-Emby-Token" to token,
                     )
                     httpDataSourceFactory.setDefaultRequestProperties(headers)
 
