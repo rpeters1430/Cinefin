@@ -35,9 +35,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material.icons.filled.VideoSettings
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
@@ -74,12 +72,10 @@ import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
-import com.rpeters.jellyfin.ui.components.ShimmerBox
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.Quality4K
 import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
-import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.time.format.DateTimeFormatter
@@ -643,17 +639,17 @@ private fun formatDate(date: Any): String {
  * Requirements:
  * - Under 720p -> SD
  * - 720p -> 720p
- * - 1080p -> 1080p  
+ * - 1080p -> 1080p
  * - Over 1080p -> 4K
  */
 private fun getEpisodeResolution(episode: BaseItemDto): Pair<String, Color>? {
     val mediaSource = episode.mediaSources?.firstOrNull() ?: return null
-    val videoStream = mediaSource.mediaStreams?.firstOrNull { 
-        it.type == MediaStreamType.VIDEO 
+    val videoStream = mediaSource.mediaStreams?.firstOrNull {
+        it.type == MediaStreamType.VIDEO
     } ?: return null
-    
+
     val height = videoStream.height ?: return null
-    
+
     return when {
         height > 1080 -> "4K" to Quality4K
         height == 1080 -> "1080p" to QualityHD

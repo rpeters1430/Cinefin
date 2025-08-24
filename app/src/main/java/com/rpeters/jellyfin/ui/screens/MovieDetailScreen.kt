@@ -32,13 +32,8 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -53,35 +48,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.ShimmerBox
-import com.rpeters.jellyfin.ui.theme.PhotoYellow
 import com.rpeters.jellyfin.ui.theme.AudioBookOrange
 import com.rpeters.jellyfin.ui.theme.JellyfinBlue80
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
-import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.MovieRed
+import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.theme.RatingGold
-import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.ui.theme.getContentTypeColor
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -180,7 +167,7 @@ fun MovieDetailScreen(
                 animationSpec = MotionTokens.expressiveEnter,
                 label = "play_button_scale",
             )
-            
+
             Surface(
                 onClick = { onPlayClick(movie) },
                 shape = RoundedCornerShape(28.dp),
@@ -619,7 +606,7 @@ private fun ExpressiveMovieInfoCard(
                 movie.mediaSources?.firstOrNull()?.let { source ->
                     val videoStream = source.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
                     val resolution = getMovieResolution(videoStream)
-                    
+
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
@@ -649,7 +636,7 @@ private fun ExpressiveMovieInfoCard(
                                 )
                             }
                         }
-                        
+
                         videoStream?.codec?.let { codec ->
                             item {
                                 Surface(
@@ -666,7 +653,7 @@ private fun ExpressiveMovieInfoCard(
                                 }
                             }
                         }
-                        
+
                         source.container?.let { container ->
                             item {
                                 Surface(

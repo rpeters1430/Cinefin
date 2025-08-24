@@ -209,7 +209,7 @@ fun JellyfinNavGraph(
             val viewModel = hiltViewModel<MainAppViewModel>()
             val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle()
-            
+
             // Local state for filtering and sorting
             var selectedFilter by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieFilter.ALL) }
             var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
