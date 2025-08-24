@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.data.repository
 
 import android.util.Log
+import com.rpeters.jellyfin.data.DeviceCapabilities
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
@@ -15,6 +16,7 @@ import javax.inject.Singleton
 @Singleton
 class JellyfinStreamRepository @Inject constructor(
     private val authRepository: JellyfinAuthRepository,
+    private val deviceCapabilities: DeviceCapabilities,
 ) {
     companion object {
         // Stream quality constants
@@ -34,7 +36,7 @@ class JellyfinStreamRepository @Inject constructor(
     }
 
     /**
-     * Get basic stream URL for a media item
+     * Get optimal stream URL - prioritizes direct play when possible, falls back to transcoding
      */
     fun getStreamUrl(itemId: String): String? {
         val server = authRepository.getCurrentServer() ?: return null
@@ -58,7 +60,16 @@ class JellyfinStreamRepository @Inject constructor(
         }
 
         return try {
-            "${server.url}/Videos/$itemId/stream?static=true&api_key=${server.accessToken}"
+            // First try to get media info to determine if we can direct play
+            val directPlayUrl = getOptimalDirectPlayUrl(itemId, server.url, server.accessToken)
+            if (directPlayUrl != null) {
+                Log.d("JellyfinStreamRepository", "Using direct play for item $itemId")
+                return directPlayUrl
+            }
+            
+            // Fall back to adaptive transcoding with device-optimized parameters
+            Log.d("JellyfinStreamRepository", "Using transcoded stream for item $itemId")
+            getOptimalTranscodedUrl(itemId, server.url, server.accessToken)
         } catch (e: Exception) {
             Log.e("JellyfinStreamRepository", "getStreamUrl: Failed to generate stream URL for item $itemId", e)
             null
@@ -153,12 +164,86 @@ class JellyfinStreamRepository @Inject constructor(
     }
 
     /**
-     * Get direct stream URL optimized for downloads
+     * Get direct stream URL - forces direct play without transcoding
      */
     fun getDirectStreamUrl(itemId: String, container: String? = null): String? {
         val server = authRepository.getCurrentServer() ?: return null
         val containerParam = container?.let { "&Container=$it" } ?: ""
-        return "${server.url}/Videos/$itemId/stream.${container ?: "mp4"}?static=true&api_key=${server.accessToken}$containerParam"
+        return "${server.url}/Videos/$itemId/stream?static=true&api_key=${server.accessToken}$containerParam"
+    }
+    
+    /**
+     * Get optimal direct play URL if the device supports the media format
+     */
+    private fun getOptimalDirectPlayUrl(itemId: String, serverUrl: String, accessToken: String): String? {
+        return try {
+            // For now, we'll try common container formats that Android supports well
+            // In a full implementation, we'd query the media info first
+            
+            // Try MP4 container first (most compatible)
+            if (deviceCapabilities.canPlayContainer("mp4")) {
+                val mp4Url = "$serverUrl/Videos/$itemId/stream?static=true&Container=mp4&api_key=$accessToken"
+                Log.d("JellyfinStreamRepository", "Trying direct play with MP4 container")
+                return mp4Url
+            }
+            
+            // Try original container (MKV is supported on newer Android versions)
+            if (deviceCapabilities.canPlayContainer("mkv")) {
+                val directUrl = "$serverUrl/Videos/$itemId/stream?static=true&api_key=$accessToken"
+                Log.d("JellyfinStreamRepository", "Trying direct play with original container")
+                return directUrl
+            }
+            
+            null
+        } catch (e: Exception) {
+            Log.w("JellyfinStreamRepository", "Failed to determine direct play URL", e)
+            null
+        }
+    }
+    
+    /**
+     * Get optimal transcoded URL based on device capabilities
+     */
+    private fun getOptimalTranscodedUrl(itemId: String, serverUrl: String, accessToken: String): String {
+        val capabilities = deviceCapabilities.getDirectPlayCapabilities()
+        val maxRes = capabilities.maxResolution
+        
+        val params = mutableListOf<String>()
+        
+        // Use best supported video codec
+        val videoCodec = when {
+            capabilities.supportedVideoCodecs.contains("h264") -> "h264"
+            capabilities.supportedVideoCodecs.contains("mpeg4") -> "mpeg4"
+            else -> "h264" // Fallback
+        }
+        
+        // Use best supported audio codec
+        val audioCodec = when {
+            capabilities.supportedAudioCodecs.contains("aac") -> "aac"
+            capabilities.supportedAudioCodecs.contains("mp3") -> "mp3"
+            else -> "aac" // Fallback
+        }
+        
+        // Use best supported container
+        val container = when {
+            capabilities.supportedContainers.contains("mp4") -> "mp4"
+            capabilities.supportedContainers.contains("webm") -> "webm"
+            else -> "mp4" // Fallback
+        }
+        
+        params.add("VideoCodec=$videoCodec")
+        params.add("AudioCodec=$audioCodec")
+        params.add("Container=$container")
+        params.add("MaxStreamingBitrate=20000000") // 20 Mbps max - can be made configurable
+        params.add("MaxWidth=${maxRes.first}")
+        params.add("MaxHeight=${maxRes.second}")
+        params.add("TranscodingMaxAudioChannels=2")
+        params.add("BreakOnNonKeyFrames=true")
+        params.add("api_key=$accessToken")
+        
+        Log.d("JellyfinStreamRepository", "Transcoding with: $videoCodec/$audioCodec in $container, max ${maxRes.first}x${maxRes.second}")
+        
+        return "$serverUrl/Videos/$itemId/stream?${params.joinToString("&")}"
     }
 
     /**

@@ -125,7 +125,7 @@ class VideoPlayerViewModel @Inject constructor(
             Log.e("VideoPlayerViewModel", "Error cause: ${error.cause}")
             Log.e("VideoPlayerViewModel", "Error stacktrace: ${error.stackTrace?.take(5)?.joinToString("\n")}")
 
-            // Try fallback stream URLs on authentication or network errors
+            // Try fallback stream URLs on authentication, network, or codec errors
             if (currentItemId != null && shouldTryFallback(error)) {
                 Log.d("VideoPlayerViewModel", "Attempting fallback stream URL for item: $currentItemId")
                 viewModelScope.launch {
@@ -150,6 +150,10 @@ class VideoPlayerViewModel @Inject constructor(
                     "Media not found on server"
                 error.cause?.message?.contains("HTTP") == true ->
                     "Server error: ${error.cause?.message}"
+                error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED ->
+                    "Video codec not supported - trying alternative formats"
+                error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED ->
+                    "Video decoder initialization failed - trying alternative formats"
                 else -> "Playback error: ${error.message}"
             }
 
@@ -284,6 +288,17 @@ class VideoPlayerViewModel @Inject constructor(
                 exoPlayer = try {
                     if (BuildConfig.DEBUG) {
                         Log.d("VideoPlayerViewModel", "Creating ExoPlayer with enhanced crash protection...")
+                    }
+                    
+                    // Configure track selector for better codec compatibility
+                    selector.apply {
+                        setParameters(
+                            parameters.buildUpon()
+                                .setMaxVideoSizeSd() // Prefer SD quality for compatibility
+                                .setForceHighestSupportedBitrate(false) // Don't force highest bitrate
+                                .setPreferredVideoMimeTypes("video/mp4", "video/avc") // Prefer MP4/H.264
+                                .build()
+                        )
                     }
                     
                     ExoPlayer.Builder(context)
@@ -721,16 +736,26 @@ class VideoPlayerViewModel @Inject constructor(
             error.cause?.message?.contains("403") == true -> true  
             error.cause?.message?.contains("HTTP") == true -> true
             error.cause is java.net.SocketTimeoutException -> true
+            error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED -> true
+            error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> true
+            error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> true
+            error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT -> true
             else -> false
         }
     }
 
     private suspend fun tryFallbackStreamUrls(itemId: String, itemName: String) {
         try {
-            // Try different stream URL formats as fallbacks
+            // Try different stream URL formats as fallbacks, prioritizing direct play
             val fallbackUrls = listOf(
-                repository.getTranscodedStreamUrl(itemId, maxBitrate = 20_000_000),
-                repository.getDirectStreamUrl(itemId),
+                // Try direct play formats first
+                repository.getDirectStreamUrl(itemId, "mp4"), // MP4 container - most compatible
+                repository.getDirectStreamUrl(itemId, "mkv"), // Original MKV container
+                repository.getDirectStreamUrl(itemId), // Original format
+                // Then try transcoding with progressively lower quality
+                repository.getTranscodedStreamUrl(itemId, maxBitrate = 15_000_000, maxWidth = 1920, maxHeight = 1080), // High quality transcode
+                repository.getTranscodedStreamUrl(itemId, maxBitrate = 8_000_000, maxWidth = 1280, maxHeight = 720), // Medium quality transcode
+                repository.getTranscodedStreamUrl(itemId, maxBitrate = 4_000_000, maxWidth = 854, maxHeight = 480), // Low quality transcode
                 repository.getHlsStreamUrl(itemId),
                 repository.getDashStreamUrl(itemId)
             ).filterNotNull()
@@ -740,8 +765,15 @@ class VideoPlayerViewModel @Inject constructor(
             }
 
             for ((index, fallbackUrl) in fallbackUrls.withIndex()) {
+                val urlType = when {
+                    fallbackUrl.contains("static=true") -> "Direct play"
+                    fallbackUrl.contains("master.m3u8") -> "HLS"
+                    fallbackUrl.contains("stream.mpd") -> "DASH"
+                    else -> "Transcoded"
+                }
+                
                 if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Trying fallback URL #${index + 1}: ${fallbackUrl.take(100)}...")
+                    Log.d("VideoPlayerViewModel", "Trying fallback #${index + 1} ($urlType): ${fallbackUrl.take(100)}...")
                 }
 
                 try {
@@ -753,13 +785,13 @@ class VideoPlayerViewModel @Inject constructor(
                     
                     // If we get here without error, the fallback worked
                     if (BuildConfig.DEBUG) {
-                        Log.d("VideoPlayerViewModel", "Fallback URL #${index + 1} succeeded")
+                        Log.d("VideoPlayerViewModel", "Fallback #${index + 1} ($urlType) succeeded")
                     }
                     break
                     
                 } catch (e: Exception) {
                     if (BuildConfig.DEBUG) {
-                        Log.w("VideoPlayerViewModel", "Fallback URL #${index + 1} failed: ${e.message}")
+                        Log.w("VideoPlayerViewModel", "Fallback #${index + 1} ($urlType) failed: ${e.message}")
                     }
                     continue
                 }
@@ -767,7 +799,7 @@ class VideoPlayerViewModel @Inject constructor(
         } catch (e: Exception) {
             Log.e("VideoPlayerViewModel", "All fallback attempts failed", e)
             _playerState.value = _playerState.value.copy(
-                error = "Unable to play video - tried multiple streaming formats",
+                error = "Unable to play video - tried direct play and transcoding",
                 isLoading = false,
             )
         }
