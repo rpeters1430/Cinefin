@@ -179,7 +179,7 @@ class VideoPlayerViewModel @Inject constructor(
                 // Store current item details for error handling
                 currentItemId = itemId
                 currentItemName = itemName
-                
+
                 // Add critical crash protection
                 if (BuildConfig.DEBUG) {
                     Log.d("VideoPlayerViewModel", "=== STARTING PLAYER INITIALIZATION ===")
@@ -187,7 +187,7 @@ class VideoPlayerViewModel @Inject constructor(
                     Log.d("VideoPlayerViewModel", "Stream URL: ${streamUrl.take(100)}...")
                     Log.d("VideoPlayerViewModel", "Start position: ${startPosition}ms")
                 }
-                
+
                 // Load user's preferred aspect ratio
                 val preferredAspectRatio = try {
                     val sharedPrefs = context.getSharedPreferences("video_player_prefs", android.content.Context.MODE_PRIVATE)
@@ -279,7 +279,7 @@ class VideoPlayerViewModel @Inject constructor(
                         "User-Agent" to "JellyfinAndroid/1.0.0",
                     )
                     httpDataSourceFactory.setDefaultRequestProperties(headers)
-                    
+
                     if (BuildConfig.DEBUG) {
                         Log.d("VideoPlayerViewModel", "Added authentication headers: ${headers.keys.joinToString(", ")}")
                     }
@@ -289,7 +289,7 @@ class VideoPlayerViewModel @Inject constructor(
                     if (BuildConfig.DEBUG) {
                         Log.d("VideoPlayerViewModel", "Creating ExoPlayer with enhanced crash protection...")
                     }
-                    
+
                     // Configure track selector for better codec compatibility
                     selector.apply {
                         setParameters(
@@ -297,10 +297,10 @@ class VideoPlayerViewModel @Inject constructor(
                                 .setMaxVideoSizeSd() // Prefer SD quality for compatibility
                                 .setForceHighestSupportedBitrate(false) // Don't force highest bitrate
                                 .setPreferredVideoMimeTypes("video/mp4", "video/avc") // Prefer MP4/H.264
-                                .build()
+                                .build(),
                         )
                     }
-                    
+
                     ExoPlayer.Builder(context)
                         .setTrackSelector(selector)
                         .setMediaSourceFactory(
@@ -312,40 +312,40 @@ class VideoPlayerViewModel @Inject constructor(
                                 .setBufferDurationsMs(
                                     15_000, // Min buffer
                                     60_000, // Max buffer
-                                    5_000,  // Buffer for playback
-                                    10_000  // Buffer for playback after rebuffer
+                                    5_000, // Buffer for playback
+                                    10_000, // Buffer for playback after rebuffer
                                 )
-                                .build()
+                                .build(),
                         )
                         .build()
                 } catch (e: Exception) {
                     Log.e("VideoPlayerViewModel", "CRITICAL: Failed to create ExoPlayer", e)
                     _playerState.value = _playerState.value.copy(
                         error = "Critical error initializing video player: ${e.message}",
-                        isLoading = false
+                        isLoading = false,
                     )
                     return@launch
                 }
-                
-                exoPlayer?.apply {
-                        addListener(playerListener)
-                        if (BuildConfig.DEBUG) {
-                            Log.d("VideoPlayerViewModel", "Setting media item and preparing player")
-                        }
-                        setMediaItem(mediaItem)
-                        seekTo(startPosition)
-                        prepare()
-                        
-                        // Enable automatic playback start
-                        playWhenReady = true
 
-                        // Enable scrubbing mode for smoother seeks (Media3 1.8.0 feature)
-                        setScrubbingModeEnabled(true)
-                        
-                        if (BuildConfig.DEBUG) {
-                            Log.d("VideoPlayerViewModel", "ExoPlayer prepared successfully with playWhenReady = true")
-                        }
+                exoPlayer?.apply {
+                    addListener(playerListener)
+                    if (BuildConfig.DEBUG) {
+                        Log.d("VideoPlayerViewModel", "Setting media item and preparing player")
                     }
+                    setMediaItem(mediaItem)
+                    seekTo(startPosition)
+                    prepare()
+
+                    // Enable automatic playback start
+                    playWhenReady = true
+
+                    // Enable scrubbing mode for smoother seeks (Media3 1.8.0 feature)
+                    setScrubbingModeEnabled(true)
+
+                    if (BuildConfig.DEBUG) {
+                        Log.d("VideoPlayerViewModel", "ExoPlayer prepared successfully with playWhenReady = true")
+                    }
+                }
 
                 trackSelectionManager = TrackSelectionManager(exoPlayer!!, selector)
                 trackSelectionManager?.updateAvailableTracks()
@@ -733,7 +733,7 @@ class VideoPlayerViewModel @Inject constructor(
     private fun shouldTryFallback(error: PlaybackException): Boolean {
         return when {
             error.cause?.message?.contains("401") == true -> true
-            error.cause?.message?.contains("403") == true -> true  
+            error.cause?.message?.contains("403") == true -> true
             error.cause?.message?.contains("HTTP") == true -> true
             error.cause is java.net.SocketTimeoutException -> true
             error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED -> true
@@ -757,7 +757,7 @@ class VideoPlayerViewModel @Inject constructor(
                 repository.getTranscodedStreamUrl(itemId, maxBitrate = 8_000_000, maxWidth = 1280, maxHeight = 720), // Medium quality transcode
                 repository.getTranscodedStreamUrl(itemId, maxBitrate = 4_000_000, maxWidth = 854, maxHeight = 480), // Low quality transcode
                 repository.getHlsStreamUrl(itemId),
-                repository.getDashStreamUrl(itemId)
+                repository.getDashStreamUrl(itemId),
             ).filterNotNull()
 
             if (BuildConfig.DEBUG) {
@@ -771,7 +771,7 @@ class VideoPlayerViewModel @Inject constructor(
                     fallbackUrl.contains("stream.mpd") -> "DASH"
                     else -> "Transcoded"
                 }
-                
+
                 if (BuildConfig.DEBUG) {
                     Log.d("VideoPlayerViewModel", "Trying fallback #${index + 1} ($urlType): ${fallbackUrl.take(100)}...")
                 }
@@ -779,16 +779,15 @@ class VideoPlayerViewModel @Inject constructor(
                 try {
                     // Release current player
                     exoPlayer?.release()
-                    
+
                     // Try this fallback URL
                     initializePlayer(itemId, itemName, fallbackUrl, 0)
-                    
+
                     // If we get here without error, the fallback worked
                     if (BuildConfig.DEBUG) {
                         Log.d("VideoPlayerViewModel", "Fallback #${index + 1} ($urlType) succeeded")
                     }
                     break
-                    
                 } catch (e: Exception) {
                     if (BuildConfig.DEBUG) {
                         Log.w("VideoPlayerViewModel", "Fallback #${index + 1} ($urlType) failed: ${e.message}")
