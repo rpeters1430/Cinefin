@@ -182,7 +182,7 @@ fun PerformanceTracker(
  * Wrapper for performance-sensitive operations.
  */
 @Composable
-fun <T> PerformanceOptimized(
+fun <T> performanceOptimized(
     key: Any?,
     enabled: Boolean = true,
     computation: @Composable () -> T,
