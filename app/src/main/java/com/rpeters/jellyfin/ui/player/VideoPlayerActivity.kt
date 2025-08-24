@@ -113,14 +113,18 @@ class VideoPlayerActivity : ComponentActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        playerViewModel.startPlayback()
+    override fun onResume() {
+        super.onResume()
+        // Don't auto-start playback in onResume - let the user control this
+        // playerViewModel.startPlayback()
     }
 
-    override fun onStop() {
-        super.onStop()
-        playerViewModel.pausePlayback()
+    override fun onPause() {
+        super.onPause()
+        // Only pause if we're actually leaving the activity (not just transitioning)
+        if (isFinishing || !isChangingConfigurations) {
+            playerViewModel.pausePlayback()
+        }
     }
 
     override fun onDestroy() {

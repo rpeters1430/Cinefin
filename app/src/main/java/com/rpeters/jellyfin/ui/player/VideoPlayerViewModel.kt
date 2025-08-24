@@ -8,24 +8,18 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import androidx.media3.common.Tracks
-import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @UnstableApi
@@ -46,34 +40,6 @@ data class TrackInfo(
     val displayName: String,
 )
 
-@UnstableApi
-data class VideoPlayerState(
-    val isPlaying: Boolean = false,
-    val isLoading: Boolean = false,
-    val currentPosition: Long = 0L,
-    val duration: Long = 0L,
-    val bufferedPosition: Long = 0L,
-    val playbackSpeed: Float = 1.0f,
-    val availableQualities: List<VideoQuality> = emptyList(),
-    val selectedQuality: VideoQuality? = null,
-    val isControlsVisible: Boolean = true,
-    val isCasting: Boolean = false,
-    val castDeviceName: String? = null,
-    val error: String? = null,
-    val itemId: String = "",
-    val itemName: String = "",
-    val aspectRatio: Float = 16f / 9f,
-    val selectedAspectRatio: AspectRatioMode = AspectRatioMode.FILL,
-    val availableAspectRatios: List<AspectRatioMode> = AspectRatioMode.values().toList(),
-    val availableAudioTracks: List<TrackInfo> = emptyList(),
-    val selectedAudioTrack: TrackInfo? = null,
-    val showSubtitleDialog: Boolean = false,
-    val availableSubtitleTracks: List<TrackInfo> = emptyList(),
-    val selectedSubtitleTrack: TrackInfo? = null,
-    val showCastDialog: Boolean = false,
-    val availableCastDevices: List<String> = emptyList(),
-)
-
 data class VideoQuality(
     val id: String,
     val label: String,
@@ -83,30 +49,59 @@ data class VideoQuality(
 )
 
 @UnstableApi
+data class VideoPlayerState(
+    val isPlaying: Boolean = false,
+    val isLoading: Boolean = false,
+    val currentPosition: Long = 0L,
+    val duration: Long = 0L,
+    val bufferedPosition: Long = 0L,
+    val error: String? = null,
+    val itemId: String = "",
+    val itemName: String = "",
+    val aspectRatio: Float = 16f / 9f,
+    val selectedAspectRatio: AspectRatioMode = AspectRatioMode.FILL,
+    val availableAspectRatios: List<AspectRatioMode> = AspectRatioMode.values().toList(),
+    val isControlsVisible: Boolean = true,
+    val showSubtitleDialog: Boolean = false,
+    val showCastDialog: Boolean = false,
+    val availableCastDevices: List<String> = emptyList(),
+    val availableQualities: List<VideoQuality> = emptyList(),
+    val selectedQuality: VideoQuality? = null,
+    val isCasting: Boolean = false,
+    val castDeviceName: String? = null,
+    val availableAudioTracks: List<TrackInfo> = emptyList(),
+    val selectedAudioTrack: TrackInfo? = null,
+    val availableSubtitleTracks: List<TrackInfo> = emptyList(),
+    val selectedSubtitleTrack: TrackInfo? = null,
+)
+
+@UnstableApi
 @HiltViewModel
 class VideoPlayerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: JellyfinRepository,
-    private val castManager: CastManager,
-    private val offlinePlaybackManager: com.rpeters.jellyfin.data.offline.OfflinePlaybackManager,
 ) : ViewModel() {
 
     private val _playerState = MutableStateFlow(VideoPlayerState())
     val playerState: StateFlow<VideoPlayerState> = _playerState.asStateFlow()
 
-    private var trackSelector: DefaultTrackSelector? = null
-    private var trackSelectionManager: TrackSelectionManager? = null
-    private var currentMediaItem: MediaItem? = null
-    private var currentJellyfinItem: org.jellyfin.sdk.model.api.BaseItemDto? = null
-    private var currentSubtitleSpecs: List<SubtitleSpec> = emptyList()
-    private var currentItemId: String? = null
-    private var currentItemName: String? = null
-
     var exoPlayer: ExoPlayer? = null
         private set
 
+    private var currentItemId: String? = null
+    private var currentItemName: String? = null
+
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
+            val stateString = when (playbackState) {
+                Player.STATE_IDLE -> "IDLE"
+                Player.STATE_BUFFERING -> "BUFFERING"
+                Player.STATE_READY -> "READY"
+                Player.STATE_ENDED -> "ENDED"
+                else -> "UNKNOWN($playbackState)"
+            }
+            Log.d("VideoPlayer", "State: $stateString, isPlaying: ${exoPlayer?.isPlaying}")
+            
             _playerState.value = _playerState.value.copy(
                 isLoading = playbackState == Player.STATE_BUFFERING,
                 isPlaying = exoPlayer?.isPlaying == true,
@@ -114,829 +109,124 @@ class VideoPlayerViewModel @Inject constructor(
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
+            Log.d("VideoPlayer", "Playing changed: $isPlaying")
             _playerState.value = _playerState.value.copy(isPlaying = isPlaying)
         }
 
-        override fun onTracksChanged(tracks: Tracks) {
-            trackSelectionManager?.updateAvailableTracks()
-        }
-
         override fun onPlayerError(error: PlaybackException) {
-            Log.e("VideoPlayerViewModel", "Playback error: ${error.message}", error)
-            Log.e("VideoPlayerViewModel", "Error cause: ${error.cause}")
-            Log.e("VideoPlayerViewModel", "Error stacktrace: ${error.stackTrace?.take(5)?.joinToString("\n")}")
-
-            // Try fallback stream URLs on authentication, network, or codec errors
-            if (currentItemId != null && shouldTryFallback(error)) {
-                Log.d("VideoPlayerViewModel", "Attempting fallback stream URL for item: $currentItemId")
-                viewModelScope.launch {
-                    tryFallbackStreamUrls(currentItemId!!, currentItemName ?: "Unknown")
-                }
-                return
-            }
-
-            // Provide more specific error messages based on error type
-            val errorMessage = when {
-                error.cause is java.net.SocketTimeoutException ->
-                    "Network timeout - check your connection to the Jellyfin server"
-                error.cause is javax.net.ssl.SSLException ->
-                    "SSL connection failed - check server certificate"
-                error.cause is java.net.UnknownHostException ->
-                    "Cannot reach Jellyfin server - check server URL"
-                error.cause?.message?.contains("401") == true ->
-                    "Authentication failed - please log in again"
-                error.cause?.message?.contains("403") == true ->
-                    "Access denied - insufficient permissions"
-                error.cause?.message?.contains("404") == true ->
-                    "Media not found on server"
-                error.cause?.message?.contains("HTTP") == true ->
-                    "Server error: ${error.cause?.message}"
-                error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED ->
-                    "Video codec not supported - trying alternative formats"
-                error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED ->
-                    "Video decoder initialization failed - trying alternative formats"
-                else -> "Playback error: ${error.message}"
-            }
-
+            Log.e("VideoPlayer", "Error: ${error.message}", error)
             _playerState.value = _playerState.value.copy(
-                error = errorMessage,
+                error = "Playback error: ${error.message}",
                 isLoading = false,
             )
-        }
-
-        override fun onVideoSizeChanged(videoSize: VideoSize) {
-            val aspectRatio = if (videoSize.height > 0) {
-                videoSize.width.toFloat() / videoSize.height.toFloat()
-            } else {
-                16f / 9f
-            }
-            _playerState.value = _playerState.value.copy(aspectRatio = aspectRatio)
         }
     }
 
     fun initializePlayer(itemId: String, itemName: String, startPosition: Long) {
+        Log.d("VideoPlayer", "Initializing player for: $itemName")
+        
+        currentItemId = itemId
+        currentItemName = itemName
+        
+        _playerState.value = _playerState.value.copy(
+            itemId = itemId,
+            itemName = itemName,
+            isLoading = true,
+            error = null
+        )
+
         viewModelScope.launch {
             try {
-                // Store current item details for error handling
-                currentItemId = itemId
-                currentItemName = itemName
-
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "=== STARTING JELLYFIN OFFICIAL FLOW ===")
-                    Log.d("VideoPlayerViewModel", "Item: $itemName ($itemId)")
-                    Log.d("VideoPlayerViewModel", "Start position: ${startPosition}ms")
+                // Get stream URL
+                val streamUrl = repository.getStreamUrl(itemId)
+                if (streamUrl.isNullOrEmpty()) {
+                    throw Exception("No stream URL available")
                 }
 
-                // Step 1: Get Jellyfin PlaybackInfo (official API flow)
-                val playbackInfo = try {
-                    repository.getPlaybackInfo(itemId)
-                } catch (e: Exception) {
-                    Log.e("VideoPlayerViewModel", "Failed to get playback info for item $itemId", e)
-                    _playerState.value = _playerState.value.copy(
-                        error = "Failed to get playback information: ${e.message}",
-                        isLoading = false,
-                    )
-                    return@launch
-                }
+                Log.d("VideoPlayer", "Stream URL: $streamUrl")
 
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "PlaybackInfo received:")
-                    Log.d("VideoPlayerViewModel", "- PlaySessionId: ${playbackInfo.playSessionId}")
-                    Log.d("VideoPlayerViewModel", "- MediaSources count: ${playbackInfo.mediaSources?.size ?: 0}")
-                }
-
-                // Step 2: Choose best MediaSource (prioritize compatibility over direct play for emulator)
-                val isEmulator = android.os.Build.FINGERPRINT.contains("generic") ||
-                    android.os.Build.MODEL.contains("sdk") ||
-                    android.os.Build.PRODUCT.contains("emulator")
-
-                val mediaSource = if (isEmulator) {
-                    // For emulators, prefer transcoding for better compatibility
-                    playbackInfo.mediaSources?.firstOrNull { source ->
-                        source.supportsTranscoding == true && source.container?.lowercase() == "mp4"
-                    } ?: playbackInfo.mediaSources?.firstOrNull { source ->
-                        source.supportsDirectPlay == true && source.container?.lowercase() == "mp4"
-                    } ?: playbackInfo.mediaSources?.firstOrNull()
-                } else {
-                    // For real devices, prefer direct play first
-                    playbackInfo.mediaSources?.firstOrNull { source ->
-                        source.supportsDirectPlay == true
-                    } ?: playbackInfo.mediaSources?.firstOrNull()
-                }
-
-                if (mediaSource == null) {
-                    Log.e("VideoPlayerViewModel", "No suitable media source found")
-                    _playerState.value = _playerState.value.copy(
-                        error = "No playable media source available",
-                        isLoading = false,
-                    )
-                    return@launch
-                }
-
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Selected MediaSource:")
-                    Log.d("VideoPlayerViewModel", "- ID: ${mediaSource.id}")
-                    Log.d("VideoPlayerViewModel", "- Container: ${mediaSource.container}")
-                    Log.d("VideoPlayerViewModel", "- SupportsDirectPlay: ${mediaSource.supportsDirectPlay}")
-                    Log.d("VideoPlayerViewModel", "- Path: ${mediaSource.path?.take(50)}...")
-                }
-
-                // Step 3: Construct proper Jellyfin stream URL using official pattern
-                val server = repository.getCurrentServer()
-                if (server == null) {
-                    Log.e("VideoPlayerViewModel", "No current server available")
-                    _playerState.value = _playerState.value.copy(
-                        error = "Server connection not available",
-                        isLoading = false,
-                    )
-                    return@launch
-                }
-
-                // Decide between direct play and transcoding
-                val videoStream = mediaSource.mediaStreams?.firstOrNull { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
-                val videoWidth = videoStream?.width ?: 0
-                val videoHeight = videoStream?.height ?: 0
-                val useTranscoding = isEmulator && (
-                    mediaSource.container?.lowercase() != "mp4" ||
-                        videoWidth > 1280 || videoHeight > 720
-                    )
-
-                val streamUrl = if (useTranscoding) {
-                    // Use transcoding for better compatibility
-                    "${server.url}/Videos/$itemId/stream?" +
-                        "VideoCodec=h264&" +
-                        "AudioCodec=aac&" +
-                        "Container=mp4&" +
-                        "MaxWidth=1280&" +
-                        "MaxHeight=720&" +
-                        "MaxStreamingBitrate=4000000&" +
-                        "mediaSourceId=${mediaSource.id}&" +
-                        "playSessionId=${playbackInfo.playSessionId}"
-                } else {
-                    // Use direct play
-                    "${server.url}/Videos/$itemId/stream?" +
-                        "static=true&" +
-                        "Container=${mediaSource.container}&" +
-                        "mediaSourceId=${mediaSource.id}&" +
-                        "playSessionId=${playbackInfo.playSessionId}"
-                }
-
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Constructed official stream URL:")
-                    Log.d("VideoPlayerViewModel", "- Base: ${server.url}/Videos/$itemId/stream")
-                    Log.d("VideoPlayerViewModel", "- Container: ${mediaSource.container}")
-                    Log.d("VideoPlayerViewModel", "- MediaSource ID: ${mediaSource.id}")
-                    Log.d("VideoPlayerViewModel", "- PlaySession ID: ${playbackInfo.playSessionId}")
-                    Log.d("VideoPlayerViewModel", "- Using transcoding: $useTranscoding")
-                    Log.d("VideoPlayerViewModel", "- Is emulator: $isEmulator")
-                    Log.d("VideoPlayerViewModel", "- Video resolution: ${videoWidth}x$videoHeight")
-                }
-
-                // Load user's preferred aspect ratio
-                val preferredAspectRatio = try {
-                    val sharedPrefs = context.getSharedPreferences("video_player_prefs", android.content.Context.MODE_PRIVATE)
-                    val savedAspectRatio = sharedPrefs.getString("preferred_aspect_ratio", AspectRatioMode.FILL.name)
-                    AspectRatioMode.valueOf(savedAspectRatio ?: AspectRatioMode.FILL.name)
-                } catch (e: Exception) {
-                    Log.w("VideoPlayerViewModel", "Failed to load aspect ratio preference, using FILL", e)
-                    AspectRatioMode.FILL
-                }
-
-                _playerState.value = _playerState.value.copy(
-                    itemId = itemId,
-                    itemName = itemName,
-                    isLoading = true,
-                    error = null,
-                    selectedAspectRatio = preferredAspectRatio, // Apply user's preferred aspect ratio
-                )
-
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Initializing player with aspect ratio: ${preferredAspectRatio.label}")
-                }
-
-                // Initialize track selector for quality selection
-                trackSelector = DefaultTrackSelector(context)
-
-                // Create ExoPlayer with properly tagged network client
-                // Check if offline content is available
-                val offlineMediaItem = offlinePlaybackManager.getOfflineMediaItem(itemId)
-                val isOfflinePlayback = offlineMediaItem != null
-
-                // Get external subtitles if available
-                val sideLoadedSubs = try {
-                    // TODO: Implement repository.getExternalSubtitlesFor(itemId) when server supports it
-                    emptyList<SubtitleSpec>()
-                } catch (e: Exception) {
-                    Log.w("VideoPlayerViewModel", "Failed to load external subtitles", e)
-                    emptyList<SubtitleSpec>()
-                }
-
-                // Store for later use in casting
-                currentSubtitleSpecs = sideLoadedSubs
-
-                // Create media item with subtitle support and proper MIME type
-                currentMediaItem = if (isOfflinePlayback && offlineMediaItem != null) {
-                    if (BuildConfig.DEBUG) {
-                        Log.d("VideoPlayerViewModel", "Using offline media item for $itemName")
+                withContext(Dispatchers.Main) {
+                    // Create simple ExoPlayer
+                    exoPlayer = ExoPlayer.Builder(context).build()
+                    
+                    // Add listener
+                    exoPlayer?.addListener(playerListener)
+                    
+                    // Create media item
+                    val mediaItem = MediaItem.fromUri(streamUrl)
+                    
+                    // Set media and prepare
+                    exoPlayer?.setMediaItem(mediaItem)
+                    exoPlayer?.prepare()
+                    
+                    // Seek to start position if specified
+                    if (startPosition > 0) {
+                        exoPlayer?.seekTo(startPosition)
                     }
-                    offlineMediaItem
-                } else {
-                    // Use container information from MediaSource for accurate MIME type
-                    val mimeTypeHint = if (useTranscoding) {
-                        // Transcoded streams are always MP4
-                        MimeTypes.VIDEO_MP4
-                    } else {
-                        // Use original container information
-                        MediaItemFactory.mimeTypeFromContainer(mediaSource.container)
-                            .takeIf { it != MimeTypes.VIDEO_UNKNOWN }
-                            ?: MediaItemFactory.inferMimeType(streamUrl) // Fallback to URL-based detection
-                    }
-                    if (BuildConfig.DEBUG) {
-                        Log.d("VideoPlayerViewModel", "Creating media item - URL: ${streamUrl.take(100)}..., Container: ${if (useTranscoding) "mp4 (transcoded)" else mediaSource.container}, MIME: $mimeTypeHint")
-                    }
-                    MediaItemFactory.build(
-                        videoUrl = streamUrl,
-                        title = itemName,
-                        sideLoadedSubs = sideLoadedSubs,
-                        mimeTypeHint = mimeTypeHint,
-                    )
+                    
+                    Log.d("VideoPlayer", "Player prepared successfully")
                 }
-
-                // Ensure trackSelector and currentMediaItem are not null before creating ExoPlayer
-                val selector = trackSelector ?: throw IllegalStateException("Track selector not initialized")
-                val mediaItem = currentMediaItem ?: throw IllegalStateException("Media item not created")
-
-                // Create ExoPlayer with properly authenticated network data source
-                val currentServer = repository.getCurrentServer()
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Current server: ${currentServer?.url}")
-                    Log.d("VideoPlayerViewModel", "Has access token: ${currentServer?.accessToken != null}")
-                    Log.d("VideoPlayerViewModel", "Stream URL: $streamUrl")
-                    Log.d("VideoPlayerViewModel", "Item ID: $itemId")
-                }
-
-                val httpDataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
-                    .setUserAgent("JellyfinAndroid/1.0.0")
-                    .setConnectTimeoutMs(30_000)
-                    .setReadTimeoutMs(60_000)
-                    .setAllowCrossProtocolRedirects(true)
-
-                // Add Jellyfin authentication headers if server is available
-                currentServer?.accessToken?.let { token ->
-                    // Use MediaBrowser authentication format (official Jellyfin API)
-                    val clientInfo = "JellyfinAndroid"
-                    val deviceInfo = "Android Device" // Could be enhanced with actual device model
-                    val deviceId = "jellyfin-android-${android.os.Build.MODEL?.replace(" ", "-")?.lowercase()}"
-                    val version = "1.0.0"
-
-                    val mediaBrowserAuth = "MediaBrowser Client=\"$clientInfo\", Device=\"$deviceInfo\", DeviceId=\"$deviceId\", Version=\"$version\", Token=\"$token\""
-
-                    val headers = mapOf(
-                        "Authorization" to mediaBrowserAuth,
-                        "Accept" to "*/*",
-                        "Accept-Encoding" to "identity",
-                        "User-Agent" to "JellyfinAndroid/1.0.0",
-                        "X-Emby-Client" to clientInfo,
-                        "X-Emby-Device-Name" to deviceInfo,
-                        "X-Emby-Device-Id" to deviceId,
-                        "X-Emby-Client-Version" to version,
-                        "X-Emby-Token" to token,
-                    )
-                    httpDataSourceFactory.setDefaultRequestProperties(headers)
-
-                    if (BuildConfig.DEBUG) {
-                        Log.d("VideoPlayerViewModel", "Added MediaBrowser authentication:")
-                        Log.d("VideoPlayerViewModel", "- Authorization header: ${mediaBrowserAuth.take(80)}...")
-                        Log.d("VideoPlayerViewModel", "- Device ID: $deviceId")
-                        Log.d("VideoPlayerViewModel", "- Client: $clientInfo v$version")
-                    }
-                }
-
-                exoPlayer = try {
-                    if (BuildConfig.DEBUG) {
-                        Log.d("VideoPlayerViewModel", "Creating ExoPlayer with enhanced crash protection...")
-                    }
-
-                    // Configure track selector for better codec compatibility
-                    selector.apply {
-                        setParameters(
-                            parameters.buildUpon()
-                                .setMaxVideoSizeSd() // Prefer SD quality for compatibility on weaker devices
-                                .setForceHighestSupportedBitrate(false) // Don't force highest bitrate
-                                .setPreferredVideoMimeTypes("video/mp4", "video/avc", "video/x-matroska") // Support MP4/H.264 and MKV
-                                .setAllowVideoMixedMimeTypeAdaptiveness(true) // Allow switching between different formats
-                                .setAllowAudioMixedMimeTypeAdaptiveness(true) // Allow switching between audio formats
-                                .build(),
-                        )
-                    }
-
-                    ExoPlayer.Builder(context)
-                        .setTrackSelector(selector)
-                        .setMediaSourceFactory(
-                            androidx.media3.exoplayer.source.DefaultMediaSourceFactory(context)
-                                .setDataSourceFactory(httpDataSourceFactory),
-                        )
-                        .setLoadControl(
-                            androidx.media3.exoplayer.DefaultLoadControl.Builder()
-                                .setBufferDurationsMs(
-                                    15_000, // Min buffer
-                                    60_000, // Max buffer
-                                    5_000, // Buffer for playback
-                                    10_000, // Buffer for playback after rebuffer
-                                )
-                                .build(),
-                        )
-                        .build()
-                } catch (e: Exception) {
-                    Log.e("VideoPlayerViewModel", "CRITICAL: Failed to create ExoPlayer", e)
-                    _playerState.value = _playerState.value.copy(
-                        error = "Critical error initializing video player: ${e.message}",
-                        isLoading = false,
-                    )
-                    return@launch
-                }
-
-                exoPlayer?.apply {
-                    addListener(playerListener)
-                    if (BuildConfig.DEBUG) {
-                        Log.d("VideoPlayerViewModel", "Setting media item and preparing player")
-                    }
-                    setMediaItem(mediaItem)
-                    seekTo(startPosition)
-                    prepare()
-
-                    // Enable automatic playback start
-                    playWhenReady = true
-
-                    // Enable scrubbing mode for smoother seeks (Media3 1.8.0 feature)
-                    setScrubbingModeEnabled(true)
-
-                    if (BuildConfig.DEBUG) {
-                        Log.d("VideoPlayerViewModel", "ExoPlayer prepared successfully with playWhenReady = true")
-                    }
-                }
-
-                trackSelectionManager = TrackSelectionManager(exoPlayer!!, selector)
-                trackSelectionManager?.updateAvailableTracks()
-
-                launch {
-                    trackSelectionManager?.trackSelectionState?.collectLatest { state ->
-                        val audioTracks = state.audioTracks.mapIndexed { index, track ->
-                            TrackInfo(
-                                groupIndex = 0,
-                                trackIndex = index,
-                                format = androidx.media3.common.Format.Builder()
-                                    .setId(track.id)
-                                    .setLanguage(track.language)
-                                    .build(),
-                                isSelected = track.isSelected,
-                                displayName = track.label,
-                            )
-                        }
-                        _playerState.value = _playerState.value.copy(
-                            availableAudioTracks = audioTracks,
-                            selectedAudioTrack = audioTracks.find { it.isSelected },
-                        )
-                    }
-                }
-
-                // Load Jellyfin item for Cast metadata
-                loadJellyfinItem(itemId)
-
-                // Initialize Cast support on main thread (required by Cast framework)
-                launch(Dispatchers.Main) {
-                    try {
-                        castManager.initialize()
-                    } catch (e: Exception) {
-                        Log.w("VideoPlayerViewModel", "Cast initialization failed", e)
-                    }
-                }
-
-                // Observe cast state updates (single collector lifecycle bound to player init)
-                launch {
-                    castManager.castState.collectLatest { castState ->
-                        _playerState.value = _playerState.value.copy(
-                            isCasting = castState.isCasting && castState.isConnected,
-                            castDeviceName = castState.deviceName,
-                        )
-                    }
-                }
-
-                // Load available qualities
-                loadAvailableQualities(itemId)
-
-                // Start position updates
-                startPositionUpdates()
-
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Player initialized for item: $itemName")
-                }
+                
             } catch (e: Exception) {
-                Log.e("VideoPlayerViewModel", "Failed to initialize player", e)
+                Log.e("VideoPlayer", "Init failed: ${e.message}", e)
                 _playerState.value = _playerState.value.copy(
-                    error = "Failed to initialize player: ${e.message}",
-                    isLoading = false,
+                    error = "Failed to initialize: ${e.message}",
+                    isLoading = false
                 )
-            }
-        }
-    }
-
-    fun startPlayback() {
-        exoPlayer?.play()
-    }
-
-    fun pausePlayback() {
-        exoPlayer?.pause()
-        val position = exoPlayer?.currentPosition ?: 0L
-        val itemId = _playerState.value.itemId
-        if (itemId.isNotEmpty()) {
-            viewModelScope.launch {
-                com.rpeters.jellyfin.data.PlaybackPositionStore.savePlaybackPosition(context, itemId, position)
             }
         }
     }
 
     fun togglePlayPause() {
-        exoPlayer?.let { player ->
-            if (player.isPlaying) {
-                player.pause()
-            } else {
-                player.play()
-            }
+        val player = exoPlayer ?: return
+        
+        Log.d("VideoPlayer", "Toggle play/pause. Current state: playing=${player.isPlaying}, playWhenReady=${player.playWhenReady}")
+        
+        if (player.isPlaying) {
+            player.pause()
+            Log.d("VideoPlayer", "Paused")
+        } else {
+            player.play()
+            Log.d("VideoPlayer", "Play requested")
         }
     }
 
     fun seekTo(positionMs: Long) {
         exoPlayer?.seekTo(positionMs)
+        Log.d("VideoPlayer", "Seeked to: $positionMs")
     }
 
-    fun selectAudioTrack(trackInfo: TrackInfo) {
-        trackInfo.format.id?.let { id ->
-            trackSelectionManager?.selectAudioTrack(id)
-            _playerState.value = _playerState.value.copy(selectedAudioTrack = trackInfo)
-        }
+    fun startPlayback() {
+        exoPlayer?.play()
+        Log.d("VideoPlayer", "Start playback requested")
     }
 
-    fun changeQuality(quality: VideoQuality) {
-        viewModelScope.launch {
-            try {
-                val currentPosition = exoPlayer?.currentPosition ?: 0L
-                val itemId = _playerState.value.itemId
-
-                // Get new stream URL with quality parameters
-                val newStreamUrl = getStreamUrlWithQuality(itemId, quality)
-
-                newStreamUrl?.let { url ->
-                    exoPlayer?.apply {
-                        val mediaItem = MediaItemFactory.build(
-                            videoUrl = url,
-                            title = _playerState.value.itemName,
-                            mimeTypeHint = MediaItemFactory.inferMimeType(url),
-                        )
-                        setMediaItem(mediaItem)
-                        seekTo(currentPosition)
-                        prepare()
-                    }
-
-                    _playerState.value = _playerState.value.copy(selectedQuality = quality)
-                    if (BuildConfig.DEBUG) {
-                        Log.d("VideoPlayerViewModel", "Quality changed to: ${quality.label}")
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("VideoPlayerViewModel", "Failed to change quality", e)
-                _playerState.value = _playerState.value.copy(
-                    error = "Failed to change quality: ${e.message}",
-                )
-            }
-        }
-    }
-
-    fun showCastDialog() {
-        viewModelScope.launch(Dispatchers.Main) {
-            try {
-                // Cast framework requires main thread access
-                val castContext = com.google.android.gms.cast.framework.CastContext.getSharedInstance(context)
-                val sessionManager = castContext.sessionManager
-
-                if (sessionManager.currentCastSession?.isConnected == true) {
-                    // If already connected, disconnect
-                    sessionManager.endCurrentSession(true)
-                    if (BuildConfig.DEBUG) {
-                        Log.d("VideoPlayerViewModel", "Disconnected from Cast device")
-                    }
-                } else {
-                    // Show cast device selection dialog
-                    _playerState.value = _playerState.value.copy(showCastDialog = true)
-                    if (BuildConfig.DEBUG) {
-                        Log.d("VideoPlayerViewModel", "Cast dialog requested")
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("VideoPlayerViewModel", "Failed to show cast dialog", e)
-            }
-        }
-    }
-
-    fun hideCastDialog() {
-        _playerState.value = _playerState.value.copy(showCastDialog = false)
-    }
-
-    fun selectCastDevice(deviceName: String) {
-        try {
-            // This is a simplified implementation - in reality you'd need to
-            // interface with the Cast framework to connect to specific devices
-            startCasting()
-            _playerState.value = _playerState.value.copy(showCastDialog = false)
-            if (BuildConfig.DEBUG) {
-                Log.d("VideoPlayerViewModel", "Connecting to Cast device: $deviceName")
-            }
-        } catch (e: Exception) {
-            Log.e("VideoPlayerViewModel", "Failed to connect to Cast device", e)
-        }
-    }
-
-    fun showSubtitleDialog() {
-        trackSelector?.let { selector ->
-            try {
-                // Get current track groups and selections
-                val trackGroups = exoPlayer?.currentTracks
-                val subtitleTracks = mutableListOf<TrackInfo>()
-
-                trackGroups?.groups?.forEachIndexed { groupIndex, trackGroup ->
-                    if (trackGroup.type == androidx.media3.common.C.TRACK_TYPE_TEXT) {
-                        for (i in 0 until trackGroup.length) {
-                            val format = trackGroup.getTrackFormat(i)
-                            val isSelected = trackGroup.isTrackSelected(i)
-                            subtitleTracks.add(
-                                TrackInfo(
-                                    groupIndex = groupIndex,
-                                    trackIndex = i,
-                                    format = format,
-                                    isSelected = isSelected,
-                                    displayName = format.label ?: format.language ?: "Track ${i + 1}",
-                                ),
-                            )
-                        }
-                    }
-                }
-
-                // Update state with available subtitle tracks
-                _playerState.value = _playerState.value.copy(
-                    availableSubtitleTracks = subtitleTracks,
-                    showSubtitleDialog = true,
-                )
-
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Found ${subtitleTracks.size} subtitle tracks")
-                }
-            } catch (e: Exception) {
-                Log.e("VideoPlayerViewModel", "Failed to get subtitle tracks", e)
-            }
-        }
-    }
-
-    fun selectSubtitleTrack(trackInfo: TrackInfo?) {
-        trackSelector?.let { selector ->
-            try {
-                val parametersBuilder = selector.parameters.buildUpon()
-
-                if (trackInfo != null) {
-                    // Enable the selected track
-                    parametersBuilder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, false)
-                } else {
-                    // Disable all subtitle tracks
-                    parametersBuilder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, true)
-                }
-
-                selector.setParameters(parametersBuilder.build())
-
-                // Update UI state
-                _playerState.value = _playerState.value.copy(
-                    showSubtitleDialog = false,
-                    selectedSubtitleTrack = trackInfo,
-                )
-
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Selected subtitle track: ${trackInfo?.displayName ?: "None"}")
-                }
-            } catch (e: Exception) {
-                Log.e("VideoPlayerViewModel", "Failed to select subtitle track", e)
-            }
-        }
-    }
-
-    fun hideSubtitleDialog() {
-        _playerState.value = _playerState.value.copy(showSubtitleDialog = false)
-    }
-
-    fun changeAspectRatio(aspectRatioMode: AspectRatioMode) {
-        _playerState.value = _playerState.value.copy(selectedAspectRatio = aspectRatioMode)
-        if (BuildConfig.DEBUG) {
-            Log.d("VideoPlayerViewModel", "User changed aspect ratio to: ${aspectRatioMode.label}")
-        }
-        // Save user preference for future videos
-        viewModelScope.launch {
-            try {
-                val sharedPrefs = context.getSharedPreferences("video_player_prefs", android.content.Context.MODE_PRIVATE)
-                sharedPrefs.edit().putString("preferred_aspect_ratio", aspectRatioMode.name).apply()
-            } catch (e: Exception) {
-                Log.w("VideoPlayerViewModel", "Failed to save aspect ratio preference", e)
-            }
-        }
-    }
-
-    fun startCasting() {
-        currentMediaItem?.let { mediaItem ->
-            currentJellyfinItem?.let { jellyfinItem ->
-                castManager.startCasting(mediaItem, jellyfinItem, currentSubtitleSpecs)
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Started casting: ${jellyfinItem.name} with ${currentSubtitleSpecs.size} subtitle tracks")
-                }
-            }
-        }
-    }
-
-    fun stopCasting() {
-        castManager.stopCasting()
-        if (BuildConfig.DEBUG) {
-            Log.d("VideoPlayerViewModel", "Stopped casting")
-        }
+    fun pausePlayback() {
+        exoPlayer?.pause()
+        Log.d("VideoPlayer", "Pause requested")
     }
 
     fun releasePlayer() {
-        val position = exoPlayer?.currentPosition ?: 0L
-        val itemId = _playerState.value.itemId
-        saveCurrentPlaybackPosition(position, itemId)
-
-        stopPositionUpdates()
+        Log.d("VideoPlayer", "Releasing player")
         exoPlayer?.removeListener(playerListener)
         exoPlayer?.release()
         exoPlayer = null
-        trackSelectionManager = null
-        castManager.release()
     }
 
-    private fun saveCurrentPlaybackPosition(position: Long, itemId: String) {
-        if (itemId.isNotEmpty()) {
-            viewModelScope.launch {
-                com.rpeters.jellyfin.data.PlaybackPositionStore.savePlaybackPosition(context, itemId, position)
-            }
-        }
+    // Placeholder methods for UI compatibility
+    fun changeQuality(quality: VideoQuality) { /* Not implemented yet */ }
+    fun changeAspectRatio(aspectRatio: AspectRatioMode) {
+        _playerState.value = _playerState.value.copy(selectedAspectRatio = aspectRatio)
     }
-
-    private suspend fun loadAvailableQualities(itemId: String) {
-        try {
-            // Generate standard quality options
-            val qualities = listOf(
-                VideoQuality("auto", "Auto", 0, 0, 0),
-                VideoQuality("1080p", "1080p", 8000000, 1920, 1080),
-                VideoQuality("720p", "720p", 4000000, 1280, 720),
-                VideoQuality("480p", "480p", 2000000, 854, 480),
-                VideoQuality("360p", "360p", 1000000, 640, 360),
-            )
-
-            _playerState.value = _playerState.value.copy(
-                availableQualities = qualities,
-                selectedQuality = qualities.first(), // Default to Auto
-            )
-        } catch (e: Exception) {
-            Log.e("VideoPlayerViewModel", "Failed to load qualities", e)
-        }
+    fun showCastDialog() { /* Not implemented yet */ }
+    fun showSubtitleDialog() { /* Not implemented yet */ }
+    fun selectAudioTrack(track: TrackInfo) { /* Not implemented yet */ }
+    fun selectSubtitleTrack(track: TrackInfo?) { /* Not implemented yet */ }
+    fun hideSubtitleDialog() {
+        _playerState.value = _playerState.value.copy(showSubtitleDialog = false)
     }
-
-    private fun getStreamUrlWithQuality(itemId: String, quality: VideoQuality): String? {
-        return when (quality.id) {
-            "auto" -> repository.getStreamUrl(itemId)
-            else -> {
-                val server = repository.getCurrentServer() ?: return null
-                "${server.url}/Videos/$itemId/stream?" +
-                    "MaxStreamingBitrate=${quality.bitrate}&" +
-                    "VideoCodec=h264&" +
-                    "AudioCodec=aac&" +
-                    "MaxWidth=${quality.width}&" +
-                    "MaxHeight=${quality.height}&" +
-                    "api_key=${server.accessToken}"
-            }
-        }
-    }
-
-    private suspend fun loadJellyfinItem(itemId: String) {
-        try {
-            // This would need to be implemented in the repository
-            // For now, create a basic item for Cast metadata
-            currentJellyfinItem = org.jellyfin.sdk.model.api.BaseItemDto(
-                id = java.util.UUID.fromString(itemId),
-                name = _playerState.value.itemName,
-                overview = "Playing from Jellyfin Android Client",
-                type = org.jellyfin.sdk.model.api.BaseItemKind.VIDEO,
-            )
-        } catch (e: Exception) {
-            Log.w("VideoPlayerViewModel", "Could not load Jellyfin item metadata", e)
-        }
-    }
-
-    private var positionUpdateJob: Job? = null
-
-    private fun startPositionUpdates() {
-        positionUpdateJob?.cancel()
-        positionUpdateJob = viewModelScope.launch {
-            while (isActive) {
-                exoPlayer?.let { player ->
-                    _playerState.value = _playerState.value.copy(
-                        currentPosition = player.currentPosition,
-                        duration = player.duration.takeIf { it > 0 } ?: 0L,
-                        bufferedPosition = player.bufferedPosition,
-                    )
-                }
-                delay(1000L) // Update every second
-            }
-        }
-    }
-
-    private fun stopPositionUpdates() {
-        positionUpdateJob?.cancel()
-        positionUpdateJob = null
-    }
-
-    private fun shouldTryFallback(error: PlaybackException): Boolean {
-        return when {
-            error.cause?.message?.contains("401") == true -> true
-            error.cause?.message?.contains("403") == true -> true
-            error.cause?.message?.contains("HTTP") == true -> true
-            error.cause is java.net.SocketTimeoutException -> true
-            error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED -> true
-            error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> true
-            error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> true
-            error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT -> true
-            else -> false
-        }
-    }
-
-    private suspend fun tryFallbackStreamUrls(itemId: String, itemName: String) {
-        try {
-            // Try different stream URL formats as fallbacks, prioritizing direct play
-            val fallbackUrls = listOf(
-                // Try direct play formats first
-                repository.getDirectStreamUrl(itemId, "mp4"), // MP4 container - most compatible
-                repository.getDirectStreamUrl(itemId, "mkv"), // Original MKV container
-                repository.getDirectStreamUrl(itemId), // Original format
-                // Then try transcoding with progressively lower quality
-                repository.getTranscodedStreamUrl(itemId, maxBitrate = 15_000_000, maxWidth = 1920, maxHeight = 1080), // High quality transcode
-                repository.getTranscodedStreamUrl(itemId, maxBitrate = 8_000_000, maxWidth = 1280, maxHeight = 720), // Medium quality transcode
-                repository.getTranscodedStreamUrl(itemId, maxBitrate = 4_000_000, maxWidth = 854, maxHeight = 480), // Low quality transcode
-                repository.getHlsStreamUrl(itemId),
-                repository.getDashStreamUrl(itemId),
-            ).filterNotNull()
-
-            if (BuildConfig.DEBUG) {
-                Log.d("VideoPlayerViewModel", "Trying ${fallbackUrls.size} fallback URLs for item $itemId")
-            }
-
-            for ((index, fallbackUrl) in fallbackUrls.withIndex()) {
-                val urlType = when {
-                    fallbackUrl.contains("static=true") -> "Direct play"
-                    fallbackUrl.contains("master.m3u8") -> "HLS"
-                    fallbackUrl.contains("stream.mpd") -> "DASH"
-                    else -> "Transcoded"
-                }
-
-                if (BuildConfig.DEBUG) {
-                    Log.d("VideoPlayerViewModel", "Trying fallback #${index + 1} ($urlType): ${fallbackUrl.take(100)}...")
-                }
-
-                try {
-                    // Release current player
-                    exoPlayer?.release()
-
-                    // Try this fallback URL
-                    // Try fallback with official Jellyfin flow (will re-fetch PlaybackInfo)
-                    initializePlayer(itemId, itemName, 0)
-
-                    // If we get here without error, the fallback worked
-                    if (BuildConfig.DEBUG) {
-                        Log.d("VideoPlayerViewModel", "Fallback #${index + 1} ($urlType) succeeded")
-                    }
-                    break
-                } catch (e: Exception) {
-                    if (BuildConfig.DEBUG) {
-                        Log.w("VideoPlayerViewModel", "Fallback #${index + 1} ($urlType) failed: ${e.message}")
-                    }
-                    continue
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("VideoPlayerViewModel", "All fallback attempts failed", e)
-            _playerState.value = _playerState.value.copy(
-                error = "Unable to play video - tried direct play and transcoding",
-                isLoading = false,
-            )
-        }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        stopPositionUpdates()
-        releasePlayer()
+    fun selectCastDevice(deviceName: String) { /* Not implemented yet */ }
+    fun hideCastDialog() {
+        _playerState.value = _playerState.value.copy(showCastDialog = false)
     }
 }

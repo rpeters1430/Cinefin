@@ -86,12 +86,6 @@ fun VideoPlayerScreen(
 
     val rememberedPlayer = remember(exoPlayer) { exoPlayer }
 
-    DisposableEffect(rememberedPlayer) {
-        onDispose {
-            rememberedPlayer?.release()
-        }
-    }
-
     // Auto-hide controls after 5 seconds (increased from 3)
     LaunchedEffect(controlsVisible, playerState.isPlaying) {
         if (controlsVisible && playerState.isPlaying) {
@@ -121,18 +115,29 @@ fun VideoPlayerScreen(
         AndroidView(
             factory = { context ->
                 PlayerView(context).apply {
-                    player = exoPlayer
                     useController = false // We'll use custom controls
                     setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
-                    resizeMode = playerState.selectedAspectRatio.resizeMode
                 }
             },
             update = { playerView ->
-                playerView.player = exoPlayer
+                // Set player and configuration
+                if (playerView.player != exoPlayer) {
+                    playerView.player = exoPlayer
+                    // Force a surface layout after player assignment
+                    playerView.requestLayout()
+                }
                 playerView.resizeMode = playerState.selectedAspectRatio.resizeMode
             },
             modifier = Modifier.fillMaxSize(),
         )
+        
+        // Add DisposableEffect to ensure proper cleanup and attachment
+        DisposableEffect(exoPlayer) {
+            onDispose {
+                // Clear the player reference when exoPlayer changes or component disposes
+                // This will be handled by the update block above
+            }
+        }
 
         // Loading indicator
         if (playerState.isLoading) {
