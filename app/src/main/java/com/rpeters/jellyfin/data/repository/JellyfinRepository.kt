@@ -26,6 +26,7 @@ import org.jellyfin.sdk.api.client.extensions.mediaInfoApi
 import org.jellyfin.sdk.api.client.extensions.playStateApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
+import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -37,8 +38,6 @@ import org.jellyfin.sdk.model.api.PlaybackInfoResponse
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.jellyfin.sdk.model.api.SortOrder
 import retrofit2.HttpException
-import org.jellyfin.sdk.model.UUID
-import java.util.UUID as JavaUUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -1132,13 +1131,13 @@ class JellyfinRepository @Inject constructor(
         val server = authRepository.getCurrentServer()
             ?: throw IllegalStateException("No authenticated server available")
         val client = clientFactory.getClient(server.url, server.accessToken)
-        
+
         // Create playbook info DTO with direct play enabled
         val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
             ?: throw IllegalStateException("Invalid user UUID: ${server.userId}")
-        val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull() 
+        val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull()
             ?: throw IllegalArgumentException("Invalid item UUID: $itemId")
-        
+
         val playbackInfoDto = PlaybackInfoDto(
             userId = userUuid,
             maxStreamingBitrate = 20_000_000, // 20Mbps
@@ -1154,12 +1153,12 @@ class JellyfinRepository @Inject constructor(
             enableTranscoding = true,
             allowVideoStreamCopy = true,
             allowAudioStreamCopy = true,
-            autoOpenLiveStream = null
+            autoOpenLiveStream = null,
         )
-        
+
         return client.mediaInfoApi.getPostedPlaybackInfo(
             itemId = itemUuid,
-            data = playbackInfoDto
+            data = playbackInfoDto,
         ).content
     }
 
