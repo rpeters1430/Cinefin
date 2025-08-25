@@ -48,7 +48,11 @@ fun StuffScreen(
     }
 
     val type = remember(collectionType, appState.libraries, libraryId) {
-        collectionType ?: appState.libraries.firstOrNull { it.id == libraryId }
+    val librariesById = remember(appState.libraries) {
+        appState.libraries.associateBy { it.id }
+    }
+    val type = remember(collectionType, librariesById, libraryId) {
+        collectionType ?: librariesById[libraryId]
             ?.collectionType?.toString()?.lowercase()
     }
 
