@@ -640,6 +640,11 @@ class MainAppViewModel @Inject constructor(
         // Navigation compatibility method - music loading handled by existing functionality
     }
 
+    fun loadStuff() {
+        // Load mixed content including home videos, photos, books, etc.
+        loadLibraryTypeData(LibraryType.STUFF)
+    }
+
     /**
      * Loads episode details for episode detail screen navigation
      */

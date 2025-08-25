@@ -22,7 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,6 +43,7 @@ import com.rpeters.jellyfin.ui.screens.ProfileScreen
 import com.rpeters.jellyfin.ui.screens.QuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.SearchScreen
 import com.rpeters.jellyfin.ui.screens.ServerConnectionScreen
+import com.rpeters.jellyfin.ui.screens.StuffScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodeDetailScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodesScreen
 import com.rpeters.jellyfin.ui.screens.TVSeasonScreen
@@ -195,9 +196,13 @@ fun JellyfinNavGraph(
                         "movies" -> navController.navigate(Screen.Movies.route)
                         "tvshows" -> navController.navigate(Screen.TVShows.route)
                         "music" -> navController.navigate(Screen.Music.route)
+                        "homevideos", "mixed", null -> {
+                            // For home videos, mixed content, or unknown types, use Stuff screen
+                            navController.navigate(Screen.Stuff.route)
+                        }
                         else -> {
-                            // For mixed or unknown types, default to Movies screen
-                            navController.navigate(Screen.Movies.route)
+                            // For any other types, use Stuff screen
+                            navController.navigate(Screen.Stuff.route)
                         }
                     }
                 },
@@ -330,6 +335,20 @@ fun JellyfinNavGraph(
 
             MusicScreen(
                 onBackClick = { navController.popBackStack() },
+                viewModel = viewModel,
+            )
+        }
+
+        composable(Screen.Stuff.route) {
+            val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
+
+            LaunchedEffect(Unit) {
+                // Load stuff/mixed content data when screen is first shown
+                viewModel.loadStuff()
+            }
+
+            StuffScreen(
                 viewModel = viewModel,
             )
         }

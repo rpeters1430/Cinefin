@@ -616,7 +616,23 @@ private fun ExpressiveSeasonCard(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(
-                    text = season.name ?: "Unknown Season",
+                    text = buildString {
+                        val seasonName = season.name ?: "Unknown Season"
+                        append(seasonName)
+                        
+                        // Add episode count in parentheses for more compact display
+                        season.childCount?.let { count ->
+                            // Extract season number from name if possible, otherwise use full name
+                            val seasonDisplay = if (seasonName.startsWith("Season ", ignoreCase = true)) {
+                                "S${seasonName.substring(7)}"
+                            } else {
+                                seasonName
+                            }
+                            // Replace the basic name with enhanced format
+                            clear()
+                            append("$seasonDisplay ($count)")
+                        }
+                    },
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -632,20 +648,6 @@ private fun ExpressiveSeasonCard(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    }
-
-                    season.childCount?.let { count ->
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                        ) {
-                            Text(
-                                text = "$count episodes",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            )
-                        }
                     }
                 }
 

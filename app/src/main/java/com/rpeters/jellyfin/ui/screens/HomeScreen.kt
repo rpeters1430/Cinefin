@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,20 +13,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -35,6 +41,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -193,6 +200,18 @@ fun HomeContent(
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         item { HomeHeader(currentServer) }
+
+        // Continue Watching Section
+        val continueWatchingItems = getContinueWatchingItems(appState)
+        if (continueWatchingItems.isNotEmpty()) {
+            item {
+                ContinueWatchingSection(
+                    items = continueWatchingItems,
+                    getImageUrl = getImageUrl,
+                    onItemClick = onItemClick,
+                )
+            }
+        }
 
         val recentMovies = appState.recentlyAddedByTypes["MOVIE"]?.take(8) ?: emptyList()
         val recentTVShows = appState.recentlyAddedByTypes["SERIES"]?.take(8) ?: emptyList()
@@ -448,6 +467,181 @@ fun SearchResultsContent(
                     if (rowItems.size == 1) {
                         Spacer(modifier = Modifier.weight(1f))
                     }
+                }
+            }
+        }
+    }
+}
+
+// Helper function to get continue watching items
+private fun getContinueWatchingItems(appState: MainAppState): List<BaseItemDto> {
+    val continueWatchingItems = mutableListOf<BaseItemDto>()
+    
+    // Get partially watched movies
+    appState.allMovies.filter { movie ->
+        val percentage = movie.userData?.playedPercentage ?: 0.0
+        percentage > 0.0 && percentage < 100.0
+    }.sortedByDescending { it.userData?.lastPlayedDate }.take(5).let { movies ->
+        continueWatchingItems.addAll(movies)
+    }
+    
+    // Get partially watched TV episodes
+    appState.recentlyAddedByTypes["EPISODE"]?.filter { episode ->
+        val percentage = episode.userData?.playedPercentage ?: 0.0
+        percentage > 0.0 && percentage < 100.0
+    }?.sortedByDescending { it.userData?.lastPlayedDate }?.take(5)?.let { episodes ->
+        continueWatchingItems.addAll(episodes)
+    }
+    
+    return continueWatchingItems.sortedByDescending { it.userData?.lastPlayedDate }.take(8)
+}
+
+@Composable
+private fun ContinueWatchingSection(
+    items: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        // Section Header
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+        ) {
+            Text(
+                text = "Continue Watching",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            )
+        }
+        
+        // Horizontal scrolling list of continue watching items
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp),
+        ) {
+            items(
+                items = items,
+                key = { it.getItemKey() }
+            ) { item ->
+                ContinueWatchingCard(
+                    item = item,
+                    getImageUrl = getImageUrl,
+                    onItemClick = onItemClick,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContinueWatchingCard(
+    item: BaseItemDto,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val watchedPercentage = (item.userData?.playedPercentage ?: 0.0).toFloat() / 100f
+    
+    ElevatedCard(
+        onClick = { onItemClick(item) },
+        modifier = modifier.width(160.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
+    ) {
+        Box {
+            // Media image
+            Column {
+                coil.compose.SubcomposeAsyncImage(
+                    model = getImageUrl(item),
+                    contentDescription = item.name,
+                    loading = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(240.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(240.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = when (item.type) {
+                                    BaseItemKind.MOVIE -> Icons.Default.Movie
+                                    BaseItemKind.EPISODE -> Icons.Default.Tv
+                                    else -> Icons.Default.PlayArrow
+                                },
+                                contentDescription = "No image",
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp),
+                )
+                
+                // Progress bar
+                LinearProgressIndicator(
+                    progress = { watchedPercentage },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                )
+                
+                // Item details
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = item.name ?: "Unknown",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    
+                    // Show episode info for TV episodes
+                    if (item.type == BaseItemKind.EPISODE) {
+                        Text(
+                            text = buildString {
+                                item.seriesName?.let { append("$it • ") }
+                                item.parentIndexNumber?.let { season -> 
+                                    item.indexNumber?.let { episode ->
+                                        append("S${season}E${episode}")
+                                    }
+                                }
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    
+                    // Progress text
+                    Text(
+                        text = "${(watchedPercentage * 100).toInt()}% watched",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
             }
         }
