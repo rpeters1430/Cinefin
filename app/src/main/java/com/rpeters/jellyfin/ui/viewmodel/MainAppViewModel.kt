@@ -38,6 +38,7 @@ data class MainAppState(
     val searchQuery: String = "",
     val isSearching: Boolean = false,
     val allItems: List<BaseItemDto> = emptyList(),
+    val homeVideosByLibrary: Map<String, List<BaseItemDto>> = emptyMap(),
     val allMovies: List<BaseItemDto> = emptyList(),
     val isLoadingMovies: Boolean = false,
     val hasMoreMovies: Boolean = true,
@@ -643,6 +644,24 @@ class MainAppViewModel @Inject constructor(
     fun loadStuff() {
         // Load mixed content including home videos, photos, books, etc.
         loadLibraryTypeData(LibraryType.STUFF)
+    }
+
+    fun loadHomeVideos(libraryId: String) {
+        viewModelScope.launch {
+            when (val result = mediaRepository.getLibraryItems(parentId = libraryId)) {
+                is ApiResult.Success -> {
+                    val updated = _appState.value.homeVideosByLibrary.toMutableMap()
+                    updated[libraryId] = result.data
+                    _appState.value = _appState.value.copy(homeVideosByLibrary = updated)
+                }
+                is ApiResult.Error -> {
+                    _appState.value = _appState.value.copy(
+                        errorMessage = "Failed to load library items: ${result.message}",
+                    )
+                }
+                else -> {}
+            }
+        }
     }
 
     /**

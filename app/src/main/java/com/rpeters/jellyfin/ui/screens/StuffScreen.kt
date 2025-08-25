@@ -16,7 +16,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -36,13 +35,23 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 
 @Composable
 fun StuffScreen(
+    libraryId: String,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
 ) {
-    val appState by viewModel.appState.collectAsState()
+    val appState by viewModel.appState.collectAsSt
+    LaunchedEffect(libraryId) {
+        viewModel.loadHomeVideos(libraryId)
+    }
+    var selectedFilter by remember { mutableStateOf(StuffFilter.ALL) }
+    var sortOrder by remember { mutableStateOf(StuffSortOrder.getDefault()) }
+    var viewMode by remember { mutableStateOf(StuffViewMode.GRID) }
+    var showSortMenu by remember { mutableStateOf(false) }
 
-    val stuffItems = remember(appState.allItems) {
-        appState.allItems.filter {
+    // Filter stuff items from the library-specific home videos
+    val stuffItems = remember(appState.homeVideosByLibrary, libraryId) {
+        val items = appState.homeVideosByLibrary[libraryId] ?: emptyList()
+        items.filter {
             it.type == BaseItemKind.BOOK ||
                 it.type == BaseItemKind.AUDIO_BOOK ||
                 it.type == BaseItemKind.VIDEO ||
