@@ -9,7 +9,8 @@ enum class MovieFilter(val displayNameResId: Int) {
     ALL(R.string.filter_all_movies),
     FAVORITES(R.string.filter_favorites),
     UNWATCHED(R.string.filter_unwatched),
-    WATCHED(R.string.filter_recent);
+    WATCHED(R.string.filter_recent),
+    ;
 
     companion object {
         fun getAllFilters() = entries
@@ -24,7 +25,7 @@ enum class MovieSortOrder(val displayNameResId: Int) {
     YEAR(R.string.sort_year_desc),
     RATING(R.string.sort_rating_desc),
     RECENTLY_ADDED(R.string.sort_date_added_desc),
-    RUNTIME(R.string.sort_runtime_desc);
+    RUNTIME(R.string.sort_runtime_desc),
 }
 
 /**
@@ -32,7 +33,7 @@ enum class MovieSortOrder(val displayNameResId: Int) {
  */
 enum class MovieViewMode {
     GRID,
-    LIST
+    LIST,
 }
 
 /**
@@ -45,5 +46,5 @@ enum class LibraryType {
     BOOKS,
     AUDIOBOOKS,
     PHOTOS,
-    MIXED
+    MIXED,
 }

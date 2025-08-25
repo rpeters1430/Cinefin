@@ -30,8 +30,6 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -42,9 +40,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -63,17 +58,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.data.models.LibraryType
 import com.rpeters.jellyfin.data.models.MovieFilter
 import com.rpeters.jellyfin.data.models.MovieSortOrder
 import com.rpeters.jellyfin.data.models.MovieViewMode
 import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
-import com.rpeters.jellyfin.ui.theme.MusicGreen
-import com.rpeters.jellyfin.ui.theme.MovieRed
 import com.rpeters.jellyfin.ui.theme.MotionTokens
+import com.rpeters.jellyfin.ui.theme.MovieRed
+import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -97,7 +90,7 @@ fun MoviesScreen(
     modifier: Modifier = Modifier,
 ) {
     var showSortMenu by remember { mutableStateOf(false) }
-    
+
     // Filter and sort movies
     val filteredAndSortedMovies = movies.filter { movie ->
         when (selectedFilter) {
@@ -319,11 +312,11 @@ private fun MoviesContent(
             items(MovieFilter.getAllFilters()) { filter ->
                 FilterChip(
                     onClick = { onFilterChange(filter) },
-                    label = { 
+                    label = {
                         Text(
                             text = stringResource(id = filter.displayNameResId),
                             fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
-                        ) 
+                        )
                     },
                     selected = selectedFilter == filter,
                     leadingIcon = if (filter == MovieFilter.FAVORITES) {
@@ -395,7 +388,7 @@ private fun MoviesGrid(
                 animationSpec = MotionTokens.expressiveEnter,
                 label = "movie_card_scale",
             )
-            
+
             ExpressiveMediaCard(
                 title = movie.name ?: "Unknown Movie",
                 subtitle = movie.productionYear?.toString() ?: "",
@@ -409,7 +402,7 @@ private fun MoviesGrid(
                 },
             )
         }
-        
+
         // Loading/pagination footer
         if (isLoadingMore || hasMoreItems) {
             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -445,7 +438,7 @@ private fun MoviesList(
                 animationSpec = MotionTokens.expressiveEnter,
                 label = "movie_list_card_scale",
             )
-            
+
             ExpressiveCompactCard(
                 title = movie.name ?: "Unknown Movie",
                 subtitle = buildString {
@@ -468,7 +461,7 @@ private fun MoviesList(
                 },
             )
         }
-        
+
         // Loading/pagination footer
         if (isLoadingMore || hasMoreItems) {
             item {
