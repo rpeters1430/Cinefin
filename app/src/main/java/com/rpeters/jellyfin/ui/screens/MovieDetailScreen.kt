@@ -607,7 +607,7 @@ private fun ExpressiveMovieInfoCard(
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier
                                         .padding(horizontal = 12.dp, vertical = 6.dp)
-                                        .widthIn(max = GenreBadgeMaxWidth),
+                                        .widthIn(max = GENRE_BADGE_MAX_WIDTH),
                                 )
                             }
                         }
