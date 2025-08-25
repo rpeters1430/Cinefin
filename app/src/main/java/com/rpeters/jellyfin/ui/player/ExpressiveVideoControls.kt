@@ -30,13 +30,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.ClosedCaption
-import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.Hd
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay10
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Sd
+import androidx.compose.material.icons.filled.FourK
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -74,9 +75,9 @@ fun ExpressiveVideoControls(
     onSeek: (Long) -> Unit,
     onSeekBy: (Long) -> Unit,
     onQualityClick: () -> Unit,
+    onAudioClick: () -> Unit, // New audio selection callback
     onCastClick: () -> Unit,
     onSubtitlesClick: () -> Unit,
-    onPictureInPictureClick: () -> Unit,
     onBackClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
     isVisible: Boolean,
@@ -108,52 +109,25 @@ fun ExpressiveVideoControls(
             )
 
             Column {
-                // Top Controls Bar
+                // Top Controls Bar (simplified - removed settings, PiP, extra fullscreen)
                 ExpressiveTopControls(
                     playerState = playerState,
                     onBackClick = onBackClick,
-                    onQualityClick = onQualityClick,
-                    onSubtitlesClick = onSubtitlesClick,
-                    onPictureInPictureClick = onPictureInPictureClick,
-                    onFullscreenToggle = onFullscreenToggle,
+                    onCastClick = onCastClick,
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Center Play Controls
-                ExpressiveCenterControls(
-                    isPlaying = playerState.isPlaying,
-                    isLoading = playerState.isLoading,
-                    onPlayPause = onPlayPause,
-                    onSeekBackward = { onSeekBy(-10000) },
-                    onSeekForward = { onSeekBy(10000) },
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // Bottom Progress and Controls
+                // Bottom Progress and Controls (now includes play button and all controls)
                 ExpressiveBottomControls(
                     playerState = playerState,
                     onSeek = onSeek,
+                    onPlayPause = onPlayPause,
+                    onAudioClick = onAudioClick,
+                    onQualityClick = onQualityClick,
+                    onSubtitlesClick = onSubtitlesClick,
+                    onFullscreenToggle = onFullscreenToggle,
                 )
-            }
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp),
-            ) {
-                AnimatedContent(
-                    targetState = playerState.isCasting,
-                    label = "cast_button",
-                ) { isCasting ->
-                    ExpressiveIconButton(
-                        icon = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
-                        contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
-                        onClick = onCastClick,
-                        isActive = isCasting,
-                    )
-                }
             }
         }
     }
@@ -164,10 +138,7 @@ fun ExpressiveVideoControls(
 private fun ExpressiveTopControls(
     playerState: VideoPlayerState,
     onBackClick: () -> Unit,
-    onQualityClick: () -> Unit,
-    onSubtitlesClick: () -> Unit,
-    onPictureInPictureClick: () -> Unit,
-    onFullscreenToggle: () -> Unit,
+    onCastClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -215,85 +186,20 @@ private fun ExpressiveTopControls(
                     }
                 }
 
-                // Right side - Action buttons
-                Row(
-                    modifier = Modifier.wrapContentWidth(),
-                ) {
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        ExpressiveIconButton(
-                            icon = Icons.Default.Settings,
-                            contentDescription = "Quality",
-                            onClick = onQualityClick,
-                        )
-
-                        ExpressiveIconButton(
-                            icon = Icons.Default.ClosedCaption,
-                            contentDescription = "Subtitles",
-                            onClick = onSubtitlesClick,
-                        )
-
-                        ExpressiveIconButton(
-                            icon = Icons.Default.PictureInPicture,
-                            contentDescription = "Picture in Picture",
-                            onClick = onPictureInPictureClick,
-                        )
-
-                        ExpressiveIconButton(
-                            icon = Icons.Default.Fullscreen,
-                            contentDescription = "Fullscreen",
-                            onClick = onFullscreenToggle,
-                        )
-                    }
+                // Right side - Cast button only
+                AnimatedContent(
+                    targetState = playerState.isCasting,
+                    label = "cast_button",
+                ) { isCasting ->
+                    ExpressiveIconButton(
+                        icon = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
+                        contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
+                        onClick = onCastClick,
+                        isActive = isCasting,
+                    )
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ExpressiveCenterControls(
-    isPlaying: Boolean,
-    isLoading: Boolean,
-    onPlayPause: () -> Unit,
-    onSeekBackward: () -> Unit,
-    onSeekForward: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(32.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // Seek backward button
-        ExpressiveSeekButton(
-            icon = Icons.Default.Replay10,
-            contentDescription = "Seek backward 10s",
-            onClick = onSeekBackward,
-        )
-
-        // Main play/pause button
-        AnimatedContent(
-            targetState = isPlaying,
-            label = "play_pause_button",
-        ) { playing ->
-            ExpressiveMainButton(
-                icon = if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (playing) "Pause" else "Play",
-                onClick = onPlayPause,
-                isLoading = isLoading,
-            )
-        }
-
-        // Seek forward button
-        ExpressiveSeekButton(
-            icon = Icons.Default.Forward10,
-            contentDescription = "Seek forward 10s",
-            onClick = onSeekForward,
-        )
     }
 }
 
@@ -302,6 +208,11 @@ private fun ExpressiveCenterControls(
 private fun ExpressiveBottomControls(
     playerState: VideoPlayerState,
     onSeek: (Long) -> Unit,
+    onPlayPause: () -> Unit,
+    onAudioClick: () -> Unit,
+    onQualityClick: () -> Unit,
+    onSubtitlesClick: () -> Unit,
+    onFullscreenToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -319,85 +230,122 @@ private fun ExpressiveBottomControls(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
-                // Progress bar with buffer indicator
-                if (playerState.duration > 0) {
-                    var sliderPosition by remember { mutableFloatStateOf(0f) }
-                    var isDragging by remember { mutableStateOf(false) }
-
-                    LaunchedEffect(playerState.currentPosition, playerState.duration, isDragging) {
-                        if (playerState.duration > 0 && !isDragging) {
-                            sliderPosition =
-                                playerState.currentPosition.toFloat() / playerState.duration.toFloat()
-                        }
+                // Main controls row with play button, progress, and action buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    // Play/Pause button (left side)
+                    AnimatedContent(
+                        targetState = playerState.isPlaying,
+                        label = "play_pause_button",
+                    ) { playing ->
+                        ExpressivePlayButton(
+                            icon = if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = if (playing) "Pause" else "Play",
+                            onClick = onPlayPause,
+                            isLoading = playerState.isLoading,
+                        )
                     }
 
-                    val previewPosition = (sliderPosition * playerState.duration).toLong()
+                    // Progress bar (center, expandable)
+                    if (playerState.duration > 0) {
+                        var sliderPosition by remember { mutableFloatStateOf(0f) }
+                        var isDragging by remember { mutableStateOf(false) }
 
-                    BoxWithConstraints {
-                        // Buffer progress (background)
-                        LinearProgressIndicator(
-                            progress = {
-                                if (playerState.duration > 0) {
-                                    playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()
-                                } else {
-                                    0f
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            color = Color.White.copy(alpha = 0.3f),
-                            trackColor = Color.White.copy(alpha = 0.1f),
-                        )
+                        LaunchedEffect(playerState.currentPosition, playerState.duration, isDragging) {
+                            if (playerState.duration > 0 && !isDragging) {
+                                sliderPosition =
+                                    playerState.currentPosition.toFloat() / playerState.duration.toFloat()
+                            }
+                        }
 
-                        // Main progress slider
-                        Slider(
-                            value = sliderPosition,
-                            onValueChange = { progress ->
-                                sliderPosition = progress
-                                isDragging = true
-                            },
-                            onValueChangeFinished = {
-                                val newPosition =
-                                    (sliderPosition * playerState.duration).toLong()
-                                onSeek(newPosition)
-                                isDragging = false
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = SliderDefaults.colors(
-                                thumbColor = MaterialTheme.colorScheme.primary,
-                                activeTrackColor = MaterialTheme.colorScheme.primary,
-                                inactiveTrackColor = Color.Transparent,
-                            ),
-                        )
+                        BoxWithConstraints(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            // Buffer progress (background)
+                            LinearProgressIndicator(
+                                progress = {
+                                    if (playerState.duration > 0) {
+                                        playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()
+                                    } else {
+                                        0f
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                color = Color.White.copy(alpha = 0.3f),
+                                trackColor = Color.White.copy(alpha = 0.1f),
+                            )
 
-                        if (isDragging) {
-                            val previewText = formatTime(previewPosition)
-                            val xOffset = (maxWidth * sliderPosition) - (40.dp)
-                            Text(
-                                text = previewText,
-                                color = Color.White,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.offset(
-                                    x = xOffset.coerceIn(0.dp, maxWidth - 80.dp),
-                                    y = (-24).dp,
+                            // Main progress slider
+                            Slider(
+                                value = sliderPosition,
+                                onValueChange = { progress ->
+                                    sliderPosition = progress
+                                    isDragging = true
+                                },
+                                onValueChangeFinished = {
+                                    val newPosition =
+                                        (sliderPosition * playerState.duration).toLong()
+                                    onSeek(newPosition)
+                                    isDragging = false
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = MaterialTheme.colorScheme.primary,
+                                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                                    inactiveTrackColor = Color.Transparent,
                                 ),
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    // Action buttons (right side)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // Audio selection button
+                        ExpressiveIconButton(
+                            icon = Icons.Default.MusicNote,
+                            contentDescription = "Audio Selection",
+                            onClick = onAudioClick,
+                        )
 
-                    // Time indicators
+                        // Quality button with dynamic icon based on current quality
+                        ExpressiveIconButton(
+                            icon = getQualityIcon(playerState.selectedQuality?.label),
+                            contentDescription = "Quality",
+                            onClick = onQualityClick,
+                        )
+
+                        // Subtitles button
+                        ExpressiveIconButton(
+                            icon = Icons.Default.ClosedCaption,
+                            contentDescription = "Subtitles",
+                            onClick = onSubtitlesClick,
+                        )
+
+                        // Fullscreen button
+                        ExpressiveIconButton(
+                            icon = Icons.Default.Fullscreen,
+                            contentDescription = "Fullscreen",
+                            onClick = onFullscreenToggle,
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Time indicators
+                if (playerState.duration > 0) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        val displayPosition = if (isDragging) {
-                            previewPosition
-                        } else {
-                            playerState.currentPosition
-                        }
                         Text(
-                            text = formatTime(displayPosition),
+                            text = formatTime(playerState.currentPosition),
                             color = Color.White,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = FontWeight.Medium,
@@ -413,6 +361,19 @@ private fun ExpressiveBottomControls(
                 }
             }
         }
+    }
+}
+
+// Helper function to get quality icon based on quality text
+private fun getQualityIcon(qualityLabel: String?): ImageVector {
+    return when {
+        qualityLabel?.contains("4K", ignoreCase = true) == true -> Icons.Default.FourK
+        qualityLabel?.contains("HD", ignoreCase = true) == true -> Icons.Default.Hd
+        qualityLabel?.contains("SD", ignoreCase = true) == true -> Icons.Default.Sd
+        qualityLabel?.contains("1080", ignoreCase = true) == true -> Icons.Default.Hd
+        qualityLabel?.contains("720", ignoreCase = true) == true -> Icons.Default.Hd
+        qualityLabel?.contains("480", ignoreCase = true) == true -> Icons.Default.Sd
+        else -> Icons.Default.Movie // Default fallback icon
     }
 }
 
@@ -456,7 +417,7 @@ private fun ExpressiveIconButton(
 }
 
 @Composable
-private fun ExpressiveMainButton(
+private fun ExpressivePlayButton(
     icon: ImageVector,
     contentDescription: String?,
     onClick: () -> Unit,
@@ -466,13 +427,13 @@ private fun ExpressiveMainButton(
     val scale by animateFloatAsState(
         targetValue = if (isLoading) 0.9f else 1f,
         animationSpec = MotionTokens.mediaPlayEasing,
-        label = "main_button_scale",
+        label = "play_button_scale",
     )
 
     FilledIconButton(
         onClick = onClick,
         modifier = modifier
-            .size(80.dp)
+            .size(48.dp) // Smaller than the original main button
             .scale(scale),
         colors = IconButtonDefaults.filledIconButtonColors(
             containerColor = MaterialTheme.colorScheme.primary,
@@ -481,61 +442,22 @@ private fun ExpressiveMainButton(
     ) {
         AnimatedContent(
             targetState = isLoading,
-            label = "main_button_content",
+            label = "play_button_content",
         ) { loading ->
             if (loading) {
                 androidx.compose.material3.CircularProgressIndicator(
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(24.dp),
                     color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 3.dp,
+                    strokeWidth = 2.dp,
                 )
             } else {
                 Icon(
                     imageVector = icon,
                     contentDescription = contentDescription,
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun ExpressiveSeekButton(
-    icon: ImageVector,
-    contentDescription: String?,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var isPressed by remember { mutableStateOf(false) }
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 1.2f else 1f,
-        animationSpec = MotionTokens.mediaSeekEasing,
-        label = "seek_button_scale",
-    )
-
-    Surface(
-        modifier = modifier
-            .scale(scale)
-            .clip(CircleShape)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = {
-                    isPressed = true
-                    onClick()
-                },
-            ),
-        color = Color.White.copy(alpha = 0.15f),
-        shape = CircleShape,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = Color.White,
-            modifier = Modifier.padding(16.dp),
-        )
     }
 }
 
