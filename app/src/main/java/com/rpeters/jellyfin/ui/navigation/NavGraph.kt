@@ -39,6 +39,8 @@ import com.rpeters.jellyfin.ui.screens.LibraryScreen
 import com.rpeters.jellyfin.ui.screens.MovieDetailScreen
 import com.rpeters.jellyfin.ui.screens.MoviesScreen
 import com.rpeters.jellyfin.ui.screens.MusicScreen
+import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
+import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.ProfileScreen
 import com.rpeters.jellyfin.ui.screens.QuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.SearchScreen
@@ -327,6 +329,18 @@ fun JellyfinNavGraph(
             MusicScreen(
                 onBackClick = { navController.popBackStack() },
                 viewModel = viewModel,
+            )
+        }
+
+        composable(Screen.HomeVideos.route) {
+            HomeVideosScreen(
+                onBackClick = { navController.popBackStack() },
+            )
+        }
+
+        composable(Screen.Books.route) {
+            BooksScreen(
+                onBackClick = { navController.popBackStack() },
             )
         }
 
@@ -675,6 +689,8 @@ private fun libraryRouteFor(library: BaseItemDto): String? {
         CollectionType.MOVIES -> Screen.Movies.route
         CollectionType.TVSHOWS -> Screen.TVShows.route
         CollectionType.MUSIC -> Screen.Music.route
+        CollectionType.HOMEVIDEOS -> Screen.HomeVideos.route
+        CollectionType.BOOKS -> Screen.Books.route
         else -> library.id?.toString()?.let { Screen.Stuff.createRoute(it) }
     }
 }
