@@ -25,7 +25,9 @@ sealed class Screen(val route: String) {
         fun createRoute(seasonId: String) = "tv_episodes/$seasonId"
     }
     object Music : Screen("music")
-    object Stuff : Screen("stuff")
+    object Stuff : Screen("stuff/{libraryId}") {
+        fun createRoute(libraryId: String) = "stuff/$libraryId"
+    }
     object Search : Screen("search")
     object Favorites : Screen("favorites")
     object Profile : Screen("profile")
@@ -42,6 +44,7 @@ sealed class Screen(val route: String) {
         const val SEASON_ID_ARG = "seasonId"
         const val MOVIE_ID_ARG = "movieId"
         const val EPISODE_ID_ARG = "episodeId"
+        const val LIBRARY_ID_ARG = "libraryId"
     }
 }
 
