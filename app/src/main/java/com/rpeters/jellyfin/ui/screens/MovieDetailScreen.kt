@@ -31,6 +31,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,6 +55,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -609,73 +612,27 @@ private fun ExpressiveMovieInfoCard(
                     }
                 }
 
-                // Media info with resolution display
-                movie.mediaSources?.firstOrNull()?.let { source ->
-                    val videoStream = source.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
+                // Media info with resolution and codecs
+                movie.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
+                    val videoStream = streams.firstOrNull { it.type == MediaStreamType.VIDEO }
+                    val audioStream = streams.firstOrNull { it.type == MediaStreamType.AUDIO }
                     val resolution = getMovieResolution(videoStream)
 
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        item {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = when (resolution) {
-                                    "SD" -> AudioBookOrange.copy(alpha = 0.15f)
-                                    "720p" -> MusicGreen.copy(alpha = 0.15f)
-                                    "1080p" -> JellyfinBlue80.copy(alpha = 0.15f)
-                                    "4K" -> MovieRed.copy(alpha = 0.15f)
-                                    else -> MaterialTheme.colorScheme.primaryContainer
-                                },
-                            ) {
-                                Text(
-                                    text = resolution,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = when (resolution) {
-                                        "SD" -> AudioBookOrange
-                                        "720p" -> MusicGreen
-                                        "1080p" -> JellyfinBlue80
-                                        "4K" -> MovieRed
-                                        else -> MaterialTheme.colorScheme.onPrimaryContainer
-                                    },
-                                    fontWeight = FontWeight.SemiBold,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                )
-                            }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        videoStream?.let { stream ->
+                            ExpressiveInfoRow(
+                                label = stringResource(id = R.string.video),
+                                value = listOfNotNull(resolution, stream.codec?.uppercase()).joinToString(" \u2022 "),
+                                icon = Icons.Default.HighQuality,
+                            )
                         }
 
-                        videoStream?.codec?.let { codec ->
-                            item {
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.secondaryContainer,
-                                ) {
-                                    Text(
-                                        text = codec.uppercase(),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                        fontWeight = FontWeight.SemiBold,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    )
-                                }
-                            }
-                        }
-
-                        source.container?.let { container ->
-                            item {
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                                ) {
-                                    Text(
-                                        text = container.uppercase(),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                        fontWeight = FontWeight.SemiBold,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    )
-                                }
-                            }
+                        audioStream?.codec?.let { codec ->
+                            ExpressiveInfoRow(
+                                label = stringResource(id = R.string.audio),
+                                value = codec.uppercase(),
+                                icon = Icons.Default.Audiotrack,
+                            )
                         }
                     }
                 }
@@ -703,6 +660,52 @@ private fun ExpressiveMovieInfoCard(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ExpressiveInfoRow(
+    label: String,
+    value: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(24.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier
+                    .size(16.dp)
+                    .padding(4.dp),
+            )
+        }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
         }
     }
 }
