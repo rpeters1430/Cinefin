@@ -155,7 +155,7 @@ private fun StuffGrid(
                 imageUrl = getImageUrl(stuffItem) ?: "",
                 rating = (stuffItem.communityRating as? Double)?.toFloat(),
                 isFavorite = stuffItem.userData?.isFavorite == true,
-                onCardClick = {},
+                onCardClick = { /* TODO: Handle item click, e.g., navigate to details screen */ },
             )
         }
 
