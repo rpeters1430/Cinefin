@@ -23,18 +23,18 @@ fun HomeVideosScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Home Videos") },
+            TopAppBar(
+                title = { Text(stringResource(R.string.home_videos)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
+                            contentDescription = stringResource(R.string.navigate_up),
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(),
             )
-        },
         modifier = modifier,
     ) { paddingValues ->
         Box(
