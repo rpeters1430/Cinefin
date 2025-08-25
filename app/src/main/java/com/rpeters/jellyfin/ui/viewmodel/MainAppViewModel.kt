@@ -90,8 +90,7 @@ class MainAppViewModel @Inject constructor(
                     PerformanceMonitor.logMemoryUsage("Before loading data")
                 }
 
-                // ✅ FIX: Clear any previously loaded library type flags for fresh start
-                clearLoadedLibraryTypes()
+                val previousLibraries = _appState.value.libraries
 
                 _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
 
@@ -117,7 +116,62 @@ class MainAppViewModel @Inject constructor(
                         if (BuildConfig.DEBUG) {
                             Log.d("MainAppViewModel", "loadInitialData: Loaded ${librariesResult.data.size} libraries")
                         }
-                        _appState.value = _appState.value.copy(libraries = librariesResult.data)
+
+                        val newLibraries = librariesResult.data
+                        val previousIds = previousLibraries.mapNotNull { it.id?.toString() }.toSet()
+                        val newIds = newLibraries.mapNotNull { it.id?.toString() }.toSet()
+
+                        val removedIds = previousIds - newIds
+                        if (removedIds.isNotEmpty()) {
+                            val updatedHomeVideos = _appState.value.homeVideosByLibrary.toMutableMap()
+                            removedIds.forEach { removedId ->
+                                val removedLibrary = previousLibraries.find { it.id?.toString() == removedId }
+                                val type = removedLibrary?.collectionType ?: removedLibrary?.type?.name
+                                when (type?.lowercase()) {
+                                    "movies" -> {
+                                        _appState.value = _appState.value.copy(allMovies = emptyList())
+                                        loadedLibraryTypes.remove(LibraryType.MOVIES.name)
+                                    }
+                                    "tvshows" -> {
+                                        _appState.value = _appState.value.copy(allTVShows = emptyList())
+                                        loadedLibraryTypes.remove(LibraryType.TV_SHOWS.name)
+                                    }
+                                    "music" -> {
+                                        _appState.value = _appState.value.copy(
+                                            allItems = _appState.value.allItems.filterNot {
+                                                LibraryType.MUSIC.itemKinds.contains(it.type)
+                                            },
+                                        )
+                                        loadedLibraryTypes.remove(LibraryType.MUSIC.name)
+                                    }
+                                    else -> {
+                                        updatedHomeVideos.remove(removedId)
+                                        loadedLibraryTypes.remove(LibraryType.STUFF.name)
+                                    }
+                                }
+                            }
+                            _appState.value = _appState.value.copy(homeVideosByLibrary = updatedHomeVideos)
+                        }
+
+                        _appState.value = _appState.value.copy(libraries = newLibraries)
+
+                        val addedLibraries = newLibraries.filter { it.id?.toString() !in previousIds }
+                        val addedTypes = addedLibraries.mapNotNull { (it.collectionType ?: it.type?.name)?.lowercase() }.toSet()
+                        if ("movies" in addedTypes) {
+                            loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
+                        }
+                        if ("tvshows" in addedTypes) {
+                            loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true)
+                        }
+                        if ("music" in addedTypes) {
+                            loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true)
+                        }
+                        addedLibraries.filter {
+                            val type = (it.collectionType ?: it.type?.name)?.lowercase()
+                            type !in setOf("movies", "tvshows", "music")
+                        }.forEach { library ->
+                            library.id?.let { loadHomeVideos(it.toString()) }
+                        }
                     }
                     is ApiResult.Error -> {
                         // ✅ FIX: Don't show error messages for cancelled operations (navigation/lifecycle)
