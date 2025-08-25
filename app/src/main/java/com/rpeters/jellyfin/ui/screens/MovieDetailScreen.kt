@@ -74,6 +74,7 @@ import com.rpeters.jellyfin.ui.theme.MovieRed
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.theme.getContentTypeColor
+import kotlin.math.roundToInt
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
