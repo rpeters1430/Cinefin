@@ -13,7 +13,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,6 +61,7 @@ import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.CollectionType
+import kotlinx.coroutines.flow.map
 
 @androidx.media3.common.util.UnstableApi
 @Composable
@@ -68,11 +71,18 @@ fun JellyfinNavGraph(
     modifier: Modifier = Modifier,
     onLogout: () -> Unit = {},
 ) {
-    NavHost(
-        navController = navController,
-        startDestination = startDestination,
-        modifier = modifier,
-    ) {
+    val mainViewModel: MainAppViewModel = hiltViewModel()
+    val libraries by mainViewModel.appState
+        .map { it.libraries }
+        .collectAsState(initial = emptyList())
+    val libraryTypes = libraries.mapNotNull { it.collectionType }.toSet()
+
+    key(libraryTypes) {
+        NavHost(
+            navController = navController,
+            startDestination = startDestination,
+            modifier = modifier,
+        ) {
         // Authentication flow
         composable(Screen.ServerConnection.route) {
             val viewModel: ServerConnectionViewModel = hiltViewModel()
@@ -203,56 +213,62 @@ fun JellyfinNavGraph(
             )
         }
 
-        composable(Screen.Movies.route) {
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
-            val appState by viewModel.appState.collectAsStateWithLifecycle()
+        if (CollectionType.MOVIES in libraryTypes) {
+            key(CollectionType.MOVIES) {
+                composable(Screen.Movies.route) {
+                    val viewModel = mainViewModel
+                    val appState by viewModel.appState.collectAsStateWithLifecycle()
 
-            // Local state for filtering and sorting
-            var selectedFilter by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieFilter.ALL) }
-            var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
-            var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
+                    // Local state for filtering and sorting
+                    var selectedFilter by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieFilter.ALL) }
+                    var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
+                    var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
 
-            // Load movies when first entering the screen
-            LaunchedEffect(Unit) {
-                if (appState.allMovies.isEmpty() && !appState.isLoadingMovies) {
-                    viewModel.loadAllMovies(reset = true)
+                    // Load movies when first entering the screen
+                    LaunchedEffect(Unit) {
+                        if (appState.allMovies.isEmpty() && !appState.isLoadingMovies) {
+                            viewModel.loadAllMovies(reset = true)
+                        }
+                    }
+
+                    MoviesScreen(
+                        movies = appState.allMovies,
+                        isLoading = appState.isLoadingMovies,
+                        isLoadingMore = appState.isLoadingMovies,
+                        hasMoreItems = appState.hasMoreMovies,
+                        selectedFilter = selectedFilter,
+                        onFilterChange = { selectedFilter = it },
+                        selectedSort = selectedSort,
+                        onSortChange = { selectedSort = it },
+                        viewMode = viewMode,
+                        onViewModeChange = { viewMode = it },
+                        onMovieClick = { movie ->
+                            movie.id?.let { movieId ->
+                                navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                            }
+                        },
+                        onRefresh = { viewModel.refreshMovies() },
+                        onLoadMore = { viewModel.loadMoreMovies() },
+                        getImageUrl = { movie -> viewModel.getImageUrl(movie) },
+                    )
                 }
             }
-
-            MoviesScreen(
-                movies = appState.allMovies,
-                isLoading = appState.isLoadingMovies,
-                isLoadingMore = appState.isLoadingMovies,
-                hasMoreItems = appState.hasMoreMovies,
-                selectedFilter = selectedFilter,
-                onFilterChange = { selectedFilter = it },
-                selectedSort = selectedSort,
-                onSortChange = { selectedSort = it },
-                viewMode = viewMode,
-                onViewModeChange = { viewMode = it },
-                onMovieClick = { movie ->
-                    movie.id?.let { movieId ->
-                        navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
-                    }
-                },
-                onRefresh = { viewModel.refreshMovies() },
-                onLoadMore = { viewModel.loadMoreMovies() },
-                getImageUrl = { movie -> viewModel.getImageUrl(movie) },
-            )
         }
 
-        composable(Screen.TVShows.route) {
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
+        if (CollectionType.TVSHOWS in libraryTypes) {
+            key(CollectionType.TVSHOWS) {
+                composable(Screen.TVShows.route) {
+                    val viewModel = mainViewModel
 
-            TVShowsScreen(
-                onTVShowClick = { seriesId ->
-                    navController.navigate(Screen.TVSeasons.createRoute(seriesId))
-                },
-                onBackClick = { navController.popBackStack() },
-                viewModel = viewModel,
-            )
+                    TVShowsScreen(
+                        onTVShowClick = { seriesId ->
+                            navController.navigate(Screen.TVSeasons.createRoute(seriesId))
+                        },
+                        onBackClick = { navController.popBackStack() },
+                        viewModel = viewModel,
+                    )
+                }
+            }
         }
 
         composable(
@@ -317,19 +333,22 @@ fun JellyfinNavGraph(
             )
         }
 
-        composable(Screen.Music.route) {
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
+        if (CollectionType.MUSIC in libraryTypes) {
+            key(CollectionType.MUSIC) {
+                composable(Screen.Music.route) {
+                    val viewModel = mainViewModel
 
-            LaunchedEffect(Unit) {
-                // Load music data when screen is first shown
-                viewModel.loadMusic()
+                    LaunchedEffect(Unit) {
+                        // Load music data when screen is first shown
+                        viewModel.loadMusic()
+                    }
+
+                    MusicScreen(
+                        onBackClick = { navController.popBackStack() },
+                        viewModel = viewModel,
+                    )
+                }
             }
-
-            MusicScreen(
-                onBackClick = { navController.popBackStack() },
-                viewModel = viewModel,
-            )
         }
 
         composable(Screen.HomeVideos.route) {
