@@ -37,7 +37,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.pullrefresh.PullRefreshIndicator
+import androidx.compose.material3.pullrefresh.pullRefresh
+import androidx.compose.material3.pullrefresh.rememberPullRefreshState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -196,10 +199,20 @@ fun HomeContent(
     onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+    var refreshing by remember { mutableStateOf(false) }
+    val pullRefreshState = rememberPullRefreshState(refreshing) {
+        refreshing = true
+        onRefresh()
+        refreshing = false
+    }
+
+    Box(
+        modifier = modifier.pullRefresh(pullRefreshState)
     ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
         item { HomeHeader(currentServer) }
 
         // Continue Watching Section
@@ -304,6 +317,12 @@ fun HomeContent(
                 )
             }
         }
+    }
+    PullRefreshIndicator(
+        refreshing = refreshing,
+        state = pullRefreshState,
+        modifier = Modifier.align(Alignment.TopCenter)
+    )
     }
 }
 

@@ -85,8 +85,8 @@ dependencies {
 
     // Material 3 Expressive Components (2024-2025)
     // Note: Some components not yet available in stable releases
+    implementation("androidx.compose.material3:material3-pullrefresh:${libs.versions.material3ExpressiveComponents.get()}")
     // implementation(libs.androidx.material3.carousel)
-    // implementation(libs.androidx.material3.pulltorefresh)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
