@@ -207,122 +207,122 @@ fun HomeContent(
     }
 
     Box(
-        modifier = modifier.pullRefresh(pullRefreshState)
+        modifier = modifier.pullRefresh(pullRefreshState),
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-        item { HomeHeader(currentServer) }
+            item { HomeHeader(currentServer) }
 
-        // Continue Watching Section
-        val continueWatchingItems = getContinueWatchingItems(appState)
-        if (continueWatchingItems.isNotEmpty()) {
-            item {
-                ContinueWatchingSection(
-                    items = continueWatchingItems,
-                    getImageUrl = getImageUrl,
-                    onItemClick = onItemClick,
-                )
-            }
-        }
-
-        val recentMovies = appState.recentlyAddedByTypes["MOVIE"]?.take(8) ?: emptyList()
-        val recentTVShows = appState.recentlyAddedByTypes["SERIES"]?.take(8) ?: emptyList()
-        val featuredItems = (recentMovies + recentTVShows).take(10)
-
-        if (featuredItems.isNotEmpty()) {
-            item {
-                EnhancedContentCarousel(
-                    items = featuredItems,
-                    getImageUrl = getImageUrl,
-                    getBackdropUrl = getBackdropUrl,
-                    getSeriesImageUrl = getSeriesImageUrl,
-                    onItemClick = onItemClick,
-                    title = "Featured",
-                )
-            }
-        }
-
-        if (appState.libraries.isNotEmpty()) {
-            item {
-                val orderedLibraries = appState.libraries.sortedBy { library ->
-                    when (library.collectionType?.toString()?.lowercase()) {
-                        "movies" -> 0
-                        "tvshows" -> 1
-                        "music" -> 2
-                        else -> 3
-                    }
+            // Continue Watching Section
+            val continueWatchingItems = getContinueWatchingItems(appState)
+            if (continueWatchingItems.isNotEmpty()) {
+                item {
+                    ContinueWatchingSection(
+                        items = continueWatchingItems,
+                        getImageUrl = getImageUrl,
+                        onItemClick = onItemClick,
+                    )
                 }
-                LibraryGridSection(
-                    libraries = orderedLibraries,
-                    getImageUrl = getImageUrl,
-                    onLibraryClick = onItemClick,
-                    title = "Libraries",
-                )
             }
-        }
 
-        if (recentMovies.isNotEmpty()) {
-            item {
-                EnhancedContentCarousel(
-                    items = recentMovies.take(15),
-                    getImageUrl = getImageUrl,
-                    getBackdropUrl = getBackdropUrl,
-                    getSeriesImageUrl = getSeriesImageUrl,
-                    onItemClick = onItemClick,
-                    title = "Recently Added Movies",
-                )
-            }
-        }
+            val recentMovies = appState.recentlyAddedByTypes["MOVIE"]?.take(8) ?: emptyList()
+            val recentTVShows = appState.recentlyAddedByTypes["SERIES"]?.take(8) ?: emptyList()
+            val featuredItems = (recentMovies + recentTVShows).take(10)
 
-        val recentEpisodes = appState.recentlyAddedByTypes["EPISODE"]?.take(15) ?: emptyList()
-        if (recentEpisodes.isNotEmpty()) {
-            item {
-                EnhancedContentCarousel(
-                    items = recentEpisodes,
-                    getImageUrl = getImageUrl,
-                    getBackdropUrl = getBackdropUrl,
-                    getSeriesImageUrl = getSeriesImageUrl,
-                    onItemClick = onItemClick,
-                    title = "Recently Added TV Episodes",
-                )
+            if (featuredItems.isNotEmpty()) {
+                item {
+                    EnhancedContentCarousel(
+                        items = featuredItems,
+                        getImageUrl = getImageUrl,
+                        getBackdropUrl = getBackdropUrl,
+                        getSeriesImageUrl = getSeriesImageUrl,
+                        onItemClick = onItemClick,
+                        title = "Featured",
+                    )
+                }
             }
-        }
 
-        val recentMusic = appState.recentlyAddedByTypes["AUDIO"]?.take(15) ?: emptyList()
-        if (recentMusic.isNotEmpty()) {
-            item {
-                EnhancedContentCarousel(
-                    items = recentMusic,
-                    getImageUrl = getImageUrl,
-                    getBackdropUrl = getBackdropUrl,
-                    getSeriesImageUrl = getSeriesImageUrl,
-                    onItemClick = onItemClick,
-                    title = "Recently Added Music",
-                )
+            if (appState.libraries.isNotEmpty()) {
+                item {
+                    val orderedLibraries = appState.libraries.sortedBy { library ->
+                        when (library.collectionType?.toString()?.lowercase()) {
+                            "movies" -> 0
+                            "tvshows" -> 1
+                            "music" -> 2
+                            else -> 3
+                        }
+                    }
+                    LibraryGridSection(
+                        libraries = orderedLibraries,
+                        getImageUrl = getImageUrl,
+                        onLibraryClick = onItemClick,
+                        title = "Libraries",
+                    )
+                }
             }
-        }
 
-        val recentVideos = appState.recentlyAddedByTypes["VIDEO"]?.take(15) ?: emptyList()
-        if (recentVideos.isNotEmpty()) {
-            item {
-                EnhancedContentCarousel(
-                    items = recentVideos,
-                    getImageUrl = getImageUrl,
-                    getBackdropUrl = getBackdropUrl,
-                    getSeriesImageUrl = getSeriesImageUrl,
-                    onItemClick = onItemClick,
-                    title = "Recently Added Home Videos",
-                )
+            if (recentMovies.isNotEmpty()) {
+                item {
+                    EnhancedContentCarousel(
+                        items = recentMovies.take(15),
+                        getImageUrl = getImageUrl,
+                        getBackdropUrl = getBackdropUrl,
+                        getSeriesImageUrl = getSeriesImageUrl,
+                        onItemClick = onItemClick,
+                        title = "Recently Added Movies",
+                    )
+                }
+            }
+
+            val recentEpisodes = appState.recentlyAddedByTypes["EPISODE"]?.take(15) ?: emptyList()
+            if (recentEpisodes.isNotEmpty()) {
+                item {
+                    EnhancedContentCarousel(
+                        items = recentEpisodes,
+                        getImageUrl = getImageUrl,
+                        getBackdropUrl = getBackdropUrl,
+                        getSeriesImageUrl = getSeriesImageUrl,
+                        onItemClick = onItemClick,
+                        title = "Recently Added TV Episodes",
+                    )
+                }
+            }
+
+            val recentMusic = appState.recentlyAddedByTypes["AUDIO"]?.take(15) ?: emptyList()
+            if (recentMusic.isNotEmpty()) {
+                item {
+                    EnhancedContentCarousel(
+                        items = recentMusic,
+                        getImageUrl = getImageUrl,
+                        getBackdropUrl = getBackdropUrl,
+                        getSeriesImageUrl = getSeriesImageUrl,
+                        onItemClick = onItemClick,
+                        title = "Recently Added Music",
+                    )
+                }
+            }
+
+            val recentVideos = appState.recentlyAddedByTypes["VIDEO"]?.take(15) ?: emptyList()
+            if (recentVideos.isNotEmpty()) {
+                item {
+                    EnhancedContentCarousel(
+                        items = recentVideos,
+                        getImageUrl = getImageUrl,
+                        getBackdropUrl = getBackdropUrl,
+                        getSeriesImageUrl = getSeriesImageUrl,
+                        onItemClick = onItemClick,
+                        title = "Recently Added Home Videos",
+                    )
+                }
             }
         }
-    }
-    PullRefreshIndicator(
-        refreshing = refreshing,
-        state = pullRefreshState,
-        modifier = Modifier.align(Alignment.TopCenter)
-    )
+        PullRefreshIndicator(
+            refreshing = refreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+        )
     }
 }
 
