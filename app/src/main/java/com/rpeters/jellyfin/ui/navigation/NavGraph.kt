@@ -56,6 +56,7 @@ import com.rpeters.jellyfin.ui.viewmodel.MovieDetailViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.CollectionType
 
 @androidx.media3.common.util.UnstableApi
 @Composable
@@ -668,10 +669,10 @@ fun JellyfinNavGraph(
 }
 
 private fun libraryRouteFor(library: BaseItemDto): String? {
-    return when (library.collectionType?.toString()?.lowercase()) {
-        "movies" -> Screen.Movies.route
-        "tvshows" -> Screen.TVShows.route
-        "music" -> Screen.Music.route
+    return when (library.collectionType) {
+        CollectionType.MOVIES -> Screen.Movies.route
+        CollectionType.TVSHOWS -> Screen.TVShows.route
+        CollectionType.MUSIC -> Screen.Music.route
         else -> library.id?.toString()?.let { Screen.Stuff.createRoute(it) }
     }
 }
