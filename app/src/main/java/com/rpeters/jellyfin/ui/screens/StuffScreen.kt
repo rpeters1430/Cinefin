@@ -120,12 +120,13 @@ fun StuffScreen(
             isVisible = stuffItems.isNotEmpty(),
             onPlayClick = {},
             onQueueClick = {},
-            onDownloadClick = { viewModel.refreshLibraryItems() },
+            onDownloadClick = {}, // No-op or implement download functionality if available
+            onRefreshClick = { viewModel.refreshLibraryItems() },
             onCastClick = {},
             onFavoriteClick = {},
             onShareClick = {},
             onMoreClick = {},
-            primaryAction = ToolbarAction.DOWNLOAD,
+            primaryAction = ToolbarAction.REFRESH,
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
