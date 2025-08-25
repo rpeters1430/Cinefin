@@ -25,10 +25,9 @@ sealed class Screen(val route: String) {
         fun createRoute(seasonId: String) = "tv_episodes/$seasonId"
     }
     object Music : Screen("music")
-    object HomeVideos : Screen("home_videos")
-    object Books : Screen("books")
-    object Stuff : Screen("stuff/{libraryId}") {
-        fun createRoute(libraryId: String) = "stuff/$libraryId"
+    object Stuff : Screen("stuff/{libraryId}/{collectionType}") {
+        fun createRoute(libraryId: String, collectionType: String) =
+            "stuff/$libraryId/$collectionType"
     }
     object Search : Screen("search")
     object Favorites : Screen("favorites")
@@ -47,6 +46,7 @@ sealed class Screen(val route: String) {
         const val MOVIE_ID_ARG = "movieId"
         const val EPISODE_ID_ARG = "episodeId"
         const val LIBRARY_ID_ARG = "libraryId"
+        const val COLLECTION_TYPE_ARG = "collectionType"
     }
 }
 
