@@ -65,7 +65,7 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 - Android Studio Iguana or later
 - JDK 17
 - **Compile SDK:** 36
-- **Target SDK:** 35
+- **Target SDK:** 36
 
 ### Building the Project
 
