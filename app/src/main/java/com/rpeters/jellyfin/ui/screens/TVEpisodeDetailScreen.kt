@@ -25,13 +25,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.HighQuality
-import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
@@ -73,8 +73,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
-import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.Quality4K
 import com.rpeters.jellyfin.ui.theme.QualityHD
