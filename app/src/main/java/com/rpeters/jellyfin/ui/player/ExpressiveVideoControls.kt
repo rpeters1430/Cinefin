@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -194,44 +196,49 @@ private fun ExpressiveTopControls(
 
                 // Right side - Action buttons
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.wrapContentWidth()
                 ) {
-                    ExpressiveIconButton(
-                        icon = Icons.Default.Settings,
-                        contentDescription = "Quality",
-                        onClick = onQualityClick,
-                    )
-
-                    ExpressiveIconButton(
-                        icon = Icons.Default.ClosedCaption,
-                        contentDescription = "Subtitles",
-                        onClick = onSubtitlesClick,
-                    )
-
-                    AnimatedContent(
-                        targetState = playerState.isCasting,
-                        label = "cast_button",
-                    ) { isCasting ->
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
                         ExpressiveIconButton(
-                            icon = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
-                            contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
-                            onClick = onCastClick,
-                            isActive = isCasting,
+                            icon = Icons.Default.Settings,
+                            contentDescription = "Quality",
+                            onClick = onQualityClick,
+                        )
+
+                        ExpressiveIconButton(
+                            icon = Icons.Default.ClosedCaption,
+                            contentDescription = "Subtitles",
+                            onClick = onSubtitlesClick,
+                        )
+
+                        AnimatedContent(
+                            targetState = playerState.isCasting,
+                            label = "cast_button",
+                        ) { isCasting ->
+                            ExpressiveIconButton(
+                                icon = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
+                                contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
+                                onClick = onCastClick,
+                                isActive = isCasting,
+                            )
+                        }
+
+                        ExpressiveIconButton(
+                            icon = Icons.Default.PictureInPicture,
+                            contentDescription = "Picture in Picture",
+                            onClick = onPictureInPictureClick,
+                        )
+
+                        ExpressiveIconButton(
+                            icon = Icons.Default.Fullscreen,
+                            contentDescription = "Fullscreen",
+                            onClick = onFullscreenToggle,
                         )
                     }
-
-                    ExpressiveIconButton(
-                        icon = Icons.Default.PictureInPicture,
-                        contentDescription = "Picture in Picture",
-                        onClick = onPictureInPictureClick,
-                    )
-
-                    ExpressiveIconButton(
-                        icon = Icons.Default.Fullscreen,
-                        contentDescription = "Fullscreen",
-                        onClick = onFullscreenToggle,
-                    )
                 }
             }
         }
