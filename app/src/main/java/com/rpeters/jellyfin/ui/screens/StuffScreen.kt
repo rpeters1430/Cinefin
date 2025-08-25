@@ -161,7 +161,7 @@ private fun StuffGrid(
 
         if (hasMoreItems || isLoadingMore) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                LaunchedEffect(Unit) {
+                LaunchedEffect(hasMoreItems, isLoadingMore) {
                     if (hasMoreItems && !isLoadingMore) {
                         onLoadMore()
                     }
