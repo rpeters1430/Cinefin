@@ -22,17 +22,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.rpeters.jellyfin.ui.components.ExpressiveFloatingToolbar
-import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
-import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveFloatingToolbar
+import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun StuffScreen(
@@ -198,4 +198,3 @@ private fun StuffGridPreview() {
         onLoadMore = {},
     )
 }
-
