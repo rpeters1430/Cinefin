@@ -1,11 +1,19 @@
 package com.rpeters.jellyfin.ui.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -22,13 +30,26 @@ fun BottomNavBar(
 
     // Only show bottom nav for main screens
     if (shouldShowBottomNav(currentDestination)) {
-        NavigationBar {
-            BottomNavItem.bottomNavItems.forEach { item ->
-                AddItem(
-                    screen = item,
-                    currentDestination = currentDestination,
-                    navController = navController,
+        Box(
+            modifier = Modifier
+                .padding(16.dp)
+                .shadow(
+                    elevation = 3.dp,
+                    shape = RoundedCornerShape(28.dp),
                 )
+                .clip(RoundedCornerShape(28.dp)),
+        ) {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 3.dp,
+            ) {
+                BottomNavItem.bottomNavItems.forEach { item ->
+                    AddItem(
+                        screen = item,
+                        currentDestination = currentDestination,
+                        navController = navController,
+                    )
+                }
             }
         }
     }
