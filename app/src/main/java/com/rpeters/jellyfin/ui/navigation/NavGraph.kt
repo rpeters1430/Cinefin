@@ -667,11 +667,11 @@ fun JellyfinNavGraph(
     }
 }
 
-private fun libraryRouteFor(library: BaseItemDto): String {
+private fun libraryRouteFor(library: BaseItemDto): String? {
     return when (library.collectionType?.toString()?.lowercase()) {
         "movies" -> Screen.Movies.route
         "tvshows" -> Screen.TVShows.route
         "music" -> Screen.Music.route
-        else -> Screen.Stuff.createRoute(library.id.toString())
+        else -> library.id?.toString()?.let { Screen.Stuff.createRoute(it) }
     }
 }
