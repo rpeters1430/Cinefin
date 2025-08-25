@@ -30,9 +30,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -589,23 +591,61 @@ private fun ExpressiveSeasonCard(
                         .clip(RoundedCornerShape(12.dp)),
                 )
 
-                // Favorite indicator
-                if (season.userData?.isFavorite == true) {
-                    Surface(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(6.dp),
-                        shape = CircleShape,
-                        color = Color.Black.copy(alpha = 0.6f),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Favorite",
-                            tint = Color.Yellow,
-                            modifier = Modifier
-                                .size(20.dp)
-                                .padding(4.dp),
-                        )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp),
+                ) {
+                    // Favorite indicator
+                    if (season.userData?.isFavorite == true) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.Black.copy(alpha = 0.6f),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = "Favorite",
+                                tint = Color.Yellow,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .padding(4.dp),
+                            )
+                        }
+                    }
+
+                    val unplayedCount = season.userData?.unplayedItemCount ?: 0
+                    val played = season.userData?.played == true
+
+                    when {
+                        unplayedCount > 0 -> {
+                            Badge(
+                                modifier = Modifier.align(Alignment.TopEnd),
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            ) {
+                                val countText = when {
+                                    unplayedCount > 99 -> "99+"
+                                    else -> unplayedCount.toString()
+                                }
+                                Text(
+                                    text = countText,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                )
+                            }
+                        }
+                        unplayedCount == 0 && played -> {
+                            Badge(
+                                modifier = Modifier.align(Alignment.TopEnd),
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Season watched",
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                        }
                     }
                 }
             }
