@@ -4,8 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,18 +20,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ClosedCaption
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Brightness6
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,11 +49,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -91,7 +90,7 @@ fun VideoPlayerScreen(
     var showQualityMenu by remember { mutableStateOf(false) }
     var showAspectRatioMenu by remember { mutableStateOf(false) }
     var showAudioDialog by remember { mutableStateOf(false) }
-    
+
     // Gesture feedback states
     var showSeekFeedback by remember { mutableStateOf(false) }
     var seekFeedbackText by remember { mutableStateOf("") }
@@ -133,15 +132,15 @@ fun VideoPlayerScreen(
                         val currentTime = System.currentTimeMillis()
                         val doubleTapThreshold = 300L // milliseconds
                         val screenWidth = size.width.toFloat()
-                        
+
                         if (currentTime - lastTapTime <= doubleTapThreshold) {
                             // Double tap detected
                             val isRightSide = offset.x > screenWidth / 2
                             val seekAmount = if (isRightSide) 10000L else -10000L
                             val newPosition = (playerState.currentPosition + seekAmount).coerceAtLeast(0L)
-                            
+
                             onSeek(newPosition)
-                            
+
                             // Show feedback
                             showSeekFeedback = true
                             seekFeedbackIcon = if (isRightSide) Icons.Default.FastForward else Icons.Default.FastRewind
@@ -162,7 +161,7 @@ fun VideoPlayerScreen(
                     val deltaY = startY - currentY
                     val screenHeight = size.height.toFloat()
                     val isLeftSide = change.position.x < size.width / 2
-                    
+
                     // Only respond to significant vertical drags
                     if (kotlin.math.abs(deltaY) > 5f) {
                         if (isLeftSide) {

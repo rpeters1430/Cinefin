@@ -61,13 +61,17 @@ fun SearchScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var isFilterExpanded by remember { mutableStateOf(false) }
-    var selectedContentTypes by remember { mutableStateOf(setOf(
-        BaseItemKind.MOVIE,
-        BaseItemKind.SERIES,
-        BaseItemKind.AUDIO,
-        BaseItemKind.BOOK,
-    )) }
-    
+    var selectedContentTypes by remember {
+        mutableStateOf(
+            setOf(
+                BaseItemKind.MOVIE,
+                BaseItemKind.SERIES,
+                BaseItemKind.AUDIO,
+                BaseItemKind.BOOK,
+            ),
+        )
+    }
+
     val debouncedQuery = rememberDebouncedState(
         value = searchQuery,
         delayMs = Constants.SEARCH_DEBOUNCE_MS,
@@ -75,12 +79,12 @@ fun SearchScreen(
 
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
-    
+
     // Recent search suggestions
-    val recentSearches = remember { 
-        listOf("Avengers", "Breaking Bad", "The Office", "Star Wars", "Marvel") 
+    val recentSearches = remember {
+        listOf("Avengers", "Breaking Bad", "The Office", "Star Wars", "Marvel")
     }
-    
+
     // Smart suggestions based on content
     val smartSuggestions = remember(appState.allItems) {
         val genres = appState.allItems
@@ -90,14 +94,14 @@ fun SearchScreen(
             .sortedByDescending { it.value.size }
             .take(8)
             .map { it.key }
-        
+
         val years = appState.allItems
             .mapNotNull { it.productionYear }
             .distinct()
             .sorted()
             .takeLast(5)
             .map { it.toString() }
-        
+
         genres + years
     }
 
@@ -164,7 +168,7 @@ fun SearchScreen(
                 },
                 trailingIcon = if (searchQuery.isNotEmpty()) {
                     {
-                        IconButton(onClick = { 
+                        IconButton(onClick = {
                             searchQuery = ""
                             onClearSearch()
                         }) {
@@ -174,7 +178,9 @@ fun SearchScreen(
                             )
                         }
                     }
-                } else null,
+                } else {
+                    null
+                },
                 placeholder = { Text(stringResource(id = R.string.search_hint)) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -200,20 +206,20 @@ fun SearchScreen(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(bottom = 8.dp),
                         )
-                        
+
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             contentPadding = PaddingValues(horizontal = 0.dp),
                         ) {
                             val contentTypes = listOf(
                                 BaseItemKind.MOVIE to "Movies",
-                                BaseItemKind.SERIES to "TV Shows", 
+                                BaseItemKind.SERIES to "TV Shows",
                                 BaseItemKind.AUDIO to "Music",
                                 BaseItemKind.BOOK to "Books",
                                 BaseItemKind.AUDIO_BOOK to "Audiobooks",
                                 BaseItemKind.VIDEO to "Videos",
                             )
-                            
+
                             items(contentTypes) { (kind, label) ->
                                 FilterChip(
                                     selected = selectedContentTypes.contains(kind),
@@ -235,7 +241,7 @@ fun SearchScreen(
                     }
                 }
             }
-            
+
             // Search suggestions when no active search
             if (searchQuery.isBlank() && appState.searchResults.isEmpty()) {
                 Column(
@@ -262,7 +268,7 @@ fun SearchScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
-                            
+
                             LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 contentPadding = PaddingValues(horizontal = 0.dp),
@@ -276,7 +282,7 @@ fun SearchScreen(
                             }
                         }
                     }
-                    
+
                     // Smart suggestions
                     if (smartSuggestions.isNotEmpty()) {
                         Column(
@@ -287,7 +293,7 @@ fun SearchScreen(
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            
+
                             LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 contentPadding = PaddingValues(horizontal = 0.dp),
