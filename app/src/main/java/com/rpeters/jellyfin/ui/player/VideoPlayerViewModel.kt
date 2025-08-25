@@ -194,6 +194,10 @@ class VideoPlayerViewModel @Inject constructor(
                     // Set media and prepare
                     exoPlayer?.setMediaItem(mediaItem)
                     exoPlayer?.prepare()
+                    exoPlayer?.play()
+
+                    // Update state so UI hides controls after timeout
+                    _playerState.value = _playerState.value.copy(isPlaying = true)
 
                     // Seek to start position if specified
                     if (startPosition > 0) {
