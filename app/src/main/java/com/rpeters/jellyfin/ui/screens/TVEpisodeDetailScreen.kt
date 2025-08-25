@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
@@ -65,12 +66,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.Quality4K
@@ -448,6 +451,10 @@ private fun ExpressiveEpisodeInfoCard(
         label = "info_card_scale",
     )
 
+    val mediaStreams = episode.mediaSources?.firstOrNull()?.mediaStreams
+    val videoStream = mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+    val audioStream = mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }
+
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
@@ -510,12 +517,22 @@ private fun ExpressiveEpisodeInfoCard(
                         )
                     }
 
-                    // Resolution information
-                    getEpisodeResolution(episode)?.let { (resolution, _) ->
+                    // Video information
+                    val videoResolution = getEpisodeResolution(episode)?.first
+                    videoStream?.let { stream ->
                         ExpressiveInfoRow(
-                            label = "Resolution",
-                            value = resolution,
+                            label = stringResource(id = R.string.video),
+                            value = listOfNotNull(videoResolution, stream.codec?.uppercase()).joinToString(" \u2022 "),
                             icon = Icons.Default.HighQuality,
+                        )
+                    }
+
+                    // Audio information
+                    audioStream?.codec?.let { codec ->
+                        ExpressiveInfoRow(
+                            label = stringResource(id = R.string.audio),
+                            value = codec.uppercase(),
+                            icon = Icons.Default.Audiotrack,
                         )
                     }
                 }

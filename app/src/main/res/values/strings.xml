@@ -27,7 +27,9 @@
     <string name="episodes">Episodes</string>
     <string name="season">Season</string>
     <string name="tv_show">TV Show</string>
-    
+    <string name="video">Video</string>
+    <string name="audio">Audio</string>
+
     <!-- Search -->
     <string name="search_hint">Search for movies, TV shows, music…</string>
     
