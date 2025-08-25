@@ -680,7 +680,7 @@ private fun ExpressiveMovieInfoCard(
                     if (progress > 0.0) {
                         Column(modifier = Modifier.padding(top = 12.dp)) {
                             Text(
-                                text = "${String.format(Locale.ROOT, "%.0f", progress)}% watched",
+                                text = "${progress.roundToInt()}% watched",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                                 fontWeight = FontWeight.Medium,
