@@ -16,12 +16,16 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -152,38 +156,53 @@ fun EnhancedContentCarousel(
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
-        val carouselState = rememberCarouselState { items.size }
-        HorizontalUncontainedCarousel(
+        val carouselState = rememberCarouselState(initialItem = 1) { items.size }
+        HorizontalMultiBrowseCarousel(
             state = carouselState,
+            preferredItemWidth = 220.dp,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(360.dp),
-            itemWidth = 220.dp,
             itemSpacing = 16.dp,
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            contentPadding = PaddingValues(horizontal = 64.dp),
         ) { index ->
             val item = items[index]
-            ExpressiveMediaCard(
-                title = item.name ?: "Unknown Title",
-                subtitle = when (item.type?.toString()) {
-                    "Episode" -> item.seriesName ?: ""
-                    "Series" -> item.productionYear?.toString() ?: ""
-                    "Audio" -> item.artists?.firstOrNull() ?: ""
-                    "Movie" -> item.productionYear?.toString() ?: ""
-                    else -> ""
-                },
-                imageUrl = when (item.type?.toString()) {
-                    "Episode" -> getSeriesImageUrl(item) ?: getImageUrl(item) ?: ""
-                    "Audio", "MusicAlbum" -> getImageUrl(item) ?: ""
-                    "Series" -> getSeriesImageUrl(item) ?: getBackdropUrl(item) ?: getImageUrl(item) ?: ""
-                    else -> getBackdropUrl(item) ?: getImageUrl(item) ?: ""
-                },
-                rating = item.communityRating?.toFloat(),
-                onCardClick = { onItemClick(item) },
-                onPlayClick = { onItemClick(item) },
-                cardType = ExpressiveCardType.ELEVATED,
-                modifier = Modifier.fillMaxSize(),
+            val info = carouselItemDrawInfo
+            val progress by animateFloatAsState(
+                targetValue = if (info.maxSize == 0f) 0f else info.size / info.maxSize,
+                label = "carousel_item_scale",
             )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        val scale = 0.85f + (0.15f * progress)
+                        scaleX = scale
+                        scaleY = scale
+                    },
+            ) {
+                ExpressiveMediaCard(
+                    title = item.name ?: "Unknown Title",
+                    subtitle = when (item.type?.toString()) {
+                        "Episode" -> item.seriesName ?: ""
+                        "Series" -> item.productionYear?.toString() ?: ""
+                        "Audio" -> item.artists?.firstOrNull() ?: ""
+                        "Movie" -> item.productionYear?.toString() ?: ""
+                        else -> ""
+                    },
+                    imageUrl = when (item.type?.toString()) {
+                        "Episode" -> getSeriesImageUrl(item) ?: getImageUrl(item) ?: ""
+                        "Audio", "MusicAlbum" -> getImageUrl(item) ?: ""
+                        "Series" -> getSeriesImageUrl(item) ?: getBackdropUrl(item) ?: getImageUrl(item) ?: ""
+                        else -> getBackdropUrl(item) ?: getImageUrl(item) ?: ""
+                    },
+                    rating = item.communityRating?.toFloat(),
+                    onCardClick = { onItemClick(item) },
+                    onPlayClick = { onItemClick(item) },
+                    cardType = ExpressiveCardType.ELEVATED,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
     }
 }
