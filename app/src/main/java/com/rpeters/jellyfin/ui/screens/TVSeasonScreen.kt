@@ -619,7 +619,7 @@ private fun ExpressiveSeasonCard(
                     text = buildString {
                         val seasonName = season.name ?: "Unknown Season"
                         append(seasonName)
-                        
+
                         // Add episode count in parentheses for more compact display
                         season.childCount?.let { count ->
                             // Extract season number from name if possible, otherwise use full name
