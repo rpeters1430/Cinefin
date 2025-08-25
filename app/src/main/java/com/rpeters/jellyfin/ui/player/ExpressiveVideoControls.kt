@@ -108,7 +108,6 @@ fun ExpressiveVideoControls(
                     playerState = playerState,
                     onBackClick = onBackClick,
                     onQualityClick = onQualityClick,
-                    onCastClick = onCastClick,
                     onSubtitlesClick = onSubtitlesClick,
                     onPictureInPictureClick = onPictureInPictureClick,
                     onFullscreenToggle = onFullscreenToggle,
@@ -133,6 +132,24 @@ fun ExpressiveVideoControls(
                     onSeek = onSeek,
                 )
             }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp),
+            ) {
+                AnimatedContent(
+                    targetState = playerState.isCasting,
+                    label = "cast_button",
+                ) { isCasting ->
+                    ExpressiveIconButton(
+                        icon = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
+                        contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
+                        onClick = onCastClick,
+                        isActive = isCasting,
+                    )
+                }
+            }
         }
     }
 }
@@ -143,7 +160,6 @@ private fun ExpressiveTopControls(
     playerState: VideoPlayerState,
     onBackClick: () -> Unit,
     onQualityClick: () -> Unit,
-    onCastClick: () -> Unit,
     onSubtitlesClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
@@ -214,18 +230,6 @@ private fun ExpressiveTopControls(
                             contentDescription = "Subtitles",
                             onClick = onSubtitlesClick,
                         )
-
-                        AnimatedContent(
-                            targetState = playerState.isCasting,
-                            label = "cast_button",
-                        ) { isCasting ->
-                            ExpressiveIconButton(
-                                icon = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
-                                contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
-                                onClick = onCastClick,
-                                isActive = isCasting,
-                            )
-                        }
 
                         ExpressiveIconButton(
                             icon = Icons.Default.PictureInPicture,
