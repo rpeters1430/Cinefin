@@ -334,7 +334,7 @@ fun JellyfinNavGraph(
             route = Screen.Stuff.route,
             arguments = listOf(
                 navArgument(Screen.LIBRARY_ID_ARG) { type = NavType.StringType },
-                navArgument(Screen.COLLECTION_TYPE_ARG) { type = NavType.StringType },
+                navArgument(Screen.COLLECTION_TYPE_ARG) { type = NavType.StringType; nullable = true },
             ),
         ) { backStackEntry ->
             val libraryId = backStackEntry.arguments?.getString(Screen.LIBRARY_ID_ARG)
