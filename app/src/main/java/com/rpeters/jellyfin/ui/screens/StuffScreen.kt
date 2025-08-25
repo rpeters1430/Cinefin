@@ -38,6 +38,7 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 @Composable
 fun StuffScreen(
     libraryId: String,
+    collectionType: String?,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
 ) {
@@ -46,30 +47,52 @@ fun StuffScreen(
         viewModel.loadHomeVideos(libraryId)
     }
 
+    val type = remember(collectionType, appState.libraries, libraryId) {
+    val librariesById = remember(appState.libraries) {
+        appState.libraries.associateBy { it.id }
+    }
+    val type = remember(collectionType, librariesById, libraryId) {
+        collectionType ?: librariesById[libraryId]
+            ?.collectionType?.toString()?.lowercase()
+    }
+
     // Filter stuff items from the library-specific home videos
-    val stuffItems = remember(appState.homeVideosByLibrary, libraryId) {
+    val stuffItems = remember(appState.homeVideosByLibrary, libraryId, type) {
         val items = appState.homeVideosByLibrary[libraryId] ?: emptyList()
-        items.filter {
-            it.type == BaseItemKind.BOOK ||
-                it.type == BaseItemKind.AUDIO_BOOK ||
-                it.type == BaseItemKind.VIDEO ||
-                it.type == BaseItemKind.PHOTO ||
-                (
-                    it.type != BaseItemKind.MOVIE &&
-                        it.type != BaseItemKind.SERIES &&
-                        it.type != BaseItemKind.EPISODE &&
-                        it.type != BaseItemKind.AUDIO &&
-                        it.type != BaseItemKind.MUSIC_ALBUM &&
-                        it.type != BaseItemKind.MUSIC_ARTIST
-                    )
-        }.sortedBy { it.sortName ?: it.name }
+        val filtered = when (type) {
+            "books" -> items.filter {
+                it.type == BaseItemKind.BOOK || it.type == BaseItemKind.AUDIO_BOOK
+            }
+            "homevideos" -> items.filter { it.type == BaseItemKind.VIDEO }
+            else -> items.filter {
+                it.type == BaseItemKind.BOOK ||
+                    it.type == BaseItemKind.AUDIO_BOOK ||
+                    it.type == BaseItemKind.VIDEO ||
+                    it.type == BaseItemKind.PHOTO ||
+                    (
+                        it.type != BaseItemKind.MOVIE &&
+                            it.type != BaseItemKind.SERIES &&
+                            it.type != BaseItemKind.EPISODE &&
+                            it.type != BaseItemKind.AUDIO &&
+                            it.type != BaseItemKind.MUSIC_ALBUM &&
+                            it.type != BaseItemKind.MUSIC_ARTIST
+                        )
+            }
+        }
+        filtered.sortedBy { it.sortName ?: it.name }
+    }
+
+    val loadingMessage = when (type) {
+        "books" -> "Loading books..."
+        "homevideos" -> "Loading videos..."
+        else -> "Loading items..."
     }
 
     Box(modifier = modifier.fillMaxSize()) {
         when {
             appState.isLoading -> {
                 ExpressiveFullScreenLoading(
-                    message = "Loading stuff...",
+                    message = loadingMessage,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -103,8 +126,13 @@ fun StuffScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
+                    val emptyMessage = when (type) {
+                        "books" -> "No books found"
+                        "homevideos" -> "No videos found"
+                        else -> "No items found"
+                    }
                     Text(
-                        text = "No items found",
+                        text = emptyMessage,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

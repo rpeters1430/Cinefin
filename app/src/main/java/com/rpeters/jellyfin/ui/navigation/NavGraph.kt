@@ -365,9 +365,16 @@ fun JellyfinNavGraph(
 
         composable(
             route = Screen.Stuff.route,
-            arguments = listOf(navArgument(Screen.LIBRARY_ID_ARG) { type = NavType.StringType }),
+            arguments = listOf(
+                navArgument(Screen.LIBRARY_ID_ARG) { type = NavType.StringType },
+                navArgument(Screen.COLLECTION_TYPE_ARG) {
+                    type = NavType.StringType
+                    nullable = true
+                },
+            ),
         ) { backStackEntry ->
             val libraryId = backStackEntry.arguments?.getString(Screen.LIBRARY_ID_ARG)
+            val collectionType = backStackEntry.arguments?.getString(Screen.COLLECTION_TYPE_ARG)
             if (libraryId.isNullOrBlank()) {
                 Log.e("NavGraph", "Stuff navigation cancelled: libraryId is null or blank")
                 return@composable
@@ -376,6 +383,7 @@ fun JellyfinNavGraph(
 
             StuffScreen(
                 libraryId = libraryId,
+                collectionType = collectionType,
                 viewModel = viewModel,
             )
         }
@@ -708,8 +716,9 @@ private fun libraryRouteFor(library: BaseItemDto): String? {
         CollectionType.MOVIES -> Screen.Movies.route
         CollectionType.TVSHOWS -> Screen.TVShows.route
         CollectionType.MUSIC -> Screen.Music.route
-        CollectionType.HOMEVIDEOS -> Screen.HomeVideos.route
-        CollectionType.BOOKS -> Screen.Books.route
-        else -> library.id?.toString()?.let { Screen.Stuff.createRoute(it) }
+        else -> library.id?.toString()?.let { id ->
+            val type = library.collectionType?.toString()?.lowercase() ?: "mixed"
+            Screen.Stuff.createRoute(id, type)
+        }
     }
 }
