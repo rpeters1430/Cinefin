@@ -9,6 +9,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.framework.CastContext
@@ -158,6 +159,33 @@ class CastManager @Inject constructor(
             } catch (e: Exception) {
                 Log.e("CastManager", "Failed to initialize Cast", e)
             }
+        }
+    }
+
+    /**
+     * Discover available Cast devices on the local network.
+     * Returns a list of friendly device names.
+     */
+    fun discoverDevices(): List<String> {
+        val router = MediaRouter.getInstance(context)
+        val selector = castContext?.mergedSelector
+        return router.routes
+            .filter { selector?.matchesControlFilters(it) == true }
+            .map { it.name }
+    }
+
+    /**
+     * Connect to the specified Cast device by name.
+     * Returns true if a matching device was found and selected.
+     */
+    fun connectToDevice(deviceName: String): Boolean {
+        val router = MediaRouter.getInstance(context)
+        val route = router.routes.firstOrNull { it.name == deviceName }
+        return if (route != null) {
+            router.selectRoute(route)
+            true
+        } else {
+            false
         }
     }
 

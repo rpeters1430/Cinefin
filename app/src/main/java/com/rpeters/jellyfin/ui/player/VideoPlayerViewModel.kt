@@ -79,7 +79,12 @@ data class VideoPlayerState(
 class VideoPlayerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: JellyfinRepository,
+    private val castManager: CastManager,
 ) : ViewModel() {
+
+    init {
+        castManager.initialize()
+    }
 
     private val _playerState = MutableStateFlow(VideoPlayerState())
     val playerState: StateFlow<VideoPlayerState> = _playerState.asStateFlow()
@@ -253,14 +258,27 @@ class VideoPlayerViewModel @Inject constructor(
     fun changeAspectRatio(aspectRatio: AspectRatioMode) {
         _playerState.value = _playerState.value.copy(selectedAspectRatio = aspectRatio)
     }
-    fun showCastDialog() { /* Not implemented yet */ }
+    fun showCastDialog() {
+        val devices = castManager.discoverDevices()
+        _playerState.value = _playerState.value.copy(
+            availableCastDevices = devices,
+            showCastDialog = true,
+        )
+    }
     fun showSubtitleDialog() { /* Not implemented yet */ }
     fun selectAudioTrack(track: TrackInfo) { /* Not implemented yet */ }
     fun selectSubtitleTrack(track: TrackInfo?) { /* Not implemented yet */ }
     fun hideSubtitleDialog() {
         _playerState.value = _playerState.value.copy(showSubtitleDialog = false)
     }
-    fun selectCastDevice(deviceName: String) { /* Not implemented yet */ }
+    fun selectCastDevice(deviceName: String) {
+        val connected = castManager.connectToDevice(deviceName)
+        _playerState.value = _playerState.value.copy(
+            isCasting = connected,
+            castDeviceName = if (connected) deviceName else null,
+            showCastDialog = false,
+        )
+    }
     fun hideCastDialog() {
         _playerState.value = _playerState.value.copy(showCastDialog = false)
     }
