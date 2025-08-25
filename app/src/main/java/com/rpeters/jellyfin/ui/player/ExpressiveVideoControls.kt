@@ -370,13 +370,15 @@ private fun ExpressiveBottomControls(
                             ),
                         )
 
+                        val textMeasurer = rememberTextMeasurer()
                         if (isDragging) {
                             val previewText = formatTime(previewPosition)
-                            val textMeasurer = rememberTextMeasurer()
-                            val textLayout = textMeasurer.measure(
-                                text = AnnotatedString(previewText),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
+                            val textLayout = remember(previewText, MaterialTheme.typography.bodySmall) {
+                                textMeasurer.measure(
+                                    text = AnnotatedString(previewText),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
                             val textWidth = with(LocalDensity.current) {
                                 textLayout.size.width.toDp()
                             }
