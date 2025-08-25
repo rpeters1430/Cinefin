@@ -122,38 +122,66 @@ class MainAppViewModel @Inject constructor(
                         val newIds = newLibraries.mapNotNull { it.id?.toString() }.toSet()
 
                         val removedIds = previousIds - newIds
+                        var updatedAllMovies = _appState.value.allMovies
+                        var updatedAllTVShows = _appState.value.allTVShows
+                        var updatedAllItems = _appState.value.allItems
+                        val updatedHomeVideos = _appState.value.homeVideosByLibrary.toMutableMap()
+
                         if (removedIds.isNotEmpty()) {
-                            val updatedHomeVideos = _appState.value.homeVideosByLibrary.toMutableMap()
-                            removedIds.forEach { removedId ->
-                                val removedLibrary = previousLibraries.find { it.id?.toString() == removedId }
-                                val type = removedLibrary?.collectionType ?: removedLibrary?.type?.name
-                                when (type?.lowercase()) {
+                            val removedLibraries = previousLibraries.filter { it.id?.toString() in removedIds }
+                            val newLibrariesByType = newLibraries.groupBy { (it.collectionType ?: it.type?.name)?.lowercase() }
+                            var customRemoved = false
+
+                            removedLibraries.groupBy { (it.collectionType ?: it.type?.name)?.lowercase() }.forEach { (type, libs) ->
+                                val remaining = newLibrariesByType[type]?.isNotEmpty() == true
+                                when (type) {
                                     "movies" -> {
-                                        _appState.value = _appState.value.copy(allMovies = emptyList())
-                                        loadedLibraryTypes.remove(LibraryType.MOVIES.name)
+                                        if (remaining) {
+                                            loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
+                                        } else {
+                                            updatedAllMovies = emptyList()
+                                            loadedLibraryTypes.remove(LibraryType.MOVIES.name)
+                                        }
                                     }
                                     "tvshows" -> {
-                                        _appState.value = _appState.value.copy(allTVShows = emptyList())
-                                        loadedLibraryTypes.remove(LibraryType.TV_SHOWS.name)
+                                        if (remaining) {
+                                            loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true)
+                                        } else {
+                                            updatedAllTVShows = emptyList()
+                                            loadedLibraryTypes.remove(LibraryType.TV_SHOWS.name)
+                                        }
                                     }
                                     "music" -> {
-                                        _appState.value = _appState.value.copy(
-                                            allItems = _appState.value.allItems.filterNot {
+                                        if (remaining) {
+                                            loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true)
+                                        } else {
+                                            updatedAllItems = updatedAllItems.filterNot {
                                                 LibraryType.MUSIC.itemKinds.contains(it.type)
-                                            },
-                                        )
-                                        loadedLibraryTypes.remove(LibraryType.MUSIC.name)
+                                            }
+                                            loadedLibraryTypes.remove(LibraryType.MUSIC.name)
+                                        }
                                     }
                                     else -> {
-                                        updatedHomeVideos.remove(removedId)
-                                        loadedLibraryTypes.remove(LibraryType.STUFF.name)
+                                        customRemoved = true
+                                        libs.forEach { lib ->
+                                            lib.id?.toString()?.let { updatedHomeVideos.remove(it) }
+                                        }
                                     }
                                 }
                             }
-                            _appState.value = _appState.value.copy(homeVideosByLibrary = updatedHomeVideos)
+
+                            if (customRemoved && newLibraries.none { (it.collectionType ?: it.type?.name)?.lowercase() !in setOf("movies", "tvshows", "music") }) {
+                                loadedLibraryTypes.remove(LibraryType.STUFF.name)
+                            }
                         }
 
-                        _appState.value = _appState.value.copy(libraries = newLibraries)
+                        _appState.value = _appState.value.copy(
+                            allMovies = updatedAllMovies,
+                            allTVShows = updatedAllTVShows,
+                            allItems = updatedAllItems,
+                            homeVideosByLibrary = updatedHomeVideos,
+                            libraries = newLibraries,
+                        )
 
                         val addedLibraries = newLibraries.filter { it.id?.toString() !in previousIds }
                         val addedTypes = addedLibraries.mapNotNull { (it.collectionType ?: it.type?.name)?.lowercase() }.toSet()
