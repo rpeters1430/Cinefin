@@ -106,10 +106,10 @@ fun MoviesScreen(
             MovieFilter.ACTION -> movie.genres?.any { it.contains("Action", ignoreCase = true) } == true
             MovieFilter.COMEDY -> movie.genres?.any { it.contains("Comedy", ignoreCase = true) } == true
             MovieFilter.DRAMA -> movie.genres?.any { it.contains("Drama", ignoreCase = true) } == true
-            MovieFilter.SCI_FI -> movie.genres?.any { 
-                it.contains("Science Fiction", ignoreCase = true) || 
-                it.contains("Sci-Fi", ignoreCase = true) ||
-                it.contains("Fantasy", ignoreCase = true)
+            MovieFilter.SCI_FI -> movie.genres?.any {
+                it.contains("Science Fiction", ignoreCase = true) ||
+                    it.contains("Sci-Fi", ignoreCase = true) ||
+                    it.contains("Fantasy", ignoreCase = true)
             } == true
         }
     }.sortedWith { movie1, movie2 ->
@@ -353,7 +353,7 @@ private fun MoviesContent(
                     )
                 }
             }
-            
+
             // Smart & Genre Filters
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
