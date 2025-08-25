@@ -1,7 +1,7 @@
 # Jellyfin Android Client
 
-[![Android CI](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/android-ci.yml/badge.svg)](https://github.com/yourusername/JellyfinAndroid/actions/workflows/android-ci.yml)
-[![Dependency Check](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/yourusername/JellyfinAndroid/actions/workflows/dependency-check.yml)
+[![Android CI](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/android-ci.yml/badge.svg)](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/android-ci.yml)
+[![Dependency Check](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/dependency-check.yml)
 [![API Level](https://img.shields.io/badge/API-26%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=26)
 
 A modern, beautiful Android client for Jellyfin media servers built with Material 3 design principles and the latest Android development technologies.
@@ -35,23 +35,23 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 ## 🛠️ Technical Stack
 
 ### **Core Technologies**
-- **Language:** Kotlin 2.2.0
-- **UI Framework:** Jetpack Compose (2025.06.01 BOM)
+- **Language:** Kotlin 2.2.10
+- **UI Framework:** Jetpack Compose (2025.08.00 BOM)
 - **Architecture:** MVVM + Repository Pattern
-- **Dependency Injection:** Hilt 2.56.2
+- **Dependency Injection:** Hilt 2.57.1
 - **Async Programming:** Kotlin Coroutines 1.10.2
 
 ### **Networking & API**
 - **Jellyfin SDK:** 1.6.8 (Official Jellyfin Kotlin SDK)
-- **HTTP Client:** Retrofit 3.0.0 + OkHttp 4.12.0
+- **HTTP Client:** Retrofit 3.0.0 + OkHttp 5.1.0
 - **Serialization:** Kotlinx Serialization 1.9.0
 - **Image Loading:** Coil 2.7.0 with Compose integration
 
 ### **Media & UI**
-- **Media Playback:** ExoPlayer (Media3 1.7.1) - *Ready for implementation*
+- **Media Playback:** ExoPlayer (Media3 1.8.0) with Jellyfin FFmpeg decoder
 - **Material Design:** Material 3 with Carousel support
-- **Navigation:** Navigation Compose 2.9.1
-- **Data Storage:** DataStore Preferences 1.1.7
+- **Navigation:** Navigation Compose 2.9.3
+- **Data Storage:** DataStore Preferences 1.2.0-alpha02
 
 ## 📱 Requirements
 
@@ -65,7 +65,7 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 - Android Studio Iguana or later
 - JDK 17
 - **Compile SDK:** 36
-- **Target SDK:** 36
+- **Target SDK:** 35
 
 ### Building the Project
 
@@ -96,27 +96,14 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 ## 🏗️ Project Structure
 
 ```
-app/src/main/java/com/example/jellyfinandroid/
-├── 📱 MainActivity.kt              # Main activity with navigation
-├── 🚀 JellyfinApplication.kt       # Application class with Hilt
-├── 📊 data/
-│   ├── JellyfinServer.kt           # Server data models
-│   └── repository/
-│       └── JellyfinRepository.kt   # Data layer with API calls
-├── 🌐 network/
-│   └── JellyfinApiService.kt       # Retrofit API definitions
-├── 💉 di/
-│   └── NetworkModule.kt            # Hilt dependency injection
-└── 🎨 ui/
-    ├── screens/
-    │   └── ServerConnectionScreen.kt # Authentication UI
-    ├── theme/
-    │   ├── Color.kt                # Jellyfin brand colors
-    │   ├── Theme.kt                # Material 3 theming
-    │   └── Type.kt                 # Typography definitions
-    └── viewmodel/
-        ├── MainAppViewModel.kt     # Main app state management
-        └── ServerConnectionViewModel.kt # Authentication logic
+app/src/main/java/com/rpeters/jellyfin/
+├── JellyfinApplication.kt       # Application class with Hilt
+├── MainActivity.kt              # Main activity with navigation
+├── core/                        # Core constants and helpers
+├── data/                        # Models, paging, and repositories
+├── di/                          # Hilt modules
+├── ui/                          # Compose screens, navigation, and viewmodels
+└── utils/                       # Utility classes
 ```
 
 ## 🎯 Key Components
@@ -206,7 +193,7 @@ Automated workflows for:
 - [x] Favorites management
 
 ### **Phase 2: Media Playback** 🔄
-- [ ] Video playback with ExoPlayer
+- [x] Video playback with ExoPlayer
 - [ ] Audio playback support
 - [ ] Subtitle handling
 - [ ] Continue watching functionality
