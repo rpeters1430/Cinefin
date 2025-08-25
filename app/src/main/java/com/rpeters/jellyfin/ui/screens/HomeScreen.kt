@@ -476,7 +476,7 @@ fun SearchResultsContent(
 // Helper function to get continue watching items
 private fun getContinueWatchingItems(appState: MainAppState): List<BaseItemDto> {
     val continueWatchingItems = mutableListOf<BaseItemDto>()
-    
+
     // Get partially watched movies
     appState.allMovies.filter { movie ->
         val percentage = movie.userData?.playedPercentage ?: 0.0
@@ -484,7 +484,7 @@ private fun getContinueWatchingItems(appState: MainAppState): List<BaseItemDto> 
     }.sortedByDescending { it.userData?.lastPlayedDate }.take(5).let { movies ->
         continueWatchingItems.addAll(movies)
     }
-    
+
     // Get partially watched TV episodes
     appState.recentlyAddedByTypes["EPISODE"]?.filter { episode ->
         val percentage = episode.userData?.playedPercentage ?: 0.0
@@ -492,7 +492,7 @@ private fun getContinueWatchingItems(appState: MainAppState): List<BaseItemDto> 
     }?.sortedByDescending { it.userData?.lastPlayedDate }?.take(5)?.let { episodes ->
         continueWatchingItems.addAll(episodes)
     }
-    
+
     return continueWatchingItems.sortedByDescending { it.userData?.lastPlayedDate }.take(8)
 }
 
@@ -520,7 +520,7 @@ private fun ContinueWatchingSection(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
             )
         }
-        
+
         // Horizontal scrolling list of continue watching items
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -528,7 +528,7 @@ private fun ContinueWatchingSection(
         ) {
             items(
                 items = items,
-                key = { it.getItemKey() }
+                key = { it.getItemKey() },
             ) { item ->
                 ContinueWatchingCard(
                     item = item,
@@ -548,7 +548,7 @@ private fun ContinueWatchingCard(
     modifier: Modifier = Modifier,
 ) {
     val watchedPercentage = (item.userData?.playedPercentage ?: 0.0).toFloat() / 100f
-    
+
     ElevatedCard(
         onClick = { onItemClick(item) },
         modifier = modifier.width(160.dp),
@@ -594,7 +594,7 @@ private fun ContinueWatchingCard(
                         .fillMaxWidth()
                         .height(240.dp),
                 )
-                
+
                 // Progress bar
                 LinearProgressIndicator(
                     progress = { watchedPercentage },
@@ -604,7 +604,7 @@ private fun ContinueWatchingCard(
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 )
-                
+
                 // Item details
                 Column(
                     modifier = Modifier.padding(12.dp),
@@ -617,15 +617,15 @@ private fun ContinueWatchingCard(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    
+
                     // Show episode info for TV episodes
                     if (item.type == BaseItemKind.EPISODE) {
                         Text(
                             text = buildString {
                                 item.seriesName?.let { append("$it • ") }
-                                item.parentIndexNumber?.let { season -> 
+                                item.parentIndexNumber?.let { season ->
                                     item.indexNumber?.let { episode ->
-                                        append("S${season}E${episode}")
+                                        append("S${season}E$episode")
                                     }
                                 }
                             },
@@ -635,7 +635,7 @@ private fun ContinueWatchingCard(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    
+
                     // Progress text
                     Text(
                         text = "${(watchedPercentage * 100).toInt()}% watched",
