@@ -13,6 +13,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,7 +45,9 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -56,7 +59,10 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.ui.theme.MotionTokens
@@ -316,7 +322,19 @@ private fun ExpressiveBottomControls(
             ) {
                 // Progress bar with buffer indicator
                 if (playerState.duration > 0) {
-                    Box {
+                    var sliderPosition by remember { mutableFloatStateOf(0f) }
+                    var isDragging by remember { mutableStateOf(false) }
+
+                    LaunchedEffect(playerState.currentPosition, playerState.duration, isDragging) {
+                        if (playerState.duration > 0 && !isDragging) {
+                            sliderPosition =
+                                playerState.currentPosition.toFloat() / playerState.duration.toFloat()
+                        }
+                    }
+
+                    val previewPosition = (sliderPosition * playerState.duration).toLong()
+
+                    BoxWithConstraints {
                         // Buffer progress (background)
                         LinearProgressIndicator(
                             progress = {
@@ -333,14 +351,16 @@ private fun ExpressiveBottomControls(
 
                         // Main progress slider
                         Slider(
-                            value = if (playerState.duration > 0) {
-                                playerState.currentPosition.toFloat() / playerState.duration.toFloat()
-                            } else {
-                                0f
-                            },
+                            value = sliderPosition,
                             onValueChange = { progress ->
-                                val newPosition = (progress * playerState.duration).toLong()
+                                sliderPosition = progress
+                                isDragging = true
+                            },
+                            onValueChangeFinished = {
+                                val newPosition =
+                                    (sliderPosition * playerState.duration).toLong()
                                 onSeek(newPosition)
+                                isDragging = false
                             },
                             modifier = Modifier.fillMaxWidth(),
                             colors = SliderDefaults.colors(
@@ -349,6 +369,30 @@ private fun ExpressiveBottomControls(
                                 inactiveTrackColor = Color.Transparent,
                             ),
                         )
+
+                        val textMeasurer = rememberTextMeasurer()
+                        if (isDragging) {
+                            val previewText = formatTime(previewPosition)
+                            val textLayout = remember(previewText, MaterialTheme.typography.bodySmall) {
+                                textMeasurer.measure(
+                                    text = AnnotatedString(previewText),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                            val textWidth = with(LocalDensity.current) {
+                                textLayout.size.width.toDp()
+                            }
+                            val xOffset = (maxWidth * sliderPosition) - (textWidth / 2)
+                            Text(
+                                text = previewText,
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.offset(
+                                    x = xOffset.coerceIn(0.dp, maxWidth - textWidth),
+                                    y = (-24).dp,
+                                ),
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -358,8 +402,13 @@ private fun ExpressiveBottomControls(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
+                        val displayPosition = if (isDragging) {
+                            previewPosition
+                        } else {
+                            playerState.currentPosition
+                        }
                         Text(
-                            text = formatTime(playerState.currentPosition),
+                            text = formatTime(displayPosition),
                             color = Color.White,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = FontWeight.Medium,
