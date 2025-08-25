@@ -619,7 +619,7 @@ private fun ContinueWatchingCard(
                 }
 
                 Text(
-                    text = "${watchedPercentage.toInt()}% watched",
+                    text = "${watchedPercentage.roundToInt()}% watched",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
