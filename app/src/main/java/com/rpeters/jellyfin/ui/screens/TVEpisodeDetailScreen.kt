@@ -366,7 +366,7 @@ private fun ExpressiveEpisodeHero(
 
                     episode.parentIndexNumber?.let { seasonNum ->
                         Text(
-                            text = "Season $seasonNum",
+                            text = "S$seasonNum",
                             style = MaterialTheme.typography.bodyLarge,
                             color = Color.White.copy(alpha = 0.9f),
                             fontWeight = FontWeight.Medium,
