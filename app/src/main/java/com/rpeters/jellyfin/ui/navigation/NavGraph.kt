@@ -673,7 +673,6 @@ private fun libraryRouteFor(library: BaseItemDto): String? {
         CollectionType.MOVIES -> Screen.Movies.route
         CollectionType.TVSHOWS -> Screen.TVShows.route
         CollectionType.MUSIC -> Screen.Music.route
-        CollectionType.HOMEVIDEOS -> library.id?.toString()?.let { Screen.Stuff.createRoute(it) }
         else -> library.id?.toString()?.let { Screen.Stuff.createRoute(it) }
     }
 }
