@@ -39,16 +39,16 @@ object NetworkModule {
             // Apply as both network and application interceptor for complete coverage
             val trafficTagInterceptor = { chain: okhttp3.Interceptor.Chain ->
                 val request = chain.request()
-                
+
                 // Create a stable, unique tag based on request details
                 val url = request.url.toString()
                 val method = request.method
                 val tagString = "$method:${url.take(50)}" // First 50 chars of URL + method
                 val stableTag = tagString.hashCode() and 0x0FFFFFFF // Ensure positive value
-                
+
                 // Apply tag for all socket operations during this request
                 android.net.TrafficStats.setThreadStatsTag(stableTag)
-                
+
                 try {
                     val response = chain.proceed(request)
                     // Ensure tag is maintained during response processing
@@ -58,7 +58,7 @@ object NetworkModule {
                     android.net.TrafficStats.clearThreadStatsTag()
                 }
             }
-            
+
             // Apply as network interceptor (runs for each network connection)
             addNetworkInterceptor(trafficTagInterceptor)
             // Apply as application interceptor (runs once per request)
@@ -73,14 +73,14 @@ object NetworkModule {
                     .addHeader("Accept-Encoding", "gzip, deflate") // Explicit compression
                     .addHeader("Cache-Control", "no-cache") // Prevent caching issues
                     .build()
-                
+
                 // Ensure traffic is tagged before any socket operations
                 val url = originalRequest.url.toString()
                 val method = originalRequest.method
                 val tagString = "$method:${url.take(50)}"
                 val stableTag = tagString.hashCode() and 0x0FFFFFFF
                 android.net.TrafficStats.setThreadStatsTag(stableTag)
-                
+
                 try {
                     chain.proceed(newRequest)
                 } finally {

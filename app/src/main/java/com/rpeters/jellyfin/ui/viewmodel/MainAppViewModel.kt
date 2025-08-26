@@ -934,10 +934,10 @@ class MainAppViewModel @Inject constructor(
             }
 
             // Fix HTTP 400: Get the first available movie library for parentId
-            val movieLibraries = _appState.value.libraries.filter { 
-                it.collectionType == org.jellyfin.sdk.model.api.CollectionType.MOVIES 
+            val movieLibraries = _appState.value.libraries.filter {
+                it.collectionType == org.jellyfin.sdk.model.api.CollectionType.MOVIES
             }
-            
+
             if (movieLibraries.isEmpty()) {
                 if (BuildConfig.DEBUG) {
                     Log.w("MainAppViewModel", "loadAllMovies: No movie libraries found")
@@ -945,11 +945,11 @@ class MainAppViewModel @Inject constructor(
                 _appState.value = _appState.value.copy(
                     isLoadingMovies = false,
                     hasMoreMovies = false,
-                    errorMessage = "No movie libraries available"
+                    errorMessage = "No movie libraries available",
                 )
                 return@launch
             }
-            
+
             // Use the first movie library as parentId to avoid HTTP 400
             val movieLibraryId = movieLibraries.first().id.toString()
 
@@ -1060,10 +1060,10 @@ class MainAppViewModel @Inject constructor(
             }
 
             // Fix HTTP 400: Get the first available TV show library for parentId
-            val tvLibraries = _appState.value.libraries.filter { 
-                it.collectionType == org.jellyfin.sdk.model.api.CollectionType.TVSHOWS 
+            val tvLibraries = _appState.value.libraries.filter {
+                it.collectionType == org.jellyfin.sdk.model.api.CollectionType.TVSHOWS
             }
-            
+
             if (tvLibraries.isEmpty()) {
                 if (BuildConfig.DEBUG) {
                     Log.w("MainAppViewModel", "loadAllTVShows: No TV show libraries found")
@@ -1071,11 +1071,11 @@ class MainAppViewModel @Inject constructor(
                 _appState.value = _appState.value.copy(
                     isLoadingTVShows = false,
                     hasMoreTVShows = false,
-                    errorMessage = "No TV show libraries available"
+                    errorMessage = "No TV show libraries available",
                 )
                 return@launch
             }
-            
+
             // Use the first TV show library as parentId to avoid HTTP 400
             val tvLibraryId = tvLibraries.first().id.toString()
 
@@ -1205,18 +1205,18 @@ class MainAppViewModel @Inject constructor(
                         if (BuildConfig.DEBUG) {
                             Log.d("MainAppViewModel", "loadLibraryTypeData: Loading music library items")
                         }
-                        
+
                         // Get the first available music library for parentId
-                        val musicLibraries = _appState.value.libraries.filter { 
-                            it.collectionType == org.jellyfin.sdk.model.api.CollectionType.MUSIC 
+                        val musicLibraries = _appState.value.libraries.filter {
+                            it.collectionType == org.jellyfin.sdk.model.api.CollectionType.MUSIC
                         }
-                        
+
                         if (musicLibraries.isEmpty()) {
                             if (BuildConfig.DEBUG) {
                                 Log.w("MainAppViewModel", "loadLibraryTypeData: No music libraries found")
                             }
                             _appState.value = _appState.value.copy(
-                                errorMessage = "No music libraries available"
+                                errorMessage = "No music libraries available",
                             )
                         } else {
                             // Use the first music library as parentId to avoid HTTP 400
@@ -1230,14 +1230,14 @@ class MainAppViewModel @Inject constructor(
                             Log.d("MainAppViewModel", "loadLibraryTypeData: Loading general library items for $typeKey")
                         }
                         // For other types, use the general library items with first available non-standard library
-                        val otherLibraries = _appState.value.libraries.filter { 
+                        val otherLibraries = _appState.value.libraries.filter {
                             it.collectionType !in setOf(
                                 org.jellyfin.sdk.model.api.CollectionType.MOVIES,
                                 org.jellyfin.sdk.model.api.CollectionType.TVSHOWS,
-                                org.jellyfin.sdk.model.api.CollectionType.MUSIC
+                                org.jellyfin.sdk.model.api.CollectionType.MUSIC,
                             )
                         }
-                        
+
                         if (otherLibraries.isEmpty()) {
                             if (BuildConfig.DEBUG) {
                                 Log.w("MainAppViewModel", "loadLibraryTypeData: No other content libraries found")
@@ -1330,31 +1330,33 @@ class MainAppViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadMusicLibraryItems: Loading music items for library $musicLibraryId")
             }
-            
-            when (val result = mediaRepository.getLibraryItems(
-                parentId = musicLibraryId,
-                startIndex = 0,
-                limit = 50
-            )) {
+
+            when (
+                val result = mediaRepository.getLibraryItems(
+                    parentId = musicLibraryId,
+                    startIndex = 0,
+                    limit = 50,
+                )
+            ) {
                 is ApiResult.Success -> {
                     val musicItems = result.data
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "loadMusicLibraryItems: Successfully loaded ${musicItems.size} music items")
                     }
-                    
+
                     // Add music items to allItems
                     val currentItems = _appState.value.allItems.toMutableList()
                     // Remove existing music items to avoid duplicates
                     currentItems.removeAll { it.type in LibraryType.MUSIC.itemKinds }
                     currentItems.addAll(musicItems)
-                    
+
                     _appState.value = _appState.value.copy(allItems = currentItems)
                 }
                 is ApiResult.Error -> {
                     Log.e("MainAppViewModel", "loadMusicLibraryItems: Failed to load music items: ${result.message}")
                     if (result.errorType != ErrorType.OPERATION_CANCELLED) {
                         _appState.value = _appState.value.copy(
-                            errorMessage = "Failed to load music items: ${result.message}"
+                            errorMessage = "Failed to load music items: ${result.message}",
                         )
                     }
                 }
@@ -1364,7 +1366,7 @@ class MainAppViewModel @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Loads other library items (photos, books, etc.) with proper parentId to prevent HTTP 400 errors
      */
@@ -1373,31 +1375,33 @@ class MainAppViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadOtherLibraryItems: Loading other items for library $libraryId")
             }
-            
-            when (val result = mediaRepository.getLibraryItems(
-                parentId = libraryId,
-                startIndex = 0,
-                limit = 50
-            )) {
+
+            when (
+                val result = mediaRepository.getLibraryItems(
+                    parentId = libraryId,
+                    startIndex = 0,
+                    limit = 50,
+                )
+            ) {
                 is ApiResult.Success -> {
                     val otherItems = result.data
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "loadOtherLibraryItems: Successfully loaded ${otherItems.size} other items")
                     }
-                    
+
                     // Add other items to allItems
                     val currentItems = _appState.value.allItems.toMutableList()
                     // Remove existing items of this type to avoid duplicates
                     currentItems.removeAll { it.type in LibraryType.STUFF.itemKinds }
                     currentItems.addAll(otherItems)
-                    
+
                     _appState.value = _appState.value.copy(allItems = currentItems)
                 }
                 is ApiResult.Error -> {
                     Log.e("MainAppViewModel", "loadOtherLibraryItems: Failed to load other items: ${result.message}")
                     if (result.errorType != ErrorType.OPERATION_CANCELLED) {
                         _appState.value = _appState.value.copy(
-                            errorMessage = "Failed to load other items: ${result.message}"
+                            errorMessage = "Failed to load other items: ${result.message}",
                         )
                     }
                 }
