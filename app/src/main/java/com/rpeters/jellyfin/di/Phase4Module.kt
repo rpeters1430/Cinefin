@@ -1,5 +1,8 @@
 package com.rpeters.jellyfin.di
 
+import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
+import com.rpeters.jellyfin.data.repository.common.LibraryHealthChecker
+import com.rpeters.jellyfin.data.repository.common.LibraryLoadingManager
 import com.rpeters.jellyfin.ui.utils.PerformanceMonitor
 import com.rpeters.jellyfin.ui.viewmodel.common.SharedAppStateManager
 import dagger.Module
@@ -33,6 +36,17 @@ object Phase4Module {
         return PerformanceMonitor()
     }
 
-    // Note: Complex repository implementations removed for stability
-    // The concepts are demonstrated in SimpleOptimizedViewModel
+    @Provides
+    @Singleton
+    fun provideLibraryHealthChecker(): LibraryHealthChecker {
+        return LibraryHealthChecker()
+    }
+
+    @Provides
+    @Singleton
+    fun provideLibraryLoadingManager(
+        mediaRepository: JellyfinMediaRepository
+    ): LibraryLoadingManager {
+        return LibraryLoadingManager(mediaRepository)
+    }
 }
