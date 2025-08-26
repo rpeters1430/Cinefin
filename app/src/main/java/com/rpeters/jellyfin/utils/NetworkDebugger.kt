@@ -97,7 +97,7 @@ object NetworkDebugger {
                     Socket().use { socket ->
                         // Tag network traffic to avoid StrictMode violations
                         TrafficStats.setThreadStatsTag(Process.myPid())
-                        
+
                         try {
                             socket.connect(InetSocketAddress(host, port), CONNECTION_TIMEOUT)
                             val endTime = System.currentTimeMillis()

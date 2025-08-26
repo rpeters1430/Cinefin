@@ -61,9 +61,9 @@ class JellyfinMediaRepository @Inject constructor(
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
-        
+
         // Validate parentId before parsing - prevent HTTP 400 errors
-        val parent = parentId?.takeIf { it.isNotBlank() && it != "null" }?.let { 
+        val parent = parentId?.takeIf { it.isNotBlank() && it != "null" }?.let {
             try {
                 parseUuid(it, "parent")
             } catch (e: Exception) {

@@ -37,16 +37,16 @@ object NetworkModule {
             // Enhanced interceptor to tag network traffic for StrictMode compliance
             addNetworkInterceptor { chain ->
                 val request = chain.request()
-                
+
                 // Create a stable, unique tag based on request details
                 val url = request.url.toString()
                 val method = request.method
                 val tagString = "$method:${url.take(50)}" // First 50 chars of URL + method
                 val stableTag = tagString.hashCode() and 0x0FFFFFFF // Ensure positive value
-                
+
                 // Apply tag before the request
                 android.net.TrafficStats.setThreadStatsTag(stableTag)
-                
+
                 try {
                     val response = chain.proceed(request)
                     // Keep tag during response processing

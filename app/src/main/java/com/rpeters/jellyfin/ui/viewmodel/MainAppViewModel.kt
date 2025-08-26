@@ -934,10 +934,10 @@ class MainAppViewModel @Inject constructor(
             }
 
             // Fix HTTP 400: Get the first available movie library for parentId
-            val movieLibraries = _appState.value.libraries.filter { 
-                it.collectionType == org.jellyfin.sdk.model.api.CollectionType.MOVIES 
+            val movieLibraries = _appState.value.libraries.filter {
+                it.collectionType == org.jellyfin.sdk.model.api.CollectionType.MOVIES
             }
-            
+
             if (movieLibraries.isEmpty()) {
                 if (BuildConfig.DEBUG) {
                     Log.w("MainAppViewModel", "loadAllMovies: No movie libraries found")
@@ -945,11 +945,11 @@ class MainAppViewModel @Inject constructor(
                 _appState.value = _appState.value.copy(
                     isLoadingMovies = false,
                     hasMoreMovies = false,
-                    errorMessage = "No movie libraries available"
+                    errorMessage = "No movie libraries available",
                 )
                 return@launch
             }
-            
+
             // Use the first movie library as parentId to avoid HTTP 400
             val movieLibraryId = movieLibraries.first().id.toString()
 
@@ -1060,10 +1060,10 @@ class MainAppViewModel @Inject constructor(
             }
 
             // Fix HTTP 400: Get the first available TV show library for parentId
-            val tvLibraries = _appState.value.libraries.filter { 
-                it.collectionType == org.jellyfin.sdk.model.api.CollectionType.TVSHOWS 
+            val tvLibraries = _appState.value.libraries.filter {
+                it.collectionType == org.jellyfin.sdk.model.api.CollectionType.TVSHOWS
             }
-            
+
             if (tvLibraries.isEmpty()) {
                 if (BuildConfig.DEBUG) {
                     Log.w("MainAppViewModel", "loadAllTVShows: No TV show libraries found")
@@ -1071,11 +1071,11 @@ class MainAppViewModel @Inject constructor(
                 _appState.value = _appState.value.copy(
                     isLoadingTVShows = false,
                     hasMoreTVShows = false,
-                    errorMessage = "No TV show libraries available"
+                    errorMessage = "No TV show libraries available",
                 )
                 return@launch
             }
-            
+
             // Use the first TV show library as parentId to avoid HTTP 400
             val tvLibraryId = tvLibraries.first().id.toString()
 

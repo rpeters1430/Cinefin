@@ -138,12 +138,12 @@ class JellyfinAuthRepository @Inject constructor(
 
         // All URLs failed
         val errorType = getErrorType(lastException ?: Exception("Unknown error"))
-        
+
         // Don't log cancellation exceptions as errors
         if (errorType != ErrorType.OPERATION_CANCELLED) {
             Log.e("JellyfinAuthRepository", "All server connection attempts failed. Tried URLs: $urlVariations", lastException)
         }
-        
+
         val host = try {
             ServerUrlValidator.extractBaseUrl(urlVariations.first())?.let { URI(it).host }
         } catch (e: Exception) {
@@ -490,8 +490,9 @@ class JellyfinAuthRepository @Inject constructor(
 
     private fun getErrorType(e: Throwable): ErrorType {
         return when (e) {
-            is java.util.concurrent.CancellationException, 
-            is kotlinx.coroutines.CancellationException -> {
+            is java.util.concurrent.CancellationException,
+            is kotlinx.coroutines.CancellationException,
+            -> {
                 // Don't log cancellation as an error - it's expected during navigation
                 ErrorType.OPERATION_CANCELLED
             }
