@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -60,9 +59,9 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MovieDetailViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
+import kotlinx.coroutines.flow.map
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.CollectionType
-import kotlinx.coroutines.flow.map
 import java.util.Locale
 
 @androidx.media3.common.util.UnstableApi
@@ -77,18 +76,24 @@ fun JellyfinNavGraph(
     val libraries by mainViewModel.appState
         .map { it.libraries }
         .collectAsState(initial = emptyList())
-    val libraryTypes = libraries.mapNotNull { it.collectionType }.toSet()
 
     // Helper function to determine the route for a library
     fun libraryRouteFor(library: BaseItemDto): String? {
-        return when (library.collectionType) {
-            CollectionType.MOVIES -> Screen.Movies.route
-            CollectionType.TVSHOWS -> Screen.TVShows.route
-            CollectionType.MUSIC -> Screen.Music.route
-            else -> library.id?.toString()?.let { id ->
-                val type = library.collectionType?.toString()?.lowercase(Locale.getDefault()) ?: "mixed"
-                Screen.Stuff.createRoute(id, type)
+        return try {
+            when (library.collectionType) {
+                CollectionType.MOVIES -> Screen.Movies.route
+                CollectionType.TVSHOWS -> Screen.TVShows.route
+                CollectionType.MUSIC -> Screen.Music.route
+                CollectionType.BOOKS -> Screen.Books.route
+                CollectionType.HOMEVIDEOS -> Screen.HomeVideos.route
+                else -> library.id?.toString()?.let { id ->
+                    val type = library.collectionType?.toString()?.lowercase(Locale.getDefault()) ?: "mixed"
+                    Screen.Stuff.createRoute(id, type)
+                }
             }
+        } catch (e: Exception) {
+            Log.e("NavGraph", "Error determining library route for ${library.name}", e)
+            null
         }
     }
 
@@ -120,12 +125,9 @@ fun JellyfinNavGraph(
                 onRememberLoginChange = { viewModel.setRememberLogin(it) },
                 onAutoLogin = { viewModel.autoLogin() },
                 onBiometricLogin = {
-                    // For biometric auth, we need to convert context to FragmentActivity
-                    // This is a simplified approach - in a real app you might want to handle this differently
                     if (context is androidx.fragment.app.FragmentActivity) {
                         viewModel.autoLoginWithBiometric(context)
                     } else {
-                        // Fallback to regular auto-login if we can't get the activity
                         viewModel.autoLogin()
                     }
                 },
@@ -191,7 +193,6 @@ fun JellyfinNavGraph(
                             }
                         }
                         else -> {
-                            // For backward compatibility, try to handle movies
                             if (item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE) {
                                 item.id?.let { movieId ->
                                     navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
@@ -233,44 +234,42 @@ fun JellyfinNavGraph(
             )
         }
 
-        // Movies Screen - Always available, not conditional on library types
+        // Movies Screen - Always available
         composable(Screen.Movies.route) {
-                val viewModel = mainViewModel
-                val appState by viewModel.appState.collectAsStateWithLifecycle()
+            val viewModel = mainViewModel
+            val appState by viewModel.appState.collectAsStateWithLifecycle()
 
-                // Local state for filtering and sorting
-                var selectedFilter by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieFilter.ALL) }
-                var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
-                var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
+            var selectedFilter by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieFilter.ALL) }
+            var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
+            var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
 
-                // Load movies when first entering the screen using on-demand loading
-                LaunchedEffect(Unit) {
-                    viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
-                }
-
-                MoviesScreen(
-                    movies = appState.allMovies,
-                    isLoading = appState.isLoadingMovies,
-                    isLoadingMore = appState.isLoadingMovies,
-                    hasMoreItems = appState.hasMoreMovies,
-                    selectedFilter = selectedFilter,
-                    onFilterChange = { selectedFilter = it },
-                    selectedSort = selectedSort,
-                    onSortChange = { selectedSort = it },
-                    viewMode = viewMode,
-                    onViewModeChange = { viewMode = it },
-                    onMovieClick = { movie ->
-                        movie.id?.let { movieId ->
-                            navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
-                        }
-                    },
-                    onRefresh = { viewModel.refreshMovies() },
-                    onLoadMore = { viewModel.loadMoreMovies() },
-                    getImageUrl = { movie -> viewModel.getImageUrl(movie) },
-                )
+            LaunchedEffect(Unit) {
+                viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
             }
 
-        // TV Shows Screen - Always available, not conditional on library types
+            MoviesScreen(
+                movies = appState.allMovies,
+                isLoading = appState.isLoadingMovies,
+                isLoadingMore = appState.isLoadingMovies,
+                hasMoreItems = appState.hasMoreMovies,
+                selectedFilter = selectedFilter,
+                onFilterChange = { selectedFilter = it },
+                selectedSort = selectedSort,
+                onSortChange = { selectedSort = it },
+                viewMode = viewMode,
+                onViewModeChange = { viewMode = it },
+                onMovieClick = { movie ->
+                    movie.id?.let { movieId ->
+                        navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                    }
+                },
+                onRefresh = { viewModel.refreshMovies() },
+                onLoadMore = { viewModel.loadMoreMovies() },
+                getImageUrl = { movie -> viewModel.getImageUrl(movie) },
+            )
+        }
+
+        // TV Shows Screen - Always available
         composable(Screen.TVShows.route) {
             val viewModel = hiltViewModel<MainAppViewModel>()
 
@@ -300,7 +299,6 @@ fun JellyfinNavGraph(
             val lifecycleOwner = LocalLifecycleOwner.current
 
             LaunchedEffect(seriesId) {
-                // Load series data when screen is first shown
                 viewModel.loadTVShowDetails(seriesId)
             }
 
@@ -328,7 +326,6 @@ fun JellyfinNavGraph(
             val lifecycleOwner = LocalLifecycleOwner.current
 
             LaunchedEffect(seasonId) {
-                // Load episodes when screen is first shown
                 viewModel.loadEpisodes(seasonId)
             }
 
@@ -338,10 +335,7 @@ fun JellyfinNavGraph(
                 getImageUrl = { item -> mainViewModel.getImageUrl(item) },
                 onEpisodeClick = { episode ->
                     episode.id?.let { episodeId ->
-                        // Add episode to main app state for detail screen access
                         mainViewModel.addOrUpdateItem(episode)
-
-                        // Navigate to episode detail screen
                         navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
                     }
                 },
@@ -349,12 +343,11 @@ fun JellyfinNavGraph(
             )
         }
 
-        // Music Screen - Always available, not conditional on library types
+        // Music Screen - Always available
         composable(Screen.Music.route) {
             val viewModel = mainViewModel
 
             LaunchedEffect(Unit) {
-                // Load music data when screen is first shown using on-demand loading
                 viewModel.loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = false)
             }
 
@@ -479,7 +472,6 @@ fun JellyfinNavGraph(
                 minActiveState = Lifecycle.State.STARTED,
             )
 
-            // Find the movie from the loaded items or detail view model
             val movie = appState.allItems.find { it.id?.toString() == movieId }
             val detailState by detailViewModel.state.collectAsStateWithLifecycle(lifecycle = lifecycleOwner.lifecycle)
 
@@ -492,14 +484,12 @@ fun JellyfinNavGraph(
             val resolvedMovie = movie ?: detailState.movie
 
             if (resolvedMovie != null) {
-                // Get related items (movies from same genre or similar)
                 val relatedItems = appState.allItems.filter { item ->
                     item.id?.toString() != movieId &&
                         item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE &&
                         resolvedMovie.genres?.any { genre -> item.genres?.contains(genre) == true } == true
                 }.take(10)
 
-                // Cast preview: show artwork on Cast device when opening detail
                 LaunchedEffect(resolvedMovie.id) {
                     mainViewModel.sendCastPreview(resolvedMovie)
                 }
@@ -555,25 +545,20 @@ fun JellyfinNavGraph(
                 minActiveState = Lifecycle.State.STARTED,
             )
 
-            // Find the episode from the loaded items
-            // Try multiple approaches to find the episode
             val episode = appState.allItems.find { item ->
                 val itemIdString = item.id?.toString()
                 itemIdString == episodeId || itemIdString?.equals(episodeId, ignoreCase = true) == true
             } ?: appState.allItems.find { item ->
-                // Fallback: check if this is an episode with matching UUID
                 item.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE &&
                     item.id?.toString()?.equals(episodeId, ignoreCase = true) == true
             }
 
             when {
                 episode != null -> {
-                    // Episode found, show detail screen
                     if (BuildConfig.DEBUG) {
                         Log.d("NavGraph", "TVEpisodeDetail: Found episode ${episode.name} (${episode.id}) in app state")
                     }
 
-                    // Find the series information if available
                     val seriesInfo = episode.seriesId?.let { seriesId ->
                         appState.allItems.find { it.id?.toString() == seriesId.toString() }
                     }
@@ -651,13 +636,11 @@ fun JellyfinNavGraph(
                         },
                     )
 
-                    // Cast preview for episode
                     LaunchedEffect(episode.id) {
                         viewModel.sendCastPreview(episode)
                     }
                 }
                 appState.isLoading -> {
-                    // Still loading, show loading indicator
                     if (BuildConfig.DEBUG) {
                         Log.d("NavGraph", "TVEpisodeDetail: App state is loading, showing loading indicator")
                     }
@@ -666,7 +649,6 @@ fun JellyfinNavGraph(
                     }
                 }
                 !appState.errorMessage.isNullOrBlank() -> {
-                    // Error occurred during loading
                     Log.e("NavGraph", "TVEpisodeDetail: Error loading episode: ${appState.errorMessage}")
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(
@@ -697,26 +679,24 @@ fun JellyfinNavGraph(
                     }
                 }
                 else -> {
-                    // Episode not found and not loading - try to load it
-                    Log.w("NavGraph", "TVEpisodeDetail: Episode $episodeId not found in app state with ${appState.allItems.size} items, attempting to load")
-
-                    // Debug: Log available episode IDs for troubleshooting
-                    val episodeIds = appState.allItems
-                        .filter { it.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE }
-                        .map { "${it.name} (${it.id})" }
-                        .take(5) // Limit to first 5 for log readability
-                    if (BuildConfig.DEBUG) {
-                        Log.d("NavGraph", "TVEpisodeDetail: Available episodes: $episodeIds")
-                    }
-
-                    // Load the episode details if we haven't already
-                    LaunchedEffect(episodeId) {
-                        viewModel.loadEpisodeDetails(episodeId)
-                    }
-
-                    // Show loading while we fetch the episode
+                    Log.w("NavGraph", "TVEpisodeDetail: Episode not found and no error - this shouldn't happen")
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Text(
+                                text = "Episode not found",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { navController.popBackStack() },
+                            ) {
+                                Text("Go Back")
+                            }
+                        }
                     }
                 }
             }
