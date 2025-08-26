@@ -8,6 +8,8 @@ import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.di.JellyfinClientFactory
 import com.rpeters.jellyfin.ui.utils.RetryManager
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
@@ -23,6 +25,8 @@ open class BaseJellyfinRepository @Inject constructor(
     private val clientFactory: JellyfinClientFactory,
     protected val cache: JellyfinCache,
 ) {
+    // Mutex to prevent race conditions in token refresh
+    private val tokenRefreshMutex = Mutex()
     /**
      * Get Jellyfin API client on background thread to avoid StrictMode violations.
      * Client creation involves static initialization that performs file I/O.
@@ -37,6 +41,81 @@ open class BaseJellyfinRepository @Inject constructor(
 
     protected fun parseUuid(id: String, type: String) =
         RepositoryUtils.parseUuid(id, type)
+    
+    /**
+     * Checks if token needs refresh and proactively refreshes it
+     */
+    protected suspend fun validateTokenAndRefreshIfNeeded() {
+        if (authRepository.isTokenExpired()) {
+            tokenRefreshMutex.withLock {
+                // Double-check after acquiring lock (another thread might have refreshed)
+                if (authRepository.isTokenExpired()) {
+                    Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token expired, proactively refreshing")
+                    
+                    val refreshResult = authRepository.reAuthenticate()
+                    when (refreshResult) {
+                        is ApiResult.Success<*> -> {
+                            Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Proactive token refresh successful")
+                            clientFactory.invalidateClient()
+                        }
+                        is ApiResult.Error<*> -> {
+                            Logger.w(LogCategory.NETWORK, javaClass.simpleName, "Proactive token refresh failed: ${refreshResult.message}")
+                            // Don't throw here - let the subsequent API call handle the 401
+                        }
+                        is ApiResult.Loading<*> -> {
+                            Logger.w(LogCategory.NETWORK, javaClass.simpleName, "Unexpected loading state during proactive token refresh")
+                        }
+                        else -> {
+                            Logger.w(LogCategory.NETWORK, javaClass.simpleName, "Unknown result type from token refresh")
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Executes API call with automatic token refresh on 401 errors
+     */
+    protected suspend fun <T> executeWithTokenRefresh(
+        operation: suspend () -> T
+    ): T {
+        // Proactively check and refresh token if expired
+        validateTokenAndRefreshIfNeeded()
+        
+        return try {
+            operation()
+        } catch (e: Exception) {
+            if (RepositoryUtils.is401Error(e)) {
+                return tokenRefreshMutex.withLock {
+                    Logger.d(LogCategory.NETWORK, javaClass.simpleName, "HTTP 401 detected, attempting token refresh")
+                    
+                    val refreshResult = authRepository.reAuthenticate()
+                    when (refreshResult) {
+                        is ApiResult.Success<*> -> {
+                            Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token refresh successful, retrying operation")
+                            // Clear client factory to ensure new token is used
+                            clientFactory.invalidateClient()
+                            // Retry the operation with refreshed token
+                            operation()
+                        }
+                        is ApiResult.Error<*> -> {
+                            Logger.e(LogCategory.NETWORK, javaClass.simpleName, "Token refresh failed: ${refreshResult.message}")
+                            throw Exception("Authentication failed: ${refreshResult.message}")
+                        }
+                        is ApiResult.Loading<*> -> {
+                            throw Exception("Unexpected loading state during token refresh")
+                        }
+                        else -> {
+                            throw Exception("Unknown result type during token refresh")
+                        }
+                    }
+                }
+            } else {
+                throw e
+            }
+        }
+    }
 
     /**
      * Wraps a suspend block returning [ApiResult]. Any thrown exception

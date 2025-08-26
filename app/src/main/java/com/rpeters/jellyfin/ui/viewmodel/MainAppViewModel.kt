@@ -514,6 +514,7 @@ class MainAppViewModel @Inject constructor(
                 val result = mediaRepository.getLibraryItems(
                     startIndex = startIndex,
                     limit = pageSize,
+                    collectionType = null, // General loading, no specific type
                 )
             ) {
                 is ApiResult.Success -> {
@@ -803,6 +804,7 @@ class MainAppViewModel @Inject constructor(
                     itemTypes = "Video", // Specify Video type for home videos to prevent HTTP 400 errors
                     startIndex = 0,
                     limit = 100,
+                    collectionType = "homevideos",
                 )
             ) {
                 is ApiResult.Success -> {
@@ -983,6 +985,7 @@ class MainAppViewModel @Inject constructor(
                     itemTypes = "Movie",
                     startIndex = startIndex,
                     limit = pageSize,
+                    collectionType = "movies",
                 )
             ) {
                 is ApiResult.Success -> {
@@ -1119,6 +1122,7 @@ class MainAppViewModel @Inject constructor(
                     itemTypes = "Series",
                     startIndex = startIndex,
                     limit = pageSize,
+                    collectionType = "tvshows",
                 )
             ) {
                 is ApiResult.Success -> {
@@ -1371,6 +1375,7 @@ class MainAppViewModel @Inject constructor(
                     itemTypes = "MusicAlbum,MusicArtist,Audio", // Specify music-specific item types
                     startIndex = 0,
                     limit = 50,
+                    collectionType = "music",
                 )
             ) {
                 is ApiResult.Success -> {
@@ -1426,12 +1431,20 @@ class MainAppViewModel @Inject constructor(
                 Log.d("MainAppViewModel", "loadOtherLibraryItems: Library name='${library?.name}', collectionType=${library?.collectionType}")
             }
 
+            val collectionTypeStr = when (library?.collectionType) {
+                org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> "homevideos"
+                org.jellyfin.sdk.model.api.CollectionType.BOOKS -> "books"
+                org.jellyfin.sdk.model.api.CollectionType.PHOTOS -> "photos"
+                else -> null
+            }
+            
             when (
                 val result = mediaRepository.getLibraryItems(
                     parentId = libraryId,
                     itemTypes = itemTypes,
                     startIndex = 0,
                     limit = 50,
+                    collectionType = collectionTypeStr,
                 )
             ) {
                 is ApiResult.Success -> {

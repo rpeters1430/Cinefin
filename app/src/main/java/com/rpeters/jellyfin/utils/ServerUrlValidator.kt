@@ -143,59 +143,55 @@ object ServerUrlValidator {
         val isReverseProxyLikely = isReverseProxySetup(baseUrl, originalPort)
 
         if (isReverseProxyLikely) {
-            // Reverse proxy: prioritize the exact URL provided, then try common proxy patterns
+            // Reverse proxy: prioritize standard web ports first, then original URL
             when {
                 baseUrl.startsWith("https://") -> {
-                    // User specified HTTPS - likely reverse proxy handles SSL termination
-                    variations.add("$baseUrl$path")
-                    if (originalPort != -1 && originalPort != 443) {
-                        variations.add("https://$host:$originalPort$path")
-                    }
-                    // Try with /jellyfin path if not already present
-                    if (!path.contains("jellyfin")) {
-                        variations.add("https://$host:${if (originalPort != -1) originalPort else 443}/jellyfin")
-                        variations.add("https://$host/jellyfin")
-                    }
-                    // Try standard HTTPS ports
+                    // For HTTPS reverse proxy, prioritize standard ports first
+                    variations.add("https://$host:443/jellyfin")
+                    variations.add("https://$host/jellyfin") 
                     variations.add("https://$host:443$path")
                     variations.add("https://$host$path")
-                    // Try HTTP on same ports (proxy might redirect)
-                    if (originalPort != -1) {
-                        variations.add("http://$host:$originalPort$path")
+                    // Only try original non-standard port if specifically provided
+                    if (originalPort != -1 && originalPort != 443) {
+                        variations.add("https://$host:$originalPort/jellyfin")
+                        variations.add("https://$host:$originalPort$path")
+                        variations.add("$baseUrl$path")
                     }
+                    // Try HTTP fallback on standard ports only
+                    variations.add("http://$host/jellyfin")
                     variations.add("http://$host$path")
                 }
                 baseUrl.startsWith("http://") -> {
-                    variations.add("$baseUrl$path")
-                    if (originalPort != -1 && originalPort != 80) {
-                        variations.add("http://$host:$originalPort$path")
-                    }
-                    // Try with /jellyfin path if not already present
-                    if (!path.contains("jellyfin")) {
-                        variations.add("http://$host:${if (originalPort != -1) originalPort else 80}/jellyfin")
-                        variations.add("http://$host/jellyfin")
-                    }
-                    variations.add("http://$host:80$path")
+                    // For HTTP reverse proxy, prioritize standard ports first
+                    variations.add("http://$host/jellyfin")
+                    variations.add("http://$host:80/jellyfin")
                     variations.add("http://$host$path")
+                    variations.add("http://$host:80$path")
+                    // Only try original non-standard port if specifically provided
+                    if (originalPort != -1 && originalPort != 80) {
+                        variations.add("http://$host:$originalPort/jellyfin")
+                        variations.add("http://$host:$originalPort$path")
+                        variations.add("$baseUrl$path")
+                    }
+                    // Try HTTPS upgrade on standard ports
+                    variations.add("https://$host/jellyfin")
+                    variations.add("https://$host:443/jellyfin")
                 }
                 else -> {
-                    // No protocol, but looks like reverse proxy
-                    if (originalPort != -1) {
-                        variations.add("https://$host:$originalPort$path")
-                        variations.add("http://$host:$originalPort$path")
-                        // Try with /jellyfin path
-                        if (!path.contains("jellyfin")) {
-                            variations.add("https://$host:$originalPort/jellyfin")
-                            variations.add("http://$host:$originalPort/jellyfin")
-                        }
-                    }
-                    // Try with /jellyfin path
-                    if (!path.contains("jellyfin")) {
-                        variations.add("https://$host/jellyfin")
-                        variations.add("http://$host/jellyfin")
-                    }
+                    // No protocol, but looks like reverse proxy - prioritize standard web ports
+                    variations.add("https://$host/jellyfin")
+                    variations.add("https://$host:443/jellyfin")
+                    variations.add("http://$host/jellyfin")
+                    variations.add("http://$host:80/jellyfin")
                     variations.add("https://$host$path")
                     variations.add("http://$host$path")
+                    // Only try original non-standard port if specifically provided
+                    if (originalPort != -1 && originalPort !in listOf(80, 443)) {
+                        variations.add("https://$host:$originalPort/jellyfin")
+                        variations.add("http://$host:$originalPort/jellyfin")
+                        variations.add("https://$host:$originalPort$path")
+                        variations.add("http://$host:$originalPort$path")
+                    }
                 }
             }
         } else {
@@ -228,18 +224,20 @@ object ServerUrlValidator {
 
     /**
      * Determines if the URL looks like a reverse proxy setup.
-     * Indicators: non-standard ports, domain names with subdomains, paths
+     * Indicators: domain names with subdomains, paths, common web ports
      */
     private fun isReverseProxySetup(url: String, port: Int): Boolean {
         return when {
-            // Has a path component beyond root
+            // Has a path component beyond root (like /jellyfin)
             url.contains("/") && url.substringAfter("/").isNotEmpty() -> true
-            // Uses non-standard ports (not 80, 443, 8096, 8920)
-            port != -1 && port !in listOf(80, 443, DEFAULT_HTTP_PORT, DEFAULT_HTTPS_PORT) -> true
-            // Domain has subdomain (more than 2 parts)
+            // Domain has subdomain (more than 1 dot - e.g., server.domain.com)
             url.substringAfter("://").substringBefore("/").substringBefore(":").count { it == '.' } >= 2 -> true
+            // Uses standard web ports (likely reverse proxy)
+            port == 80 || port == 443 -> true
             // Contains common reverse proxy indicators in hostname
             url.contains("proxy") || url.contains("cdn") || url.contains("gateway") -> true
+            // Common subdomain patterns for reverse proxy
+            url.contains("jellyfin.") || url.contains("media.") || url.contains("stream.") -> true
             else -> false
         }
     }

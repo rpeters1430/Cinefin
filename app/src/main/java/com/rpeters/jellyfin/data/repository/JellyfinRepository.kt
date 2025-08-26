@@ -97,6 +97,17 @@ class JellyfinRepository @Inject constructor(
 
     // Helper function to get string resources
     private fun getString(resId: Int): String = context.getString(resId)
+    
+    // Helper function to get default item types for a collection
+    private fun getDefaultTypesForCollection(collectionType: String?): List<BaseItemKind>? = when (collectionType?.lowercase()) {
+        "movies" -> listOf(BaseItemKind.MOVIE)
+        "tvshows" -> listOf(BaseItemKind.SERIES)
+        "music" -> listOf(BaseItemKind.MUSIC_ALBUM, BaseItemKind.AUDIO, BaseItemKind.MUSIC_ARTIST)
+        "homevideos" -> listOf(BaseItemKind.VIDEO)
+        "photos" -> listOf(BaseItemKind.PHOTO)
+        "books" -> listOf(BaseItemKind.BOOK, BaseItemKind.AUDIO_BOOK)
+        else -> null
+    }
 
     /**
      * Get Jellyfin API client on background thread to avoid StrictMode violations.
@@ -231,17 +242,32 @@ class JellyfinRepository @Inject constructor(
                     "Series" -> BaseItemKind.SERIES
                     "Episode" -> BaseItemKind.EPISODE
                     "Audio" -> BaseItemKind.AUDIO
+                    "MusicAlbum" -> BaseItemKind.MUSIC_ALBUM
+                    "MusicArtist" -> BaseItemKind.MUSIC_ARTIST
+                    "Book" -> BaseItemKind.BOOK
+                    "AudioBook" -> BaseItemKind.AUDIO_BOOK
+                    "Video" -> BaseItemKind.VIDEO
+                    "Photo" -> BaseItemKind.PHOTO
                     else -> null
                 }
             }
+            
+            // Guard against empty list - can cause 400 errors
+            val includeTypes = itemKinds?.takeIf { it.isNotEmpty() }
+            
             val response = client.itemsApi.getItems(
                 userId = userUuid,
                 recursive = true,
-                includeItemTypes = itemKinds,
+                includeItemTypes = includeTypes,
                 startIndex = startIndex,
                 limit = limit,
             )
             ApiResult.Success(response.content.items ?: emptyList())
+        } catch (e: org.jellyfin.sdk.api.client.exception.InvalidStatusException) {
+            val errorMsg = try { e.message } catch (_: Throwable) { "Bad Request" }
+            Log.e("JellyfinRepository", "getLibraryItems 400/404: ${e.status} ${errorMsg ?: e.message}")
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error(errorMsg ?: "Bad Request: ${e.message}", e, errorType)
         } catch (e: Exception) {
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to load items: ${e.message}", e, errorType)
