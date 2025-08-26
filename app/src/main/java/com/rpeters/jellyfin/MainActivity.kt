@@ -29,10 +29,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        
+
         // Start main thread monitoring in debug builds
         MainThreadMonitor.startMonitoring()
-        
+
         imageLoaderInitializer = EntryPointAccessors.fromApplication(
             applicationContext,
             ImageLoaderInitializerEntryPoint::class.java,
@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    
+
     override fun onDestroy() {
         super.onDestroy()
         MainThreadMonitor.stopMonitoring()

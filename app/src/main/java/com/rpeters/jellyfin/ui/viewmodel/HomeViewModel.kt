@@ -55,7 +55,7 @@ class HomeViewModel @Inject constructor(
     fun loadHomeData() {
         viewModelScope.launch {
             MainThreadMonitor.warnIfMainThread("HomeViewModel.loadHomeData")
-            
+
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Loading home screen data")
             }
@@ -70,7 +70,7 @@ class HomeViewModel @Inject constructor(
                     val librariesDeferred = async { loadLibraries() }
                     val recentlyAddedDeferred = async { loadRecentlyAdded() }
                     val recentlyAddedByTypesDeferred = async { loadRecentlyAddedByTypes() }
-                    
+
                     // Wait for all operations to complete
                     librariesDeferred.await()
                     recentlyAddedDeferred.await()
@@ -103,7 +103,7 @@ class HomeViewModel @Inject constructor(
                     val librariesDeferred = async { loadLibraries(forceRefresh = true) }
                     val recentlyAddedDeferred = async { loadRecentlyAdded(forceRefresh = true) }
                     val recentlyAddedByTypesDeferred = async { loadRecentlyAddedByTypes(forceRefresh = true) }
-                    
+
                     // Wait for all operations to complete
                     librariesDeferred.await()
                     recentlyAddedDeferred.await()
@@ -120,7 +120,7 @@ class HomeViewModel @Inject constructor(
      */
     private suspend fun loadLibraries(forceRefresh: Boolean = false) {
         val result = mediaRepository.getUserLibraries(forceRefresh)
-        
+
         when (result) {
             is ApiResult.Success -> {
                 if (BuildConfig.DEBUG) {
@@ -147,7 +147,7 @@ class HomeViewModel @Inject constructor(
      */
     private suspend fun loadRecentlyAdded(forceRefresh: Boolean = false) {
         val result = mediaRepository.getRecentlyAdded(RECENTLY_ADDED_LIMIT, forceRefresh)
-        
+
         when (result) {
             is ApiResult.Success -> {
                 if (BuildConfig.DEBUG) {
@@ -197,7 +197,7 @@ class HomeViewModel @Inject constructor(
         // Wait for all results and process them
         deferredResults.forEach { deferred ->
             val (contentType, result) = deferred.await()
-            
+
             when (result) {
                 is ApiResult.Success -> {
                     if (result.data.isNotEmpty()) {

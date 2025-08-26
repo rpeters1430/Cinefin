@@ -40,14 +40,14 @@ class JellyfinMediaRepository @Inject constructor(
                 operationName = "getUserLibraries",
                 cacheKey = "user_libraries",
                 cacheTtlMs = 60 * 60 * 1000L, // 1 hour
-                block = operation
+                block = operation,
             )
         } else {
             executeWithCache(
                 operationName = "getUserLibraries",
                 cacheKey = "user_libraries",
                 cacheTtlMs = 60 * 60 * 1000L, // 1 hour
-                block = operation
+                block = operation,
             )
         }
     }
@@ -116,14 +116,14 @@ class JellyfinMediaRepository @Inject constructor(
                 operationName = "getRecentlyAdded",
                 cacheKey = "recently_added",
                 cacheTtlMs = 15 * 60 * 1000L, // 15 minutes - improved cache efficiency
-                block = operation
+                block = operation,
             )
         } else {
             executeWithCache(
                 operationName = "getRecentlyAdded",
                 cacheKey = "recently_added",
                 cacheTtlMs = 15 * 60 * 1000L, // 15 minutes - improved cache efficiency
-                block = operation
+                block = operation,
             )
         }
     }
@@ -146,20 +146,20 @@ class JellyfinMediaRepository @Inject constructor(
         }
 
         val cacheKey = "recently_added_${itemType.name.lowercase()}"
-        
+
         return if (forceRefresh) {
             executeRefreshWithCache(
                 operationName = "getRecentlyAddedByType",
                 cacheKey = cacheKey,
                 cacheTtlMs = 15 * 60 * 1000L, // 15 minutes - improved cache efficiency
-                block = operation
+                block = operation,
             )
         } else {
             executeWithCache(
                 operationName = "getRecentlyAddedByType",
                 cacheKey = cacheKey,
                 cacheTtlMs = 15 * 60 * 1000L, // 15 minutes - improved cache efficiency
-                block = operation
+                block = operation,
             )
         }
     }

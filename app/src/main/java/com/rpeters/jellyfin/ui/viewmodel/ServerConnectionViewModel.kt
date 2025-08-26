@@ -126,7 +126,7 @@ class ServerConnectionViewModel @Inject constructor(
             )
             return
         }
-        
+
         // Validate and normalize the server URL
         val normalizedServerUrl = ServerUrlValidator.validateAndNormalizeUrl(serverUrl)
         if (normalizedServerUrl == null) {
@@ -339,7 +339,7 @@ class ServerConnectionViewModel @Inject constructor(
             )
             return
         }
-        
+
         // Validate and normalize the server URL
         val normalizedServerUrl = ServerUrlValidator.validateAndNormalizeUrl(serverUrl)
         if (normalizedServerUrl == null) {
