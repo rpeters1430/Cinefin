@@ -61,16 +61,43 @@ class JellyfinMediaRepository @Inject constructor(
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
-        val parent = parentId?.let { parseUuid(it, "parent") }
+        
+        // Validate parentId before parsing - prevent HTTP 400 errors
+        val parent = parentId?.takeIf { it.isNotBlank() && it != "null" }?.let { 
+            try {
+                parseUuid(it, "parent")
+            } catch (e: Exception) {
+                android.util.Log.w("JellyfinMediaRepository", "Invalid parentId format: $it", e)
+                throw IllegalArgumentException("Invalid parent library ID format: $it")
+            }
+        }
 
+        // Validate and parse item types
         val itemKinds = itemTypes?.split(",")?.mapNotNull { type ->
             when (type.trim()) {
                 "Movie" -> BaseItemKind.MOVIE
                 "Series" -> BaseItemKind.SERIES
                 "Episode" -> BaseItemKind.EPISODE
                 "Audio" -> BaseItemKind.AUDIO
-                else -> null
+                "MusicAlbum" -> BaseItemKind.MUSIC_ALBUM
+                "MusicArtist" -> BaseItemKind.MUSIC_ARTIST
+                "Book" -> BaseItemKind.BOOK
+                "AudioBook" -> BaseItemKind.AUDIO_BOOK
+                "Video" -> BaseItemKind.VIDEO
+                "Photo" -> BaseItemKind.PHOTO
+                else -> {
+                    android.util.Log.w("JellyfinMediaRepository", "Unknown item type: ${type.trim()}")
+                    null
+                }
             }
+        }
+
+        // Validate pagination parameters
+        val validStartIndex = maxOf(0, startIndex)
+        val validLimit = when {
+            limit <= 0 -> 50 // Default to 50 if invalid
+            limit > 200 -> 200 // Cap at 200 for performance
+            else -> limit
         }
 
         val response = client.itemsApi.getItems(
@@ -78,8 +105,8 @@ class JellyfinMediaRepository @Inject constructor(
             parentId = parent,
             recursive = true,
             includeItemTypes = itemKinds,
-            startIndex = startIndex,
-            limit = limit,
+            startIndex = validStartIndex,
+            limit = validLimit,
         )
         response.content.items ?: emptyList()
     }

@@ -57,6 +57,7 @@ object RepositoryUtils {
             -> ErrorType.NETWORK
 
             is HttpException -> when (e.code()) {
+                400 -> ErrorType.BAD_REQUEST
                 401 -> ErrorType.UNAUTHORIZED
                 403 -> ErrorType.FORBIDDEN
                 404 -> ErrorType.NOT_FOUND
@@ -67,16 +68,18 @@ object RepositoryUtils {
             is InvalidStatusException -> {
                 val statusCode = extractStatusCode(e)
                 when (statusCode) {
+                    400 -> ErrorType.BAD_REQUEST
                     401 -> ErrorType.UNAUTHORIZED
                     403 -> ErrorType.FORBIDDEN
                     404 -> ErrorType.NOT_FOUND
                     in 500..599 -> ErrorType.SERVER_ERROR
                     else -> {
-                        // Fallback: check message content for 401
-                        if (e.message?.contains("401") == true) {
-                            ErrorType.UNAUTHORIZED
-                        } else {
-                            ErrorType.UNKNOWN
+                        // Fallback: check message content for specific errors
+                        val message = e.message ?: ""
+                        when {
+                            message.contains("401") -> ErrorType.UNAUTHORIZED
+                            message.contains("400") -> ErrorType.BAD_REQUEST
+                            else -> ErrorType.UNKNOWN
                         }
                     }
                 }

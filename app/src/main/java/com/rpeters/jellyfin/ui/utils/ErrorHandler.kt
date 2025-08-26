@@ -213,6 +213,7 @@ object ErrorHandler {
             ErrorType.UNAUTHORIZED -> attemptNumber < 3 // Allow up to 2 retries for token refresh scenarios
             ErrorType.FORBIDDEN -> false // Don't retry permission errors
             ErrorType.NOT_FOUND -> false // Don't retry 404s
+            ErrorType.BAD_REQUEST -> false // Don't retry invalid request parameters
             ErrorType.OPERATION_CANCELLED -> false // User cancelled
             ErrorType.TIMEOUT -> true // Retry timeout errors
             ErrorType.VALIDATION -> false // Don't retry validation errors

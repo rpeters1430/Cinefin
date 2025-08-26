@@ -25,6 +25,7 @@ enum class ErrorType {
     NOT_FOUND,
     UNAUTHORIZED,
     FORBIDDEN,
+    BAD_REQUEST,
     OPERATION_CANCELLED,
     TIMEOUT,
     VALIDATION,
