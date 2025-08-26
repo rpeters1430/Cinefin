@@ -63,9 +63,9 @@ object NetworkModule {
             }
         }
             .connectionPool(okhttp3.ConnectionPool(10, 5, TimeUnit.MINUTES))
-            .connectTimeout(10, TimeUnit.SECONDS)  // Reduced from 30s for faster failure detection
-            .readTimeout(30, TimeUnit.SECONDS)      // Reduced from 60s for faster timeout
-            .writeTimeout(15, TimeUnit.SECONDS)     // Reduced from 30s for faster timeout
+            .connectTimeout(10, TimeUnit.SECONDS) // Reduced from 30s for faster failure detection
+            .readTimeout(30, TimeUnit.SECONDS) // Reduced from 60s for faster timeout
+            .writeTimeout(15, TimeUnit.SECONDS) // Reduced from 30s for faster timeout
             .retryOnConnectionFailure(true)
             .build()
     }

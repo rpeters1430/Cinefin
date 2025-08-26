@@ -99,7 +99,7 @@ object RepositoryUtils {
             Log.w(TAG, "validateServer: Server has no access token - authentication may have expired")
             throw IllegalStateException("Authentication token is missing. Please log in again.")
         }
-        
+
         if (server.userId == null) {
             Log.w(TAG, "validateServer: Server has no user ID - authentication may be incomplete")
             throw IllegalStateException("User authentication is incomplete. Please log in again.")

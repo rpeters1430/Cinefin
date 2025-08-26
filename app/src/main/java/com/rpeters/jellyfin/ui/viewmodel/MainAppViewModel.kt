@@ -78,7 +78,7 @@ class MainAppViewModel @Inject constructor(
 
     // ✅ FIX: Track which library types have been loaded to prevent double loading
     private val loadedLibraryTypes = mutableSetOf<String>()
-    
+
     // Prevent multiple concurrent data loading operations
     @Volatile
     private var isLoadingData = false
@@ -95,11 +95,11 @@ class MainAppViewModel @Inject constructor(
             }
             return
         }
-        
+
         viewModelScope.launch {
             measureSuspendTime("loadInitialData") {
                 isLoadingData = true
-                
+
                 try {
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "loadInitialData: Starting to load all data (forceRefresh=$forceRefresh)")
@@ -112,254 +112,254 @@ class MainAppViewModel @Inject constructor(
                             Log.w("MainAppViewModel", "loadInitialData: User not authenticated, skipping data load")
                         }
                         _appState.value = _appState.value.copy(
-                            isLoading = false, 
-                            errorMessage = "Authentication required. Please log in again."
+                            isLoading = false,
+                            errorMessage = "Authentication required. Please log in again.",
                         )
                         return@measureSuspendTime
                     }
 
-                val previousLibraries = _appState.value.libraries
+                    val previousLibraries = _appState.value.libraries
 
-                _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
+                    _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
 
-                // Launch libraries and recently added loading in parallel
-                if (BuildConfig.DEBUG) {
-                    Log.d("MainAppViewModel", "loadInitialData: Loading libraries and recently added in parallel")
-                }
-
-                val librariesDeferred = async {
-                    measureSuspendTime("getUserLibraries") {
-                        mediaRepository.getUserLibraries(forceRefresh)
+                    // Launch libraries and recently added loading in parallel
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadInitialData: Loading libraries and recently added in parallel")
                     }
-                }
-                val recentlyAddedDeferred = async {
-                    measureSuspendTime("getRecentlyAdded") {
-                        mediaRepository.getRecentlyAdded()
-                    }
-                }
 
-                // Process libraries result
-                when (val librariesResult = librariesDeferred.await()) {
-                    is ApiResult.Success -> {
-                        if (BuildConfig.DEBUG) {
-                            Log.d("MainAppViewModel", "loadInitialData: Loaded ${librariesResult.data.size} libraries")
+                    val librariesDeferred = async {
+                        measureSuspendTime("getUserLibraries") {
+                            mediaRepository.getUserLibraries(forceRefresh)
                         }
+                    }
+                    val recentlyAddedDeferred = async {
+                        measureSuspendTime("getRecentlyAdded") {
+                            mediaRepository.getRecentlyAdded()
+                        }
+                    }
 
-                        val newLibraries = librariesResult.data
-                        val previousIds = previousLibraries.mapNotNull { it.id?.toString() }.toSet()
-                        val newIds = newLibraries.mapNotNull { it.id?.toString() }.toSet()
-
-                        val removedIds = previousIds - newIds
-                        var updatedAllMovies = _appState.value.allMovies
-                        var updatedAllTVShows = _appState.value.allTVShows
-                        var updatedAllItems = _appState.value.allItems
-                        val updatedHomeVideos = _appState.value.homeVideosByLibrary.toMutableMap()
-
-                        if (removedIds.isNotEmpty()) {
-                            val removedLibraries = previousLibraries.filter { it.id?.toString() in removedIds }
-                            val newLibrariesByType: Map<String?, List<BaseItemDto>> = newLibraries.groupBy {
-                                (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
+                    // Process libraries result
+                    when (val librariesResult = librariesDeferred.await()) {
+                        is ApiResult.Success -> {
+                            if (BuildConfig.DEBUG) {
+                                Log.d("MainAppViewModel", "loadInitialData: Loaded ${librariesResult.data.size} libraries")
                             }
-                            var customRemoved = false
 
-                            removedLibraries.groupBy<BaseItemDto, String?> {
-                                (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
-                            }.forEach { (type, libs) ->
-                                val remaining = newLibrariesByType[type]?.isNotEmpty() == true
-                                when (type) {
-                                    "movies" -> {
-                                        if (remaining) {
-                                            loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
-                                        } else {
-                                            updatedAllMovies = emptyList()
-                                            loadedLibraryTypes.remove(LibraryType.MOVIES.name)
-                                        }
-                                    }
-                                    "tvshows" -> {
-                                        if (remaining) {
-                                            loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true)
-                                        } else {
-                                            updatedAllTVShows = emptyList()
-                                            loadedLibraryTypes.remove(LibraryType.TV_SHOWS.name)
-                                        }
-                                    }
-                                    "music" -> {
-                                        if (remaining) {
-                                            loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true)
-                                        } else {
-                                            updatedAllItems = updatedAllItems.filterNot {
-                                                LibraryType.MUSIC.itemKinds.contains(it.type)
+                            val newLibraries = librariesResult.data
+                            val previousIds = previousLibraries.mapNotNull { it.id?.toString() }.toSet()
+                            val newIds = newLibraries.mapNotNull { it.id?.toString() }.toSet()
+
+                            val removedIds = previousIds - newIds
+                            var updatedAllMovies = _appState.value.allMovies
+                            var updatedAllTVShows = _appState.value.allTVShows
+                            var updatedAllItems = _appState.value.allItems
+                            val updatedHomeVideos = _appState.value.homeVideosByLibrary.toMutableMap()
+
+                            if (removedIds.isNotEmpty()) {
+                                val removedLibraries = previousLibraries.filter { it.id?.toString() in removedIds }
+                                val newLibrariesByType: Map<String?, List<BaseItemDto>> = newLibraries.groupBy {
+                                    (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
+                                }
+                                var customRemoved = false
+
+                                removedLibraries.groupBy<BaseItemDto, String?> {
+                                    (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
+                                }.forEach { (type, libs) ->
+                                    val remaining = newLibrariesByType[type]?.isNotEmpty() == true
+                                    when (type) {
+                                        "movies" -> {
+                                            if (remaining) {
+                                                loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
+                                            } else {
+                                                updatedAllMovies = emptyList()
+                                                loadedLibraryTypes.remove(LibraryType.MOVIES.name)
                                             }
-                                            loadedLibraryTypes.remove(LibraryType.MUSIC.name)
                                         }
-                                    }
-                                    else -> {
-                                        customRemoved = true
-                                        libs.forEach { lib ->
-                                            lib.id?.toString()?.let { updatedHomeVideos.remove(it) }
+                                        "tvshows" -> {
+                                            if (remaining) {
+                                                loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true)
+                                            } else {
+                                                updatedAllTVShows = emptyList()
+                                                loadedLibraryTypes.remove(LibraryType.TV_SHOWS.name)
+                                            }
+                                        }
+                                        "music" -> {
+                                            if (remaining) {
+                                                loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true)
+                                            } else {
+                                                updatedAllItems = updatedAllItems.filterNot {
+                                                    LibraryType.MUSIC.itemKinds.contains(it.type)
+                                                }
+                                                loadedLibraryTypes.remove(LibraryType.MUSIC.name)
+                                            }
+                                        }
+                                        else -> {
+                                            customRemoved = true
+                                            libs.forEach { lib ->
+                                                lib.id?.toString()?.let { updatedHomeVideos.remove(it) }
+                                            }
                                         }
                                     }
                                 }
+
+                                if (customRemoved && newLibraries.none { (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault()) !in setOf("movies", "tvshows", "music") }) {
+                                    loadedLibraryTypes.remove(LibraryType.STUFF.name)
+                                }
                             }
 
-                            if (customRemoved && newLibraries.none { (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault()) !in setOf("movies", "tvshows", "music") }) {
-                                loadedLibraryTypes.remove(LibraryType.STUFF.name)
-                            }
-                        }
-
-                        _appState.value = _appState.value.copy(
-                            allMovies = updatedAllMovies,
-                            allTVShows = updatedAllTVShows,
-                            allItems = updatedAllItems,
-                            homeVideosByLibrary = updatedHomeVideos,
-                            libraries = newLibraries,
-                        )
-
-                        val addedLibraries = newLibraries.filter { it.id?.toString() !in previousIds }
-                        val addedTypes: Set<String> = addedLibraries.mapNotNull {
-                            (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
-                        }.toSet()
-                        if ("movies" in addedTypes) {
-                            loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
-                        }
-                        if ("tvshows" in addedTypes) {
-                            loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true)
-                        }
-                        if ("music" in addedTypes) {
-                            loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true)
-                        }
-                        addedLibraries.filter {
-                            val type = (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
-                            type !in setOf("movies", "tvshows", "music")
-                        }.forEach { library ->
-                            library.id?.let { loadHomeVideos(it.toString()) }
-                        }
-                    }
-                    is ApiResult.Error -> {
-                        // ✅ FIX: Don't show error messages for cancelled operations (navigation/lifecycle)
-                        if (librariesResult.errorType == ErrorType.OPERATION_CANCELLED) {
-                            if (BuildConfig.DEBUG) {
-                                Log.d("MainAppViewModel", "loadInitialData: Library loading was cancelled (navigation)")
-                            }
-                        } else {
-                            Log.e("MainAppViewModel", "loadInitialData: Failed to load libraries: ${librariesResult.message}")
                             _appState.value = _appState.value.copy(
-                                errorMessage = "Failed to load libraries: ${librariesResult.message}",
+                                allMovies = updatedAllMovies,
+                                allTVShows = updatedAllTVShows,
+                                allItems = updatedAllItems,
+                                homeVideosByLibrary = updatedHomeVideos,
+                                libraries = newLibraries,
                             )
-                        }
-                    }
-                    is ApiResult.Loading -> {
-                        // Already handled
-                    }
-                }
 
-                // Process recently added result
-                when (val recentlyAddedResult = recentlyAddedDeferred.await()) {
-                    is ApiResult.Success -> {
-                        if (BuildConfig.DEBUG) {
-                            Log.d("MainAppViewModel", "loadInitialData: Loaded ${recentlyAddedResult.data.size} recently added items")
-                        }
-                        _appState.value = _appState.value.copy(recentlyAdded = recentlyAddedResult.data)
-                    }
-                    is ApiResult.Error -> {
-                        // ✅ FIX: Don't show error messages for cancelled operations
-                        if (recentlyAddedResult.errorType == ErrorType.OPERATION_CANCELLED) {
-                            if (BuildConfig.DEBUG) {
-                                Log.d("MainAppViewModel", "loadInitialData: Recent items loading was cancelled (navigation)")
+                            val addedLibraries = newLibraries.filter { it.id?.toString() !in previousIds }
+                            val addedTypes: Set<String> = addedLibraries.mapNotNull {
+                                (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
+                            }.toSet()
+                            if ("movies" in addedTypes) {
+                                loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
                             }
-                        } else {
-                            Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items: ${recentlyAddedResult.message}")
-                            // Don't override library error, just log this
-                            if (_appState.value.errorMessage == null) {
-                                _appState.value = _appState.value.copy(
-                                    errorMessage = "Failed to load recent items: ${recentlyAddedResult.message}",
-                                )
+                            if ("tvshows" in addedTypes) {
+                                loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true)
                             }
-                        }
-                    }
-                    is ApiResult.Loading -> {
-                        // Already handled
-                    }
-                }
-
-                // Load recently added items by types - PARALLEL LOADING
-                if (BuildConfig.DEBUG) {
-                    Log.d("MainAppViewModel", "loadInitialData: Loading recently added items by types (parallel)")
-                }
-
-                // Launch all API calls concurrently
-                val types = listOf(
-                    BaseItemKind.MOVIE to "MOVIE",
-                    BaseItemKind.SERIES to "SERIES",
-                    BaseItemKind.EPISODE to "EPISODE",
-                    BaseItemKind.AUDIO to "AUDIO",
-                    BaseItemKind.VIDEO to "VIDEO",
-                )
-
-                val contentTypeDeferreds = types.map { (itemType, typeKey) ->
-                    async {
-                        typeKey to mediaRepository.getRecentlyAddedByType(itemType, limit = 20)
-                    }
-                }
-
-                // Await all results concurrently
-                val contentTypeResults = contentTypeDeferreds.awaitAll()
-
-                // Process results
-                val recentlyAddedByTypes = mutableMapOf<String, List<BaseItemDto>>()
-                contentTypeResults.forEach { (typeKey, result) ->
-                    when (result) {
-                        is ApiResult.Success -> {
-                            recentlyAddedByTypes[typeKey] = result.data
-                            val displayName = when (typeKey) {
-                                "MOVIE" -> "Movies"
-                                "SERIES" -> "TV Shows"
-                                "EPISODE" -> "TV Episodes"
-                                "AUDIO" -> "Music"
-                                "VIDEO" -> "Home Videos"
-                                else -> typeKey
+                            if ("music" in addedTypes) {
+                                loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true)
                             }
-                            if (BuildConfig.DEBUG) {
-                                Log.d("MainAppViewModel", "loadInitialData: $displayName: ${result.data.size} items")
+                            addedLibraries.filter {
+                                val type = (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
+                                type !in setOf("movies", "tvshows", "music")
+                            }.forEach { library ->
+                                library.id?.let { loadHomeVideos(it.toString()) }
                             }
                         }
                         is ApiResult.Error -> {
-                            val displayName = when (typeKey) {
-                                "MOVIE" -> "Movies"
-                                "SERIES" -> "TV Shows"
-                                "EPISODE" -> "TV Episodes"
-                                "AUDIO" -> "Music"
-                                "VIDEO" -> "Home Videos"
-                                else -> typeKey
-                            }
-                            if (result.errorType != ErrorType.OPERATION_CANCELLED) {
+                            // ✅ FIX: Don't show error messages for cancelled operations (navigation/lifecycle)
+                            if (librariesResult.errorType == ErrorType.OPERATION_CANCELLED) {
                                 if (BuildConfig.DEBUG) {
-                                    Log.e("MainAppViewModel", "loadInitialData: Failed to load recent $displayName: ${result.message}")
+                                    Log.d("MainAppViewModel", "loadInitialData: Library loading was cancelled (navigation)")
+                                }
+                            } else {
+                                Log.e("MainAppViewModel", "loadInitialData: Failed to load libraries: ${librariesResult.message}")
+                                _appState.value = _appState.value.copy(
+                                    errorMessage = "Failed to load libraries: ${librariesResult.message}",
+                                )
+                            }
+                        }
+                        is ApiResult.Loading -> {
+                            // Already handled
+                        }
+                    }
+
+                    // Process recently added result
+                    when (val recentlyAddedResult = recentlyAddedDeferred.await()) {
+                        is ApiResult.Success -> {
+                            if (BuildConfig.DEBUG) {
+                                Log.d("MainAppViewModel", "loadInitialData: Loaded ${recentlyAddedResult.data.size} recently added items")
+                            }
+                            _appState.value = _appState.value.copy(recentlyAdded = recentlyAddedResult.data)
+                        }
+                        is ApiResult.Error -> {
+                            // ✅ FIX: Don't show error messages for cancelled operations
+                            if (recentlyAddedResult.errorType == ErrorType.OPERATION_CANCELLED) {
+                                if (BuildConfig.DEBUG) {
+                                    Log.d("MainAppViewModel", "loadInitialData: Recent items loading was cancelled (navigation)")
+                                }
+                            } else {
+                                Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items: ${recentlyAddedResult.message}")
+                                // Don't override library error, just log this
+                                if (_appState.value.errorMessage == null) {
+                                    _appState.value = _appState.value.copy(
+                                        errorMessage = "Failed to load recent items: ${recentlyAddedResult.message}",
+                                    )
                                 }
                             }
                         }
                         is ApiResult.Loading -> {
-                            // Ignore loading state for this
+                            // Already handled
                         }
                     }
-                }
 
-                // Update state with the collected data
-                _appState.value = _appState.value.copy(recentlyAddedByTypes = recentlyAddedByTypes)
-
-                // ✅ FIX: Only load essential data initially, load library-specific data on-demand
-                // This prevents the double loading issue when navigating to library type screens
-
-                _appState.value = _appState.value.copy(isLoading = false)
-                if (BuildConfig.DEBUG) {
-                    Log.d("MainAppViewModel", "loadInitialData: Completed loading essential data. Library-specific data will load on-demand.")
-                    PerformanceMonitor.logMemoryUsage("After loading data")
-
-                    // Check for memory pressure and suggest GC if needed
-                    if (PerformanceMonitor.checkMemoryPressure()) {
-                        PerformanceMonitor.forceGarbageCollection("High memory usage after data loading")
+                    // Load recently added items by types - PARALLEL LOADING
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadInitialData: Loading recently added items by types (parallel)")
                     }
-                }
+
+                    // Launch all API calls concurrently
+                    val types = listOf(
+                        BaseItemKind.MOVIE to "MOVIE",
+                        BaseItemKind.SERIES to "SERIES",
+                        BaseItemKind.EPISODE to "EPISODE",
+                        BaseItemKind.AUDIO to "AUDIO",
+                        BaseItemKind.VIDEO to "VIDEO",
+                    )
+
+                    val contentTypeDeferreds = types.map { (itemType, typeKey) ->
+                        async {
+                            typeKey to mediaRepository.getRecentlyAddedByType(itemType, limit = 20)
+                        }
+                    }
+
+                    // Await all results concurrently
+                    val contentTypeResults = contentTypeDeferreds.awaitAll()
+
+                    // Process results
+                    val recentlyAddedByTypes = mutableMapOf<String, List<BaseItemDto>>()
+                    contentTypeResults.forEach { (typeKey, result) ->
+                        when (result) {
+                            is ApiResult.Success -> {
+                                recentlyAddedByTypes[typeKey] = result.data
+                                val displayName = when (typeKey) {
+                                    "MOVIE" -> "Movies"
+                                    "SERIES" -> "TV Shows"
+                                    "EPISODE" -> "TV Episodes"
+                                    "AUDIO" -> "Music"
+                                    "VIDEO" -> "Home Videos"
+                                    else -> typeKey
+                                }
+                                if (BuildConfig.DEBUG) {
+                                    Log.d("MainAppViewModel", "loadInitialData: $displayName: ${result.data.size} items")
+                                }
+                            }
+                            is ApiResult.Error -> {
+                                val displayName = when (typeKey) {
+                                    "MOVIE" -> "Movies"
+                                    "SERIES" -> "TV Shows"
+                                    "EPISODE" -> "TV Episodes"
+                                    "AUDIO" -> "Music"
+                                    "VIDEO" -> "Home Videos"
+                                    else -> typeKey
+                                }
+                                if (result.errorType != ErrorType.OPERATION_CANCELLED) {
+                                    if (BuildConfig.DEBUG) {
+                                        Log.e("MainAppViewModel", "loadInitialData: Failed to load recent $displayName: ${result.message}")
+                                    }
+                                }
+                            }
+                            is ApiResult.Loading -> {
+                                // Ignore loading state for this
+                            }
+                        }
+                    }
+
+                    // Update state with the collected data
+                    _appState.value = _appState.value.copy(recentlyAddedByTypes = recentlyAddedByTypes)
+
+                    // ✅ FIX: Only load essential data initially, load library-specific data on-demand
+                    // This prevents the double loading issue when navigating to library type screens
+
+                    _appState.value = _appState.value.copy(isLoading = false)
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadInitialData: Completed loading essential data. Library-specific data will load on-demand.")
+                        PerformanceMonitor.logMemoryUsage("After loading data")
+
+                        // Check for memory pressure and suggest GC if needed
+                        if (PerformanceMonitor.checkMemoryPressure()) {
+                            PerformanceMonitor.forceGarbageCollection("High memory usage after data loading")
+                        }
+                    }
                 } finally {
                     isLoadingData = false
                 }
@@ -774,11 +774,11 @@ class MainAppViewModel @Inject constructor(
                 }
                 return@launch
             }
-            
+
             // Check if the library still exists to prevent 400 errors from removed libraries
             val currentLibraries = _appState.value.libraries
             val libraryExists = currentLibraries.any { it.id?.toString() == libraryId }
-            
+
             if (!libraryExists) {
                 if (BuildConfig.DEBUG) {
                     Log.w("MainAppViewModel", "loadHomeVideos: Library $libraryId no longer exists, skipping API call")
@@ -789,7 +789,7 @@ class MainAppViewModel @Inject constructor(
                 _appState.value = _appState.value.copy(homeVideosByLibrary = updated)
                 return@launch
             }
-            
+
             when (val result = mediaRepository.getLibraryItems(parentId = libraryId)) {
                 is ApiResult.Success -> {
                     val updated = _appState.value.homeVideosByLibrary.toMutableMap()
@@ -898,7 +898,7 @@ class MainAppViewModel @Inject constructor(
                 }
                 _appState.value = _appState.value.copy(
                     isLoadingMovies = false,
-                    errorMessage = "Authentication required. Please log in again."
+                    errorMessage = "Authentication required. Please log in again.",
                 )
                 return@launch
             }
@@ -1003,7 +1003,7 @@ class MainAppViewModel @Inject constructor(
                 }
                 _appState.value = _appState.value.copy(
                     isLoadingTVShows = false,
-                    errorMessage = "Authentication required. Please log in again."
+                    errorMessage = "Authentication required. Please log in again.",
                 )
                 return@launch
             }
@@ -1133,7 +1133,7 @@ class MainAppViewModel @Inject constructor(
      */
     fun loadLibraryTypeData(libraryType: LibraryType, forceRefresh: Boolean = false) {
         val typeKey = libraryType.name
-        
+
         // Skip if already loaded (prevents double loading)
         if (!forceRefresh && loadedLibraryTypes.contains(typeKey)) {
             if (BuildConfig.DEBUG) {
@@ -1141,7 +1141,7 @@ class MainAppViewModel @Inject constructor(
             }
             return // No unnecessary API calls!
         }
-        
+
         viewModelScope.launch {
             try {
                 when (libraryType) {
@@ -1174,7 +1174,7 @@ class MainAppViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e("MainAppViewModel", "loadLibraryTypeData: Error loading $typeKey", e)
                 _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to load ${libraryType.displayName}: ${e.message}"
+                    errorMessage = "Failed to load ${libraryType.displayName}: ${e.message}",
                 )
             }
         }

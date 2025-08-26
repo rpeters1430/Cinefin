@@ -13,14 +13,14 @@ import java.net.URL
  */
 object ServerUrlValidator {
     private const val TAG = "ServerUrlValidator"
-    
+
     // Common Jellyfin ports
     private const val DEFAULT_HTTP_PORT = 8096
     private const val DEFAULT_HTTPS_PORT = 8920
-    
+
     /**
      * Validates and normalizes a server URL for Jellyfin connection.
-     * 
+     *
      * @param inputUrl The user-provided server URL
      * @return A normalized URL string or null if invalid
      */
@@ -28,21 +28,21 @@ object ServerUrlValidator {
         if (inputUrl.isBlank()) {
             return null
         }
-        
+
         var url = inputUrl.trim()
-        
+
         // Remove trailing slashes
         url = url.trimEnd('/')
-        
+
         // Add protocol if missing
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             // Default to HTTP for Jellyfin
             url = "http://$url"
         }
-        
+
         // Add default port if missing
         url = addDefaultPortIfMissing(url)
-        
+
         // Validate the final URL
         return if (isValidUrl(url)) {
             url
@@ -51,11 +51,11 @@ object ServerUrlValidator {
             null
         }
     }
-    
+
     /**
      * Gets fallback URL for connection failures.
      * If HTTPS fails, try HTTP. If HTTP fails, try different ports.
-     * 
+     *
      * @param originalUrl The original URL that failed
      * @return Alternative URL to try, or null if no fallback available
      */
@@ -63,7 +63,7 @@ object ServerUrlValidator {
         return try {
             val uri = URI(originalUrl)
             val host = uri.host ?: return null
-            
+
             when {
                 // HTTPS on 8920 failed -> try HTTP on 8096
                 uri.scheme == "https" && uri.port == DEFAULT_HTTPS_PORT -> {
@@ -88,19 +88,19 @@ object ServerUrlValidator {
             null
         }
     }
-    
+
     /**
      * Gets all possible URL variations to try for a server.
      * Returns list in order of preference (most to least likely to work).
-     * 
+     *
      * @param inputUrl The user-provided server URL
      * @return List of URLs to try in order
      */
     fun getUrlVariations(inputUrl: String): List<String> {
         if (inputUrl.isBlank()) return emptyList()
-        
+
         var baseUrl = inputUrl.trim().trimEnd('/')
-        
+
         // Extract components from input
         val (host, originalPort, path) = try {
             when {
@@ -113,7 +113,7 @@ object ServerUrlValidator {
                     val parts = baseUrl.split("/", limit = 2)
                     val hostPort = parts[0]
                     val path = if (parts.size > 1) "/${parts[1]}" else ""
-                    
+
                     val host = if (hostPort.contains(":")) {
                         hostPort.substringBefore(":")
                     } else {
@@ -131,17 +131,17 @@ object ServerUrlValidator {
             Log.w(TAG, "Failed to extract components from URL: $inputUrl", e)
             return emptyList()
         }
-        
+
         if (host.isNullOrBlank() || !isValidHost(host)) {
             return emptyList()
         }
-        
+
         // Generate variations in order of preference for reverse proxy scenarios
         val variations = mutableListOf<String>()
-        
+
         // Determine if this looks like a reverse proxy setup
         val isReverseProxyLikely = isReverseProxySetup(baseUrl, originalPort)
-        
+
         if (isReverseProxyLikely) {
             // Reverse proxy: prioritize the exact URL provided, then try common proxy patterns
             when {
@@ -221,11 +221,11 @@ object ServerUrlValidator {
                 }
             }
         }
-        
+
         // Remove duplicates while preserving order
         return variations.distinct().filter { isValidUrl(it) }
     }
-    
+
     /**
      * Determines if the URL looks like a reverse proxy setup.
      * Indicators: non-standard ports, domain names with subdomains, paths
@@ -243,56 +243,56 @@ object ServerUrlValidator {
             else -> false
         }
     }
-    
+
     /**
      * Adds default Jellyfin port if no port is specified.
      */
     private fun addDefaultPortIfMissing(url: String): String {
         return try {
             val uri = URI(url)
-            
+
             // If port is already specified, keep it
             if (uri.port != -1) {
                 return url
             }
-            
+
             // Add default port based on protocol
             val defaultPort = when (uri.scheme?.lowercase()) {
                 "https" -> DEFAULT_HTTPS_PORT
                 "http" -> DEFAULT_HTTP_PORT
                 else -> DEFAULT_HTTP_PORT
             }
-            
+
             "${uri.scheme}://${uri.host}:$defaultPort${uri.path ?: ""}"
         } catch (e: URISyntaxException) {
             Log.w(TAG, "Failed to parse URI for port addition: $url", e)
             url
         }
     }
-    
+
     /**
      * Validates if a URL is properly formatted and potentially reachable.
      */
     private fun isValidUrl(url: String): Boolean {
         return try {
             val urlObj = URL(url)
-            
+
             // Check basic URL structure
             if (urlObj.host.isNullOrBlank()) {
                 return false
             }
-            
+
             // Check if host looks valid (basic pattern check)
             val host = urlObj.host
             if (!isValidHost(host)) {
                 return false
             }
-            
+
             // Check protocol
             if (urlObj.protocol !in listOf("http", "https")) {
                 return false
             }
-            
+
             // Check port range
             val port = if (urlObj.port == -1) {
                 when (urlObj.protocol) {
@@ -303,11 +303,11 @@ object ServerUrlValidator {
             } else {
                 urlObj.port
             }
-            
+
             if (port < 1 || port > 65535) {
                 return false
             }
-            
+
             true
         } catch (e: MalformedURLException) {
             Log.w(TAG, "Malformed URL: $url", e)
@@ -317,64 +317,65 @@ object ServerUrlValidator {
             false
         }
     }
-    
+
     /**
      * Validates if a host string is valid (IP address, domain, or localhost).
      */
     private fun isValidHost(host: String): Boolean {
         // Check for localhost variants
-        if (host.equals("localhost", ignoreCase = true) || 
-            host == "127.0.0.1" || 
-            host == "::1") {
+        if (host.equals("localhost", ignoreCase = true) ||
+            host == "127.0.0.1" ||
+            host == "::1"
+        ) {
             return true
         }
-        
+
         // Check for valid IP address pattern
         if (isValidIPAddress(host)) {
             return true
         }
-        
+
         // Check for valid domain pattern
         if (Patterns.DOMAIN_NAME.matcher(host).matches()) {
             return true
         }
-        
+
         // Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
         if (isLocalNetworkIP(host)) {
             return true
         }
-        
+
         return false
     }
-    
+
     /**
      * Checks if an IP address is in private/local network ranges.
      */
     private fun isLocalNetworkIP(host: String): Boolean {
         val ipPattern = """^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$""".toRegex()
         val match = ipPattern.find(host) ?: return false
-        
+
         val parts = match.groupValues.drop(1).map { it.toIntOrNull() ?: 256 }
-        
+
         // Validate octet ranges
         if (parts.any { it < 0 || it > 255 }) {
             return false
         }
-        
+
         val (a, b, c, d) = parts
-        
+
         // Check private IP ranges
         return when {
             // 192.168.0.0/16
             a == 192 && b == 168 -> true
-            // 10.0.0.0/8  
+            // 10.0.0.0/8
             a == 10 -> true
             // 172.16.0.0/12
             a == 172 && b in 16..31 -> true
             else -> false
         }
     }
-    
+
     /**
      * Extracts the base URL (protocol + host + port) from a full URL.
      */
@@ -388,7 +389,7 @@ object ServerUrlValidator {
             null
         }
     }
-    
+
     /**
      * Checks if two URLs point to the same server (ignoring paths).
      */
@@ -397,16 +398,16 @@ object ServerUrlValidator {
         val base2 = extractBaseUrl(url2)
         return base1 != null && base2 != null && base1.equals(base2, ignoreCase = true)
     }
-    
+
     /**
      * Validates if a string is a valid IPv4 address.
      */
     private fun isValidIPAddress(host: String): Boolean {
         val ipPattern = """^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$""".toRegex()
         val match = ipPattern.find(host) ?: return false
-        
+
         val parts = match.groupValues.drop(1).map { it.toIntOrNull() ?: 256 }
-        
+
         // Validate octet ranges (0-255)
         return parts.all { it in 0..255 }
     }

@@ -66,7 +66,7 @@ class JellyfinAuthRepository @Inject constructor(
      */
     data class ConnectionTestResult(
         val systemInfo: PublicSystemInfo,
-        val workingUrl: String
+        val workingUrl: String,
     )
 
     /**
@@ -75,7 +75,7 @@ class JellyfinAuthRepository @Inject constructor(
     suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
         // Log network diagnostics before attempting connection
         NetworkDebugger.logNetworkDiagnostics(context, serverUrl)
-        
+
         return when (val result = testServerConnectionWithUrl(serverUrl)) {
             is ApiResult.Success -> {
                 // Test and log server connectivity in debug builds
@@ -88,54 +88,54 @@ class JellyfinAuthRepository @Inject constructor(
             is ApiResult.Loading -> ApiResult.Loading(result.message)
         }
     }
-    
+
     /**
      * Test connection to a Jellyfin server with automatic fallback, returning both result and working URL
      */
     private suspend fun testServerConnectionWithUrl(serverUrl: String): ApiResult<ConnectionTestResult> {
         // Get all URL variations to try
         val urlVariations = ServerUrlValidator.getUrlVariations(serverUrl)
-        
+
         if (urlVariations.isEmpty()) {
             return ApiResult.Error(
-                "Invalid server URL format. Please use format: http://server:port or https://server:port", 
-                null, 
-                ErrorType.VALIDATION
+                "Invalid server URL format. Please use format: http://server:port or https://server:port",
+                null,
+                ErrorType.VALIDATION,
             )
         }
-        
+
         var lastException: Exception? = null
-        
+
         // Try each URL variation until one works
         for ((index, url) in urlVariations.withIndex()) {
             try {
                 if (BuildConfig.DEBUG) {
                     Log.d("JellyfinAuthRepository", "Testing connection to: $url (attempt ${index + 1}/${urlVariations.size})")
                 }
-                
+
                 val client = getClient(url)
                 val response = client.systemApi.getPublicSystemInfo()
-                
+
                 if (BuildConfig.DEBUG) {
                     Log.d("JellyfinAuthRepository", "Successfully connected to server: ${response.content.serverName} at $url")
                 }
-                
+
                 return ApiResult.Success(ConnectionTestResult(response.content, url))
             } catch (e: Exception) {
                 lastException = e
                 val errorType = getErrorType(e)
-                
+
                 if (BuildConfig.DEBUG) {
                     Log.d("JellyfinAuthRepository", "Connection failed for $url: ${e.message}")
                 }
-                
+
                 // If this is not a network or timeout error, don't try other URLs
                 if (errorType != ErrorType.NETWORK && errorType != ErrorType.TIMEOUT) {
                     break
                 }
             }
         }
-        
+
         // All URLs failed
         val errorType = getErrorType(lastException ?: Exception("Unknown error"))
         val host = try {
@@ -143,15 +143,15 @@ class JellyfinAuthRepository @Inject constructor(
         } catch (e: Exception) {
             null
         } ?: "server"
-        
+
         val message = when (errorType) {
             ErrorType.NETWORK -> {
                 val attemptedUrls = urlVariations.take(3).joinToString(", ") // Show first 3 attempts
-                val isReverseProxy = urlVariations.any { url -> 
-                    url.contains("/jellyfin") || 
-                    url.substringAfter("://").substringBefore("/").count { it == '.' } >= 2 
+                val isReverseProxy = urlVariations.any { url ->
+                    url.contains("/jellyfin") ||
+                        url.substringAfter("://").substringBefore("/").count { it == '.' } >= 2
                 }
-                
+
                 buildString {
                     append("Cannot connect to Jellyfin server '$host'.\n\n")
                     append("Tried: $attemptedUrls\n\n")
@@ -178,7 +178,7 @@ class JellyfinAuthRepository @Inject constructor(
             ErrorType.TIMEOUT -> "Connection to server '$host' timed out. The server may be overloaded or have network issues."
             else -> "Failed to connect to server '$host': ${lastException?.message ?: "Unknown error"}"
         }
-        
+
         Log.e("JellyfinAuthRepository", "All server connection attempts failed. Tried URLs: $urlVariations", lastException)
         return ApiResult.Error(message, lastException, errorType)
     }
@@ -197,11 +197,11 @@ class JellyfinAuthRepository @Inject constructor(
                 is ApiResult.Success -> {
                     val workingUrl = connectionResult.data.workingUrl
                     val systemInfo = connectionResult.data.systemInfo
-                    
+
                     if (BuildConfig.DEBUG) {
                         Log.d("JellyfinAuthRepository", "Authenticating user: $username on $workingUrl")
                     }
-                    
+
                     val client = getClient(workingUrl)
                     val request = AuthenticateUserByName(
                         username = username,
@@ -250,7 +250,7 @@ class JellyfinAuthRepository @Inject constructor(
                 ErrorType.FORBIDDEN -> "Access forbidden. Check user permissions."
                 else -> "Authentication failed: ${e.message}"
             }
-            
+
             Log.e("JellyfinAuthRepository", "Authentication failed for user: $username", e)
             ApiResult.Error(message, e, errorType)
         }
@@ -482,8 +482,8 @@ class JellyfinAuthRepository @Inject constructor(
     private fun getErrorType(e: Throwable): ErrorType {
         return when (e) {
             is java.util.concurrent.CancellationException, is kotlinx.coroutines.CancellationException -> ErrorType.OPERATION_CANCELLED
-            is java.net.UnknownHostException -> ErrorType.NETWORK  // DNS resolution failed
-            is java.net.ConnectException -> ErrorType.NETWORK      // Connection refused
+            is java.net.UnknownHostException -> ErrorType.NETWORK // DNS resolution failed
+            is java.net.ConnectException -> ErrorType.NETWORK // Connection refused
             is java.net.SocketTimeoutException -> ErrorType.TIMEOUT // Connection timeout
             is java.net.NoRouteToHostException -> ErrorType.NETWORK // No route to host
             is java.security.cert.CertificateException -> ErrorType.SERVER_ERROR // SSL certificate issues

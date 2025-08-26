@@ -256,7 +256,7 @@ class JellyfinStreamRepository @Inject constructor(
                 Log.w("JellyfinStreamRepository", "getImageUrl: Server not available or missing credentials")
                 return null
             }
-            
+
             val tagParam = tag?.let { "&tag=$it" } ?: ""
             "${server.url}/Items/$itemId/Images/$imageType?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH$tagParam"
         } catch (e: Exception) {
@@ -275,7 +275,7 @@ class JellyfinStreamRepository @Inject constructor(
                 Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Server not available or missing credentials")
                 return null
             }
-            
+
             // For episodes, use the series poster if available
             val imageId = if (item.type == BaseItemKind.EPISODE && item.seriesId != null) {
                 item.seriesId.toString()
@@ -299,7 +299,7 @@ class JellyfinStreamRepository @Inject constructor(
                 Log.w("JellyfinStreamRepository", "getBackdropUrl: Server not available or missing credentials")
                 return null
             }
-            
+
             val backdropTag = item.backdropImageTags?.firstOrNull()
             if (backdropTag != null) {
                 "${server.url}/Items/${item.id}/Images/Backdrop?tag=$backdropTag&maxHeight=$BACKDROP_MAX_HEIGHT&maxWidth=$BACKDROP_MAX_WIDTH"

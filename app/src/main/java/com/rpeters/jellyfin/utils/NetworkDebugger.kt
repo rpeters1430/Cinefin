@@ -5,11 +5,11 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
-import java.net.InetSocketAddress
-import java.net.Socket
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import java.net.InetSocketAddress
+import java.net.Socket
 
 /**
  * Network debugging utility to help diagnose connection issues.
@@ -18,24 +18,24 @@ import kotlinx.coroutines.withTimeoutOrNull
 object NetworkDebugger {
     private const val TAG = "NetworkDebugger"
     private const val CONNECTION_TIMEOUT = 5000 // 5 seconds
-    
+
     /**
      * Check detailed network connectivity status.
      */
     fun checkNetworkStatus(context: Context): NetworkStatus {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val activeNetwork = connectivityManager.activeNetwork
-        
+
         if (activeNetwork == null) {
             return NetworkStatus(
                 isConnected = false,
                 connectionType = "None",
                 isMetered = false,
                 hasInternet = false,
-                details = "No active network"
+                details = "No active network",
             )
         }
-        
+
         val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
         if (capabilities == null) {
             return NetworkStatus(
@@ -43,22 +43,22 @@ object NetworkDebugger {
                 connectionType = "Unknown",
                 isMetered = false,
                 hasInternet = false,
-                details = "No network capabilities"
+                details = "No network capabilities",
             )
         }
-        
+
         val connectionType = when {
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "WiFi"
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "Cellular"
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet"
             else -> "Other"
         }
-        
+
         val hasInternet = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                          capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-        
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+
         val isMetered = !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
-        
+
         val details = buildString {
             append("Transport: $connectionType")
             if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)) {
@@ -73,57 +73,56 @@ object NetworkDebugger {
                 append(", Captive Portal Detected")
             }
         }
-        
+
         return NetworkStatus(
             isConnected = true,
             connectionType = connectionType,
             isMetered = isMetered,
             hasInternet = hasInternet,
-            details = details
+            details = details,
         )
     }
-    
+
     /**
      * Test raw socket connection to a server.
      */
     suspend fun testSocketConnection(host: String, port: Int): ConnectionTestResult {
         return withContext(Dispatchers.IO) {
             val startTime = System.currentTimeMillis()
-            
+
             try {
                 val result = withTimeoutOrNull(CONNECTION_TIMEOUT.toLong()) {
                     Socket().use { socket ->
                         socket.connect(InetSocketAddress(host, port), CONNECTION_TIMEOUT)
                         val endTime = System.currentTimeMillis()
-                        
+
                         ConnectionTestResult(
                             success = true,
                             responseTime = endTime - startTime,
                             error = null,
-                            details = "Socket connection successful to $host:$port"
+                            details = "Socket connection successful to $host:$port",
                         )
                     }
                 }
-                
+
                 result ?: ConnectionTestResult(
                     success = false,
                     responseTime = System.currentTimeMillis() - startTime,
                     error = "Connection timeout after ${CONNECTION_TIMEOUT}ms",
-                    details = "Failed to connect to $host:$port within timeout"
+                    details = "Failed to connect to $host:$port within timeout",
                 )
-                
             } catch (e: Exception) {
                 val endTime = System.currentTimeMillis()
                 ConnectionTestResult(
                     success = false,
                     responseTime = endTime - startTime,
                     error = e.message ?: "Unknown error",
-                    details = "Socket connection failed: ${e.javaClass.simpleName}"
+                    details = "Socket connection failed: ${e.javaClass.simpleName}",
                 )
             }
         }
     }
-    
+
     /**
      * Extract host and port from URL.
      */
@@ -146,18 +145,18 @@ object NetworkDebugger {
             null
         }
     }
-    
+
     /**
      * Log comprehensive network diagnostics.
      */
     fun logNetworkDiagnostics(context: Context, serverUrl: String?) {
         if (!BuildConfig.DEBUG) return
-        
+
         Log.d(TAG, "=== Network Diagnostics ===")
-        
+
         val networkStatus = checkNetworkStatus(context)
         Log.d(TAG, "Network Status: $networkStatus")
-        
+
         if (serverUrl != null) {
             val hostPort = parseHostPort(serverUrl)
             if (hostPort != null) {
@@ -167,30 +166,30 @@ object NetworkDebugger {
                 Log.w(TAG, "Could not parse server URL: $serverUrl")
             }
         }
-        
+
         Log.d(TAG, "============================")
     }
-    
+
     /**
      * Test server connectivity and log results.
      */
     suspend fun testAndLogServerConnectivity(context: Context, serverUrl: String) {
         if (!BuildConfig.DEBUG) return
-        
+
         Log.d(TAG, "Testing server connectivity: $serverUrl")
-        
+
         val hostPort = parseHostPort(serverUrl)
         if (hostPort == null) {
             Log.w(TAG, "Could not parse server URL for testing: $serverUrl")
             return
         }
-        
+
         val result = testSocketConnection(hostPort.first, hostPort.second)
         Log.d(TAG, "Connection test result: $result")
-        
+
         if (!result.success) {
             Log.w(TAG, "Server connectivity issue detected - this may cause API failures")
-            
+
             // Additional diagnostics
             val networkStatus = checkNetworkStatus(context)
             if (!networkStatus.hasInternet) {
@@ -210,7 +209,7 @@ data class NetworkStatus(
     val connectionType: String,
     val isMetered: Boolean,
     val hasInternet: Boolean,
-    val details: String
+    val details: String,
 ) {
     override fun toString(): String {
         return "Connected: $isConnected, Type: $connectionType, Internet: $hasInternet, Details: $details"
@@ -224,7 +223,7 @@ data class ConnectionTestResult(
     val success: Boolean,
     val responseTime: Long,
     val error: String?,
-    val details: String
+    val details: String,
 ) {
     override fun toString(): String {
         return if (success) {
