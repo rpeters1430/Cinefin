@@ -184,12 +184,13 @@ class JellyfinCache @Inject constructor(
 
     /**
      * Checks if cached data exists and is valid for a given key.
+     * Performs I/O operations on background thread.
      */
-    fun isCached(key: String): Boolean {
+    suspend fun isCached(key: String): Boolean = withContext(Dispatchers.IO) {
         // Check memory cache
         memoryCache[key]?.let { entry ->
             if (entry.isValid()) {
-                return true
+                return@withContext true
             } else {
                 memoryCache.remove(key)
             }
@@ -201,7 +202,7 @@ class JellyfinCache @Inject constructor(
             try {
                 val cacheData = json.decodeFromString<CacheData>(file.readText())
                 val isValid = (System.currentTimeMillis() - cacheData.timestamp) < cacheData.ttlMs
-                return isValid
+                return@withContext isValid
             } catch (e: Exception) {
                 Log.e(TAG, "Error checking cache validity for key: $key", e)
                 // Delete corrupted file
@@ -209,13 +210,13 @@ class JellyfinCache @Inject constructor(
             }
         }
 
-        return false
+        false
     }
 
     /**
      * Invalidates cache for a specific key.
      */
-    suspend fun invalidateCache(key: String) {
+    suspend fun invalidateCache(key: String) = withContext(Dispatchers.IO) {
         memoryCache.remove(key)
         val file = File(cacheDir, "$key.json")
         if (file.exists()) {
@@ -230,7 +231,7 @@ class JellyfinCache @Inject constructor(
     /**
      * Clears all cached data.
      */
-    suspend fun clearAllCache() {
+    suspend fun clearAllCache() = withContext(Dispatchers.IO) {
         memoryCache.clear()
 
         cacheDir.listFiles()?.forEach { file ->
@@ -248,8 +249,8 @@ class JellyfinCache @Inject constructor(
     /**
      * Gets the size of cached data in bytes.
      */
-    fun getCacheSizeBytes(): Long {
-        return try {
+    suspend fun getCacheSizeBytes(): Long = withContext(Dispatchers.IO) {
+        try {
             cacheDir.listFiles()?.sumOf { it.length() } ?: 0L
         } catch (e: Exception) {
             Log.e(TAG, "Error calculating cache size", e)
@@ -316,7 +317,7 @@ class JellyfinCache @Inject constructor(
     /**
      * Evicts oldest cache entries to stay within size limit.
      */
-    private fun evictOldestEntries(maxSizeBytes: Long) {
+    private suspend fun evictOldestEntries(maxSizeBytes: Long) {
         try {
             val files = cacheDir.listFiles()
                 ?.filter { it.isFile && it.name.endsWith(".json") }
@@ -349,7 +350,7 @@ class JellyfinCache @Inject constructor(
     /**
      * Updates cache statistics.
      */
-    private fun updateCacheStats() {
+    private suspend fun updateCacheStats() {
         try {
             val diskEntries = cacheDir.listFiles()
                 ?.count { it.isFile && it.name.endsWith(".json") } ?: 0

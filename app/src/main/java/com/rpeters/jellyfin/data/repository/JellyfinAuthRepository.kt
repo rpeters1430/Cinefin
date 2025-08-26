@@ -138,6 +138,12 @@ class JellyfinAuthRepository @Inject constructor(
 
         // All URLs failed
         val errorType = getErrorType(lastException ?: Exception("Unknown error"))
+        
+        // Don't log cancellation exceptions as errors
+        if (errorType != ErrorType.OPERATION_CANCELLED) {
+            Log.e("JellyfinAuthRepository", "All server connection attempts failed. Tried URLs: $urlVariations", lastException)
+        }
+        
         val host = try {
             ServerUrlValidator.extractBaseUrl(urlVariations.first())?.let { URI(it).host }
         } catch (e: Exception) {
@@ -241,6 +247,9 @@ class JellyfinAuthRepository @Inject constructor(
                     return ApiResult.Error("Unexpected loading state during authentication", null, ErrorType.UNKNOWN)
                 }
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // Don't log cancellation exceptions - these are expected during navigation/lifecycle changes
+            throw e
         } catch (e: Exception) {
             val errorType = getErrorType(e)
             val message = when (errorType) {
@@ -481,7 +490,11 @@ class JellyfinAuthRepository @Inject constructor(
 
     private fun getErrorType(e: Throwable): ErrorType {
         return when (e) {
-            is java.util.concurrent.CancellationException, is kotlinx.coroutines.CancellationException -> ErrorType.OPERATION_CANCELLED
+            is java.util.concurrent.CancellationException, 
+            is kotlinx.coroutines.CancellationException -> {
+                // Don't log cancellation as an error - it's expected during navigation
+                ErrorType.OPERATION_CANCELLED
+            }
             is java.net.UnknownHostException -> ErrorType.NETWORK // DNS resolution failed
             is java.net.ConnectException -> ErrorType.NETWORK // Connection refused
             is java.net.SocketTimeoutException -> ErrorType.TIMEOUT // Connection timeout

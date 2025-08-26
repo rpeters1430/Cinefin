@@ -3,6 +3,8 @@ package com.rpeters.jellyfin.utils
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.TrafficStats
+import android.os.Process
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import kotlinx.coroutines.Dispatchers
@@ -93,15 +95,23 @@ object NetworkDebugger {
             try {
                 val result = withTimeoutOrNull(CONNECTION_TIMEOUT.toLong()) {
                     Socket().use { socket ->
-                        socket.connect(InetSocketAddress(host, port), CONNECTION_TIMEOUT)
-                        val endTime = System.currentTimeMillis()
+                        // Tag network traffic to avoid StrictMode violations
+                        TrafficStats.setThreadStatsTag(Process.myPid())
+                        
+                        try {
+                            socket.connect(InetSocketAddress(host, port), CONNECTION_TIMEOUT)
+                            val endTime = System.currentTimeMillis()
 
-                        ConnectionTestResult(
-                            success = true,
-                            responseTime = endTime - startTime,
-                            error = null,
-                            details = "Socket connection successful to $host:$port",
-                        )
+                            ConnectionTestResult(
+                                success = true,
+                                responseTime = endTime - startTime,
+                                error = null,
+                                details = "Socket connection successful to $host:$port",
+                            )
+                        } finally {
+                            // Clear the traffic stats tag
+                            TrafficStats.clearThreadStatsTag()
+                        }
                     }
                 }
 

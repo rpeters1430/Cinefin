@@ -34,24 +34,38 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
         return OkHttpClient.Builder().apply {
-            // Add interceptor to tag network traffic for StrictMode compliance
+            // Enhanced interceptor to tag network traffic for StrictMode compliance
             addNetworkInterceptor { chain ->
-                val threadId = Thread.currentThread().hashCode()
-                android.net.TrafficStats.setThreadStatsTag(threadId)
+                val request = chain.request()
+                
+                // Create a stable, unique tag based on request details
+                val url = request.url.toString()
+                val method = request.method
+                val tagString = "$method:${url.take(50)}" // First 50 chars of URL + method
+                val stableTag = tagString.hashCode() and 0x0FFFFFFF // Ensure positive value
+                
+                // Apply tag before the request
+                android.net.TrafficStats.setThreadStatsTag(stableTag)
+                
                 try {
-                    chain.proceed(chain.request())
+                    val response = chain.proceed(request)
+                    // Keep tag during response processing
+                    response
                 } finally {
+                    // Always clear tag after request completes
                     android.net.TrafficStats.clearThreadStatsTag()
                 }
             }
 
-            // Add connection pool to optimize connections
+            // Add application interceptor with additional headers
             addInterceptor { chain ->
-                val request = chain.request().newBuilder()
+                val originalRequest = chain.request()
+                val newRequest = originalRequest.newBuilder()
                     .addHeader("Connection", "keep-alive")
                     .addHeader("User-Agent", "JellyfinAndroid/1.0.0")
+                    .addHeader("Accept-Encoding", "gzip, deflate") // Explicit compression
                     .build()
-                chain.proceed(request)
+                chain.proceed(newRequest)
             }
 
             if (BuildConfig.DEBUG) {

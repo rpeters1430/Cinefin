@@ -280,6 +280,7 @@ private fun getErrorIcon(errorType: ErrorType) = when (errorType) {
     ErrorType.FORBIDDEN -> Icons.Default.Error
     ErrorType.NOT_FOUND -> Icons.Default.Warning
     ErrorType.SERVER_ERROR -> Icons.Default.Error
+    ErrorType.BAD_REQUEST -> Icons.Default.Warning
     ErrorType.OPERATION_CANCELLED -> Icons.Default.Warning
     ErrorType.TIMEOUT -> Icons.Default.Warning
     ErrorType.VALIDATION -> Icons.Default.Warning
@@ -293,6 +294,7 @@ private fun getErrorTitle(errorType: ErrorType) = when (errorType) {
     ErrorType.FORBIDDEN -> "Access Denied"
     ErrorType.NOT_FOUND -> "Not Found"
     ErrorType.SERVER_ERROR -> "Server Error"
+    ErrorType.BAD_REQUEST -> "Invalid Request"
     ErrorType.OPERATION_CANCELLED -> "Operation Cancelled"
     ErrorType.TIMEOUT -> "Request Timeout"
     ErrorType.VALIDATION -> "Invalid Input"
