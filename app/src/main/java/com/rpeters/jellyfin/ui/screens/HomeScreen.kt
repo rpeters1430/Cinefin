@@ -37,9 +37,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pullrefresh.PullRefreshIndicator
-import androidx.compose.material3.pullrefresh.pullRefresh
-import androidx.compose.material3.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.JellyfinServer
+import java.util.Locale
 import com.rpeters.jellyfin.ui.components.MediaCard
 import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.screens.home.EnhancedContentCarousel
@@ -199,15 +197,8 @@ fun HomeContent(
     onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    var refreshing by remember { mutableStateOf(false) }
-    val pullRefreshState = rememberPullRefreshState(refreshing) {
-        refreshing = true
-        onRefresh()
-        refreshing = false
-    }
-
     Box(
-        modifier = modifier.pullRefresh(pullRefreshState),
+        modifier = modifier,
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -247,7 +238,7 @@ fun HomeContent(
             if (appState.libraries.isNotEmpty()) {
                 item {
                     val orderedLibraries = appState.libraries.sortedBy { library ->
-                        when (library.collectionType?.toString()?.lowercase()) {
+                        when (library.collectionType?.toString()?.lowercase(Locale.getDefault())) {
                             "movies" -> 0
                             "tvshows" -> 1
                             "music" -> 2
@@ -318,11 +309,6 @@ fun HomeContent(
                 }
             }
         }
-        PullRefreshIndicator(
-            refreshing = refreshing,
-            state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
-        )
     }
 }
 

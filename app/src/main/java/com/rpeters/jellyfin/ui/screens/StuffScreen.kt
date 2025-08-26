@@ -34,6 +34,8 @@ import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import java.util.Locale
+import java.util.UUID
 
 @Composable
 fun StuffScreen(
@@ -47,13 +49,12 @@ fun StuffScreen(
         viewModel.loadHomeVideos(libraryId)
     }
 
-    val type = remember(collectionType, appState.libraries, libraryId) {
     val librariesById = remember(appState.libraries) {
         appState.libraries.associateBy { it.id }
     }
     val type = remember(collectionType, librariesById, libraryId) {
-        collectionType ?: librariesById[libraryId]
-            ?.collectionType?.toString()?.lowercase()
+        collectionType ?: librariesById[UUID.fromString(libraryId)]
+            ?.collectionType?.toString()?.lowercase(Locale.getDefault())
     }
 
     // Filter stuff items from the library-specific home videos
@@ -167,7 +168,7 @@ fun StuffScreen(
 }
 
 @Composable
-private fun StuffGrid(
+fun StuffGrid(
     stuffItems: List<BaseItemDto>,
     getImageUrl: (BaseItemDto) -> String?,
     isLoadingMore: Boolean,
@@ -224,7 +225,7 @@ private fun StuffGrid(
 
 @Preview(showBackground = true)
 @Composable
-private fun StuffGridPreview() {
+fun StuffGridPreview() {
     StuffGrid(
         stuffItems = emptyList(),
         getImageUrl = { null },
