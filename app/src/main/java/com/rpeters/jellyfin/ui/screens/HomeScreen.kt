@@ -47,7 +47,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.JellyfinServer
-import java.util.Locale
 import com.rpeters.jellyfin.ui.components.MediaCard
 import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.screens.home.EnhancedContentCarousel
@@ -57,6 +56,7 @@ import com.rpeters.jellyfin.utils.PerformanceTracker
 import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import java.util.Locale
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
