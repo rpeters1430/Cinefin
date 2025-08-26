@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data.repository
 
+import android.util.Log
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.BaseJellyfinRepository
@@ -62,6 +63,10 @@ class JellyfinMediaRepository @Inject constructor(
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
         
+        // Debug logging for API call parameters
+        android.util.Log.d("JellyfinMediaRepository", 
+            "getLibraryItems called with parentId=$parentId, itemTypes=$itemTypes, startIndex=$startIndex, limit=$limit")
+        
         // Validate parentId before parsing - prevent HTTP 400 errors
         val parent = parentId?.takeIf { it.isNotBlank() && it != "null" }?.let { 
             try {
@@ -100,15 +105,24 @@ class JellyfinMediaRepository @Inject constructor(
             else -> limit
         }
 
-        val response = client.itemsApi.getItems(
-            userId = userUuid,
-            parentId = parent,
-            recursive = true,
-            includeItemTypes = itemKinds,
-            startIndex = validStartIndex,
-            limit = validLimit,
-        )
-        response.content.items ?: emptyList()
+        android.util.Log.d("JellyfinMediaRepository", 
+            "Making API call with parentId=${parent?.toString()}, itemKinds=${itemKinds?.size}, startIndex=$validStartIndex, limit=$validLimit")
+
+        try {
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                parentId = parent,
+                recursive = true,
+                includeItemTypes = itemKinds,
+                startIndex = validStartIndex,
+                limit = validLimit,
+            )
+            response.content.items ?: emptyList()
+        } catch (e: org.jellyfin.sdk.api.client.exception.InvalidStatusException) {
+            android.util.Log.e("JellyfinMediaRepository", 
+                "HTTP error in getLibraryItems: ${e.message}")
+            throw e
+        }
     }
 
     suspend fun getRecentlyAdded(limit: Int = 50, forceRefresh: Boolean = false): ApiResult<List<BaseItemDto>> {
@@ -278,5 +292,9 @@ class JellyfinMediaRepository @Inject constructor(
 
         return response.content.items?.firstOrNull()
             ?: throw IllegalStateException("$itemTypeName not found")
+    }
+
+    suspend fun logHttpError(requestUrl: String, status: Int, body: String?) {
+        Log.e("JellyfinMediaRepository", "HTTP error for $requestUrl\n$status ${body.orEmpty()}")
     }
 }

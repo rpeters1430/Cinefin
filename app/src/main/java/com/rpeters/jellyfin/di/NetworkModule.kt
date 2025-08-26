@@ -6,6 +6,7 @@ import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.ServerUrlValidator
+import com.rpeters.jellyfin.utils.withStrictModeTagger
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -34,76 +35,32 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder().apply {
-            // Enhanced interceptor to tag network traffic for StrictMode compliance
-            // Apply as both network and application interceptor for complete coverage
-            val trafficTagInterceptor = { chain: okhttp3.Interceptor.Chain ->
-                val request = chain.request()
-                
-                // Create a stable, unique tag based on request details
-                val url = request.url.toString()
-                val method = request.method
-                val tagString = "$method:${url.take(50)}" // First 50 chars of URL + method
-                val stableTag = tagString.hashCode() and 0x0FFFFFFF // Ensure positive value
-                
-                // Apply tag for all socket operations during this request
-                android.net.TrafficStats.setThreadStatsTag(stableTag)
-                
-                try {
-                    val response = chain.proceed(request)
-                    // Ensure tag is maintained during response processing
-                    response
-                } finally {
-                    // Always clear tag after request completes to prevent leak to other operations
-                    android.net.TrafficStats.clearThreadStatsTag()
-                }
-            }
-            
-            // Apply as network interceptor (runs for each network connection)
-            addNetworkInterceptor(trafficTagInterceptor)
-            // Apply as application interceptor (runs once per request)
-            addInterceptor(trafficTagInterceptor)
-
-            // Add application interceptor with additional headers and connection optimization
-            addInterceptor { chain ->
+        return OkHttpClient.Builder()
+            .withStrictModeTagger()
+            .addInterceptor { chain ->
                 val originalRequest = chain.request()
                 val newRequest = originalRequest.newBuilder()
                     .addHeader("Connection", "keep-alive")
                     .addHeader("User-Agent", "JellyfinAndroid/1.0.0")
-                    .addHeader("Accept-Encoding", "gzip, deflate") // Explicit compression
-                    .addHeader("Cache-Control", "no-cache") // Prevent caching issues
+                    .addHeader("Accept-Encoding", "gzip, deflate")
+                    .addHeader("Cache-Control", "no-cache")
                     .build()
-                
-                // Ensure traffic is tagged before any socket operations
-                val url = originalRequest.url.toString()
-                val method = originalRequest.method
-                val tagString = "$method:${url.take(50)}"
-                val stableTag = tagString.hashCode() and 0x0FFFFFFF
-                android.net.TrafficStats.setThreadStatsTag(stableTag)
-                
-                try {
-                    chain.proceed(newRequest)
-                } finally {
-                    android.net.TrafficStats.clearThreadStatsTag()
+                chain.proceed(newRequest)
+            }
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(
+                        HttpLoggingInterceptor().apply {
+                            level = HttpLoggingInterceptor.Level.BASIC
+                        },
+                    )
                 }
             }
-
-            if (BuildConfig.DEBUG) {
-                addInterceptor(
-                    HttpLoggingInterceptor().apply {
-                        level = HttpLoggingInterceptor.Level.BASIC
-                    },
-                )
-            }
-        }
-            // Optimized connection pool for mobile - fewer connections, longer keep-alive
             .connectionPool(okhttp3.ConnectionPool(5, 10, TimeUnit.MINUTES))
-            // Aggressive timeouts to prevent main thread blocking
-            .connectTimeout(8, TimeUnit.SECONDS) // Quick connection timeout
-            .readTimeout(25, TimeUnit.SECONDS) // Reasonable read timeout
-            .writeTimeout(12, TimeUnit.SECONDS) // Quick write timeout
+            .connectTimeout(8, TimeUnit.SECONDS)
+            .readTimeout(25, TimeUnit.SECONDS)
+            .writeTimeout(12, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
-            // Enable HTTP/2 for better performance
             .protocols(listOf(okhttp3.Protocol.HTTP_2, okhttp3.Protocol.HTTP_1_1))
             .build()
     }
@@ -173,9 +130,7 @@ class JellyfinClientFactory @Inject constructor(
      */
     suspend fun getClient(baseUrl: String, accessToken: String? = null): org.jellyfin.sdk.api.client.ApiClient = withContext(Dispatchers.IO) {
         // Validate and normalize the URL properly
-        val validatedUrl = ServerUrlValidator.validateAndNormalizeUrl(baseUrl)
-            ?: throw IllegalArgumentException("Invalid server URL: $baseUrl")
-        val normalizedUrl = validatedUrl.trimEnd('/') + "/"
+    val normalizedUrl = com.rpeters.jellyfin.utils.normalizeJellyfinBase(baseUrl)
 
         // Use synchronized block to prevent race conditions during client creation
         synchronized(clientLock) {

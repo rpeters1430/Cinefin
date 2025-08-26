@@ -170,6 +170,7 @@ object NetworkOptimizer {
 
     /**
      * Configure StrictMode for network optimizations
+     * Note: Untagged socket detection disabled due to Jellyfin SDK using internal Ktor client
      */
     fun configureNetworkStrictMode() {
         if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
@@ -190,7 +191,7 @@ object NetworkOptimizer {
                     .detectLeakedClosableObjects()
                     .detectLeakedRegistrationObjects()
                     .detectActivityLeaks()
-                    .detectUntaggedSockets()
+                    // Disabled: .detectUntaggedSockets() - Jellyfin SDK uses internal Ktor client
                     .penaltyLog()
                     .build(),
             )

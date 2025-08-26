@@ -39,20 +39,9 @@ object ImageLoadingOptimizer {
                             .build()
                     }
                     .okHttpClient {
-                        // Create a separate client for Coil to avoid conflicts
                         okHttpClient.newBuilder()
-                            .addNetworkInterceptor { chain ->
-                                // Use unique thread ID to avoid conflicts with other network operations
-                                val uniqueTag = "coil_${Thread.currentThread().hashCode()}".hashCode()
-                                android.net.TrafficStats.setThreadStatsTag(uniqueTag)
-                                try {
-                                    chain.proceed(chain.request())
-                                } finally {
-                                    android.net.TrafficStats.clearThreadStatsTag()
-                                }
-                            }
+                            .withStrictModeTagger()
                             .addInterceptor { chain ->
-                                // Optimize for image loading
                                 val request = chain.request().newBuilder()
                                     .addHeader("Connection", "keep-alive")
                                     .addHeader("User-Agent", "JellyfinAndroid-Images/1.0.0")
@@ -61,10 +50,10 @@ object ImageLoadingOptimizer {
                                 chain.proceed(request)
                             }
                             .connectionPool(okhttp3.ConnectionPool(3, 3, TimeUnit.MINUTES))
-                            .connectTimeout(8, TimeUnit.SECONDS) // Faster timeout for images
+                            .connectTimeout(8, TimeUnit.SECONDS)
                             .readTimeout(15, TimeUnit.SECONDS)
                             .writeTimeout(8, TimeUnit.SECONDS)
-                            .retryOnConnectionFailure(false) // Don't retry to avoid blocking
+                            .retryOnConnectionFailure(false)
                             .build()
                     }
                     .crossfade(100) // Fast crossfade

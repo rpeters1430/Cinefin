@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -32,9 +33,16 @@ fun JellyfinApp(
         val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
         val connectionState by connectionViewModel.connectionState.collectAsState()
 
+        // Debug logging for connection state
+        LaunchedEffect(connectionState.isConnected) {
+            android.util.Log.d("JellyfinApp", "Connection state changed: isConnected = ${connectionState.isConnected}")
+        }
+
         val startDestination = if (connectionState.isConnected) {
+            android.util.Log.d("JellyfinApp", "Starting with Home screen")
             Screen.Home.route
         } else {
+            android.util.Log.d("JellyfinApp", "Starting with ServerConnection screen")
             Screen.ServerConnection.route
         }
 
