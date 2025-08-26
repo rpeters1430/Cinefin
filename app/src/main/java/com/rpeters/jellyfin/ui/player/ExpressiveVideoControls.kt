@@ -26,7 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.ClosedCaption
-import androidx.compose.material.icons.filled.FourK
+import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Hd
 import androidx.compose.material.icons.filled.Movie
@@ -363,7 +363,7 @@ private fun ExpressiveBottomControls(
 // Helper function to get quality icon based on quality text
 private fun getQualityIcon(qualityLabel: String?): ImageVector {
     return when {
-        qualityLabel?.contains("4K", ignoreCase = true) == true -> Icons.Default.FourK
+        qualityLabel?.contains("4K", ignoreCase = true) == true -> Icons.Default.HighQuality
         qualityLabel?.contains("HD", ignoreCase = true) == true -> Icons.Default.Hd
         qualityLabel?.contains("SD", ignoreCase = true) == true -> Icons.Default.Sd
         qualityLabel?.contains("1080", ignoreCase = true) == true -> Icons.Default.Hd

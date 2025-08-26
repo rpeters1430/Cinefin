@@ -62,6 +62,7 @@ import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.CollectionType
 import kotlinx.coroutines.flow.map
+import java.util.Locale
 
 @androidx.media3.common.util.UnstableApi
 @Composable
@@ -76,6 +77,19 @@ fun JellyfinNavGraph(
         .map { it.libraries }
         .collectAsState(initial = emptyList())
     val libraryTypes = libraries.mapNotNull { it.collectionType }.toSet()
+
+    // Helper function to determine the route for a library
+    fun libraryRouteFor(library: BaseItemDto): String? {
+        return when (library.collectionType) {
+            CollectionType.MOVIES -> Screen.Movies.route
+            CollectionType.TVSHOWS -> Screen.TVShows.route
+            CollectionType.MUSIC -> Screen.Music.route
+            else -> library.id?.toString()?.let { id ->
+                val type = library.collectionType?.toString()?.lowercase(Locale.getDefault()) ?: "mixed"
+                Screen.Stuff.createRoute(id, type)
+            }
+        }
+    }
 
     key(libraryTypes) {
         NavHost(
@@ -213,8 +227,8 @@ fun JellyfinNavGraph(
             )
         }
 
-        if (CollectionType.MOVIES in libraryTypes) {
-            key(CollectionType.MOVIES) {
+            // Movies Screen
+            if (CollectionType.MOVIES in libraryTypes) {
                 composable(Screen.Movies.route) {
                     val viewModel = mainViewModel
                     val appState by viewModel.appState.collectAsStateWithLifecycle()
@@ -253,10 +267,9 @@ fun JellyfinNavGraph(
                     )
                 }
             }
-        }
 
-        if (CollectionType.TVSHOWS in libraryTypes) {
-            key(CollectionType.TVSHOWS) {
+            // TV Shows Screen
+            if (CollectionType.TVSHOWS in libraryTypes) {
                 composable(Screen.TVShows.route) {
                     val viewModel = mainViewModel
 
@@ -269,9 +282,8 @@ fun JellyfinNavGraph(
                     )
                 }
             }
-        }
 
-        composable(
+            composable(
             route = Screen.TVSeasons.route,
             arguments = listOf(navArgument(Screen.SERIES_ID_ARG) { type = NavType.StringType }),
         ) { backStackEntry ->
@@ -333,8 +345,8 @@ fun JellyfinNavGraph(
             )
         }
 
-        if (CollectionType.MUSIC in libraryTypes) {
-            key(CollectionType.MUSIC) {
+            // Music Screen
+            if (CollectionType.MUSIC in libraryTypes) {
                 composable(Screen.Music.route) {
                     val viewModel = mainViewModel
 
@@ -349,9 +361,8 @@ fun JellyfinNavGraph(
                     )
                 }
             }
-        }
 
-        composable(Screen.HomeVideos.route) {
+            composable(Screen.HomeVideos.route) {
             HomeVideosScreen(
                 onBackClick = { navController.popBackStack() },
             )
@@ -708,17 +719,6 @@ fun JellyfinNavGraph(
                 }
             }
         }
-    }
-}
-
-private fun libraryRouteFor(library: BaseItemDto): String? {
-    return when (library.collectionType) {
-        CollectionType.MOVIES -> Screen.Movies.route
-        CollectionType.TVSHOWS -> Screen.TVShows.route
-        CollectionType.MUSIC -> Screen.Music.route
-        else -> library.id?.toString()?.let { id ->
-            val type = library.collectionType?.toString()?.lowercase() ?: "mixed"
-            Screen.Stuff.createRoute(id, type)
         }
     }
 }

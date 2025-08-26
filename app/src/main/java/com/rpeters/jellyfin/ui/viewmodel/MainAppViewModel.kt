@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import java.util.Locale
 import javax.inject.Inject
 
 data class MainAppState(
@@ -129,10 +130,14 @@ class MainAppViewModel @Inject constructor(
 
                         if (removedIds.isNotEmpty()) {
                             val removedLibraries = previousLibraries.filter { it.id?.toString() in removedIds }
-                            val newLibrariesByType = newLibraries.groupBy { (it.collectionType ?: it.type?.name)?.lowercase() }
+                            val newLibrariesByType: Map<String?, List<BaseItemDto>> = newLibraries.groupBy { 
+                                (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault()) 
+                            }
                             var customRemoved = false
 
-                            removedLibraries.groupBy { (it.collectionType ?: it.type?.name)?.lowercase() }.forEach { (type, libs) ->
+                            removedLibraries.groupBy<BaseItemDto, String?> { 
+                                (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault()) 
+                            }.forEach { (type, libs) ->
                                 val remaining = newLibrariesByType[type]?.isNotEmpty() == true
                                 when (type) {
                                     "movies" -> {
@@ -170,7 +175,7 @@ class MainAppViewModel @Inject constructor(
                                 }
                             }
 
-                            if (customRemoved && newLibraries.none { (it.collectionType ?: it.type?.name)?.lowercase() !in setOf("movies", "tvshows", "music") }) {
+                            if (customRemoved && newLibraries.none { (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault()) !in setOf("movies", "tvshows", "music") }) {
                                 loadedLibraryTypes.remove(LibraryType.STUFF.name)
                             }
                         }
@@ -184,7 +189,9 @@ class MainAppViewModel @Inject constructor(
                         )
 
                         val addedLibraries = newLibraries.filter { it.id?.toString() !in previousIds }
-                        val addedTypes = addedLibraries.mapNotNull { (it.collectionType ?: it.type?.name)?.lowercase() }.toSet()
+                        val addedTypes: Set<String> = addedLibraries.mapNotNull { 
+                            (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault()) 
+                        }.toSet()
                         if ("movies" in addedTypes) {
                             loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
                         }
@@ -195,7 +202,7 @@ class MainAppViewModel @Inject constructor(
                             loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true)
                         }
                         addedLibraries.filter {
-                            val type = (it.collectionType ?: it.type?.name)?.lowercase()
+                            val type = (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
                             type !in setOf("movies", "tvshows", "music")
                         }.forEach { library ->
                             library.id?.let { loadHomeVideos(it.toString()) }
