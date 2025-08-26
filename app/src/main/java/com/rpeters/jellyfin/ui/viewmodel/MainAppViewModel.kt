@@ -797,12 +797,14 @@ class MainAppViewModel @Inject constructor(
                 return@launch
             }
 
-            when (val result = mediaRepository.getLibraryItems(
-                parentId = libraryId,
-                itemTypes = "Video", // Specify Video type for home videos to prevent HTTP 400 errors
-                startIndex = 0,
-                limit = 100
-            )) {
+            when (
+                val result = mediaRepository.getLibraryItems(
+                    parentId = libraryId,
+                    itemTypes = "Video", // Specify Video type for home videos to prevent HTTP 400 errors
+                    startIndex = 0,
+                    limit = 100,
+                )
+            ) {
                 is ApiResult.Success -> {
                     val updated = _appState.value.homeVideosByLibrary.toMutableMap()
                     updated[libraryId] = result.data
