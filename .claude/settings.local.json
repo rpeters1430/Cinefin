@@ -20,8 +20,13 @@
       "Bash(copy \"C:\\Users\\James\\Documents\\GitHub\\JellyfinAndroid\\android_app_icon_pack\\res\\drawable\\ic_launcher_fg.xml\" \"C:\\Users\\James\\Documents\\GitHub\\JellyfinAndroid\\app\\src\\main\\res\\drawable\"\")",
       "Bash(rg:*)",
       "Bash(.gradlew.bat assembleDebug)",
-      "Bash(.gradlew.bat build:*)"
+      "Bash(.gradlew.bat build:*)",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:gist.githubusercontent.com)"
     ],
-    "defaultMode": "acceptEdits"
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "C:\\c\\Users\\James\\Documents\\GitHub"
+    ]
   }
 }

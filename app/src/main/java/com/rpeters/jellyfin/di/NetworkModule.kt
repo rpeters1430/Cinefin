@@ -5,6 +5,7 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.utils.SecureLogger
+import com.rpeters.jellyfin.utils.ServerUrlValidator
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -62,9 +63,9 @@ object NetworkModule {
             }
         }
             .connectionPool(okhttp3.ConnectionPool(10, 5, TimeUnit.MINUTES))
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            .connectTimeout(10, TimeUnit.SECONDS)  // Reduced from 30s for faster failure detection
+            .readTimeout(30, TimeUnit.SECONDS)      // Reduced from 60s for faster timeout
+            .writeTimeout(15, TimeUnit.SECONDS)     // Reduced from 30s for faster timeout
             .retryOnConnectionFailure(true)
             .build()
     }
@@ -133,7 +134,10 @@ class JellyfinClientFactory @Inject constructor(
      * of the Ktor HTTP client, which must be done off the main thread.
      */
     suspend fun getClient(baseUrl: String, accessToken: String? = null): org.jellyfin.sdk.api.client.ApiClient = withContext(Dispatchers.IO) {
-        val normalizedUrl = baseUrl.trimEnd('/') + "/"
+        // Validate and normalize the URL properly
+        val validatedUrl = ServerUrlValidator.validateAndNormalizeUrl(baseUrl)
+            ?: throw IllegalArgumentException("Invalid server URL: $baseUrl")
+        val normalizedUrl = validatedUrl.trimEnd('/') + "/"
 
         // Use synchronized block to prevent race conditions during client creation
         synchronized(clientLock) {

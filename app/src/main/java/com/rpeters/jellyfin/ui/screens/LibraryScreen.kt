@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -149,7 +150,13 @@ fun LibraryScreen(
                             LibraryCard(
                                 library = library,
                                 getImageUrl = getImageUrl,
-                                onClick = { onLibraryClick(library) },
+                                onClick = {
+                                    try {
+                                        onLibraryClick(library)
+                                    } catch (e: Exception) {
+                                        Log.e("LibraryScreen", "Error navigating to library: ${library.name}", e)
+                                    }
+                                },
                             )
                         }
                     }

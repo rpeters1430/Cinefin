@@ -40,6 +40,7 @@ import com.rpeters.jellyfin.ui.screens.FavoritesScreen
 import com.rpeters.jellyfin.ui.screens.HomeScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
 import com.rpeters.jellyfin.ui.screens.LibraryScreen
+import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.screens.MovieDetailScreen
 import com.rpeters.jellyfin.ui.screens.MoviesScreen
 import com.rpeters.jellyfin.ui.screens.MusicScreen
@@ -91,12 +92,11 @@ fun JellyfinNavGraph(
         }
     }
 
-    key(libraryTypes) {
-        NavHost(
-            navController = navController,
-            startDestination = startDestination,
-            modifier = modifier,
-        ) {
+    NavHost(
+        navController = navController,
+        startDestination = startDestination,
+        modifier = modifier,
+    ) {
         // Authentication flow
         composable(Screen.ServerConnection.route) {
             val viewModel: ServerConnectionViewModel = hiltViewModel()
@@ -216,74 +216,78 @@ fun JellyfinNavGraph(
                 libraries = appState.libraries,
                 isLoading = appState.isLoading,
                 errorMessage = appState.errorMessage,
-                onRefresh = { viewModel.loadInitialData() },
+                onRefresh = { viewModel.loadInitialData(forceRefresh = true) },
                 getImageUrl = { item -> viewModel.getImageUrl(item) },
                 onLibraryClick = { library ->
-                    libraryRouteFor(library)?.let { route ->
-                        navController.navigate(route)
+                    try {
+                        libraryRouteFor(library)?.let { route ->
+                            navController.navigate(route)
+                        } ?: run {
+                            Log.w("NavGraph", "No route found for library: ${library.name} (${library.collectionType})")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("NavGraph", "Error navigating to library: ${library.name}", e)
                     }
                 },
                 onSettingsClick = { navController.navigate(Screen.Profile.route) },
             )
         }
 
-            // Movies Screen
-            if (CollectionType.MOVIES in libraryTypes) {
-                composable(Screen.Movies.route) {
-                    val viewModel = mainViewModel
-                    val appState by viewModel.appState.collectAsStateWithLifecycle()
+        // Movies Screen - Always available, not conditional on library types
+        composable(Screen.Movies.route) {
+                val viewModel = mainViewModel
+                val appState by viewModel.appState.collectAsStateWithLifecycle()
 
-                    // Local state for filtering and sorting
-                    var selectedFilter by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieFilter.ALL) }
-                    var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
-                    var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
+                // Local state for filtering and sorting
+                var selectedFilter by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieFilter.ALL) }
+                var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
+                var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
 
-                    // Load movies when first entering the screen
-                    LaunchedEffect(Unit) {
-                        if (appState.allMovies.isEmpty() && !appState.isLoadingMovies) {
-                            viewModel.loadAllMovies(reset = true)
+                // Load movies when first entering the screen using on-demand loading
+                LaunchedEffect(Unit) {
+                    viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
+                }
+
+                MoviesScreen(
+                    movies = appState.allMovies,
+                    isLoading = appState.isLoadingMovies,
+                    isLoadingMore = appState.isLoadingMovies,
+                    hasMoreItems = appState.hasMoreMovies,
+                    selectedFilter = selectedFilter,
+                    onFilterChange = { selectedFilter = it },
+                    selectedSort = selectedSort,
+                    onSortChange = { selectedSort = it },
+                    viewMode = viewMode,
+                    onViewModeChange = { viewMode = it },
+                    onMovieClick = { movie ->
+                        movie.id?.let { movieId ->
+                            navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
                         }
+                    },
+                    onRefresh = { viewModel.refreshMovies() },
+                    onLoadMore = { viewModel.loadMoreMovies() },
+                    getImageUrl = { movie -> viewModel.getImageUrl(movie) },
+                )
+            }
+
+        // TV Shows Screen - Always available, not conditional on library types
+        composable(Screen.TVShows.route) {
+            val viewModel = hiltViewModel<MainAppViewModel>()
+
+            TVShowsScreen(
+                onTVShowClick = { seriesId ->
+                    try {
+                        navController.navigate(Screen.TVSeasons.createRoute(seriesId))
+                    } catch (e: Exception) {
+                        Log.e("NavGraph", "Failed to navigate to TV Seasons: $seriesId", e)
                     }
+                },
+                onBackClick = { navController.popBackStack() },
+                viewModel = viewModel,
+            )
+        }
 
-                    MoviesScreen(
-                        movies = appState.allMovies,
-                        isLoading = appState.isLoadingMovies,
-                        isLoadingMore = appState.isLoadingMovies,
-                        hasMoreItems = appState.hasMoreMovies,
-                        selectedFilter = selectedFilter,
-                        onFilterChange = { selectedFilter = it },
-                        selectedSort = selectedSort,
-                        onSortChange = { selectedSort = it },
-                        viewMode = viewMode,
-                        onViewModeChange = { viewMode = it },
-                        onMovieClick = { movie ->
-                            movie.id?.let { movieId ->
-                                navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
-                            }
-                        },
-                        onRefresh = { viewModel.refreshMovies() },
-                        onLoadMore = { viewModel.loadMoreMovies() },
-                        getImageUrl = { movie -> viewModel.getImageUrl(movie) },
-                    )
-                }
-            }
-
-            // TV Shows Screen
-            if (CollectionType.TVSHOWS in libraryTypes) {
-                composable(Screen.TVShows.route) {
-                    val viewModel = mainViewModel
-
-                    TVShowsScreen(
-                        onTVShowClick = { seriesId ->
-                            navController.navigate(Screen.TVSeasons.createRoute(seriesId))
-                        },
-                        onBackClick = { navController.popBackStack() },
-                        viewModel = viewModel,
-                    )
-                }
-            }
-
-            composable(
+        composable(
             route = Screen.TVSeasons.route,
             arguments = listOf(navArgument(Screen.SERIES_ID_ARG) { type = NavType.StringType }),
         ) { backStackEntry ->
@@ -345,24 +349,22 @@ fun JellyfinNavGraph(
             )
         }
 
-            // Music Screen
-            if (CollectionType.MUSIC in libraryTypes) {
-                composable(Screen.Music.route) {
-                    val viewModel = mainViewModel
+        // Music Screen - Always available, not conditional on library types
+        composable(Screen.Music.route) {
+            val viewModel = mainViewModel
 
-                    LaunchedEffect(Unit) {
-                        // Load music data when screen is first shown
-                        viewModel.loadMusic()
-                    }
-
-                    MusicScreen(
-                        onBackClick = { navController.popBackStack() },
-                        viewModel = viewModel,
-                    )
-                }
+            LaunchedEffect(Unit) {
+                // Load music data when screen is first shown using on-demand loading
+                viewModel.loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = false)
             }
 
-            composable(Screen.HomeVideos.route) {
+            MusicScreen(
+                onBackClick = { navController.popBackStack() },
+                viewModel = viewModel,
+            )
+        }
+
+        composable(Screen.HomeVideos.route) {
             HomeVideosScreen(
                 onBackClick = { navController.popBackStack() },
             )
@@ -718,7 +720,6 @@ fun JellyfinNavGraph(
                     }
                 }
             }
-        }
         }
     }
 }

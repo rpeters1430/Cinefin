@@ -6,7 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.utils.MainThreadMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -51,17 +54,28 @@ class HomeViewModel @Inject constructor(
      */
     fun loadHomeData() {
         viewModelScope.launch {
+            MainThreadMonitor.warnIfMainThread("HomeViewModel.loadHomeData")
+            
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Loading home screen data")
             }
 
+            // Check authentication before attempting data load
+            // Note: We don't have direct access to repository here, so we'll rely on the repository's error handling
             _homeState.value = _homeState.value.copy(isLoading = true, errorMessage = null)
 
             try {
-                // Load libraries and recently added content in parallel
-                loadLibraries()
-                loadRecentlyAdded()
-                loadRecentlyAddedByTypes()
+                // Load libraries and recently added content in parallel for better performance
+                coroutineScope {
+                    val librariesDeferred = async { loadLibraries() }
+                    val recentlyAddedDeferred = async { loadRecentlyAdded() }
+                    val recentlyAddedByTypesDeferred = async { loadRecentlyAddedByTypes() }
+                    
+                    // Wait for all operations to complete
+                    librariesDeferred.await()
+                    recentlyAddedDeferred.await()
+                    recentlyAddedByTypesDeferred.await()
+                }
             } catch (e: Exception) {
                 if (BuildConfig.DEBUG) {
                     Log.e(TAG, "Error loading home data", e)
@@ -84,10 +98,17 @@ class HomeViewModel @Inject constructor(
             _homeState.value = _homeState.value.copy(isRefreshing = true)
 
             try {
-                // Force refresh by clearing cache first (would need cache invalidation)
-                loadLibraries()
-                loadRecentlyAdded()
-                loadRecentlyAddedByTypes()
+                // Force refresh by running operations in parallel
+                coroutineScope {
+                    val librariesDeferred = async { loadLibraries(forceRefresh = true) }
+                    val recentlyAddedDeferred = async { loadRecentlyAdded(forceRefresh = true) }
+                    val recentlyAddedByTypesDeferred = async { loadRecentlyAddedByTypes(forceRefresh = true) }
+                    
+                    // Wait for all operations to complete
+                    librariesDeferred.await()
+                    recentlyAddedDeferred.await()
+                    recentlyAddedByTypesDeferred.await()
+                }
             } finally {
                 _homeState.value = _homeState.value.copy(isRefreshing = false)
             }
@@ -97,8 +118,10 @@ class HomeViewModel @Inject constructor(
     /**
      * Load user libraries.
      */
-    private suspend fun loadLibraries() {
-        when (val result = mediaRepository.getUserLibraries()) {
+    private suspend fun loadLibraries(forceRefresh: Boolean = false) {
+        val result = mediaRepository.getUserLibraries(forceRefresh)
+        
+        when (result) {
             is ApiResult.Success -> {
                 if (BuildConfig.DEBUG) {
                     Log.d(TAG, "Loaded ${result.data.size} libraries")
@@ -122,8 +145,10 @@ class HomeViewModel @Inject constructor(
     /**
      * Load recently added content across all types.
      */
-    private suspend fun loadRecentlyAdded() {
-        when (val result = mediaRepository.getRecentlyAdded(RECENTLY_ADDED_LIMIT)) {
+    private suspend fun loadRecentlyAdded(forceRefresh: Boolean = false) {
+        val result = mediaRepository.getRecentlyAdded(RECENTLY_ADDED_LIMIT, forceRefresh)
+        
+        when (result) {
             is ApiResult.Success -> {
                 if (BuildConfig.DEBUG) {
                     Log.d(TAG, "Loaded ${result.data.size} recently added items")
@@ -144,8 +169,9 @@ class HomeViewModel @Inject constructor(
 
     /**
      * Load recently added content organized by type.
+     * Now optimized to run all API calls in parallel instead of sequential.
      */
-    private suspend fun loadRecentlyAddedByTypes() {
+    private suspend fun loadRecentlyAddedByTypes(forceRefresh: Boolean = false) {
         val contentTypes = listOf(
             BaseItemKind.MOVIE,
             BaseItemKind.SERIES,
@@ -156,10 +182,23 @@ class HomeViewModel @Inject constructor(
             BaseItemKind.VIDEO,
         )
 
+        // Run all API calls in parallel for much better performance
+        val deferredResults = coroutineScope {
+            contentTypes.map { contentType ->
+                async {
+                    val result = mediaRepository.getRecentlyAddedByType(contentType, RECENTLY_ADDED_BY_TYPE_LIMIT, forceRefresh)
+                    Pair(contentType, result)
+                }
+            }
+        }
+
         val results = mutableMapOf<String, List<BaseItemDto>>()
 
-        for (contentType in contentTypes) {
-            when (val result = mediaRepository.getRecentlyAddedByType(contentType, RECENTLY_ADDED_BY_TYPE_LIMIT)) {
+        // Wait for all results and process them
+        deferredResults.forEach { deferred ->
+            val (contentType, result) = deferred.await()
+            
+            when (result) {
                 is ApiResult.Success -> {
                     if (result.data.isNotEmpty()) {
                         val typeName = when (contentType) {

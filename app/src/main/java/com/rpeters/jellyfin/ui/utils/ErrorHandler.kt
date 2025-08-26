@@ -215,6 +215,7 @@ object ErrorHandler {
             ErrorType.NOT_FOUND -> false // Don't retry 404s
             ErrorType.OPERATION_CANCELLED -> false // User cancelled
             ErrorType.TIMEOUT -> true // Retry timeout errors
+            ErrorType.VALIDATION -> false // Don't retry validation errors
         }
     }
 

@@ -28,13 +28,13 @@ object ImageLoadingOptimizer {
                 val imageLoader = ImageLoader.Builder(context)
                     .memoryCache {
                         MemoryCache.Builder(context)
-                            .maxSizePercent(0.15) // Reduce to 15% to prevent memory issues
+                            .maxSizePercent(0.20) // Increase to 20% for better performance
                             .build()
                     }
                     .diskCache {
                         DiskCache.Builder()
                             .directory(getCacheDirectory(context))
-                            .maxSizePercent(0.015) // Reduce to 1.5% to prevent disk issues
+                            .maxSizeBytes(120 * 1024 * 1024) // Fixed 120MB cache
                             .cleanupDispatcher(Dispatchers.IO)
                             .build()
                     }

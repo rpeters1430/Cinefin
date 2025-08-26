@@ -78,18 +78,45 @@ class MainAppViewModel @Inject constructor(
 
     // ✅ FIX: Track which library types have been loaded to prevent double loading
     private val loadedLibraryTypes = mutableSetOf<String>()
+    
+    // Prevent multiple concurrent data loading operations
+    @Volatile
+    private var isLoadingData = false
 
     init {
         loadInitialData()
     }
 
-    fun loadInitialData() {
+    fun loadInitialData(forceRefresh: Boolean = false) {
+        // Prevent multiple concurrent loading operations unless force refresh
+        if (!forceRefresh && isLoadingData) {
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadInitialData: Already loading data, skipping duplicate request")
+            }
+            return
+        }
+        
         viewModelScope.launch {
             measureSuspendTime("loadInitialData") {
-                if (BuildConfig.DEBUG) {
-                    Log.d("MainAppViewModel", "loadInitialData: Starting to load all data")
-                    PerformanceMonitor.logMemoryUsage("Before loading data")
-                }
+                isLoadingData = true
+                
+                try {
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "loadInitialData: Starting to load all data (forceRefresh=$forceRefresh)")
+                        PerformanceMonitor.logMemoryUsage("Before loading data")
+                    }
+
+                    // Check if user is authenticated before attempting data load
+                    if (!repository.isUserAuthenticated()) {
+                        if (BuildConfig.DEBUG) {
+                            Log.w("MainAppViewModel", "loadInitialData: User not authenticated, skipping data load")
+                        }
+                        _appState.value = _appState.value.copy(
+                            isLoading = false, 
+                            errorMessage = "Authentication required. Please log in again."
+                        )
+                        return@measureSuspendTime
+                    }
 
                 val previousLibraries = _appState.value.libraries
 
@@ -102,7 +129,7 @@ class MainAppViewModel @Inject constructor(
 
                 val librariesDeferred = async {
                     measureSuspendTime("getUserLibraries") {
-                        mediaRepository.getUserLibraries()
+                        mediaRepository.getUserLibraries(forceRefresh)
                     }
                 }
                 val recentlyAddedDeferred = async {
@@ -332,6 +359,9 @@ class MainAppViewModel @Inject constructor(
                     if (PerformanceMonitor.checkMemoryPressure()) {
                         PerformanceMonitor.forceGarbageCollection("High memory usage after data loading")
                     }
+                }
+                } finally {
+                    isLoadingData = false
                 }
             }
         }
@@ -737,6 +767,29 @@ class MainAppViewModel @Inject constructor(
 
     fun loadHomeVideos(libraryId: String) {
         viewModelScope.launch {
+            // Check authentication first
+            if (!repository.isUserAuthenticated()) {
+                if (BuildConfig.DEBUG) {
+                    Log.w("MainAppViewModel", "loadHomeVideos: User not authenticated, skipping API call")
+                }
+                return@launch
+            }
+            
+            // Check if the library still exists to prevent 400 errors from removed libraries
+            val currentLibraries = _appState.value.libraries
+            val libraryExists = currentLibraries.any { it.id?.toString() == libraryId }
+            
+            if (!libraryExists) {
+                if (BuildConfig.DEBUG) {
+                    Log.w("MainAppViewModel", "loadHomeVideos: Library $libraryId no longer exists, skipping API call")
+                }
+                // Remove any cached data for this library
+                val updated = _appState.value.homeVideosByLibrary.toMutableMap()
+                updated.remove(libraryId)
+                _appState.value = _appState.value.copy(homeVideosByLibrary = updated)
+                return@launch
+            }
+            
             when (val result = mediaRepository.getLibraryItems(parentId = libraryId)) {
                 is ApiResult.Success -> {
                     val updated = _appState.value.homeVideosByLibrary.toMutableMap()
@@ -838,6 +891,18 @@ class MainAppViewModel @Inject constructor(
      */
     fun loadAllMovies(reset: Boolean = false) {
         viewModelScope.launch {
+            // Check authentication before attempting to load movies
+            if (!repository.isUserAuthenticated()) {
+                if (BuildConfig.DEBUG) {
+                    Log.w("MainAppViewModel", "loadAllMovies: User not authenticated, skipping data load")
+                }
+                _appState.value = _appState.value.copy(
+                    isLoadingMovies = false,
+                    errorMessage = "Authentication required. Please log in again."
+                )
+                return@launch
+            }
+
             val currentState = _appState.value
 
             if (reset) {
@@ -931,6 +996,18 @@ class MainAppViewModel @Inject constructor(
      */
     fun loadAllTVShows(reset: Boolean = false) {
         viewModelScope.launch {
+            // Check authentication before attempting to load TV shows
+            if (!repository.isUserAuthenticated()) {
+                if (BuildConfig.DEBUG) {
+                    Log.w("MainAppViewModel", "loadAllTVShows: User not authenticated, skipping data load")
+                }
+                _appState.value = _appState.value.copy(
+                    isLoadingTVShows = false,
+                    errorMessage = "Authentication required. Please log in again."
+                )
+                return@launch
+            }
+
             val currentState = _appState.value
 
             if (reset) {
@@ -1053,47 +1130,52 @@ class MainAppViewModel @Inject constructor(
 
     /**
      * ✅ FIX: Load library type data on-demand to prevent double loading
-     * This method checks if data for a specific library type is already loaded
-     * and only loads it if necessary, preventing the double refresh issue.
      */
     fun loadLibraryTypeData(libraryType: LibraryType, forceRefresh: Boolean = false) {
-        viewModelScope.launch {
-            val typeKey = libraryType.name
-
-            // Skip loading if already loaded and not forcing refresh
-            if (!forceRefresh && loadedLibraryTypes.contains(typeKey)) {
-                if (BuildConfig.DEBUG) {
-                    Log.d("MainAppViewModel", "loadLibraryTypeData: $typeKey already loaded, skipping")
-                }
-                return@launch
+        val typeKey = libraryType.name
+        
+        // Skip if already loaded (prevents double loading)
+        if (!forceRefresh && loadedLibraryTypes.contains(typeKey)) {
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadLibraryTypeData: Skipping $typeKey - already loaded")
             }
-
-            when (libraryType) {
-                LibraryType.MOVIES -> {
-                    if (BuildConfig.DEBUG) {
-                        Log.d("MainAppViewModel", "loadLibraryTypeData: Loading movies data")
+            return // No unnecessary API calls!
+        }
+        
+        viewModelScope.launch {
+            try {
+                when (libraryType) {
+                    LibraryType.MOVIES -> {
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadLibraryTypeData: Loading movies data")
+                        }
+                        loadAllMovies(reset = true)
+                        loadedLibraryTypes.add(typeKey)
                     }
-                    loadAllMovies(reset = true)
-                    loadedLibraryTypes.add(typeKey)
+                    LibraryType.TV_SHOWS -> {
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadLibraryTypeData: Loading TV shows data")
+                        }
+                        loadAllTVShows(reset = true)
+                        loadedLibraryTypes.add(typeKey)
+                    }
+                    LibraryType.MUSIC, LibraryType.STUFF -> {
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadLibraryTypeData: Loading general library items for $typeKey")
+                        }
+                        // For music and other types, use the general library items
+                        if (!loadedLibraryTypes.contains("GENERAL_ITEMS") || forceRefresh) {
+                            loadLibraryItemsPage(reset = true)
+                            loadedLibraryTypes.add("GENERAL_ITEMS")
+                        }
+                        loadedLibraryTypes.add(typeKey)
+                    }
                 }
-                LibraryType.TV_SHOWS -> {
-                    if (BuildConfig.DEBUG) {
-                        Log.d("MainAppViewModel", "loadLibraryTypeData: Loading TV shows data")
-                    }
-                    loadAllTVShows(reset = true)
-                    loadedLibraryTypes.add(typeKey)
-                }
-                LibraryType.MUSIC, LibraryType.STUFF -> {
-                    if (BuildConfig.DEBUG) {
-                        Log.d("MainAppViewModel", "loadLibraryTypeData: Loading general library items for $typeKey")
-                    }
-                    // For music and other types, use the general library items
-                    if (!loadedLibraryTypes.contains("GENERAL_ITEMS") || forceRefresh) {
-                        loadLibraryItemsPage(reset = true)
-                        loadedLibraryTypes.add("GENERAL_ITEMS")
-                    }
-                    loadedLibraryTypes.add(typeKey)
-                }
+            } catch (e: Exception) {
+                Log.e("MainAppViewModel", "loadLibraryTypeData: Error loading $typeKey", e)
+                _appState.value = _appState.value.copy(
+                    errorMessage = "Failed to load ${libraryType.displayName}: ${e.message}"
+                )
             }
         }
     }

@@ -9,7 +9,9 @@ import com.rpeters.jellyfin.data.model.QuickConnectState
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.di.JellyfinClientFactory
+import com.rpeters.jellyfin.utils.NetworkDebugger
 import com.rpeters.jellyfin.utils.SecureLogger
+import com.rpeters.jellyfin.utils.ServerUrlValidator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +25,7 @@ import org.jellyfin.sdk.model.api.AuthenticateUserByName
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.jellyfin.sdk.model.api.QuickConnectDto
+import java.net.URI
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,6 +37,7 @@ import javax.inject.Singleton
 class JellyfinAuthRepository @Inject constructor(
     private val clientFactory: JellyfinClientFactory,
     private val secureCredentialManager: SecureCredentialManager,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
 ) {
     private val _currentServer = MutableStateFlow<JellyfinServer?>(null)
     val currentServer: Flow<JellyfinServer?> = _currentServer.asStateFlow()
@@ -58,20 +62,129 @@ class JellyfinAuthRepository @Inject constructor(
     }
 
     /**
-     * Test connection to a Jellyfin server
+     * Data class to hold connection test results including the working URL
+     */
+    data class ConnectionTestResult(
+        val systemInfo: PublicSystemInfo,
+        val workingUrl: String
+    )
+
+    /**
+     * Test connection to a Jellyfin server with automatic fallback
      */
     suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
-        return try {
-            val client = getClient(serverUrl)
-            val response = client.systemApi.getPublicSystemInfo()
-            ApiResult.Success(response.content)
-        } catch (e: Exception) {
-            ApiResult.Error("Failed to connect to server: ${e.message}", e, getErrorType(e))
+        // Log network diagnostics before attempting connection
+        NetworkDebugger.logNetworkDiagnostics(context, serverUrl)
+        
+        return when (val result = testServerConnectionWithUrl(serverUrl)) {
+            is ApiResult.Success -> {
+                // Test and log server connectivity in debug builds
+                if (BuildConfig.DEBUG) {
+                    NetworkDebugger.testAndLogServerConnectivity(context, result.data.workingUrl)
+                }
+                ApiResult.Success(result.data.systemInfo)
+            }
+            is ApiResult.Error -> ApiResult.Error(result.message, result.cause, result.errorType)
+            is ApiResult.Loading -> ApiResult.Loading(result.message)
         }
+    }
+    
+    /**
+     * Test connection to a Jellyfin server with automatic fallback, returning both result and working URL
+     */
+    private suspend fun testServerConnectionWithUrl(serverUrl: String): ApiResult<ConnectionTestResult> {
+        // Get all URL variations to try
+        val urlVariations = ServerUrlValidator.getUrlVariations(serverUrl)
+        
+        if (urlVariations.isEmpty()) {
+            return ApiResult.Error(
+                "Invalid server URL format. Please use format: http://server:port or https://server:port", 
+                null, 
+                ErrorType.VALIDATION
+            )
+        }
+        
+        var lastException: Exception? = null
+        
+        // Try each URL variation until one works
+        for ((index, url) in urlVariations.withIndex()) {
+            try {
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinAuthRepository", "Testing connection to: $url (attempt ${index + 1}/${urlVariations.size})")
+                }
+                
+                val client = getClient(url)
+                val response = client.systemApi.getPublicSystemInfo()
+                
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinAuthRepository", "Successfully connected to server: ${response.content.serverName} at $url")
+                }
+                
+                return ApiResult.Success(ConnectionTestResult(response.content, url))
+            } catch (e: Exception) {
+                lastException = e
+                val errorType = getErrorType(e)
+                
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinAuthRepository", "Connection failed for $url: ${e.message}")
+                }
+                
+                // If this is not a network or timeout error, don't try other URLs
+                if (errorType != ErrorType.NETWORK && errorType != ErrorType.TIMEOUT) {
+                    break
+                }
+            }
+        }
+        
+        // All URLs failed
+        val errorType = getErrorType(lastException ?: Exception("Unknown error"))
+        val host = try {
+            ServerUrlValidator.extractBaseUrl(urlVariations.first())?.let { URI(it).host }
+        } catch (e: Exception) {
+            null
+        } ?: "server"
+        
+        val message = when (errorType) {
+            ErrorType.NETWORK -> {
+                val attemptedUrls = urlVariations.take(3).joinToString(", ") // Show first 3 attempts
+                val isReverseProxy = urlVariations.any { url -> 
+                    url.contains("/jellyfin") || 
+                    url.substringAfter("://").substringBefore("/").count { it == '.' } >= 2 
+                }
+                
+                buildString {
+                    append("Cannot connect to Jellyfin server '$host'.\n\n")
+                    append("Tried: $attemptedUrls\n\n")
+                    if (isReverseProxy) {
+                        append("This appears to be a reverse proxy setup. Please check:\n")
+                        append("• Reverse proxy is running and configured correctly\n")
+                        append("• Jellyfin backend server is accessible to the proxy\n")
+                        append("• SSL certificates are valid (if using HTTPS)\n")
+                        append("• Proxy configuration includes proper headers\n")
+                        append("• Try adding '/jellyfin' path if not included\n")
+                    } else {
+                        append("Please check:\n")
+                        append("• Jellyfin server is running and accessible\n")
+                        append("• Network connection is working\n")
+                        append("• Firewall allows connections to Jellyfin ports\n")
+                        append("• Server URL and port are correct\n")
+                    }
+                    append("• Contact your server administrator if issues persist")
+                }
+            }
+            ErrorType.SERVER_ERROR -> "Server '$host' is reachable but returned an error. Please check if Jellyfin is running properly."
+            ErrorType.UNAUTHORIZED -> "Server '$host' requires authentication to access system information."
+            ErrorType.FORBIDDEN -> "Access to server '$host' is denied. Check server permissions."
+            ErrorType.TIMEOUT -> "Connection to server '$host' timed out. The server may be overloaded or have network issues."
+            else -> "Failed to connect to server '$host': ${lastException?.message ?: "Unknown error"}"
+        }
+        
+        Log.e("JellyfinAuthRepository", "All server connection attempts failed. Tried URLs: $urlVariations", lastException)
+        return ApiResult.Error(message, lastException, errorType)
     }
 
     /**
-     * Authenticate user with username and password
+     * Authenticate user with username and password, with automatic URL fallback
      */
     suspend fun authenticateUser(
         serverUrl: String,
@@ -79,43 +192,67 @@ class JellyfinAuthRepository @Inject constructor(
         password: String,
     ): ApiResult<AuthenticationResult> = authMutex.withLock {
         return try {
-            val client = getClient(serverUrl)
-            val request = AuthenticateUserByName(
-                username = username,
-                pw = password,
-            )
-            val response = client.userApi.authenticateUserByName(request)
-            val authResult = response.content
+            // First test connection to find working URL
+            when (val connectionResult = testServerConnectionWithUrl(serverUrl)) {
+                is ApiResult.Success -> {
+                    val workingUrl = connectionResult.data.workingUrl
+                    val systemInfo = connectionResult.data.systemInfo
+                    
+                    if (BuildConfig.DEBUG) {
+                        Log.d("JellyfinAuthRepository", "Authenticating user: $username on $workingUrl")
+                    }
+                    
+                    val client = getClient(workingUrl)
+                    val request = AuthenticateUserByName(
+                        username = username,
+                        pw = password,
+                    )
+                    val response = client.userApi.authenticateUserByName(request)
+                    val authResult = response.content
 
-            // Fetch public system info to get server name and version
-            val systemInfo = try {
-                getClient(serverUrl, authResult.accessToken)
-                    .systemApi.getPublicSystemInfo().content
-            } catch (e: Exception) {
-                Log.e("JellyfinAuthRepository", "Failed to fetch public system info: ${e.message}", e)
-                PublicSystemInfo(serverName = "Unknown Server", version = "Unknown Version")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("JellyfinAuthRepository", "Authentication successful for user: $username")
+                    }
+
+                    // Update current server state with real name and version
+                    val server = JellyfinServer(
+                        id = authResult.serverId.toString(),
+                        name = systemInfo.serverName ?: "Unknown Server",
+                        url = workingUrl.trimEnd('/'),
+                        isConnected = true,
+                        version = systemInfo.version,
+                        userId = authResult.user?.id.toString(),
+                        username = authResult.user?.name,
+                        accessToken = authResult.accessToken,
+                        loginTimestamp = System.currentTimeMillis(),
+                    )
+
+                    _currentServer.value = server
+                    _isConnected.value = true
+
+                    ApiResult.Success(authResult)
+                }
+                is ApiResult.Error -> {
+                    // Connection test failed, return the connection error
+                    Log.e("JellyfinAuthRepository", "Server connection failed during authentication", connectionResult.cause)
+                    return ApiResult.Error(connectionResult.message, connectionResult.cause, connectionResult.errorType)
+                }
+                is ApiResult.Loading -> {
+                    return ApiResult.Error("Unexpected loading state during authentication", null, ErrorType.UNKNOWN)
+                }
             }
-
-            // Update current server state with real name and version
-            val server = JellyfinServer(
-                id = authResult.serverId.toString(),
-                name = systemInfo.serverName ?: "Unknown Server",
-                url = serverUrl.trimEnd('/'),
-                isConnected = true,
-                version = systemInfo.version,
-                userId = authResult.user?.id.toString(),
-                username = authResult.user?.name,
-                accessToken = authResult.accessToken,
-                loginTimestamp = System.currentTimeMillis(),
-            )
-
-            _currentServer.value = server
-            _isConnected.value = true
-
-            ApiResult.Success(authResult)
         } catch (e: Exception) {
             val errorType = getErrorType(e)
-            ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
+            val message = when (errorType) {
+                ErrorType.UNAUTHORIZED -> "Invalid username or password."
+                ErrorType.NETWORK -> "Cannot reach server. Check network connection."
+                ErrorType.SERVER_ERROR -> "Server error during authentication."
+                ErrorType.FORBIDDEN -> "Access forbidden. Check user permissions."
+                else -> "Authentication failed: ${e.message}"
+            }
+            
+            Log.e("JellyfinAuthRepository", "Authentication failed for user: $username", e)
+            ApiResult.Error(message, e, errorType)
         }
     }
 
@@ -345,7 +482,13 @@ class JellyfinAuthRepository @Inject constructor(
     private fun getErrorType(e: Throwable): ErrorType {
         return when (e) {
             is java.util.concurrent.CancellationException, is kotlinx.coroutines.CancellationException -> ErrorType.OPERATION_CANCELLED
-            is java.net.UnknownHostException, is java.net.ConnectException, is java.net.SocketTimeoutException -> ErrorType.NETWORK
+            is java.net.UnknownHostException -> ErrorType.NETWORK  // DNS resolution failed
+            is java.net.ConnectException -> ErrorType.NETWORK      // Connection refused
+            is java.net.SocketTimeoutException -> ErrorType.TIMEOUT // Connection timeout
+            is java.net.NoRouteToHostException -> ErrorType.NETWORK // No route to host
+            is java.security.cert.CertificateException -> ErrorType.SERVER_ERROR // SSL certificate issues
+            is javax.net.ssl.SSLException -> ErrorType.SERVER_ERROR // SSL handshake issues
+            is org.jellyfin.sdk.api.client.exception.TimeoutException -> ErrorType.TIMEOUT // Jellyfin SDK timeout
             is retrofit2.HttpException -> when (e.code()) {
                 401 -> ErrorType.UNAUTHORIZED
                 403 -> ErrorType.FORBIDDEN

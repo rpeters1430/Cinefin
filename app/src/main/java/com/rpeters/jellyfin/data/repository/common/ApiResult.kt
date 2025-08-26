@@ -27,5 +27,6 @@ enum class ErrorType {
     FORBIDDEN,
     OPERATION_CANCELLED,
     TIMEOUT,
+    VALIDATION,
     UNKNOWN,
 }

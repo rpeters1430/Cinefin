@@ -30,8 +30,10 @@ open class BaseJellyfinRepository @Inject constructor(
     protected suspend fun getClient(serverUrl: String, accessToken: String?): ApiClient =
         clientFactory.getClient(serverUrl, accessToken)
 
-    protected fun validateServer(): JellyfinServer =
-        RepositoryUtils.validateServer(authRepository.getCurrentServer())
+    protected fun validateServer(): JellyfinServer {
+        val currentServer = authRepository.getCurrentServer()
+        return RepositoryUtils.validateServer(currentServer)
+    }
 
     protected fun parseUuid(id: String, type: String) =
         RepositoryUtils.parseUuid(id, type)

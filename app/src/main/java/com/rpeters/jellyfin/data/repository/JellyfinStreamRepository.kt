@@ -250,35 +250,65 @@ class JellyfinStreamRepository @Inject constructor(
      * Get image URL for an item
      */
     fun getImageUrl(itemId: String, imageType: String = "Primary", tag: String? = null): String? {
-        val server = authRepository.getCurrentServer() ?: return null
-        val tagParam = tag?.let { "&tag=$it" } ?: ""
-        return "${server.url}/Items/$itemId/Images/$imageType?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH$tagParam"
+        return try {
+            val server = authRepository.getCurrentServer()
+            if (server?.accessToken.isNullOrBlank() || server?.url.isNullOrBlank()) {
+                Log.w("JellyfinStreamRepository", "getImageUrl: Server not available or missing credentials")
+                return null
+            }
+            
+            val tagParam = tag?.let { "&tag=$it" } ?: ""
+            "${server.url}/Items/$itemId/Images/$imageType?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH$tagParam"
+        } catch (e: Exception) {
+            Log.w("JellyfinStreamRepository", "getImageUrl: Failed to generate image URL for $itemId", e)
+            null
+        }
     }
 
     /**
      * Get series image URL for an item (uses series poster for episodes)
      */
     fun getSeriesImageUrl(item: BaseItemDto): String? {
-        val server = authRepository.getCurrentServer() ?: return null
-        // For episodes, use the series poster if available
-        val imageId = if (item.type == BaseItemKind.EPISODE && item.seriesId != null) {
-            item.seriesId.toString()
-        } else {
-            item.id.toString()
+        return try {
+            val server = authRepository.getCurrentServer()
+            if (server?.accessToken.isNullOrBlank() || server?.url.isNullOrBlank()) {
+                Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Server not available or missing credentials")
+                return null
+            }
+            
+            // For episodes, use the series poster if available
+            val imageId = if (item.type == BaseItemKind.EPISODE && item.seriesId != null) {
+                item.seriesId.toString()
+            } else {
+                item.id.toString()
+            }
+            "${server.url}/Items/$imageId/Images/Primary?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH"
+        } catch (e: Exception) {
+            Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Failed to generate series image URL for ${item.id}", e)
+            null
         }
-        return "${server.url}/Items/$imageId/Images/Primary?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH"
     }
 
     /**
      * Get backdrop URL for an item
      */
     fun getBackdropUrl(item: BaseItemDto): String? {
-        val server = authRepository.getCurrentServer() ?: return null
-        val backdropTag = item.backdropImageTags?.firstOrNull()
-        return if (backdropTag != null) {
-            "${server.url}/Items/${item.id}/Images/Backdrop?tag=$backdropTag&maxHeight=$BACKDROP_MAX_HEIGHT&maxWidth=$BACKDROP_MAX_WIDTH"
-        } else {
-            getImageUrl(item.id.toString(), "Primary", item.imageTags?.get(ImageType.PRIMARY))
+        return try {
+            val server = authRepository.getCurrentServer()
+            if (server?.accessToken.isNullOrBlank() || server?.url.isNullOrBlank()) {
+                Log.w("JellyfinStreamRepository", "getBackdropUrl: Server not available or missing credentials")
+                return null
+            }
+            
+            val backdropTag = item.backdropImageTags?.firstOrNull()
+            if (backdropTag != null) {
+                "${server.url}/Items/${item.id}/Images/Backdrop?tag=$backdropTag&maxHeight=$BACKDROP_MAX_HEIGHT&maxWidth=$BACKDROP_MAX_WIDTH"
+            } else {
+                getImageUrl(item.id.toString(), "Primary", item.imageTags?.get(ImageType.PRIMARY))
+            }
+        } catch (e: Exception) {
+            Log.w("JellyfinStreamRepository", "getBackdropUrl: Failed to generate backdrop URL for ${item.id}", e)
+            null
         }
     }
 }

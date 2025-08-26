@@ -75,6 +75,7 @@ import com.rpeters.jellyfin.utils.getItemKey
 import com.rpeters.jellyfin.utils.getRatingAsDouble
 import com.rpeters.jellyfin.utils.hasHighRating
 import org.jellyfin.sdk.model.api.BaseItemDto
+import com.rpeters.jellyfin.ui.screens.LibraryType
 
 enum class TVShowFilter(val displayNameResId: Int) {
     ALL(R.string.filter_all_shows),
@@ -134,9 +135,8 @@ fun TVShowsScreen(
 
     // Load TV shows when screen is first displayed
     LaunchedEffect(Unit) {
-        if (appState.allTVShows.isEmpty() && !appState.isLoadingTVShows) {
-            viewModel.loadAllTVShows(reset = true)
-        }
+        // Use the new on-demand loading system to prevent double loading
+        viewModel.loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = false)
     }
 
     // Get all TV shows from the dedicated allTVShows field
@@ -144,8 +144,10 @@ fun TVShowsScreen(
         appState.allTVShows
     }
 
-    // Apply filtering and sorting
+    // Apply filtering and sorting with proper keys to prevent unnecessary recomputation
     val filteredAndSortedTVShows = remember(tvShowItems, selectedFilter, sortOrder) {
+        if (tvShowItems.isEmpty()) return@remember emptyList()
+        
         val filtered = when (selectedFilter) {
             TVShowFilter.ALL -> tvShowItems
             TVShowFilter.FAVORITES -> tvShowItems.filter { it.userData?.isFavorite == true }

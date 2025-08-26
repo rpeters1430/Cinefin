@@ -8,6 +8,7 @@ import com.rpeters.jellyfin.ui.JellyfinApp
 import com.rpeters.jellyfin.ui.tv.TvJellyfinApp
 import com.rpeters.jellyfin.utils.DeviceTypeUtils
 import com.rpeters.jellyfin.utils.ImageLoaderInitializer
+import com.rpeters.jellyfin.utils.MainThreadMonitor
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
@@ -28,13 +29,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Start main thread monitoring in debug builds
+        MainThreadMonitor.startMonitoring()
+        
         imageLoaderInitializer = EntryPointAccessors.fromApplication(
             applicationContext,
             ImageLoaderInitializerEntryPoint::class.java,
         ).imageLoaderInitializer()
         imageLoaderInitializer.initialize()
 
-        val deviceType = DeviceTypeUtils.getDeviceType(this)
+        val deviceType = MainThreadMonitor.measureMainThreadImpact("getDeviceType") {
+            DeviceTypeUtils.getDeviceType(this)
+        }
 
         setContent {
             when (deviceType) {
@@ -42,5 +49,10 @@ class MainActivity : ComponentActivity() {
                 else -> JellyfinApp()
             }
         }
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        MainThreadMonitor.stopMonitoring()
     }
 }

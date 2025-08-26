@@ -13,6 +13,7 @@ import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.utils.ServerUrlValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -125,6 +126,15 @@ class ServerConnectionViewModel @Inject constructor(
             )
             return
         }
+        
+        // Validate and normalize the server URL
+        val normalizedServerUrl = ServerUrlValidator.validateAndNormalizeUrl(serverUrl)
+        if (normalizedServerUrl == null) {
+            _connectionState.value = _connectionState.value.copy(
+                errorMessage = "Invalid server URL. Please enter a valid URL like 'http://192.168.1.100:8096' or 'https://jellyfin.myserver.com'",
+            )
+            return
+        }
 
         viewModelScope.launch {
             _connectionState.value = _connectionState.value.copy(
@@ -133,7 +143,7 @@ class ServerConnectionViewModel @Inject constructor(
             )
 
             // First test server connection
-            when (val serverResult = repository.testServerConnection(serverUrl)) {
+            when (val serverResult = repository.testServerConnection(normalizedServerUrl)) {
                 is ApiResult.Success -> {
                     val serverInfo = serverResult.data
                     _connectionState.value = _connectionState.value.copy(
@@ -141,11 +151,11 @@ class ServerConnectionViewModel @Inject constructor(
                     )
 
                     // Now authenticate
-                    when (val authResult = repository.authenticateUser(serverUrl, username, password)) {
+                    when (val authResult = repository.authenticateUser(normalizedServerUrl, username, password)) {
                         is ApiResult.Success -> {
                             // Save credentials only when the user opted in
                             if (_connectionState.value.rememberLogin) {
-                                saveCredentials(serverUrl, username, password)
+                                saveCredentials(normalizedServerUrl, username, password)
                             } else {
                                 clearSavedCredentials()
                             }
@@ -329,6 +339,15 @@ class ServerConnectionViewModel @Inject constructor(
             )
             return
         }
+        
+        // Validate and normalize the server URL
+        val normalizedServerUrl = ServerUrlValidator.validateAndNormalizeUrl(serverUrl)
+        if (normalizedServerUrl == null) {
+            _connectionState.value = _connectionState.value.copy(
+                errorMessage = "Invalid server URL. Please enter a valid URL like 'http://192.168.1.100:8096' or 'https://jellyfin.myserver.com'",
+            )
+            return
+        }
 
         viewModelScope.launch {
             _connectionState.value = _connectionState.value.copy(
@@ -338,14 +357,14 @@ class ServerConnectionViewModel @Inject constructor(
             )
 
             // First test server connection
-            when (val serverResult = repository.testServerConnection(serverUrl)) {
+            when (val serverResult = repository.testServerConnection(normalizedServerUrl)) {
                 is ApiResult.Success -> {
                     _connectionState.value = _connectionState.value.copy(
                         quickConnectStatus = "Initiating Quick Connect...",
                     )
 
                     // Now initiate Quick Connect
-                    when (val quickConnectResult = repository.initiateQuickConnect(serverUrl)) {
+                    when (val quickConnectResult = repository.initiateQuickConnect(normalizedServerUrl)) {
                         is ApiResult.Success -> {
                             val result = quickConnectResult.data
                             _connectionState.value = _connectionState.value.copy(
@@ -358,7 +377,7 @@ class ServerConnectionViewModel @Inject constructor(
 
                             // Start polling for approval
                             quickConnectPollingJob = viewModelScope.launch {
-                                pollQuickConnectState(serverUrl, result.secret ?: "")
+                                pollQuickConnectState(normalizedServerUrl, result.secret ?: "")
                             }
                         }
                         is ApiResult.Error -> {
