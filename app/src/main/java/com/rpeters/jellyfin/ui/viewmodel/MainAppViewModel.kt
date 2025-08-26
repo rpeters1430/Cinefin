@@ -15,6 +15,7 @@ import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.utils.PerformanceMonitor
 import com.rpeters.jellyfin.utils.measureSuspendTime
+import com.rpeters.jellyfin.utils.ConcurrencyThrottler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -129,12 +130,16 @@ class MainAppViewModel @Inject constructor(
 
                     val librariesDeferred = async {
                         measureSuspendTime("getUserLibraries") {
-                            mediaRepository.getUserLibraries(forceRefresh)
+                            ConcurrencyThrottler.throttle {
+                                mediaRepository.getUserLibraries(forceRefresh)
+                            }
                         }
                     }
                     val recentlyAddedDeferred = async {
                         measureSuspendTime("getRecentlyAdded") {
-                            mediaRepository.getRecentlyAdded()
+                            ConcurrencyThrottler.throttle {
+                                mediaRepository.getRecentlyAdded()
+                            }
                         }
                     }
 
@@ -298,7 +303,9 @@ class MainAppViewModel @Inject constructor(
 
                     val contentTypeDeferreds = types.map { (itemType, typeKey) ->
                         async {
-                            typeKey to mediaRepository.getRecentlyAddedByType(itemType, limit = 20)
+                            typeKey to ConcurrencyThrottler.throttle {
+                                mediaRepository.getRecentlyAddedByType(itemType, limit = 20)
+                            }
                         }
                     }
 
@@ -938,9 +945,19 @@ class MainAppViewModel @Inject constructor(
                 it.collectionType == org.jellyfin.sdk.model.api.CollectionType.MOVIES 
             }
             
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadAllMovies: Found ${movieLibraries.size} movie libraries")
+                movieLibraries.forEachIndexed { index, library ->
+                    Log.d("MainAppViewModel", "loadAllMovies: Movie library $index: ${library.name} (ID: ${library.id})")
+                }
+            }
+            
             if (movieLibraries.isEmpty()) {
                 if (BuildConfig.DEBUG) {
-                    Log.w("MainAppViewModel", "loadAllMovies: No movie libraries found")
+                    Log.w("MainAppViewModel", "loadAllMovies: No movie libraries found in ${_appState.value.libraries.size} total libraries")
+                    _appState.value.libraries.forEach { lib ->
+                        Log.d("MainAppViewModel", "Available library: ${lib.name} (Type: ${lib.collectionType}, ID: ${lib.id})")
+                    }
                 }
                 _appState.value = _appState.value.copy(
                     isLoadingMovies = false,
@@ -1064,9 +1081,19 @@ class MainAppViewModel @Inject constructor(
                 it.collectionType == org.jellyfin.sdk.model.api.CollectionType.TVSHOWS 
             }
             
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadAllTVShows: Found ${tvLibraries.size} TV libraries")
+                tvLibraries.forEachIndexed { index, library ->
+                    Log.d("MainAppViewModel", "loadAllTVShows: TV library $index: ${library.name} (ID: ${library.id})")
+                }
+            }
+            
             if (tvLibraries.isEmpty()) {
                 if (BuildConfig.DEBUG) {
-                    Log.w("MainAppViewModel", "loadAllTVShows: No TV show libraries found")
+                    Log.w("MainAppViewModel", "loadAllTVShows: No TV show libraries found in ${_appState.value.libraries.size} total libraries")
+                    _appState.value.libraries.forEach { lib ->
+                        Log.d("MainAppViewModel", "Available library: ${lib.name} (Type: ${lib.collectionType}, ID: ${lib.id})")
+                    }
                 }
                 _appState.value = _appState.value.copy(
                     isLoadingTVShows = false,
@@ -1333,6 +1360,7 @@ class MainAppViewModel @Inject constructor(
             
             when (val result = mediaRepository.getLibraryItems(
                 parentId = musicLibraryId,
+                itemTypes = "MusicAlbum,MusicArtist,Audio", // Specify music-specific item types
                 startIndex = 0,
                 limit = 50
             )) {
@@ -1374,8 +1402,22 @@ class MainAppViewModel @Inject constructor(
                 Log.d("MainAppViewModel", "loadOtherLibraryItems: Loading other items for library $libraryId")
             }
             
+            // Determine the collection type from the library to specify appropriate item types
+            val library = _appState.value.libraries.find { it.id.toString() == libraryId }
+            val itemTypes = when (library?.collectionType) {
+                org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> "Video"
+                org.jellyfin.sdk.model.api.CollectionType.BOOKS -> "Book,AudioBook"
+                org.jellyfin.sdk.model.api.CollectionType.PHOTOS -> "Photo"
+                else -> null // Let server determine for mixed content libraries
+            }
+            
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadOtherLibraryItems: Using itemTypes=$itemTypes for library type ${library?.collectionType}")
+            }
+            
             when (val result = mediaRepository.getLibraryItems(
                 parentId = libraryId,
+                itemTypes = itemTypes,
                 startIndex = 0,
                 limit = 50
             )) {

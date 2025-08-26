@@ -108,6 +108,17 @@ fun JellyfinNavGraph(
             val connectionState by viewModel.connectionState.collectAsStateWithLifecycle()
             val context = LocalContext.current
 
+            // Navigate to home screen when connection succeeds
+            LaunchedEffect(connectionState.isConnected) {
+                if (connectionState.isConnected) {
+                    Log.d("NavGraph", "Connection successful, navigating to home")
+                    navController.navigate(Screen.Home.route) {
+                        // Clear the back stack so user can't go back to connection screen
+                        popUpTo(Screen.ServerConnection.route) { inclusive = true }
+                    }
+                }
+            }
+
             ServerConnectionScreen(
                 onConnect = { serverUrl, username, password ->
                     viewModel.connectToServer(serverUrl, username, password)
