@@ -14,6 +14,7 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
@@ -35,7 +36,8 @@ object NetworkModule {
     fun provideOkHttpClient(): OkHttpClient {
         return OkHttpClient.Builder().apply {
             // Enhanced interceptor to tag network traffic for StrictMode compliance
-            addNetworkInterceptor { chain ->
+            // Apply as both network and application interceptor for complete coverage
+            val trafficTagInterceptor = { chain: okhttp3.Interceptor.Chain ->
                 val request = chain.request()
                 
                 // Create a stable, unique tag based on request details
@@ -44,28 +46,46 @@ object NetworkModule {
                 val tagString = "$method:${url.take(50)}" // First 50 chars of URL + method
                 val stableTag = tagString.hashCode() and 0x0FFFFFFF // Ensure positive value
                 
-                // Apply tag before the request
+                // Apply tag for all socket operations during this request
                 android.net.TrafficStats.setThreadStatsTag(stableTag)
                 
                 try {
                     val response = chain.proceed(request)
-                    // Keep tag during response processing
+                    // Ensure tag is maintained during response processing
                     response
                 } finally {
-                    // Always clear tag after request completes
+                    // Always clear tag after request completes to prevent leak to other operations
                     android.net.TrafficStats.clearThreadStatsTag()
                 }
             }
+            
+            // Apply as network interceptor (runs for each network connection)
+            addNetworkInterceptor(trafficTagInterceptor)
+            // Apply as application interceptor (runs once per request)
+            addInterceptor(trafficTagInterceptor)
 
-            // Add application interceptor with additional headers
+            // Add application interceptor with additional headers and connection optimization
             addInterceptor { chain ->
                 val originalRequest = chain.request()
                 val newRequest = originalRequest.newBuilder()
                     .addHeader("Connection", "keep-alive")
                     .addHeader("User-Agent", "JellyfinAndroid/1.0.0")
                     .addHeader("Accept-Encoding", "gzip, deflate") // Explicit compression
+                    .addHeader("Cache-Control", "no-cache") // Prevent caching issues
                     .build()
-                chain.proceed(newRequest)
+                
+                // Ensure traffic is tagged before any socket operations
+                val url = originalRequest.url.toString()
+                val method = originalRequest.method
+                val tagString = "$method:${url.take(50)}"
+                val stableTag = tagString.hashCode() and 0x0FFFFFFF
+                android.net.TrafficStats.setThreadStatsTag(stableTag)
+                
+                try {
+                    chain.proceed(newRequest)
+                } finally {
+                    android.net.TrafficStats.clearThreadStatsTag()
+                }
             }
 
             if (BuildConfig.DEBUG) {
@@ -76,11 +96,15 @@ object NetworkModule {
                 )
             }
         }
-            .connectionPool(okhttp3.ConnectionPool(10, 5, TimeUnit.MINUTES))
-            .connectTimeout(10, TimeUnit.SECONDS) // Reduced from 30s for faster failure detection
-            .readTimeout(30, TimeUnit.SECONDS) // Reduced from 60s for faster timeout
-            .writeTimeout(15, TimeUnit.SECONDS) // Reduced from 30s for faster timeout
+            // Optimized connection pool for mobile - fewer connections, longer keep-alive
+            .connectionPool(okhttp3.ConnectionPool(5, 10, TimeUnit.MINUTES))
+            // Aggressive timeouts to prevent main thread blocking
+            .connectTimeout(8, TimeUnit.SECONDS) // Quick connection timeout
+            .readTimeout(25, TimeUnit.SECONDS) // Reasonable read timeout
+            .writeTimeout(12, TimeUnit.SECONDS) // Quick write timeout
             .retryOnConnectionFailure(true)
+            // Enable HTTP/2 for better performance
+            .protocols(listOf(okhttp3.Protocol.HTTP_2, okhttp3.Protocol.HTTP_1_1))
             .build()
     }
 
