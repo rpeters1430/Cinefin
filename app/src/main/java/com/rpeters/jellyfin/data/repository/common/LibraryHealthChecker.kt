@@ -36,9 +36,9 @@ class LibraryHealthChecker @Inject constructor() {
             failureCounts.remove(libraryId)
             blockedLibraries.remove(libraryId)
             libraryIssues.remove(libraryId)
-            
+
             updateHealthStatus(libraryId, LibraryHealthStatus.HEALTHY)
-            
+
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Library $libraryId marked as healthy")
             }
@@ -64,9 +64,9 @@ class LibraryHealthChecker @Inject constructor() {
                     // Block this library temporarily
                     val blockUntil = System.currentTimeMillis() + BLOCK_DURATION_MS
                     blockedLibraries[libraryId] = blockUntil
-                    
+
                     updateHealthStatus(libraryId, LibraryHealthStatus.BLOCKED)
-                    
+
                     if (BuildConfig.DEBUG) {
                         Log.w(TAG, "Library $libraryId blocked for ${BLOCK_DURATION_MS / 1000} seconds due to repeated failures")
                     }
@@ -88,20 +88,20 @@ class LibraryHealthChecker @Inject constructor() {
         synchronized(this) {
             val blockUntil = blockedLibraries[libraryId] ?: return false
             val currentTime = System.currentTimeMillis()
-            
+
             if (currentTime >= blockUntil) {
                 // Block has expired, remove it
                 blockedLibraries.remove(libraryId)
                 failureCounts.remove(libraryId)
                 libraryIssues.remove(libraryId)
                 updateHealthStatus(libraryId, LibraryHealthStatus.HEALTHY)
-                
+
                 if (BuildConfig.DEBUG) {
                     Log.d(TAG, "Library $libraryId block expired, marked as healthy")
                 }
                 return false
             }
-            
+
             return true
         }
     }
@@ -124,8 +124,8 @@ class LibraryHealthChecker @Inject constructor() {
      * Gets all libraries with health issues.
      */
     fun getProblematicLibraries(): Map<String, LibraryHealthStatus> {
-        return _libraryHealth.value.filterValues { 
-            it != LibraryHealthStatus.HEALTHY && it != LibraryHealthStatus.UNKNOWN 
+        return _libraryHealth.value.filterValues {
+            it != LibraryHealthStatus.HEALTHY && it != LibraryHealthStatus.UNKNOWN
         }
     }
 
@@ -138,7 +138,7 @@ class LibraryHealthChecker @Inject constructor() {
             blockedLibraries.remove(libraryId)
             libraryIssues.remove(libraryId)
             updateHealthStatus(libraryId, LibraryHealthStatus.HEALTHY)
-            
+
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Manually cleared health status for library $libraryId")
             }
@@ -151,22 +151,22 @@ class LibraryHealthChecker @Inject constructor() {
     fun getLibraryRecommendations(libraryId: String): List<String> {
         val health = getLibraryHealth(libraryId)
         val issue = getLibraryIssueDescription(libraryId)
-        
+
         return when (health) {
             LibraryHealthStatus.BLOCKED -> listOf(
                 "Library temporarily disabled due to repeated errors",
                 "Will automatically retry in a few minutes",
-                "Check server logs for detailed error information"
+                "Check server logs for detailed error information",
             )
             LibraryHealthStatus.UNHEALTHY -> listOf(
                 "Library experiencing intermittent issues",
                 "Some content may not load properly",
-                "Issue: ${issue ?: "Unknown error"}"
+                "Issue: ${issue ?: "Unknown error"}",
             )
             LibraryHealthStatus.WARNING -> listOf(
                 "Library had recent loading issues",
                 "Monitoring for additional problems",
-                "Most recent issue: ${issue ?: "Unknown error"}"
+                "Most recent issue: ${issue ?: "Unknown error"}",
             )
             else -> emptyList()
         }
@@ -185,14 +185,14 @@ class LibraryHealthChecker @Inject constructor() {
         synchronized(this) {
             val currentTime = System.currentTimeMillis()
             val expiredBlocks = blockedLibraries.filterValues { it <= currentTime }.keys
-            
+
             expiredBlocks.forEach { libraryId ->
                 blockedLibraries.remove(libraryId)
                 failureCounts.remove(libraryId)
                 libraryIssues.remove(libraryId)
                 updateHealthStatus(libraryId, LibraryHealthStatus.HEALTHY)
             }
-            
+
             if (BuildConfig.DEBUG && expiredBlocks.isNotEmpty()) {
                 Log.d(TAG, "Cleaned up ${expiredBlocks.size} expired library blocks")
             }
@@ -204,9 +204,9 @@ class LibraryHealthChecker @Inject constructor() {
  * Represents the health status of a library.
  */
 enum class LibraryHealthStatus {
-    UNKNOWN,    // No data yet
-    HEALTHY,    // Working normally
-    WARNING,    // Had 1 recent failure
-    UNHEALTHY,  // Had 2 recent failures
-    BLOCKED     // Temporarily disabled due to repeated failures
+    UNKNOWN, // No data yet
+    HEALTHY, // Working normally
+    WARNING, // Had 1 recent failure
+    UNHEALTHY, // Had 2 recent failures
+    BLOCKED, // Temporarily disabled due to repeated failures
 }

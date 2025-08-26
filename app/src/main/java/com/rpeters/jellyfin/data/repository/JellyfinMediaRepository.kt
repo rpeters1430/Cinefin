@@ -82,14 +82,14 @@ class JellyfinMediaRepository @Inject constructor(
             itemTypes = itemTypes,
             startIndex = startIndex,
             limit = limit,
-            collectionType = collectionType
+            collectionType = collectionType,
         ) ?: throw IllegalArgumentException("Invalid API parameters provided")
 
         // Check if library is blocked due to repeated failures
         if (validatedParams.parentId != null && healthChecker.isLibraryBlocked(validatedParams.parentId)) {
             android.util.Log.w(
                 "JellyfinMediaRepository",
-                "Library ${validatedParams.parentId} is blocked due to repeated failures, returning empty list"
+                "Library ${validatedParams.parentId} is blocked due to repeated failures, returning empty list",
             )
             return@execute emptyList()
         }
@@ -135,12 +135,12 @@ class JellyfinMediaRepository @Inject constructor(
                 )
             }
             val items = response.content.items ?: emptyList()
-            
+
             // Report success to health checker
             validatedParams.parentId?.let { libraryId ->
                 healthChecker.reportSuccess(libraryId)
             }
-            
+
             items
         } catch (e: org.jellyfin.sdk.api.client.exception.InvalidStatusException) {
             val errorMsg = try { e.message } catch (_: Throwable) { "Bad Request" }
@@ -148,29 +148,29 @@ class JellyfinMediaRepository @Inject constructor(
                 "JellyfinMediaRepository",
                 "getLibraryItems ${e.status}: ${errorMsg ?: e.message}",
             )
-            
+
             // If we get a 401, the token refresh should have already been handled by executeWithTokenRefresh
             if (e.message?.contains("401") == true) {
                 android.util.Log.w(
                     "JellyfinMediaRepository",
                     "HTTP 401 error after token refresh attempt, authentication may have permanently failed",
                 )
-                
+
                 // Report failure to health checker
                 validatedParams.parentId?.let { libraryId ->
                     healthChecker.reportFailure(libraryId, "Authentication failed")
                 }
-                
+
                 throw Exception("Authentication failed: Token refresh was unsuccessful")
             }
-            
+
             // If we get a 400, try multiple fallback strategies
             if (e.message?.contains("400") == true) {
                 android.util.Log.w(
                     "JellyfinMediaRepository",
                     "HTTP 400 error detected, attempting fallback strategies for parentId=$parentId, collectionType=$collectionType",
                 )
-                
+
                 // Strategy 1: Try collection-type defaults if we had explicit types
                 if (!collectionType.isNullOrBlank() && !itemTypes.isNullOrBlank()) {
                     try {
@@ -179,7 +179,7 @@ class JellyfinMediaRepository @Inject constructor(
                             "JellyfinMediaRepository",
                             "Fallback strategy 1: Using collection type defaults: ${fallbackTypes?.joinToString()}",
                         )
-                        
+
                         val response = executeWithTokenRefresh {
                             client.itemsApi.getItems(
                                 userId = userUuid,
@@ -202,14 +202,14 @@ class JellyfinMediaRepository @Inject constructor(
                         )
                     }
                 }
-                
+
                 // Strategy 2: Try without any includeItemTypes (let server decide)
                 try {
                     android.util.Log.d(
                         "JellyfinMediaRepository",
                         "Fallback strategy 2: Requesting without includeItemTypes filter",
                     )
-                    
+
                     val response = executeWithTokenRefresh {
                         client.itemsApi.getItems(
                             userId = userUuid,
@@ -231,7 +231,7 @@ class JellyfinMediaRepository @Inject constructor(
                         "Fallback strategy 2 also failed: ${fallbackException2.message}",
                     )
                 }
-                
+
                 // Strategy 3: Try without parentId (library-wide search)
                 if (parent != null) {
                     try {
@@ -239,7 +239,7 @@ class JellyfinMediaRepository @Inject constructor(
                             "JellyfinMediaRepository",
                             "Fallback strategy 3: Requesting without parentId constraint",
                         )
-                        
+
                         val response = executeWithTokenRefresh {
                             client.itemsApi.getItems(
                                 userId = userUuid,
@@ -262,26 +262,26 @@ class JellyfinMediaRepository @Inject constructor(
                         )
                     }
                 }
-                
+
                 // Strategy 4: Return empty list as graceful degradation
                 android.util.Log.w(
                     "JellyfinMediaRepository",
                     "All fallback strategies failed for library ${validatedParams.parentId}, returning empty list",
                 )
-                
+
                 // Report failure to health checker
                 validatedParams.parentId?.let { libraryId ->
                     healthChecker.reportFailure(libraryId, errorMsg ?: "HTTP 400 error")
                 }
-                
+
                 return@execute emptyList()
             }
-            
+
             // Report failure to health checker for any unhandled exceptions
             validatedParams.parentId?.let { libraryId ->
                 healthChecker.reportFailure(libraryId, errorMsg ?: "HTTP error")
             }
-            
+
             throw e
         }
     }

@@ -27,7 +27,7 @@ import javax.inject.Inject
 
 /**
  * Optimized ViewModel that addresses the systemic issues in library loading:
- * 
+ *
  * 1. Eliminates duplicate loading operations through centralized coordination
  * 2. Provides proper error handling with recovery mechanisms
  * 3. Uses intelligent caching and pagination
@@ -55,13 +55,13 @@ class OptimizedMainAppViewModel @Inject constructor(
     // Combined state for UI convenience
     val uiState = combine(
         appState,
-        libraryLoadingManager.libraryLoadingState
+        libraryLoadingManager.libraryLoadingState,
     ) { app, loading ->
         OptimizedUiState(
             appState = app,
             loadingStates = loading,
             isInitialLoading = loading.values.any { it is LibraryLoadingState.Loading },
-            hasErrors = loading.values.any { it is LibraryLoadingState.Error }
+            hasErrors = loading.values.any { it is LibraryLoadingState.Error },
         )
     }
 
@@ -89,7 +89,7 @@ class OptimizedMainAppViewModel @Inject constructor(
                         Log.w(TAG, "User not authenticated, skipping data load")
                     }
                     _appState.value = _appState.value.copy(
-                        errorMessage = "Authentication required. Please log in again."
+                        errorMessage = "Authentication required. Please log in again.",
                     )
                     return@launch
                 }
@@ -103,11 +103,11 @@ class OptimizedMainAppViewModel @Inject constructor(
                         if (BuildConfig.DEBUG) {
                             Log.d(TAG, "Loaded ${librariesResult.data.size} libraries")
                         }
-                        
+
                         _appState.value = _appState.value.copy(
-                            libraries = librariesResult.data
+                            libraries = librariesResult.data,
                         )
-                        
+
                         // Load library-specific data based on available libraries
                         loadLibrarySpecificData(librariesResult.data, forceRefresh)
                     }
@@ -115,17 +115,16 @@ class OptimizedMainAppViewModel @Inject constructor(
                         if (librariesResult.errorType != ErrorType.OPERATION_CANCELLED) {
                             Log.e(TAG, "Failed to load libraries: ${librariesResult.message}")
                             _appState.value = _appState.value.copy(
-                                errorMessage = "Failed to load libraries: ${librariesResult.message}"
+                                errorMessage = "Failed to load libraries: ${librariesResult.message}",
                             )
                         }
                     }
                     else -> { /* Loading state handled by manager */ }
                 }
-
             } catch (e: Exception) {
                 Log.e(TAG, "Exception during initial data load", e)
                 _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to load data: ${e.message}"
+                    errorMessage = "Failed to load data: ${e.message}",
                 )
             }
         }
@@ -152,8 +151,8 @@ class OptimizedMainAppViewModel @Inject constructor(
                     collectionType = CollectionType.MOVIES,
                     itemTypes = listOf(BaseItemKind.MOVIE),
                     limit = DEFAULT_PAGE_SIZE,
-                    forceRefresh = forceRefresh
-                )
+                    forceRefresh = forceRefresh,
+                ),
             )
         }
 
@@ -166,8 +165,8 @@ class OptimizedMainAppViewModel @Inject constructor(
                     collectionType = CollectionType.TVSHOWS,
                     itemTypes = listOf(BaseItemKind.SERIES),
                     limit = DEFAULT_PAGE_SIZE,
-                    forceRefresh = forceRefresh
-                )
+                    forceRefresh = forceRefresh,
+                ),
             )
         }
 
@@ -180,16 +179,16 @@ class OptimizedMainAppViewModel @Inject constructor(
                     collectionType = CollectionType.MUSIC,
                     itemTypes = listOf(BaseItemKind.MUSIC_ALBUM, BaseItemKind.MUSIC_ARTIST),
                     limit = DEFAULT_PAGE_SIZE,
-                    forceRefresh = forceRefresh
-                )
+                    forceRefresh = forceRefresh,
+                ),
             )
         }
 
         // Load other library types
-        val otherLibraries = librariesByType.filterKeys { 
-            it !in setOf(CollectionType.MOVIES, CollectionType.TVSHOWS, CollectionType.MUSIC) 
+        val otherLibraries = librariesByType.filterKeys {
+            it !in setOf(CollectionType.MOVIES, CollectionType.TVSHOWS, CollectionType.MUSIC)
         }
-        
+
         otherLibraries.forEach { (collectionType, libs) ->
             libs.firstOrNull()?.let { lib ->
                 val itemTypes = when (collectionType) {
@@ -206,8 +205,8 @@ class OptimizedMainAppViewModel @Inject constructor(
                         collectionType = collectionType,
                         itemTypes = itemTypes,
                         limit = DEFAULT_PAGE_SIZE,
-                        forceRefresh = forceRefresh
-                    )
+                        forceRefresh = forceRefresh,
+                    ),
                 )
             }
         }
@@ -219,7 +218,7 @@ class OptimizedMainAppViewModel @Inject constructor(
 
             // Load in parallel
             val results = libraryLoadingManager.loadLibraryTypesBatch(loadRequests)
-            
+
             // Process results
             processLibraryTypeResults(results)
         }
@@ -265,7 +264,7 @@ class OptimizedMainAppViewModel @Inject constructor(
             movies = updatedMovies,
             tvShows = updatedTVShows,
             music = updatedMusic,
-            otherItems = updatedOtherItems
+            otherItems = updatedOtherItems,
         )
 
         if (BuildConfig.DEBUG) {
@@ -284,7 +283,7 @@ class OptimizedMainAppViewModel @Inject constructor(
                     LibraryType.MOVIES -> libraries.find { it.collectionType == CollectionType.MOVIES }
                     LibraryType.TV_SHOWS -> libraries.find { it.collectionType == CollectionType.TVSHOWS }
                     LibraryType.MUSIC -> libraries.find { it.collectionType == CollectionType.MUSIC }
-                    LibraryType.STUFF -> libraries.find { 
+                    LibraryType.STUFF -> libraries.find {
                         it.collectionType !in setOf(CollectionType.MOVIES, CollectionType.TVSHOWS, CollectionType.MUSIC)
                     }
                 } ?: return@launch
@@ -317,7 +316,7 @@ class OptimizedMainAppViewModel @Inject constructor(
                     collectionType = collectionType,
                     itemTypes = itemTypes,
                     startIndex = currentItems.size,
-                    limit = DEFAULT_PAGE_SIZE
+                    limit = DEFAULT_PAGE_SIZE,
                 )
 
                 when (result) {
@@ -325,7 +324,7 @@ class OptimizedMainAppViewModel @Inject constructor(
                         val newItems = result.data
                         if (newItems.isNotEmpty()) {
                             val updatedItems = currentItems + newItems
-                            
+
                             when (libraryType) {
                                 LibraryType.MOVIES -> {
                                     _appState.value = _appState.value.copy(movies = updatedItems)
@@ -352,16 +351,15 @@ class OptimizedMainAppViewModel @Inject constructor(
                     is ApiResult.Error -> {
                         Log.e(TAG, "Failed to load more ${libraryType.displayName}: ${result.message}")
                         _appState.value = _appState.value.copy(
-                            errorMessage = "Failed to load more items: ${result.message}"
+                            errorMessage = "Failed to load more items: ${result.message}",
                         )
                     }
                     else -> { /* Loading handled by manager */ }
                 }
-
             } catch (e: Exception) {
                 Log.e(TAG, "Exception loading more ${libraryType.displayName}", e)
                 _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to load more items: ${e.message}"
+                    errorMessage = "Failed to load more items: ${e.message}",
                 )
             }
         }

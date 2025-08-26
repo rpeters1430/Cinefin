@@ -37,7 +37,7 @@ class LibraryLoadingManager @Inject constructor(
 
     // Coordinated loading scope with supervisor job for error isolation
     private val loadingScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    
+
     // Track ongoing operations to prevent duplicates
     private val ongoingOperations = mutableMapOf<String, kotlinx.coroutines.Deferred<ApiResult<List<BaseItemDto>>>>()
     private val operationsMutex = Mutex()
@@ -51,7 +51,7 @@ class LibraryLoadingManager @Inject constructor(
      */
     suspend fun loadLibraries(forceRefresh: Boolean = false): ApiResult<List<BaseItemDto>> {
         val operationKey = "load_libraries"
-        
+
         return operationsMutex.withLock {
             // Check if operation is already in progress
             ongoingOperations[operationKey]?.let { ongoing ->
@@ -65,9 +65,9 @@ class LibraryLoadingManager @Inject constructor(
             val operation = loadingScope.async {
                 try {
                     updateLoadingState(operationKey, LibraryLoadingState.Loading)
-                    
+
                     val result = mediaRepository.getUserLibraries(forceRefresh)
-                    
+
                     when (result) {
                         is ApiResult.Success -> {
                             updateLoadingState(operationKey, LibraryLoadingState.Success(result.data))
@@ -83,7 +83,7 @@ class LibraryLoadingManager @Inject constructor(
                         }
                         else -> { /* Loading state already set */ }
                     }
-                    
+
                     result
                 } catch (e: Exception) {
                     val errorMsg = "Failed to load libraries: ${e.message}"
@@ -96,7 +96,7 @@ class LibraryLoadingManager @Inject constructor(
                     }
                 }
             }
-            
+
             ongoingOperations[operationKey] = operation
             operation.await()
         }
@@ -113,8 +113,8 @@ class LibraryLoadingManager @Inject constructor(
         limit: Int = LOAD_BATCH_SIZE,
         forceRefresh: Boolean = false,
     ): ApiResult<List<BaseItemDto>> {
-        val operationKey = "load_library_${libraryId}_${startIndex}_${limit}"
-        
+        val operationKey = "load_library_${libraryId}_${startIndex}_$limit"
+
         return operationsMutex.withLock {
             // Check for ongoing operation
             ongoingOperations[operationKey]?.let { ongoing ->
@@ -130,22 +130,22 @@ class LibraryLoadingManager @Inject constructor(
                 return@withLock ApiResult.Error(
                     "Invalid library parameters",
                     null,
-                    ErrorType.VALIDATION
+                    ErrorType.VALIDATION,
                 )
             }
 
             val operation = loadingScope.async {
                 try {
                     updateLoadingState(operationKey, LibraryLoadingState.Loading)
-                    
+
                     val result = mediaRepository.getLibraryItems(
                         parentId = validatedParams.parentId,
                         itemTypes = validatedParams.itemTypes,
                         startIndex = validatedParams.startIndex,
                         limit = validatedParams.limit,
-                        collectionType = validatedParams.collectionType
+                        collectionType = validatedParams.collectionType,
                     )
-                    
+
                     when (result) {
                         is ApiResult.Success -> {
                             updateLoadingState(operationKey, LibraryLoadingState.Success(result.data))
@@ -161,7 +161,7 @@ class LibraryLoadingManager @Inject constructor(
                         }
                         else -> { /* Loading state already set */ }
                     }
-                    
+
                     result
                 } catch (e: Exception) {
                     val errorMsg = "Failed to load library items: ${e.message}"
@@ -174,7 +174,7 @@ class LibraryLoadingManager @Inject constructor(
                     }
                 }
             }
-            
+
             ongoingOperations[operationKey] = operation
             operation.await()
         }
@@ -184,18 +184,18 @@ class LibraryLoadingManager @Inject constructor(
      * Loads multiple library types in parallel with proper error isolation.
      */
     suspend fun loadLibraryTypesBatch(
-        requests: List<LibraryTypeLoadRequest>
+        requests: List<LibraryTypeLoadRequest>,
     ): Map<String, ApiResult<List<BaseItemDto>>> {
         if (requests.isEmpty()) return emptyMap()
-        
+
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Loading ${requests.size} library types in parallel")
         }
-        
+
         // Limit concurrent operations
         val batches = requests.chunked(MAX_CONCURRENT_LOADS)
         val results = mutableMapOf<String, ApiResult<List<BaseItemDto>>>()
-        
+
         for (batch in batches) {
             val batchResults = batch.map { request ->
                 loadingScope.async {
@@ -205,19 +205,19 @@ class LibraryLoadingManager @Inject constructor(
                         itemTypes = request.itemTypes,
                         startIndex = request.startIndex,
                         limit = request.limit,
-                        forceRefresh = request.forceRefresh
+                        forceRefresh = request.forceRefresh,
                     )
                 }
             }.awaitAll()
-            
+
             results.putAll(batchResults)
         }
-        
+
         if (BuildConfig.DEBUG) {
             val successCount = results.values.count { it is ApiResult.Success }
             Log.d(TAG, "Batch loading completed: $successCount/${results.size} successful")
         }
-        
+
         return results
     }
 
@@ -229,7 +229,7 @@ class LibraryLoadingManager @Inject constructor(
         collectionType: CollectionType?,
         itemTypes: List<BaseItemKind>?,
         startIndex: Int,
-        limit: Int
+        limit: Int,
     ): ValidatedLibraryParams? {
         try {
             // Validate basic parameters
@@ -241,8 +241,8 @@ class LibraryLoadingManager @Inject constructor(
             }
 
             // Validate and sanitize library ID
-            val parentId = libraryId?.takeIf { 
-                it.isNotBlank() && it != "null" && it != "undefined" 
+            val parentId = libraryId?.takeIf {
+                it.isNotBlank() && it != "null" && it != "undefined"
             }
 
             // Convert collection type to string
@@ -285,7 +285,7 @@ class LibraryLoadingManager @Inject constructor(
                 collectionType = collectionTypeString,
                 itemTypes = itemTypesString,
                 startIndex = validStartIndex,
-                limit = validLimit
+                limit = validLimit,
             )
         } catch (e: Exception) {
             Log.e(TAG, "Parameter validation failed", e)
@@ -330,7 +330,7 @@ data class LibraryTypeLoadRequest(
     val itemTypes: List<BaseItemKind>? = null,
     val startIndex: Int = 0,
     val limit: Int = 50,
-    val forceRefresh: Boolean = false
+    val forceRefresh: Boolean = false,
 )
 
 private data class ValidatedLibraryParams(
@@ -338,7 +338,7 @@ private data class ValidatedLibraryParams(
     val collectionType: String?,
     val itemTypes: String?,
     val startIndex: Int,
-    val limit: Int
+    val limit: Int,
 )
 
 sealed class LibraryLoadingState {

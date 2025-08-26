@@ -148,7 +148,7 @@ object ServerUrlValidator {
                 baseUrl.startsWith("https://") -> {
                     // For HTTPS reverse proxy, prioritize standard ports first
                     variations.add("https://$host:443/jellyfin")
-                    variations.add("https://$host/jellyfin") 
+                    variations.add("https://$host/jellyfin")
                     variations.add("https://$host:443$path")
                     variations.add("https://$host$path")
                     // Only try original non-standard port if specifically provided

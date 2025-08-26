@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,7 +35,7 @@ fun LibraryHealthIndicator(
     libraryName: String,
     healthStatus: LibraryHealthStatus,
     recommendations: List<String> = emptyList(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (healthStatus == LibraryHealthStatus.HEALTHY || healthStatus == LibraryHealthStatus.UNKNOWN) {
         return // Don't show anything for healthy libraries
@@ -44,14 +43,14 @@ fun LibraryHealthIndicator(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
     ) {
         Column(
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(12.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // Status indicator
                 val statusInfo = when (healthStatus) {
@@ -66,13 +65,13 @@ fun LibraryHealthIndicator(
                 Box(
                     modifier = Modifier
                         .size(12.dp)
-                        .background(color, CircleShape)
+                        .background(color, CircleShape),
                 )
 
                 Text(
                     text = "$libraryName - ${healthStatus.name.lowercase().replaceFirstChar { it.uppercase() }}",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
 
@@ -83,7 +82,7 @@ fun LibraryHealthIndicator(
                         text = "• $recommendation",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 20.dp, top = 2.dp)
+                        modifier = Modifier.padding(start = 20.dp, top = 2.dp),
                     )
                 }
             }
@@ -98,10 +97,10 @@ fun LibraryHealthIndicator(
 fun LibraryHealthSummary(
     healthMap: Map<String, LibraryHealthStatus>,
     getRecommendations: (String) -> List<String> = { emptyList() },
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val problematicLibraries = healthMap.filterValues { 
-        it != LibraryHealthStatus.HEALTHY && it != LibraryHealthStatus.UNKNOWN 
+    val problematicLibraries = healthMap.filterValues {
+        it != LibraryHealthStatus.HEALTHY && it != LibraryHealthStatus.UNKNOWN
     }
 
     if (problematicLibraries.isEmpty()) {
@@ -110,19 +109,19 @@ fun LibraryHealthSummary(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
             text = "Library Issues",
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
 
         problematicLibraries.forEach { (libraryId, status) ->
             LibraryHealthIndicator(
                 libraryName = "Library $libraryId",
                 healthStatus = status,
-                recommendations = getRecommendations(libraryId)
+                recommendations = getRecommendations(libraryId),
             )
         }
     }
