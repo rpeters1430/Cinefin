@@ -130,13 +130,13 @@ class MainAppViewModel @Inject constructor(
 
                         if (removedIds.isNotEmpty()) {
                             val removedLibraries = previousLibraries.filter { it.id?.toString() in removedIds }
-                            val newLibrariesByType: Map<String?, List<BaseItemDto>> = newLibraries.groupBy { 
-                                (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault()) 
+                            val newLibrariesByType: Map<String?, List<BaseItemDto>> = newLibraries.groupBy {
+                                (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
                             }
                             var customRemoved = false
 
-                            removedLibraries.groupBy<BaseItemDto, String?> { 
-                                (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault()) 
+                            removedLibraries.groupBy<BaseItemDto, String?> {
+                                (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
                             }.forEach { (type, libs) ->
                                 val remaining = newLibrariesByType[type]?.isNotEmpty() == true
                                 when (type) {
@@ -189,8 +189,8 @@ class MainAppViewModel @Inject constructor(
                         )
 
                         val addedLibraries = newLibraries.filter { it.id?.toString() !in previousIds }
-                        val addedTypes: Set<String> = addedLibraries.mapNotNull { 
-                            (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault()) 
+                        val addedTypes: Set<String> = addedLibraries.mapNotNull {
+                            (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
                         }.toSet()
                         if ("movies" in addedTypes) {
                             loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
