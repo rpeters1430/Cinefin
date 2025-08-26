@@ -1437,7 +1437,7 @@ class MainAppViewModel @Inject constructor(
                 org.jellyfin.sdk.model.api.CollectionType.PHOTOS -> "photos"
                 else -> null
             }
-            
+
             when (
                 val result = mediaRepository.getLibraryItems(
                     parentId = libraryId,

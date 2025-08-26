@@ -35,34 +35,36 @@ object ApiParameterValidator {
         try {
             // Validate and sanitize parentId
             val validParentId = validateParentId(parentId)
-            
+
             // Validate pagination parameters
             val validStartIndex = validateStartIndex(startIndex)
             val validLimit = validateLimit(limit)
-            
+
             // Validate item types
             val validItemTypes = validateItemTypes(itemTypes)
-            
+
             // Validate collection type
             val validCollectionType = validateCollectionType(collectionType)
-            
+
             // Smart parameter compatibility checking
             val finalParams = ensureParameterCompatibility(
                 parentId = validParentId,
                 itemTypes = validItemTypes,
                 collectionType = validCollectionType,
                 startIndex = validStartIndex,
-                limit = validLimit
+                limit = validLimit,
             )
 
             if (BuildConfig.DEBUG && finalParams != null) {
-                Log.d(TAG, "Validated params: parentId=${finalParams.parentId}, " +
-                    "itemTypes=${finalParams.itemTypes}, collectionType=${finalParams.collectionType}, " +
-                    "startIndex=${finalParams.startIndex}, limit=${finalParams.limit}")
+                Log.d(
+                    TAG,
+                    "Validated params: parentId=${finalParams.parentId}, " +
+                        "itemTypes=${finalParams.itemTypes}, collectionType=${finalParams.collectionType}, " +
+                        "startIndex=${finalParams.startIndex}, limit=${finalParams.limit}",
+                )
             }
 
             return finalParams
-
         } catch (e: Exception) {
             Log.e(TAG, "Parameter validation failed", e)
             return null
@@ -74,11 +76,11 @@ object ApiParameterValidator {
      */
     private fun validateParentId(parentId: String?): String? {
         if (parentId.isNullOrBlank()) return null
-        
+
         // Filter out invalid values
         val invalidValues = setOf("null", "undefined", "", "0", "-1")
         if (parentId.lowercase() in invalidValues) return null
-        
+
         // Try to parse as UUID to ensure it's valid
         return try {
             UUID.fromString(parentId)
@@ -128,11 +130,11 @@ object ApiParameterValidator {
      */
     private fun validateItemTypes(itemTypes: String?): String? {
         if (itemTypes.isNullOrBlank()) return null
-        
+
         val validItemTypes = setOf(
             "Movie", "Series", "Episode", "Audio", "MusicAlbum", "MusicArtist",
             "Book", "AudioBook", "Video", "Photo", "BoxSet", "CollectionFolder",
-            "Playlist", "Person", "Genre", "MusicGenre", "Studio", "Year"
+            "Playlist", "Person", "Genre", "MusicGenre", "Studio", "Year",
         )
 
         val requestedTypes = itemTypes.split(",").map { it.trim() }
@@ -157,10 +159,10 @@ object ApiParameterValidator {
      */
     private fun validateCollectionType(collectionType: String?): String? {
         if (collectionType.isNullOrBlank()) return null
-        
+
         val validCollectionTypes = setOf(
             "movies", "tvshows", "music", "homevideos", "photos", "books",
-            "playlists", "livetv", "folders"
+            "playlists", "livetv", "folders",
         )
 
         val normalizedType = collectionType.lowercase().trim()
@@ -183,7 +185,6 @@ object ApiParameterValidator {
         startIndex: Int,
         limit: Int,
     ): ValidatedApiLibraryParams? {
-        
         // Rule 1: If no parentId and no itemTypes, we need at least collection type or default types
         if (parentId == null && itemTypes == null && collectionType == null) {
             if (BuildConfig.DEBUG) {
@@ -194,7 +195,7 @@ object ApiParameterValidator {
                 itemTypes = null, // Let server decide
                 collectionType = null,
                 startIndex = startIndex,
-                limit = limit
+                limit = limit,
             )
         }
 
@@ -285,7 +286,7 @@ object ApiParameterValidator {
             itemTypes = finalItemTypes,
             collectionType = collectionType,
             startIndex = startIndex,
-            limit = limit
+            limit = limit,
         )
     }
 
@@ -299,49 +300,49 @@ object ApiParameterValidator {
                 itemTypes = "Movie",
                 collectionType = "movies",
                 startIndex = 0,
-                limit = DEFAULT_LIMIT
+                limit = DEFAULT_LIMIT,
             )
             CollectionType.TVSHOWS -> ValidatedApiLibraryParams(
                 parentId = null,
                 itemTypes = "Series",
                 collectionType = "tvshows",
                 startIndex = 0,
-                limit = DEFAULT_LIMIT
+                limit = DEFAULT_LIMIT,
             )
             CollectionType.MUSIC -> ValidatedApiLibraryParams(
                 parentId = null,
                 itemTypes = "MusicAlbum,MusicArtist,Audio",
                 collectionType = "music",
                 startIndex = 0,
-                limit = DEFAULT_LIMIT
+                limit = DEFAULT_LIMIT,
             )
             CollectionType.HOMEVIDEOS -> ValidatedApiLibraryParams(
                 parentId = null,
                 itemTypes = "Video",
                 collectionType = "homevideos",
                 startIndex = 0,
-                limit = DEFAULT_LIMIT
+                limit = DEFAULT_LIMIT,
             )
             CollectionType.PHOTOS -> ValidatedApiLibraryParams(
                 parentId = null,
                 itemTypes = "Photo",
                 collectionType = "photos",
                 startIndex = 0,
-                limit = DEFAULT_LIMIT
+                limit = DEFAULT_LIMIT,
             )
             CollectionType.BOOKS -> ValidatedApiLibraryParams(
                 parentId = null,
                 itemTypes = "Book,AudioBook",
                 collectionType = "books",
                 startIndex = 0,
-                limit = DEFAULT_LIMIT
+                limit = DEFAULT_LIMIT,
             )
             else -> ValidatedApiLibraryParams(
                 parentId = null,
                 itemTypes = null, // Let server decide
                 collectionType = null,
                 startIndex = 0,
-                limit = DEFAULT_LIMIT
+                limit = DEFAULT_LIMIT,
             )
         }
     }
@@ -352,7 +353,7 @@ object ApiParameterValidator {
     fun validateSearchParams(
         query: String?,
         itemTypes: List<BaseItemKind>? = null,
-        limit: Int = 50
+        limit: Int = 50,
     ): ValidatedSearchParams? {
         // Validate query
         val validQuery = query?.trim()?.takeIf { it.isNotBlank() && it.length >= 2 }
@@ -383,7 +384,7 @@ object ApiParameterValidator {
         return ValidatedSearchParams(
             query = validQuery,
             itemTypes = validItemTypes?.joinToString(","),
-            limit = validLimit
+            limit = validLimit,
         )
     }
 }

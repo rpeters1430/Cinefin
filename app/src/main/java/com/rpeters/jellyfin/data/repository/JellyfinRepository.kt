@@ -97,7 +97,7 @@ class JellyfinRepository @Inject constructor(
 
     // Helper function to get string resources
     private fun getString(resId: Int): String = context.getString(resId)
-    
+
     // Helper function to get default item types for a collection
     private fun getDefaultTypesForCollection(collectionType: String?): List<BaseItemKind>? = when (collectionType?.lowercase()) {
         "movies" -> listOf(BaseItemKind.MOVIE)
@@ -251,10 +251,10 @@ class JellyfinRepository @Inject constructor(
                     else -> null
                 }
             }
-            
+
             // Guard against empty list - can cause 400 errors
             val includeTypes = itemKinds?.takeIf { it.isNotEmpty() }
-            
+
             val response = client.itemsApi.getItems(
                 userId = userUuid,
                 recursive = true,

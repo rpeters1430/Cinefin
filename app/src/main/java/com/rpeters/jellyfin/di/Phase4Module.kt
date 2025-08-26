@@ -45,7 +45,7 @@ object Phase4Module {
     @Provides
     @Singleton
     fun provideLibraryLoadingManager(
-        mediaRepository: JellyfinMediaRepository
+        mediaRepository: JellyfinMediaRepository,
     ): LibraryLoadingManager {
         return LibraryLoadingManager(mediaRepository)
     }

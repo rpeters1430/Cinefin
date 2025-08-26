@@ -27,6 +27,7 @@ open class BaseJellyfinRepository @Inject constructor(
 ) {
     // Mutex to prevent race conditions in token refresh
     private val tokenRefreshMutex = Mutex()
+
     /**
      * Get Jellyfin API client on background thread to avoid StrictMode violations.
      * Client creation involves static initialization that performs file I/O.
@@ -41,7 +42,7 @@ open class BaseJellyfinRepository @Inject constructor(
 
     protected fun parseUuid(id: String, type: String) =
         RepositoryUtils.parseUuid(id, type)
-    
+
     /**
      * Checks if token needs refresh and proactively refreshes it
      */
@@ -51,7 +52,7 @@ open class BaseJellyfinRepository @Inject constructor(
                 // Double-check after acquiring lock (another thread might have refreshed)
                 if (authRepository.isTokenExpired()) {
                     Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token expired, proactively refreshing")
-                    
+
                     val refreshResult = authRepository.reAuthenticate()
                     when (refreshResult) {
                         is ApiResult.Success<*> -> {
@@ -73,23 +74,23 @@ open class BaseJellyfinRepository @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Executes API call with automatic token refresh on 401 errors
      */
     protected suspend fun <T> executeWithTokenRefresh(
-        operation: suspend () -> T
+        operation: suspend () -> T,
     ): T {
         // Proactively check and refresh token if expired
         validateTokenAndRefreshIfNeeded()
-        
+
         return try {
             operation()
         } catch (e: Exception) {
             if (RepositoryUtils.is401Error(e)) {
                 return tokenRefreshMutex.withLock {
                     Logger.d(LogCategory.NETWORK, javaClass.simpleName, "HTTP 401 detected, attempting token refresh")
-                    
+
                     val refreshResult = authRepository.reAuthenticate()
                     when (refreshResult) {
                         is ApiResult.Success<*> -> {
