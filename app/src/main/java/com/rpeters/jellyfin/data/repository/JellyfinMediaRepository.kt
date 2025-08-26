@@ -62,13 +62,15 @@ class JellyfinMediaRepository @Inject constructor(
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
-        
+
         // Debug logging for API call parameters
-        android.util.Log.d("JellyfinMediaRepository", 
-            "getLibraryItems called with parentId=$parentId, itemTypes=$itemTypes, startIndex=$startIndex, limit=$limit")
-        
+        android.util.Log.d(
+            "JellyfinMediaRepository",
+            "getLibraryItems called with parentId=$parentId, itemTypes=$itemTypes, startIndex=$startIndex, limit=$limit",
+        )
+
         // Validate parentId before parsing - prevent HTTP 400 errors
-        val parent = parentId?.takeIf { it.isNotBlank() && it != "null" }?.let { 
+        val parent = parentId?.takeIf { it.isNotBlank() && it != "null" }?.let {
             try {
                 parseUuid(it, "parent")
             } catch (e: Exception) {
@@ -105,8 +107,10 @@ class JellyfinMediaRepository @Inject constructor(
             else -> limit
         }
 
-        android.util.Log.d("JellyfinMediaRepository", 
-            "Making API call with parentId=${parent?.toString()}, itemKinds=${itemKinds?.size}, startIndex=$validStartIndex, limit=$validLimit")
+        android.util.Log.d(
+            "JellyfinMediaRepository",
+            "Making API call with parentId=${parent?.toString()}, itemKinds=${itemKinds?.size}, startIndex=$validStartIndex, limit=$validLimit",
+        )
 
         try {
             val response = client.itemsApi.getItems(
@@ -119,8 +123,10 @@ class JellyfinMediaRepository @Inject constructor(
             )
             response.content.items ?: emptyList()
         } catch (e: org.jellyfin.sdk.api.client.exception.InvalidStatusException) {
-            android.util.Log.e("JellyfinMediaRepository", 
-                "HTTP error in getLibraryItems: ${e.message}")
+            android.util.Log.e(
+                "JellyfinMediaRepository",
+                "HTTP error in getLibraryItems: ${e.message}",
+            )
             throw e
         }
     }

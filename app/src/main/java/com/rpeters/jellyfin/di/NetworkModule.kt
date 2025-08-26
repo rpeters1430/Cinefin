@@ -5,7 +5,6 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.utils.SecureLogger
-import com.rpeters.jellyfin.utils.ServerUrlValidator
 import com.rpeters.jellyfin.utils.withStrictModeTagger
 import dagger.Module
 import dagger.Provides
@@ -130,7 +129,7 @@ class JellyfinClientFactory @Inject constructor(
      */
     suspend fun getClient(baseUrl: String, accessToken: String? = null): org.jellyfin.sdk.api.client.ApiClient = withContext(Dispatchers.IO) {
         // Validate and normalize the URL properly
-    val normalizedUrl = com.rpeters.jellyfin.utils.normalizeJellyfinBase(baseUrl)
+        val normalizedUrl = com.rpeters.jellyfin.utils.normalizeJellyfinBase(baseUrl)
 
         // Use synchronized block to prevent race conditions during client creation
         synchronized(clientLock) {
