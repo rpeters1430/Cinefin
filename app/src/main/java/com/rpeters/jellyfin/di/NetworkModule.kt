@@ -82,10 +82,20 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideOptimizedClientFactory(
+        @ApplicationContext context: Context
+    ): OptimizedClientFactory {
+        return OptimizedClientFactory(context)
+    }
+
+    @Provides
+    @Singleton
     fun provideJellyfinClientFactory(
+        optimizedFactory: OptimizedClientFactory,
         jellyfin: Jellyfin,
         authRepositoryProvider: Provider<JellyfinAuthRepository>,
     ): JellyfinClientFactory {
+        // Use optimized factory for better performance
         return JellyfinClientFactory(jellyfin, authRepositoryProvider)
     }
 

@@ -37,6 +37,7 @@ import javax.inject.Singleton
 class JellyfinAuthRepository @Inject constructor(
     private val clientFactory: JellyfinClientFactory,
     private val secureCredentialManager: SecureCredentialManager,
+    private val connectionOptimizer: ConnectionOptimizer, // Add optimized connection
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
 ) {
     private val _currentServer = MutableStateFlow<JellyfinServer?>(null)
@@ -74,23 +75,14 @@ class JellyfinAuthRepository @Inject constructor(
     )
 
     /**
-     * Test connection to a Jellyfin server with automatic fallback
+     * Test connection to a Jellyfin server using optimized parallel discovery
      */
     suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
         // Log network diagnostics before attempting connection
         NetworkDebugger.logNetworkDiagnostics(context, serverUrl)
 
-        return when (val result = testServerConnectionWithUrl(serverUrl)) {
-            is ApiResult.Success -> {
-                // Test and log server connectivity in debug builds
-                if (BuildConfig.DEBUG) {
-                    NetworkDebugger.testAndLogServerConnectivity(context, result.data.workingUrl)
-                }
-                ApiResult.Success(result.data.systemInfo)
-            }
-            is ApiResult.Error -> ApiResult.Error(result.message, result.cause, result.errorType)
-            is ApiResult.Loading -> ApiResult.Loading(result.message)
-        }
+        // Use optimized connection testing
+        return connectionOptimizer.testServerConnection(serverUrl)
     }
 
     /**

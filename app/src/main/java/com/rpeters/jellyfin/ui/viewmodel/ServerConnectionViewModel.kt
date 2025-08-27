@@ -26,23 +26,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class ConnectionState(
-    val isConnecting: Boolean = false,
-    val isConnected: Boolean = false,
-    val errorMessage: String? = null,
-    val serverName: String? = null,
-    val savedServerUrl: String = "",
-    val savedUsername: String = "",
-    val rememberLogin: Boolean = false,
-    val isQuickConnectActive: Boolean = false,
-    val quickConnectServerUrl: String = "",
-    val quickConnectCode: String = "",
-    val quickConnectSecret: String = "",
-    val isQuickConnectPolling: Boolean = false,
-    val quickConnectStatus: String = "",
-    val hasSavedPassword: Boolean = false,
-    val isBiometricAuthAvailable: Boolean = false, // New field for biometric auth status
-)
+// Use the enhanced ConnectionState from ConnectionProgress.kt
+// This data class is now defined in the ConnectionProgress.kt file
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "login_preferences")
 
@@ -140,17 +125,20 @@ class ServerConnectionViewModel @Inject constructor(
             _connectionState.value = _connectionState.value.copy(
                 isConnecting = true,
                 errorMessage = null,
+                connectionPhase = ConnectionPhase.Testing,
+                currentUrl = serverUrl
             )
 
-            // First test server connection
+            // First test server connection with enhanced feedback
             when (val serverResult = repository.testServerConnection(normalizedServerUrl)) {
                 is ApiResult.Success -> {
                     val serverInfo = serverResult.data
                     _connectionState.value = _connectionState.value.copy(
                         serverName = serverInfo.serverName,
+                        connectionPhase = ConnectionPhase.Authenticating
                     )
 
-                    // Now authenticate
+                    // Now authenticate with enhanced feedback
                     when (val authResult = repository.authenticateUser(normalizedServerUrl, username, password)) {
                         is ApiResult.Success -> {
                             // Save credentials only when the user opted in
@@ -163,6 +151,7 @@ class ServerConnectionViewModel @Inject constructor(
                                 isConnecting = false,
                                 isConnected = true,
                                 errorMessage = null,
+                                connectionPhase = ConnectionPhase.Connected
                             )
                         }
                         is ApiResult.Error -> {
@@ -171,6 +160,7 @@ class ServerConnectionViewModel @Inject constructor(
                             _connectionState.value = _connectionState.value.copy(
                                 isConnecting = false,
                                 errorMessage = authResult.message,
+                                connectionPhase = ConnectionPhase.Error
                             )
                         }
                         is ApiResult.Loading -> {
@@ -182,6 +172,7 @@ class ServerConnectionViewModel @Inject constructor(
                     _connectionState.value = _connectionState.value.copy(
                         isConnecting = false,
                         errorMessage = "Cannot connect to server: ${serverResult.message}",
+                        connectionPhase = ConnectionPhase.Error
                     )
                 }
                 is ApiResult.Loading -> {

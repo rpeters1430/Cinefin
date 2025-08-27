@@ -54,22 +54,24 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
+import com.rpeters.jellyfin.ui.components.ConnectionProgressIndicator
+import com.rpeters.jellyfin.ui.components.ConnectionState
+import com.rpeters.jellyfin.ui.components.ConnectionPhase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServerConnectionScreen(
     onConnect: (String, String, String) -> Unit = { _, _, _ -> },
     onQuickConnect: () -> Unit = {},
-    isConnecting: Boolean = false,
-    errorMessage: String? = null,
+    connectionState: ConnectionState = ConnectionState(), // Use enhanced connection state
     savedServerUrl: String = "",
     savedUsername: String = "",
     rememberLogin: Boolean = false,
     hasSavedPassword: Boolean = false,
-    isBiometricAuthAvailable: Boolean = false, // New parameter
+    isBiometricAuthAvailable: Boolean = false,
     onRememberLoginChange: (Boolean) -> Unit = {},
     onAutoLogin: () -> Unit = {},
-    onBiometricLogin: () -> Unit = {}, // New parameter
+    onBiometricLogin: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var serverUrl by remember { mutableStateOf(savedServerUrl) }
@@ -306,10 +308,10 @@ fun ServerConnectionScreen(
                 keyboardController?.hide()
                 onConnect(serverUrl, username, password)
             },
-            enabled = serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank() && !isConnecting,
+            enabled = serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank() && !connectionState.isConnecting,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            if (isConnecting) {
+            if (connectionState.isConnecting) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     color = MaterialTheme.colorScheme.onPrimary,
@@ -324,7 +326,7 @@ fun ServerConnectionScreen(
         // Quick Connect button
         OutlinedButton(
             onClick = onQuickConnect,
-            enabled = !isConnecting,
+            enabled = !connectionState.isConnecting,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Quick Connect")
@@ -347,7 +349,11 @@ fun ServerConnectionScreenPreview() {
 fun ServerConnectionScreenConnectingPreview() {
     JellyfinAndroidTheme {
         ServerConnectionScreen(
-            isConnecting = true,
+            connectionState = ConnectionState(
+                isConnecting = true,
+                connectionPhase = ConnectionPhase.Testing,
+                currentUrl = "https://jellyfin.example.com"
+            ),
         )
     }
 }
@@ -357,7 +363,10 @@ fun ServerConnectionScreenConnectingPreview() {
 fun ServerConnectionScreenErrorPreview() {
     JellyfinAndroidTheme {
         ServerConnectionScreen(
-            errorMessage = "Failed to connect to server. Please check your server URL and credentials.",
+            connectionState = ConnectionState(
+                errorMessage = "Failed to connect to server. Please check your server URL and credentials.",
+                connectionPhase = ConnectionPhase.Error
+            ),
         )
     }
 }
