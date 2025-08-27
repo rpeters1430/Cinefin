@@ -238,7 +238,7 @@ class MainAppViewModel @Inject constructor(
                                     }
                                 }
                                 "tvshows" -> {
-                                    if (lib.id?.toString() !in loadedLibraryTypes) {
+                                    if (LibraryType.TV_SHOWS.name !in loadedLibraryTypes) {
                                         loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true)
                                     } else {
                                         updatedAllTVShows = emptyList()
