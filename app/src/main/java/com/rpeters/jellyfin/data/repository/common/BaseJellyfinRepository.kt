@@ -54,21 +54,12 @@ open class BaseJellyfinRepository @Inject constructor(
                     Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token expired, proactively refreshing")
 
                     val refreshResult = authRepository.reAuthenticate()
-                    when (refreshResult) {
-                        is ApiResult.Success<*> -> {
-                            Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Proactive token refresh successful")
-                            clientFactory.invalidateClient()
-                        }
-                        is ApiResult.Error<*> -> {
-                            Logger.w(LogCategory.NETWORK, javaClass.simpleName, "Proactive token refresh failed: ${refreshResult.message}")
-                            // Don't throw here - let the subsequent API call handle the 401
-                        }
-                        is ApiResult.Loading<*> -> {
-                            Logger.w(LogCategory.NETWORK, javaClass.simpleName, "Unexpected loading state during proactive token refresh")
-                        }
-                        else -> {
-                            Logger.w(LogCategory.NETWORK, javaClass.simpleName, "Unknown result type from token refresh")
-                        }
+                    if (refreshResult) {
+                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Proactive token refresh successful")
+                        clientFactory.invalidateClient()
+                    } else {
+                        Logger.w(LogCategory.NETWORK, javaClass.simpleName, "Proactive token refresh failed")
+                        // Don't throw here - let the subsequent API call handle the 401
                     }
                 }
             }
@@ -92,24 +83,15 @@ open class BaseJellyfinRepository @Inject constructor(
                     Logger.d(LogCategory.NETWORK, javaClass.simpleName, "HTTP 401 detected, attempting token refresh")
 
                     val refreshResult = authRepository.reAuthenticate()
-                    when (refreshResult) {
-                        is ApiResult.Success<*> -> {
-                            Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token refresh successful, retrying operation")
-                            // Clear client factory to ensure new token is used
-                            clientFactory.invalidateClient()
-                            // Retry the operation with refreshed token
-                            operation()
-                        }
-                        is ApiResult.Error<*> -> {
-                            Logger.e(LogCategory.NETWORK, javaClass.simpleName, "Token refresh failed: ${refreshResult.message}")
-                            throw Exception("Authentication failed: ${refreshResult.message}")
-                        }
-                        is ApiResult.Loading<*> -> {
-                            throw Exception("Unexpected loading state during token refresh")
-                        }
-                        else -> {
-                            throw Exception("Unknown result type during token refresh")
-                        }
+                    if (refreshResult) {
+                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token refresh successful, retrying operation")
+                        // Clear client factory to ensure new token is used
+                        clientFactory.invalidateClient()
+                        // Retry the operation with refreshed token
+                        operation()
+                    } else {
+                        Logger.e(LogCategory.NETWORK, javaClass.simpleName, "Token refresh failed")
+                        throw Exception("Authentication failed: Unable to refresh token")
                     }
                 }
             } else {

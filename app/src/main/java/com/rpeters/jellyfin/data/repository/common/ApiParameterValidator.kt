@@ -235,12 +235,13 @@ object ApiParameterValidator {
                 }
             }
             "homevideos" -> {
+                // ✅ FIX: For home videos, respect null itemTypes to let server decide and prevent HTTP 400 errors
                 when {
-                    itemTypes == null -> "Video"
+                    itemTypes == null -> null // Let server decide item types to prevent HTTP 400 errors
                     itemTypes.contains("Video") -> itemTypes
                     else -> {
-                        Log.w(TAG, "Incompatible item types '$itemTypes' for homevideos collection, using Video")
-                        "Video"
+                        Log.w(TAG, "Incompatible item types '$itemTypes' for homevideos collection, letting server decide")
+                        null // Let server decide instead of forcing Video type
                     }
                 }
             }
@@ -318,7 +319,7 @@ object ApiParameterValidator {
             )
             CollectionType.HOMEVIDEOS -> ValidatedApiLibraryParams(
                 parentId = null,
-                itemTypes = "Video",
+                itemTypes = null, // Let server decide item types to prevent HTTP 400 errors
                 collectionType = "homevideos",
                 startIndex = 0,
                 limit = DEFAULT_LIMIT,

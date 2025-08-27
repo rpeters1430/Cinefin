@@ -22,7 +22,8 @@
       "Bash(.gradlew.bat assembleDebug)",
       "Bash(.gradlew.bat build:*)",
       "WebFetch(domain:gist.github.com)",
-      "WebFetch(domain:gist.githubusercontent.com)"
+      "WebFetch(domain:gist.githubusercontent.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

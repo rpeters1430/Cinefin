@@ -801,7 +801,7 @@ class MainAppViewModel @Inject constructor(
             when (
                 val result = mediaRepository.getLibraryItems(
                     parentId = libraryId,
-                    itemTypes = "Video", // Specify Video type for home videos to prevent HTTP 400 errors
+                    itemTypes = null, // Let server decide item types for home videos to prevent HTTP 400 errors
                     startIndex = 0,
                     limit = 100,
                     collectionType = "homevideos",
@@ -941,6 +941,38 @@ class MainAppViewModel @Inject constructor(
                 _appState.value = currentState.copy(isLoadingMovies = true)
             }
 
+            // ✅ FIX: Ensure libraries are loaded before trying to filter them
+            if (_appState.value.libraries.isEmpty()) {
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "loadAllMovies: Libraries not loaded yet, loading libraries first")
+                }
+                
+                // Wait for libraries to load
+                val librariesResult = mediaRepository.getUserLibraries()
+                when (librariesResult) {
+                    is ApiResult.Success -> {
+                        _appState.value = _appState.value.copy(libraries = librariesResult.data)
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadAllMovies: Loaded ${librariesResult.data.size} libraries")
+                        }
+                    }
+                    is ApiResult.Error -> {
+                        if (BuildConfig.DEBUG) {
+                            Log.e("MainAppViewModel", "loadAllMovies: Failed to load libraries: ${librariesResult.message}")
+                        }
+                        _appState.value = _appState.value.copy(
+                            isLoadingMovies = false,
+                            hasMoreMovies = false,
+                            errorMessage = "Failed to load libraries: ${librariesResult.message}",
+                        )
+                        return@launch
+                    }
+                    is ApiResult.Loading -> {
+                        // Continue with empty state, should not happen
+                    }
+                }
+            }
+
             val pageSize = 50
             val page = if (reset) 0 else currentState.moviesPage + 1
             val startIndex = page * pageSize
@@ -1012,11 +1044,20 @@ class MainAppViewModel @Inject constructor(
                     )
                 }
                 is ApiResult.Error -> {
-                    Log.e("MainAppViewModel", "loadAllMovies: Failed to load page $page: ${result.message}")
-                    _appState.value = _appState.value.copy(
-                        isLoadingMovies = false,
-                        errorMessage = if (reset) "Failed to load movies: ${result.message}" else result.message,
-                    )
+                    // ✅ FIX: Handle job cancellation gracefully - don't show error for navigation cancellations
+                    if (result.message.contains("Job was cancelled", ignoreCase = true)) {
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadAllMovies: Request cancelled due to navigation, keeping current state")
+                        }
+                        // Don't update error state for navigation cancellations
+                        _appState.value = _appState.value.copy(isLoadingMovies = false)
+                    } else {
+                        Log.e("MainAppViewModel", "loadAllMovies: Failed to load page $page: ${result.message}")
+                        _appState.value = _appState.value.copy(
+                            isLoadingMovies = false,
+                            errorMessage = if (reset) "Failed to load movies: ${result.message}" else result.message,
+                        )
+                    }
                 }
                 is ApiResult.Loading -> {
                     // Already handled above
@@ -1076,6 +1117,38 @@ class MainAppViewModel @Inject constructor(
                     Log.d("MainAppViewModel", "loadAllTVShows: Loading next page")
                 }
                 _appState.value = currentState.copy(isLoadingTVShows = true)
+            }
+
+            // ✅ FIX: Ensure libraries are loaded before trying to filter them
+            if (_appState.value.libraries.isEmpty()) {
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "loadAllTVShows: Libraries not loaded yet, loading libraries first")
+                }
+                
+                // Wait for libraries to load
+                val librariesResult = mediaRepository.getUserLibraries()
+                when (librariesResult) {
+                    is ApiResult.Success -> {
+                        _appState.value = _appState.value.copy(libraries = librariesResult.data)
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadAllTVShows: Loaded ${librariesResult.data.size} libraries")
+                        }
+                    }
+                    is ApiResult.Error -> {
+                        if (BuildConfig.DEBUG) {
+                            Log.e("MainAppViewModel", "loadAllTVShows: Failed to load libraries: ${librariesResult.message}")
+                        }
+                        _appState.value = _appState.value.copy(
+                            isLoadingTVShows = false,
+                            hasMoreTVShows = false,
+                            errorMessage = "Failed to load libraries: ${librariesResult.message}",
+                        )
+                        return@launch
+                    }
+                    is ApiResult.Loading -> {
+                        // Continue with empty state, should not happen
+                    }
+                }
             }
 
             val pageSize = 50
@@ -1149,11 +1222,20 @@ class MainAppViewModel @Inject constructor(
                     )
                 }
                 is ApiResult.Error -> {
-                    Log.e("MainAppViewModel", "loadAllTVShows: Failed to load page $page: ${result.message}")
-                    _appState.value = _appState.value.copy(
-                        isLoadingTVShows = false,
-                        errorMessage = if (reset) "Failed to load TV shows: ${result.message}" else result.message,
-                    )
+                    // ✅ FIX: Handle job cancellation gracefully - don't show error for navigation cancellations
+                    if (result.message.contains("Job was cancelled", ignoreCase = true)) {
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadAllTVShows: Request cancelled due to navigation, keeping current state")
+                        }
+                        // Don't update error state for navigation cancellations
+                        _appState.value = _appState.value.copy(isLoadingTVShows = false)
+                    } else {
+                        Log.e("MainAppViewModel", "loadAllTVShows: Failed to load page $page: ${result.message}")
+                        _appState.value = _appState.value.copy(
+                            isLoadingTVShows = false,
+                            errorMessage = if (reset) "Failed to load TV shows: ${result.message}" else result.message,
+                        )
+                    }
                 }
                 is ApiResult.Loading -> {
                     // Already handled above
@@ -1242,6 +1324,36 @@ class MainAppViewModel @Inject constructor(
                     LibraryType.MUSIC -> {
                         if (BuildConfig.DEBUG) {
                             Log.d("MainAppViewModel", "loadLibraryTypeData: Loading music library items")
+                        }
+
+                        // ✅ FIX: Ensure libraries are loaded before trying to filter them
+                        if (_appState.value.libraries.isEmpty()) {
+                            if (BuildConfig.DEBUG) {
+                                Log.d("MainAppViewModel", "loadLibraryTypeData: Libraries not loaded yet, loading libraries first for music")
+                            }
+                            
+                            // Wait for libraries to load
+                            val librariesResult = mediaRepository.getUserLibraries()
+                            when (librariesResult) {
+                                is ApiResult.Success -> {
+                                    _appState.value = _appState.value.copy(libraries = librariesResult.data)
+                                    if (BuildConfig.DEBUG) {
+                                        Log.d("MainAppViewModel", "loadLibraryTypeData: Loaded ${librariesResult.data.size} libraries for music")
+                                    }
+                                }
+                                is ApiResult.Error -> {
+                                    if (BuildConfig.DEBUG) {
+                                        Log.e("MainAppViewModel", "loadLibraryTypeData: Failed to load libraries for music: ${librariesResult.message}")
+                                    }
+                                    _appState.value = _appState.value.copy(
+                                        errorMessage = "Failed to load libraries: ${librariesResult.message}",
+                                    )
+                                    return@launch
+                                }
+                                is ApiResult.Loading -> {
+                                    // Continue with empty state, should not happen
+                                }
+                            }
                         }
 
                         // Get the first available music library for parentId
@@ -1393,8 +1505,14 @@ class MainAppViewModel @Inject constructor(
                     _appState.value = _appState.value.copy(allItems = currentItems)
                 }
                 is ApiResult.Error -> {
-                    Log.e("MainAppViewModel", "loadMusicLibraryItems: Failed to load music items: ${result.message}")
-                    if (result.errorType != ErrorType.OPERATION_CANCELLED) {
+                    // ✅ FIX: Handle job cancellation gracefully - don't show error for navigation cancellations
+                    if (result.message.contains("Job was cancelled", ignoreCase = true) || result.errorType == ErrorType.OPERATION_CANCELLED) {
+                        if (BuildConfig.DEBUG) {
+                            Log.d("MainAppViewModel", "loadMusicLibraryItems: Request cancelled due to navigation, keeping current state")
+                        }
+                        // Don't update error state for navigation cancellations
+                    } else {
+                        Log.e("MainAppViewModel", "loadMusicLibraryItems: Failed to load music items: ${result.message}")
                         _appState.value = _appState.value.copy(
                             errorMessage = "Failed to load music items: ${result.message}",
                         )
@@ -1419,7 +1537,7 @@ class MainAppViewModel @Inject constructor(
             // Determine the collection type from the library to specify appropriate item types
             val library = _appState.value.libraries.find { it.id.toString() == libraryId }
             val itemTypes = when (library?.collectionType) {
-                org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> "Video"
+                org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> null // Let server decide for home videos to prevent HTTP 400 errors
                 org.jellyfin.sdk.model.api.CollectionType.BOOKS -> "Book,AudioBook"
                 org.jellyfin.sdk.model.api.CollectionType.PHOTOS -> "Photo"
                 // Provide safe fallback for unknown collection types to prevent HTTP 400 errors
@@ -1437,7 +1555,7 @@ class MainAppViewModel @Inject constructor(
                 org.jellyfin.sdk.model.api.CollectionType.PHOTOS -> "photos"
                 else -> null
             }
-
+            
             when (
                 val result = mediaRepository.getLibraryItems(
                     parentId = libraryId,

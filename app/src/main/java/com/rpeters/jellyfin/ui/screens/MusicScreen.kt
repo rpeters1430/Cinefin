@@ -117,7 +117,7 @@ fun MusicScreen(
 
     // Filter music items from recently added types data (this is where the music data actually is)
     val musicItems = remember(appState.recentlyAddedByTypes) {
-        appState.recentlyAddedByTypes["Music"] ?: emptyList()
+        appState.recentlyAddedByTypes["AUDIO"] ?: emptyList()
     }
 
     // Apply filtering and sorting

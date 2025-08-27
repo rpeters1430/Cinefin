@@ -231,10 +231,23 @@ class JellyfinAuthRepository @Inject constructor(
                         username = authResult.user?.name,
                         accessToken = authResult.accessToken,
                         loginTimestamp = System.currentTimeMillis(),
+                        originalServerUrl = normalizeServerUrl(serverUrl), // Store normalized original URL for credential lookups
                     )
 
                     _currentServer.value = server
                     _isConnected.value = true
+
+                    // Save credentials for token refresh 
+                    // Use a normalized version of the original URL to ensure consistent lookups
+                    val normalizedUrl = normalizeServerUrl(serverUrl)
+                    try {
+                        secureCredentialManager.savePassword(normalizedUrl, username, password)
+                        if (BuildConfig.DEBUG) {
+                            Log.d("JellyfinAuthRepository", "Saved credentials for user: $username on server: $normalizedUrl")
+                        }
+                    } catch (e: Exception) {
+                        Log.w("JellyfinAuthRepository", "Failed to save credentials for token refresh", e)
+                    }
 
                     ApiResult.Success(authResult)
                 }
@@ -343,6 +356,7 @@ class JellyfinAuthRepository @Inject constructor(
                 username = authResult.user?.name,
                 accessToken = authResult.accessToken,
                 loginTimestamp = System.currentTimeMillis(),
+                originalServerUrl = normalizeServerUrl(serverUrl), // Store normalized original URL for credential lookups
             )
 
             _currentServer.value = server
@@ -373,20 +387,22 @@ class JellyfinAuthRepository @Inject constructor(
             clientFactory.invalidateClient()
 
             // Get saved password for the current server and username
-            val savedPassword = secureCredentialManager.getPassword(server.url, server.username ?: "")
+            // Use the stored original server URL for credential lookup, fallback to extracting from current URL
+            val credentialUrl = server.originalServerUrl ?: normalizeServerUrl(server.url)
+            val savedPassword = secureCredentialManager.getPassword(credentialUrl, server.username ?: "")
             if (savedPassword == null) {
-                Log.w("JellyfinAuthRepository", "reAuthenticate: No saved password found for user ${server.username}")
+                Log.w("JellyfinAuthRepository", "reAuthenticate: No saved password found for user ${server.username} on $credentialUrl")
                 // If we can't re-authenticate, logout the user
                 logout()
                 return@withLock false
             }
 
             if (BuildConfig.DEBUG) {
-                Log.d("JellyfinAuthRepository", "reAuthenticate: Found saved credentials, attempting authentication")
+                Log.d("JellyfinAuthRepository", "reAuthenticate: Found saved credentials for $credentialUrl, attempting authentication")
             }
 
-            // Re-authenticate using saved credentials
-            when (val authResult = authenticateUser(server.url, server.username ?: "", savedPassword)) {
+            // Re-authenticate using saved credentials (use the credential URL for consistency)
+            when (val authResult = authenticateUser(credentialUrl, server.username ?: "", savedPassword)) {
                 is ApiResult.Success -> {
                     if (BuildConfig.DEBUG) {
                         Log.d("JellyfinAuthRepository", "reAuthenticate: Successfully re-authenticated user ${server.username}")
@@ -486,6 +502,37 @@ class JellyfinAuthRepository @Inject constructor(
     fun updateCurrentServer(server: JellyfinServer) {
         _currentServer.value = server
         _isConnected.value = server.isConnected
+    }
+
+    /**
+     * Normalize server URL for consistent credential storage and lookup
+     * This ensures that URLs with different ports (like 8920 -> 443 redirects) are handled consistently
+     */
+    private fun normalizeServerUrl(serverUrl: String): String {
+        return try {
+            val uri = URI(serverUrl.trimEnd('/'))
+            val scheme = uri.scheme ?: "https"
+            val host = uri.host ?: return serverUrl
+            val path = uri.path?.takeIf { it.isNotEmpty() && it != "/" } ?: ""
+            
+            // Normalize to use the hostname without port for credential storage
+            // This handles cases where the server URL changes ports during connection resolution
+            "$scheme://$host$path"
+        } catch (e: Exception) {
+            Log.w("JellyfinAuthRepository", "Failed to normalize server URL: $serverUrl", e)
+            serverUrl
+        }
+    }
+
+    /**
+     * Extracts the base server URL without the /jellyfin path for consistent credential storage
+     */
+    private fun extractBaseServerUrl(fullUrl: String): String {
+        return if (fullUrl.endsWith("/jellyfin")) {
+            fullUrl.removeSuffix("/jellyfin")
+        } else {
+            fullUrl
+        }
     }
 
     private fun getErrorType(e: Throwable): ErrorType {

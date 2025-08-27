@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveFloatingToolbar
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
@@ -44,8 +45,14 @@ fun StuffScreen(
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
 ) {
+    if (BuildConfig.DEBUG) {
+        android.util.Log.d("StuffScreen", "StuffScreen started: libraryId=$libraryId, collectionType=$collectionType")
+    }
     val appState by viewModel.appState.collectAsState()
     LaunchedEffect(libraryId) {
+        if (BuildConfig.DEBUG) {
+            android.util.Log.d("StuffScreen", "LaunchedEffect triggered for libraryId=$libraryId")
+        }
         viewModel.loadHomeVideos(libraryId)
     }
 
@@ -60,6 +67,13 @@ fun StuffScreen(
     // Filter stuff items from the library-specific home videos
     val stuffItems = remember(appState.homeVideosByLibrary, libraryId, type) {
         val items = appState.homeVideosByLibrary[libraryId] ?: emptyList()
+        if (BuildConfig.DEBUG) {
+            android.util.Log.d("StuffScreen", "libraryId=$libraryId, type=$type, items.size=${items.size}")
+            if (items.isNotEmpty()) {
+                val typeBreakdown = items.groupBy { it.type?.name }.mapValues { it.value.size }
+                android.util.Log.d("StuffScreen", "Item types: $typeBreakdown")
+            }
+        }
         val filtered = when (type) {
             "books" -> items.filter {
                 it.type == BaseItemKind.BOOK || it.type == BaseItemKind.AUDIO_BOOK

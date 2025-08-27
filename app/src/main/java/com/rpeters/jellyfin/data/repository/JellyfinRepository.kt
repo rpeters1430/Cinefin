@@ -360,20 +360,22 @@ class JellyfinRepository @Inject constructor(
             clientFactory.invalidateClient()
 
             // Get saved password for the current server and username
-            val savedPassword = secureCredentialManager.getPassword(server.url, server.username ?: "")
+            // Use the stored original server URL for credential lookup, fallback to current URL
+            val credentialUrl = server.originalServerUrl ?: server.url
+            val savedPassword = secureCredentialManager.getPassword(credentialUrl, server.username ?: "")
             if (savedPassword == null) {
-                Log.w("JellyfinRepository", "reAuthenticate: No saved password found for user ${server.username}")
+                Log.w("JellyfinRepository", "reAuthenticate: No saved password found for user ${server.username} on $credentialUrl")
                 // If we can't re-authenticate, logout the user
                 logout()
                 return@withLock false
             }
 
             if (BuildConfig.DEBUG) {
-                Log.d("JellyfinRepository", "reAuthenticate: Found saved credentials, attempting authentication")
+                Log.d("JellyfinRepository", "reAuthenticate: Found saved credentials for $credentialUrl, attempting authentication")
             }
 
-            // Re-authenticate using saved credentials - delegate to auth repository for consistency
-            when (val authResult = authRepository.authenticateUser(server.url, server.username ?: "", savedPassword)) {
+            // Re-authenticate using saved credentials - use the credential URL for consistency
+            when (val authResult = authRepository.authenticateUser(credentialUrl, server.username ?: "", savedPassword)) {
                 is ApiResult.Success -> {
                     if (BuildConfig.DEBUG) {
                         Log.d("JellyfinRepository", "reAuthenticate: Successfully re-authenticated user ${server.username}")

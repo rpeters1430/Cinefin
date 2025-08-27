@@ -14,6 +14,8 @@ data class JellyfinServer(
     val username: String? = null,
     val accessToken: String? = null,
     val loginTimestamp: Long? = null,
+    // Store the original server URL for credential lookups (without /jellyfin path)
+    val originalServerUrl: String? = null,
 )
 
 @Serializable
