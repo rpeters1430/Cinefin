@@ -338,14 +338,16 @@ class JellyfinMediaRepository @Inject constructor(
             val userUuid = parseUuid(server.userId ?: "", "user")
             val client = getClient(server.url, server.accessToken)
 
-            val response = client.itemsApi.getItems(
-                userId = userUuid,
-                recursive = true,
-                includeItemTypes = listOf(itemType),
-                sortBy = listOf(ItemSortBy.DATE_CREATED),
-                sortOrder = listOf(SortOrder.DESCENDING),
-                limit = limit,
-            )
+            val response = executeWithTokenRefresh {
+                client.itemsApi.getItems(
+                    userId = userUuid,
+                    recursive = true,
+                    includeItemTypes = listOf(itemType),
+                    sortBy = listOf(ItemSortBy.DATE_CREATED),
+                    sortOrder = listOf(SortOrder.DESCENDING),
+                    limit = limit,
+                )
+            }
             response.content.items ?: emptyList()
         }
 
