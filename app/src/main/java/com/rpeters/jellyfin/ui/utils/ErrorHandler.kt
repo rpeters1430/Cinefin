@@ -210,7 +210,7 @@ object ErrorHandler {
             ErrorType.SERVER_ERROR -> true
             ErrorType.UNKNOWN -> attemptNumber < 2 // Only retry once for unknown errors
             ErrorType.AUTHENTICATION -> false // Don't auto-retry auth errors
-            ErrorType.UNAUTHORIZED -> attemptNumber < 3 // Allow up to 2 retries for token refresh scenarios
+            ErrorType.UNAUTHORIZED -> false // ✅ FIX: Don't retry UNAUTHORIZED - let executeWithTokenRefresh handle it
             ErrorType.FORBIDDEN -> false // Don't retry permission errors
             ErrorType.NOT_FOUND -> false // Don't retry 404s
             ErrorType.BAD_REQUEST -> false // Don't retry invalid request parameters

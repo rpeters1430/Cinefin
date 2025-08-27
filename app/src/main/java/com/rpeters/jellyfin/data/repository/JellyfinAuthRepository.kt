@@ -45,6 +45,10 @@ class JellyfinAuthRepository @Inject constructor(
     private val _isConnected = MutableStateFlow(false)
     val isConnected: Flow<Boolean> = _isConnected.asStateFlow()
 
+    // ✅ FIX: Track authentication status to prevent concurrent authentication calls
+    private val _isAuthenticating = MutableStateFlow(false)
+    val isAuthenticating: Flow<Boolean> = _isAuthenticating.asStateFlow()
+
     // Mutex to prevent race conditions in authentication
     private val authMutex = Mutex()
 
@@ -373,16 +377,27 @@ class JellyfinAuthRepository @Inject constructor(
     }
 
     /**
-     * Re-authenticate using saved credentials
+     * ✅ ENHANCED: Re-authenticate using saved credentials with early validation
      */
     suspend fun reAuthenticate(): Boolean = authMutex.withLock {
         val server = _currentServer.value ?: return@withLock false
+
+        // ✅ FIX: Early check - if token is already valid, don't re-authenticate
+        if (!isTokenExpired()) {
+            if (BuildConfig.DEBUG) {
+                Log.d("JellyfinAuthRepository", "reAuthenticate: Token is already valid, skipping re-authentication")
+            }
+            return@withLock true
+        }
 
         if (BuildConfig.DEBUG) {
             Log.d("JellyfinAuthRepository", "reAuthenticate: Starting re-authentication for user ${server.username} on ${server.url}")
         }
 
         try {
+            // ✅ FIX: Set authentication status to prevent concurrent calls
+            _isAuthenticating.value = true
+            
             // Clear any cached clients before re-authenticating
             clientFactory.invalidateClient()
 
@@ -438,6 +453,9 @@ class JellyfinAuthRepository @Inject constructor(
             // If there's an exception during re-auth, logout to prevent further errors
             logout()
             return@withLock false
+        } finally {
+            // ✅ FIX: Always clear authentication status when done
+            _isAuthenticating.value = false
         }
     }
 

@@ -98,6 +98,47 @@ class MainAppViewModel @Inject constructor(
         }
     }
 
+    /**
+     * ✅ FIX: Enhanced token validation that waits for authentication to complete
+     * This prevents race conditions during app startup with remembered credentials
+     */
+    private suspend fun ensureValidTokenWithWait(): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                // First check if we have a valid token
+                if (!authRepository.isTokenExpired()) {
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "ensureValidTokenWithWait: Token is valid, proceeding")
+                    }
+                    return@withContext true
+                }
+
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "ensureValidTokenWithWait: Token expired, attempting re-authentication")
+                }
+
+                // Wait for authentication to complete
+                val authSuccess = authRepository.reAuthenticate()
+                
+                if (authSuccess) {
+                    if (BuildConfig.DEBUG) {
+                        Log.d("MainAppViewModel", "ensureValidTokenWithWait: Re-authentication successful")
+                    }
+                    // Additional verification that the token is now valid
+                    return@withContext !authRepository.isTokenExpired()
+                } else {
+                    if (BuildConfig.DEBUG) {
+                        Log.w("MainAppViewModel", "ensureValidTokenWithWait: Re-authentication failed")
+                    }
+                    return@withContext false
+                }
+            } catch (e: Exception) {
+                Log.e("MainAppViewModel", "ensureValidTokenWithWait: Exception during authentication", e)
+                return@withContext false
+            }
+        }
+    }
+
     fun loadInitialData(forceRefresh: Boolean = false) {
         // Prevent multiple concurrent loading operations unless force refresh
         if (!forceRefresh && isLoadingData) {
@@ -129,8 +170,18 @@ class MainAppViewModel @Inject constructor(
                         return@measureSuspendTime
                     }
 
-                    // Ensure token is valid before making network requests
-                    ensureValidToken()
+                    // ✅ FIX: Ensure token is valid and wait for authentication to complete
+                    // This prevents the race condition where API calls are made before authentication
+                    if (!ensureValidTokenWithWait()) {
+                        if (BuildConfig.DEBUG) {
+                            Log.w("MainAppViewModel", "loadInitialData: Authentication failed, cannot proceed with data loading")
+                        }
+                        _appState.value = _appState.value.copy(
+                            isLoading = false,
+                            errorMessage = "Authentication failed. Please log in again.",
+                        )
+                        return@measureSuspendTime
+                    }
 
                     val previousLibraries = _appState.value.libraries
 

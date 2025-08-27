@@ -67,7 +67,8 @@ open class BaseJellyfinRepository @Inject constructor(
     }
 
     /**
-     * Executes API call with automatic token refresh on 401 errors
+     * ✅ ENHANCED: Executes API call with automatic token refresh on 401 errors
+     * Improved to handle concurrent authentication and better error reporting
      */
     protected suspend fun <T> executeWithTokenRefresh(
         operation: suspend () -> T,
@@ -82,11 +83,25 @@ open class BaseJellyfinRepository @Inject constructor(
                 return tokenRefreshMutex.withLock {
                     Logger.d(LogCategory.NETWORK, javaClass.simpleName, "HTTP 401 detected, attempting token refresh")
 
+                    // Check if token was refreshed by another thread while waiting for the lock
+                    if (!authRepository.isTokenExpired()) {
+                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token was refreshed by another thread, retrying operation")
+                        clientFactory.invalidateClient()
+                        return@withLock operation()
+                    }
+
                     val refreshResult = authRepository.reAuthenticate()
                     if (refreshResult) {
                         Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token refresh successful, retrying operation")
                         // Clear client factory to ensure new token is used
                         clientFactory.invalidateClient()
+                        
+                        // Verify token is actually valid before retrying
+                        if (authRepository.isTokenExpired()) {
+                            Logger.e(LogCategory.NETWORK, javaClass.simpleName, "Token refresh appeared successful but token is still expired")
+                            throw Exception("Authentication failed: Token refresh verification failed")
+                        }
+                        
                         // Retry the operation with refreshed token
                         operation()
                     } else {
