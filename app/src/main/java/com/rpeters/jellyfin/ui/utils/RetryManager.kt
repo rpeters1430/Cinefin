@@ -53,6 +53,14 @@ object RetryManager {
                     is ApiResult.Error -> {
                         lastResult = result
 
+                        // ✅ FIX: Don't retry 401 errors - let the authentication system handle them
+                        if (result.errorType == ErrorType.UNAUTHORIZED) {
+                            if (BuildConfig.DEBUG) {
+                                Log.d(TAG, "$operationName: 401 error detected, not retrying - authentication system will handle")
+                            }
+                            return result
+                        }
+
                         if (attempt == maxAttempts) {
                             Log.w(TAG, "$operationName: Failed after $maxAttempts attempts")
                             return result
