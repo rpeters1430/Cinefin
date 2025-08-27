@@ -199,7 +199,7 @@ class JellyfinAuthRepository @Inject constructor(
     ): ApiResult<AuthenticationResult> = authMutex.withLock {
         // Clear any existing invalid token/client before authenticating
         clientFactory.invalidateClient()
-        
+
         return try {
             // First test connection to find working URL
             when (val connectionResult = testServerConnectionWithUrl(serverUrl)) {
@@ -251,7 +251,7 @@ class JellyfinAuthRepository @Inject constructor(
                     } catch (e: Exception) {
                         Log.w("JellyfinAuthRepository", "Failed to save credentials for token refresh", e)
                     }
-                    
+
                     // Clear client factory to ensure fresh token is used
                     clientFactory.invalidateClient()
 

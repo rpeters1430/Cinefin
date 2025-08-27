@@ -131,7 +131,7 @@ class MainAppViewModel @Inject constructor(
 
                     // Ensure token is valid before making network requests
                     ensureValidToken()
-                    
+
                     // Add a small delay to ensure authentication has propagated
                     delay(100)
 
