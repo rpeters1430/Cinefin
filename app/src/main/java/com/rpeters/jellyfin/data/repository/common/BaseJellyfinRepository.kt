@@ -97,7 +97,7 @@ open class BaseJellyfinRepository @Inject constructor(
                         Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication already in progress, waiting for completion")
                         // Wait a bit for authentication to complete
                         kotlinx.coroutines.delay(1000)
-                        
+
                         // Check if authentication completed successfully
                         if (!authRepository.isTokenExpired()) {
                             Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication completed by another thread, retrying operation")
