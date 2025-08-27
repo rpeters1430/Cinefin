@@ -115,10 +115,13 @@ fun MusicScreen(
     var viewMode by remember { mutableStateOf(MusicViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
 
-    // Filter music items from recently added types data (this is where the music data actually is)
-    val musicItems = remember(appState.recentlyAddedByTypes) {
-        appState.recentlyAddedByTypes["AUDIO"] ?: emptyList()
+    // Load music library data when the screen is first composed
+    LaunchedEffect(Unit) {
+        viewModel.loadLibraryTypeData(LibraryType.MUSIC)
     }
+
+    // Get music items from the view model's library data and filter/sort locally
+    val musicItems = viewModel.getLibraryTypeData(LibraryType.MUSIC)
 
     // Apply filtering and sorting
     val filteredAndSortedMusic = remember(musicItems, selectedFilter, sortOrder) {
