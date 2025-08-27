@@ -801,7 +801,7 @@ class MainAppViewModel @Inject constructor(
             when (
                 val result = mediaRepository.getLibraryItems(
                     parentId = libraryId,
-                    itemTypes = null, // Let server decide item types for home videos to prevent HTTP 400 errors
+                    itemTypes = "Video", // Specify valid item type for home videos to avoid HTTP 400 errors
                     startIndex = 0,
                     limit = 100,
                     collectionType = "homevideos",
@@ -1537,7 +1537,7 @@ class MainAppViewModel @Inject constructor(
             // Determine the collection type from the library to specify appropriate item types
             val library = _appState.value.libraries.find { it.id.toString() == libraryId }
             val itemTypes = when (library?.collectionType) {
-                org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> null // Let server decide for home videos to prevent HTTP 400 errors
+                org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> "Video" // Specify video type for home videos to avoid HTTP 400
                 org.jellyfin.sdk.model.api.CollectionType.BOOKS -> "Book,AudioBook"
                 org.jellyfin.sdk.model.api.CollectionType.PHOTOS -> "Photo"
                 // Provide safe fallback for unknown collection types to prevent HTTP 400 errors

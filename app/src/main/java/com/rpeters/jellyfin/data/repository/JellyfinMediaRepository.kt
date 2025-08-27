@@ -102,7 +102,7 @@ class JellyfinMediaRepository @Inject constructor(
         val parent = validatedParams.parentId?.let { parseUuid(it, "parent") }
 
         // Parse item types from validated string
-        val itemKinds = validatedParams.itemTypes?.split(",")?.mapNotNull { type ->
+        var itemKinds = validatedParams.itemTypes?.split(",")?.mapNotNull { type ->
             when (type.trim()) {
                 "Movie" -> BaseItemKind.MOVIE
                 "Series" -> BaseItemKind.SERIES
@@ -116,6 +116,12 @@ class JellyfinMediaRepository @Inject constructor(
                 "Photo" -> BaseItemKind.PHOTO
                 else -> null
             }
+        }
+
+        // Home videos libraries require an explicit VIDEO item type
+        val isHomeVideos = collectionType?.equals("homevideos", ignoreCase = true) == true
+        if (isHomeVideos && (itemKinds == null || itemKinds.isEmpty())) {
+            itemKinds = listOf(BaseItemKind.VIDEO)
         }
 
         android.util.Log.d(
@@ -148,6 +154,20 @@ class JellyfinMediaRepository @Inject constructor(
                 "JellyfinMediaRepository",
                 "getLibraryItems ${e.status}: ${errorMsg ?: e.message}",
             )
+
+            // Home videos libraries can produce 400 errors; log concise message and bail out
+            if (isHomeVideos && e.status == 400) {
+                android.util.Log.w(
+                    "JellyfinMediaRepository",
+                    "Library unsupported: homevideos (id=${validatedParams.parentId})",
+                )
+
+                validatedParams.parentId?.let { libraryId ->
+                    healthChecker.reportFailure(libraryId, "Unsupported library type homevideos")
+                }
+
+                return@execute emptyList()
+            }
 
             // If we get a 401, the token refresh should have already been handled by executeWithTokenRefresh
             if (e.message?.contains("401") == true) {
