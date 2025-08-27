@@ -237,7 +237,9 @@ class MainAppViewModel @Inject constructor(
                                 val type = (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
                                 type !in setOf("movies", "tvshows", "music")
                             }.forEach { library ->
-                                library.id?.let { loadHomeVideos(it.toString()) }
+                                val type = (library.collectionType?.toString() ?: library.type?.name)
+                                    ?.lowercase(Locale.getDefault())
+                                library.id?.let { loadStuffLibrary(it.toString(), type) }
                             }
                         }
                         is ApiResult.Error -> {
@@ -773,12 +775,12 @@ class MainAppViewModel @Inject constructor(
         loadLibraryTypeData(LibraryType.STUFF)
     }
 
-    fun loadHomeVideos(libraryId: String) {
+    fun loadStuffLibrary(libraryId: String, collectionType: String?) {
         viewModelScope.launch {
             // Check authentication first
             if (!repository.isUserAuthenticated()) {
                 if (BuildConfig.DEBUG) {
-                    Log.w("MainAppViewModel", "loadHomeVideos: User not authenticated, skipping API call")
+                    Log.w("MainAppViewModel", "loadStuffLibrary: User not authenticated, skipping API call")
                 }
                 return@launch
             }
@@ -789,7 +791,7 @@ class MainAppViewModel @Inject constructor(
 
             if (!libraryExists) {
                 if (BuildConfig.DEBUG) {
-                    Log.w("MainAppViewModel", "loadHomeVideos: Library $libraryId no longer exists, skipping API call")
+                    Log.w("MainAppViewModel", "loadStuffLibrary: Library $libraryId no longer exists, skipping API call")
                 }
                 // Remove any cached data for this library
                 val updated = _appState.value.homeVideosByLibrary.toMutableMap()
@@ -798,13 +800,19 @@ class MainAppViewModel @Inject constructor(
                 return@launch
             }
 
+            val itemTypes = when (collectionType?.lowercase(Locale.getDefault())) {
+                "homevideos" -> "Video"
+                "photos" -> "Photo"
+                else -> null
+            }
+
             when (
                 val result = mediaRepository.getLibraryItems(
                     parentId = libraryId,
-                    itemTypes = null, // Let server decide item types for home videos to prevent HTTP 400 errors
+                    itemTypes = itemTypes,
                     startIndex = 0,
                     limit = 100,
-                    collectionType = "homevideos",
+                    collectionType = collectionType,
                 )
             ) {
                 is ApiResult.Success -> {

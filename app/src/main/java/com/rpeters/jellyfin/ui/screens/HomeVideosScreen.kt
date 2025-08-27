@@ -69,7 +69,7 @@ fun HomeVideosScreen(
             if (BuildConfig.DEBUG) {
                 android.util.Log.d("HomeVideosScreen", "Loading home videos for library: $libraryId")
             }
-            viewModel.loadHomeVideos(libraryId.toString())
+            viewModel.loadStuffLibrary(libraryId.toString(), "homevideos")
         }
     }
 

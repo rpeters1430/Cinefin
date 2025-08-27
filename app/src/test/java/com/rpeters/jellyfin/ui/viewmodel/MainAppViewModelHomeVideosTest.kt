@@ -89,11 +89,27 @@ class MainAppViewModelHomeVideosTest {
         val itemA = BaseItemDto(id = UUID.randomUUID(), name = "A", type = BaseItemKind.VIDEO)
         val itemB = BaseItemDto(id = UUID.randomUUID(), name = "B", type = BaseItemKind.VIDEO)
 
-        coEvery { mediaRepository.getLibraryItems(parentId = libraryA, itemTypes = any(), startIndex = any(), limit = any()) } returns ApiResult.Success(listOf(itemA))
-        coEvery { mediaRepository.getLibraryItems(parentId = libraryB, itemTypes = any(), startIndex = any(), limit = any()) } returns ApiResult.Success(listOf(itemB))
+        coEvery {
+            mediaRepository.getLibraryItems(
+                parentId = libraryA,
+                itemTypes = any(),
+                startIndex = any(),
+                limit = any(),
+                collectionType = any(),
+            )
+        } returns ApiResult.Success(listOf(itemA))
+        coEvery {
+            mediaRepository.getLibraryItems(
+                parentId = libraryB,
+                itemTypes = any(),
+                startIndex = any(),
+                limit = any(),
+                collectionType = any(),
+            )
+        } returns ApiResult.Success(listOf(itemB))
 
-        viewModel.loadHomeVideos(libraryA)
-        viewModel.loadHomeVideos(libraryB)
+        viewModel.loadStuffLibrary(libraryA, "homevideos")
+        viewModel.loadStuffLibrary(libraryB, "homevideos")
         dispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.appState.value

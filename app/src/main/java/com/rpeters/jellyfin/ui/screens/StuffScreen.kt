@@ -51,9 +51,12 @@ fun StuffScreen(
     val appState by viewModel.appState.collectAsState()
     LaunchedEffect(libraryId) {
         if (BuildConfig.DEBUG) {
-            android.util.Log.d("StuffScreen", "LaunchedEffect triggered for libraryId=$libraryId")
+            android.util.Log.d(
+                "StuffScreen",
+                "LaunchedEffect triggered for libraryId=$libraryId",
+            )
         }
-        viewModel.loadHomeVideos(libraryId)
+        viewModel.loadStuffLibrary(libraryId, collectionType)
     }
 
     val librariesById = remember(appState.libraries) {
