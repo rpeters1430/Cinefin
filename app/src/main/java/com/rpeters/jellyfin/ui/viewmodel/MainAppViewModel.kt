@@ -246,7 +246,7 @@ class MainAppViewModel @Inject constructor(
                                     }
                                 }
                                 "music" -> {
-                                    if (lib.id?.toString() !in loadedLibraryTypes) {
+                                    if (LibraryType.MUSIC.name !in loadedLibraryTypes) {
                                         loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true)
                                     } else {
                                         updatedAllItems = updatedAllItems.filterNot {
