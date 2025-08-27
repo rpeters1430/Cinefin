@@ -16,7 +16,6 @@ import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.utils.ConcurrencyThrottler
 import com.rpeters.jellyfin.utils.PerformanceMonitor
-import com.rpeters.jellyfin.utils.measureSuspendTime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
