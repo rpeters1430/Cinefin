@@ -138,12 +138,12 @@ class JellyfinAuthRepository @Inject constructor(
 
         // All URLs failed
         val errorType = getErrorType(lastException ?: Exception("Unknown error"))
-        
+
         // Don't log cancellation exceptions as errors
         if (errorType != ErrorType.OPERATION_CANCELLED) {
             Log.e("JellyfinAuthRepository", "All server connection attempts failed. Tried URLs: $urlVariations", lastException)
         }
-        
+
         val host = try {
             ServerUrlValidator.extractBaseUrl(urlVariations.first())?.let { URI(it).host }
         } catch (e: Exception) {
@@ -237,7 +237,7 @@ class JellyfinAuthRepository @Inject constructor(
                     _currentServer.value = server
                     _isConnected.value = true
 
-                    // Save credentials for token refresh 
+                    // Save credentials for token refresh
                     // Use a normalized version of the original URL to ensure consistent lookups
                     val normalizedUrl = normalizeServerUrl(serverUrl)
                     try {
@@ -514,7 +514,7 @@ class JellyfinAuthRepository @Inject constructor(
             val scheme = uri.scheme ?: "https"
             val host = uri.host ?: return serverUrl
             val path = uri.path?.takeIf { it.isNotEmpty() && it != "/" } ?: ""
-            
+
             // Normalize to use the hostname without port for credential storage
             // This handles cases where the server URL changes ports during connection resolution
             "$scheme://$host$path"
@@ -537,8 +537,9 @@ class JellyfinAuthRepository @Inject constructor(
 
     private fun getErrorType(e: Throwable): ErrorType {
         return when (e) {
-            is java.util.concurrent.CancellationException, 
-            is kotlinx.coroutines.CancellationException -> {
+            is java.util.concurrent.CancellationException,
+            is kotlinx.coroutines.CancellationException,
+            -> {
                 // Don't log cancellation as an error - it's expected during navigation
                 ErrorType.OPERATION_CANCELLED
             }

@@ -946,7 +946,7 @@ class MainAppViewModel @Inject constructor(
                 if (BuildConfig.DEBUG) {
                     Log.d("MainAppViewModel", "loadAllMovies: Libraries not loaded yet, loading libraries first")
                 }
-                
+
                 // Wait for libraries to load
                 val librariesResult = mediaRepository.getUserLibraries()
                 when (librariesResult) {
@@ -1124,7 +1124,7 @@ class MainAppViewModel @Inject constructor(
                 if (BuildConfig.DEBUG) {
                     Log.d("MainAppViewModel", "loadAllTVShows: Libraries not loaded yet, loading libraries first")
                 }
-                
+
                 // Wait for libraries to load
                 val librariesResult = mediaRepository.getUserLibraries()
                 when (librariesResult) {
@@ -1331,7 +1331,7 @@ class MainAppViewModel @Inject constructor(
                             if (BuildConfig.DEBUG) {
                                 Log.d("MainAppViewModel", "loadLibraryTypeData: Libraries not loaded yet, loading libraries first for music")
                             }
-                            
+
                             // Wait for libraries to load
                             val librariesResult = mediaRepository.getUserLibraries()
                             when (librariesResult) {
@@ -1555,7 +1555,7 @@ class MainAppViewModel @Inject constructor(
                 org.jellyfin.sdk.model.api.CollectionType.PHOTOS -> "photos"
                 else -> null
             }
-            
+
             when (
                 val result = mediaRepository.getLibraryItems(
                     parentId = libraryId,

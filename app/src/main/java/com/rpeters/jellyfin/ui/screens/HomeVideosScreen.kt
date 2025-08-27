@@ -55,14 +55,14 @@ fun HomeVideosScreen(
         android.util.Log.d("HomeVideosScreen", "HomeVideosScreen started")
     }
     val appState by viewModel.appState.collectAsState()
-    
+
     // Find the first Home Videos library
     val homeVideosLibrary = remember(appState.libraries) {
         appState.libraries.find { library ->
             library.collectionType == org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS
         }
     }
-    
+
     // Load home videos when library is found
     LaunchedEffect(homeVideosLibrary) {
         homeVideosLibrary?.id?.let { libraryId ->
@@ -72,7 +72,7 @@ fun HomeVideosScreen(
             viewModel.loadHomeVideos(libraryId.toString())
         }
     }
-    
+
     // Get home videos items from the library
     val homeVideosItems = remember(appState.homeVideosByLibrary, homeVideosLibrary) {
         val libraryId = homeVideosLibrary?.id?.toString()
@@ -89,8 +89,8 @@ fun HomeVideosScreen(
             }
         }
         // Filter for videos and photos
-        items.filter { 
-            it.type == BaseItemKind.VIDEO || it.type == BaseItemKind.PHOTO 
+        items.filter {
+            it.type == BaseItemKind.VIDEO || it.type == BaseItemKind.PHOTO
         }.sortedBy { it.sortName ?: it.name }
     }
     Scaffold(
