@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
@@ -63,6 +64,7 @@ data class PaginatedItems(
 
 @HiltViewModel
 class MainAppViewModel @Inject constructor(
+    private val authRepository: JellyfinAuthRepository,
     private val repository: JellyfinRepository,
     private val mediaRepository: JellyfinMediaRepository,
     private val userRepository: JellyfinUserRepository,
@@ -86,6 +88,14 @@ class MainAppViewModel @Inject constructor(
 
     init {
         loadInitialData()
+    }
+
+    private suspend fun ensureValidToken() {
+        withContext(Dispatchers.IO) {
+            if (authRepository.isTokenExpired()) {
+                authRepository.reAuthenticate()
+            }
+        }
     }
 
     fun loadInitialData(forceRefresh: Boolean = false) {
@@ -118,6 +128,9 @@ class MainAppViewModel @Inject constructor(
                         )
                         return@measureSuspendTime
                     }
+
+                    // Ensure token is valid before making network requests
+                    ensureValidToken()
 
                     val previousLibraries = _appState.value.libraries
 
