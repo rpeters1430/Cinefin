@@ -8,6 +8,7 @@ import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.di.JellyfinClientFactory
 import com.rpeters.jellyfin.ui.utils.RetryManager
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jellyfin.sdk.api.client.ApiClient
@@ -69,6 +70,7 @@ open class BaseJellyfinRepository @Inject constructor(
     /**
      * ✅ ENHANCED: Executes API call with automatic token refresh on 401 errors
      * Improved to handle concurrent authentication and better error reporting
+     * Enhanced to prevent excessive retries and better handle authentication failures
      */
     protected suspend fun <T> executeWithTokenRefresh(
         operation: suspend () -> T,
@@ -88,6 +90,26 @@ open class BaseJellyfinRepository @Inject constructor(
                         Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token was refreshed by another thread, retrying operation")
                         clientFactory.invalidateClient()
                         return@withLock operation()
+                    }
+
+                    // ✅ FIX: Check if authentication is already in progress to prevent concurrent attempts
+                    if (authRepository.isAuthenticating().first()) {
+                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication already in progress, waiting for completion")
+                        // Wait for authentication to complete, with timeout
+                        val maxWaitMs = 10000L // 10 seconds timeout
+                        val pollIntervalMs = 100L
+                        var waitedMs = 0L
+                        while (authRepository.isAuthenticating().first() && waitedMs < maxWaitMs) {
+                            kotlinx.coroutines.delay(pollIntervalMs)
+                            waitedMs += pollIntervalMs
+                        }
+
+                        // Check if authentication completed successfully
+                        if (!authRepository.isTokenExpired()) {
+                            Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication completed by another thread, retrying operation")
+                            clientFactory.invalidateClient()
+                            return@withLock operation()
+                        }
                     }
 
                     val refreshResult = authRepository.reAuthenticate()

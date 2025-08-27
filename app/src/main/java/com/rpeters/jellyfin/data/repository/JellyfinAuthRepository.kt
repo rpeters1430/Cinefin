@@ -378,6 +378,7 @@ class JellyfinAuthRepository @Inject constructor(
 
     /**
      * ✅ ENHANCED: Re-authenticate using saved credentials with early validation
+     * Improved to prevent concurrent authentication attempts and better handle race conditions
      */
     suspend fun reAuthenticate(): Boolean = authMutex.withLock {
         val server = _currentServer.value ?: return@withLock false
@@ -388,6 +389,15 @@ class JellyfinAuthRepository @Inject constructor(
                 Log.d("JellyfinAuthRepository", "reAuthenticate: Token is already valid, skipping re-authentication")
             }
             return@withLock true
+        }
+
+            _isAuthenticating.asStateFlow().first { !it }
+            // After waiting, check if token is now valid
+            if (!isTokenExpired()) {
+                return@withLock true
+            } else {
+                return@withLock false
+            }
         }
 
         if (BuildConfig.DEBUG) {
