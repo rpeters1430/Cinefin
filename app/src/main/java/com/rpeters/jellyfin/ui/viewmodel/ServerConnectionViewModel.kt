@@ -126,7 +126,7 @@ class ServerConnectionViewModel @Inject constructor(
                 isConnecting = true,
                 errorMessage = null,
                 connectionPhase = ConnectionPhase.Testing,
-                currentUrl = serverUrl
+                currentUrl = serverUrl,
             )
 
             // First test server connection with enhanced feedback
@@ -135,7 +135,7 @@ class ServerConnectionViewModel @Inject constructor(
                     val serverInfo = serverResult.data
                     _connectionState.value = _connectionState.value.copy(
                         serverName = serverInfo.serverName,
-                        connectionPhase = ConnectionPhase.Authenticating
+                        connectionPhase = ConnectionPhase.Authenticating,
                     )
 
                     // Now authenticate with enhanced feedback
@@ -151,7 +151,7 @@ class ServerConnectionViewModel @Inject constructor(
                                 isConnecting = false,
                                 isConnected = true,
                                 errorMessage = null,
-                                connectionPhase = ConnectionPhase.Connected
+                                connectionPhase = ConnectionPhase.Connected,
                             )
                         }
                         is ApiResult.Error -> {
@@ -160,7 +160,7 @@ class ServerConnectionViewModel @Inject constructor(
                             _connectionState.value = _connectionState.value.copy(
                                 isConnecting = false,
                                 errorMessage = authResult.message,
-                                connectionPhase = ConnectionPhase.Error
+                                connectionPhase = ConnectionPhase.Error,
                             )
                         }
                         is ApiResult.Loading -> {
@@ -172,7 +172,7 @@ class ServerConnectionViewModel @Inject constructor(
                     _connectionState.value = _connectionState.value.copy(
                         isConnecting = false,
                         errorMessage = "Cannot connect to server: ${serverResult.message}",
-                        connectionPhase = ConnectionPhase.Error
+                        connectionPhase = ConnectionPhase.Error,
                     )
                 }
                 is ApiResult.Loading -> {

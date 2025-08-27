@@ -83,7 +83,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOptimizedClientFactory(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): OptimizedClientFactory {
         return OptimizedClientFactory(context)
     }

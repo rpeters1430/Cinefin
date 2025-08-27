@@ -23,16 +23,16 @@ class RetryStrategy @Inject constructor() {
         private const val DEFAULT_MAX_RETRIES = 3
         private const val MAX_RETRY_DELAY_MS = 10000L
     }
-    
+
     /**
      * Execute with intelligent retry based on error type and network conditions
      */
     suspend fun <T> executeWithRetry(
         maxRetries: Int = DEFAULT_MAX_RETRIES,
-        operation: suspend () -> T
+        operation: suspend () -> T,
     ): ApiResult<T> {
         var lastException: Exception? = null
-        
+
         repeat(maxRetries + 1) { attempt ->
             try {
                 val result = operation()
@@ -42,7 +42,7 @@ class RetryStrategy @Inject constructor() {
                 return ApiResult.Success(result)
             } catch (e: Exception) {
                 lastException = e
-                
+
                 if (attempt < maxRetries && shouldRetry(e, attempt)) {
                     val delay = calculateRetryDelay(e, attempt)
                     logDebug("Retrying operation (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms delay. Error: ${e.message}")
@@ -53,13 +53,13 @@ class RetryStrategy @Inject constructor() {
                 }
             }
         }
-        
+
         return ApiResult.Error(
             message = "Operation failed after ${maxRetries + 1} attempts",
-            cause = lastException
+            cause = lastException,
         )
     }
-    
+
     /**
      * Determine if operation should be retried based on error type
      */
@@ -102,7 +102,7 @@ class RetryStrategy @Inject constructor() {
             }
         }
     }
-    
+
     /**
      * Calculate retry delay with exponential backoff and jitter
      */
@@ -115,13 +115,13 @@ class RetryStrategy @Inject constructor() {
             }
             else -> 1000L // Network errors
         }
-        
+
         val exponentialDelay = baseDelay * (2.0.pow(attempt.toDouble())).toLong()
         val jitter = (Math.random() * 0.1 * exponentialDelay).toLong() // 10% jitter
-        
+
         return minOf(exponentialDelay + jitter, MAX_RETRY_DELAY_MS)
     }
-    
+
     /**
      * Execute with custom retry configuration
      */
@@ -130,10 +130,10 @@ class RetryStrategy @Inject constructor() {
         baseDelayMs: Long = 1000L,
         maxDelayMs: Long = MAX_RETRY_DELAY_MS,
         shouldRetryPredicate: (Exception, Int) -> Boolean = { _, _ -> true },
-        operation: suspend () -> T
+        operation: suspend () -> T,
     ): ApiResult<T> {
         var lastException: Exception? = null
-        
+
         repeat(maxRetries + 1) { attempt ->
             try {
                 val result = operation()
@@ -143,7 +143,7 @@ class RetryStrategy @Inject constructor() {
                 return ApiResult.Success(result)
             } catch (e: Exception) {
                 lastException = e
-                
+
                 if (attempt < maxRetries && shouldRetryPredicate(e, attempt)) {
                     val delay = calculateCustomRetryDelay(baseDelayMs, maxDelayMs, attempt)
                     logDebug("Custom retry (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms delay")
@@ -154,13 +154,13 @@ class RetryStrategy @Inject constructor() {
                 }
             }
         }
-        
+
         return ApiResult.Error(
             message = "Custom retry operation failed after ${maxRetries + 1} attempts",
-            cause = lastException
+            cause = lastException,
         )
     }
-    
+
     /**
      * Calculate custom retry delay
      */
@@ -169,7 +169,7 @@ class RetryStrategy @Inject constructor() {
         val jitter = (Math.random() * 0.1 * exponentialDelay).toLong()
         return minOf(exponentialDelay + jitter, maxDelayMs)
     }
-    
+
     /**
      * Helper function for debug logging
      */

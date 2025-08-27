@@ -21,7 +21,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class OptimizedClientFactory @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) {
     companion object {
         private const val TAG = "OptimizedClientFactory"
@@ -31,31 +31,31 @@ class OptimizedClientFactory @Inject constructor(
         private const val READ_TIMEOUT_SECONDS = 30L
         private const val WRITE_TIMEOUT_SECONDS = 30L
     }
-    
+
     private val clientCache = mutableMapOf<String, ApiClient>()
     private val clientMutex = Mutex()
-    
+
     /**
      * Get or create cached API client for better performance
      */
     suspend fun getClient(serverUrl: String, accessToken: String? = null): ApiClient {
         val cacheKey = "$serverUrl:$accessToken"
-        
+
         return clientMutex.withLock {
             clientCache[cacheKey]?.let { cachedClient ->
                 logDebug("Reusing cached client for: $serverUrl")
                 return@withLock cachedClient
             }
-            
+
             logDebug("Creating new optimized client for: $serverUrl")
-            
+
             // Create new client with optimized configuration
             val newClient = createOptimizedClient(serverUrl, accessToken)
             clientCache[cacheKey] = newClient
             newClient
         }
     }
-    
+
     /**
      * Create optimized HTTP client with connection pooling
      */
@@ -68,19 +68,19 @@ class OptimizedClientFactory @Inject constructor(
                 ConnectionPool(
                     CONNECTION_POOL_SIZE,
                     CONNECTION_KEEP_ALIVE_MINUTES,
-                    TimeUnit.MINUTES
-                )
+                    TimeUnit.MINUTES,
+                ),
             )
             .addInterceptor(createOptimizedInterceptor(accessToken))
             .addInterceptor(createLoggingInterceptor())
             .build()
-            
+
         return ApiClient.Builder()
             .baseUrl(serverUrl)
             .httpClient(okHttpClient)
             .build()
     }
-    
+
     /**
      * Optimized interceptor with keep-alive and compression
      */
@@ -96,11 +96,11 @@ class OptimizedClientFactory @Inject constructor(
                     }
                 }
                 .build()
-            
+
             chain.proceed(request)
         }
     }
-    
+
     /**
      * Logging interceptor for debug builds
      */
@@ -117,7 +117,7 @@ class OptimizedClientFactory @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Clear client cache (useful for testing or memory management)
      */
@@ -127,14 +127,14 @@ class OptimizedClientFactory @Inject constructor(
             clientCache.clear()
         }
     }
-    
+
     /**
      * Get cache statistics for debugging
      */
     fun getCacheStats(): String {
         return "Cached clients: ${clientCache.size}"
     }
-    
+
     /**
      * Helper function for debug logging
      */

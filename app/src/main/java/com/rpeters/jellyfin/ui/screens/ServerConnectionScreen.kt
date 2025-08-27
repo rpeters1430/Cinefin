@@ -53,10 +53,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
-import com.rpeters.jellyfin.ui.components.ConnectionProgressIndicator
-import com.rpeters.jellyfin.ui.components.ConnectionState
 import com.rpeters.jellyfin.ui.components.ConnectionPhase
+import com.rpeters.jellyfin.ui.components.ConnectionState
+import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -352,7 +351,7 @@ fun ServerConnectionScreenConnectingPreview() {
             connectionState = ConnectionState(
                 isConnecting = true,
                 connectionPhase = ConnectionPhase.Testing,
-                currentUrl = "https://jellyfin.example.com"
+                currentUrl = "https://jellyfin.example.com",
             ),
         )
     }
@@ -365,7 +364,7 @@ fun ServerConnectionScreenErrorPreview() {
         ServerConnectionScreen(
             connectionState = ConnectionState(
                 errorMessage = "Failed to connect to server. Please check your server URL and credentials.",
-                connectionPhase = ConnectionPhase.Error
+                connectionPhase = ConnectionPhase.Error,
             ),
         )
     }

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
@@ -33,15 +32,15 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ConnectionProgressIndicator(
     connectionState: ConnectionState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             when (connectionState.connectionPhase) {
                 ConnectionPhase.Testing -> {
@@ -50,7 +49,7 @@ fun ConnectionProgressIndicator(
                         title = "Testing Server Connection",
                         subtitle = connectionState.currentUrl.ifEmpty { "Discovering endpoints..." },
                         showProgress = true,
-                        progress = null
+                        progress = null,
                     )
                 }
                 ConnectionPhase.Authenticating -> {
@@ -59,7 +58,7 @@ fun ConnectionProgressIndicator(
                         title = "Authenticating",
                         subtitle = "Verifying credentials...",
                         showProgress = true,
-                        progress = null
+                        progress = null,
                     )
                 }
                 ConnectionPhase.LoadingLibraries -> {
@@ -68,7 +67,7 @@ fun ConnectionProgressIndicator(
                         title = "Loading Libraries",
                         subtitle = "${connectionState.loadedCount}/${connectionState.totalCount} libraries loaded",
                         showProgress = true,
-                        progress = connectionState.progress
+                        progress = connectionState.progress,
                     )
                 }
                 ConnectionPhase.Complete -> {
@@ -78,7 +77,7 @@ fun ConnectionProgressIndicator(
                         subtitle = "Ready to browse your media",
                         showProgress = false,
                         progress = null,
-                        iconTint = MaterialTheme.colorScheme.primary
+                        iconTint = MaterialTheme.colorScheme.primary,
                     )
                 }
                 ConnectionPhase.Error -> {
@@ -88,7 +87,7 @@ fun ConnectionProgressIndicator(
                         subtitle = connectionState.errorMessage ?: "Unable to connect to server",
                         showProgress = false,
                         progress = null,
-                        iconTint = MaterialTheme.colorScheme.error
+                        iconTint = MaterialTheme.colorScheme.error,
                     )
                 }
                 ConnectionPhase.Idle -> {
@@ -106,51 +105,51 @@ private fun ConnectionPhaseContent(
     subtitle: String,
     showProgress: Boolean,
     progress: Float?,
-    iconTint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface
+    iconTint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
 ) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Status icon
         Icon(
             imageVector = icon,
             contentDescription = title,
             modifier = Modifier.size(48.dp),
-            tint = iconTint
+            tint = iconTint,
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Title
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         // Subtitle
         Text(
             text = subtitle,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
-        
+
         if (showProgress) {
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             if (progress != null) {
                 // Linear progress for operations with known progress
                 LinearProgressIndicator(
                     progress = progress,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             } else {
                 // Circular progress for operations without known progress
                 CircularProgressIndicator(
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(32.dp),
                 )
             }
         }
@@ -163,12 +162,12 @@ private fun ConnectionPhaseContent(
 @Composable
 fun ConnectionStatusIndicator(
     connectionState: ConnectionState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         // Status icon
         Icon(
@@ -185,9 +184,9 @@ fun ConnectionStatusIndicator(
                 ConnectionPhase.Testing, ConnectionPhase.Authenticating, ConnectionPhase.LoadingLibraries -> MaterialTheme.colorScheme.tertiary
                 ConnectionPhase.Error -> MaterialTheme.colorScheme.error
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
-            }
+            },
         )
-        
+
         // Status text
         Text(
             text = when (connectionState.connectionPhase) {
@@ -198,7 +197,7 @@ fun ConnectionStatusIndicator(
                 ConnectionPhase.Error -> "Error"
                 else -> "Disconnected"
             },
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
         )
     }
 }
@@ -227,7 +226,7 @@ data class ConnectionState(
     val currentUrl: String = "",
     val progress: Float = 0f,
     val loadedCount: Int = 0,
-    val totalCount: Int = 0
+    val totalCount: Int = 0,
 )
 
 /**
@@ -239,5 +238,5 @@ enum class ConnectionPhase {
     Authenticating,
     LoadingLibraries,
     Connected,
-    Error
+    Error,
 }
