@@ -156,7 +156,7 @@ class JellyfinMediaRepository @Inject constructor(
             )
 
             // Home videos libraries can produce 400 errors; log concise message and bail out
-            if (isHomeVideos && e.message?.contains("400") == true) {
+            if (isHomeVideos && e.status == 400) {
                 android.util.Log.w(
                     "JellyfinMediaRepository",
                     "Library unsupported: homevideos (id=${validatedParams.parentId})",
