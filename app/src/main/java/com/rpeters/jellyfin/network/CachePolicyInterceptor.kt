@@ -6,16 +6,16 @@ import okhttp3.Response
 import java.util.concurrent.TimeUnit
 
 class CachePolicyInterceptor(
-    private val connectivity: ConnectivityChecker
+    private val connectivity: ConnectivityChecker,
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val req = chain.request()
         val url = req.url.toString()
         val isWrite = req.method != "GET"
         val isAuth = url.contains("/Users/Authenticate", true) ||
-                url.contains("/Sessions", true)
+            url.contains("/Sessions", true)
         val isImage = url.contains("/Items/", true) &&
-                url.contains("/Images", true)
+            url.contains("/Images", true)
 
         val newReq = when {
             isWrite || isAuth -> req.newBuilder()
@@ -26,7 +26,7 @@ class CachePolicyInterceptor(
                     CacheControl.Builder()
                         .onlyIfCached()
                         .maxStale(7, TimeUnit.DAYS)
-                        .build()
+                        .build(),
                 )
                 .build()
             else -> req
@@ -42,4 +42,3 @@ class CachePolicyInterceptor(
         return resp
     }
 }
-

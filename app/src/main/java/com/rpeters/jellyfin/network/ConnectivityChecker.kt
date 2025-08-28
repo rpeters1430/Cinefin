@@ -9,7 +9,7 @@ import javax.inject.Singleton
 
 @Singleton
 class ConnectivityChecker @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) {
     fun isOnline(): Boolean {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -18,4 +18,3 @@ class ConnectivityChecker @Inject constructor(
         return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 }
-
