@@ -13,6 +13,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
@@ -33,8 +34,18 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpCache(@ApplicationContext ctx: Context): Cache {
+        val cacheSizeBytes = 150L * 1024L * 1024L // 150 MB
+        return Cache(ctx.cacheDir.resolve("okhttp_cache"), cacheSizeBytes)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        cache: Cache,
+    ): OkHttpClient {
         return OkHttpClient.Builder()
+            .cache(cache)
             .withStrictModeTagger()
             .addInterceptor { chain ->
                 val originalRequest = chain.request()
@@ -59,7 +70,7 @@ object NetworkModule {
             .readTimeout(25, TimeUnit.SECONDS)
             .writeTimeout(12, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
-            .protocols(listOf(okhttp3.Protocol.HTTP_2, okhttp3.Protocol.HTTP_1_1))
+            .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .build()
     }
 
