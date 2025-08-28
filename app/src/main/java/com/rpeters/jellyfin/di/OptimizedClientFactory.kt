@@ -79,7 +79,7 @@ class OptimizedClientFactory @Inject constructor(
 
         return jellyfin.createApi(
             baseUrl = serverUrl,
-            accessToken = accessToken
+            accessToken = accessToken,
         )
     }
 
