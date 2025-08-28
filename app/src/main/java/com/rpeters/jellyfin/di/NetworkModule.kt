@@ -15,6 +15,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
@@ -72,7 +73,7 @@ object NetworkModule {
             .readTimeout(25, TimeUnit.SECONDS)
             .writeTimeout(12, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
-            .protocols(listOf(okhttp3.Protocol.HTTP_2, okhttp3.Protocol.HTTP_1_1))
+            .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .build()
     }
 
