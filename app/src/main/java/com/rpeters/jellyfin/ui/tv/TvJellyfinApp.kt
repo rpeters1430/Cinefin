@@ -11,7 +11,6 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,7 +46,7 @@ fun TvJellyfinApp(
             modifier = Modifier.fillMaxSize(),
         ) { innerPadding ->
             // For TV, we'll simplify the navigation and use a more direct approach
-            if (false) {  // Disable for now
+            if (false) { // Disable for now
                 TvHomeScreen(
                     onItemSelect = { itemId ->
                         // Handle item selection

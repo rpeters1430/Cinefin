@@ -415,7 +415,7 @@ fun QuickConnectScreen(
         // Server URL input
         OutlinedTextField(
             value = serverUrl,
-            onValueChange = { 
+            onValueChange = {
                 serverUrl = it
                 onServerUrlChange(it)
             },
