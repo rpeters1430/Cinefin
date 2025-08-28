@@ -427,7 +427,7 @@ class JellyfinAuthRepository @Inject constructor(
                     _isConnected.value = true
 
                     // Clear client factory again to ensure fresh token is used
-                    clientFactory.invalidateClient()
+                    clientFactory.refreshClient(updatedServer.url, updatedServer.accessToken)
 
                     return@withLock true
                 }
@@ -494,7 +494,12 @@ class JellyfinAuthRepository @Inject constructor(
         if (BuildConfig.DEBUG) {
             Log.d("JellyfinAuthRepository", "Logging out user")
         }
-        clientFactory.invalidateClient()
+        val server = _currentServer.value
+        if (server != null) {
+            clientFactory.refreshClient(server.url, null)
+        } else {
+            clientFactory.invalidateClient()
+        }
         _currentServer.value = null
         _isConnected.value = false
         secureCredentialManager.clearCredentials()

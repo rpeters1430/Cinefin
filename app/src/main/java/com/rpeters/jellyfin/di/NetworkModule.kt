@@ -138,13 +138,17 @@ class JellyfinClientFactory @Inject constructor(
      * The client creation involves file I/O operations during static initialization
      * of the Ktor HTTP client, which must be done off the main thread.
      */
-    suspend fun getClient(baseUrl: String, accessToken: String? = null): org.jellyfin.sdk.api.client.ApiClient = withContext(Dispatchers.IO) {
+    suspend fun getClient(
+        baseUrl: String,
+        accessToken: String? = null,
+        forceRefresh: Boolean = false,
+    ): org.jellyfin.sdk.api.client.ApiClient = withContext(Dispatchers.IO) {
         // Validate and normalize the URL properly
         val normalizedUrl = com.rpeters.jellyfin.utils.normalizeJellyfinBase(baseUrl)
 
         // Use synchronized block to prevent race conditions during client creation
         synchronized(clientLock) {
-            if (currentToken != accessToken || currentBaseUrl != normalizedUrl || currentClient == null) {
+            if (forceRefresh || currentToken != accessToken || currentBaseUrl != normalizedUrl || currentClient == null) {
                 // This is where the StrictMode violation was occurring - Ktor/ServiceLoader static init
                 currentClient = jellyfin.createApi(
                     baseUrl = normalizedUrl,
@@ -224,6 +228,10 @@ class JellyfinClientFactory @Inject constructor(
             // For non-401 exceptions, just rethrow
             throw e
         }
+    }
+
+    suspend fun refreshClient(baseUrl: String, token: String?): ApiClient {
+        return getClient(baseUrl, token, forceRefresh = true)
     }
 
     fun invalidateClient() {
