@@ -42,7 +42,6 @@ object NetworkModule {
                     .addHeader("Connection", "keep-alive")
                     .addHeader("User-Agent", "JellyfinAndroid/1.0.0")
                     .addHeader("Accept-Encoding", "gzip, deflate")
-                    .addHeader("Cache-Control", "no-cache")
                     .build()
                 chain.proceed(newRequest)
             }
