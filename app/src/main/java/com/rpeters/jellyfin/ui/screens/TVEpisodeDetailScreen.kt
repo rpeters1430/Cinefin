@@ -41,7 +41,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -208,7 +207,7 @@ fun TVEpisodeDetailScreen(
                             Spacer(modifier = Modifier.height(80.dp))
                         }
                     }
-                    
+
                     // Add ExpressiveFloatingToolbar for episode details
                     ExpressiveFloatingToolbar(
                         isVisible = true,

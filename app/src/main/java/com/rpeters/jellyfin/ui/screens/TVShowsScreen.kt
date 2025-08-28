@@ -377,7 +377,7 @@ fun TVShowsScreen(
                                 hasMoreItems = appState.hasMoreTVShows,
                                 onLoadMore = { viewModel.loadMoreTVShows() },
                             )
-                            
+
                             // Add ExpressiveFloatingToolbar for TV shows
                             if (filteredAndSortedTVShows.isNotEmpty()) {
                                 ExpressiveFloatingToolbar(

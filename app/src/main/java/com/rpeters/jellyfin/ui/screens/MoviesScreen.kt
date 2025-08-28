@@ -274,7 +274,7 @@ fun MoviesScreen(
                                 .fillMaxSize()
                                 .padding(paddingValues),
                         )
-                        
+
                         // Add ExpressiveFloatingToolbar for movies
                         if (filteredAndSortedMovies.isNotEmpty()) {
                             ExpressiveFloatingToolbar(

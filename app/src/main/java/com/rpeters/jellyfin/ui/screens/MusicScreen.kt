@@ -117,11 +117,11 @@ fun MusicScreen(
 
     // Get music items from the proper library data
     val musicItems = remember(appState.allItems, appState.recentlyAddedByTypes) {
-        val libraryMusic = appState.allItems.filter { 
+        val libraryMusic = appState.allItems.filter {
             it.type in listOf(BaseItemKind.MUSIC_ALBUM, BaseItemKind.MUSIC_ARTIST, BaseItemKind.AUDIO)
         }
         val recentMusic = appState.recentlyAddedByTypes["AUDIO"] ?: emptyList()
-        
+
         // Combine library music with recent music, removing duplicates
         val combined = (libraryMusic + recentMusic).distinctBy { it.id }
         combined
@@ -471,7 +471,7 @@ private fun ExpressiveMusicCard(
 ) {
     val imageUrl = getImageUrl(item) ?: ""
     val title = item.name ?: "Unknown Title"
-    
+
     // Determine subtitle based on item type
     val subtitle = when (item.type) {
         BaseItemKind.MUSIC_ALBUM -> {
@@ -489,10 +489,10 @@ private fun ExpressiveMusicCard(
             item.type?.toString() ?: ""
         }
     }
-    
+
     // Get rating if available
     val rating = item.communityRating?.toFloat()
-    
+
     // Check if favorite
     val isFavorite = item.userData?.isFavorite == true
 

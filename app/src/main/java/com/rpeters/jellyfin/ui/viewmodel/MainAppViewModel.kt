@@ -609,7 +609,7 @@ class MainAppViewModel @Inject constructor(
                     val validItems = allItems.filter { item ->
                         item is org.jellyfin.sdk.model.api.BaseItemDto
                     }
-                    
+
                     if (validItems.size != allItems.size) {
                         Log.w("MainAppViewModel", "Filtered out ${allItems.size - validItems.size} invalid items from allItems list")
                     }
@@ -791,11 +791,11 @@ class MainAppViewModel @Inject constructor(
                     val validItems = currentItems.filter { item ->
                         item is org.jellyfin.sdk.model.api.BaseItemDto
                     }
-                    
+
                     if (validItems.size != currentItems.size) {
                         Log.w("MainAppViewModel", "Filtered out ${currentItems.size - validItems.size} invalid items from allItems list")
                     }
-                    
+
                     _appState.value = _appState.value.copy(allItems = validItems, isLoading = false)
                 }
                 is ApiResult.Error -> {
@@ -835,11 +835,11 @@ class MainAppViewModel @Inject constructor(
                     val validItems = currentItems.filter { item ->
                         item is org.jellyfin.sdk.model.api.BaseItemDto
                     }
-                    
+
                     if (validItems.size != currentItems.size) {
                         Log.w("MainAppViewModel", "Filtered out ${currentItems.size - validItems.size} invalid items from allItems list")
                     }
-                    
+
                     _appState.value = _appState.value.copy(allItems = validItems)
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "loadTVShowDetails: Successfully loaded series ${result.data.name}")
@@ -897,7 +897,7 @@ class MainAppViewModel @Inject constructor(
             // Get the library to determine its collection type
             val library = currentLibraries.find { it.id?.toString() == libraryId }
             val collectionType = library?.collectionType?.toString()?.lowercase()
-            
+
             // Determine appropriate item types based on collection type
             val itemTypes = when (collectionType) {
                 "homevideos" -> "Video" // Specify video type for home videos to avoid HTTP 400 errors
@@ -923,7 +923,7 @@ class MainAppViewModel @Inject constructor(
                     val updated = _appState.value.homeVideosByLibrary.toMutableMap()
                     updated[libraryId] = result.data
                     _appState.value = _appState.value.copy(homeVideosByLibrary = updated)
-                    
+
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "loadHomeVideos: Successfully loaded ${result.data.size} items for library $libraryId")
                     }
@@ -1419,11 +1419,11 @@ class MainAppViewModel @Inject constructor(
         val validItems = currentItems.filter { item ->
             item is org.jellyfin.sdk.model.api.BaseItemDto
         }
-        
+
         if (validItems.size != currentItems.size) {
             Log.w("MainAppViewModel", "Filtered out ${currentItems.size - validItems.size} invalid items from allItems list")
         }
-        
+
         _appState.value = _appState.value.copy(allItems = validItems)
     }
 
@@ -1719,11 +1719,11 @@ class MainAppViewModel @Inject constructor(
                     val validItems = currentItems.filter { item ->
                         item is org.jellyfin.sdk.model.api.BaseItemDto
                     }
-                    
+
                     if (validItems.size != currentItems.size) {
                         Log.w("MainAppViewModel", "Filtered out ${currentItems.size - validItems.size} invalid items from allItems list")
                     }
-                    
+
                     _appState.value = _appState.value.copy(allItems = validItems)
                 }
                 is ApiResult.Error -> {

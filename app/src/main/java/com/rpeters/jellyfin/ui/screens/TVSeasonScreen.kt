@@ -198,7 +198,7 @@ fun TVSeasonScreen(
                             onSeasonClick = onSeasonClick,
                             modifier = Modifier.padding(innerPadding),
                         )
-                        
+
                         // Add ExpressiveFloatingToolbar for TV seasons
                         if (state.seasons.isNotEmpty()) {
                             ExpressiveFloatingToolbar(

@@ -5,7 +5,6 @@ import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.di.JellyfinClientFactory
-import com.rpeters.jellyfin.utils.ServerUrlValidator
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -82,24 +81,24 @@ class ConnectionOptimizer @Inject constructor(
         val normalizedUrl = baseUrl.trim().removeSuffix("/")
 
         // Check if this looks like a reverse proxy setup
-        val isReverseProxy = normalizedUrl.contains("/jellyfin") || 
+        val isReverseProxy = normalizedUrl.contains("/jellyfin") ||
             normalizedUrl.substringAfter("://").substringBefore("/").substringBefore(":").count { it == '.' } >= 2 ||
             normalizedUrl.contains(":443") || normalizedUrl.contains(":80")
 
         if (isReverseProxy) {
             // For reverse proxy setups, prioritize the exact URL first
             urls.add(normalizedUrl)
-            
+
             // Add /jellyfin path if not already present
             if (!normalizedUrl.endsWith("/jellyfin")) {
                 urls.add("$normalizedUrl/jellyfin")
             }
-            
+
             // Try without the path if it was included (but not if it's just /jellyfin)
             if (normalizedUrl.endsWith("/jellyfin") && normalizedUrl != baseUrl) {
                 urls.add(normalizedUrl.removeSuffix("/jellyfin"))
             }
-            
+
             // Add protocol variations
             if (normalizedUrl.startsWith("https://")) {
                 urls.add(normalizedUrl.replace("https://", "http://"))
@@ -112,8 +111,8 @@ class ConnectionOptimizer @Inject constructor(
                     urls.add("http://$host:80$path")
                     // Only add /jellyfin if not already present
                     if (!path.endsWith("/jellyfin")) {
-                        urls.add("https://$host:443${path}/jellyfin")
-                        urls.add("http://$host:80${path}/jellyfin")
+                        urls.add("https://$host:443$path/jellyfin")
+                        urls.add("http://$host:80$path/jellyfin")
                     }
                 } catch (e: Exception) {
                     logDebug("Failed to parse URI for reverse proxy variations: ${e.message}")
@@ -129,8 +128,8 @@ class ConnectionOptimizer @Inject constructor(
                     urls.add("http://$host:80$path")
                     // Only add /jellyfin if not already present
                     if (!path.endsWith("/jellyfin")) {
-                        urls.add("https://$host:443${path}/jellyfin")
-                        urls.add("http://$host:80${path}/jellyfin")
+                        urls.add("https://$host:443$path/jellyfin")
+                        urls.add("http://$host:80$path/jellyfin")
                     }
                 } catch (e: Exception) {
                     logDebug("Failed to parse URI for reverse proxy variations: ${e.message}")

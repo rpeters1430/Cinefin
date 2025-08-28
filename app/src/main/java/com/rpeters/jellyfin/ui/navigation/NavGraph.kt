@@ -33,7 +33,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.rpeters.jellyfin.BuildConfig
-import com.rpeters.jellyfin.ui.components.ConnectionState
 import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.FavoritesScreen
 import com.rpeters.jellyfin.ui.screens.HomeScreen
@@ -713,7 +712,7 @@ fun JellyfinNavGraph(
                         Log.d("NavGraph", "TVEpisodeDetail: Episode $episodeId not found in app state with ${appState.allItems.size} items, attempting to load it")
                         viewModel.loadEpisodeDetails(episodeId)
                     }
-                    
+
                     // Show loading while fetching
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(

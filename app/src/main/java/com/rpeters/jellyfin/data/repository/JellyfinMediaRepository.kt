@@ -186,11 +186,11 @@ class JellyfinMediaRepository @Inject constructor(
                         "JellyfinMediaRepository",
                         "Attempting final retry with fresh client after 401 error",
                     )
-                    
+
                     // Force client invalidation and retry once more
                     // Note: clientFactory is private in BaseJellyfinRepository, so we'll just get a fresh client
                     val freshClient = getClient(server.url, server.accessToken)
-                    
+
                     val response = freshClient.itemsApi.getItems(
                         userId = userUuid,
                         parentId = parent,
@@ -199,14 +199,14 @@ class JellyfinMediaRepository @Inject constructor(
                         startIndex = validatedParams.startIndex,
                         limit = validatedParams.limit,
                     )
-                    
+
                     val items = response.content.items ?: emptyList()
-                    
+
                     // Report success to health checker
                     validatedParams.parentId?.let { libraryId ->
                         healthChecker.reportSuccess(libraryId)
                     }
-                    
+
                     return@execute items
                 } catch (finalException: Exception) {
                     android.util.Log.e(
@@ -525,7 +525,7 @@ class JellyfinMediaRepository @Inject constructor(
         // Clean up any previous health issues for homevideos libraries
         // since we now handle them gracefully
         healthChecker.cleanup()
-        
+
         if (BuildConfig.DEBUG) {
             Log.d("JellyfinMediaRepository", "Cleared known library health issues on initialization")
         }

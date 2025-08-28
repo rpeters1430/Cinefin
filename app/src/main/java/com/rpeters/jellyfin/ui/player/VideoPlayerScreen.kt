@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.Cast
@@ -35,12 +34,9 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Hd
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Sd
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -479,16 +475,18 @@ private fun VideoControlsOverlay(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(
-                colors = listOf(
-                    Color.Black.copy(alpha = 0.7f),
-                    Color.Transparent,
-                    Color.Transparent,
-                    Color.Black.copy(alpha = 0.8f)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Black.copy(alpha = 0.7f),
+                        Color.Transparent,
+                        Color.Transparent,
+                        Color.Black.copy(alpha = 0.8f),
+                    ),
+                    startY = 0f,
+                    endY = Float.POSITIVE_INFINITY,
                 ),
-                startY = 0f,
-                endY = Float.POSITIVE_INFINITY
-            )),
+            ),
     ) {
         // Top bar with item name and casting button
         Row(
@@ -511,7 +509,7 @@ private fun VideoControlsOverlay(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            
+
             // Casting button - top right with expressive styling
             ExpressiveIconButton(
                 icon = if (playerState.isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
@@ -664,7 +662,7 @@ private fun VideoControlsOverlay(
                                 onShowQualityMenu(false)
                             },
                         )
-                        
+
                         // Available qualities from player state
                         playerState.availableQualities.forEach { quality ->
                             DropdownMenuItem(

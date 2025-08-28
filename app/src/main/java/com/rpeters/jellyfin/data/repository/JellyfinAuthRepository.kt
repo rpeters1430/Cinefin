@@ -15,7 +15,6 @@ import com.rpeters.jellyfin.utils.ServerUrlValidator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jellyfin.sdk.api.client.ApiClient
@@ -84,8 +83,8 @@ class JellyfinAuthRepository @Inject constructor(
 
         // Use optimized connection testing
         val result = connectionOptimizer.testServerConnection(serverUrl)
-        
-        // If the initial attempt failed and the URL doesn't already end with /jellyfin, 
+
+        // If the initial attempt failed and the URL doesn't already end with /jellyfin,
         // try with /jellyfin appended for reverse proxy setups
         if (result is ApiResult.Error && serverUrl.isNotBlank() && !serverUrl.endsWith("/jellyfin")) {
             val jellyfinUrl = "$serverUrl/jellyfin"
@@ -94,7 +93,7 @@ class JellyfinAuthRepository @Inject constructor(
             }
             return connectionOptimizer.testServerConnection(jellyfinUrl)
         }
-        
+
         return result
     }
 
@@ -104,12 +103,12 @@ class JellyfinAuthRepository @Inject constructor(
     private suspend fun testServerConnectionWithUrl(serverUrl: String): ApiResult<ConnectionTestResult> {
         // First, try the direct connection using the optimized connection testing
         val directResult = connectionOptimizer.testServerConnection(serverUrl)
-        
+
         if (directResult is ApiResult.Success) {
             return ApiResult.Success(ConnectionTestResult(directResult.data, serverUrl))
         }
-        
-        // If the initial attempt failed and the URL doesn't already end with /jellyfin, 
+
+        // If the initial attempt failed and the URL doesn't already end with /jellyfin,
         // try with /jellyfin appended for reverse proxy setups
         if (serverUrl.isNotBlank() && !serverUrl.endsWith("/jellyfin")) {
             val jellyfinUrl = "$serverUrl/jellyfin"
@@ -117,15 +116,15 @@ class JellyfinAuthRepository @Inject constructor(
                 Log.d("JellyfinAuthRepository", "Retrying connection with /jellyfin path: $jellyfinUrl")
             }
             val retryResult = connectionOptimizer.testServerConnection(jellyfinUrl)
-            
+
             if (retryResult is ApiResult.Success) {
                 return ApiResult.Success(ConnectionTestResult(retryResult.data, jellyfinUrl))
             }
         }
-        
+
         // If we get here, all attempts failed. Return the error from the first attempt
         val errorType = getErrorType((directResult as? ApiResult.Error)?.cause ?: Exception("Unknown error"))
-        
+
         // Don't log cancellation exceptions as errors
         if (errorType != ErrorType.OPERATION_CANCELLED) {
             Log.e("JellyfinAuthRepository", "All server connection attempts failed for: $serverUrl", (directResult as? ApiResult.Error)?.cause)
@@ -363,7 +362,7 @@ class JellyfinAuthRepository @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("JellyfinAuthRepository", "reAuthenticate: Already authenticating, waiting for completion")
             }
-            
+
             // Wait for authentication to complete with timeout
             val maxWaitMs = 10000L // 10 seconds timeout
             val pollIntervalMs = 100L
@@ -372,7 +371,7 @@ class JellyfinAuthRepository @Inject constructor(
                 kotlinx.coroutines.delay(pollIntervalMs)
                 waitedMs += pollIntervalMs
             }
-            
+
             // After waiting, check if token is now valid
             if (!isTokenExpired()) {
                 if (BuildConfig.DEBUG) {

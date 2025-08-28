@@ -78,7 +78,7 @@ fun HomeVideosScreen(
     // Get home videos items from all libraries
     val homeVideosItems = remember(appState.homeVideosByLibrary, homeVideosLibraries) {
         val allItems = mutableListOf<BaseItemDto>()
-        
+
         homeVideosLibraries.forEach { library ->
             library.id?.let { libraryId ->
                 val items = appState.homeVideosByLibrary[libraryId.toString()] ?: emptyList()
@@ -92,16 +92,16 @@ fun HomeVideosScreen(
                 allItems.addAll(items)
             }
         }
-        
+
         // Filter for videos and photos
         val filteredItems = allItems.filter {
             it.type == BaseItemKind.VIDEO || it.type == BaseItemKind.PHOTO
         }.sortedBy { it.sortName ?: it.name }
-        
+
         if (BuildConfig.DEBUG) {
             android.util.Log.d("HomeVideosScreen", "Total filtered home video items: ${filteredItems.size}")
         }
-        
+
         filteredItems
     }
     Scaffold(
