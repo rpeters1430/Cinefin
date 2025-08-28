@@ -149,11 +149,11 @@ open class BaseJellyfinRepository @Inject constructor(
     protected suspend fun <T> execute(
         operationName: String,
         block: suspend () -> T,
-    ): ApiResult<T> {
-        validateTokenAndRefreshIfNeeded()
-
-        return try {
-            ApiResult.Success(block())
+    ): ApiResult<T> =
+        try {
+            // ensure proactive check + 401-aware retry
+            val result = executeWithTokenRefresh { block() }
+            ApiResult.Success(result)
         } catch (e: Exception) {
             Logger.e(
                 LogCategory.NETWORK,
@@ -164,7 +164,6 @@ open class BaseJellyfinRepository @Inject constructor(
             val error = RepositoryUtils.getErrorType(e)
             ApiResult.Error(e.message ?: "Unknown error", e, error)
         }
-    }
 
     /**
      * Executes a block with automatic retry logic and error handling.
@@ -176,9 +175,9 @@ open class BaseJellyfinRepository @Inject constructor(
         block: suspend () -> T,
     ): ApiResult<T> {
         return RetryManager.withRetry(maxAttempts, operationName) { attempt ->
-            validateTokenAndRefreshIfNeeded()
             try {
-                ApiResult.Success(block())
+                val result = executeWithTokenRefresh { block() }
+                ApiResult.Success(result)
             } catch (e: Exception) {
                 Logger.e(
                     LogCategory.NETWORK,
@@ -202,11 +201,10 @@ open class BaseJellyfinRepository @Inject constructor(
         circuitBreakerKey: String = operationName,
         block: suspend () -> T,
     ): ApiResult<T> {
-        validateTokenAndRefreshIfNeeded()
-
         return RetryManager.withRetryAndCircuitBreaker(maxAttempts, operationName, circuitBreakerKey) { attempt ->
             try {
-                ApiResult.Success(block())
+                val result = executeWithTokenRefresh { block() }
+                ApiResult.Success(result)
             } catch (e: Exception) {
                 Logger.e(
                     LogCategory.NETWORK,
@@ -231,8 +229,6 @@ open class BaseJellyfinRepository @Inject constructor(
         cacheTtlMs: Long = 30 * 60 * 1000L, // 30 minutes default
         block: suspend () -> List<BaseItemDto>,
     ): ApiResult<List<BaseItemDto>> {
-        validateTokenAndRefreshIfNeeded()
-
         // Try cache first
         val cachedData = cache.getCachedItems(cacheKey)
         if (cachedData != null) {
@@ -258,8 +254,6 @@ open class BaseJellyfinRepository @Inject constructor(
         cacheTtlMs: Long = 30 * 60 * 1000L,
         block: suspend () -> List<BaseItemDto>,
     ): ApiResult<List<BaseItemDto>> {
-        validateTokenAndRefreshIfNeeded()
-
         // Invalidate existing cache
         cache.invalidateCache(cacheKey)
 
