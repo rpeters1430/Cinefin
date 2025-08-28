@@ -10,6 +10,7 @@ import okhttp3.ConnectionPool
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -22,6 +23,7 @@ import javax.inject.Singleton
 @Singleton
 class OptimizedClientFactory @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val jellyfin: Jellyfin,
 ) {
     companion object {
         private const val TAG = "OptimizedClientFactory"
@@ -75,10 +77,10 @@ class OptimizedClientFactory @Inject constructor(
             .addInterceptor(createLoggingInterceptor())
             .build()
 
-        return ApiClient.Builder()
-            .baseUrl(serverUrl)
-            .httpClient(okHttpClient)
-            .build()
+        return jellyfin.createApi(
+            baseUrl = serverUrl,
+            accessToken = accessToken
+        )
     }
 
     /**

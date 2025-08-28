@@ -43,6 +43,15 @@ fun ConnectionProgressIndicator(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             when (connectionState.connectionPhase) {
+                ConnectionPhase.Idle -> {
+                    ConnectionPhaseContent(
+                        icon = Icons.Default.Wifi,
+                        title = "Ready to Connect",
+                        subtitle = "Enter server details to connect",
+                        showProgress = false,
+                        progress = null,
+                    )
+                }
                 ConnectionPhase.Testing -> {
                     ConnectionPhaseContent(
                         icon = Icons.Default.Wifi,
@@ -61,16 +70,7 @@ fun ConnectionProgressIndicator(
                         progress = null,
                     )
                 }
-                ConnectionPhase.LoadingLibraries -> {
-                    ConnectionPhaseContent(
-                        icon = Icons.Default.Wifi,
-                        title = "Loading Libraries",
-                        subtitle = "${connectionState.loadedCount}/${connectionState.totalCount} libraries loaded",
-                        showProgress = true,
-                        progress = connectionState.progress,
-                    )
-                }
-                ConnectionPhase.Complete -> {
+                ConnectionPhase.Connected -> {
                     ConnectionPhaseContent(
                         icon = Icons.Default.CheckCircle,
                         title = "Connected Successfully",
@@ -173,7 +173,7 @@ fun ConnectionStatusIndicator(
         Icon(
             imageVector = when (connectionState.connectionPhase) {
                 ConnectionPhase.Connected -> Icons.Default.Wifi
-                ConnectionPhase.Testing, ConnectionPhase.Authenticating, ConnectionPhase.LoadingLibraries -> Icons.Default.WifiOff
+                ConnectionPhase.Testing, ConnectionPhase.Authenticating -> Icons.Default.WifiOff
                 ConnectionPhase.Error -> Icons.Default.Error
                 else -> Icons.Default.WifiOff
             },
@@ -181,7 +181,7 @@ fun ConnectionStatusIndicator(
             modifier = Modifier.size(16.dp),
             tint = when (connectionState.connectionPhase) {
                 ConnectionPhase.Connected -> MaterialTheme.colorScheme.primary
-                ConnectionPhase.Testing, ConnectionPhase.Authenticating, ConnectionPhase.LoadingLibraries -> MaterialTheme.colorScheme.tertiary
+                ConnectionPhase.Testing, ConnectionPhase.Authenticating -> MaterialTheme.colorScheme.tertiary
                 ConnectionPhase.Error -> MaterialTheme.colorScheme.error
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
             },
@@ -193,7 +193,6 @@ fun ConnectionStatusIndicator(
                 ConnectionPhase.Connected -> "Connected"
                 ConnectionPhase.Testing -> "Testing..."
                 ConnectionPhase.Authenticating -> "Authenticating..."
-                ConnectionPhase.LoadingLibraries -> "Loading..."
                 ConnectionPhase.Error -> "Error"
                 else -> "Disconnected"
             },
@@ -236,7 +235,6 @@ enum class ConnectionPhase {
     Idle,
     Testing,
     Authenticating,
-    LoadingLibraries,
     Connected,
     Error,
 }

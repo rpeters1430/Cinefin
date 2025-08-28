@@ -23,7 +23,9 @@
       "Bash(.gradlew.bat build:*)",
       "WebFetch(domain:gist.github.com)",
       "WebFetch(domain:gist.githubusercontent.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gradlew.bat build:*)",
+      "Bash(del \"C:\\Users\\James\\Documents\\GitHub\\JellyfinAndroid\\nul\")"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

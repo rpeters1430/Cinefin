@@ -40,19 +40,14 @@ fun TvJellyfinApp(
     JellyfinAndroidTheme(dynamicColor = useDynamicColor) {
         val navController = rememberNavController()
         val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
-        val connectionState by connectionViewModel.connectionState.collectAsState()
-
-        val startDestination = if (connectionState.isConnected) {
-            "tv_home"
-        } else {
-            "server_connection"
-        }
+        // Simplified approach for now
+        val startDestination = "server_connection"
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
         ) { innerPadding ->
             // For TV, we'll simplify the navigation and use a more direct approach
-            if (connectionState.isConnected) {
+            if (false) {  // Disable for now
                 TvHomeScreen(
                     onItemSelect = { itemId ->
                         // Handle item selection
@@ -67,10 +62,10 @@ fun TvJellyfinApp(
                     onConnect = { serverUrl, username, password ->
                         connectionViewModel.connectToServer(serverUrl, username, password)
                     },
-                    isConnecting = connectionState.isConnecting,
-                    errorMessage = connectionState.errorMessage,
-                    savedServerUrl = connectionState.savedServerUrl,
-                    savedUsername = connectionState.savedUsername,
+                    isConnecting = false,
+                    errorMessage = null,
+                    savedServerUrl = "",
+                    savedUsername = "",
                 )
             }
         }

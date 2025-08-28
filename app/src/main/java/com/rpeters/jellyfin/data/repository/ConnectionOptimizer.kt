@@ -129,8 +129,8 @@ class ConnectionOptimizer @Inject constructor(
         return try {
             withTimeoutOrNull(CONNECTION_TIMEOUT_MS) {
                 val client = clientFactory.getClient(url)
-                val systemInfo = client.systemApi.getPublicSystemInfo()
-                ApiResult.Success(systemInfo)
+                val response = client.systemApi.getPublicSystemInfo()
+                ApiResult.Success(response.content)
             } ?: ApiResult.Error("Connection timeout for $url")
         } catch (e: Exception) {
             ApiResult.Error("Connection failed for $url: ${e.message}")

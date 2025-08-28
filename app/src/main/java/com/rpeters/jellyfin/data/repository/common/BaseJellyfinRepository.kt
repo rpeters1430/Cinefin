@@ -93,13 +93,13 @@ open class BaseJellyfinRepository @Inject constructor(
                     }
 
                     // ✅ FIX: Check if authentication is already in progress to prevent concurrent attempts
-                    if (authRepository.isAuthenticating().first()) {
+                    if (authRepository.isAuthenticating.first()) {
                         Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication already in progress, waiting for completion")
                         // Wait for authentication to complete, with timeout
                         val maxWaitMs = 10000L // 10 seconds timeout
                         val pollIntervalMs = 100L
                         var waitedMs = 0L
-                        while (authRepository.isAuthenticating().first() && waitedMs < maxWaitMs) {
+                        while (authRepository.isAuthenticating.first() && waitedMs < maxWaitMs) {
                             kotlinx.coroutines.delay(pollIntervalMs)
                             waitedMs += pollIntervalMs
                         }

@@ -49,7 +49,7 @@ class RetryStrategy @Inject constructor() {
                     delay(delay)
                 } else {
                     logDebug("Operation failed after ${attempt + 1} attempts. Final error: ${e.message}")
-                    break
+                    return@repeat
                 }
             }
         }
@@ -150,7 +150,7 @@ class RetryStrategy @Inject constructor() {
                     delay(delay)
                 } else {
                     logDebug("Custom retry failed after ${attempt + 1} attempts")
-                    break
+                    return@repeat
                 }
             }
         }

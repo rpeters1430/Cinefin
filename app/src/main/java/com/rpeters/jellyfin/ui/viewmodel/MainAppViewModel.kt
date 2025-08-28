@@ -52,6 +52,7 @@ data class MainAppState(
     val isLoadingMore: Boolean = false,
     val hasMoreItems: Boolean = true,
     val currentPage: Int = 0,
+    val loadedLibraryTypes: Set<String> = emptySet(),
     val errorMessage: String? = null,
 )
 
@@ -163,7 +164,7 @@ class MainAppViewModel @Inject constructor(
                     if (BuildConfig.DEBUG) {
                         Log.w("MainAppViewModel", "loadInitialData: User not authenticated, skipping data load")
                     }
-                    PerformanceMonitor.logExecutionTime("loadInitialData") { }
+                    PerformanceMonitor.measureExecutionTime("loadInitialData") { }
                     return@launch
                 }
 
@@ -219,21 +220,21 @@ class MainAppViewModel @Inject constructor(
                         // Load home videos for custom libraries
                         val previousIds = _appState.value.homeVideosByLibrary.keys.toSet()
                         val updatedHomeVideos = _appState.value.homeVideosByLibrary.toMutableMap()
-                        val updatedAllMovies = _appState.value.allMovies.toMutableList()
-                        val updatedAllTVShows = _appState.value.allTVShows.toMutableList()
-                        val updatedAllItems = _appState.value.allItems.toMutableList()
+                        var updatedAllMovies = _appState.value.allMovies.toMutableList()
+                        var updatedAllTVShows = _appState.value.allTVShows.toMutableList()
+                        var updatedAllItems = _appState.value.allItems.toMutableList()
                         val loadedLibraryTypes = _appState.value.loadedLibraryTypes.toMutableSet()
+                        var customRemoved = false
 
                         newLibraries.forEach { lib ->
                             val type = (lib.collectionType?.toString() ?: lib.type?.name)?.lowercase(Locale.getDefault())
-                            var customRemoved = false
 
                             when (type) {
                                 "movies" -> {
                                     if (LibraryType.MOVIES.name !in loadedLibraryTypes) {
                                         loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
                                     } else {
-                                        updatedAllMovies = emptyList()
+                                        updatedAllMovies = emptyList<BaseItemDto>().toMutableList()
                                         loadedLibraryTypes.remove(LibraryType.MOVIES.name)
                                     }
                                 }
@@ -241,7 +242,7 @@ class MainAppViewModel @Inject constructor(
                                     if (LibraryType.TV_SHOWS.name !in loadedLibraryTypes) {
                                         loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true)
                                     } else {
-                                        updatedAllTVShows = emptyList()
+                                        updatedAllTVShows = emptyList<BaseItemDto>().toMutableList()
                                         loadedLibraryTypes.remove(LibraryType.TV_SHOWS.name)
                                     }
                                 }
@@ -251,7 +252,7 @@ class MainAppViewModel @Inject constructor(
                                     } else {
                                         updatedAllItems = updatedAllItems.filterNot {
                                             LibraryType.MUSIC.itemKinds.contains(it.type)
-                                        }
+                                        }.toMutableList()
                                         loadedLibraryTypes.remove(LibraryType.MUSIC.name)
                                     }
                                 }
@@ -346,8 +347,11 @@ class MainAppViewModel @Inject constructor(
                     Log.d("MainAppViewModel", "loadInitialData: Loading recently added items by types (parallel)")
                 }
 
-                // ✅ FIX: Wait for authentication to complete before making API calls to prevent race conditions
-                authRepository.awaitAuthentication()
+                // ✅ FIX: Check authentication status before making API calls to prevent race conditions
+                if (!authRepository.isUserAuthenticated()) {
+                    Log.w("MainAppViewModel", "loadLibraryTypeData: User not authenticated")
+                    return@launch
+                }
 
                 // Launch all API calls concurrently
                 val types = listOf(

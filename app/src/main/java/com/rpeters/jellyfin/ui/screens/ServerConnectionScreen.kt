@@ -146,7 +146,7 @@ fun ServerConnectionScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     FilledTonalButton(
                         onClick = onAutoLogin,
-                        enabled = !isConnecting,
+                        enabled = !connectionState.isConnecting,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text("Auto Login")
@@ -157,7 +157,7 @@ fun ServerConnectionScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedButton(
                             onClick = onBiometricLogin,
-                            enabled = !isConnecting,
+                            enabled = !connectionState.isConnecting,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text("Login with Biometric")
@@ -194,7 +194,7 @@ fun ServerConnectionScreen(
             ),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            enabled = !isConnecting,
+            enabled = !connectionState.isConnecting,
         )
 
         // Username input
@@ -208,7 +208,7 @@ fun ServerConnectionScreen(
             ),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            enabled = !isConnecting,
+            enabled = !connectionState.isConnecting,
         )
 
         // Password input
@@ -241,7 +241,7 @@ fun ServerConnectionScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .focusRequester(focusRequester),
-            enabled = !isConnecting,
+            enabled = !connectionState.isConnecting,
         )
 
         // Remember login toggle
@@ -252,7 +252,7 @@ fun ServerConnectionScreen(
             Switch(
                 checked = rememberLogin,
                 onCheckedChange = { onRememberLoginChange(it) },
-                enabled = !isConnecting,
+                enabled = !connectionState.isConnecting,
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text("Remember login")
@@ -280,7 +280,7 @@ fun ServerConnectionScreen(
         }
 
         // Error message
-        if (errorMessage != null) {
+        if (connectionState.errorMessage != null) {
             ElevatedCard(
                 colors = CardDefaults.elevatedCardColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -291,7 +291,7 @@ fun ServerConnectionScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
-                    text = errorMessage,
+                    text = connectionState.errorMessage,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(16.dp),
@@ -373,18 +373,17 @@ fun ServerConnectionScreenErrorPreview() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickConnectScreen(
+    connectionState: ConnectionState = ConnectionState(),
     onConnect: () -> Unit = {},
     onCancel: () -> Unit = {},
-    isConnecting: Boolean = false,
-    errorMessage: String? = null,
-    serverUrl: String = "",
-    code: String = "",
-    isPolling: Boolean = false,
-    status: String = "",
     onServerUrlChange: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
+    var serverUrl by remember { mutableStateOf(connectionState.quickConnectServerUrl) }
+    val code = connectionState.quickConnectCode
+    val isPolling = connectionState.isQuickConnectPolling
+    val status = connectionState.quickConnectStatus
 
     Column(
         modifier = modifier
@@ -416,7 +415,10 @@ fun QuickConnectScreen(
         // Server URL input
         OutlinedTextField(
             value = serverUrl,
-            onValueChange = onServerUrlChange,
+            onValueChange = { 
+                serverUrl = it
+                onServerUrlChange(it)
+            },
             label = { Text(stringResource(id = R.string.quick_connect_server_url_label)) },
             placeholder = { Text(stringResource(id = R.string.quick_connect_server_url_placeholder)) },
             keyboardOptions = KeyboardOptions(
@@ -433,7 +435,7 @@ fun QuickConnectScreen(
             ),
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            enabled = !isConnecting && !isPolling,
+            enabled = !connectionState.isConnecting && !isPolling,
         )
 
         // Status message
@@ -504,7 +506,7 @@ fun QuickConnectScreen(
         }
 
         // Error message
-        if (errorMessage != null) {
+        if (connectionState.errorMessage != null) {
             ElevatedCard(
                 colors = CardDefaults.elevatedCardColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -515,7 +517,7 @@ fun QuickConnectScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
-                    text = errorMessage,
+                    text = connectionState.errorMessage,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(16.dp),
@@ -531,12 +533,12 @@ fun QuickConnectScreen(
                 keyboardController?.hide()
                 onConnect()
             },
-            enabled = !isConnecting && !isPolling && serverUrl.isNotBlank(),
+            enabled = !connectionState.isConnecting && !isPolling && serverUrl.isNotBlank(),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
         ) {
-            if (isConnecting) {
+            if (connectionState.isConnecting) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
                     strokeWidth = 2.dp,
@@ -558,7 +560,7 @@ fun QuickConnectScreen(
         // Cancel button
         OutlinedButton(
             onClick = onCancel,
-            enabled = !isConnecting,
+            enabled = !connectionState.isConnecting,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),

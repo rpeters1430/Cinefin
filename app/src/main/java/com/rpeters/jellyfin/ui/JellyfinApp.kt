@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
 import com.rpeters.jellyfin.ui.components.BottomNavBar
+import com.rpeters.jellyfin.ui.components.ConnectionState
 import com.rpeters.jellyfin.ui.navigation.JellyfinNavGraph
 import com.rpeters.jellyfin.ui.navigation.Screen
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
@@ -31,26 +32,13 @@ fun JellyfinApp(
     JellyfinAndroidTheme(dynamicColor = useDynamicColor) {
         val navController = rememberNavController()
         val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
-        val connectionState by connectionViewModel.connectionState.collectAsState()
-
-        // Debug logging for connection state
-        LaunchedEffect(connectionState.isConnected) {
-            android.util.Log.d("JellyfinApp", "Connection state changed: isConnected = ${connectionState.isConnected}")
-        }
-
-        val startDestination = if (connectionState.isConnected) {
-            android.util.Log.d("JellyfinApp", "Starting with Home screen")
-            Screen.Home.route
-        } else {
-            android.util.Log.d("JellyfinApp", "Starting with ServerConnection screen")
-            Screen.ServerConnection.route
-        }
+        // Use a simple approach without collectAsState for now
+        val startDestination = Screen.ServerConnection.route
 
         Scaffold(
             bottomBar = {
-                if (connectionState.isConnected) {
-                    BottomNavBar(navController = navController)
-                }
+                // TODO: Re-enable bottom nav when connectionState is working
+                // BottomNavBar(navController = navController)
             },
             modifier = Modifier.fillMaxSize(),
         ) { innerPadding ->

@@ -49,6 +49,7 @@ This is a Jellyfin Android client application built with Kotlin and Jetpack Comp
 ./gradlew testReleaseUnitTest     # Run release unit tests
 ./gradlew connectedAndroidTest    # Run instrumentation tests on connected devices
 ./gradlew connectedDebugAndroidTest # Run debug instrumentation tests
+./gradlew ciTest                  # Run CI test suite (unit + instrumentation tests)
 ```
 
 ### Code Quality Commands
@@ -63,26 +64,31 @@ This is a Jellyfin Android client application built with Kotlin and Jetpack Comp
 ## Key Architecture Files
 
 ### Application Layer
-- `app/src/main/java/com/example/jellyfinandroid/JellyfinApplication.kt` - Application class with Hilt setup
-- `app/src/main/java/com/example/jellyfinandroid/MainActivity.kt` - Main activity with adaptive navigation
+- `app/src/main/java/com/rpeters/jellyfin/JellyfinApplication.kt` - Application class with Hilt setup and performance optimizations
+- `app/src/main/java/com/rpeters/jellyfin/MainActivity.kt` - Main activity with adaptive navigation
 
 ### Data Layer
-- `app/src/main/java/com/example/jellyfinandroid/data/repository/JellyfinRepository.kt` - Central repository for API calls
-- `app/src/main/java/com/example/jellyfinandroid/data/JellyfinServer.kt` - Server data models
-- `app/src/main/java/com/example/jellyfinandroid/data/SecureCredentialManager.kt` - Encrypted credential storage
+- `app/src/main/java/com/rpeters/jellyfin/data/repository/JellyfinRepository.kt` - Central repository for API calls
+- `app/src/main/java/com/rpeters/jellyfin/data/JellyfinServer.kt` - Server data models
+- `app/src/main/java/com/rpeters/jellyfin/data/SecureCredentialManager.kt` - Encrypted credential storage with biometric support
+- `app/src/main/java/com/rpeters/jellyfin/data/repository/JellyfinRepositoryCoordinator.kt` - Repository coordination and delegation
+- `app/src/main/java/com/rpeters/jellyfin/data/cache/OptimizedCacheManager.kt` - Performance-optimized caching
 
 ### Dependency Injection
-- `app/src/main/java/com/example/jellyfinandroid/di/NetworkModule.kt` - Network-related dependencies (Jellyfin SDK, OkHttp)
+- `app/src/main/java/com/rpeters/jellyfin/di/NetworkModule.kt` - Network-related dependencies (Jellyfin SDK, OkHttp)
+- `app/src/main/java/com/rpeters/jellyfin/di/OptimizedClientFactory.kt` - Optimized API client factory
+- `app/src/main/java/com/rpeters/jellyfin/di/Phase4Module.kt` - Phase 4 dependency injection modules
 
 ### UI Layer
-- `app/src/main/java/com/example/jellyfinandroid/ui/viewmodel/` - ViewModels for state management
-- `app/src/main/java/com/example/jellyfinandroid/ui/screens/` - Compose screens for different features
-- `app/src/main/java/com/example/jellyfinandroid/ui/theme/` - Material 3 theme definitions
+- `app/src/main/java/com/rpeters/jellyfin/ui/viewmodel/` - ViewModels for state management
+- `app/src/main/java/com/rpeters/jellyfin/ui/screens/` - Compose screens for different features
+- `app/src/main/java/com/rpeters/jellyfin/ui/theme/` - Material 3 theme definitions
+- `app/src/main/java/com/rpeters/jellyfin/ui/components/` - Reusable UI components including expressive and accessible variants
 
 ### Navigation
-- `app/src/main/java/com/example/jellyfinandroid/ui/navigation/AppDestinations.kt` - App navigation destinations
-- `app/src/main/java/com/example/jellyfinandroid/ui/navigation/NavGraph.kt` - Navigation graph configuration
-- `app/src/main/java/com/example/jellyfinandroid/ui/navigation/NavRoutes.kt` - Route definitions and parameters
+- `app/src/main/java/com/rpeters/jellyfin/ui/navigation/AppDestinations.kt` - App navigation destinations
+- `app/src/main/java/com/rpeters/jellyfin/ui/navigation/NavGraph.kt` - Navigation graph configuration
+- `app/src/main/java/com/rpeters/jellyfin/ui/navigation/NavRoutes.kt` - Route definitions and parameters
 
 ## API Integration Patterns
 
@@ -146,11 +152,12 @@ The app uses a comprehensive `ApiResult<T>` sealed class with specific error typ
 Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.toml`. Key dependencies include:
 
 ### Core Android
-- Jetpack Compose BOM (2025.07.00)
-- Material 3 (1.5.0-alpha02) with adaptive navigation suite
+- Jetpack Compose BOM (2025.08.00)
+- Material 3 (1.5.0-alpha02) with adaptive navigation suite and expressive components
 - AndroidX core libraries and lifecycle components
-- Media3 (1.8.0) for video playback with ExoPlayer
+- Media3 (1.8.0) for video playbook with ExoPlayer and Jellyfin FFmpeg decoder
 - Coil (2.7.0) for image loading
+- Paging 3 (3.4.0-alpha02) for paginated content loading
 
 ### Jellyfin Integration
 - Jellyfin SDK (1.6.8) for API communication
@@ -159,25 +166,29 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 - SLF4J Android (1.7.36) for SDK logging
 
 ### Architecture
-- Hilt (2.57) for dependency injection
+- Hilt (2.57.1) for dependency injection
 - Kotlin Coroutines (1.10.2) for async operations
-- DataStore Preferences (1.1.7) for settings storage
+- DataStore Preferences (1.2.0-alpha02) for settings storage
 - AndroidX Security (1.1.0) for encrypted credential storage
-- AndroidX Biometric (1.1.0) for biometric authentication
+- AndroidX Biometric (1.4.0-alpha04) for biometric authentication
+- AndroidX TV Material (1.1.0-alpha01) for Android TV support
 
 ## Development Notes
 
 ### Build Configuration
-- **Kotlin**: 2.2.0 with Compose compiler plugin
-- **Gradle**: 8.12.0 with Kotlin DSL
+- **Kotlin**: 2.2.10 with Compose compiler plugin
+- **Gradle**: 8.12.1 with Kotlin DSL
 - **Java**: Target/Source compatibility Version 17
-- **Android SDK**: Target 36, Min 26 (Android 8.0+) for broader device compatibility
+- **Android SDK**: Compile 36, Target 35, Min 26 (Android 8.0+) for broader device compatibility
+- **Package**: `com.rpeters.jellyfin` (actual package structure)
 
 ### Code Style
 - Follow Kotlin coding conventions from CONTRIBUTING.md
 - Use 4 spaces for indentation, 120 character line length
 - PascalCase for classes, camelCase for functions/variables
 - Implement proper error handling and logging
+- Use SecureLogger for all logging to prevent sensitive information leakage
+- Prefer data classes for model objects and sealed classes for state management
 
 ### Security Considerations
 - Never log sensitive information (tokens, passwords)
@@ -188,10 +199,12 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 - Follow secure coding practices for network communication
 
 ### Constants and Configuration
-- Application constants centralized in `AppConstants.kt` and `Constants.kt`
+- Application constants centralized in `Constants.kt`
 - API retry limits, timeout configurations, and pagination constants
 - Image size constraints and streaming quality defaults
 - Token expiration handling with proactive refresh (50-minute validity)
+- Performance monitoring and optimization configurations
+- Accessibility support configurations in `AccessibilityExtensions.kt`
 
 ### Media Player Integration
 - ExoPlayer integration through Media3 framework

@@ -84,8 +84,9 @@ object NetworkModule {
     @Singleton
     fun provideOptimizedClientFactory(
         @ApplicationContext context: Context,
+        jellyfin: Jellyfin,
     ): OptimizedClientFactory {
-        return OptimizedClientFactory(context)
+        return OptimizedClientFactory(context, jellyfin)
     }
 
     @Provides

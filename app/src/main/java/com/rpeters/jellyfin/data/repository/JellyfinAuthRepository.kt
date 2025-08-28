@@ -15,6 +15,7 @@ import com.rpeters.jellyfin.utils.ServerUrlValidator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jellyfin.sdk.api.client.ApiClient
@@ -383,6 +384,11 @@ class JellyfinAuthRepository @Inject constructor(
             return@withLock true
         }
 
+        // ✅ FIX: Check if already authenticating - wait for completion
+        if (_isAuthenticating.value) {
+            if (BuildConfig.DEBUG) {
+                Log.d("JellyfinAuthRepository", "reAuthenticate: Already authenticating, waiting for completion")
+            }
             _isAuthenticating.asStateFlow().first { !it }
             // After waiting, check if token is now valid
             if (!isTokenExpired()) {
