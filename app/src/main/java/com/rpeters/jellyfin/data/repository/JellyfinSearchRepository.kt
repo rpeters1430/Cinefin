@@ -33,27 +33,29 @@ class JellyfinSearchRepository @Inject constructor(
         }
 
         return executeWithRetry("searchItems") {
-            val server = validateServer()
-            val userUuid = parseUuid(server.userId ?: "", "user")
-            val client = getClient(server.url, server.accessToken)
+            executeWithTokenRefresh {
+                val server = validateServer()
+                val userUuid = parseUuid(server.userId ?: "", "user")
+                val client = getClient(server.url, server.accessToken)
 
-            val response = client.itemsApi.getItems(
-                userId = userUuid,
-                searchTerm = query.trim(),
-                recursive = true,
-                includeItemTypes = includeItemTypes ?: listOf(
-                    BaseItemKind.MOVIE,
-                    BaseItemKind.SERIES,
-                    BaseItemKind.EPISODE,
-                    BaseItemKind.AUDIO,
-                    BaseItemKind.MUSIC_ALBUM,
-                    BaseItemKind.MUSIC_ARTIST,
-                    BaseItemKind.BOOK,
-                    BaseItemKind.AUDIO_BOOK,
-                ),
-                limit = limit,
-            )
-            response.content.items ?: emptyList()
+                val response = client.itemsApi.getItems(
+                    userId = userUuid,
+                    searchTerm = query.trim(),
+                    recursive = true,
+                    includeItemTypes = includeItemTypes ?: listOf(
+                        BaseItemKind.MOVIE,
+                        BaseItemKind.SERIES,
+                        BaseItemKind.EPISODE,
+                        BaseItemKind.AUDIO,
+                        BaseItemKind.MUSIC_ALBUM,
+                        BaseItemKind.MUSIC_ARTIST,
+                        BaseItemKind.BOOK,
+                        BaseItemKind.AUDIO_BOOK,
+                    ),
+                    limit = limit,
+                )
+                response.content.items ?: emptyList()
+            }
         }
     }
 
