@@ -2,12 +2,12 @@ package com.rpeters.jellyfin
 
 import android.app.Application
 import android.os.StrictMode
+import coil.ImageLoader
+import coil.ImageLoaderFactory
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.utils.NetworkOptimizer
 import com.rpeters.jellyfin.utils.SecureLogger
-import coil.ImageLoader
-import coil.ImageLoaderFactory
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
