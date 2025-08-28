@@ -44,12 +44,10 @@ class JellyfinMediaRepository @Inject constructor(
             val server = validateServer()
             val userUuid = parseUuid(server.userId ?: "", "user")
             val client = getClient(server.url, server.accessToken)
-            val response = executeWithTokenRefresh {
-                client.itemsApi.getItems(
-                    userId = userUuid,
-                    includeItemTypes = listOf(BaseItemKind.COLLECTION_FOLDER),
-                )
-            }
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                includeItemTypes = listOf(BaseItemKind.COLLECTION_FOLDER),
+            )
             response.content.items ?: emptyList()
         }
 
@@ -131,16 +129,14 @@ class JellyfinMediaRepository @Inject constructor(
         )
 
         try {
-            val response = executeWithTokenRefresh {
-                client.itemsApi.getItems(
-                    userId = userUuid,
-                    parentId = parent,
-                    recursive = true,
-                    includeItemTypes = itemKinds,
-                    startIndex = validatedParams.startIndex,
-                    limit = validatedParams.limit,
-                )
-            }
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                parentId = parent,
+                recursive = true,
+                includeItemTypes = itemKinds,
+                startIndex = validatedParams.startIndex,
+                limit = validatedParams.limit,
+            )
             val items = response.content.items ?: emptyList()
 
             // Report success to health checker
@@ -168,7 +164,7 @@ class JellyfinMediaRepository @Inject constructor(
                 return@execute emptyList()
             }
 
-            // If we get a 401, the token refresh should have already been handled by executeWithTokenRefresh
+            // If we get a 401, the token refresh should have already been handled by execute
             if (e.message?.contains("401") == true) {
                 android.util.Log.w(
                     "JellyfinMediaRepository",
@@ -234,16 +230,14 @@ class JellyfinMediaRepository @Inject constructor(
                             "Fallback strategy 1: Using collection type defaults: ${fallbackTypes?.joinToString()}",
                         )
 
-                        val response = executeWithTokenRefresh {
-                            client.itemsApi.getItems(
-                                userId = userUuid,
-                                parentId = parent,
-                                recursive = true,
-                                includeItemTypes = fallbackTypes,
-                                startIndex = validatedParams.startIndex,
-                                limit = validatedParams.limit,
-                            )
-                        }
+                        val response = client.itemsApi.getItems(
+                            userId = userUuid,
+                            parentId = parent,
+                            recursive = true,
+                            includeItemTypes = fallbackTypes,
+                            startIndex = validatedParams.startIndex,
+                            limit = validatedParams.limit,
+                        )
                         android.util.Log.d(
                             "JellyfinMediaRepository",
                             "Fallback strategy 1 succeeded: ${response.content.items?.size ?: 0} items",
@@ -264,16 +258,14 @@ class JellyfinMediaRepository @Inject constructor(
                         "Fallback strategy 2: Requesting without includeItemTypes filter",
                     )
 
-                    val response = executeWithTokenRefresh {
-                        client.itemsApi.getItems(
-                            userId = userUuid,
-                            parentId = parent,
-                            recursive = true,
-                            includeItemTypes = null, // Let server return all types
-                            startIndex = validatedParams.startIndex,
-                            limit = validatedParams.limit,
-                        )
-                    }
+                    val response = client.itemsApi.getItems(
+                        userId = userUuid,
+                        parentId = parent,
+                        recursive = true,
+                        includeItemTypes = null, // Let server return all types
+                        startIndex = validatedParams.startIndex,
+                        limit = validatedParams.limit,
+                    )
                     android.util.Log.d(
                         "JellyfinMediaRepository",
                         "Fallback strategy 2 succeeded: ${response.content.items?.size ?: 0} items",
@@ -294,16 +286,14 @@ class JellyfinMediaRepository @Inject constructor(
                             "Fallback strategy 3: Requesting without parentId constraint",
                         )
 
-                        val response = executeWithTokenRefresh {
-                            client.itemsApi.getItems(
-                                userId = userUuid,
-                                parentId = null, // Remove library constraint
-                                recursive = true,
-                                includeItemTypes = itemKinds,
-                                startIndex = validatedParams.startIndex,
-                                limit = validatedParams.limit,
-                            )
-                        }
+                        val response = client.itemsApi.getItems(
+                            userId = userUuid,
+                            parentId = null, // Remove library constraint
+                            recursive = true,
+                            includeItemTypes = itemKinds,
+                            startIndex = validatedParams.startIndex,
+                            limit = validatedParams.limit,
+                        )
                         android.util.Log.d(
                             "JellyfinMediaRepository",
                             "Fallback strategy 3 succeeded: ${response.content.items?.size ?: 0} items",
@@ -346,26 +336,24 @@ class JellyfinMediaRepository @Inject constructor(
             val userUuid = parseUuid(server.userId ?: "", "user")
             val client = getClient(server.url, server.accessToken)
 
-            val response = executeWithTokenRefresh {
-                client.itemsApi.getItems(
-                    userId = userUuid,
-                    recursive = true,
-                    includeItemTypes = listOf(
-                        BaseItemKind.MOVIE,
-                        BaseItemKind.SERIES,
-                        BaseItemKind.EPISODE,
-                        BaseItemKind.AUDIO,
-                        BaseItemKind.MUSIC_ALBUM,
-                        BaseItemKind.MUSIC_ARTIST,
-                        BaseItemKind.BOOK,
-                        BaseItemKind.AUDIO_BOOK,
-                        BaseItemKind.VIDEO,
-                    ),
-                    sortBy = listOf(ItemSortBy.DATE_CREATED),
-                    sortOrder = listOf(SortOrder.DESCENDING),
-                    limit = limit,
-                )
-            }
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                recursive = true,
+                includeItemTypes = listOf(
+                    BaseItemKind.MOVIE,
+                    BaseItemKind.SERIES,
+                    BaseItemKind.EPISODE,
+                    BaseItemKind.AUDIO,
+                    BaseItemKind.MUSIC_ALBUM,
+                    BaseItemKind.MUSIC_ARTIST,
+                    BaseItemKind.BOOK,
+                    BaseItemKind.AUDIO_BOOK,
+                    BaseItemKind.VIDEO,
+                ),
+                sortBy = listOf(ItemSortBy.DATE_CREATED),
+                sortOrder = listOf(SortOrder.DESCENDING),
+                limit = limit,
+            )
             response.content.items ?: emptyList()
         }
 
@@ -392,16 +380,14 @@ class JellyfinMediaRepository @Inject constructor(
             val userUuid = parseUuid(server.userId ?: "", "user")
             val client = getClient(server.url, server.accessToken)
 
-            val response = executeWithTokenRefresh {
-                client.itemsApi.getItems(
-                    userId = userUuid,
-                    recursive = true,
-                    includeItemTypes = listOf(itemType),
-                    sortBy = listOf(ItemSortBy.DATE_CREATED),
-                    sortOrder = listOf(SortOrder.DESCENDING),
-                    limit = limit,
-                )
-            }
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                recursive = true,
+                includeItemTypes = listOf(itemType),
+                sortBy = listOf(ItemSortBy.DATE_CREATED),
+                sortOrder = listOf(SortOrder.DESCENDING),
+                limit = limit,
+            )
             response.content.items ?: emptyList()
         }
 
