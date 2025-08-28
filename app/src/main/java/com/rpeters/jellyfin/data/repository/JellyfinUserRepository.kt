@@ -105,10 +105,12 @@ class JellyfinUserRepository @Inject constructor(
         server: com.rpeters.jellyfin.data.JellyfinServer,
     ): Boolean {
         return try {
-            val userUuid = parseUuid(server.userId ?: "", "user")
-            val client = getClient(server.url, server.accessToken)
-            val user = client.userApi.getCurrentUser().content
-            user?.policy?.isAdministrator == true || user?.policy?.enableContentDeletion == true
+            executeWithTokenRefresh {
+                val userUuid = parseUuid(server.userId ?: "", "user")
+                val client = getClient(server.url, server.accessToken)
+                val user = client.userApi.getCurrentUser().content
+                user?.policy?.isAdministrator == true || user?.policy?.enableContentDeletion == true
+            }
         } catch (e: Exception) {
             false
         }
