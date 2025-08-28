@@ -1,6 +1,10 @@
 package com.rpeters.jellyfin.di
 
 import android.content.Context
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
+import coil.util.DebugLogger
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
@@ -25,6 +29,7 @@ import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.createJellyfin
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
+import java.io.File
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Provider
@@ -79,6 +84,48 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideImageLoader(
+        @ApplicationContext context: Context,
+        okHttpClient: OkHttpClient,
+    ): ImageLoader {
+        return ImageLoader.Builder(context)
+            .memoryCache {
+                MemoryCache.Builder(context)
+                    .maxSizePercent(0.20)
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(File(context.cacheDir, "image_cache"))
+                    .maxSizeBytes(120L * 1024 * 1024)
+                    .build()
+            }
+            .okHttpClient {
+                okHttpClient.newBuilder()
+                    .addInterceptor { chain ->
+                        val request = chain.request().newBuilder()
+                            .addHeader("Connection", "keep-alive")
+                            .addHeader("User-Agent", "JellyfinAndroid-Images/1.0.0")
+                            .addHeader("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
+                            .build()
+                        chain.proceed(request)
+                    }
+                    .build()
+            }
+            .crossfade(true)
+            .respectCacheHeaders(false)
+            .allowRgb565(true)
+            .allowHardware(true)
+            .apply {
+                if (BuildConfig.DEBUG) {
+                    logger(DebugLogger())
+                }
+            }
+            .build()
+    }
+
+    @Provides
+    @Singleton
     fun provideJellyfinSdk(@ApplicationContext context: Context): Jellyfin {
         return createJellyfin {
             clientInfo = ClientInfo(
@@ -115,9 +162,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideJellyfinCache(@ApplicationContext context: Context, okHttpClient: OkHttpClient): JellyfinCache {
-        // Initialize image loading with the same OkHttpClient for consistency
-        com.rpeters.jellyfin.utils.ImageLoadingOptimizer.initializeCoil(context, okHttpClient)
+    fun provideJellyfinCache(@ApplicationContext context: Context): JellyfinCache {
         return JellyfinCache(context)
     }
 }
