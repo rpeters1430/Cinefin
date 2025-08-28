@@ -4,6 +4,8 @@ import android.content.Context
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
+import com.rpeters.jellyfin.network.CachePolicyInterceptor
+import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.withStrictModeTagger
 import dagger.Module
@@ -33,27 +35,38 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
+    fun provideOkHttpClient(
+        @ApplicationContext context: Context,
+        connectivityChecker: ConnectivityChecker,
+    ): OkHttpClient {
+        val cacheDir = java.io.File(context.cacheDir, "http_cache")
+        val cache = okhttp3.Cache(cacheDir, 20L * 1024 * 1024) // 20 MB
+
+        val authInterceptor = okhttp3.Interceptor { chain ->
+            val originalRequest = chain.request()
+            val newRequest = originalRequest.newBuilder()
+                .addHeader("Connection", "keep-alive")
+                .addHeader("User-Agent", "JellyfinAndroid/1.0.0")
+                .addHeader("Accept-Encoding", "gzip, deflate")
+                .build()
+            chain.proceed(newRequest)
+        }
+
+        val builder = OkHttpClient.Builder()
             .withStrictModeTagger()
-            .addInterceptor { chain ->
-                val originalRequest = chain.request()
-                val newRequest = originalRequest.newBuilder()
-                    .addHeader("Connection", "keep-alive")
-                    .addHeader("User-Agent", "JellyfinAndroid/1.0.0")
-                    .addHeader("Accept-Encoding", "gzip, deflate")
-                    .build()
-                chain.proceed(newRequest)
-            }
-            .apply {
-                if (BuildConfig.DEBUG) {
-                    addInterceptor(
-                        HttpLoggingInterceptor().apply {
-                            level = HttpLoggingInterceptor.Level.BASIC
-                        },
-                    )
-                }
-            }
+            .cache(cache)
+            .addInterceptor(authInterceptor)
+            .addInterceptor(CachePolicyInterceptor(connectivityChecker))
+
+        if (BuildConfig.DEBUG) {
+            builder.addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BASIC
+                },
+            )
+        }
+
+        return builder
             .connectionPool(okhttp3.ConnectionPool(5, 10, TimeUnit.MINUTES))
             .connectTimeout(8, TimeUnit.SECONDS)
             .readTimeout(25, TimeUnit.SECONDS)
