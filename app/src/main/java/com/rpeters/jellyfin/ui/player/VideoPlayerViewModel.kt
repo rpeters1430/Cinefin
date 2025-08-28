@@ -13,6 +13,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.rpeters.jellyfin.ui.player.CastManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

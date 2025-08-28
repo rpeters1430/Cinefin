@@ -56,42 +56,53 @@ fun HomeVideosScreen(
     }
     val appState by viewModel.appState.collectAsState()
 
-    // Find the first Home Videos library
-    val homeVideosLibrary = remember(appState.libraries) {
-        appState.libraries.find { library ->
+    // Find all Home Videos libraries (there might be more than one)
+    val homeVideosLibraries = remember(appState.libraries) {
+        appState.libraries.filter { library ->
             library.collectionType == org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS
         }
     }
 
-    // Load home videos when library is found
-    LaunchedEffect(homeVideosLibrary) {
-        homeVideosLibrary?.id?.let { libraryId ->
-            if (BuildConfig.DEBUG) {
-                android.util.Log.d("HomeVideosScreen", "Loading home videos for library: $libraryId")
+    // Load home videos for all libraries
+    LaunchedEffect(homeVideosLibraries) {
+        homeVideosLibraries.forEach { library ->
+            library.id?.let { libraryId ->
+                if (BuildConfig.DEBUG) {
+                    android.util.Log.d("HomeVideosScreen", "Loading home videos for library: $libraryId")
+                }
+                viewModel.loadHomeVideos(libraryId.toString())
             }
-            viewModel.loadHomeVideos(libraryId.toString())
         }
     }
 
-    // Get home videos items from the library
-    val homeVideosItems = remember(appState.homeVideosByLibrary, homeVideosLibrary) {
-        val libraryId = homeVideosLibrary?.id?.toString()
-        val items = if (libraryId != null) {
-            appState.homeVideosByLibrary[libraryId] ?: emptyList()
-        } else {
-            emptyList()
-        }
-        if (BuildConfig.DEBUG) {
-            android.util.Log.d("HomeVideosScreen", "Found ${items.size} home video items")
-            if (items.isNotEmpty()) {
-                val typeBreakdown = items.groupBy { it.type?.name }.mapValues { it.value.size }
-                android.util.Log.d("HomeVideosScreen", "Item types: $typeBreakdown")
+    // Get home videos items from all libraries
+    val homeVideosItems = remember(appState.homeVideosByLibrary, homeVideosLibraries) {
+        val allItems = mutableListOf<BaseItemDto>()
+        
+        homeVideosLibraries.forEach { library ->
+            library.id?.let { libraryId ->
+                val items = appState.homeVideosByLibrary[libraryId.toString()] ?: emptyList()
+                if (BuildConfig.DEBUG) {
+                    android.util.Log.d("HomeVideosScreen", "Found ${items.size} items in library: $libraryId")
+                    if (items.isNotEmpty()) {
+                        val typeBreakdown = items.groupBy { it.type?.name }.mapValues { it.value.size }
+                        android.util.Log.d("HomeVideosScreen", "Item types in library $libraryId: $typeBreakdown")
+                    }
+                }
+                allItems.addAll(items)
             }
         }
+        
         // Filter for videos and photos
-        items.filter {
+        val filteredItems = allItems.filter {
             it.type == BaseItemKind.VIDEO || it.type == BaseItemKind.PHOTO
         }.sortedBy { it.sortName ?: it.name }
+        
+        if (BuildConfig.DEBUG) {
+            android.util.Log.d("HomeVideosScreen", "Total filtered home video items: ${filteredItems.size}")
+        }
+        
+        filteredItems
     }
     Scaffold(
         topBar = {

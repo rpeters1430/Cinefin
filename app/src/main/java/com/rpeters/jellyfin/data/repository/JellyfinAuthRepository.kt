@@ -83,95 +83,69 @@ class JellyfinAuthRepository @Inject constructor(
         NetworkDebugger.logNetworkDiagnostics(context, serverUrl)
 
         // Use optimized connection testing
-        return connectionOptimizer.testServerConnection(serverUrl)
+        val result = connectionOptimizer.testServerConnection(serverUrl)
+        
+        // If the initial attempt failed and the URL doesn't already end with /jellyfin, 
+        // try with /jellyfin appended for reverse proxy setups
+        if (result is ApiResult.Error && serverUrl.isNotBlank() && !serverUrl.endsWith("/jellyfin")) {
+            val jellyfinUrl = "$serverUrl/jellyfin"
+            if (BuildConfig.DEBUG) {
+                Log.d("JellyfinAuthRepository", "Retrying connection with /jellyfin path: $jellyfinUrl")
+            }
+            return connectionOptimizer.testServerConnection(jellyfinUrl)
+        }
+        
+        return result
     }
 
     /**
      * Test connection to a Jellyfin server with automatic fallback, returning both result and working URL
      */
     private suspend fun testServerConnectionWithUrl(serverUrl: String): ApiResult<ConnectionTestResult> {
-        // Get all URL variations to try
-        val urlVariations = ServerUrlValidator.getUrlVariations(serverUrl)
-
-        if (urlVariations.isEmpty()) {
-            return ApiResult.Error(
-                "Invalid server URL format. Please use format: http://server:port or https://server:port",
-                null,
-                ErrorType.VALIDATION,
-            )
+        // First, try the direct connection using the optimized connection testing
+        val directResult = connectionOptimizer.testServerConnection(serverUrl)
+        
+        if (directResult is ApiResult.Success) {
+            return ApiResult.Success(ConnectionTestResult(directResult.data, serverUrl))
         }
-
-        var lastException: Exception? = null
-
-        // Try each URL variation until one works
-        for ((index, url) in urlVariations.withIndex()) {
-            try {
-                if (BuildConfig.DEBUG) {
-                    Log.d("JellyfinAuthRepository", "Testing connection to: $url (attempt ${index + 1}/${urlVariations.size})")
-                }
-
-                val client = getClient(url)
-                val response = client.systemApi.getPublicSystemInfo()
-
-                if (BuildConfig.DEBUG) {
-                    Log.d("JellyfinAuthRepository", "Successfully connected to server: ${response.content.serverName} at $url")
-                }
-
-                return ApiResult.Success(ConnectionTestResult(response.content, url))
-            } catch (e: Exception) {
-                lastException = e
-                val errorType = getErrorType(e)
-
-                if (BuildConfig.DEBUG) {
-                    Log.d("JellyfinAuthRepository", "Connection failed for $url: ${e.message}")
-                }
-
-                // If this is not a network or timeout error, don't try other URLs
-                if (errorType != ErrorType.NETWORK && errorType != ErrorType.TIMEOUT) {
-                    break
-                }
+        
+        // If the initial attempt failed and the URL doesn't already end with /jellyfin, 
+        // try with /jellyfin appended for reverse proxy setups
+        if (serverUrl.isNotBlank() && !serverUrl.endsWith("/jellyfin")) {
+            val jellyfinUrl = "$serverUrl/jellyfin"
+            if (BuildConfig.DEBUG) {
+                Log.d("JellyfinAuthRepository", "Retrying connection with /jellyfin path: $jellyfinUrl")
+            }
+            val retryResult = connectionOptimizer.testServerConnection(jellyfinUrl)
+            
+            if (retryResult is ApiResult.Success) {
+                return ApiResult.Success(ConnectionTestResult(retryResult.data, jellyfinUrl))
             }
         }
-
-        // All URLs failed
-        val errorType = getErrorType(lastException ?: Exception("Unknown error"))
-
+        
+        // If we get here, all attempts failed. Return the error from the first attempt
+        val errorType = getErrorType((directResult as? ApiResult.Error)?.cause ?: Exception("Unknown error"))
+        
         // Don't log cancellation exceptions as errors
         if (errorType != ErrorType.OPERATION_CANCELLED) {
-            Log.e("JellyfinAuthRepository", "All server connection attempts failed. Tried URLs: $urlVariations", lastException)
+            Log.e("JellyfinAuthRepository", "All server connection attempts failed for: $serverUrl", (directResult as? ApiResult.Error)?.cause)
         }
 
         val host = try {
-            ServerUrlValidator.extractBaseUrl(urlVariations.first())?.let { URI(it).host }
+            ServerUrlValidator.extractBaseUrl(serverUrl)?.let { URI(it).host }
         } catch (e: Exception) {
             null
         } ?: "server"
 
         val message = when (errorType) {
             ErrorType.NETWORK -> {
-                val attemptedUrls = urlVariations.take(3).joinToString(", ") // Show first 3 attempts
-                val isReverseProxy = urlVariations.any { url ->
-                    url.contains("/jellyfin") ||
-                        url.substringAfter("://").substringBefore("/").count { it == '.' } >= 2
-                }
-
                 buildString {
                     append("Cannot connect to Jellyfin server '$host'.\n\n")
-                    append("Tried: $attemptedUrls\n\n")
-                    if (isReverseProxy) {
-                        append("This appears to be a reverse proxy setup. Please check:\n")
-                        append("• Reverse proxy is running and configured correctly\n")
-                        append("• Jellyfin backend server is accessible to the proxy\n")
-                        append("• SSL certificates are valid (if using HTTPS)\n")
-                        append("• Proxy configuration includes proper headers\n")
-                        append("• Try adding '/jellyfin' path if not included\n")
-                    } else {
-                        append("Please check:\n")
-                        append("• Jellyfin server is running and accessible\n")
-                        append("• Network connection is working\n")
-                        append("• Firewall allows connections to Jellyfin ports\n")
-                        append("• Server URL and port are correct\n")
-                    }
+                    append("Please check:\n")
+                    append("• Jellyfin server is running and accessible\n")
+                    append("• Network connection is working\n")
+                    append("• Firewall allows connections to Jellyfin ports\n")
+                    append("• Server URL and port are correct\n")
                     append("• Contact your server administrator if issues persist")
                 }
             }
@@ -179,11 +153,11 @@ class JellyfinAuthRepository @Inject constructor(
             ErrorType.UNAUTHORIZED -> "Server '$host' requires authentication to access system information."
             ErrorType.FORBIDDEN -> "Access to server '$host' is denied. Check server permissions."
             ErrorType.TIMEOUT -> "Connection to server '$host' timed out. The server may be overloaded or have network issues."
-            else -> "Failed to connect to server '$host': ${lastException?.message ?: "Unknown error"}"
+            else -> "Failed to connect to server '$host': ${(directResult as? ApiResult.Error)?.message ?: "Unknown error"}"
         }
 
-        Log.e("JellyfinAuthRepository", "All server connection attempts failed. Tried URLs: $urlVariations", lastException)
-        return ApiResult.Error(message, lastException, errorType)
+        Log.e("JellyfinAuthRepository", "All server connection attempts failed for: $serverUrl", (directResult as? ApiResult.Error)?.cause)
+        return ApiResult.Error(message, (directResult as? ApiResult.Error)?.cause, errorType)
     }
 
     /**
@@ -389,11 +363,26 @@ class JellyfinAuthRepository @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("JellyfinAuthRepository", "reAuthenticate: Already authenticating, waiting for completion")
             }
-            _isAuthenticating.asStateFlow().first { !it }
+            
+            // Wait for authentication to complete with timeout
+            val maxWaitMs = 10000L // 10 seconds timeout
+            val pollIntervalMs = 100L
+            var waitedMs = 0L
+            while (_isAuthenticating.value && waitedMs < maxWaitMs) {
+                kotlinx.coroutines.delay(pollIntervalMs)
+                waitedMs += pollIntervalMs
+            }
+            
             // After waiting, check if token is now valid
             if (!isTokenExpired()) {
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinAuthRepository", "reAuthenticate: Authentication completed by another thread, token is valid")
+                }
                 return@withLock true
             } else {
+                if (BuildConfig.DEBUG) {
+                    Log.w("JellyfinAuthRepository", "reAuthenticate: Authentication completed by another thread, but token is still expired")
+                }
                 return@withLock false
             }
         }

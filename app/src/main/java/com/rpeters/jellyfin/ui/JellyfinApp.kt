@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
+import com.rpeters.jellyfin.ui.components.BottomNavBar
 import com.rpeters.jellyfin.ui.navigation.JellyfinNavGraph
 import com.rpeters.jellyfin.ui.navigation.Screen
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
@@ -33,8 +34,7 @@ fun JellyfinApp(
 
         Scaffold(
             bottomBar = {
-                // TODO: Re-enable bottom nav when connectionState is working
-                // BottomNavBar(navController = navController)
+                BottomNavBar(navController = navController)
             },
             modifier = Modifier.fillMaxSize(),
         ) { innerPadding ->

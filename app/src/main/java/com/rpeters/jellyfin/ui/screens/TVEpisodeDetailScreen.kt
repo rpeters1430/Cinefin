@@ -74,7 +74,9 @@ import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ExpressiveFloatingToolbar
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
+import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.Quality4K
 import com.rpeters.jellyfin.ui.theme.QualityHD
@@ -140,20 +142,6 @@ fun TVEpisodeDetailScreen(
                 ),
             )
         },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { onPlayClick(episode) },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play",
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Play Episode")
-            }
-        },
         modifier = modifier,
     ) { paddingValues ->
         AnimatedContent(
@@ -165,59 +153,75 @@ fun TVEpisodeDetailScreen(
             label = "episode_detail_content",
         ) { showContent ->
             if (showContent) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
-                ) {
-                    // Hero Section with Episode Image
-                    item {
-                        ExpressiveEpisodeHero(
-                            episode = episode,
-                            seriesInfo = seriesInfo,
-                            getBackdropUrl = getBackdropUrl,
-                            getImageUrl = getImageUrl,
-                        )
-                    }
-
-                    // Episode Information Card
-                    item {
-                        ExpressiveEpisodeInfoCard(episode = episode)
-                    }
-
-                    // Action Buttons
-                    item {
-                        ExpressiveEpisodeActions(
-                            episode = episode,
-                            onDownloadClick = onDownloadClick,
-                            onDeleteClick = onDeleteClick,
-                            onMarkWatchedClick = onMarkWatchedClick,
-                            onMarkUnwatchedClick = onMarkUnwatchedClick,
-                            onFavoriteClick = onFavoriteClick,
-                        )
-                    }
-
-                    // Episode Details
-                    item {
-                        ExpressiveEpisodeOverview(episode = episode)
-                    }
-
-                    // Series Information (if available)
-                    seriesInfo?.let { series ->
+                Box(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        // Hero Section with Episode Image
                         item {
-                            ExpressiveSeriesInfo(
-                                series = series,
+                            ExpressiveEpisodeHero(
+                                episode = episode,
+                                seriesInfo = seriesInfo,
+                                getBackdropUrl = getBackdropUrl,
                                 getImageUrl = getImageUrl,
                             )
                         }
-                    }
 
-                    // Extra spacing for FAB
-                    item {
-                        Spacer(modifier = Modifier.height(80.dp))
+                        // Episode Information Card
+                        item {
+                            ExpressiveEpisodeInfoCard(episode = episode)
+                        }
+
+                        // Action Buttons
+                        item {
+                            ExpressiveEpisodeActions(
+                                episode = episode,
+                                onDownloadClick = onDownloadClick,
+                                onDeleteClick = onDeleteClick,
+                                onMarkWatchedClick = onMarkWatchedClick,
+                                onMarkUnwatchedClick = onMarkUnwatchedClick,
+                                onFavoriteClick = onFavoriteClick,
+                            )
+                        }
+
+                        // Episode Details
+                        item {
+                            ExpressiveEpisodeOverview(episode = episode)
+                        }
+
+                        // Series Information (if available)
+                        seriesInfo?.let { series ->
+                            item {
+                                ExpressiveSeriesInfo(
+                                    series = series,
+                                    getImageUrl = getImageUrl,
+                                )
+                            }
+                        }
+
+                        // Extra spacing for FAB
+                        item {
+                            Spacer(modifier = Modifier.height(80.dp))
+                        }
                     }
+                    
+                    // Add ExpressiveFloatingToolbar for episode details
+                    ExpressiveFloatingToolbar(
+                        isVisible = true,
+                        onPlayClick = { onPlayClick(episode) },
+                        onQueueClick = { /* TODO: Implement queue functionality */ },
+                        onDownloadClick = { onDownloadClick(episode) },
+                        onCastClick = { /* TODO: Implement cast functionality */ },
+                        onFavoriteClick = { onFavoriteClick(episode) },
+                        onShareClick = { /* TODO: Implement share functionality */ },
+                        onMoreClick = { /* TODO: Implement more options functionality */ },
+                        primaryAction = ToolbarAction.PLAY,
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
                 }
             }
         }

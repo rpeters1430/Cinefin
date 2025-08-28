@@ -71,6 +71,7 @@ fun HomeScreen(
     getBackdropUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit = {},
+    onLibraryClick: (BaseItemDto) -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -107,6 +108,7 @@ fun HomeScreen(
                 getBackdropUrl = getBackdropUrl,
                 getSeriesImageUrl = getSeriesImageUrl,
                 onItemClick = onItemClick,
+                onLibraryClick = onLibraryClick,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -195,6 +197,7 @@ fun HomeContent(
     getBackdropUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit = {},
+    onLibraryClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -248,7 +251,7 @@ fun HomeContent(
                     LibraryGridSection(
                         libraries = orderedLibraries,
                         getImageUrl = getImageUrl,
-                        onLibraryClick = onItemClick,
+                        onLibraryClick = onLibraryClick,
                         title = "Libraries",
                     )
                 }

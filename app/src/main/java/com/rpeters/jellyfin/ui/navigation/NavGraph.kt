@@ -105,8 +105,20 @@ fun JellyfinNavGraph(
         // Authentication flow
         composable(Screen.ServerConnection.route) {
             val viewModel: ServerConnectionViewModel = hiltViewModel()
-            // Use default connection state for now until state collection is fixed
-            val connectionState = ConnectionState()
+            val lifecycleOwner = LocalLifecycleOwner.current
+            val connectionState by viewModel.connectionState.collectAsStateWithLifecycle(
+                lifecycle = lifecycleOwner.lifecycle,
+                minActiveState = Lifecycle.State.STARTED,
+            )
+
+            // Navigate to Home when successfully connected
+            LaunchedEffect(connectionState.isConnected) {
+                if (connectionState.isConnected) {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.ServerConnection.route) { inclusive = true }
+                    }
+                }
+            }
 
             ServerConnectionScreen(
                 onConnect = { serverUrl, username, password ->
@@ -116,6 +128,11 @@ fun JellyfinNavGraph(
                     navController.navigate(Screen.QuickConnect.route)
                 },
                 connectionState = connectionState,
+                savedServerUrl = connectionState.savedServerUrl,
+                savedUsername = connectionState.savedUsername,
+                rememberLogin = connectionState.rememberLogin,
+                hasSavedPassword = connectionState.hasSavedPassword,
+                isBiometricAuthAvailable = connectionState.isBiometricAuthAvailable,
                 onRememberLoginChange = { viewModel.setRememberLogin(it) },
                 onAutoLogin = { viewModel.autoLogin() },
                 onBiometricLogin = {
@@ -126,7 +143,20 @@ fun JellyfinNavGraph(
 
         composable(Screen.QuickConnect.route) {
             val viewModel: ServerConnectionViewModel = hiltViewModel()
-            val connectionState = ConnectionState()
+            val lifecycleOwner = LocalLifecycleOwner.current
+            val connectionState by viewModel.connectionState.collectAsStateWithLifecycle(
+                lifecycle = lifecycleOwner.lifecycle,
+                minActiveState = Lifecycle.State.STARTED,
+            )
+
+            // Navigate to Home when successfully connected
+            LaunchedEffect(connectionState.isConnected) {
+                if (connectionState.isConnected) {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.ServerConnection.route) { inclusive = true }
+                    }
+                }
+            }
 
             QuickConnectScreen(
                 connectionState = connectionState,
@@ -143,7 +173,10 @@ fun JellyfinNavGraph(
         composable(Screen.Home.route) {
             val viewModel: MainAppViewModel = hiltViewModel()
             val lifecycleOwner = LocalLifecycleOwner.current
-            val appState = viewModel.appState.value
+            val appState by viewModel.appState.collectAsStateWithLifecycle(
+                lifecycle = lifecycleOwner.lifecycle,
+                minActiveState = Lifecycle.State.STARTED,
+            )
 
             HomeScreen(
                 appState = appState,
@@ -183,6 +216,17 @@ fun JellyfinNavGraph(
                         }
                     }
                 },
+                onLibraryClick = { library ->
+                    try {
+                        libraryRouteFor(library)?.let { route ->
+                            navController.navigate(route)
+                        } ?: run {
+                            Log.w("NavGraph", "No route found for library: ${library.name} (${library.collectionType})")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("NavGraph", "Error navigating to library: ${library.name}", e)
+                    }
+                },
                 onSettingsClick = { navController.navigate(Screen.Profile.route) },
             )
         }
@@ -219,7 +263,10 @@ fun JellyfinNavGraph(
         // Movies Screen - Always available
         composable(Screen.Movies.route) {
             val viewModel = mainViewModel
-            val appState = viewModel.appState.value
+            val appState by viewModel.appState.collectAsStateWithLifecycle(
+                lifecycle = LocalLifecycleOwner.current.lifecycle,
+                minActiveState = Lifecycle.State.STARTED,
+            )
 
             var selectedFilter by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieFilter.ALL) }
             var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
@@ -230,10 +277,10 @@ fun JellyfinNavGraph(
             }
 
             MoviesScreen(
-                movies = emptyList(),
-                isLoading = false,
+                movies = viewModel.getLibraryTypeData(LibraryType.MOVIES),
+                isLoading = appState.isLoadingMovies,
                 isLoadingMore = false,
-                hasMoreItems = false,
+                hasMoreItems = appState.hasMoreMovies,
                 selectedFilter = selectedFilter,
                 onFilterChange = { selectedFilter = it },
                 selectedSort = selectedSort,
@@ -245,7 +292,7 @@ fun JellyfinNavGraph(
                         navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
                     }
                 },
-                onRefresh = { viewModel.refreshMovies() },
+                onRefresh = { viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true) },
                 onLoadMore = { viewModel.loadMoreMovies() },
                 getImageUrl = { movie -> viewModel.getImageUrl(movie) },
             )
@@ -661,23 +708,24 @@ fun JellyfinNavGraph(
                     }
                 }
                 else -> {
-                    Log.w("NavGraph", "TVEpisodeDetail: Episode not found and no error - this shouldn't happen")
+                    // Episode not found - try to load it
+                    LaunchedEffect(episodeId) {
+                        Log.d("NavGraph", "TVEpisodeDetail: Episode $episodeId not found in app state with ${appState.allItems.size} items, attempting to load it")
+                        viewModel.loadEpisodeDetails(episodeId)
+                    }
+                    
+                    // Show loading while fetching
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
                         ) {
-                            Text(
-                                text = "Episode not found",
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.error,
-                            )
+                            CircularProgressIndicator()
                             Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = { navController.popBackStack() },
-                            ) {
-                                Text("Go Back")
-                            }
+                            Text(
+                                text = "Loading episode...",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
                         }
                     }
                 }

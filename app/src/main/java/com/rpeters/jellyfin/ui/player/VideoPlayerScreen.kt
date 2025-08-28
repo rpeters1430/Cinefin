@@ -1,11 +1,15 @@
 package com.rpeters.jellyfin.ui.player
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,9 +32,14 @@ import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.Hd
+import androidx.compose.material.icons.filled.HighQuality
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPicture
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Sd
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -38,11 +47,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -55,15 +68,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import com.rpeters.jellyfin.ui.theme.MotionTokens
 import kotlinx.coroutines.delay
 
 @UnstableApi
@@ -461,97 +479,200 @@ private fun VideoControlsOverlay(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.3f)),
+            .background(Brush.verticalGradient(
+                colors = listOf(
+                    Color.Black.copy(alpha = 0.7f),
+                    Color.Transparent,
+                    Color.Transparent,
+                    Color.Black.copy(alpha = 0.8f)
+                ),
+                startY = 0f,
+                endY = Float.POSITIVE_INFINITY
+            )),
     ) {
-        Text(
-            text = playerState.itemName,
-            color = Color.White,
-            style = MaterialTheme.typography.titleMedium,
+        // Top bar with item name and casting button
+        Row(
             modifier = Modifier
-                .align(Alignment.TopStart)
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
                 .padding(16.dp),
-        )
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Item name with expressive styling
+            Text(
+                text = playerState.itemName,
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 16.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            
+            // Casting button - top right with expressive styling
+            ExpressiveIconButton(
+                icon = if (playerState.isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
+                contentDescription = if (playerState.isCasting) "Disconnect Cast" else "Cast to Device",
+                onClick = onCastClick,
+                isActive = playerState.isCasting,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
 
+        // Main playback controls at the bottom with expressive styling
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .padding(16.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                ControlButton(
-                    onClick = onPlayPause,
-                    imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (playerState.isPlaying) "Pause" else "Play",
-                )
+            // Progress bar with time indicators
+            if (playerState.duration > 0) {
+                val duration = playerState.duration.toFloat()
+                val progress = playerState.currentPosition.toFloat() / duration
+                val buffered = playerState.bufferedPosition.toFloat() / duration
 
-                if (playerState.duration > 0) {
-                    val duration = playerState.duration.toFloat()
-                    val progress = playerState.currentPosition.toFloat() / duration
-                    val buffered = playerState.bufferedPosition.toFloat() / duration
-
-                    Row(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = formatTime(playerState.currentPosition),
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-
-                        Box(modifier = Modifier.weight(1f)) {
-                            LinearProgressIndicator(
-                                progress = { buffered },
-                                modifier = Modifier.fillMaxWidth(),
-                                color = Color.White.copy(alpha = 0.3f),
-                                trackColor = Color.White.copy(alpha = 0.1f),
-                            )
-
-                            Slider(
-                                value = progress,
-                                onValueChange = { newProgress ->
-                                    val newPosition = (newProgress * playerState.duration).toLong()
-                                    onSeek(newPosition)
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-
-                        Text(
-                            text = formatTime(playerState.duration),
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
+                // Time indicators above progress bar
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = formatTime(playerState.currentPosition),
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        text = formatTime(playerState.duration),
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Box {
-                        ControlButton(
-                            onClick = { onShowQualityMenu(true) },
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Quality Settings",
-                        )
+                // Progress bar with buffering indicator and expressive styling
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    // Buffer progress (background)
+                    LinearProgressIndicator(
+                        progress = { buffered },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color.White.copy(alpha = 0.3f),
+                        trackColor = Color.White.copy(alpha = 0.1f),
+                    )
 
-                        DropdownMenu(
-                            expanded = showQualityMenu,
-                            onDismissRequest = { onShowQualityMenu(false) },
-                        ) {
-                            playerState.availableQualities.forEach { quality ->
-                                DropdownMenuItem(
-                                    text = {
+                    // Main progress slider with expressive styling
+                    Slider(
+                        value = progress,
+                        onValueChange = { newProgress ->
+                            val newPosition = (newProgress * playerState.duration).toLong()
+                            onSeek(newPosition)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = Color.Transparent,
+                        ),
+                    )
+                }
+            }
+
+            // Main control bar with the requested layout:
+            // Play/Pause | Progress Bar | Subtitles | Audio Format | Quality | Fullscreen
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                // Play/Pause button (left) with expressive styling
+                ExpressivePlayButton(
+                    icon = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (playerState.isPlaying) "Pause" else "Play",
+                    onClick = onPlayPause,
+                    isLoading = playerState.isLoading,
+                    modifier = Modifier.size(48.dp),
+                )
+
+                // Spacer to push buttons to the right
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Subtitles button with expressive styling
+                if (playerState.availableSubtitleTracks.isNotEmpty()) {
+                    ExpressiveIconButton(
+                        icon = Icons.Default.ClosedCaption,
+                        contentDescription = "Subtitles",
+                        onClick = onSubtitlesClick,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    )
+                }
+
+                // Audio format selection button with expressive styling
+                if (playerState.availableAudioTracks.size > 1) {
+                    ExpressiveIconButton(
+                        icon = Icons.Default.Audiotrack,
+                        contentDescription = "Audio Tracks",
+                        onClick = onAudioTracksClick,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    )
+                }
+
+                // Quality selection button with dynamic icon and expressive styling
+                Box {
+                    ExpressiveIconButton(
+                        icon = getQualityIcon(playerState.selectedQuality?.label),
+                        contentDescription = "Quality: ${playerState.selectedQuality?.label ?: "Auto"}",
+                        onClick = { onShowQualityMenu(true) },
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    )
+
+                    // Enhanced quality selection dropdown with all options
+                    DropdownMenu(
+                        expanded = showQualityMenu,
+                        onDismissRequest = { onShowQualityMenu(false) },
+                    ) {
+                        // Auto option
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = "Auto",
+                                        fontWeight = if (playerState.selectedQuality == null) {
+                                            FontWeight.Bold
+                                        } else {
+                                            FontWeight.Normal
+                                        },
+                                    )
+                                    if (playerState.selectedQuality == null) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Selected",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                    }
+                                }
+                            },
+                            onClick = {
+                                // TODO: Implement auto quality selection
+                                onShowQualityMenu(false)
+                            },
+                        )
+                        
+                        // Available qualities from player state
+                        playerState.availableQualities.forEach { quality ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
                                         Text(
                                             text = quality.label,
                                             fontWeight = if (quality == playerState.selectedQuality) {
@@ -560,109 +681,133 @@ private fun VideoControlsOverlay(
                                                 FontWeight.Normal
                                             },
                                         )
-                                    },
-                                    onClick = {
-                                        onQualityChange(quality)
-                                        onShowQualityMenu(false)
-                                    },
-                                )
-                            }
-                        }
-                    }
-
-                    Box {
-                        ControlButton(
-                            onClick = { onShowAspectRatioMenu(true) },
-                            imageVector = Icons.Default.AspectRatio,
-                            contentDescription = "Aspect Ratio: ${playerState.selectedAspectRatio.label}",
-                            tint = if (playerState.selectedAspectRatio != AspectRatioMode.FIT) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                Color.White
-                            },
-                        )
-
-                        DropdownMenu(
-                            expanded = showAspectRatioMenu,
-                            onDismissRequest = { onShowAspectRatioMenu(false) },
-                        ) {
-                            playerState.availableAspectRatios.forEach { aspectRatio ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            Text(
-                                                text = aspectRatio.label,
-                                                fontWeight = if (aspectRatio == playerState.selectedAspectRatio) {
-                                                    FontWeight.Bold
-                                                } else {
-                                                    FontWeight.Normal
-                                                },
+                                        if (quality == playerState.selectedQuality) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Selected",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp),
                                             )
-                                            if (aspectRatio == playerState.selectedAspectRatio) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Check,
-                                                    contentDescription = "Selected",
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(16.dp),
-                                                )
-                                            }
                                         }
-                                    },
-                                    onClick = {
-                                        onAspectRatioChange(aspectRatio)
-                                        onShowAspectRatioMenu(false)
-                                    },
-                                )
-                            }
+                                    }
+                                },
+                                onClick = {
+                                    onQualityChange(quality)
+                                    onShowQualityMenu(false)
+                                },
+                            )
                         }
                     }
-                    if (playerState.availableAudioTracks.size > 1) {
-                        ControlButton(
-                            onClick = onAudioTracksClick,
-                            imageVector = Icons.Default.Audiotrack,
-                            contentDescription = "Audio Tracks",
-                        )
-                    }
-
-                    if (playerState.availableSubtitleTracks.isNotEmpty()) {
-                        ControlButton(
-                            onClick = onSubtitlesClick,
-                            imageVector = Icons.Default.ClosedCaption,
-                            contentDescription = "Subtitles",
-                        )
-                    }
-
-                    ControlButton(
-                        onClick = onOrientationToggle,
-                        imageVector = Icons.Default.Fullscreen,
-                        contentDescription = "Toggle Orientation",
-                    )
                 }
-            }
 
-            // Bottom row for Cast and PiP controls
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = if (playerState.duration > 0) 8.dp else 0.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CastButton(
-                    isCasting = playerState.isCasting,
-                    onClick = onCastClick,
-                )
-
-                ControlButton(
+                // Fullscreen button (right) - triggers PiP if not fullscreen with expressive styling
+                ExpressiveIconButton(
+                    icon = Icons.Default.Fullscreen,
+                    contentDescription = "Fullscreen / Picture in Picture",
                     onClick = onPictureInPictureClick,
-                    imageVector = Icons.Default.PictureInPicture,
-                    contentDescription = "Picture in Picture",
+                    modifier = Modifier.padding(start = 4.dp),
                 )
             }
         }
+    }
+}
+
+// Expressive Icon Button component
+@Composable
+private fun ExpressiveIconButton(
+    icon: ImageVector,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isActive: Boolean = false,
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (isActive) 1.1f else 1f,
+        animationSpec = MotionTokens.expressiveEnter,
+        label = "icon_button_scale",
+    )
+
+    Surface(
+        modifier = modifier
+            .scale(scale)
+            .clip(CircleShape)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            ),
+        color = if (isActive) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+        } else {
+            Color.White.copy(alpha = 0.1f)
+        },
+        shape = CircleShape,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = if (isActive) MaterialTheme.colorScheme.primary else Color.White,
+            modifier = Modifier.padding(12.dp),
+        )
+    }
+}
+
+// Expressive Play Button component
+@Composable
+private fun ExpressivePlayButton(
+    icon: ImageVector,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    isLoading: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (isLoading) 0.9f else 1f,
+        animationSpec = MotionTokens.mediaPlayEasing,
+        label = "play_button_scale",
+    )
+
+    FilledIconButton(
+        onClick = onClick,
+        modifier = modifier
+            .size(48.dp)
+            .scale(scale),
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        ),
+    ) {
+        AnimatedContent(
+            targetState = isLoading,
+            label = "play_button_content",
+        ) { loading ->
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
+    }
+}
+
+// Helper function to get quality icon based on quality text
+private fun getQualityIcon(qualityLabel: String?): ImageVector {
+    return when {
+        qualityLabel?.contains("4K", ignoreCase = true) == true -> Icons.Default.HighQuality
+        qualityLabel?.contains("HD", ignoreCase = true) == true -> Icons.Default.Hd
+        qualityLabel?.contains("SD", ignoreCase = true) == true -> Icons.Default.Sd
+        qualityLabel?.contains("1080", ignoreCase = true) == true -> Icons.Default.Hd
+        qualityLabel?.contains("720", ignoreCase = true) == true -> Icons.Default.Hd
+        qualityLabel?.contains("480", ignoreCase = true) == true -> Icons.Default.Sd
+        else -> Icons.Default.Movie // Default fallback icon
     }
 }
 
@@ -672,11 +817,11 @@ private fun CastButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    ControlButton(
-        onClick = onClick,
-        imageVector = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
+    ExpressiveIconButton(
+        icon = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
         contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
-        tint = if (isCasting) Color.Green else Color.White,
+        onClick = onClick,
+        isActive = isCasting,
         modifier = modifier,
     )
 }
@@ -691,12 +836,13 @@ private fun ControlButton(
 ) {
     IconButton(
         onClick = onClick,
-        modifier = modifier.size(40.dp),
+        modifier = modifier.size(48.dp),
     ) {
         Icon(
             imageVector = imageVector,
             contentDescription = contentDescription,
             tint = tint,
+            modifier = Modifier.size(24.dp),
         )
     }
 }

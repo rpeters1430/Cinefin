@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.data.repository
 
 import android.util.Log
+import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.common.ApiParameterValidator
 import com.rpeters.jellyfin.data.repository.common.ApiResult
@@ -155,17 +156,15 @@ class JellyfinMediaRepository @Inject constructor(
                 "getLibraryItems ${e.status}: ${errorMsg ?: e.message}",
             )
 
-            // Home videos libraries can produce 400 errors; log concise message and bail out
+            // Home videos libraries can produce 400 errors; handle gracefully without reporting as failure
             if (isHomeVideos && e.status == 400) {
                 android.util.Log.w(
                     "JellyfinMediaRepository",
-                    "Library unsupported: homevideos (id=${validatedParams.parentId})",
+                    "Known compatibility issue with homevideos library (id=${validatedParams.parentId}), returning empty list",
                 )
 
-                validatedParams.parentId?.let { libraryId ->
-                    healthChecker.reportFailure(libraryId, "Unsupported library type homevideos")
-                }
-
+                // Don't report this as a failure since it's a known limitation
+                // Just return empty list and let the UI handle it gracefully
                 return@execute emptyList()
             }
 
@@ -181,7 +180,42 @@ class JellyfinMediaRepository @Inject constructor(
                     healthChecker.reportFailure(libraryId, "Authentication failed")
                 }
 
-                throw Exception("Authentication failed: Token refresh was unsuccessful")
+                // ✅ FIX: Instead of throwing immediately, try one more time with a fresh client
+                try {
+                    android.util.Log.d(
+                        "JellyfinMediaRepository",
+                        "Attempting final retry with fresh client after 401 error",
+                    )
+                    
+                    // Force client invalidation and retry once more
+                    // Note: clientFactory is private in BaseJellyfinRepository, so we'll just get a fresh client
+                    val freshClient = getClient(server.url, server.accessToken)
+                    
+                    val response = freshClient.itemsApi.getItems(
+                        userId = userUuid,
+                        parentId = parent,
+                        recursive = true,
+                        includeItemTypes = itemKinds,
+                        startIndex = validatedParams.startIndex,
+                        limit = validatedParams.limit,
+                    )
+                    
+                    val items = response.content.items ?: emptyList()
+                    
+                    // Report success to health checker
+                    validatedParams.parentId?.let { libraryId ->
+                        healthChecker.reportSuccess(libraryId)
+                    }
+                    
+                    return@execute items
+                } catch (finalException: Exception) {
+                    android.util.Log.e(
+                        "JellyfinMediaRepository",
+                        "Final retry failed, authentication has permanently failed",
+                        finalException,
+                    )
+                    throw Exception("Authentication failed: Token refresh was unsuccessful")
+                }
             }
 
             // If we get a 400, try multiple fallback strategies
@@ -481,5 +515,19 @@ class JellyfinMediaRepository @Inject constructor(
 
     suspend fun logHttpError(requestUrl: String, status: Int, body: String?) {
         Log.e("JellyfinMediaRepository", "HTTP error for $requestUrl\n$status ${body.orEmpty()}")
+    }
+
+    /**
+     * Clear library health issues for known problematic collection types on app initialization.
+     * This helps with libraries like 'homevideos' that may have compatibility issues.
+     */
+    fun clearKnownLibraryHealthIssues() {
+        // Clean up any previous health issues for homevideos libraries
+        // since we now handle them gracefully
+        healthChecker.cleanup()
+        
+        if (BuildConfig.DEBUG) {
+            Log.d("JellyfinMediaRepository", "Cleared known library health issues on initialization")
+        }
     }
 }

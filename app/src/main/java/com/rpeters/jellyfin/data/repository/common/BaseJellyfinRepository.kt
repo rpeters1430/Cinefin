@@ -118,6 +118,9 @@ open class BaseJellyfinRepository @Inject constructor(
                         // Clear client factory to ensure new token is used
                         clientFactory.invalidateClient()
 
+                        // ✅ FIX: Add delay to ensure token propagation and prevent race conditions
+                        kotlinx.coroutines.delay(500) // 500ms delay
+
                         // Verify token is actually valid before retrying
                         if (authRepository.isTokenExpired()) {
                             Logger.e(LogCategory.NETWORK, javaClass.simpleName, "Token refresh appeared successful but token is still expired")

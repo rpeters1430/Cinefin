@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,7 +54,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.ui.components.MediaCard
+import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -115,9 +115,16 @@ fun MusicScreen(
     var viewMode by remember { mutableStateOf(MusicViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
 
-    // Filter music items from recently added types data (this is where the music data actually is)
-    val musicItems = remember(appState.recentlyAddedByTypes) {
-        appState.recentlyAddedByTypes["AUDIO"] ?: emptyList()
+    // Get music items from the proper library data
+    val musicItems = remember(appState.allItems, appState.recentlyAddedByTypes) {
+        val libraryMusic = appState.allItems.filter { 
+            it.type in listOf(BaseItemKind.MUSIC_ALBUM, BaseItemKind.MUSIC_ARTIST, BaseItemKind.AUDIO)
+        }
+        val recentMusic = appState.recentlyAddedByTypes["AUDIO"] ?: emptyList()
+        
+        // Combine library music with recent music, removing duplicates
+        val combined = (libraryMusic + recentMusic).distinctBy { it.id }
+        combined
     }
 
     // Apply filtering and sorting
@@ -179,6 +186,10 @@ fun MusicScreen(
                         Icon(
                             imageVector = Icons.Default.MusicNote,
                             contentDescription = null,
+                        )
+                        Text(
+                            text = stringResource(id = R.string.music),
+                            style = MaterialTheme.typography.titleLarge,
                         )
                     }
                 },
@@ -311,7 +322,10 @@ fun MusicScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator(color = MusicGreen)
+                        ExpressiveCircularLoading(
+                            size = 48.dp,
+                            showPulse = true,
+                        )
                     }
                 }
 
@@ -403,7 +417,7 @@ private fun MusicContent(
                 modifier = modifier.fillMaxSize(),
             ) {
                 items(musicItems) { musicItem ->
-                    MediaCard(
+                    ExpressiveMusicCard(
                         item = musicItem,
                         getImageUrl = getImageUrl,
                     )
@@ -429,7 +443,7 @@ private fun MusicContent(
                 modifier = modifier.fillMaxSize(),
             ) {
                 items(musicItems) { musicItem ->
-                    MediaCard(
+                    ExpressiveMusicCard(
                         item = musicItem,
                         getImageUrl = getImageUrl,
                     )
@@ -447,6 +461,53 @@ private fun MusicContent(
             }
         }
     }
+}
+
+@Composable
+private fun ExpressiveMusicCard(
+    item: BaseItemDto,
+    getImageUrl: (BaseItemDto) -> String?,
+    modifier: Modifier = Modifier,
+) {
+    val imageUrl = getImageUrl(item) ?: ""
+    val title = item.name ?: "Unknown Title"
+    
+    // Determine subtitle based on item type
+    val subtitle = when (item.type) {
+        BaseItemKind.MUSIC_ALBUM -> {
+            val artist = item.albumArtist ?: item.artists?.firstOrNull()
+            artist?.let { "$it • ${item.productionYear ?: ""}" } ?: "${item.productionYear ?: ""}"
+        }
+        BaseItemKind.MUSIC_ARTIST -> {
+            "Artist"
+        }
+        BaseItemKind.AUDIO -> {
+            val artist = item.artists?.firstOrNull()
+            artist?.let { "$it • ${item.productionYear ?: ""}" } ?: "${item.productionYear ?: ""}"
+        }
+        else -> {
+            item.type?.toString() ?: ""
+        }
+    }
+    
+    // Get rating if available
+    val rating = item.communityRating?.toFloat()
+    
+    // Check if favorite
+    val isFavorite = item.userData?.isFavorite == true
+
+    ExpressiveMediaCard(
+        title = title,
+        subtitle = subtitle,
+        imageUrl = imageUrl,
+        rating = rating,
+        isFavorite = isFavorite,
+        onCardClick = { /* TODO: Handle card click */ },
+        onPlayClick = { /* TODO: Handle play click */ },
+        onFavoriteClick = { /* TODO: Handle favorite click */ },
+        onMoreClick = { /* TODO: Handle more options click */ },
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -473,9 +534,9 @@ private fun MusicPaginationFooter(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                CircularProgressIndicator(
-                    color = MusicGreen,
-                    modifier = Modifier.padding(8.dp),
+                ExpressiveCircularLoading(
+                    size = 24.dp,
+                    strokeWidth = 2.dp,
                 )
                 Text(
                     text = stringResource(id = R.string.loading_more_music),

@@ -65,10 +65,12 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
 import com.rpeters.jellyfin.ui.components.ExpressiveDotsLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveFloatingToolbar
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
 import com.rpeters.jellyfin.ui.components.MediaType
+import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.getItemKey
@@ -365,15 +367,33 @@ fun TVShowsScreen(
                     }
 
                     TVShowContentState.CONTENT -> {
-                        TVShowsContent(
-                            tvShows = filteredAndSortedTVShows,
-                            viewMode = viewMode,
-                            getImageUrl = { item -> viewModel.getBackdropUrl(item) },
-                            onTVShowClick = onTVShowClick,
-                            isLoadingMore = appState.isLoadingTVShows,
-                            hasMoreItems = appState.hasMoreTVShows,
-                            onLoadMore = { viewModel.loadMoreTVShows() },
-                        )
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            TVShowsContent(
+                                tvShows = filteredAndSortedTVShows,
+                                viewMode = viewMode,
+                                getImageUrl = { item -> viewModel.getBackdropUrl(item) },
+                                onTVShowClick = onTVShowClick,
+                                isLoadingMore = appState.isLoadingTVShows,
+                                hasMoreItems = appState.hasMoreTVShows,
+                                onLoadMore = { viewModel.loadMoreTVShows() },
+                            )
+                            
+                            // Add ExpressiveFloatingToolbar for TV shows
+                            if (filteredAndSortedTVShows.isNotEmpty()) {
+                                ExpressiveFloatingToolbar(
+                                    isVisible = filteredAndSortedTVShows.isNotEmpty(),
+                                    onPlayClick = { /* TODO: Implement play functionality */ },
+                                    onQueueClick = { /* TODO: Implement queue functionality */ },
+                                    onDownloadClick = { /* TODO: Implement download functionality */ },
+                                    onCastClick = { /* TODO: Implement cast functionality */ },
+                                    onFavoriteClick = { /* TODO: Implement favorite functionality */ },
+                                    onShareClick = { /* TODO: Implement share functionality */ },
+                                    onMoreClick = { /* TODO: Implement more options functionality */ },
+                                    primaryAction = ToolbarAction.PLAY,
+                                    modifier = Modifier.align(Alignment.BottomCenter),
+                                )
+                            }
+                        }
                     }
                 }
             }
