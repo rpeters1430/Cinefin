@@ -100,7 +100,16 @@ object NetworkModule {
                     .maxSizeBytes(120L * 1024 * 1024)
                     .build()
             }
-            .okHttpClient(okHttpClient)
+            .okHttpClient(
+                okHttpClient.newBuilder()
+                    .addInterceptor { chain ->
+                        val request = chain.request().newBuilder()
+                            .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
+                            .build()
+                        chain.proceed(request)
+                    }
+                    .build()
+            )
             .crossfade(true)
             .respectCacheHeaders(true)
             .allowRgb565(true)
