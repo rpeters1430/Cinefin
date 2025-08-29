@@ -108,7 +108,7 @@ object NetworkModule {
                             .build()
                         chain.proceed(request)
                     }
-                    .build()
+                    .build(),
             )
             .crossfade(true)
             .respectCacheHeaders(true)
