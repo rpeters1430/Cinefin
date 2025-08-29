@@ -21,8 +21,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -220,17 +220,17 @@ class MainAppViewModel @Inject constructor(
                         }
 
                         // ✅ PERFORMANCE FIX: Load library type data asynchronously with staggered timing to prevent auth conflicts
-                        launch { 
+                        launch {
                             delay(100) // Small delay to prevent concurrent 401 errors
-                            loadLibraryTypeData(LibraryType.MOVIES, forceRefresh) 
+                            loadLibraryTypeData(LibraryType.MOVIES, forceRefresh)
                         }
-                        launch { 
+                        launch {
                             delay(200) // Staggered delay
-                            loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh) 
+                            loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh)
                         }
-                        launch { 
+                        launch {
                             delay(300) // Staggered delay
-                            loadLibraryTypeData(LibraryType.MUSIC, forceRefresh) 
+                            loadLibraryTypeData(LibraryType.MUSIC, forceRefresh)
                         }
 
                         // Load home videos for custom libraries
@@ -249,9 +249,9 @@ class MainAppViewModel @Inject constructor(
                                 "movies" -> {
                                     if (LibraryType.MOVIES.name !in loadedLibraryTypes) {
                                         // ✅ PERFORMANCE FIX: Launch asynchronously with delay to prevent auth conflicts
-                                        launch { 
+                                        launch {
                                             delay(700) // Further staggered to avoid auth conflicts
-                                            loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true) 
+                                            loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
                                         }
                                     } else {
                                         updatedAllMovies = emptyList<BaseItemDto>().toMutableList()
@@ -261,9 +261,9 @@ class MainAppViewModel @Inject constructor(
                                 "tvshows" -> {
                                     if (LibraryType.TV_SHOWS.name !in loadedLibraryTypes) {
                                         // ✅ PERFORMANCE FIX: Launch asynchronously with delay to prevent auth conflicts
-                                        launch { 
+                                        launch {
                                             delay(800) // Further staggered to avoid auth conflicts
-                                            loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true) 
+                                            loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true)
                                         }
                                     } else {
                                         updatedAllTVShows = emptyList<BaseItemDto>().toMutableList()
@@ -273,9 +273,9 @@ class MainAppViewModel @Inject constructor(
                                 "music" -> {
                                     if (LibraryType.MUSIC.name !in loadedLibraryTypes) {
                                         // ✅ PERFORMANCE FIX: Launch asynchronously with delay to prevent auth conflicts
-                                        launch { 
+                                        launch {
                                             delay(900) // Further staggered to avoid auth conflicts
-                                            loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true) 
+                                            loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true)
                                         }
                                     } else {
                                         updatedAllItems = updatedAllItems.filterNot {
@@ -309,21 +309,21 @@ class MainAppViewModel @Inject constructor(
                         }.toSet()
                         // ✅ PERFORMANCE FIX: Launch library type data loading asynchronously with delays
                         if ("movies" in addedTypes) {
-                            launch { 
+                            launch {
                                 delay(400) // Staggered to avoid auth conflicts
-                                loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true) 
+                                loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
                             }
                         }
                         if ("tvshows" in addedTypes) {
-                            launch { 
+                            launch {
                                 delay(500) // Staggered to avoid auth conflicts
-                                loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true) 
+                                loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true)
                             }
                         }
                         if ("music" in addedTypes) {
-                            launch { 
+                            launch {
                                 delay(600) // Staggered to avoid auth conflicts
-                                loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true) 
+                                loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true)
                             }
                         }
                         // ✅ PERFORMANCE FIX: Launch home videos loading asynchronously
@@ -331,10 +331,10 @@ class MainAppViewModel @Inject constructor(
                             val type = (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
                             type !in setOf("movies", "tvshows", "music")
                         }.forEach { library ->
-                            library.id?.let { libraryId -> 
-                                launch { 
+                            library.id?.let { libraryId ->
+                                launch {
                                     delay(1000) // Delay to avoid auth conflicts with other async calls
-                                    loadHomeVideos(libraryId.toString()) 
+                                    loadHomeVideos(libraryId.toString())
                                 }
                             }
                         }
@@ -360,7 +360,7 @@ class MainAppViewModel @Inject constructor(
                 // Process recently added result (collect data for batch update)
                 var recentlyAddedItems: List<BaseItemDto> = emptyList()
                 var errorMessage: String? = null
-                
+
                 when (val recentlyAddedResult = recentlyAddedDeferred.await()) {
                     is ApiResult.Success -> {
                         if (BuildConfig.DEBUG) {
@@ -464,7 +464,7 @@ class MainAppViewModel @Inject constructor(
                     recentlyAdded = recentlyAddedItems,
                     recentlyAddedByTypes = recentlyAddedByTypes,
                     isLoading = false,
-                    errorMessage = errorMessage
+                    errorMessage = errorMessage,
                 )
 
                 // ✅ DEBUG: Log final state for UI troubleshooting
@@ -940,7 +940,7 @@ class MainAppViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadHomeVideos: Starting to load home videos for libraryId=$libraryId")
             }
-            
+
             // ✅ FIX: Use same authentication validation as loadInitialData
             if (!ensureValidTokenWithWait()) {
                 if (BuildConfig.DEBUG) {

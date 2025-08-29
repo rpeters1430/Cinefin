@@ -349,7 +349,7 @@ class JellyfinRepository @Inject constructor(
         if (BuildConfig.DEBUG) {
             Log.d("JellyfinRepository", "reAuthenticate: Delegating to AuthRepository")
         }
-        
+
         // ✅ FIX: Delegate to AuthRepository to prevent duplicate authentication logic and race conditions
         return authRepository.reAuthenticate()
     }
@@ -358,7 +358,7 @@ class JellyfinRepository @Inject constructor(
         if (BuildConfig.DEBUG) {
             Log.d("JellyfinRepository", "forceReAuthenticate: Forcing token refresh via AuthRepository")
         }
-        
+
         // ✅ FIX: Use force refresh when server reports 401 errors
         return authRepository.forceReAuthenticate()
     }

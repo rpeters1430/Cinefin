@@ -171,7 +171,7 @@ class JellyfinAuthRepository @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("JellyfinAuthRepository", "authenticateUser: Attempting authentication for user '$username' on server '$serverUrl'")
             }
-            
+
             // First test connection to find working URL
             when (val connectionResult = testServerConnectionWithUrl(serverUrl)) {
                 is ApiResult.Success -> {
@@ -428,7 +428,7 @@ class JellyfinAuthRepository @Inject constructor(
                 Log.d("JellyfinAuthRepository", "reAuthenticate: Server URL: '${server.url}'")
                 Log.d("JellyfinAuthRepository", "reAuthenticate: Original server URL: '${server.originalServerUrl}'")
             }
-            
+
             // Try to get the password with detailed logging
             val savedPassword = try {
                 val password = secureCredentialManager.getPassword(credentialUrl, server.username ?: "")
@@ -440,7 +440,7 @@ class JellyfinAuthRepository @Inject constructor(
                 Log.e("JellyfinAuthRepository", "reAuthenticate: Exception while getting password from credential manager", e)
                 null
             }
-            
+
             if (savedPassword == null) {
                 Log.w("JellyfinAuthRepository", "reAuthenticate: No saved password found for user '${server.username}' on '$credentialUrl'")
                 // Try with the server URL directly as a fallback
@@ -458,7 +458,7 @@ class JellyfinAuthRepository @Inject constructor(
                     Log.e("JellyfinAuthRepository", "reAuthenticate: Exception while getting password from credential manager with fallback URL", e)
                     null
                 }
-                
+
                 if (fallbackPassword == null) {
                     Log.w("JellyfinAuthRepository", "reAuthenticate: No saved password found for user '${server.username}' on fallback URL '$fallbackUrl'")
                     // If we can't re-authenticate, logout the user

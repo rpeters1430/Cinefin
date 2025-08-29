@@ -49,7 +49,7 @@ fun StuffScreen(
         android.util.Log.d("StuffScreen", "StuffScreen started: libraryId=$libraryId, collectionType=$collectionType")
     }
     val appState by viewModel.appState.collectAsState()
-    
+
     if (BuildConfig.DEBUG) {
         android.util.Log.d("StuffScreen", "App state libraries count: ${appState.libraries.size}")
         android.util.Log.d("StuffScreen", "App state homeVideosByLibrary size: ${appState.homeVideosByLibrary.size}")
@@ -57,7 +57,7 @@ fun StuffScreen(
             android.util.Log.d("StuffScreen", "homeVideosByLibrary[$id]: ${items.size} items")
         }
     }
-    
+
     LaunchedEffect(libraryId) {
         if (BuildConfig.DEBUG) {
             android.util.Log.d("StuffScreen", "LaunchedEffect triggered for libraryId=$libraryId")
@@ -83,7 +83,7 @@ fun StuffScreen(
                 android.util.Log.d("StuffScreen", "Item types: $typeBreakdown")
             }
         }
-        
+
         // For "stuff" library, we want to show all items except movies, TV shows, music, etc.
         // We'll be more permissive with the filtering to ensure items are displayed
         val filtered = when (type) {
@@ -101,7 +101,7 @@ fun StuffScreen(
                 items
             }
         }
-        
+
         val sorted = filtered.sortedBy { it.sortName ?: it.name }
         if (BuildConfig.DEBUG) {
             android.util.Log.d("StuffScreen", "Filtered items count: ${filtered.size}, Sorted items count: ${sorted.size}")
