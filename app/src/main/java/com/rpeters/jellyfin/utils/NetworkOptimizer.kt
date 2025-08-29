@@ -7,6 +7,7 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 

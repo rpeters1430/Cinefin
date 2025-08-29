@@ -152,12 +152,12 @@ The app uses a comprehensive `ApiResult<T>` sealed class with specific error typ
 Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.toml`. Key dependencies include:
 
 ### Core Android
-- Jetpack Compose BOM (2025.08.00)
-- Material 3 (1.5.0-alpha02) with adaptive navigation suite and expressive components
+- Jetpack Compose BOM (2025.08.01)
+- Material 3 (1.5.0-alpha03) with adaptive navigation suite and expressive components
 - AndroidX core libraries and lifecycle components
-- Media3 (1.8.0) for video playbook with ExoPlayer and Jellyfin FFmpeg decoder
+- Media3 (1.8.0) for video playback with ExoPlayer and Jellyfin FFmpeg decoder
 - Coil (2.7.0) for image loading
-- Paging 3 (3.4.0-alpha02) for paginated content loading
+- Paging 3 (3.4.0-alpha03) for paginated content loading
 
 ### Jellyfin Integration
 - Jellyfin SDK (1.6.8) for API communication
@@ -177,7 +177,7 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 
 ### Build Configuration
 - **Kotlin**: 2.2.10 with Compose compiler plugin
-- **Gradle**: 8.12.1 with Kotlin DSL
+- **Gradle**: 8.12.2 (AGP) with Kotlin DSL
 - **Java**: Target/Source compatibility Version 17
 - **Android SDK**: Compile 36, Target 35, Min 26 (Android 8.0+) for broader device compatibility
 - **Package**: `com.rpeters.jellyfin` (actual package structure)

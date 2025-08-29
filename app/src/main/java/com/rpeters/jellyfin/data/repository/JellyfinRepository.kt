@@ -18,8 +18,6 @@ import com.rpeters.jellyfin.ui.utils.ErrorHandler
 import com.rpeters.jellyfin.ui.utils.OfflineManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
@@ -85,8 +83,7 @@ class JellyfinRepository @Inject constructor(
     val currentServer: Flow<JellyfinServer?> = authRepository.currentServer
     val isConnected: Flow<Boolean> = authRepository.isConnected
 
-    // Mutex to prevent race conditions in authentication
-    private val authMutex = Mutex()
+    // ✅ FIX: Removed authMutex - authentication is now handled by AuthRepository
 
     // Helper function for debug logging that only logs in debug builds
     private fun logDebug(message: String) {
@@ -348,69 +345,13 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
-    private suspend fun reAuthenticate(): Boolean = authMutex.withLock {
-        val server = authRepository.getCurrentServer() ?: return@withLock false
-
+    private suspend fun reAuthenticate(): Boolean {
         if (BuildConfig.DEBUG) {
-            Log.d("JellyfinRepository", "reAuthenticate: Starting re-authentication for user ${server.username} on ${server.url}")
+            Log.d("JellyfinRepository", "reAuthenticate: Delegating to AuthRepository")
         }
-
-        try {
-            // Clear any cached clients before re-authenticating
-            clientFactory.invalidateClient()
-
-            // Get saved password for the current server and username
-            // Use the stored original server URL for credential lookup, fallback to current URL
-            val credentialUrl = server.originalServerUrl ?: server.url
-            val savedPassword = secureCredentialManager.getPassword(credentialUrl, server.username ?: "")
-            if (savedPassword == null) {
-                Log.w("JellyfinRepository", "reAuthenticate: No saved password found for user ${server.username} on $credentialUrl")
-                // If we can't re-authenticate, logout the user
-                logout()
-                return@withLock false
-            }
-
-            if (BuildConfig.DEBUG) {
-                Log.d("JellyfinRepository", "reAuthenticate: Found saved credentials for $credentialUrl, attempting authentication")
-            }
-
-            // Re-authenticate using saved credentials - use the credential URL for consistency
-            when (val authResult = authRepository.authenticateUser(credentialUrl, server.username ?: "", savedPassword)) {
-                is ApiResult.Success -> {
-                    if (BuildConfig.DEBUG) {
-                        Log.d("JellyfinRepository", "reAuthenticate: Successfully re-authenticated user ${server.username}")
-                    }
-                    // Update auth repository state
-                    val updatedServer = server.copy(
-                        accessToken = authResult.data.accessToken,
-                        loginTimestamp = System.currentTimeMillis(),
-                    )
-                    authRepository.updateCurrentServer(updatedServer)
-
-                    // Clear client factory again to ensure fresh token is used
-                    clientFactory.invalidateClient()
-
-                    return@withLock true
-                }
-                is ApiResult.Error -> {
-                    Log.w("JellyfinRepository", "reAuthenticate: Failed to re-authenticate: ${authResult.message}")
-                    // If re-authentication fails, logout the user
-                    logout()
-                    return@withLock false
-                }
-                is ApiResult.Loading -> {
-                    if (BuildConfig.DEBUG) {
-                        Log.d("JellyfinRepository", "reAuthenticate: Authentication in progress")
-                    }
-                    return@withLock false
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("JellyfinRepository", "reAuthenticate: Exception during re-authentication", e)
-            // If there's an exception during re-auth, logout to prevent further errors
-            logout()
-            return@withLock false
-        }
+        
+        // ✅ FIX: Delegate to AuthRepository to prevent duplicate authentication logic and race conditions
+        return authRepository.reAuthenticate()
     }
 
     suspend fun logout() {

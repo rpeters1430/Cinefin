@@ -16,8 +16,8 @@ import javax.inject.Singleton
 class LibraryHealthChecker @Inject constructor() {
     companion object {
         private const val TAG = "LibraryHealthChecker"
-        private const val MAX_FAILURES_BEFORE_BLOCK = 3
-        private const val BLOCK_DURATION_MS = 5 * 60 * 1000L // 5 minutes
+        private const val MAX_FAILURES_BEFORE_BLOCK = 5
+        private const val BLOCK_DURATION_MS = 60 * 1000L // 1 minute
     }
 
     // Track library failure counts

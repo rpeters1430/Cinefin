@@ -98,7 +98,7 @@ object NetworkModule {
                 DiskCache.Builder()
                     .directory(File(context.cacheDir, "image_cache"))
                     .maxSizeBytes(120L * 1024 * 1024)
-                    .build(),
+                    .build()
             }
             .okHttpClient(
                 okHttpClient.newBuilder()
@@ -198,9 +198,14 @@ class JellyfinClientFactory @Inject constructor(
         baseUrl: String,
         accessToken: String? = null,
         forceRefresh: Boolean = false,
+        skipNormalization: Boolean = false,
     ): org.jellyfin.sdk.api.client.ApiClient = withContext(Dispatchers.IO) {
-        // Validate and normalize the URL properly
-        val normalizedUrl = com.rpeters.jellyfin.utils.normalizeJellyfinBase(baseUrl)
+        // Only normalize URL if not already validated by ConnectionOptimizer
+        val normalizedUrl = if (skipNormalization) {
+            baseUrl.trim().removeSuffix("/")
+        } else {
+            com.rpeters.jellyfin.utils.normalizeJellyfinBase(baseUrl)
+        }
 
         // Use synchronized block to prevent race conditions during client creation
         synchronized(clientLock) {

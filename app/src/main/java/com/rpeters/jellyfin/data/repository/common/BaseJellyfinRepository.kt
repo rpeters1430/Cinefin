@@ -121,7 +121,7 @@ open class BaseJellyfinRepository @Inject constructor(
                         clientFactory.invalidateClient()
 
                         // ✅ FIX: Add delay to ensure token propagation and prevent race conditions
-                        kotlinx.coroutines.delay(500) // 500ms delay
+                        kotlinx.coroutines.delay(1000) // 1000ms delay
 
                         // Verify token is actually valid before retrying
                         if (authRepository.isTokenExpired()) {

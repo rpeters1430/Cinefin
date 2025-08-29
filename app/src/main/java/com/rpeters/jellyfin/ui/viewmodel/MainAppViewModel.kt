@@ -16,11 +16,13 @@ import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.utils.ConcurrencyThrottler
 import com.rpeters.jellyfin.utils.PerformanceMonitor
+import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -87,13 +89,22 @@ class MainAppViewModel @Inject constructor(
     private var isLoadingData = false
 
     init {
-        loadInitialData()
+        // ✅ AUTHENTICATION FIX: Don't load data in init block
+        // Data loading should only happen after authentication is established
+        // This prevents premature API calls and "User not authenticated" logs
+        if (BuildConfig.DEBUG) {
+            Log.d("MainAppViewModel", "ViewModel initialized - data loading will be triggered by UI after auth")
+        }
     }
 
-    private suspend fun ensureValidToken() {
-        withContext(Dispatchers.IO) {
-            if (authRepository.isTokenExpired()) {
-                authRepository.reAuthenticate()
+    private suspend fun ensureValidToken(): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Use the improved token validation that waits for concurrent authentication
+                return@withContext ensureValidTokenWithWait()
+            } catch (e: Exception) {
+                SecureLogger.e("MainAppViewModel", "Error ensuring valid token", e)
+                return@withContext false
             }
         }
     }
@@ -168,18 +179,13 @@ class MainAppViewModel @Inject constructor(
                     return@launch
                 }
 
-                // ✅ FIX: Validate and refresh token if needed before starting data loading
-                if (authRepository.isTokenExpired()) {
+                // ✅ FIX: Ensure we have a valid token before starting any data loading
+                // This prevents multiple concurrent authentication attempts
+                if (!ensureValidTokenWithWait()) {
                     if (BuildConfig.DEBUG) {
-                        Log.d("MainAppViewModel", "loadInitialData: Token expired, refreshing before data load")
+                        Log.e("MainAppViewModel", "loadInitialData: Token validation failed, cannot load data")
                     }
-                    val refreshResult = authRepository.reAuthenticate()
-                    if (!refreshResult) {
-                        if (BuildConfig.DEBUG) {
-                            Log.e("MainAppViewModel", "loadInitialData: Token refresh failed, cannot load data")
-                        }
-                        return@launch
-                    }
+                    return@launch
                 }
 
                 // Clear any existing library health issues for known problematic libraries
@@ -205,20 +211,27 @@ class MainAppViewModel @Inject constructor(
                 }
 
                 // Process libraries result
+                var newLibraries: List<BaseItemDto> = emptyList()
                 when (val librariesResult = librariesDeferred.await()) {
                     is ApiResult.Success -> {
-                        val newLibraries = librariesResult.data
+                        newLibraries = librariesResult.data
                         if (BuildConfig.DEBUG) {
                             Log.d("MainAppViewModel", "loadInitialData: Loaded ${newLibraries.size} libraries")
                         }
 
-                        // Update libraries state
-                        _appState.value = _appState.value.copy(libraries = newLibraries)
-
-                        // Load library type data
-                        loadLibraryTypeData(LibraryType.MOVIES, forceRefresh)
-                        loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh)
-                        loadLibraryTypeData(LibraryType.MUSIC, forceRefresh)
+                        // ✅ PERFORMANCE FIX: Load library type data asynchronously with staggered timing to prevent auth conflicts
+                        launch { 
+                            delay(100) // Small delay to prevent concurrent 401 errors
+                            loadLibraryTypeData(LibraryType.MOVIES, forceRefresh) 
+                        }
+                        launch { 
+                            delay(200) // Staggered delay
+                            loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh) 
+                        }
+                        launch { 
+                            delay(300) // Staggered delay
+                            loadLibraryTypeData(LibraryType.MUSIC, forceRefresh) 
+                        }
 
                         // Load home videos for custom libraries
                         val previousIds = _appState.value.homeVideosByLibrary.keys.toSet()
@@ -235,7 +248,11 @@ class MainAppViewModel @Inject constructor(
                             when (type) {
                                 "movies" -> {
                                     if (LibraryType.MOVIES.name !in loadedLibraryTypes) {
-                                        loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
+                                        // ✅ PERFORMANCE FIX: Launch asynchronously with delay to prevent auth conflicts
+                                        launch { 
+                                            delay(700) // Further staggered to avoid auth conflicts
+                                            loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true) 
+                                        }
                                     } else {
                                         updatedAllMovies = emptyList<BaseItemDto>().toMutableList()
                                         loadedLibraryTypes.remove(LibraryType.MOVIES.name)
@@ -243,7 +260,11 @@ class MainAppViewModel @Inject constructor(
                                 }
                                 "tvshows" -> {
                                     if (LibraryType.TV_SHOWS.name !in loadedLibraryTypes) {
-                                        loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true)
+                                        // ✅ PERFORMANCE FIX: Launch asynchronously with delay to prevent auth conflicts
+                                        launch { 
+                                            delay(800) // Further staggered to avoid auth conflicts
+                                            loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true) 
+                                        }
                                     } else {
                                         updatedAllTVShows = emptyList<BaseItemDto>().toMutableList()
                                         loadedLibraryTypes.remove(LibraryType.TV_SHOWS.name)
@@ -251,7 +272,11 @@ class MainAppViewModel @Inject constructor(
                                 }
                                 "music" -> {
                                     if (LibraryType.MUSIC.name !in loadedLibraryTypes) {
-                                        loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true)
+                                        // ✅ PERFORMANCE FIX: Launch asynchronously with delay to prevent auth conflicts
+                                        launch { 
+                                            delay(900) // Further staggered to avoid auth conflicts
+                                            loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true) 
+                                        }
                                     } else {
                                         updatedAllItems = updatedAllItems.filterNot {
                                             LibraryType.MUSIC.itemKinds.contains(it.type)
@@ -282,20 +307,36 @@ class MainAppViewModel @Inject constructor(
                         val addedTypes: Set<String> = addedLibraries.mapNotNull {
                             (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
                         }.toSet()
+                        // ✅ PERFORMANCE FIX: Launch library type data loading asynchronously with delays
                         if ("movies" in addedTypes) {
-                            loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true)
+                            launch { 
+                                delay(400) // Staggered to avoid auth conflicts
+                                loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true) 
+                            }
                         }
                         if ("tvshows" in addedTypes) {
-                            loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true)
+                            launch { 
+                                delay(500) // Staggered to avoid auth conflicts
+                                loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true) 
+                            }
                         }
                         if ("music" in addedTypes) {
-                            loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true)
+                            launch { 
+                                delay(600) // Staggered to avoid auth conflicts
+                                loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = true) 
+                            }
                         }
+                        // ✅ PERFORMANCE FIX: Launch home videos loading asynchronously
                         addedLibraries.filter {
                             val type = (it.collectionType?.toString() ?: it.type?.name)?.lowercase(Locale.getDefault())
                             type !in setOf("movies", "tvshows", "music")
                         }.forEach { library ->
-                            library.id?.let { loadHomeVideos(it.toString()) }
+                            library.id?.let { libraryId -> 
+                                launch { 
+                                    delay(1000) // Delay to avoid auth conflicts with other async calls
+                                    loadHomeVideos(libraryId.toString()) 
+                                }
+                            }
                         }
                     }
                     is ApiResult.Error -> {
@@ -316,13 +357,16 @@ class MainAppViewModel @Inject constructor(
                     }
                 }
 
-                // Process recently added result
+                // Process recently added result (collect data for batch update)
+                var recentlyAddedItems: List<BaseItemDto> = emptyList()
+                var errorMessage: String? = null
+                
                 when (val recentlyAddedResult = recentlyAddedDeferred.await()) {
                     is ApiResult.Success -> {
                         if (BuildConfig.DEBUG) {
                             Log.d("MainAppViewModel", "loadInitialData: Loaded ${recentlyAddedResult.data.size} recently added items")
                         }
-                        _appState.value = _appState.value.copy(recentlyAdded = recentlyAddedResult.data)
+                        recentlyAddedItems = recentlyAddedResult.data
                     }
                     is ApiResult.Error -> {
                         // ✅ FIX: Don't show error messages for cancelled operations
@@ -332,12 +376,7 @@ class MainAppViewModel @Inject constructor(
                             }
                         } else {
                             Log.e("MainAppViewModel", "loadInitialData: Failed to load recent items: ${recentlyAddedResult.message}")
-                            // Don't override library error, just log this
-                            if (_appState.value.errorMessage == null) {
-                                _appState.value = _appState.value.copy(
-                                    errorMessage = "Failed to load recent items: ${recentlyAddedResult.message}",
-                                )
-                            }
+                            errorMessage = "Failed to load recent items: ${recentlyAddedResult.message}"
                         }
                     }
                     is ApiResult.Loading -> {
@@ -418,13 +457,27 @@ class MainAppViewModel @Inject constructor(
                     }
                 }
 
-                // Update state with the collected data
-                _appState.value = _appState.value.copy(recentlyAddedByTypes = recentlyAddedByTypes)
+                // ✅ PERFORMANCE FIX: Batch the final state updates to minimize expensive copy operations
+                // This significantly reduces frame skipping during app startup by doing only one expensive copy operation
+                _appState.value = _appState.value.copy(
+                    libraries = newLibraries,
+                    recentlyAdded = recentlyAddedItems,
+                    recentlyAddedByTypes = recentlyAddedByTypes,
+                    isLoading = false,
+                    errorMessage = errorMessage
+                )
+
+                // ✅ DEBUG: Log final state for UI troubleshooting
+                if (BuildConfig.DEBUG) {
+                    Log.d("MainAppViewModel", "Final state update - Libraries: ${newLibraries.size}, RecentlyAdded: ${recentlyAddedItems.size}")
+                    Log.d("MainAppViewModel", "RecentlyAddedByTypes: ${recentlyAddedByTypes.mapValues { it.value.size }}")
+                    newLibraries.forEachIndexed { index, library ->
+                        Log.d("MainAppViewModel", "Library $index: ${library.name} (${library.collectionType})")
+                    }
+                }
 
                 // ✅ FIX: Only load essential data initially, load library-specific data on-demand
                 // This prevents the double loading issue when navigating to library type screens
-
-                _appState.value = _appState.value.copy(isLoading = false)
                 if (BuildConfig.DEBUG) {
                     Log.d("MainAppViewModel", "loadInitialData: Completed loading essential data. Library-specific data will load on-demand.")
                     PerformanceMonitor.logMemoryUsage("After loading data")
@@ -547,8 +600,21 @@ class MainAppViewModel @Inject constructor(
         )
     }
 
-    private fun loadLibraryItemsPage(reset: Boolean = false) {
+    fun loadLibraryItemsPage(reset: Boolean = false) {
         viewModelScope.launch {
+            // ✅ FIX: Use same authentication validation as loadInitialData
+            if (!ensureValidTokenWithWait()) {
+                if (BuildConfig.DEBUG) {
+                    Log.w("MainAppViewModel", "loadLibraryItemsPage: Authentication failed, skipping API call")
+                }
+                _appState.value = _appState.value.copy(
+                    isLoading = false,
+                    isLoadingMore = false,
+                    errorMessage = "Authentication required. Please log in again.",
+                )
+                return@launch
+            }
+
             val currentState = _appState.value
 
             if (reset) {
@@ -871,10 +937,10 @@ class MainAppViewModel @Inject constructor(
 
     fun loadHomeVideos(libraryId: String) {
         viewModelScope.launch {
-            // Check authentication first
-            if (!repository.isUserAuthenticated()) {
+            // ✅ FIX: Use same authentication validation as loadInitialData
+            if (!ensureValidTokenWithWait()) {
                 if (BuildConfig.DEBUG) {
-                    Log.w("MainAppViewModel", "loadHomeVideos: User not authenticated, skipping API call")
+                    Log.w("MainAppViewModel", "loadHomeVideos: Authentication failed, skipping API call")
                 }
                 return@launch
             }
@@ -1614,6 +1680,14 @@ class MainAppViewModel @Inject constructor(
      */
     private fun loadMusicLibraryItems(musicLibraryId: String) {
         viewModelScope.launch {
+            // ✅ FIX: Use same authentication validation as loadInitialData
+            if (!ensureValidTokenWithWait()) {
+                if (BuildConfig.DEBUG) {
+                    Log.w("MainAppViewModel", "loadMusicLibraryItems: Authentication failed, skipping API call")
+                }
+                return@launch
+            }
+
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadMusicLibraryItems: Loading music items for library $musicLibraryId")
             }
@@ -1667,6 +1741,14 @@ class MainAppViewModel @Inject constructor(
      */
     private fun loadOtherLibraryItems(libraryId: String) {
         viewModelScope.launch {
+            // ✅ FIX: Use same authentication validation as loadInitialData
+            if (!ensureValidTokenWithWait()) {
+                if (BuildConfig.DEBUG) {
+                    Log.w("MainAppViewModel", "loadOtherLibraryItems: Authentication failed, skipping API call")
+                }
+                return@launch
+            }
+
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadOtherLibraryItems: Loading other items for library $libraryId")
             }

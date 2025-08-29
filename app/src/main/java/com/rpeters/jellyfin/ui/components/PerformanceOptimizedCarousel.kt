@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
-import com.rpeters.jellyfin.ui.image.rememberImagePreloader
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -64,15 +63,6 @@ fun PerformanceOptimizedCarousel(
         )
 
         val listState = rememberLazyListState()
-        val imagePreloader = rememberImagePreloader()
-
-        // Preload visible images
-        LaunchedEffect(limitedItems) {
-            val imagesToPreload = limitedItems.take(10).mapNotNull { item ->
-                getOptimalImageUrl(item, getImageUrl, getBackdropUrl, getSeriesImageUrl)
-            }
-            imagePreloader.preloadImages(imagesToPreload, ImageSize.CARD)
-        }
 
         LazyRow(
             state = listState,

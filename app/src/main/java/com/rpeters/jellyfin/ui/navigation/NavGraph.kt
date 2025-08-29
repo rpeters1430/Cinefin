@@ -176,10 +176,22 @@ fun JellyfinNavGraph(
                 lifecycle = lifecycleOwner.lifecycle,
                 minActiveState = Lifecycle.State.STARTED,
             )
+            val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(
+                initialValue = null,
+                lifecycle = lifecycleOwner.lifecycle,
+                minActiveState = Lifecycle.State.STARTED,
+            )
+
+            // ✅ AUTHENTICATION FIX: Only load data after reaching Home screen (post-authentication)
+            LaunchedEffect(Unit) {
+                // This runs only once when the Home screen is composed
+                // At this point, authentication should be established
+                viewModel.loadInitialData()
+            }
 
             HomeScreen(
                 appState = appState,
-                currentServer = null,
+                currentServer = currentServer,
                 onRefresh = { viewModel.loadInitialData() },
                 onSearch = { query ->
                     viewModel.search(query)
@@ -237,6 +249,16 @@ fun JellyfinNavGraph(
                 lifecycle = lifecycleOwner.lifecycle,
                 minActiveState = Lifecycle.State.STARTED,
             )
+
+            // ✅ FIX: Trigger initial data loading when navigating to Library screen
+            LaunchedEffect(Unit) {
+                if (appState.libraries.isEmpty() && !appState.isLoading) {
+                    if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                        Log.d("NavGraph", "Library screen - triggering initial data load")
+                    }
+                    viewModel.loadInitialData()
+                }
+            }
 
             LibraryScreen(
                 libraries = appState.libraries,

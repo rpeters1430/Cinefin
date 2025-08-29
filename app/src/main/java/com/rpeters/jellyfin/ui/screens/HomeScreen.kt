@@ -200,6 +200,15 @@ fun HomeContent(
     onLibraryClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    // ✅ DEBUG: Log received state for UI troubleshooting
+    LaunchedEffect(appState.libraries.size, appState.recentlyAddedByTypes.size) {
+        if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+            android.util.Log.d("HomeScreen", "Received state - Libraries: ${appState.libraries.size}, RecentlyAddedByTypes: ${appState.recentlyAddedByTypes.mapValues { it.value.size }}")
+            appState.libraries.forEachIndexed { index, library ->
+                android.util.Log.d("HomeScreen", "Library $index: ${library.name} (${library.collectionType})")
+            }
+        }
+    }
     Box(
         modifier = modifier,
     ) {

@@ -26,7 +26,8 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(gradlew.bat build:*)",
       "Bash(del \"C:\\Users\\James\\Documents\\GitHub\\JellyfinAndroid\\nul\")",
-      "Bash(adb logcat:*)"
+      "Bash(adb logcat:*)",
+      "Bash(gradlew.bat assembleDebug:*)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

@@ -211,7 +211,8 @@ class ConnectionOptimizer @Inject constructor(
     private suspend fun testSingleEndpoint(url: String): ApiResult<PublicSystemInfo> {
         return try {
             withTimeoutOrNull(CONNECTION_TIMEOUT_MS) {
-                val client = clientFactory.getClient(url)
+                // Skip normalization since we're testing the exact URL variations
+                val client = clientFactory.getClient(url, skipNormalization = true)
                 val response = client.systemApi.getPublicSystemInfo()
                 ApiResult.Success(response.content)
             } ?: ApiResult.Error("Connection timeout for $url")

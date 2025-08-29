@@ -18,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.rpeters.jellyfin.ui.image.rememberImagePreloader
 import com.rpeters.jellyfin.utils.PerformanceMonitor
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -127,14 +126,7 @@ fun PerformanceOptimizedLazyRow(
         start until end
     }
 
-    // Image preloading
-    val imagePreloader = rememberImagePreloader()
-    LaunchedEffect(optimizedItems, preloadImages) {
-        if (preloadImages && getImageUrl != null) {
-            val imagesToPreload = optimizedItems.take(10).mapNotNull(getImageUrl)
-            imagePreloader.preloadImages(imagesToPreload)
-        }
-    }
+    // Note: Image preloading is handled by the optimized ImageLoader with cache
 
     LazyRow(
         modifier = modifier,

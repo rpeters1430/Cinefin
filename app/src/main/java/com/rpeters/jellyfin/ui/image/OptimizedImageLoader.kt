@@ -317,18 +317,18 @@ private fun UserAvatarPlaceholder(
  * Preload images for better user experience.
  */
 @Composable
-fun rememberImagePreloader(): ImagePreloader {
+fun rememberImagePreloader(okHttpClient: OkHttpClient): ImagePreloader {
     val context = LocalContext.current
-    return remember { ImagePreloader(context) }
+    return remember { ImagePreloader(context, okHttpClient) }
 }
 
 /**
  * Image preloader for background loading of images.
  */
-class ImagePreloader(private val context: Context) {
+class ImagePreloader(private val context: Context, private val okHttpClient: OkHttpClient) {
     private val imageLoader = createOptimizedImageLoader(
         context,
-        Coil.imageLoader(context).okHttpClient,
+        okHttpClient,
     )
 
     /**

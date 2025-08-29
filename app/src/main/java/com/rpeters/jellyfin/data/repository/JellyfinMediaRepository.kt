@@ -117,10 +117,14 @@ class JellyfinMediaRepository @Inject constructor(
             }
         }
 
-        // Home videos libraries require an explicit VIDEO item type
+        // Home videos and photos libraries require explicit item types
         val isHomeVideos = collectionType?.equals("homevideos", ignoreCase = true) == true
+        val isPhotos = collectionType?.equals("photos", ignoreCase = true) == true
         if (isHomeVideos && (itemKinds == null || itemKinds.isEmpty())) {
             itemKinds = listOf(BaseItemKind.VIDEO)
+        }
+        if (isPhotos && (itemKinds == null || itemKinds.isEmpty())) {
+            itemKinds = listOf(BaseItemKind.PHOTO)
         }
 
         android.util.Log.d(
@@ -152,11 +156,11 @@ class JellyfinMediaRepository @Inject constructor(
                 "getLibraryItems ${e.status}: ${errorMsg ?: e.message}",
             )
 
-            // Home videos libraries can produce 400 errors; handle gracefully without reporting as failure
-            if (isHomeVideos && e.status == 400) {
+            // Home videos and photos libraries can produce 400 errors; handle gracefully without reporting as failure
+            if ((isHomeVideos || isPhotos) && e.status == 400) {
                 android.util.Log.w(
                     "JellyfinMediaRepository",
-                    "Known compatibility issue with homevideos library (id=${validatedParams.parentId}), returning empty list",
+                    "Known compatibility issue with ${collectionType} library (id=${validatedParams.parentId}), returning empty list",
                 )
 
                 // Don't report this as a failure since it's a known limitation
