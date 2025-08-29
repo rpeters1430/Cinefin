@@ -26,8 +26,8 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.size.Size
 import coil.transform.RoundedCornersTransformation
-import okhttp3.OkHttpClient
 import com.rpeters.jellyfin.ui.ShimmerBox
+import okhttp3.OkHttpClient
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import java.io.File
