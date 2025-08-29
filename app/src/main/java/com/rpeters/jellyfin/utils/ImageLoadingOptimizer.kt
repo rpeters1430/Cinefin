@@ -13,7 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 /**
  * Optimizes image loading with Coil to prevent memory leaks and improve performance
@@ -38,26 +37,9 @@ object ImageLoadingOptimizer {
                             .cleanupDispatcher(Dispatchers.IO)
                             .build()
                     }
-                    .okHttpClient {
-                        okHttpClient.newBuilder()
-                            .withStrictModeTagger()
-                            .addInterceptor { chain ->
-                                val request = chain.request().newBuilder()
-                                    .addHeader("Connection", "keep-alive")
-                                    .addHeader("User-Agent", "JellyfinAndroid-Images/1.0.0")
-                                    .addHeader("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
-                                    .build()
-                                chain.proceed(request)
-                            }
-                            .connectionPool(okhttp3.ConnectionPool(3, 3, TimeUnit.MINUTES))
-                            .connectTimeout(8, TimeUnit.SECONDS)
-                            .readTimeout(15, TimeUnit.SECONDS)
-                            .writeTimeout(8, TimeUnit.SECONDS)
-                            .retryOnConnectionFailure(false)
-                            .build()
-                    }
+                    .okHttpClient(okHttpClient)
                     .crossfade(100) // Fast crossfade
-                    .respectCacheHeaders(false) // Ignore server cache headers for better control
+                    .respectCacheHeaders(true) // Honor server cache headers
                     .allowRgb565(true) // Use less memory per image
                     .allowHardware(true) // Use hardware bitmaps when possible
                     .apply {

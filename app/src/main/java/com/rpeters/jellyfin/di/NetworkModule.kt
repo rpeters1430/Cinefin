@@ -100,20 +100,9 @@ object NetworkModule {
                     .maxSizeBytes(120L * 1024 * 1024)
                     .build()
             }
-            .okHttpClient {
-                okHttpClient.newBuilder()
-                    .addInterceptor { chain ->
-                        val request = chain.request().newBuilder()
-                            .addHeader("Connection", "keep-alive")
-                            .addHeader("User-Agent", "JellyfinAndroid-Images/1.0.0")
-                            .addHeader("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
-                            .build()
-                        chain.proceed(request)
-                    }
-                    .build()
-            }
+            .okHttpClient(okHttpClient)
             .crossfade(true)
-            .respectCacheHeaders(false)
+            .respectCacheHeaders(true)
             .allowRgb565(true)
             .allowHardware(true)
             .apply {
