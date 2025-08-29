@@ -12,18 +12,17 @@ import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.KtorClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.model.api.AuthenticateUserByName
-import org.jellyfin.sdk.model.api.AuthenticationResult
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class JellyfinAuthRepository @Inject constructor(
     private val context: Context,
-    private val secureStorage: SecureStorage
+    private val secureStorage: SecureStorage,
 ) {
     private val authMutex = Mutex()
     private var cachedCredentials: UserCredentials? = null
-    
+
     companion object {
         private const val TAG = "JellyfinAuthRepository"
     }
@@ -41,8 +40,8 @@ class JellyfinAuthRepository @Inject constructor(
             val response = client.userApi.authenticateUserByName(
                 authenticateUserByName = AuthenticateUserByName(
                     username = username,
-                    pw = password
-                )
+                    pw = password,
+                ),
             )
 
             val authResult = response.content
@@ -55,7 +54,7 @@ class JellyfinAuthRepository @Inject constructor(
                 serverUrl = serverUrl,
                 accessToken = authResult.accessToken ?: "",
                 userId = authResult.user?.id ?: "",
-                deviceId = client.deviceInfo.id
+                deviceId = client.deviceInfo.id,
             )
 
             Log.d(TAG, "authenticateUser: Saving credentials for user '$username' on server '$serverUrl'")
@@ -77,7 +76,7 @@ class JellyfinAuthRepository @Inject constructor(
     suspend fun refreshToken(): Result<UserCredentials> = withContext(Dispatchers.IO) {
         authMutex.withLock {
             Log.d(TAG, "refreshToken: Attempting to refresh token")
-            
+
             try {
                 // Get current credentials
                 val currentCreds = cachedCredentials ?: getCurrentCredentials().getOrNull()
@@ -91,38 +90,36 @@ class JellyfinAuthRepository @Inject constructor(
                 // Try to refresh using the Jellyfin API
                 val jellyfin = Jellyfin()
                 val client = jellyfin.createApi(baseUrl = currentCreds.serverUrl) as KtorClient
-                
+
                 // Set current token for the refresh attempt
                 client.accessToken = currentCreds.accessToken
 
                 try {
                     // Attempt to get user info to validate current token
                     val userResponse = client.userApi.getCurrentUser()
-                    
+
                     // If we get here, token is still valid
                     Log.d(TAG, "refreshToken: Current token is still valid")
                     return@withContext Result.success(currentCreds)
-                    
                 } catch (e: InvalidStatusException) {
                     if (e.status == 401) {
                         Log.d(TAG, "refreshToken: Current token expired, performing re-authentication")
-                        
+
                         // Token is expired, perform fresh login with stored password
                         return@withContext performReAuthentication(currentCreds)
                     } else {
                         throw e
                     }
                 }
-                
             } catch (e: Exception) {
                 Log.e(TAG, "refreshToken: Token refresh failed", e)
-                
+
                 // Try re-authentication as fallback
                 cachedCredentials?.let { creds ->
                     Log.d(TAG, "refreshToken: Attempting re-authentication as fallback")
                     return@withContext performReAuthentication(creds)
                 }
-                
+
                 Result.failure(e)
             }
         }
@@ -134,15 +131,15 @@ class JellyfinAuthRepository @Inject constructor(
     private suspend fun performReAuthentication(oldCredentials: UserCredentials): Result<UserCredentials> {
         return try {
             Log.d(TAG, "performReAuthentication: Re-authenticating user '${oldCredentials.username}'")
-            
+
             val jellyfin = Jellyfin()
             val client = jellyfin.createApi(baseUrl = oldCredentials.serverUrl) as KtorClient
 
             val response = client.userApi.authenticateUserByName(
                 authenticateUserByName = AuthenticateUserByName(
                     username = oldCredentials.username,
-                    pw = oldCredentials.password
-                )
+                    pw = oldCredentials.password,
+                ),
             )
 
             val authResult = response.content
@@ -152,7 +149,7 @@ class JellyfinAuthRepository @Inject constructor(
 
             val newCredentials = oldCredentials.copy(
                 accessToken = authResult.accessToken!!,
-                userId = authResult.user?.id ?: oldCredentials.userId
+                userId = authResult.user?.id ?: oldCredentials.userId,
             )
 
             Log.d(TAG, "performReAuthentication: Re-authentication successful")
@@ -163,7 +160,6 @@ class JellyfinAuthRepository @Inject constructor(
             cachedCredentials = newCredentials
 
             Result.success(newCredentials)
-            
         } catch (e: Exception) {
             Log.e(TAG, "performReAuthentication: Re-authentication failed for user '${oldCredentials.username}'", e)
             Result.failure(e)
@@ -205,7 +201,7 @@ class JellyfinAuthRepository @Inject constructor(
             // Parse the stored credentials (you'll need to implement JSON parsing)
             val credentials = parseCredentialsFromJson(credentialsJson)
             cachedCredentials = credentials
-            
+
             Log.d(TAG, "getCurrentCredentials: Loaded credentials from storage")
             Result.success(credentials)
         } catch (e: Exception) {
