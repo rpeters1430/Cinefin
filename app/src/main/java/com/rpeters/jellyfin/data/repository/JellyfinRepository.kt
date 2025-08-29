@@ -181,7 +181,7 @@ class JellyfinRepository @Inject constructor(
         // ✅ FIX: Validate token before making requests
         if (isTokenExpired()) {
             Log.w("JellyfinRepository", "getUserLibraries: Token expired, attempting proactive refresh")
-            if (!reAuthenticate()) {
+            if (!forceReAuthenticate()) {
                 return ApiResult.Error("Authentication expired", errorType = ErrorType.AUTHENTICATION)
             }
         }
@@ -216,7 +216,7 @@ class JellyfinRepository @Inject constructor(
         // ✅ FIX: Validate token before making requests
         if (isTokenExpired()) {
             Log.w("JellyfinRepository", "getLibraryItems: Token expired, attempting proactive refresh")
-            if (!reAuthenticate()) {
+            if (!forceReAuthenticate()) {
                 return ApiResult.Error("Authentication expired", errorType = ErrorType.AUTHENTICATION)
             }
         }
@@ -275,7 +275,7 @@ class JellyfinRepository @Inject constructor(
         // ✅ FIX: Validate token before making requests
         if (isTokenExpired()) {
             Log.w("JellyfinRepository", "getRecentlyAdded: Token expired, attempting proactive refresh")
-            if (!reAuthenticate()) {
+            if (!forceReAuthenticate()) {
                 return ApiResult.Error("Authentication expired", errorType = ErrorType.AUTHENTICATION)
             }
         }
@@ -354,6 +354,15 @@ class JellyfinRepository @Inject constructor(
         return authRepository.reAuthenticate()
     }
 
+    private suspend fun forceReAuthenticate(): Boolean {
+        if (BuildConfig.DEBUG) {
+            Log.d("JellyfinRepository", "forceReAuthenticate: Forcing token refresh via AuthRepository")
+        }
+        
+        // ✅ FIX: Use force refresh when server reports 401 errors
+        return authRepository.forceReAuthenticate()
+    }
+
     suspend fun logout() {
         authRepository.logout()
     }
@@ -381,18 +390,18 @@ class JellyfinRepository @Inject constructor(
                 // If it's a 401 error and we have saved credentials, try to re-authenticate
                 val is401Error = RepositoryUtils.is401Error(e)
                 if (is401Error && attempt < maxRetries) {
-                    Log.w("JellyfinRepository", "Got 401 error on attempt ${attempt + 1}, attempting to re-authenticate")
+                    Log.w("JellyfinRepository", "Got 401 error on attempt ${attempt + 1}, attempting force re-authentication")
 
-                    // Try to re-authenticate with proper synchronization
-                    if (reAuthenticate()) {
+                    // Use force re-authentication for 401 errors since server reported token invalid
+                    if (forceReAuthenticate()) {
                         if (BuildConfig.DEBUG) {
-                            Log.d("JellyfinRepository", "Re-authentication successful, retrying operation")
+                            Log.d("JellyfinRepository", "Force re-authentication successful, retrying operation")
                         }
                         // Additional delay to ensure token propagation
                         kotlinx.coroutines.delay(RE_AUTH_DELAY_MS)
                         continue
                     } else {
-                        Log.w("JellyfinRepository", "Re-authentication failed, will not retry")
+                        Log.w("JellyfinRepository", "Force re-authentication failed, will not retry")
                         throw e
                     }
                 }
@@ -438,17 +447,17 @@ class JellyfinRepository @Inject constructor(
 
                         // Check if this is a 401 error that we should retry with re-authentication
                         if (result.errorType == ErrorType.UNAUTHORIZED && attempt < maxRetries) {
-                            Log.w("JellyfinRepository", "$operationName: Got 401 error, attempting re-authentication")
+                            Log.w("JellyfinRepository", "$operationName: Got 401 error, attempting force re-authentication")
 
-                            if (reAuthenticate()) {
+                            if (forceReAuthenticate()) {
                                 if (BuildConfig.DEBUG) {
-                                    Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
+                                    Log.d("JellyfinRepository", "$operationName: Force re-authentication successful, retrying")
                                 }
                                 // Additional delay for token propagation
                                 kotlinx.coroutines.delay(RE_AUTH_DELAY_MS)
                                 continue
                             } else {
-                                Log.w("JellyfinRepository", "$operationName: Re-authentication failed")
+                                Log.w("JellyfinRepository", "$operationName: Force re-authentication failed")
                                 return result
                             }
                         } else {
@@ -473,17 +482,17 @@ class JellyfinRepository @Inject constructor(
 
                 // Check for 401 in exception and retry with re-authentication
                 if (errorType == ErrorType.UNAUTHORIZED && attempt < maxRetries) {
-                    Log.w("JellyfinRepository", "$operationName: Got 401 exception, attempting re-authentication")
+                    Log.w("JellyfinRepository", "$operationName: Got 401 exception, attempting force re-authentication")
 
-                    if (reAuthenticate()) {
+                    if (forceReAuthenticate()) {
                         if (BuildConfig.DEBUG) {
-                            Log.d("JellyfinRepository", "$operationName: Re-authentication successful, retrying")
+                            Log.d("JellyfinRepository", "$operationName: Force re-authentication successful, retrying")
                         }
                         // Additional delay for token propagation
                         kotlinx.coroutines.delay(RE_AUTH_DELAY_MS)
                         continue
                     } else {
-                        Log.w("JellyfinRepository", "$operationName: Re-authentication failed")
+                        Log.w("JellyfinRepository", "$operationName: Force re-authentication failed")
                         return handleExceptionSafely(e, operationName)
                     }
                 } else {
@@ -639,7 +648,7 @@ class JellyfinRepository @Inject constructor(
         // ✅ FIX: Validate token before making requests
         if (isTokenExpired()) {
             Log.w("JellyfinRepository", "getFavorites: Token expired, attempting proactive refresh")
-            if (!reAuthenticate()) {
+            if (!forceReAuthenticate()) {
                 return ApiResult.Error("Authentication expired", errorType = ErrorType.AUTHENTICATION)
             }
         }
@@ -813,7 +822,7 @@ class JellyfinRepository @Inject constructor(
         // ✅ FIX: Validate token before making requests
         if (isTokenExpired()) {
             Log.w("JellyfinRepository", "searchItems: Token expired, attempting proactive refresh")
-            if (!reAuthenticate()) {
+            if (!forceReAuthenticate()) {
                 return ApiResult.Error("Authentication expired", errorType = ErrorType.AUTHENTICATION)
             }
         }
@@ -898,7 +907,7 @@ class JellyfinRepository @Inject constructor(
     private suspend fun validateAndRefreshToken() {
         if (isTokenExpired()) {
             Log.w("JellyfinRepository", "Token expired, attempting proactive refresh")
-            if (reAuthenticate()) {
+            if (forceReAuthenticate()) {
                 if (BuildConfig.DEBUG) {
                     Log.d("JellyfinRepository", "Proactive token refresh successful")
                 }

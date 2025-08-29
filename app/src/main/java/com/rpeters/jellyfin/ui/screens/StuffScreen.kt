@@ -49,6 +49,15 @@ fun StuffScreen(
         android.util.Log.d("StuffScreen", "StuffScreen started: libraryId=$libraryId, collectionType=$collectionType")
     }
     val appState by viewModel.appState.collectAsState()
+    
+    if (BuildConfig.DEBUG) {
+        android.util.Log.d("StuffScreen", "App state libraries count: ${appState.libraries.size}")
+        android.util.Log.d("StuffScreen", "App state homeVideosByLibrary size: ${appState.homeVideosByLibrary.size}")
+        appState.homeVideosByLibrary.forEach { (id, items) ->
+            android.util.Log.d("StuffScreen", "homeVideosByLibrary[$id]: ${items.size} items")
+        }
+    }
+    
     LaunchedEffect(libraryId) {
         if (BuildConfig.DEBUG) {
             android.util.Log.d("StuffScreen", "LaunchedEffect triggered for libraryId=$libraryId")
@@ -74,28 +83,30 @@ fun StuffScreen(
                 android.util.Log.d("StuffScreen", "Item types: $typeBreakdown")
             }
         }
+        
+        // For "stuff" library, we want to show all items except movies, TV shows, music, etc.
+        // We'll be more permissive with the filtering to ensure items are displayed
         val filtered = when (type) {
             "books" -> items.filter {
                 it.type == BaseItemKind.BOOK || it.type == BaseItemKind.AUDIO_BOOK
             }
             "homevideos" -> items.filter { it.type == BaseItemKind.VIDEO }
             "photos" -> items.filter { it.type == BaseItemKind.PHOTO }
-            else -> items.filter {
-                it.type == BaseItemKind.BOOK ||
-                    it.type == BaseItemKind.AUDIO_BOOK ||
-                    it.type == BaseItemKind.VIDEO ||
-                    it.type == BaseItemKind.PHOTO ||
-                    (
-                        it.type != BaseItemKind.MOVIE &&
-                            it.type != BaseItemKind.SERIES &&
-                            it.type != BaseItemKind.EPISODE &&
-                            it.type != BaseItemKind.AUDIO &&
-                            it.type != BaseItemKind.MUSIC_ALBUM &&
-                            it.type != BaseItemKind.MUSIC_ARTIST
-                        )
+            else -> {
+                // For "stuff" or "mixed" libraries, show all items
+                // This is more permissive than the previous filtering
+                if (BuildConfig.DEBUG) {
+                    android.util.Log.d("StuffScreen", "Using permissive filter for type=$type")
+                }
+                items
             }
         }
-        filtered.sortedBy { it.sortName ?: it.name }
+        
+        val sorted = filtered.sortedBy { it.sortName ?: it.name }
+        if (BuildConfig.DEBUG) {
+            android.util.Log.d("StuffScreen", "Filtered items count: ${filtered.size}, Sorted items count: ${sorted.size}")
+        }
+        sorted
     }
 
     val loadingMessage = when (type) {

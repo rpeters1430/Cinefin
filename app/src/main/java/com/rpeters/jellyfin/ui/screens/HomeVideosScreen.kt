@@ -93,9 +93,17 @@ fun HomeVideosScreen(
             }
         }
 
-        // Filter for videos and photos
-        val filteredItems = allItems.filter {
-            it.type == BaseItemKind.VIDEO || it.type == BaseItemKind.PHOTO
+        // Filter for videos and photos - handle both enum and string types
+        val filteredItems = allItems.filter { item ->
+            when {
+                // Handle BaseItemKind enum (preferred)
+                item.type == BaseItemKind.VIDEO || item.type == BaseItemKind.PHOTO -> true
+                // Handle string types from API response
+                item.type?.toString() == "Video" || item.type?.toString() == "Photo" -> true
+                // Also include common home video related types
+                item.type?.toString() == "Movie" -> true
+                else -> false
+            }
         }.sortedBy { it.sortName ?: it.name }
 
         if (BuildConfig.DEBUG) {

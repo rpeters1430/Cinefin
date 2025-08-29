@@ -168,6 +168,10 @@ class JellyfinAuthRepository @Inject constructor(
         password: String,
     ): ApiResult<AuthenticationResult> = authMutex.withLock {
         return try {
+            if (BuildConfig.DEBUG) {
+                Log.d("JellyfinAuthRepository", "authenticateUser: Attempting authentication for user '$username' on server '$serverUrl'")
+            }
+            
             // First test connection to find working URL
             when (val connectionResult = testServerConnectionWithUrl(serverUrl)) {
                 is ApiResult.Success -> {
@@ -175,7 +179,7 @@ class JellyfinAuthRepository @Inject constructor(
                     val systemInfo = connectionResult.data.systemInfo
 
                     if (BuildConfig.DEBUG) {
-                        Log.d("JellyfinAuthRepository", "Authenticating user: $username on $workingUrl")
+                        Log.d("JellyfinAuthRepository", "authenticateUser: Authenticating user '$username' on '$workingUrl'")
                     }
 
                     val client = getClient(workingUrl)
@@ -187,7 +191,8 @@ class JellyfinAuthRepository @Inject constructor(
                     val authResult = response.content
 
                     if (BuildConfig.DEBUG) {
-                        Log.d("JellyfinAuthRepository", "Authentication successful for user: $username")
+                        Log.d("JellyfinAuthRepository", "authenticateUser: Authentication successful for user '$username'")
+                        Log.d("JellyfinAuthRepository", "authenticateUser: New access token: ${authResult.accessToken?.substring(0, 10)}...")
                     }
 
                     // Update current server state with real name and version
@@ -211,23 +216,26 @@ class JellyfinAuthRepository @Inject constructor(
                     // Use a normalized version of the original URL to ensure consistent lookups
                     val normalizedUrl = normalizeServerUrl(serverUrl)
                     try {
+                        if (BuildConfig.DEBUG) {
+                            Log.d("JellyfinAuthRepository", "authenticateUser: Saving credentials for user '$username' on server '$normalizedUrl'")
+                        }
                         secureCredentialManager.savePassword(normalizedUrl, username, password)
                         if (BuildConfig.DEBUG) {
-                            Log.d("JellyfinAuthRepository", "Saved credentials for user: $username on server: $normalizedUrl")
+                            Log.d("JellyfinAuthRepository", "authenticateUser: Saved credentials for user '$username' on server '$normalizedUrl'")
                         }
                     } catch (e: Exception) {
-                        Log.w("JellyfinAuthRepository", "Failed to save credentials for token refresh", e)
+                        Log.w("JellyfinAuthRepository", "authenticateUser: Failed to save credentials for token refresh", e)
                     }
 
                     ApiResult.Success(authResult)
                 }
                 is ApiResult.Error -> {
                     // Connection test failed, return the connection error
-                    Log.e("JellyfinAuthRepository", "Server connection failed during authentication", connectionResult.cause)
+                    Log.e("JellyfinAuthRepository", "authenticateUser: Server connection failed during authentication", connectionResult.cause)
                     return ApiResult.Error(connectionResult.message, connectionResult.cause, connectionResult.errorType)
                 }
                 is ApiResult.Loading -> {
-                    return ApiResult.Error("Unexpected loading state during authentication", null, ErrorType.UNKNOWN)
+                    return ApiResult.Error("authenticateUser: Unexpected loading state during authentication", null, ErrorType.UNKNOWN)
                 }
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
@@ -243,7 +251,7 @@ class JellyfinAuthRepository @Inject constructor(
                 else -> "Authentication failed: ${e.message}"
             }
 
-            Log.e("JellyfinAuthRepository", "Authentication failed for user: $username", e)
+            Log.e("JellyfinAuthRepository", "authenticateUser: Authentication failed for user '$username'", e)
             ApiResult.Error(message, e, errorType)
         }
     }
@@ -346,15 +354,30 @@ class JellyfinAuthRepository @Inject constructor(
      * ✅ ENHANCED: Re-authenticate using saved credentials with early validation
      * Improved to prevent concurrent authentication attempts and better handle race conditions
      */
-    suspend fun reAuthenticate(): Boolean = authMutex.withLock {
+    suspend fun reAuthenticate(): Boolean = reAuthenticateInternal(false)
+
+    /**
+     * ✅ NEW: Force re-authentication even if client thinks token is valid
+     * Used when server returns 401 errors indicating the token is actually expired
+     */
+    suspend fun forceReAuthenticate(): Boolean = reAuthenticateInternal(true)
+
+    /**
+     * Internal re-authentication method with force option
+     */
+    private suspend fun reAuthenticateInternal(forceRefresh: Boolean): Boolean = authMutex.withLock {
         val server = _currentServer.value ?: return@withLock false
 
-        // ✅ FIX: Early check - if token is already valid, don't re-authenticate
-        if (!isTokenExpired()) {
+        // ✅ FIX: Early check - if token is already valid and not forcing, don't re-authenticate
+        if (!forceRefresh && !isTokenExpired()) {
             if (BuildConfig.DEBUG) {
                 Log.d("JellyfinAuthRepository", "reAuthenticate: Token is already valid, skipping re-authentication")
             }
             return@withLock true
+        }
+
+        if (forceRefresh && BuildConfig.DEBUG) {
+            Log.d("JellyfinAuthRepository", "reAuthenticate: Force refresh requested, will re-authenticate even if token appears valid")
         }
 
         // ✅ FIX: Check if already authenticating - wait for completion
@@ -401,33 +424,55 @@ class JellyfinAuthRepository @Inject constructor(
             // Use the stored original server URL for credential lookup, fallback to extracting from current URL
             val credentialUrl = server.originalServerUrl ?: normalizeServerUrl(server.url)
             if (BuildConfig.DEBUG) {
-                Log.d("JellyfinAuthRepository", "reAuthenticate: Looking for saved password for user ${server.username} on $credentialUrl")
-                Log.d("JellyfinAuthRepository", "reAuthenticate: Server URL: ${server.url}")
-                Log.d("JellyfinAuthRepository", "reAuthenticate: Original server URL: ${server.originalServerUrl}")
+                Log.d("JellyfinAuthRepository", "reAuthenticate: Looking for saved password for user '${server.username}' on '$credentialUrl'")
+                Log.d("JellyfinAuthRepository", "reAuthenticate: Server URL: '${server.url}'")
+                Log.d("JellyfinAuthRepository", "reAuthenticate: Original server URL: '${server.originalServerUrl}'")
             }
-            val savedPassword = secureCredentialManager.getPassword(credentialUrl, server.username ?: "")
+            
+            // Try to get the password with detailed logging
+            val savedPassword = try {
+                val password = secureCredentialManager.getPassword(credentialUrl, server.username ?: "")
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinAuthRepository", "reAuthenticate: getPassword returned ${if (password != null) "a password" else "null"}")
+                }
+                password
+            } catch (e: Exception) {
+                Log.e("JellyfinAuthRepository", "reAuthenticate: Exception while getting password from credential manager", e)
+                null
+            }
+            
             if (savedPassword == null) {
-                Log.w("JellyfinAuthRepository", "reAuthenticate: No saved password found for user ${server.username} on $credentialUrl")
+                Log.w("JellyfinAuthRepository", "reAuthenticate: No saved password found for user '${server.username}' on '$credentialUrl'")
                 // Try with the server URL directly as a fallback
                 val fallbackUrl = server.url
                 if (BuildConfig.DEBUG) {
-                    Log.d("JellyfinAuthRepository", "reAuthenticate: Trying fallback URL: $fallbackUrl")
+                    Log.d("JellyfinAuthRepository", "reAuthenticate: Trying fallback URL: '$fallbackUrl'")
                 }
-                val fallbackPassword = secureCredentialManager.getPassword(fallbackUrl, server.username ?: "")
+                val fallbackPassword = try {
+                    val password = secureCredentialManager.getPassword(fallbackUrl, server.username ?: "")
+                    if (BuildConfig.DEBUG) {
+                        Log.d("JellyfinAuthRepository", "reAuthenticate: getPassword with fallback URL returned ${if (password != null) "a password" else "null"}")
+                    }
+                    password
+                } catch (e: Exception) {
+                    Log.e("JellyfinAuthRepository", "reAuthenticate: Exception while getting password from credential manager with fallback URL", e)
+                    null
+                }
+                
                 if (fallbackPassword == null) {
-                    Log.w("JellyfinAuthRepository", "reAuthenticate: No saved password found for user ${server.username} on fallback URL $fallbackUrl")
+                    Log.w("JellyfinAuthRepository", "reAuthenticate: No saved password found for user '${server.username}' on fallback URL '$fallbackUrl'")
                     // If we can't re-authenticate, logout the user
                     logout()
                     return@withLock false
                 } else {
                     if (BuildConfig.DEBUG) {
-                        Log.d("JellyfinAuthRepository", "reAuthenticate: Found saved credentials with fallback URL: $fallbackUrl")
+                        Log.d("JellyfinAuthRepository", "reAuthenticate: Found saved credentials with fallback URL: '$fallbackUrl'")
                     }
                     // Re-authenticate using saved credentials with fallback URL
                     when (val authResult = authenticateUser(fallbackUrl, server.username ?: "", fallbackPassword)) {
                         is ApiResult.Success -> {
                             if (BuildConfig.DEBUG) {
-                                Log.d("JellyfinAuthRepository", "reAuthenticate: Successfully re-authenticated user ${server.username} with fallback URL")
+                                Log.d("JellyfinAuthRepository", "reAuthenticate: Successfully re-authenticated user '${server.username}' with fallback URL")
                             }
                             // Update the current server with the new token and login timestamp
                             val updatedServer = server.copy(
@@ -443,7 +488,7 @@ class JellyfinAuthRepository @Inject constructor(
 
                             // Verify that the token is actually updated
                             if (BuildConfig.DEBUG) {
-                                Log.d("JellyfinAuthRepository", "reAuthenticate: Token updated to ${updatedServer.accessToken?.substring(0, 10)}...")
+                                Log.d("JellyfinAuthRepository", "reAuthenticate: Token updated to '${updatedServer.accessToken?.substring(0, 10)}...'")
                             }
 
                             return@withLock true
