@@ -937,6 +937,10 @@ class MainAppViewModel @Inject constructor(
 
     fun loadHomeVideos(libraryId: String) {
         viewModelScope.launch {
+            if (BuildConfig.DEBUG) {
+                Log.d("MainAppViewModel", "loadHomeVideos: Starting to load home videos for libraryId=$libraryId")
+            }
+            
             // ✅ FIX: Use same authentication validation as loadInitialData
             if (!ensureValidTokenWithWait()) {
                 if (BuildConfig.DEBUG) {
@@ -965,8 +969,9 @@ class MainAppViewModel @Inject constructor(
             val collectionType = library?.collectionType?.toString()?.lowercase()
 
             // Determine appropriate item types based on collection type
+            // ✅ FIX: Let ApiParameterValidator handle homevideos validation
             val itemTypes = when (collectionType) {
-                "homevideos" -> "Video" // Specify video type for home videos to avoid HTTP 400 errors
+                "homevideos" -> null // Let ApiParameterValidator handle this to avoid HTTP 400 errors
                 "photos" -> "Photo"
                 "books" -> "Book,AudioBook"
                 else -> null // Let server decide for unknown types
@@ -974,6 +979,7 @@ class MainAppViewModel @Inject constructor(
 
             if (BuildConfig.DEBUG) {
                 Log.d("MainAppViewModel", "loadHomeVideos: Loading library $libraryId with collectionType=$collectionType and itemTypes=$itemTypes")
+                Log.d("MainAppViewModel", "loadHomeVideos: Library name=${library?.name}")
             }
 
             when (
@@ -992,6 +998,9 @@ class MainAppViewModel @Inject constructor(
 
                     if (BuildConfig.DEBUG) {
                         Log.d("MainAppViewModel", "loadHomeVideos: Successfully loaded ${result.data.size} items for library $libraryId")
+                        // Log item types for debugging
+                        val typeBreakdown = result.data.groupBy { it.type }.mapValues { it.value.size }
+                        Log.d("MainAppViewModel", "loadHomeVideos: Item types breakdown: $typeBreakdown")
                     }
                 }
                 is ApiResult.Error -> {

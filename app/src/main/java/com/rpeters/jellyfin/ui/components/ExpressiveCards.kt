@@ -69,6 +69,7 @@ fun ExpressiveMediaCard(
     cardType: ExpressiveCardType = ExpressiveCardType.ELEVATED,
 ) {
     var isPressed by remember { mutableStateOf(false) }
+    // Simplify animations to improve performance
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1.0f,
         animationSpec = MotionTokens.expressiveEnter,

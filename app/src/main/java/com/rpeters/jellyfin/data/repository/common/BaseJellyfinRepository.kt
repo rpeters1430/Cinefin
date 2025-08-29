@@ -52,16 +52,16 @@ open class BaseJellyfinRepository @Inject constructor(
             tokenRefreshMutex.withLock {
                 // Double-check after acquiring lock (another thread might have refreshed)
                 if (authRepository.isTokenExpired()) {
-                    Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token expired, proactively refreshing")
+                    Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token expired, proactively refreshing with force")
 
-                    val refreshResult = authRepository.reAuthenticate()
+                    val refreshResult = authRepository.forceReAuthenticate()
                     if (refreshResult) {
-                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Proactive token refresh successful")
+                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Proactive force token refresh successful")
                         authRepository.getCurrentServer()?.let { server ->
                             clientFactory.refreshClient(server.url, server.accessToken)
                         }
                     } else {
-                        Logger.w(LogCategory.NETWORK, javaClass.simpleName, "Proactive token refresh failed")
+                        Logger.w(LogCategory.NETWORK, javaClass.simpleName, "Proactive force token refresh failed")
                         // Don't throw here - let the subsequent API call handle the 401
                     }
                 }
@@ -85,14 +85,7 @@ open class BaseJellyfinRepository @Inject constructor(
         } catch (e: Exception) {
             if (RepositoryUtils.is401Error(e)) {
                 return tokenRefreshMutex.withLock {
-                    Logger.d(LogCategory.NETWORK, javaClass.simpleName, "HTTP 401 detected, attempting token refresh")
-
-                    // Check if token was refreshed by another thread while waiting for the lock
-                    if (!authRepository.isTokenExpired()) {
-                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token was refreshed by another thread, retrying operation")
-                        clientFactory.invalidateClient()
-                        return@withLock operation()
-                    }
+                    Logger.d(LogCategory.NETWORK, javaClass.simpleName, "HTTP 401 detected, attempting force token refresh")
 
                     // ✅ FIX: Check if authentication is already in progress to prevent concurrent attempts
                     if (authRepository.isAuthenticating.first()) {
@@ -106,33 +99,25 @@ open class BaseJellyfinRepository @Inject constructor(
                             waitedMs += pollIntervalMs
                         }
 
-                        // Check if authentication completed successfully
-                        if (!authRepository.isTokenExpired()) {
-                            Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication completed by another thread, retrying operation")
-                            clientFactory.invalidateClient()
-                            return@withLock operation()
-                        }
+                        // Authentication completed, retry operation
+                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication completed by another thread, retrying operation")
+                        clientFactory.invalidateClient()
+                        return@withLock operation()
                     }
 
-                    val refreshResult = authRepository.reAuthenticate()
+                    val refreshResult = authRepository.forceReAuthenticate()
                     if (refreshResult) {
-                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token refresh successful, retrying operation")
+                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Force token refresh successful, retrying operation")
                         // Clear client factory to ensure new token is used
                         clientFactory.invalidateClient()
 
                         // ✅ FIX: Add delay to ensure token propagation and prevent race conditions
                         kotlinx.coroutines.delay(1000) // 1000ms delay
 
-                        // Verify token is actually valid before retrying
-                        if (authRepository.isTokenExpired()) {
-                            Logger.e(LogCategory.NETWORK, javaClass.simpleName, "Token refresh appeared successful but token is still expired")
-                            throw Exception("Authentication failed: Token refresh verification failed")
-                        }
-
                         // Retry the operation with refreshed token
                         operation()
                     } else {
-                        Logger.e(LogCategory.NETWORK, javaClass.simpleName, "Token refresh failed")
+                        Logger.e(LogCategory.NETWORK, javaClass.simpleName, "Force token refresh failed")
                         throw Exception("Authentication failed: Unable to refresh token")
                     }
                 }
