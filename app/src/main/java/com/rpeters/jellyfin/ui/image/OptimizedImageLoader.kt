@@ -17,6 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil.Coil
 import coil.ImageLoader
 import coil.compose.SubcomposeAsyncImage
 import coil.disk.DiskCache
@@ -26,6 +27,7 @@ import coil.request.ImageRequest
 import coil.size.Size
 import coil.transform.RoundedCornersTransformation
 import com.rpeters.jellyfin.ui.ShimmerBox
+import okhttp3.OkHttpClient
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import java.io.File
@@ -71,7 +73,11 @@ data class ImageLoaderConfig(
 /**
  * Create an optimized ImageLoader instance.
  */
-fun createOptimizedImageLoader(context: Context, config: ImageLoaderConfig = ImageLoaderConfig()): ImageLoader {
+fun createOptimizedImageLoader(
+    context: Context,
+    okHttpClient: OkHttpClient,
+    config: ImageLoaderConfig = ImageLoaderConfig(),
+): ImageLoader {
     return ImageLoader.Builder(context)
         .memoryCache {
             MemoryCache.Builder(context)
@@ -84,7 +90,8 @@ fun createOptimizedImageLoader(context: Context, config: ImageLoaderConfig = Ima
                 .maxSizeBytes(config.diskCacheSizeMB * 1024 * 1024)
                 .build()
         }
-        .respectCacheHeaders(false) // Jellyfin images don't change often
+        .okHttpClient(okHttpClient)
+        .respectCacheHeaders(true)
         .build()
 }
 
@@ -319,7 +326,10 @@ fun rememberImagePreloader(): ImagePreloader {
  * Image preloader for background loading of images.
  */
 class ImagePreloader(private val context: Context) {
-    private val imageLoader = createOptimizedImageLoader(context)
+    private val imageLoader = createOptimizedImageLoader(
+        context,
+        Coil.imageLoader(context).okHttpClient,
+    )
 
     /**
      * Preload a list of image URLs in the background.
