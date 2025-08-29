@@ -46,7 +46,7 @@ object NetworkModule {
         connectivityChecker: ConnectivityChecker,
     ): OkHttpClient {
         val cacheDir = java.io.File(context.cacheDir, "http_cache")
-        val cache = okhttp3.Cache(cacheDir, 20L * 1024 * 1024) // 20 MB
+        val cache = okhttp3.Cache(cacheDir, 150L * 1024 * 1024) // 150 MB
 
         val authInterceptor = okhttp3.Interceptor { chain ->
             val originalRequest = chain.request()
