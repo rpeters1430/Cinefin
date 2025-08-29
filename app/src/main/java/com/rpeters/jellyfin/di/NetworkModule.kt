@@ -261,13 +261,13 @@ class JellyfinClientFactory @Inject constructor(
             val is401 = e.message?.contains("401") == true
 
             if (is401 && retryCount < MAX_AUTH_RETRIES) {
-                SecureLogger.w(TAG, "401 Unauthorized detected, attempting re-authentication")
+                SecureLogger.w(TAG, "401 Unauthorized detected, attempting forced re-authentication")
 
-                // Attempt re-authentication
-                val reAuthSuccess = authRepository.reAuthenticate()
+                // Force re-authentication to refresh token
+                val forceReAuthSuccess = authRepository.forceReAuthenticate()
 
-                if (reAuthSuccess) {
-                    SecureLogger.auth(TAG, "Re-authentication successful, retrying operation", true)
+                if (forceReAuthSuccess) {
+                    SecureLogger.auth(TAG, "Forced re-authentication successful, retrying operation", true)
 
                     // Invalidate client to ensure fresh token is used
                     invalidateClient()
@@ -275,7 +275,7 @@ class JellyfinClientFactory @Inject constructor(
                     // Retry the operation with incremented count
                     return executeWithAuthRetry(operation, retryCount + 1)
                 } else {
-                    SecureLogger.auth(TAG, "Re-authentication failed, user will be logged out", false)
+                    SecureLogger.auth(TAG, "Forced re-authentication failed, user will be logged out", false)
                     throw e
                 }
             } else {
