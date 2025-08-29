@@ -132,7 +132,7 @@ class MainAppViewModel @Inject constructor(
                 }
 
                 // Force re-authentication to refresh token
-                val authSuccess = authRepository.forceReAuthenticate()
+                val authSuccess = authRepository.reAuthenticate()
 
                 if (authSuccess) {
                     if (BuildConfig.DEBUG) {
