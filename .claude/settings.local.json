@@ -1,37 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./gradlew:*)",
-      "Bash(sed:*)",
-      "Bash(.gradlew assembleDebug)",
-      "Bash(rm:*)",
-      "WebSearch",
-      "Bash(find:*)",
-      "WebFetch(domain:docs.anthropic.com)",
-      "Bash(gh pr:*)",
-      "Bash(.gradlew assembleDebug --stacktrace)",
-      "Bash(.gradlew build)",
-      "WebFetch(domain:m3.material.io)",
-      "Bash(.\\gradlew.bat:*)",
-      "Bash(git checkout:*)",
-      "Bash(.\\gradlew.bat build:*)",
-      "Bash(.\\gradlew.bat build:*)",
-      "Bash(copy \"C:\\Users\\James\\Documents\\GitHub\\JellyfinAndroid\\android_app_icon_pack\\res\\drawable\\ic_launcher_bg.xml\" \"C:\\Users\\James\\Documents\\GitHub\\JellyfinAndroid\\app\\src\\main\\res\\drawable\"\")",
-      "Bash(copy \"C:\\Users\\James\\Documents\\GitHub\\JellyfinAndroid\\android_app_icon_pack\\res\\drawable\\ic_launcher_fg.xml\" \"C:\\Users\\James\\Documents\\GitHub\\JellyfinAndroid\\app\\src\\main\\res\\drawable\"\")",
-      "Bash(rg:*)",
-      "Bash(.gradlew.bat assembleDebug)",
-      "Bash(.gradlew.bat build:*)",
-      "WebFetch(domain:gist.github.com)",
-      "WebFetch(domain:gist.githubusercontent.com)",
-      "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(gradlew.bat build:*)",
-      "Bash(del \"C:\\Users\\James\\Documents\\GitHub\\JellyfinAndroid\\nul\")",
-      "Bash(adb logcat:*)",
-      "Bash(gradlew.bat assembleDebug:*)"
+      "WebFetch(domain:gist.github.com)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
       "C:\\c\\Users\\James\\Documents\\GitHub"
-    ]
+    ],
+    "deny": [],
+    "ask": []
   }
 }

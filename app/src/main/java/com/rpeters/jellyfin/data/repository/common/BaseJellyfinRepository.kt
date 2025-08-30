@@ -70,24 +70,23 @@ open class BaseJellyfinRepository @Inject constructor(
     }
 
     /**
-     * ✅ FIXED: Execute operation with 401-aware authentication handling.
+     * Execute operation with 401-aware authentication handling.
      * This eliminates stale token issues and properly handles token refresh for 401 errors.
      */
     protected suspend fun <T> executeWithClient(
         operationName: String,
         operation: suspend (ApiClient) -> T,
     ): T {
-        // ✅ FIX: Use executeWithTokenRefresh to get 401 handling instead of clientFactory.executeWithAuth
         return executeWithTokenRefresh {
             val server = validateServer()
-            val client = clientFactory.getClient(server.url, server.accessToken)
+            val client = clientFactory.getClient(server.url)
             operation(client)
         }
     }
 
     /**
-     * ✅ ENHANCED: Legacy method for backward compatibility during transition.
-     * Will be phased out in favor of the new execute method above.
+     * Execute operation with 401-aware authentication handling.
+     * Implements single-flight reauth with mutex to prevent concurrent authentication attempts.
      */
     protected suspend fun <T> executeWithTokenRefresh(
         operation: suspend () -> T,
@@ -102,7 +101,17 @@ open class BaseJellyfinRepository @Inject constructor(
                 return tokenRefreshMutex.withLock {
                     Logger.d(LogCategory.NETWORK, javaClass.simpleName, "HTTP 401 detected, attempting force token refresh")
 
-                    // ✅ FIX: Check if authentication is already in progress to prevent concurrent attempts
+                    // Double-check if another thread already refreshed the token
+                    val currentServer = authRepository.getCurrentServer()
+                    if (currentServer?.accessToken != null && !authRepository.isTokenExpired()) {
+                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token already refreshed by another thread, retrying operation")
+                        clientFactory.invalidateClient(currentServer.id)
+                        // Add small delay to ensure client cache is properly cleared
+                        kotlinx.coroutines.delay(50)
+                        return@withLock operation()
+                    }
+
+                    // Check if authentication is already in progress to prevent concurrent attempts
                     if (authRepository.isAuthenticating.first()) {
                         Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication already in progress, waiting for completion")
                         // Wait for authentication to complete, with timeout
@@ -116,7 +125,16 @@ open class BaseJellyfinRepository @Inject constructor(
 
                         // Authentication completed, retry operation
                         Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication completed by another thread, retrying operation")
-                        clientFactory.invalidateClient()
+                        authRepository.getCurrentServer()?.let { server ->
+                            clientFactory.invalidateClient(server.id)
+                            // Ensure we have a fresh token before retrying
+                            if (server.accessToken == null || authRepository.isTokenExpired()) {
+                                Logger.w(LogCategory.NETWORK, javaClass.simpleName, "Token still invalid after waiting, forcing re-authentication")
+                                throw Exception("Authentication failed: Token still invalid after refresh")
+                            }
+                        }
+                        // Add small delay to ensure client cache is properly cleared
+                        kotlinx.coroutines.delay(50)
                         return@withLock operation()
                     }
 
@@ -124,10 +142,9 @@ open class BaseJellyfinRepository @Inject constructor(
                     if (refreshResult) {
                         Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Force token refresh successful, retrying operation")
                         // Clear client factory to ensure new token is used
-                        clientFactory.invalidateClient()
-
-                        // ✅ FIX: Add delay to ensure token propagation and prevent race conditions
-                        kotlinx.coroutines.delay(1000) // 1000ms delay
+                        authRepository.getCurrentServer()?.let { server ->
+                            clientFactory.invalidateClient(server.id)
+                        }
 
                         // Retry the operation with refreshed token
                         // Note: The operation closure should re-fetch server state for updated tokens

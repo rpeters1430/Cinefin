@@ -31,6 +31,9 @@ class JellyfinMediaRepositoryTest {
     private lateinit var cache: JellyfinCache
 
     @MockK
+    private lateinit var healthChecker: com.rpeters.jellyfin.data.repository.common.LibraryHealthChecker
+
+    @MockK
     private lateinit var apiClient: ApiClient
 
     @MockK
@@ -41,7 +44,7 @@ class JellyfinMediaRepositoryTest {
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        repository = JellyfinMediaRepository(authRepository, clientFactory, cache)
+        repository = JellyfinMediaRepository(authRepository, clientFactory, cache, healthChecker)
 
         // Mock API client setup
         coEvery { apiClient.itemsApi } returns itemsApi

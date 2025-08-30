@@ -1,127 +1,49 @@
-# 🔄 Token Refresh Authentication Fix - COMPLETED
+# Authentication Token Refresh Fix
 
-## Problem Analysis
+This document describes the changes made to fix the authentication token refresh issue in the Jellyfin Android app.
 
-The app was experiencing authentication failures when tokens expired because:
+## Problem
 
-1. **Credentials were saved during login** but not retrieved properly during token refresh
-2. **URL format mismatch** between saving and retrieving credentials  
-3. **Missing password storage** in the authentication repository during initial login
+The app was experiencing a 401 storm where retries would continue to use stale tokens, causing repeated authentication failures. The root causes were:
 
-From the logs, we saw:
-```
-JellyfinAuthRepository: reAuthenticate: No saved password found for user rpeters1428
-JellyfinAuthRepository: Logging out user
-```
+1. Server/client objects were created outside the retry block, capturing stale tokens
+2. Tokens were being passed explicitly through call sites rather than being fetched at request time
+3. No single-flight reauth mechanism to prevent concurrent authentication attempts
 
-## Root Cause
+## Solution
 
-The `JellyfinAuthRepository.reAuthenticate()` method was looking for saved passwords using a different URL format than what was used when saving the credentials:
+### 1. Client Factory Changes
 
-- **Saving**: Used original server URL (e.g., `rpeters1428.huron.usbx.me:8920`)  
-- **Retrieving**: Used working URL with full path (e.g., `https://rpeters1428.huron.usbx.me:443/jellyfin`)
+Modified `JellyfinClientFactory` to:
+- Remove the `accessToken` parameter from `getClient()` method
+- Implement a token interceptor that fetches the current token at request time
+- Update `invalidateClient()` to properly handle server URL invalidation
 
-## Solution Implemented
+### 2. Repository Changes
 
-### 1. Enhanced JellyfinServer Data Class
+Updated `BaseJellyfinRepository` to:
+- Fix `executeWithClient()` to use the new token-less `getClient()` method
+- Enhance `executeWithTokenRefresh()` with better single-flight reauth handling
+- Improve mutex-based synchronization for token refresh
 
-Added `originalServerUrl` field to store the URL format used for credential lookup:
+### 3. Dependency Injection
 
-```kotlin
-@Serializable
-data class JellyfinServer(
-    // ... existing fields
-    val originalServerUrl: String? = null, // Store original URL for credential lookups
-)
-```
+Updated `NetworkModule` to:
+- Remove circular dependency between `OptimizedClientFactory` and `JellyfinAuthRepository`
 
-### 2. Updated Authentication Flow
+## Key Benefits
 
-**JellyfinAuthRepository.authenticateUser():**
-- Now saves credentials during authentication using the original server URL
-- Stores both working URL and original URL in JellyfinServer object
-
-```kotlin
-// Save credentials for token refresh (use original serverUrl for consistency)
-try {
-    secureCredentialManager.savePassword(serverUrl, username, password)
-    if (BuildConfig.DEBUG) {
-        Log.d("JellyfinAuthRepository", "Saved credentials for user: $username on server: $serverUrl")
-    }
-} catch (e: Exception) {
-    Log.w("JellyfinAuthRepository", "Failed to save credentials for token refresh", e)
-}
-```
-
-### 3. Fixed Token Refresh Logic
-
-**JellyfinAuthRepository.reAuthenticate():**
-- Uses the original server URL for credential lookups
-- Maintains URL format consistency between saving and retrieving
-
-```kotlin
-// Get saved password using original server URL for consistency
-val credentialUrl = server.originalServerUrl ?: extractBaseServerUrl(server.url)
-val savedPassword = secureCredentialManager.getPassword(credentialUrl, server.username ?: "")
-```
-
-### 4. Added URL Normalization Helper
-
-```kotlin
-private fun extractBaseServerUrl(fullUrl: String): String {
-    return if (fullUrl.endsWith("/jellyfin")) {
-        fullUrl.removeSuffix("/jellyfin")
-    } else {
-        fullUrl
-    }
-}
-```
-
-## Technical Benefits
-
-1. **Automatic Token Refresh**: App can now automatically re-authenticate when tokens expire
-2. **Seamless User Experience**: Users won't be forced to login again after token expiration
-3. **Consistent URL Handling**: Unified approach for credential storage and retrieval
-4. **Secure Credential Storage**: Uses Android Keystore with AES encryption
-5. **Robust Error Handling**: Gracefully falls back to logout if re-authentication fails
-
-## Expected Behavior After Fix
-
-- ✅ **No more "No saved password found" errors**
-- ✅ **Automatic re-authentication when tokens expire** 
-- ✅ **Continuous app usage without forced logins**
-- ✅ **Proper HTTP 401 recovery with fresh tokens**
-- ✅ **Maintained security with encrypted credential storage**
+1. **Fresh Tokens**: Tokens are now fetched at request time rather than being cached
+2. **Single-Flight Reauth**: Only one coroutine performs re-authentication at a time
+3. **No Stale Tokens**: Retries now use fresh tokens after re-authentication
+4. **Eliminated Circular Dependencies**: Improved dependency injection setup
 
 ## Files Modified
 
-1. `JellyfinServer.kt` - Added originalServerUrl field
-2. `JellyfinAuthRepository.kt` - Enhanced authentication and token refresh logic
-3. Added URL normalization helper method
-4. Improved error logging and credential management
+- `app/src/main/java/com/rpeters/jellyfin/di/NetworkModule.kt`
+- `app/src/main/java/com/rpeters/jellyfin/di/OptimizedClientFactory.kt`
+- `app/src/main/java/com/rpeters/jellyfin/data/repository/common/BaseJellyfinRepository.kt`
 
-## Testing Verification
+## Testing
 
-After deploying this fix:
-
-1. Login with credentials and "Remember Login" enabled
-2. Wait for token to expire (after ~50-60 minutes)
-3. Navigate to library screens or perform API operations
-4. Verify automatic re-authentication occurs
-5. Check logs for "Successfully re-authenticated" messages
-6. Confirm no logout/login screen redirects
-
-The app should now maintain persistent authentication sessions with automatic token refresh capabilities.
-
-## Status: COMPLETED ✅
-
-- ✅ Build successful
-- ✅ All compilation errors resolved  
-- ✅ Token refresh mechanism implemented
-- ✅ URL consistency fixed
-- ✅ Credential storage enhanced
-- ✅ Ready for testing
-
----
-
-**Next Step**: Test the app with login enabled and verify that token expiration no longer causes forced logouts. The authentication should now seamlessly refresh in the background.
+The changes have been verified to build successfully. The app should now properly handle token refresh scenarios without 401 storms.

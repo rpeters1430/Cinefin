@@ -142,8 +142,9 @@ object NetworkModule {
     fun provideOptimizedClientFactory(
         @ApplicationContext context: Context,
         jellyfin: Jellyfin,
+        authRepositoryProvider: Provider<JellyfinAuthRepository>,
     ): OptimizedClientFactory {
-        return OptimizedClientFactory(context, jellyfin)
+        return OptimizedClientFactory(context, jellyfin, authRepositoryProvider)
     }
 
     @Provides
@@ -153,8 +154,8 @@ object NetworkModule {
         jellyfin: Jellyfin,
         authRepositoryProvider: Provider<JellyfinAuthRepository>,
     ): JellyfinClientFactory {
-        // Use optimized factory for better performance
-        return JellyfinClientFactory(jellyfin, authRepositoryProvider)
+        // NOW actually using optimized factory for better performance and token handling
+        return JellyfinClientFactory(jellyfin, authRepositoryProvider, optimizedFactory)
     }
 
     @Provides
@@ -169,6 +170,8 @@ class JellyfinClientFactory @Inject constructor(
     private val jellyfin: Jellyfin,
     // Use Provider to avoid circular dependency with JellyfinAuthRepository
     private val authRepositoryProvider: Provider<JellyfinAuthRepository>,
+    // Use OptimizedClientFactory for better token handling
+    private val optimizedClientFactory: OptimizedClientFactory,
 ) {
     // Thread-safe client management
     private val clients = mutableMapOf<String, org.jellyfin.sdk.api.client.ApiClient>()
@@ -179,29 +182,20 @@ class JellyfinClientFactory @Inject constructor(
     }
 
     /**
-     * Get a client with TokenProvider-based authentication.
-     * The client will automatically attach fresh tokens to every request.
+     * Get a client with OptimizedClientFactory's enhanced token handling.
+     * The client will automatically attach fresh tokens to every request with proper synchronization.
      */
     suspend fun getClient(serverId: String): org.jellyfin.sdk.api.client.ApiClient = withContext(Dispatchers.IO) {
-        synchronized(clientLock) {
-            clients.getOrPut(serverId) {
-                val authRepository = authRepositoryProvider.get()
-                val server = authRepository.getCurrentServer()
-                    ?: throw IllegalStateException("No authenticated server available")
+        val authRepository = authRepositoryProvider.get()
+        val server = authRepository.getCurrentServer()
+            ?: throw IllegalStateException("No authenticated server available")
 
-                // Create client without token - TokenProvider will handle token attachment
-                jellyfin.createApi(
-                    baseUrl = server.url,
-                    accessToken = null, // No token here - will be provided via interceptor
-                ).apply {
-                    // Install TokenProvider interceptor here
-                    // Note: This is a simplified example - actual implementation would use
-                    // HTTP client configuration or SDK extension points
-                    val tokenTail = server.accessToken?.takeLast(6) ?: "null"
-                    SecureLogger.d(TAG, "Created client for server: ${server.url} with token ...$tokenTail")
-                }
-            }
-        }
+        // Use OptimizedClientFactory for proper token interceptor handling
+        val client = optimizedClientFactory.getOptimizedClient(server.url)
+        val tokenTail = server.accessToken?.takeLast(6) ?: "null"
+        SecureLogger.d(TAG, "Using optimized client for server: ${server.url} with token ...$tokenTail")
+        
+        return@withContext client
     }
 
     /**
@@ -210,9 +204,35 @@ class JellyfinClientFactory @Inject constructor(
      */
     @Synchronized
     fun invalidateClient(serverId: String) {
+        // Clear legacy cache
         clients.remove(serverId)?.also {
-            SecureLogger.d(TAG, "Invalidated client for server: $serverId")
+            SecureLogger.d(TAG, "Invalidated legacy client for server: $serverId")
         }
+        
+        // Use OptimizedClientFactory invalidation - need server URL
+        try {
+            val authRepository = authRepositoryProvider.get()
+            val server = authRepository.getCurrentServer()
+            if (server != null && server.id == serverId) {
+                optimizedClientFactory.invalidateClient(server.url)
+                SecureLogger.d(TAG, "Invalidated optimized client for server: ${server.url}")
+            }
+        } catch (e: Exception) {
+            SecureLogger.w(TAG, "Could not invalidate optimized client: ${e.message}")
+        }
+        
+        // Also clear any cached connections that might have stale tokens
+        clearStaleConnections()
+    }
+    
+    /**
+     * Clear all clients and connections to force fresh token attachment
+     */
+    @Synchronized
+    private fun clearStaleConnections() {
+        clients.clear()
+        optimizedClientFactory.clearAllClients()
+        SecureLogger.d(TAG, "Cleared all cached clients to prevent stale token issues")
     }
 
     /**
