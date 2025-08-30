@@ -177,7 +177,6 @@ class JellyfinClientFactory @Inject constructor(
 
     companion object {
         private const val TAG = "JellyfinClientFactory"
-        private const val MAX_AUTH_RETRIES = 1
     }
 
     /**
@@ -199,7 +198,8 @@ class JellyfinClientFactory @Inject constructor(
                     // Install TokenProvider interceptor here
                     // Note: This is a simplified example - actual implementation would use
                     // HTTP client configuration or SDK extension points
-                    SecureLogger.d(TAG, "Created client for server: ${server.url}")
+                    val tokenTail = server.accessToken?.takeLast(6) ?: "null"
+                    SecureLogger.d(TAG, "Created client for server: ${server.url} with token ...${tokenTail}")
                 }
             }
         }
@@ -217,53 +217,15 @@ class JellyfinClientFactory @Inject constructor(
     }
 
     /**
-     * Execute an API call with automatic 401 handling and re-authentication.
-     * Uses the new TokenProvider approach to eliminate stale token issues.
+     * Execute an API call with the current authenticated client.
+     * 401 handling is managed at the repository level via executeWithTokenRefresh.
      */
     suspend fun <T> executeWithAuth(
         serverId: String,
         operation: suspend (ApiClient) -> T,
     ): T {
-        return executeWithAuthRetry(serverId, operation, retryCount = 0)
-    }
-
-    private suspend fun <T> executeWithAuthRetry(
-        serverId: String,
-        operation: suspend (ApiClient) -> T,
-        retryCount: Int,
-    ): T {
         val client = getClient(serverId)
-
-        return try {
-            operation(client)
-        } catch (e: InvalidStatusException) {
-            val is401 = e.message?.contains("401") == true
-
-            if (is401 && retryCount < MAX_AUTH_RETRIES) {
-                SecureLogger.w(TAG, "401 Unauthorized detected, attempting re-authentication")
-
-                val authRepository = authRepositoryProvider.get()
-                val reAuthSuccess = authRepository.forceReAuthenticate()
-
-                if (reAuthSuccess) {
-                    SecureLogger.auth(TAG, "Re-authentication successful, retrying operation", true)
-                    
-                    // Invalidate client to ensure fresh token provider state
-                    invalidateClient(serverId)
-                    
-                    // Retry with fresh client
-                    return executeWithAuthRetry(serverId, operation, retryCount + 1)
-                } else {
-                    SecureLogger.auth(TAG, "Re-authentication failed", false)
-                    throw e
-                }
-            } else {
-                if (is401 && retryCount >= MAX_AUTH_RETRIES) {
-                    SecureLogger.w(TAG, "Max auth retries reached for 401 error")
-                }
-                throw e
-            }
-        }
+        return operation(client)
     }
 
     // Legacy methods for backward compatibility - will be phased out

@@ -52,6 +52,8 @@ class JellyfinAuthRepository @Inject constructor(
     override fun token(): String? = _tokenState.value
     
     private fun saveNewToken(token: String?) {
+        val tokenTail = token?.takeLast(6) ?: "null"
+        Log.d(TAG, "Saving new token: ...${tokenTail}")
         _tokenState.value = token
         // Server state is also updated in authenticateUser method
     }
@@ -74,9 +76,18 @@ class JellyfinAuthRepository @Inject constructor(
         password: String,
     ): ApiResult<AuthenticationResult> {
         return authMutex.withLock {
-            _isAuthenticating.value = true
-            try {
-                Log.d(TAG, "authenticateUser: Attempting authentication for user '$username'")
+            authenticateUserInternal(serverUrl, username, password)
+        }
+    }
+
+    private suspend fun authenticateUserInternal(
+        serverUrl: String,
+        username: String,
+        password: String,
+    ): ApiResult<AuthenticationResult> {
+        _isAuthenticating.value = true
+        try {
+            Log.d(TAG, "authenticateUser: Attempting authentication for user '$username'")
                 
                 val client = clientFactory.getClient(serverUrl, null)
                 val response = client.userApi.authenticateUserByName(
@@ -115,24 +126,47 @@ class JellyfinAuthRepository @Inject constructor(
                     Log.w(TAG, "Failed to save credentials for token refresh", e)
                 }
                 
-                ApiResult.Success(authResult)
+                return ApiResult.Success(authResult)
                 
-            } catch (e: Exception) {
-                Log.e(TAG, "authenticateUser: Authentication failed", e)
-                val errorType = RepositoryUtils.getErrorType(e)
-                ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
-            } finally {
-                _isAuthenticating.value = false
-            }
+        } catch (e: Exception) {
+            Log.e(TAG, "authenticateUser: Authentication failed", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            return ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
+        } finally {
+            _isAuthenticating.value = false
         }
     }
 
     suspend fun reAuthenticate(): Boolean {
+        return authMutex.withLock {
+            reAuthenticateInternal()
+        }
+    }
+    
+    suspend fun forceReAuthenticate(): Boolean {
+        return authMutex.withLock {
+            Log.d(TAG, "forceReAuthenticate: Force refresh requested, checking if re-auth still needed")
+            
+            // Double-check: if another thread just successfully re-authenticated, 
+            // we might not need to do it again
+            val currentServer = _currentServer.value
+            if (currentServer?.accessToken != null && !isTokenExpired()) {
+                Log.d(TAG, "forceReAuthenticate: Token is now valid, skipping re-authentication")
+                return@withLock true
+            }
+            
+            // Token is still invalid, proceed with re-authentication
+            Log.d(TAG, "forceReAuthenticate: Token still invalid, proceeding with re-authentication")
+            reAuthenticateInternal()
+        }
+    }
+    
+    private suspend fun reAuthenticateInternal(): Boolean {
         val server = _currentServer.value ?: return false
         val username = server.username ?: return false
         val serverUrl = server.url
         
-        return try {
+        try {
             val password = secureCredentialManager.getPassword(serverUrl, username)
             if (password == null) {
                 Log.w(TAG, "reAuthenticate: No saved password found for user $username")
@@ -141,8 +175,8 @@ class JellyfinAuthRepository @Inject constructor(
             
             Log.d(TAG, "reAuthenticate: Found saved credentials for $serverUrl, attempting authentication")
             
-            val result = authenticateUser(serverUrl, username, password)
-            if (result is ApiResult.Success) {
+            val result = authenticateUserInternal(serverUrl, username, password)
+            return if (result is ApiResult.Success) {
                 Log.d(TAG, "reAuthenticate: Successfully re-authenticated user $username")
                 true
             } else {
@@ -151,13 +185,8 @@ class JellyfinAuthRepository @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e(TAG, "reAuthenticate: Exception during re-authentication", e)
-            false
+            return false
         }
-    }
-    
-    suspend fun forceReAuthenticate(): Boolean {
-        Log.d(TAG, "forceReAuthenticate: Force refresh requested, will re-authenticate even if token appears valid")
-        return reAuthenticate()
     }
 
     fun getCurrentServer(): JellyfinServer? = _currentServer.value

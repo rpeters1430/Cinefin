@@ -70,17 +70,17 @@ open class BaseJellyfinRepository @Inject constructor(
     }
 
     /**
-     * ✅ NEW: Execute operation with TokenProvider-based authentication.
-     * This eliminates stale token issues by ensuring fresh tokens are fetched per request.
+     * ✅ FIXED: Execute operation with 401-aware authentication handling.
+     * This eliminates stale token issues and properly handles token refresh for 401 errors.
      */
     protected suspend fun <T> executeWithClient(
         operationName: String,
         operation: suspend (ApiClient) -> T,
     ): T {
-        val server = validateServer()
-        // Use the legacy executeWithAuth method that doesn't require serverId parameter
-        return clientFactory.executeWithAuth { client ->
-            // Fresh server state is fetched inside this block after potential re-auth
+        // ✅ FIX: Use executeWithTokenRefresh to get 401 handling instead of clientFactory.executeWithAuth
+        return executeWithTokenRefresh {
+            val server = validateServer()
+            val client = clientFactory.getClient(server.url, server.accessToken)
             operation(client)
         }
     }

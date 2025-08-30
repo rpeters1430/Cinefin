@@ -93,15 +93,16 @@ class JellyfinUserRepository @Inject constructor(
         server: com.rpeters.jellyfin.data.JellyfinServer,
     ): Boolean {
         return try {
-            // ✅ FIX: Use executeWithClient to ensure fresh server/client on token refresh
-            val result = executeWithClient("hasAdminDeletePermission") { client ->
-                // Re-validate server inside the block to get fresh state
-                val currentServer = validateServer()
-                val userUuid = parseUuid(currentServer.userId ?: "", "user")
+            // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
+            val result = withServerClient("hasAdminDeletePermission") { server, client ->
+                val userUuid = parseUuid(server.userId ?: "", "user")
                 val user = client.userApi.getCurrentUser().content
                 user?.policy?.isAdministrator == true || user?.policy?.enableContentDeletion == true
             }
-            result
+            when (result) {
+                is ApiResult.Success -> result.data
+                else -> false
+            }
         } catch (e: Exception) {
             false
         }
