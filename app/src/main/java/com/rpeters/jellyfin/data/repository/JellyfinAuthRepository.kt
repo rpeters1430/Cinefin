@@ -1,237 +1,207 @@
 package com.rpeters.jellyfin.data.repository
 
-import android.content.Context
 import android.util.Log
-import com.rpeters.jellyfin.data.SecureStorage
-import com.rpeters.jellyfin.data.model.UserCredentials
-import kotlinx.coroutines.Dispatchers
+import com.rpeters.jellyfin.data.JellyfinServer
+import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.model.QuickConnectResult
+import com.rpeters.jellyfin.data.model.QuickConnectState
+import com.rpeters.jellyfin.data.network.TokenProvider
+import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.data.repository.common.ErrorType
+import com.rpeters.jellyfin.data.utils.RepositoryUtils
+import com.rpeters.jellyfin.di.JellyfinClientFactory
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.Jellyfin
-import org.jellyfin.sdk.api.client.KtorClient
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
+import org.jellyfin.sdk.api.client.extensions.systemApi
+import org.jellyfin.sdk.api.client.extensions.userApi
+import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.AuthenticateUserByName
+import org.jellyfin.sdk.model.api.PublicSystemInfo
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class JellyfinAuthRepository @Inject constructor(
-    private val context: Context,
-    private val secureStorage: SecureStorage,
-) {
+    private val clientFactory: JellyfinClientFactory,
+    private val secureCredentialManager: SecureCredentialManager,
+) : TokenProvider {
     private val authMutex = Mutex()
-    private var cachedCredentials: UserCredentials? = null
+    
+    // Token state for TokenProvider implementation
+    private val _tokenState = MutableStateFlow<String?>(null)
+    
+    // State flows for server connection status
+    private val _currentServer = MutableStateFlow<JellyfinServer?>(null)
+    val currentServer: StateFlow<JellyfinServer?> = _currentServer.asStateFlow()
+    
+    private val _isConnected = MutableStateFlow(false)
+    val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
+    
+    private val _isAuthenticating = MutableStateFlow(false)
+    val isAuthenticating: StateFlow<Boolean> = _isAuthenticating.asStateFlow()
 
     companion object {
         private const val TAG = "JellyfinAuthRepository"
+        private const val TOKEN_VALIDITY_DURATION_MS = 50 * 60 * 1000L // 50 minutes (10 min buffer)
+    }
+    
+    // TokenProvider implementation
+    override fun token(): String? = _tokenState.value
+    
+    private fun saveNewToken(token: String?) {
+        _tokenState.value = token
+        // Server state is also updated in authenticateUser method
     }
 
-    // Your existing authenticateUser method stays the same
-    suspend fun authenticateUser(username: String, password: String, serverUrl: String): Result<UserCredentials> = withContext(Dispatchers.IO) {
-        Log.d(TAG, "authenticateUser: Attempting authentication for user '$username' on server '$serverUrl'")
-
-        try {
-            val jellyfin = Jellyfin()
-            val client = jellyfin.createApi(baseUrl = serverUrl) as KtorClient
-
-            Log.d(TAG, "authenticateUser: Authenticating user '$username' on '$serverUrl'")
-
-            val response = client.userApi.authenticateUserByName(
-                authenticateUserByName = AuthenticateUserByName(
-                    username = username,
-                    pw = password,
-                ),
-            )
-
-            val authResult = response.content
-            Log.d(TAG, "authenticateUser: Authentication successful for user '$username'")
-            Log.d(TAG, "authenticateUser: New access token: ${authResult.accessToken?.take(10)}...")
-
-            val credentials = UserCredentials(
-                username = username,
-                password = password, // Store for re-authentication
-                serverUrl = serverUrl,
-                accessToken = authResult.accessToken ?: "",
-                userId = authResult.user?.id ?: "",
-                deviceId = client.deviceInfo.id,
-            )
-
-            Log.d(TAG, "authenticateUser: Saving credentials for user '$username' on server '$serverUrl'")
-            saveCredentials(credentials)
-            cachedCredentials = credentials
-            Log.d(TAG, "authenticateUser: Saved credentials for user '$username' on server '$serverUrl'")
-
-            Result.success(credentials)
-        } catch (e: Exception) {
-            Log.e(TAG, "authenticateUser: Failed to authenticate user '$username'", e)
-            Result.failure(e)
-        }
-    }
-
-    /**
-     * MISSING METHOD - This is what your MediaRepository is calling!
-     * Attempts to refresh the current access token
-     */
-    suspend fun refreshToken(): Result<UserCredentials> = withContext(Dispatchers.IO) {
-        authMutex.withLock {
-            Log.d(TAG, "refreshToken: Attempting to refresh token")
-
-            try {
-                // Get current credentials
-                val currentCreds = cachedCredentials ?: getCurrentCredentials().getOrNull()
-                if (currentCreds == null) {
-                    Log.e(TAG, "refreshToken: No credentials available for refresh")
-                    return@withContext Result.failure(Exception("No credentials available for refresh"))
-                }
-
-                Log.d(TAG, "refreshToken: Attempting token refresh for user '${currentCreds.username}'")
-
-                // Try to refresh using the Jellyfin API
-                val jellyfin = Jellyfin()
-                val client = jellyfin.createApi(baseUrl = currentCreds.serverUrl) as KtorClient
-
-                // Set current token for the refresh attempt
-                client.accessToken = currentCreds.accessToken
-
-                try {
-                    // Attempt to get user info to validate current token
-                    val userResponse = client.userApi.getCurrentUser()
-
-                    // If we get here, token is still valid
-                    Log.d(TAG, "refreshToken: Current token is still valid")
-                    return@withContext Result.success(currentCreds)
-                } catch (e: InvalidStatusException) {
-                    if (e.status == 401) {
-                        Log.d(TAG, "refreshToken: Current token expired, performing re-authentication")
-
-                        // Token is expired, perform fresh login with stored password
-                        return@withContext performReAuthentication(currentCreds)
-                    } else {
-                        throw e
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "refreshToken: Token refresh failed", e)
-
-                // Try re-authentication as fallback
-                cachedCredentials?.let { creds ->
-                    Log.d(TAG, "refreshToken: Attempting re-authentication as fallback")
-                    return@withContext performReAuthentication(creds)
-                }
-
-                Result.failure(e)
-            }
-        }
-    }
-
-    /**
-     * Performs fresh authentication using stored credentials
-     */
-    private suspend fun performReAuthentication(oldCredentials: UserCredentials): Result<UserCredentials> {
+    suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
         return try {
-            Log.d(TAG, "performReAuthentication: Re-authenticating user '${oldCredentials.username}'")
-
-            val jellyfin = Jellyfin()
-            val client = jellyfin.createApi(baseUrl = oldCredentials.serverUrl) as KtorClient
-
-            val response = client.userApi.authenticateUserByName(
-                authenticateUserByName = AuthenticateUserByName(
-                    username = oldCredentials.username,
-                    pw = oldCredentials.password,
-                ),
-            )
-
-            val authResult = response.content
-            if (authResult.accessToken.isNullOrEmpty()) {
-                throw Exception("No access token received during re-authentication")
-            }
-
-            val newCredentials = oldCredentials.copy(
-                accessToken = authResult.accessToken!!,
-                userId = authResult.user?.id ?: oldCredentials.userId,
-            )
-
-            Log.d(TAG, "performReAuthentication: Re-authentication successful")
-            Log.d(TAG, "performReAuthentication: New access token: ${newCredentials.accessToken.take(10)}...")
-
-            // Save new credentials
-            saveCredentials(newCredentials)
-            cachedCredentials = newCredentials
-
-            Result.success(newCredentials)
+            val client = clientFactory.getClient(serverUrl, null)
+            val response = client.systemApi.getPublicSystemInfo()
+            ApiResult.Success(response.content)
         } catch (e: Exception) {
-            Log.e(TAG, "performReAuthentication: Re-authentication failed for user '${oldCredentials.username}'", e)
-            Result.failure(e)
+            Log.e(TAG, "Failed to connect to server: $serverUrl", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to connect to server: ${e.message}", e, errorType)
         }
     }
 
-    /**
-     * Get current valid credentials, attempting refresh if needed
-     */
-    suspend fun getValidCredentials(): Result<UserCredentials> {
-        return refreshToken()
+    suspend fun authenticateUser(
+        serverUrl: String,
+        username: String,
+        password: String,
+    ): ApiResult<AuthenticationResult> {
+        return authMutex.withLock {
+            _isAuthenticating.value = true
+            try {
+                Log.d(TAG, "authenticateUser: Attempting authentication for user '$username'")
+                
+                val client = clientFactory.getClient(serverUrl, null)
+                val response = client.userApi.authenticateUserByName(
+                    AuthenticateUserByName(
+                        username = username,
+                        pw = password,
+                    )
+                )
+                
+                val authResult = response.content
+                Log.d(TAG, "authenticateUser: Authentication successful for user '$username'")
+                
+                // Update server state
+                val server = JellyfinServer(
+                    id = authResult.serverId ?: "",
+                    name = authResult.user?.name ?: username,
+                    url = serverUrl,
+                    isConnected = true,
+                    userId = authResult.user?.id?.toString(),
+                    username = username,
+                    accessToken = authResult.accessToken,
+                    loginTimestamp = System.currentTimeMillis()
+                )
+                
+                _currentServer.value = server
+                _isConnected.value = true
+                
+                // Update token state for TokenProvider
+                saveNewToken(authResult.accessToken)
+                
+                // Save credentials for token refresh
+                try {
+                    secureCredentialManager.savePassword(serverUrl, username, password)
+                    Log.d(TAG, "authenticateUser: Saved credentials for user '$username'")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to save credentials for token refresh", e)
+                }
+                
+                ApiResult.Success(authResult)
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "authenticateUser: Authentication failed", e)
+                val errorType = RepositoryUtils.getErrorType(e)
+                ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
+            } finally {
+                _isAuthenticating.value = false
+            }
+        }
     }
 
-    /**
-     * Clear cached credentials (for logout)
-     */
-    suspend fun clearCredentials() {
+    suspend fun reAuthenticate(): Boolean {
+        val server = _currentServer.value ?: return false
+        val username = server.username ?: return false
+        val serverUrl = server.url
+        
+        return try {
+            val password = secureCredentialManager.getPassword(serverUrl, username)
+            if (password == null) {
+                Log.w(TAG, "reAuthenticate: No saved password found for user $username")
+                return false
+            }
+            
+            Log.d(TAG, "reAuthenticate: Found saved credentials for $serverUrl, attempting authentication")
+            
+            val result = authenticateUser(serverUrl, username, password)
+            if (result is ApiResult.Success) {
+                Log.d(TAG, "reAuthenticate: Successfully re-authenticated user $username")
+                true
+            } else {
+                Log.w(TAG, "reAuthenticate: Failed to re-authenticate user $username")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "reAuthenticate: Exception during re-authentication", e)
+            false
+        }
+    }
+    
+    suspend fun forceReAuthenticate(): Boolean {
+        Log.d(TAG, "forceReAuthenticate: Force refresh requested, will re-authenticate even if token appears valid")
+        return reAuthenticate()
+    }
+
+    fun getCurrentServer(): JellyfinServer? = _currentServer.value
+    
+    fun isUserAuthenticated(): Boolean = _currentServer.value?.accessToken != null
+    
+    fun isTokenExpired(): Boolean {
+        val server = _currentServer.value ?: return true
+        val loginTimestamp = server.loginTimestamp ?: return true
+        val currentTime = System.currentTimeMillis()
+        
+        return (currentTime - loginTimestamp) > TOKEN_VALIDITY_DURATION_MS
+    }
+
+    suspend fun logout() {
         authMutex.withLock {
-            cachedCredentials = null
-            secureStorage.remove("jellyfin_credentials")
-            Log.d(TAG, "clearCredentials: Credentials cleared")
-        }
-    }
-
-    // Your existing methods stay the same
-    suspend fun getCurrentCredentials(): Result<UserCredentials> = withContext(Dispatchers.IO) {
-        try {
-            cachedCredentials?.let {
-                Log.d(TAG, "getCurrentCredentials: Returning cached credentials")
-                return@withContext Result.success(it)
+            val server = _currentServer.value
+            if (server != null && server.username != null) {
+                try {
+                    secureCredentialManager.clearPassword(server.url, server.username)
+                    Log.d(TAG, "logout: Cleared saved credentials for user ${server.username}")
+                } catch (e: Exception) {
+                    Log.w(TAG, "logout: Failed to clear credentials", e)
+                }
             }
-
-            val credentialsJson = secureStorage.getString("jellyfin_credentials")
-            if (credentialsJson.isNullOrEmpty()) {
-                Log.d(TAG, "getCurrentCredentials: No credentials found in storage")
-                return@withContext Result.failure(Exception("No credentials found"))
-            }
-
-            // Parse the stored credentials (you'll need to implement JSON parsing)
-            val credentials = parseCredentialsFromJson(credentialsJson)
-            cachedCredentials = credentials
-
-            Log.d(TAG, "getCurrentCredentials: Loaded credentials from storage")
-            Result.success(credentials)
-        } catch (e: Exception) {
-            Log.e(TAG, "getCurrentCredentials: Failed to load credentials", e)
-            Result.failure(e)
+            
+            // Clear token state
+            saveNewToken(null)
+            _currentServer.value = null
+            _isConnected.value = false
+            Log.d(TAG, "logout: User logged out successfully")
         }
     }
 
-    private suspend fun saveCredentials(credentials: UserCredentials) = withContext(Dispatchers.IO) {
-        try {
-            // Convert credentials to JSON and store securely
-            val credentialsJson = convertCredentialsToJson(credentials)
-            secureStorage.putString("jellyfin_credentials", credentialsJson)
-            Log.d(TAG, "saveCredentials: Credentials saved successfully")
-        } catch (e: Exception) {
-            Log.e(TAG, "saveCredentials: Failed to save credentials", e)
-            throw e
-        }
+    // Quick Connect methods (stubs for now)
+    suspend fun initiateQuickConnect(serverUrl: String): ApiResult<QuickConnectResult> {
+        return ApiResult.Error("Quick Connect not implemented yet", errorType = ErrorType.UNKNOWN)
     }
 
-    // You'll need to implement these JSON parsing methods
-    private fun parseCredentialsFromJson(json: String): UserCredentials {
-        // Implement JSON parsing logic here
-        // You can use Gson, Moshi, or kotlinx.serialization
-        // For now, this is a placeholder
-        TODO("Implement JSON parsing")
+    suspend fun getQuickConnectState(serverUrl: String, secret: String): ApiResult<QuickConnectState> {
+        return ApiResult.Error("Quick Connect not implemented yet", errorType = ErrorType.UNKNOWN)
     }
 
-    private fun convertCredentialsToJson(credentials: UserCredentials): String {
-        // Implement JSON serialization logic here
-        TODO("Implement JSON serialization")
+    suspend fun authenticateWithQuickConnect(serverUrl: String, secret: String): ApiResult<AuthenticationResult> {
+        return ApiResult.Error("Quick Connect not implemented yet", errorType = ErrorType.UNKNOWN)
     }
 }

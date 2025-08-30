@@ -74,7 +74,7 @@ class JellyfinMediaRepository @Inject constructor(
         startIndex: Int = 0,
         limit: Int = 100,
         collectionType: String? = null,
-    ): ApiResult<List<BaseItemDto>> = execute("getLibraryItems") {
+    ): ApiResult<List<BaseItemDto>> = executeLegacy("getLibraryItems") {
         // ✅ COMPREHENSIVE FIX: Use centralized parameter validation
         val validatedParams = ApiParameterValidator.validateLibraryParams(
             parentId = parentId,
@@ -90,9 +90,12 @@ class JellyfinMediaRepository @Inject constructor(
                 "JellyfinMediaRepository",
                 "Library ${validatedParams.parentId} is blocked due to repeated failures, returning empty list",
             )
-            return@execute emptyList()
+            return@executeLegacy emptyList()
         }
 
+        // ✅ FIX: Get fresh server state within the execution block
+        // This ensures we have the latest token after any re-authentication
+        // No more stale token capture - server state is fetched fresh
         val server = validateServer()
         val userUuid = parseUuid(server.userId ?: "", "user")
         val client = getClient(server.url, server.accessToken)
@@ -165,58 +168,12 @@ class JellyfinMediaRepository @Inject constructor(
 
                 // Don't report this as a failure since it's a known limitation
                 // Just return empty list and let the UI handle it gracefully
-                return@execute emptyList()
+                return@executeLegacy emptyList()
             }
 
-            // If we get a 401, the token refresh should have already been handled by execute
-            if (e.message?.contains("401") == true) {
-                android.util.Log.w(
-                    "JellyfinMediaRepository",
-                    "HTTP 401 error after token refresh attempt, authentication may have permanently failed",
-                )
-
-                // Report failure to health checker
-                validatedParams.parentId?.let { libraryId ->
-                    healthChecker.reportFailure(libraryId, "Authentication failed")
-                }
-
-                // ✅ FIX: Instead of throwing immediately, try one more time with a fresh client
-                try {
-                    android.util.Log.d(
-                        "JellyfinMediaRepository",
-                        "Attempting final retry with fresh client after 401 error",
-                    )
-
-                    // Force client invalidation and retry once more
-                    // Note: clientFactory is private in BaseJellyfinRepository, so we'll just get a fresh client
-                    val freshClient = getClient(server.url, server.accessToken)
-
-                    val response = freshClient.itemsApi.getItems(
-                        userId = userUuid,
-                        parentId = parent,
-                        recursive = true,
-                        includeItemTypes = itemKinds,
-                        startIndex = validatedParams.startIndex,
-                        limit = validatedParams.limit,
-                    )
-
-                    val items = response.content.items ?: emptyList()
-
-                    // Report success to health checker
-                    validatedParams.parentId?.let { libraryId ->
-                        healthChecker.reportSuccess(libraryId)
-                    }
-
-                    return@execute items
-                } catch (finalException: Exception) {
-                    android.util.Log.e(
-                        "JellyfinMediaRepository",
-                        "Final retry failed, authentication has permanently failed",
-                        finalException,
-                    )
-                    throw Exception("Authentication failed: Token refresh was unsuccessful")
-                }
-            }
+            // ✅ FIX: All 401 errors are now handled automatically by BaseJellyfinRepository
+            // No manual 401 handling needed - executeWithTokenRefresh ensures fresh tokens
+            // Just let the error propagate up to be handled by the framework
 
             // If we get a 400, try multiple fallback strategies
             if (e.message?.contains("400") == true) {
@@ -246,7 +203,7 @@ class JellyfinMediaRepository @Inject constructor(
                             "JellyfinMediaRepository",
                             "Fallback strategy 1 succeeded: ${response.content.items?.size ?: 0} items",
                         )
-                        return@execute response.content.items ?: emptyList()
+                        return@executeLegacy response.content.items ?: emptyList()
                     } catch (fallbackException: Exception) {
                         android.util.Log.w(
                             "JellyfinMediaRepository",
@@ -274,7 +231,7 @@ class JellyfinMediaRepository @Inject constructor(
                         "JellyfinMediaRepository",
                         "Fallback strategy 2 succeeded: ${response.content.items?.size ?: 0} items",
                     )
-                    return@execute response.content.items ?: emptyList()
+                    return@executeLegacy response.content.items ?: emptyList()
                 } catch (fallbackException2: Exception) {
                     android.util.Log.w(
                         "JellyfinMediaRepository",
@@ -302,7 +259,7 @@ class JellyfinMediaRepository @Inject constructor(
                             "JellyfinMediaRepository",
                             "Fallback strategy 3 succeeded: ${response.content.items?.size ?: 0} items",
                         )
-                        return@execute response.content.items ?: emptyList()
+                        return@executeLegacy response.content.items ?: emptyList()
                     } catch (fallbackException3: Exception) {
                         android.util.Log.w(
                             "JellyfinMediaRepository",
@@ -322,7 +279,7 @@ class JellyfinMediaRepository @Inject constructor(
                     healthChecker.reportFailure(libraryId, errorMsg ?: "HTTP 400 error")
                 }
 
-                return@execute emptyList()
+                return@executeLegacy emptyList()
             }
 
             // Report failure to health checker for any unhandled exceptions

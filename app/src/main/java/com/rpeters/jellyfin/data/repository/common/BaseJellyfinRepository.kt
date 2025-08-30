@@ -70,9 +70,24 @@ open class BaseJellyfinRepository @Inject constructor(
     }
 
     /**
-     * ✅ ENHANCED: Executes API call with automatic token refresh on 401 errors
-     * Improved to handle concurrent authentication and better error reporting
-     * Enhanced to prevent excessive retries and better handle authentication failures
+     * ✅ NEW: Execute operation with TokenProvider-based authentication.
+     * This eliminates stale token issues by ensuring fresh tokens are fetched per request.
+     */
+    protected suspend fun <T> executeWithClient(
+        operationName: String,
+        operation: suspend (ApiClient) -> T,
+    ): T {
+        val server = validateServer()
+        // Use the legacy executeWithAuth method that doesn't require serverId parameter
+        return clientFactory.executeWithAuth { client ->
+            // Fresh server state is fetched inside this block after potential re-auth
+            operation(client)
+        }
+    }
+
+    /**
+     * ✅ ENHANCED: Legacy method for backward compatibility during transition.
+     * Will be phased out in favor of the new execute method above.
      */
     protected suspend fun <T> executeWithTokenRefresh(
         operation: suspend () -> T,
@@ -115,6 +130,7 @@ open class BaseJellyfinRepository @Inject constructor(
                         kotlinx.coroutines.delay(1000) // 1000ms delay
 
                         // Retry the operation with refreshed token
+                        // Note: The operation closure should re-fetch server state for updated tokens
                         operation()
                     } else {
                         Logger.e(LogCategory.NETWORK, javaClass.simpleName, "Force token refresh failed")
@@ -128,10 +144,33 @@ open class BaseJellyfinRepository @Inject constructor(
     }
 
     /**
+     * ✅ NEW: Wraps a client-based operation returning [ApiResult].
+     * Uses the new TokenProvider approach to eliminate stale token issues.
+     */
+    protected suspend fun <T> execute(
+        operationName: String,
+        block: suspend (ApiClient) -> T,
+    ): ApiResult<T> =
+        try {
+            val result = executeWithClient(operationName, block)
+            ApiResult.Success(result)
+        } catch (e: Exception) {
+            Logger.e(
+                LogCategory.NETWORK,
+                javaClass.simpleName,
+                "Error executing $operationName",
+                e,
+            )
+            val error = RepositoryUtils.getErrorType(e)
+            ApiResult.Error(e.message ?: "Unknown error", e, error)
+        }
+
+    /**
+     * Legacy method for backward compatibility during transition.
      * Wraps a suspend block returning [ApiResult]. Any thrown exception
      * is converted to an [ApiResult.Error] with a best-effort error type.
      */
-    protected suspend fun <T> execute(
+    protected suspend fun <T> executeLegacy(
         operationName: String,
         block: suspend () -> T,
     ): ApiResult<T> =
