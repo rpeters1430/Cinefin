@@ -163,7 +163,7 @@ class JellyfinMediaRepository @Inject constructor(
             if ((isHomeVideos || isPhotos) && e.status == 400) {
                 android.util.Log.w(
                     "JellyfinMediaRepository",
-                    "Known compatibility issue with ${collectionType} library (id=${validatedParams.parentId}), returning empty list",
+                    "Known compatibility issue with $collectionType library (id=${validatedParams.parentId}), returning empty list",
                 )
 
                 // Don't report this as a failure since it's a known limitation

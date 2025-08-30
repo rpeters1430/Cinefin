@@ -190,11 +190,11 @@ class JellyfinClientFactory @Inject constructor(
                 val authRepository = authRepositoryProvider.get()
                 val server = authRepository.getCurrentServer()
                     ?: throw IllegalStateException("No authenticated server available")
-                
+
                 // Create client without token - TokenProvider will handle token attachment
                 jellyfin.createApi(
                     baseUrl = server.url,
-                    accessToken = null // No token here - will be provided via interceptor
+                    accessToken = null, // No token here - will be provided via interceptor
                 ).apply {
                     // Install TokenProvider interceptor here
                     // Note: This is a simplified example - actual implementation would use
@@ -247,10 +247,10 @@ class JellyfinClientFactory @Inject constructor(
 
                 if (reAuthSuccess) {
                     SecureLogger.auth(TAG, "Re-authentication successful, retrying operation", true)
-                    
+
                     // Invalidate client to ensure fresh token provider state
                     invalidateClient(serverId)
-                    
+
                     // Retry with fresh client
                     return executeWithAuthRetry(serverId, operation, retryCount + 1)
                 } else {
@@ -289,7 +289,7 @@ class JellyfinClientFactory @Inject constructor(
         operation: suspend (ApiClient) -> T,
     ): T {
         val authRepository = authRepositoryProvider.get()
-        val server = authRepository.getCurrentServer()?.id 
+        val server = authRepository.getCurrentServer()?.id
             ?: throw IllegalStateException("No authenticated server available")
         return executeWithAuth(server, operation)
     }
