@@ -168,7 +168,7 @@ open class BaseJellyfinRepository @Inject constructor(
     /**
      * Helper method to make the server/client pattern easier to use safely.
      * This ensures fresh server state and client are created inside the execution block.
-     * 
+     *
      * Usage example:
      * ```kotlin
      * return withServerClient("getLibraryItems") { server, client ->
@@ -182,7 +182,7 @@ open class BaseJellyfinRepository @Inject constructor(
      */
     protected suspend inline fun <T> withServerClient(
         operationName: String,
-        crossinline block: suspend (server: JellyfinServer, client: ApiClient) -> T
+        crossinline block: suspend (server: JellyfinServer, client: ApiClient) -> T,
     ): ApiResult<T> = execute(operationName) { client ->
         val server = validateServer()
         block(server, client)

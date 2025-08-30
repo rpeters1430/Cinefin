@@ -39,7 +39,7 @@ class JellyfinUserRepository @Inject constructor(
             !isFavorite
         }
 
-    suspend fun markAsWatched(itemId: String): ApiResult<Boolean> = 
+    suspend fun markAsWatched(itemId: String): ApiResult<Boolean> =
         withServerClient("markAsWatched") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
             val itemUuid = parseUuid(itemId, "item")
@@ -47,7 +47,7 @@ class JellyfinUserRepository @Inject constructor(
             true
         }
 
-    suspend fun markAsUnwatched(itemId: String): ApiResult<Boolean> = 
+    suspend fun markAsUnwatched(itemId: String): ApiResult<Boolean> =
         withServerClient("markAsUnwatched") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
             val itemUuid = parseUuid(itemId, "item")
@@ -55,7 +55,7 @@ class JellyfinUserRepository @Inject constructor(
             true
         }
 
-    suspend fun getFavorites(): ApiResult<List<BaseItemDto>> = 
+    suspend fun getFavorites(): ApiResult<List<BaseItemDto>> =
         // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
         withServerClient("getFavorites") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
@@ -68,7 +68,7 @@ class JellyfinUserRepository @Inject constructor(
             response.content.items ?: emptyList()
         }
 
-    suspend fun deleteItem(itemId: String): ApiResult<Boolean> = 
+    suspend fun deleteItem(itemId: String): ApiResult<Boolean> =
         withServerClient("deleteItem") { server, client ->
             val itemUuid = parseUuid(itemId, "item")
             client.libraryApi.deleteItem(itemId = itemUuid)

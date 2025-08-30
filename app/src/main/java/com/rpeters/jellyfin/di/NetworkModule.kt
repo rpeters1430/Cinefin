@@ -25,7 +25,6 @@ import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.createJellyfin
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
@@ -189,17 +188,17 @@ class JellyfinClientFactory @Inject constructor(
                 val authRepository = authRepositoryProvider.get()
                 val server = authRepository.getCurrentServer()
                     ?: throw IllegalStateException("No authenticated server available")
-                
+
                 // Create client without token - TokenProvider will handle token attachment
                 jellyfin.createApi(
                     baseUrl = server.url,
-                    accessToken = null // No token here - will be provided via interceptor
+                    accessToken = null, // No token here - will be provided via interceptor
                 ).apply {
                     // Install TokenProvider interceptor here
                     // Note: This is a simplified example - actual implementation would use
                     // HTTP client configuration or SDK extension points
                     val tokenTail = server.accessToken?.takeLast(6) ?: "null"
-                    SecureLogger.d(TAG, "Created client for server: ${server.url} with token ...${tokenTail}")
+                    SecureLogger.d(TAG, "Created client for server: ${server.url} with token ...$tokenTail")
                 }
             }
         }
@@ -251,7 +250,7 @@ class JellyfinClientFactory @Inject constructor(
         operation: suspend (ApiClient) -> T,
     ): T {
         val authRepository = authRepositoryProvider.get()
-        val server = authRepository.getCurrentServer()?.id 
+        val server = authRepository.getCurrentServer()?.id
             ?: throw IllegalStateException("No authenticated server available")
         return executeWithAuth(server, operation)
     }
