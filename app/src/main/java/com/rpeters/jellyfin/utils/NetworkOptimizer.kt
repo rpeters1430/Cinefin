@@ -37,6 +37,9 @@ object NetworkOptimizer {
     private fun setupGlobalNetworkTagging() {
         // Create a thread-local tag for network operations
         val networkTag = NETWORK_TAG.hashCode()
+        
+        // Store the original handler BEFORE setting the new one to avoid infinite recursion
+        val originalHandler = Thread.getDefaultUncaughtExceptionHandler()
 
         // This helps with ExoPlayer and other libraries that might not tag their sockets
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
@@ -49,8 +52,8 @@ object NetworkOptimizer {
                 // Ignore cleanup errors
             }
 
-            // Call the original handler if any
-            Thread.getDefaultUncaughtExceptionHandler()?.uncaughtException(thread, throwable)
+            // Call the original handler that was stored before setting our handler
+            originalHandler?.uncaughtException(thread, throwable)
         }
     }
 

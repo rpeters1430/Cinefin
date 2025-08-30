@@ -40,31 +40,14 @@ class JellyfinMediaRepository @Inject constructor(
     }
 
     suspend fun getUserLibraries(forceRefresh: Boolean = false): ApiResult<List<BaseItemDto>> {
-        val operation: suspend () -> List<BaseItemDto> = {
-            val server = validateServer()
+        // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
+        return withServerClient("getUserLibraries") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
-            val client = getClient(server.url, server.accessToken)
             val response = client.itemsApi.getItems(
                 userId = userUuid,
                 includeItemTypes = listOf(BaseItemKind.COLLECTION_FOLDER),
             )
             response.content.items ?: emptyList()
-        }
-
-        return if (forceRefresh) {
-            executeRefreshWithCache(
-                operationName = "getUserLibraries",
-                cacheKey = "user_libraries",
-                cacheTtlMs = 60 * 60 * 1000L, // 1 hour
-                block = operation,
-            )
-        } else {
-            executeWithCache(
-                operationName = "getUserLibraries",
-                cacheKey = "user_libraries",
-                cacheTtlMs = 60 * 60 * 1000L, // 1 hour
-                block = operation,
-            )
         }
     }
 
@@ -74,7 +57,7 @@ class JellyfinMediaRepository @Inject constructor(
         startIndex: Int = 0,
         limit: Int = 100,
         collectionType: String? = null,
-    ): ApiResult<List<BaseItemDto>> = executeLegacy("getLibraryItems") {
+    ): ApiResult<List<BaseItemDto>> {
         // ✅ COMPREHENSIVE FIX: Use centralized parameter validation
         val validatedParams = ApiParameterValidator.validateLibraryParams(
             parentId = parentId,
@@ -90,213 +73,210 @@ class JellyfinMediaRepository @Inject constructor(
                 "JellyfinMediaRepository",
                 "Library ${validatedParams.parentId} is blocked due to repeated failures, returning empty list",
             )
-            return@executeLegacy emptyList()
+            return ApiResult.Success(emptyList())
         }
 
-        // ✅ FIX: Get fresh server state within the execution block
-        // This ensures we have the latest token after any re-authentication
-        // No more stale token capture - server state is fetched fresh
-        val server = validateServer()
-        val userUuid = parseUuid(server.userId ?: "", "user")
-        val client = getClient(server.url, server.accessToken)
+        return withServerClient("getLibraryItems") { server, client ->
+            // ✅ CRITICAL FIX: Server is provided as parameter by withServerClient
+            // This ensures fresh token access on retry after 401 re-authentication
+            val userUuid = parseUuid(server.userId ?: "", "user")
 
-        // Parse parentId if provided
-        val parent = validatedParams.parentId?.let { parseUuid(it, "parent") }
+            // Parse parentId if provided
+            val parent = validatedParams.parentId?.let { parseUuid(it, "parent") }
 
-        // Parse item types from validated string
-        var itemKinds = validatedParams.itemTypes?.split(",")?.mapNotNull { type ->
-            when (type.trim()) {
-                "Movie" -> BaseItemKind.MOVIE
-                "Series" -> BaseItemKind.SERIES
-                "Episode" -> BaseItemKind.EPISODE
-                "Audio" -> BaseItemKind.AUDIO
-                "MusicAlbum" -> BaseItemKind.MUSIC_ALBUM
-                "MusicArtist" -> BaseItemKind.MUSIC_ARTIST
-                "Book" -> BaseItemKind.BOOK
-                "AudioBook" -> BaseItemKind.AUDIO_BOOK
-                "Video" -> BaseItemKind.VIDEO
-                "Photo" -> BaseItemKind.PHOTO
-                else -> null
-            }
-        }
-
-        // Home videos and photos libraries require explicit item types
-        val isHomeVideos = collectionType?.equals("homevideos", ignoreCase = true) == true
-        val isPhotos = collectionType?.equals("photos", ignoreCase = true) == true
-        if (isHomeVideos && (itemKinds == null || itemKinds.isEmpty())) {
-            itemKinds = listOf(BaseItemKind.VIDEO)
-        }
-        if (isPhotos && (itemKinds == null || itemKinds.isEmpty())) {
-            itemKinds = listOf(BaseItemKind.PHOTO)
-        }
-
-        android.util.Log.d(
-            "JellyfinMediaRepository",
-            "Making validated API call with parentId=${parent?.toString()}, itemTypes=${itemKinds?.joinToString { it.name }}, startIndex=${validatedParams.startIndex}, limit=${validatedParams.limit}",
-        )
-
-        try {
-            val response = client.itemsApi.getItems(
-                userId = userUuid,
-                parentId = parent,
-                recursive = true,
-                includeItemTypes = itemKinds,
-                startIndex = validatedParams.startIndex,
-                limit = validatedParams.limit,
-            )
-            val items = response.content.items ?: emptyList()
-
-            // Report success to health checker
-            validatedParams.parentId?.let { libraryId ->
-                healthChecker.reportSuccess(libraryId)
+            // Parse item types from validated string
+            var itemKinds = validatedParams.itemTypes?.split(",")?.mapNotNull { type ->
+                when (type.trim()) {
+                    "Movie" -> BaseItemKind.MOVIE
+                    "Series" -> BaseItemKind.SERIES
+                    "Episode" -> BaseItemKind.EPISODE
+                    "Audio" -> BaseItemKind.AUDIO
+                    "MusicAlbum" -> BaseItemKind.MUSIC_ALBUM
+                    "MusicArtist" -> BaseItemKind.MUSIC_ARTIST
+                    "Book" -> BaseItemKind.BOOK
+                    "AudioBook" -> BaseItemKind.AUDIO_BOOK
+                    "Video" -> BaseItemKind.VIDEO
+                    "Photo" -> BaseItemKind.PHOTO
+                    else -> null
+                }
             }
 
-            items
-        } catch (e: org.jellyfin.sdk.api.client.exception.InvalidStatusException) {
-            val errorMsg = try { e.message } catch (_: Throwable) { "Bad Request" }
-            android.util.Log.e(
+            // Home videos and photos libraries require explicit item types
+            val isHomeVideos = collectionType?.equals("homevideos", ignoreCase = true) == true
+            val isPhotos = collectionType?.equals("photos", ignoreCase = true) == true
+            if (isHomeVideos && (itemKinds == null || itemKinds.isEmpty())) {
+                itemKinds = listOf(BaseItemKind.VIDEO)
+            }
+            if (isPhotos && (itemKinds == null || itemKinds.isEmpty())) {
+                itemKinds = listOf(BaseItemKind.PHOTO)
+            }
+
+            android.util.Log.d(
                 "JellyfinMediaRepository",
-                "getLibraryItems ${e.status}: ${errorMsg ?: e.message}",
+                "Making validated API call with parentId=${parent?.toString()}, itemTypes=${itemKinds?.joinToString { it.name }}, startIndex=${validatedParams.startIndex}, limit=${validatedParams.limit}",
             )
 
-            // Home videos and photos libraries can produce 400 errors; handle gracefully without reporting as failure
-            if ((isHomeVideos || isPhotos) && e.status == 400) {
-                android.util.Log.w(
+            try {
+                val response = client.itemsApi.getItems(
+                    userId = userUuid,
+                    parentId = parent,
+                    recursive = true,
+                    includeItemTypes = itemKinds,
+                    startIndex = validatedParams.startIndex,
+                    limit = validatedParams.limit,
+                )
+                val items = response.content.items ?: emptyList()
+
+                // Report success to health checker
+                validatedParams.parentId?.let { libraryId ->
+                    healthChecker.reportSuccess(libraryId)
+                }
+
+                items
+            } catch (e: org.jellyfin.sdk.api.client.exception.InvalidStatusException) {
+                val errorMsg = try { e.message } catch (_: Throwable) { "Bad Request" }
+                android.util.Log.e(
                     "JellyfinMediaRepository",
-                    "Known compatibility issue with ${collectionType} library (id=${validatedParams.parentId}), returning empty list",
+                    "getLibraryItems ${e.status}: ${errorMsg ?: e.message}",
                 )
 
-                // Don't report this as a failure since it's a known limitation
-                // Just return empty list and let the UI handle it gracefully
-                return@executeLegacy emptyList()
-            }
+                // Home videos and photos libraries can produce 400 errors; handle gracefully without reporting as failure
+                if ((isHomeVideos || isPhotos) && e.status == 400) {
+                    android.util.Log.w(
+                        "JellyfinMediaRepository",
+                        "Known compatibility issue with ${collectionType} library (id=${validatedParams.parentId}), returning empty list",
+                    )
 
-            // ✅ FIX: All 401 errors are now handled automatically by BaseJellyfinRepository
-            // No manual 401 handling needed - executeWithTokenRefresh ensures fresh tokens
-            // Just let the error propagate up to be handled by the framework
+                    // Don't report this as a failure since it's a known limitation
+                    // Just return empty list and let the UI handle it gracefully
+                    return@withServerClient emptyList()
+                }
 
-            // If we get a 400, try multiple fallback strategies
-            if (e.message?.contains("400") == true) {
-                android.util.Log.w(
-                    "JellyfinMediaRepository",
-                    "HTTP 400 error detected, attempting fallback strategies for parentId=$parentId, collectionType=$collectionType",
-                )
+                // ✅ FIX: All 401 errors are now handled automatically by executeWithTokenRefresh
+                // No manual 401 handling needed - fresh server/client created on retry
+                // Just let the error propagate up to be handled by the framework
 
-                // Strategy 1: Try collection-type defaults if we had explicit types
-                if (!collectionType.isNullOrBlank() && !itemTypes.isNullOrBlank()) {
+                // If we get a 400, try multiple fallback strategies
+                if (e.message?.contains("400") == true) {
+                    android.util.Log.w(
+                        "JellyfinMediaRepository",
+                        "HTTP 400 error detected, attempting fallback strategies for parentId=$parentId, collectionType=$collectionType",
+                    )
+
+                    // Strategy 1: Try collection-type defaults if we had explicit types
+                    if (!collectionType.isNullOrBlank() && !itemTypes.isNullOrBlank()) {
+                        try {
+                            val fallbackTypes = getDefaultTypesForCollection(collectionType)
+                            android.util.Log.d(
+                                "JellyfinMediaRepository",
+                                "Fallback strategy 1: Using collection type defaults: ${fallbackTypes?.joinToString()}",
+                            )
+
+                            val response = client.itemsApi.getItems(
+                                userId = userUuid,
+                                parentId = parent,
+                                recursive = true,
+                                includeItemTypes = fallbackTypes,
+                                startIndex = validatedParams.startIndex,
+                                limit = validatedParams.limit,
+                            )
+                            android.util.Log.d(
+                                "JellyfinMediaRepository",
+                                "Fallback strategy 1 succeeded: ${response.content.items?.size ?: 0} items",
+                            )
+                            return@withServerClient response.content.items ?: emptyList()
+                        } catch (fallbackException: Exception) {
+                            android.util.Log.w(
+                                "JellyfinMediaRepository",
+                                "Fallback strategy 1 failed: ${fallbackException.message}",
+                            )
+                        }
+                    }
+
+                    // Strategy 2: Try without any includeItemTypes (let server decide)
                     try {
-                        val fallbackTypes = getDefaultTypesForCollection(collectionType)
                         android.util.Log.d(
                             "JellyfinMediaRepository",
-                            "Fallback strategy 1: Using collection type defaults: ${fallbackTypes?.joinToString()}",
+                            "Fallback strategy 2: Requesting without includeItemTypes filter",
                         )
 
                         val response = client.itemsApi.getItems(
                             userId = userUuid,
                             parentId = parent,
                             recursive = true,
-                            includeItemTypes = fallbackTypes,
+                            includeItemTypes = null, // Let server return all types
                             startIndex = validatedParams.startIndex,
                             limit = validatedParams.limit,
                         )
                         android.util.Log.d(
                             "JellyfinMediaRepository",
-                            "Fallback strategy 1 succeeded: ${response.content.items?.size ?: 0} items",
+                            "Fallback strategy 2 succeeded: ${response.content.items?.size ?: 0} items",
                         )
-                        return@executeLegacy response.content.items ?: emptyList()
-                    } catch (fallbackException: Exception) {
+                        return@withServerClient response.content.items ?: emptyList()
+                    } catch (fallbackException2: Exception) {
                         android.util.Log.w(
                             "JellyfinMediaRepository",
-                            "Fallback strategy 1 failed: ${fallbackException.message}",
+                            "Fallback strategy 2 also failed: ${fallbackException2.message}",
                         )
                     }
-                }
 
-                // Strategy 2: Try without any includeItemTypes (let server decide)
-                try {
-                    android.util.Log.d(
-                        "JellyfinMediaRepository",
-                        "Fallback strategy 2: Requesting without includeItemTypes filter",
-                    )
+                    // Strategy 3: Try without parentId (library-wide search)
+                    if (parent != null) {
+                        try {
+                            android.util.Log.d(
+                                "JellyfinMediaRepository",
+                                "Fallback strategy 3: Requesting without parentId constraint",
+                            )
 
-                    val response = client.itemsApi.getItems(
-                        userId = userUuid,
-                        parentId = parent,
-                        recursive = true,
-                        includeItemTypes = null, // Let server return all types
-                        startIndex = validatedParams.startIndex,
-                        limit = validatedParams.limit,
-                    )
-                    android.util.Log.d(
-                        "JellyfinMediaRepository",
-                        "Fallback strategy 2 succeeded: ${response.content.items?.size ?: 0} items",
-                    )
-                    return@executeLegacy response.content.items ?: emptyList()
-                } catch (fallbackException2: Exception) {
+                            val response = client.itemsApi.getItems(
+                                userId = userUuid,
+                                parentId = null, // Remove library constraint
+                                recursive = true,
+                                includeItemTypes = itemKinds,
+                                startIndex = validatedParams.startIndex,
+                                limit = validatedParams.limit,
+                            )
+                            android.util.Log.d(
+                                "JellyfinMediaRepository",
+                                "Fallback strategy 3 succeeded: ${response.content.items?.size ?: 0} items",
+                            )
+                            return@withServerClient response.content.items ?: emptyList()
+                        } catch (fallbackException3: Exception) {
+                            android.util.Log.w(
+                                "JellyfinMediaRepository",
+                                "Fallback strategy 3 also failed: ${fallbackException3.message}",
+                            )
+                        }
+                    }
+
+                    // Strategy 4: Return empty list as graceful degradation
                     android.util.Log.w(
                         "JellyfinMediaRepository",
-                        "Fallback strategy 2 also failed: ${fallbackException2.message}",
+                        "All fallback strategies failed for library ${validatedParams.parentId}, returning empty list",
                     )
-                }
 
-                // Strategy 3: Try without parentId (library-wide search)
-                if (parent != null) {
-                    try {
-                        android.util.Log.d(
-                            "JellyfinMediaRepository",
-                            "Fallback strategy 3: Requesting without parentId constraint",
-                        )
-
-                        val response = client.itemsApi.getItems(
-                            userId = userUuid,
-                            parentId = null, // Remove library constraint
-                            recursive = true,
-                            includeItemTypes = itemKinds,
-                            startIndex = validatedParams.startIndex,
-                            limit = validatedParams.limit,
-                        )
-                        android.util.Log.d(
-                            "JellyfinMediaRepository",
-                            "Fallback strategy 3 succeeded: ${response.content.items?.size ?: 0} items",
-                        )
-                        return@executeLegacy response.content.items ?: emptyList()
-                    } catch (fallbackException3: Exception) {
-                        android.util.Log.w(
-                            "JellyfinMediaRepository",
-                            "Fallback strategy 3 also failed: ${fallbackException3.message}",
-                        )
+                    // Report failure to health checker
+                    validatedParams.parentId?.let { libraryId ->
+                        healthChecker.reportFailure(libraryId, errorMsg ?: "HTTP 400 error")
                     }
+
+                    return@withServerClient emptyList()
                 }
 
-                // Strategy 4: Return empty list as graceful degradation
-                android.util.Log.w(
-                    "JellyfinMediaRepository",
-                    "All fallback strategies failed for library ${validatedParams.parentId}, returning empty list",
-                )
-
-                // Report failure to health checker
+                // Report failure to health checker for any unhandled exceptions
                 validatedParams.parentId?.let { libraryId ->
-                    healthChecker.reportFailure(libraryId, errorMsg ?: "HTTP 400 error")
+                    healthChecker.reportFailure(libraryId, errorMsg ?: "HTTP error")
                 }
 
-                return@executeLegacy emptyList()
+                throw e
             }
-
-            // Report failure to health checker for any unhandled exceptions
-            validatedParams.parentId?.let { libraryId ->
-                healthChecker.reportFailure(libraryId, errorMsg ?: "HTTP error")
-            }
-
-            throw e
         }
     }
 
     suspend fun getRecentlyAdded(limit: Int = 50, forceRefresh: Boolean = false): ApiResult<List<BaseItemDto>> {
-        val operation: suspend () -> List<BaseItemDto> = {
-            val server = validateServer()
+        // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
+        return withServerClient("getRecentlyAdded") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
-            val client = getClient(server.url, server.accessToken)
-
             val response = client.itemsApi.getItems(
                 userId = userUuid,
                 recursive = true,
@@ -317,30 +297,12 @@ class JellyfinMediaRepository @Inject constructor(
             )
             response.content.items ?: emptyList()
         }
-
-        return if (forceRefresh) {
-            executeRefreshWithCache(
-                operationName = "getRecentlyAdded",
-                cacheKey = "recently_added",
-                cacheTtlMs = 15 * 60 * 1000L, // 15 minutes - improved cache efficiency
-                block = operation,
-            )
-        } else {
-            executeWithCache(
-                operationName = "getRecentlyAdded",
-                cacheKey = "recently_added",
-                cacheTtlMs = 15 * 60 * 1000L, // 15 minutes - improved cache efficiency
-                block = operation,
-            )
-        }
     }
 
     suspend fun getRecentlyAddedByType(itemType: BaseItemKind, limit: Int = 20, forceRefresh: Boolean = false): ApiResult<List<BaseItemDto>> {
-        val operation: suspend () -> List<BaseItemDto> = {
-            val server = validateServer()
+        // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
+        return withServerClient("getRecentlyAddedByType") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
-            val client = getClient(server.url, server.accessToken)
-
             val response = client.itemsApi.getItems(
                 userId = userUuid,
                 recursive = true,
@@ -351,93 +313,73 @@ class JellyfinMediaRepository @Inject constructor(
             )
             response.content.items ?: emptyList()
         }
+    }
 
-        val cacheKey = "recently_added_${itemType.name.lowercase()}"
-
-        return if (forceRefresh) {
-            executeRefreshWithCache(
-                operationName = "getRecentlyAddedByType",
-                cacheKey = cacheKey,
-                cacheTtlMs = 15 * 60 * 1000L, // 15 minutes - improved cache efficiency
-                block = operation,
-            )
-        } else {
-            executeWithCache(
-                operationName = "getRecentlyAddedByType",
-                cacheKey = cacheKey,
-                cacheTtlMs = 15 * 60 * 1000L, // 15 minutes - improved cache efficiency
-                block = operation,
-            )
+    suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> = 
+        withServerClient("getMovieDetails") { server, client ->
+            getItemDetailsById(movieId, "movie", server, client)
         }
-    }
 
-    suspend fun getMovieDetails(movieId: String): ApiResult<BaseItemDto> = execute("getMovieDetails") {
-        getItemDetailsById(movieId, "movie")
-    }
+    suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> = 
+        withServerClient("getSeriesDetails") { server, client ->
+            getItemDetailsById(seriesId, "series", server, client)
+        }
 
-    suspend fun getSeriesDetails(seriesId: String): ApiResult<BaseItemDto> = execute("getSeriesDetails") {
-        getItemDetailsById(seriesId, "series")
-    }
+    suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> = 
+        withServerClient("getEpisodeDetails") { server, client ->
+            getItemDetailsById(episodeId, "episode", server, client)
+        }
 
-    suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> = execute("getEpisodeDetails") {
-        getItemDetailsById(episodeId, "episode")
-    }
+    suspend fun getSeasonsForSeries(seriesId: String): ApiResult<List<BaseItemDto>> = 
+        // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
+        withServerClient("getSeasonsForSeries") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val seriesUuid = parseUuid(seriesId, "series")
 
-    suspend fun getSeasonsForSeries(seriesId: String): ApiResult<List<BaseItemDto>> = executeWithCache(
-        operationName = "getSeasonsForSeries",
-        cacheKey = "seasons_$seriesId",
-        cacheTtlMs = 30 * 60 * 1000L,
-    ) {
-        val server = validateServer()
-        val userUuid = parseUuid(server.userId ?: "", "user")
-        val seriesUuid = parseUuid(seriesId, "series")
-        val client = getClient(server.url, server.accessToken)
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                parentId = seriesUuid,
+                includeItemTypes = listOf(BaseItemKind.SEASON),
+                sortBy = listOf(ItemSortBy.SORT_NAME),
+                sortOrder = listOf(SortOrder.ASCENDING),
+                fields = listOf(
+                    org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
+                    org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                    org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                ),
+            )
+            response.content.items ?: emptyList()
+        }
 
-        val response = client.itemsApi.getItems(
-            userId = userUuid,
-            parentId = seriesUuid,
-            includeItemTypes = listOf(BaseItemKind.SEASON),
-            sortBy = listOf(ItemSortBy.SORT_NAME),
-            sortOrder = listOf(SortOrder.ASCENDING),
-            fields = listOf(
-                org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
-                org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
-                org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
-            ),
-        )
-        response.content.items ?: emptyList()
-    }
+    suspend fun getEpisodesForSeason(seasonId: String): ApiResult<List<BaseItemDto>> = 
+        // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
+        withServerClient("getEpisodesForSeason") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val seasonUuid = parseUuid(seasonId, "season")
 
-    suspend fun getEpisodesForSeason(seasonId: String): ApiResult<List<BaseItemDto>> = executeWithCache(
-        operationName = "getEpisodesForSeason",
-        cacheKey = "episodes_$seasonId",
-        cacheTtlMs = 30 * 60 * 1000L,
-    ) {
-        val server = validateServer()
-        val userUuid = parseUuid(server.userId ?: "", "user")
-        val seasonUuid = parseUuid(seasonId, "season")
-        val client = getClient(server.url, server.accessToken)
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                parentId = seasonUuid,
+                includeItemTypes = listOf(BaseItemKind.EPISODE),
+                sortBy = listOf(ItemSortBy.INDEX_NUMBER),
+                sortOrder = listOf(SortOrder.ASCENDING),
+                fields = listOf(
+                    org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
+                    org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                    org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                ),
+            )
+            response.content.items ?: emptyList()
+        }
 
-        val response = client.itemsApi.getItems(
-            userId = userUuid,
-            parentId = seasonUuid,
-            includeItemTypes = listOf(BaseItemKind.EPISODE),
-            sortBy = listOf(ItemSortBy.INDEX_NUMBER),
-            sortOrder = listOf(SortOrder.ASCENDING),
-            fields = listOf(
-                org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
-                org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
-                org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
-            ),
-        )
-        response.content.items ?: emptyList()
-    }
-
-    private suspend fun getItemDetailsById(itemId: String, itemTypeName: String): BaseItemDto {
-        val server = validateServer()
+    private suspend fun getItemDetailsById(
+        itemId: String, 
+        itemTypeName: String, 
+        server: com.rpeters.jellyfin.data.JellyfinServer, 
+        client: org.jellyfin.sdk.api.client.ApiClient
+    ): BaseItemDto {
         val userUuid = parseUuid(server.userId ?: "", "user")
         val itemUuid = parseUuid(itemId, itemTypeName)
-        val client = getClient(server.url, server.accessToken)
 
         val response = client.itemsApi.getItems(
             userId = userUuid,

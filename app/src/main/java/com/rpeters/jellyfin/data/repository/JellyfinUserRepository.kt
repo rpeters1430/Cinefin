@@ -28,11 +28,9 @@ class JellyfinUserRepository @Inject constructor(
     }
 
     suspend fun toggleFavorite(itemId: String, isFavorite: Boolean): ApiResult<Boolean> =
-        execute("toggleFavorite") {
-            val server = validateServer()
+        withServerClient("toggleFavorite") { server, client ->
             val userUuid = parseUuid(server.userId ?: "", "user")
             val itemUuid = parseUuid(itemId, "item")
-            val client = getClient(server.url, server.accessToken)
             if (isFavorite) {
                 client.userLibraryApi.unmarkFavoriteItem(itemId = itemUuid, userId = userUuid)
             } else {
@@ -41,53 +39,44 @@ class JellyfinUserRepository @Inject constructor(
             !isFavorite
         }
 
-    suspend fun markAsWatched(itemId: String): ApiResult<Boolean> = execute("markAsWatched") {
-        val server = validateServer()
-        val userUuid = parseUuid(server.userId ?: "", "user")
-        val itemUuid = parseUuid(itemId, "item")
-        val client = getClient(server.url, server.accessToken)
-        client.playStateApi.markPlayedItem(itemId = itemUuid, userId = userUuid)
-        true
-    }
+    suspend fun markAsWatched(itemId: String): ApiResult<Boolean> = 
+        withServerClient("markAsWatched") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val itemUuid = parseUuid(itemId, "item")
+            client.playStateApi.markPlayedItem(itemId = itemUuid, userId = userUuid)
+            true
+        }
 
-    suspend fun markAsUnwatched(itemId: String): ApiResult<Boolean> = execute("markAsUnwatched") {
-        val server = validateServer()
-        val userUuid = parseUuid(server.userId ?: "", "user")
-        val itemUuid = parseUuid(itemId, "item")
-        val client = getClient(server.url, server.accessToken)
-        client.playStateApi.markUnplayedItem(itemId = itemUuid, userId = userUuid)
-        true
-    }
+    suspend fun markAsUnwatched(itemId: String): ApiResult<Boolean> = 
+        withServerClient("markAsUnwatched") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val itemUuid = parseUuid(itemId, "item")
+            client.playStateApi.markUnplayedItem(itemId = itemUuid, userId = userUuid)
+            true
+        }
 
-    suspend fun getFavorites(): ApiResult<List<BaseItemDto>> = executeWithCache(
-        operationName = "getFavorites",
-        cacheKey = "user_favorites",
-        cacheTtlMs = 10 * 60 * 1000L, // 10 minutes
-    ) {
-        val server = validateServer()
-        val userUuid = parseUuid(server.userId ?: "", "user")
-        val client = getClient(server.url, server.accessToken)
+    suspend fun getFavorites(): ApiResult<List<BaseItemDto>> = 
+        // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
+        withServerClient("getFavorites") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                recursive = true,
+                sortBy = listOf(org.jellyfin.sdk.model.api.ItemSortBy.SORT_NAME),
+                filters = listOf(org.jellyfin.sdk.model.api.ItemFilter.IS_FAVORITE),
+            )
+            response.content.items ?: emptyList()
+        }
 
-        val response = client.itemsApi.getItems(
-            userId = userUuid,
-            recursive = true,
-            sortBy = listOf(org.jellyfin.sdk.model.api.ItemSortBy.SORT_NAME),
-            filters = listOf(org.jellyfin.sdk.model.api.ItemFilter.IS_FAVORITE),
-        )
-        response.content.items ?: emptyList()
-    }
-
-    suspend fun deleteItem(itemId: String): ApiResult<Boolean> = execute("deleteItem") {
-        val server = validateServer()
-        val itemUuid = parseUuid(itemId, "item")
-        val client = getClient(server.url, server.accessToken)
-        client.libraryApi.deleteItem(itemId = itemUuid)
-        true
-    }
+    suspend fun deleteItem(itemId: String): ApiResult<Boolean> = 
+        withServerClient("deleteItem") { server, client ->
+            val itemUuid = parseUuid(itemId, "item")
+            client.libraryApi.deleteItem(itemId = itemUuid)
+            true
+        }
 
     suspend fun deleteItemAsAdmin(itemId: String): ApiResult<Boolean> =
-        execute("deleteItemAsAdmin") {
-            val server = validateServer()
+        withServerClient("deleteItemAsAdmin") { server, client ->
             val itemUuid = parseUuid(itemId, "item")
 
             // Check admin permissions first
@@ -96,7 +85,6 @@ class JellyfinUserRepository @Inject constructor(
                 throw SecurityException("Administrator permissions required")
             }
 
-            val client = getClient(server.url, server.accessToken)
             client.libraryApi.deleteItem(itemId = itemUuid)
             true
         }
@@ -105,12 +93,15 @@ class JellyfinUserRepository @Inject constructor(
         server: com.rpeters.jellyfin.data.JellyfinServer,
     ): Boolean {
         return try {
-            executeWithTokenRefresh {
-                val userUuid = parseUuid(server.userId ?: "", "user")
-                val client = getClient(server.url, server.accessToken)
+            // ✅ FIX: Use executeWithClient to ensure fresh server/client on token refresh
+            val result = executeWithClient("hasAdminDeletePermission") { client ->
+                // Re-validate server inside the block to get fresh state
+                val currentServer = validateServer()
+                val userUuid = parseUuid(currentServer.userId ?: "", "user")
                 val user = client.userApi.getCurrentUser().content
                 user?.policy?.isAdministrator == true || user?.policy?.enableContentDeletion == true
             }
+            result
         } catch (e: Exception) {
             false
         }

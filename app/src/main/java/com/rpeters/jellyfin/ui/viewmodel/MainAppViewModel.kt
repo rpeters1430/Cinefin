@@ -193,26 +193,31 @@ class MainAppViewModel @Inject constructor(
 
                 _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
 
-                // Load libraries and recently added in parallel
+                // Load libraries first, then recently added sequentially to avoid auth conflicts
                 if (BuildConfig.DEBUG) {
-                    Log.d("MainAppViewModel", "loadInitialData: Loading libraries and recently added in parallel")
+                    Log.d("MainAppViewModel", "loadInitialData: Loading libraries first, then recently added sequentially")
                 }
 
                 val librariesDeferred = async {
                     ConcurrencyThrottler.throttle {
-                        repository.getUserLibraries()
+                        mediaRepository.getUserLibraries()
                     }
                 }
 
+                // Wait for libraries first
+                val librariesResult = librariesDeferred.await()
+
                 val recentlyAddedDeferred = async {
+                    // Add delay after libraries complete to prevent auth conflicts
+                    delay(500)
                     ConcurrencyThrottler.throttle {
-                        repository.getRecentlyAdded()
+                        mediaRepository.getRecentlyAdded()
                     }
                 }
 
                 // Process libraries result
-                var newLibraries: List<BaseItemDto> = emptyList()
-                when (val librariesResult = librariesDeferred.await()) {
+                var newLibraries: List<BaseItemDto> = _appState.value.libraries // Preserve existing libraries on failure
+                when (librariesResult) {
                     is ApiResult.Success -> {
                         newLibraries = librariesResult.data
                         if (BuildConfig.DEBUG) {
@@ -358,7 +363,7 @@ class MainAppViewModel @Inject constructor(
                 }
 
                 // Process recently added result (collect data for batch update)
-                var recentlyAddedItems: List<BaseItemDto> = emptyList()
+                var recentlyAddedItems: List<BaseItemDto> = _appState.value.recentlyAdded // Preserve existing recently added on failure
                 var errorMessage: String? = null
 
                 when (val recentlyAddedResult = recentlyAddedDeferred.await()) {
@@ -418,8 +423,8 @@ class MainAppViewModel @Inject constructor(
                 // Await all results concurrently
                 val contentTypeResults = contentTypeDeferreds.awaitAll()
 
-                // Process results
-                val recentlyAddedByTypes = mutableMapOf<String, List<BaseItemDto>>()
+                // Process results - start with existing data to preserve on failure
+                val recentlyAddedByTypes = _appState.value.recentlyAddedByTypes.toMutableMap()
                 contentTypeResults.forEach { (typeKey, result) ->
                     when (result) {
                         is ApiResult.Success -> {

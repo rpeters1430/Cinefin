@@ -36,7 +36,7 @@ open class BaseJellyfinRepository @Inject constructor(
     protected suspend fun getClient(serverUrl: String, accessToken: String?): ApiClient =
         clientFactory.getClient(serverUrl, accessToken)
 
-    protected fun validateServer(): JellyfinServer {
+    fun validateServer(): JellyfinServer {
         val currentServer = authRepository.getCurrentServer()
         return RepositoryUtils.validateServer(currentServer)
     }
@@ -164,6 +164,29 @@ open class BaseJellyfinRepository @Inject constructor(
             val error = RepositoryUtils.getErrorType(e)
             ApiResult.Error(e.message ?: "Unknown error", e, error)
         }
+
+    /**
+     * Helper method to make the server/client pattern easier to use safely.
+     * This ensures fresh server state and client are created inside the execution block.
+     * 
+     * Usage example:
+     * ```kotlin
+     * return withServerClient("getLibraryItems") { server, client ->
+     *     val response = client.itemsApi.getItems(
+     *         userId = server.userId,
+     *         // ...
+     *     )
+     *     response.content.items ?: emptyList()
+     * }
+     * ```
+     */
+    protected suspend inline fun <T> withServerClient(
+        operationName: String,
+        crossinline block: suspend (server: JellyfinServer, client: ApiClient) -> T
+    ): ApiResult<T> = execute(operationName) { client ->
+        val server = validateServer()
+        block(server, client)
+    }
 
     /**
      * Legacy method for backward compatibility during transition.
