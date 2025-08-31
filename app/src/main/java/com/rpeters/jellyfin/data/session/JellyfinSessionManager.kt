@@ -6,10 +6,12 @@ import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.di.OptimizedClientFactory
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -65,7 +67,9 @@ class JellyfinSessionManager @Inject constructor(
         val client = getClientForUrl(server.url)
 
         return try {
-            block(server, client)
+            withContext(Dispatchers.IO) {
+                block(server, client)
+            }
         } catch (e: Exception) {
             if (!RepositoryUtils.is401Error(e)) throw e
 
@@ -84,7 +88,9 @@ class JellyfinSessionManager @Inject constructor(
 
             val freshServer = currentServerOrThrow()
             val freshClient = getClientForUrl(freshServer.url)
-            block(freshServer, freshClient)
+            withContext(Dispatchers.IO) {
+                block(freshServer, freshClient)
+            }
         }
     }
 

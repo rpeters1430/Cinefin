@@ -8,12 +8,14 @@ import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.utils.MainThreadMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import javax.inject.Inject
@@ -53,7 +55,7 @@ class HomeViewModel @Inject constructor(
      * Load all home screen data including libraries and recently added content.
      */
     fun loadHomeData() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             MainThreadMonitor.warnIfMainThread("HomeViewModel.loadHomeData")
 
             if (BuildConfig.DEBUG) {
@@ -62,7 +64,9 @@ class HomeViewModel @Inject constructor(
 
             // Check authentication before attempting data load
             // Note: We don't have direct access to repository here, so we'll rely on the repository's error handling
-            _homeState.value = _homeState.value.copy(isLoading = true, errorMessage = null)
+            withContext(Dispatchers.Main) {
+                _homeState.value = _homeState.value.copy(isLoading = true, errorMessage = null)
+            }
 
             try {
                 // Load libraries and recently added content in parallel for better performance
@@ -80,12 +84,16 @@ class HomeViewModel @Inject constructor(
                 if (BuildConfig.DEBUG) {
                     Log.e(TAG, "Error loading home data", e)
                 }
-                _homeState.value = _homeState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Failed to load home screen data",
-                )
+                withContext(Dispatchers.Main) {
+                    _homeState.value = _homeState.value.copy(
+                        isLoading = false,
+                        errorMessage = "Failed to load home screen data",
+                    )
+                }
             } finally {
-                _homeState.value = _homeState.value.copy(isLoading = false)
+                withContext(Dispatchers.Main) {
+                    _homeState.value = _homeState.value.copy(isLoading = false)
+                }
             }
         }
     }
@@ -94,8 +102,10 @@ class HomeViewModel @Inject constructor(
      * Refresh all home screen data.
      */
     fun refreshHomeData() {
-        viewModelScope.launch {
-            _homeState.value = _homeState.value.copy(isRefreshing = true)
+        viewModelScope.launch(Dispatchers.IO) {
+            withContext(Dispatchers.Main) {
+                _homeState.value = _homeState.value.copy(isRefreshing = true)
+            }
 
             try {
                 // Force refresh by running operations in parallel
@@ -110,7 +120,9 @@ class HomeViewModel @Inject constructor(
                     recentlyAddedByTypesDeferred.await()
                 }
             } finally {
-                _homeState.value = _homeState.value.copy(isRefreshing = false)
+                withContext(Dispatchers.Main) {
+                    _homeState.value = _homeState.value.copy(isRefreshing = false)
+                }
             }
         }
     }
@@ -126,15 +138,19 @@ class HomeViewModel @Inject constructor(
                 if (BuildConfig.DEBUG) {
                     Log.d(TAG, "Loaded ${result.data.size} libraries")
                 }
-                _homeState.value = _homeState.value.copy(libraries = result.data)
+                withContext(Dispatchers.Main) {
+                    _homeState.value = _homeState.value.copy(libraries = result.data)
+                }
             }
             is ApiResult.Error -> {
                 if (BuildConfig.DEBUG) {
                     Log.w(TAG, "Failed to load libraries: ${result.message}")
                 }
-                _homeState.value = _homeState.value.copy(
-                    errorMessage = "Failed to load libraries: ${result.message}",
-                )
+                withContext(Dispatchers.Main) {
+                    _homeState.value = _homeState.value.copy(
+                        errorMessage = "Failed to load libraries: ${result.message}",
+                    )
+                }
             }
             is ApiResult.Loading -> {
                 // Already handled by isLoading state
@@ -153,7 +169,9 @@ class HomeViewModel @Inject constructor(
                 if (BuildConfig.DEBUG) {
                     Log.d(TAG, "Loaded ${result.data.size} recently added items")
                 }
-                _homeState.value = _homeState.value.copy(recentlyAdded = result.data)
+                withContext(Dispatchers.Main) {
+                    _homeState.value = _homeState.value.copy(recentlyAdded = result.data)
+                }
             }
             is ApiResult.Error -> {
                 if (BuildConfig.DEBUG) {
@@ -226,7 +244,9 @@ class HomeViewModel @Inject constructor(
             }
         }
 
-        _homeState.value = _homeState.value.copy(recentlyAddedByTypes = results)
+        withContext(Dispatchers.Main) {
+            _homeState.value = _homeState.value.copy(recentlyAddedByTypes = results)
+        }
 
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Loaded recently added by types: ${results.keys.joinToString()}")
@@ -237,7 +257,9 @@ class HomeViewModel @Inject constructor(
      * Clear any error messages.
      */
     fun clearError() {
-        _homeState.value = _homeState.value.copy(errorMessage = null)
+        viewModelScope.launch(Dispatchers.Main) {
+            _homeState.value = _homeState.value.copy(errorMessage = null)
+        }
     }
 
     /**
