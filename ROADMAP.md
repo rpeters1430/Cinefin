@@ -2,6 +2,20 @@
 
 This roadmap outlines the comprehensive improvement plan for transforming the Jellyfin Android client into a premium, multi-platform media experience.
 
+## ✅ Immediate Fixes & Auth Hardening
+
+These are focused, near-term items discovered during code review to solidify authentication and stability.
+
+- [x] Fix client cache invalidation in `OptimizedClientFactory` so entries keyed by `serverUrl|token` are removed when invalidating by server URL.
+- [ ] Normalize server URLs for credential storage and lookup to prevent "No saved password found" during re-auth (e.g., trim trailing slashes, consistent scheme/host casing).
+- [ ] Consolidate auth handling by adopting `JellyfinSessionManager`/`BaseJellyfinRepository` wrappers across repositories to eliminate duplicate 401/re-auth logic.
+- [ ] Split `MainAppViewModel` into smaller components and remove duplicated methods (e.g., multiple `ensureValidTokenWithWait` blocks) to reduce size and prevent merge artifacts.
+- [ ] Move `TokenProvider` file to `app/src/main/java/com/rpeters/jellyfin/data/network/` to match its declared package and avoid source-set confusion.
+- [ ] Replace `runBlocking` in `OptimizedClientFactory.getOptimizedClient` with a non-blocking approach (or make it `suspend`) to avoid potential main-thread blocking.
+- [ ] Add unit tests for token expiry edge cases and single-flight re-auth (401 once → re-auth → success path; concurrent calls).
+- [ ] Optional: Add Coil auth header support for servers that disallow `api_key` query param (configurable), while keeping current URLs.
+- [ ] Implement Quick Connect flows (initiate, poll, authenticate) currently stubbed.
+
 ## 📊 **Progress Overview**
 
 - **Total Phases**: 7 major phases

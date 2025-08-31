@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -155,33 +156,39 @@ fun SearchScreen(
                 .padding(paddingValues),
         ) {
             SearchBar(
-                query = searchQuery,
-                onQueryChange = { searchQuery = it },
-                onSearch = { /* Search is handled by LaunchedEffect with debouncing */ },
-                active = false,
-                onActiveChange = { },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = stringResource(id = R.string.search),
+                inputField = {
+                    SearchBarDefaults.InputField(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        onSearch = { /* Search is handled by LaunchedEffect with debouncing */ },
+                        expanded = false,
+                        onExpandedChange = { },
+                        placeholder = { Text(stringResource(id = R.string.search_hint)) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = stringResource(id = R.string.search),
+                            )
+                        },
+                        trailingIcon = if (searchQuery.isNotEmpty()) {
+                            {
+                                IconButton(onClick = {
+                                    searchQuery = ""
+                                    onClearSearch()
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = "Clear Search",
+                                    )
+                                }
+                            }
+                        } else {
+                            null
+                        },
                     )
                 },
-                trailingIcon = if (searchQuery.isNotEmpty()) {
-                    {
-                        IconButton(onClick = {
-                            searchQuery = ""
-                            onClearSearch()
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = "Clear Search",
-                            )
-                        }
-                    }
-                } else {
-                    null
-                },
-                placeholder = { Text(stringResource(id = R.string.search_hint)) },
+                expanded = false,
+                onExpandedChange = { },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)

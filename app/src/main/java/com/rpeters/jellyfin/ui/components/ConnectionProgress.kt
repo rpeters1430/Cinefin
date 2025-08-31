@@ -90,9 +90,6 @@ fun ConnectionProgressIndicator(
                         iconTint = MaterialTheme.colorScheme.error,
                     )
                 }
-                ConnectionPhase.Idle -> {
-                    // Don't show anything when idle
-                }
             }
         }
     }
@@ -143,7 +140,7 @@ private fun ConnectionPhaseContent(
             if (progress != null) {
                 // Linear progress for operations with known progress
                 LinearProgressIndicator(
-                    progress = progress,
+                    progress = { progress },
                     modifier = Modifier.fillMaxWidth(),
                 )
             } else {

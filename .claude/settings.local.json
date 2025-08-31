@@ -4,7 +4,10 @@
       "WebFetch(domain:gist.github.com)",
       "Bash(./gradlew build:*)",
       "Bash(./gradlew compileDebugKotlin:*)",
-      "Bash(./gradlew:*)"
+      "Bash(./gradlew:*)",
+      "Bash(find:*)",
+      "Bash(sed:*)",
+      "Bash(.gradlew assembleDebug)"
     ],
     "deny": [],
     "ask": [],

@@ -16,7 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.ui.components.tv.TvContentCarousel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme

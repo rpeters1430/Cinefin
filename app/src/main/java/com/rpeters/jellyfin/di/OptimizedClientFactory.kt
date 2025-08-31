@@ -115,8 +115,13 @@ class OptimizedClientFactory @Inject constructor(
      */
     fun invalidateClient(serverUrl: String) {
         synchronized(clientLock) {
-            clients.remove(serverUrl)?.also {
-                logDebug("Invalidated optimized client for: $serverUrl")
+            // Keys are stored as "serverUrl|token"; remove all entries for this server URL
+            val keysToRemove = clients.keys.filter { it.startsWith("$serverUrl|") || it == serverUrl }
+            keysToRemove.forEach { key ->
+                clients.remove(key)
+            }
+            if (keysToRemove.isNotEmpty()) {
+                logDebug("Invalidated ${keysToRemove.size} optimized client(s) for: $serverUrl")
             }
         }
     }

@@ -63,9 +63,6 @@ object MediaDownloadManager {
                 // Show download notification
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
 
-                // Allow media scanner to find the file
-                setVisibleInDownloadsUi(true)
-
                 // Set MIME type based on media type
                 val mimeType = getMimeType(item)
                 if (mimeType != null) {
