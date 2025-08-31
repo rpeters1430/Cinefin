@@ -1754,7 +1754,6 @@ class MainAppViewModel @Inject constructor(
                     // Remove existing items of this type to avoid duplicates
                     currentItems.removeAll { it.type in LibraryType.STUFF.itemKinds }
                     currentItems.addAll(otherItems)
-
                 }
                 is ApiResult.Error -> {
                     Log.e("MainAppViewModel", "loadOtherLibraryItems: Failed to load other items: ${result.message}")
