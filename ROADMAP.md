@@ -33,30 +33,29 @@ These are focused, near-term items discovered during code review to solidify aut
 **Target Completion**: Next 2-3 months
 
 #### Implementation Checklist:
-- [ ] **TV-Specific Navigation System**
-  - [ ] Create `TVNavigationHost` with D-pad navigation support
-  - [ ] Implement `TVHomeScreen` with horizontal content carousels
-  - [ ] Add TV-specific routing in `NavGraph.kt`
-  - [ ] Create TV manifest declarations and permissions
+- [x] **TV-Specific Navigation System**
+  - [x] Create TVNavigationHost (see TvNavGraph) and wire into TvJellyfinApp
+  - [x] Implement TvHomeScreen with horizontal content carousels
+  - [x] Add TV-specific routing in TvNavGraph (Home → Library → Item)
+  - [x] Verify TV manifest (leanback launcher and banner)
 
-- [ ] **TV UI Components Library**
-  - [ ] Build `TVMediaCard` components optimized for focus navigation
-  - [ ] Create `TVCarousel` with auto-focus and smooth scrolling
-  - [ ] Implement TV-specific detail screens with large imagery
-  - [ ] Design TV-compatible loading states and error screens
+- [~] **TV UI Components Library**
+  - [x] TvContentCarousel with auto-scroll for focused item
+  - [x] TvLibraryCard section for libraries
+  - [x] Basic TvItemDetailScreen (poster, backdrop, overview, Play/Resume)
+  - [ ] TV loading/error states (skeleton, banners)
 
-- [ ] **Focus Management System**
-  - [ ] Develop `FocusManager` for consistent D-pad navigation
-  - [ ] Create focus indicators and animations
-  - [ ] Implement TV remote control shortcuts
-  - [ ] Add keyboard navigation support
+- [~] **Focus Management System**
+  - [x] Initial focus set on first carousel and libraries row
+  - [x] Simple focus glow/elevation on cards
+  - [ ] Central FocusManager util (save/restore focus per row/screen)
+  - [ ] TV remote shortcuts; keyboard navigation parity
 
 - [ ] **Adaptive Layout System**
-  - [ ] Enhance existing adaptive navigation to detect TV form factor
-  - [ ] Create TV-specific layouts using `WindowSizeClass.Expanded`
-  - [ ] Implement tablet optimization as intermediate step
-  - [ ] Add landscape-first design patterns
-
+  - [ ] Detect TV/tablet form factors in adaptive nav
+  - [ ] TV-specific layouts via WindowSizeClass
+  - [ ] Tablet optimization
+  - [ ] Landscape-first refinements
 **Dependencies**: AndroidX TV Material (already included), WindowSizeClass detection
 **Estimated Effort**: 4-6 weeks
 **Success Criteria**: Functional TV navigation with D-pad support, focus management working
@@ -90,6 +89,16 @@ These are focused, near-term items discovered during code review to solidify aut
 **Dependencies**: Media3 ExoPlayer (already included), Cast framework (already included)
 **Estimated Effort**: 3-4 weeks
 **Success Criteria**: TV-optimized playback experience, voice search working
+
+Progress note: Started item details + Play/Resume from TV details; full TV player controls and voice search pending.
+
+---
+
+### What’s Next for 1.1
+- Add centralized FocusManager: save/restore focus, D‑pad snap logic.
+- TV loading/error states: skeleton tiles + TV-friendly error banners.
+- Details polish: favorite/watched actions (done), codec/resolution badges (done), add “Similar” shelf.
+- Begin adaptive layouts with `WindowSizeClass` for TV/tablet.
 
 ---
 
