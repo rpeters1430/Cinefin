@@ -30,10 +30,15 @@ yes | sdkmanager --sdk_root="$SDK_ROOT" \
   "build-tools;${BUILD_TOOLS}"
 
 # ----- Project wiring -----
-cd /workspace
-if [ -f "./gradlew" ]; then
-  chmod +x ./gradlew
-  echo "sdk.dir=$SDK_ROOT" > local.properties
+# Write local.properties next to a detected Gradle wrapper.
+PROJECT_DIR="$PWD"
+if [ ! -f "$PROJECT_DIR/gradlew" ] && [ -f "/workspace/gradlew" ]; then
+  PROJECT_DIR="/workspace"
+fi
+
+if [ -f "$PROJECT_DIR/gradlew" ]; then
+  chmod +x "$PROJECT_DIR/gradlew"
+  echo "sdk.dir=$SDK_ROOT" > "$PROJECT_DIR/local.properties"
 fi
 
 echo "✅ Android SDK ready (API $TARGET_API, Build-Tools $BUILD_TOOLS)"

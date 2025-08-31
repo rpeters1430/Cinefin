@@ -3,7 +3,7 @@ package com.rpeters.jellyfin.data.repository
 import android.util.Log
 import com.rpeters.jellyfin.data.model.ApiResult
 import com.rpeters.jellyfin.data.model.JellyfinError
-import com.rpeters.jellyfin.di.JellyfinClientFactory
+import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.model.api.PublicSystemInfo
@@ -15,7 +15,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class JellyfinSystemRepository @Inject constructor(
-    private val clientFactory: JellyfinClientFactory,
+    private val sessionManager: JellyfinSessionManager,
 ) {
     companion object {
         private const val TAG = "JellyfinSystemRepository"
@@ -24,9 +24,8 @@ class JellyfinSystemRepository @Inject constructor(
     /**
      * Get Jellyfin API client on background thread to avoid StrictMode violations.
      */
-    private suspend fun getClient(serverUrl: String): ApiClient {
-        return clientFactory.getClient(serverUrl, null)
-    }
+    private suspend fun getClient(serverUrl: String): ApiClient =
+        sessionManager.getClientForUrl(serverUrl)
 
     private fun <T> handleException(e: Exception, defaultMessage: String = "System error"): ApiResult.Error<T> {
         Log.e(TAG, "$defaultMessage: ${e.message}", e)

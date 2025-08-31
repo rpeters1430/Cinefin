@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.data.repository
 
 import com.rpeters.jellyfin.data.JellyfinServer
+import com.rpeters.jellyfin.data.DeviceCapabilities
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -22,20 +23,25 @@ class JellyfinStreamRepositoryTest {
 
     @MockK
     private lateinit var authRepository: JellyfinAuthRepository
+    @MockK
+    private lateinit var deviceCapabilities: DeviceCapabilities
 
     private lateinit var streamRepository: JellyfinStreamRepository
 
     private val testServer = JellyfinServer(
+        id = "server-1",
+        name = "Test Server",
         url = "https://demo.jellyfin.org",
+        isConnected = true,
         userId = "test-user-id",
+        username = "test-user",
         accessToken = "test-access-token",
-        serverName = "Test Server",
     )
 
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        streamRepository = JellyfinStreamRepository(authRepository)
+        streamRepository = JellyfinStreamRepository(authRepository, deviceCapabilities)
     }
 
     @Test

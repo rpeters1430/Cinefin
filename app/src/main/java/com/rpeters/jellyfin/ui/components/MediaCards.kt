@@ -54,6 +54,7 @@ fun MediaCard(
     getImageUrl: (BaseItemDto) -> String?,
     onClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
+    enhancedPlaybackUtils: com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils? = null,
 ) {
     val contentTypeColor = getContentTypeColor(item.type?.toString())
     val coroutineScope = rememberCoroutineScope()
@@ -132,32 +133,48 @@ fun MediaCard(
             }
 
             // Top right badges container
-            Box(
+            Column(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(8.dp),
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // Favorite indicator
-                if (item.userData?.isFavorite == true) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = "Favorite",
-                        tint = Color.Yellow,
-                        modifier = Modifier.size(20.dp),
+                // Playback status indicator
+                enhancedPlaybackUtils?.let { utils ->
+                    PlaybackStatusIndicator(
+                        item = item,
+                        enhancedPlaybackUtils = utils,
+                        modifier = Modifier
                     )
                 }
 
-                // Watch status badges in top right
-                Box {
-                    UnwatchedEpisodeCountBadge(
-                        item = item,
-                        modifier = Modifier.align(Alignment.TopEnd),
-                    )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Favorite indicator
+                    if (item.userData?.isFavorite == true) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Favorite",
+                            tint = Color.Yellow,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
 
-                    WatchedIndicatorBadge(
-                        item = item,
-                        modifier = Modifier.align(Alignment.BottomEnd),
-                    )
+                    // Watch status badges
+                    Box {
+                        UnwatchedEpisodeCountBadge(
+                            item = item,
+                            modifier = Modifier.align(Alignment.TopEnd),
+                        )
+
+                        WatchedIndicatorBadge(
+                            item = item,
+                            modifier = Modifier.align(Alignment.BottomEnd),
+                        )
+                    }
                 }
             }
 
@@ -270,6 +287,7 @@ fun RecentlyAddedCard(
     getSeriesImageUrl: (BaseItemDto) -> String?,
     onClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
+    enhancedPlaybackUtils: com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils? = null,
 ) {
     val contentTypeColor = getContentTypeColor(item.type?.toString())
 
@@ -377,11 +395,22 @@ fun RecentlyAddedCard(
                 }
 
                 // Top right badges container for RecentlyAddedCard
-                Box(
+                Column(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    // Playback status indicator
+                    enhancedPlaybackUtils?.let { utils ->
+                        PlaybackStatusIndicator(
+                            item = item,
+                            enhancedPlaybackUtils = utils,
+                            modifier = Modifier
+                        )
+                    }
+
                     // Watch status badges positioned with stacking
                     Box {
                         UnwatchedEpisodeCountBadge(

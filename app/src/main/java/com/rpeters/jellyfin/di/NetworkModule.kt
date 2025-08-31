@@ -6,9 +6,13 @@ import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.util.DebugLogger
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.cache.JellyfinCache
+import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
+import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.network.CachePolicyInterceptor
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -148,137 +152,27 @@ object NetworkModule {
         return OptimizedClientFactory(context, jellyfin, authRepositoryProvider)
     }
 
-    @Provides
-    @Singleton
-    fun provideJellyfinClientFactory(
-        optimizedFactory: OptimizedClientFactory,
-        jellyfin: Jellyfin,
-        authRepositoryProvider: Provider<JellyfinAuthRepository>,
-    ): JellyfinClientFactory {
-        // Using optimized factory for better performance and token handling
-        return JellyfinClientFactory(jellyfin, authRepositoryProvider, optimizedFactory)
-    }
 
     @Provides
     @Singleton
     fun provideJellyfinCache(@ApplicationContext context: Context): JellyfinCache {
         return JellyfinCache(context)
     }
-}
 
-@Singleton
-class JellyfinClientFactory @Inject constructor(
-    private val jellyfin: Jellyfin,
-    // Use Provider to avoid circular dependency with JellyfinAuthRepository
-    private val authRepositoryProvider: Provider<JellyfinAuthRepository>,
-    // Use OptimizedClientFactory for better token handling
-    private val optimizedClientFactory: OptimizedClientFactory,
-) {
-    // Thread-safe client management
-    private val clients = mutableMapOf<String, org.jellyfin.sdk.api.client.ApiClient>()
-    private val clientLock = Any()
-
-    companion object {
-        private const val TAG = "JellyfinClientFactory"
+    @Provides
+    @Singleton
+    fun provideDeviceCapabilities(): DeviceCapabilities {
+        return DeviceCapabilities()
     }
 
-    /**
-     * Get a client with OptimizedClientFactory's enhanced token handling.
-     * The client will automatically attach fresh tokens to every request with proper synchronization.
-     */
-    suspend fun getClient(serverId: String): org.jellyfin.sdk.api.client.ApiClient = withContext(Dispatchers.IO) {
-        val authRepository = authRepositoryProvider.get()
-        val server = authRepository.getCurrentServer()
-            ?: throw IllegalStateException("No authenticated server available")
-
-        // Use OptimizedClientFactory for proper token interceptor handling
-        val client = optimizedClientFactory.getOptimizedClient(server.url)
-        val tokenTail = server.accessToken?.takeLast(6) ?: "null"
-        SecureLogger.d(TAG, "Using optimized client for server: ${server.url} with token ...$tokenTail")
-        
-        return@withContext client
-    }
-
-    /**
-     * Invalidate and recreate client for a server.
-     * Call this after re-authentication to ensure fresh token handling.
-     */
-    @Synchronized
-    fun invalidateClient(serverId: String) {
-        // Clear legacy cache
-        clients.remove(serverId)?.also {
-            SecureLogger.d(TAG, "Invalidated legacy client for server: $serverId")
-        }
-        
-        // Use OptimizedClientFactory invalidation - clear all since we can't easily get server URL synchronously
-        try {
-            optimizedClientFactory.clearAllClients()
-            SecureLogger.d(TAG, "Cleared all optimized clients for server invalidation: $serverId")
-        } catch (e: Exception) {
-            SecureLogger.w(TAG, "Could not invalidate optimized client: ${e.message}")
-        }
-        
-        // Also clear any cached connections that might have stale tokens
-        clearStaleConnections()
-    }
-    
-    /**
-     * Clear all clients and connections to force fresh token attachment
-     */
-    @Synchronized
-    private fun clearStaleConnections() {
-        clients.clear()
-        optimizedClientFactory.clearAllClients()
-        SecureLogger.d(TAG, "Cleared all cached clients to prevent stale token issues")
-    }
-
-    /**
-     * Execute an API call with the current authenticated client.
-     * 401 handling is managed at the repository level via executeWithTokenRefresh.
-     */
-    suspend fun <T> executeWithAuth(
-        serverId: String,
-        operation: suspend (ApiClient) -> T,
-    ): T {
-        val client = getClient(serverId)
-        return operation(client)
-    }
-
-    // Legacy methods for backward compatibility - will be phased out
-    suspend fun getClient(
-        baseUrl: String,
-        accessToken: String? = null,
-        forceRefresh: Boolean = false,
-        skipNormalization: Boolean = false,
-    ): org.jellyfin.sdk.api.client.ApiClient = withContext(Dispatchers.IO) {
-        val normalizedUrl = if (skipNormalization) {
-            baseUrl.trim().removeSuffix("/")
-        } else {
-            com.rpeters.jellyfin.utils.normalizeJellyfinBase(baseUrl)
-        }
-
-        return@withContext jellyfin.createApi(
-            baseUrl = normalizedUrl,
-            accessToken = accessToken,
-        )
-    }
-
-    suspend fun <T> executeWithAuth(
-        operation: suspend (ApiClient) -> T,
-    ): T {
-        val authRepository = authRepositoryProvider.get()
-        val server = authRepository.getCurrentServer()?.id
-            ?: throw IllegalStateException("No authenticated server available")
-        return executeWithAuth(server, operation)
-    }
-
-    suspend fun refreshClient(baseUrl: String, token: String?): ApiClient {
-        return getClient(baseUrl, token, forceRefresh = true)
-    }
-
-    fun invalidateClient() {
-        synchronized(clientLock) {
-            clients.clear()
-        }
+    @Provides
+    @Singleton
+    fun provideEnhancedPlaybackManager(
+        @ApplicationContext context: Context,
+        repository: JellyfinRepository,
+        streamRepository: JellyfinStreamRepository,
+        deviceCapabilities: DeviceCapabilities
+    ): EnhancedPlaybackManager {
+        return EnhancedPlaybackManager(context, repository, streamRepository, deviceCapabilities)
     }
 }

@@ -23,10 +23,10 @@ import javax.inject.Singleton
 @Singleton
 class JellyfinMediaRepository @Inject constructor(
     authRepository: JellyfinAuthRepository,
-    clientFactory: com.rpeters.jellyfin.di.JellyfinClientFactory,
+    sessionManager: com.rpeters.jellyfin.data.session.JellyfinSessionManager,
     cache: JellyfinCache,
     private val healthChecker: LibraryHealthChecker,
-) : BaseJellyfinRepository(authRepository, clientFactory, cache) {
+) : BaseJellyfinRepository(authRepository, sessionManager, cache) {
 
     // Helper function to get default item types for a collection
     private fun getDefaultTypesForCollection(collectionType: String?): List<BaseItemKind>? = when (collectionType?.lowercase()) {
@@ -101,11 +101,11 @@ class JellyfinMediaRepository @Inject constructor(
                 }
             }
 
-            // Home videos and photos libraries require explicit item types
+            // Home videos and photos libraries: include both video and photo to surface all content
             val isHomeVideos = collectionType?.equals("homevideos", ignoreCase = true) == true
             val isPhotos = collectionType?.equals("photos", ignoreCase = true) == true
             if (isHomeVideos && (itemKinds == null || itemKinds.isEmpty())) {
-                itemKinds = listOf(BaseItemKind.VIDEO)
+                itemKinds = listOf(BaseItemKind.VIDEO, BaseItemKind.PHOTO)
             }
             if (isPhotos && (itemKinds == null || itemKinds.isEmpty())) {
                 itemKinds = listOf(BaseItemKind.PHOTO)
@@ -139,18 +139,6 @@ class JellyfinMediaRepository @Inject constructor(
                     "JellyfinMediaRepository",
                     "getLibraryItems ${e.status}: ${errorMsg ?: e.message}",
                 )
-
-                // Home videos and photos libraries can produce 400 errors; handle gracefully without reporting as failure
-                if ((isHomeVideos || isPhotos) && e.status == 400) {
-                    android.util.Log.w(
-                        "JellyfinMediaRepository",
-                        "Known compatibility issue with $collectionType library (id=${validatedParams.parentId}), returning empty list",
-                    )
-
-                    // Don't report this as a failure since it's a known limitation
-                    // Just return empty list and let the UI handle it gracefully
-                    return@withServerClient emptyList()
-                }
 
                 // ✅ FIX: All 401 errors are now handled automatically by executeWithTokenRefresh
                 // No manual 401 handling needed - fresh server/client created on retry
@@ -255,9 +243,11 @@ class JellyfinMediaRepository @Inject constructor(
                         "All fallback strategies failed for library ${validatedParams.parentId}, returning empty list",
                     )
 
-                    // Report failure to health checker
-                    validatedParams.parentId?.let { libraryId ->
-                        healthChecker.reportFailure(libraryId, errorMsg ?: "HTTP 400 error")
+                    // Report failure to health checker unless it's a known fragile type
+                    if (!(isHomeVideos || isPhotos)) {
+                        validatedParams.parentId?.let { libraryId ->
+                            healthChecker.reportFailure(libraryId, errorMsg ?: "HTTP 400 error")
+                        }
                     }
 
                     return@withServerClient emptyList()
@@ -328,6 +318,35 @@ class JellyfinMediaRepository @Inject constructor(
     suspend fun getEpisodeDetails(episodeId: String): ApiResult<BaseItemDto> =
         withServerClient("getEpisodeDetails") { server, client ->
             getItemDetailsById(episodeId, "episode", server, client)
+        }
+
+    suspend fun getAlbumDetails(albumId: String): ApiResult<BaseItemDto> =
+        withServerClient("getAlbumDetails") { server, client ->
+            getItemDetailsById(albumId, "album", server, client)
+        }
+
+    suspend fun getAlbumTracks(albumId: String): ApiResult<List<BaseItemDto>> =
+        withServerClient("getAlbumTracks") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val albumUuid = parseUuid(albumId, "album")
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                parentId = albumUuid,
+                includeItemTypes = listOf(BaseItemKind.AUDIO),
+                sortBy = listOf(ItemSortBy.INDEX_NUMBER),
+                sortOrder = listOf(SortOrder.ASCENDING),
+                fields = listOf(
+                    org.jellyfin.sdk.model.api.ItemFields.MEDIA_SOURCES,
+                    org.jellyfin.sdk.model.api.ItemFields.MEDIA_STREAMS,
+                    org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                ),
+            )
+            response.content.items ?: emptyList()
+        }
+
+    suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto> =
+        withServerClient("getItemDetails") { server, client ->
+            getItemDetailsById(itemId, "item", server, client)
         }
 
     suspend fun getSeasonsForSeries(seriesId: String): ApiResult<List<BaseItemDto>> =

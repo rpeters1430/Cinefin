@@ -46,6 +46,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,7 +58,9 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.theme.MusicGreen
+import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -107,6 +110,7 @@ enum class MusicViewMode {
 fun MusicScreen(
     onBackClick: () -> Unit = {},
     viewModel: MainAppViewModel = hiltViewModel(),
+    onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val appState by viewModel.appState.collectAsState()
@@ -387,6 +391,7 @@ fun MusicScreen(
                         musicItems = filteredAndSortedMusic,
                         viewMode = viewMode,
                         getImageUrl = { item -> viewModel.getImageUrl(item) },
+                        onItemClick = onItemClick,
                         isLoadingMore = appState.isLoadingMore,
                         hasMoreItems = appState.hasMoreItems,
                         onLoadMore = { viewModel.loadMoreItems() },
@@ -402,6 +407,7 @@ private fun MusicContent(
     musicItems: List<BaseItemDto>,
     viewMode: MusicViewMode,
     getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -417,9 +423,13 @@ private fun MusicContent(
                 modifier = modifier.fillMaxSize(),
             ) {
                 items(musicItems) { musicItem ->
+                    val coroutineScope = rememberCoroutineScope()
                     ExpressiveMusicCard(
                         item = musicItem,
                         getImageUrl = getImageUrl,
+                        onClick = { onItemClick(musicItem) },
+                        playbackUtils = null, // Will be enhanced in future version
+                        coroutineScope = coroutineScope,
                     )
                 }
 
@@ -443,9 +453,13 @@ private fun MusicContent(
                 modifier = modifier.fillMaxSize(),
             ) {
                 items(musicItems) { musicItem ->
+                    val coroutineScope = rememberCoroutineScope()
                     ExpressiveMusicCard(
                         item = musicItem,
                         getImageUrl = getImageUrl,
+                        onClick = { onItemClick(musicItem) },
+                        playbackUtils = null, // Will be enhanced in future version
+                        coroutineScope = coroutineScope,
                     )
                 }
 
@@ -467,6 +481,9 @@ private fun MusicContent(
 private fun ExpressiveMusicCard(
     item: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
+    onClick: () -> Unit = {},
+    playbackUtils: EnhancedPlaybackUtils? = null,
+    coroutineScope: kotlinx.coroutines.CoroutineScope? = null,
     modifier: Modifier = Modifier,
 ) {
     val imageUrl = getImageUrl(item) ?: ""
@@ -502,10 +519,54 @@ private fun ExpressiveMusicCard(
         imageUrl = imageUrl,
         rating = rating,
         isFavorite = isFavorite,
-        onCardClick = { /* TODO: Handle card click */ },
-        onPlayClick = { /* TODO: Handle play click */ },
-        onFavoriteClick = { /* TODO: Handle favorite click */ },
-        onMoreClick = { /* TODO: Handle more options click */ },
+        onCardClick = onClick,
+        onPlayClick = { 
+            // Use enhanced playback system if available
+            if (playbackUtils != null && coroutineScope != null) {
+                coroutineScope.launch {
+                    playbackUtils.playMedia(
+                        item = item,
+                        onPlaybackStarted = { url, playbackInfo ->
+                            android.util.Log.d("MusicScreen", "Playback started: ${playbackInfo.reason}")
+                        },
+                        onPlaybackError = { error ->
+                            android.util.Log.e("MusicScreen", "Playback failed: $error")
+                            // Could show user-friendly error message
+                        }
+                    )
+                }
+            } else {
+                // Fallback to original behavior
+                when (item.type) {
+                    BaseItemKind.AUDIO -> {
+                        // Play individual audio track directly
+                        onClick()
+                    }
+                    BaseItemKind.MUSIC_ALBUM -> {
+                        // Navigate to album detail for track selection
+                        onClick()
+                    }
+                    BaseItemKind.MUSIC_ARTIST -> {
+                        // Navigate to artist detail
+                        onClick()
+                    }
+                    else -> {
+                        onClick()
+                    }
+                }
+            }
+        },
+        onFavoriteClick = { 
+            // TODO: Implement favorite toggle
+            // This would typically call a ViewModel method to update favorite status
+        },
+        onMoreClick = { 
+            // TODO: Show context menu with options like:
+            // - Add to queue
+            // - Download
+            // - Share
+            // - View details
+        },
         modifier = modifier,
     )
 }

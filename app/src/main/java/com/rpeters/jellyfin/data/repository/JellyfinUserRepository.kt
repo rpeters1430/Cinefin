@@ -19,9 +19,9 @@ import javax.inject.Singleton
 @Singleton
 class JellyfinUserRepository @Inject constructor(
     authRepository: JellyfinAuthRepository,
-    clientFactory: com.rpeters.jellyfin.di.JellyfinClientFactory,
+    sessionManager: com.rpeters.jellyfin.data.session.JellyfinSessionManager,
     cache: JellyfinCache,
-) : BaseJellyfinRepository(authRepository, clientFactory, cache) {
+) : BaseJellyfinRepository(authRepository, sessionManager, cache) {
 
     suspend fun logout() {
         authRepository.logout()

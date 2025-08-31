@@ -13,7 +13,7 @@ import com.rpeters.jellyfin.data.model.QuickConnectState
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
-import com.rpeters.jellyfin.di.JellyfinClientFactory
+import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import com.rpeters.jellyfin.ui.utils.ErrorHandler
 import com.rpeters.jellyfin.ui.utils.OfflineManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -36,13 +36,12 @@ import org.jellyfin.sdk.model.api.PlaybackInfoDto
 import org.jellyfin.sdk.model.api.PlaybackInfoResponse
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.jellyfin.sdk.model.api.SortOrder
-import retrofit2.HttpException
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class JellyfinRepository @Inject constructor(
-    private val clientFactory: JellyfinClientFactory,
+    private val sessionManager: JellyfinSessionManager,
     private val secureCredentialManager: SecureCredentialManager,
     @ApplicationContext private val context: Context,
     private val authRepository: JellyfinAuthRepository,
@@ -109,9 +108,8 @@ class JellyfinRepository @Inject constructor(
     /**
      * Get Jellyfin API client on background thread to avoid StrictMode violations.
      */
-    private suspend fun getClient(serverUrl: String, accessToken: String? = null): ApiClient {
-        return clientFactory.getClient(serverUrl, accessToken)
-    }
+    private suspend fun getClient(serverUrl: String, accessToken: String? = null): ApiClient =
+        sessionManager.getClientForUrl(serverUrl)
 
     // ✅ FIX: Helper method to get current authenticated client
     private suspend fun getCurrentAuthenticatedClient(): ApiClient? {
@@ -873,19 +871,7 @@ class JellyfinRepository @Inject constructor(
     fun getBackdropUrl(item: BaseItemDto): String? =
         streamRepository.getBackdropUrl(item)
 
-    private suspend fun <T> safeApiCall(operation: suspend () -> T): T {
-        try {
-            return operation()
-        } catch (e: HttpException) {
-            if (e.code() == 401) {
-                // Log only non-sensitive information for debugging
-                Log.w("JellyfinRepository", "401 Unauthorized detected. Server ID: ${authRepository.getCurrentServer()?.id?.take(8)}, Endpoint path: ${e.response()?.raw()?.request?.url?.encodedPath}")
-                logout() // Clear session and redirect to login
-                throw e
-            }
-            throw e
-        }
-    }
+    private suspend fun <T> safeApiCall(operation: suspend () -> T): T = operation()
 
     private fun isTokenExpired(): Boolean {
         val server = authRepository.getCurrentServer() ?: return true
@@ -1109,7 +1095,7 @@ class JellyfinRepository @Inject constructor(
     suspend fun getPlaybackInfo(itemId: String): PlaybackInfoResponse {
         val server = authRepository.getCurrentServer()
             ?: throw IllegalStateException("No authenticated server available")
-        val client = clientFactory.getClient(server.url, server.accessToken)
+        val client = sessionManager.getClientForUrl(server.url)
 
         // Create playbook info DTO with direct play enabled
         val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()

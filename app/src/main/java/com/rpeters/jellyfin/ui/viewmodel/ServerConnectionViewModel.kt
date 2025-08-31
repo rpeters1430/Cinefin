@@ -107,6 +107,11 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     fun connectToServer(serverUrl: String, username: String, password: String) {
+        // Debounce duplicate connection attempts
+        val state = _connectionState.value
+        if (state.isConnecting || state.isConnected) {
+            return
+        }
         if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
             _connectionState.value = _connectionState.value.copy(
                 errorMessage = "Please fill in all fields",

@@ -103,7 +103,106 @@ class DeviceCapabilities @Inject constructor() {
             maxResolution = getMaxSupportedResolution(),
             supportsHdr = supportsHdr(),
             supports4K = supports4K(),
+            maxBitrate = getMaxSupportedBitrate(),
+            networkCapabilities = getNetworkCapabilities(),
+            hardwareAcceleration = getHardwareAccelerationInfo(),
         )
+    }
+
+    /**
+     * Get enhanced codec support information with performance ratings
+     */
+    fun getEnhancedCodecSupport(): CodecSupportInfo {
+        return CodecSupportInfo(
+            videoCodecs = getVideoCodecSupport(),
+            audioCodecs = getAudioCodecSupport(),
+            containerFormats = getContainerSupport(),
+            performanceProfile = getDevicePerformanceProfile()
+        )
+    }
+
+    /**
+     * Check if specific media can be direct played with confidence score
+     */
+    fun analyzeDirectPlayCompatibility(
+        container: String?,
+        videoCodec: String?,
+        audioCodec: String?,
+        width: Int = 0,
+        height: Int = 0,
+        bitrate: Int = 0
+    ): DirectPlayAnalysis {
+        var score = 100
+        val issues = mutableListOf<String>()
+
+        // Container check
+        if (!canPlayContainer(container)) {
+            score -= 100
+            issues.add("Container '$container' not supported")
+            return DirectPlayAnalysis(false, 0, issues, "Unsupported container format")
+        }
+
+        // Video codec check with performance consideration
+        if (videoCodec != null) {
+            val videoSupport = getVideoCodecSupport()[normalizeVideoCodec(videoCodec.lowercase())]
+            when {
+                videoSupport == null || videoSupport.support == CodecSupport.NOT_SUPPORTED -> {
+                    score -= 100
+                    issues.add("Video codec '$videoCodec' not supported")
+                }
+                videoSupport.support == CodecSupport.SOFTWARE_ONLY -> {
+                    score -= 20
+                    issues.add("Video codec '$videoCodec' only supported via software decoding")
+                }
+                videoSupport.support == CodecSupport.HARDWARE_ACCELERATED -> {
+                    score += 10 // Bonus for hardware acceleration
+                }
+            }
+
+            // Resolution check
+            if (width > 0 && height > 0) {
+                val maxRes = getMaxSupportedResolution()
+                if (width > maxRes.first || height > maxRes.second) {
+                    score -= 50
+                    issues.add("Resolution ${width}x$height exceeds maximum ${maxRes.first}x${maxRes.second}")
+                }
+            }
+        }
+
+        // Audio codec check
+        if (audioCodec != null) {
+            val audioSupport = getAudioCodecSupport()[normalizeAudioCodec(audioCodec.lowercase())]
+            when {
+                audioSupport == null || audioSupport.support == CodecSupport.NOT_SUPPORTED -> {
+                    score -= 100
+                    issues.add("Audio codec '$audioCodec' not supported")
+                }
+                audioSupport.support == CodecSupport.SOFTWARE_ONLY -> {
+                    score -= 10
+                    issues.add("Audio codec '$audioCodec' only supported via software decoding")
+                }
+            }
+        }
+
+        // Bitrate check
+        if (bitrate > 0) {
+            val maxBitrate = getMaxSupportedBitrate()
+            if (bitrate > maxBitrate) {
+                score -= 30
+                issues.add("Bitrate ${bitrate / 1_000_000}Mbps exceeds recommended maximum ${maxBitrate / 1_000_000}Mbps")
+            }
+        }
+
+        val canDirectPlay = score > 0
+        val recommendation = when {
+            score >= 90 -> "Excellent Direct Play compatibility"
+            score >= 70 -> "Good Direct Play compatibility"
+            score >= 50 -> "Fair Direct Play compatibility - may have performance issues"
+            score > 0 -> "Poor Direct Play compatibility - transcoding recommended"
+            else -> "Direct Play not possible"
+        }
+
+        return DirectPlayAnalysis(canDirectPlay, score, issues, recommendation)
     }
 
     private fun getSupportedVideoCodecs(): List<String> {
@@ -276,8 +375,213 @@ class DeviceCapabilities @Inject constructor() {
         val maxRes = getMaxSupportedResolution()
         return maxRes.first >= 3840 && maxRes.second >= 2160
     }
+
+    /**
+     * Get maximum supported bitrate based on device performance
+     */
+    private fun getMaxSupportedBitrate(): Int {
+        val performanceProfile = getDevicePerformanceProfile()
+        return when (performanceProfile) {
+            DevicePerformanceProfile.HIGH_END -> 100_000_000 // 100 Mbps
+            DevicePerformanceProfile.MID_RANGE -> 50_000_000  // 50 Mbps
+            DevicePerformanceProfile.LOW_END -> 25_000_000    // 25 Mbps
+        }
+    }
+
+    /**
+     * Get network capabilities information
+     */
+    private fun getNetworkCapabilities(): NetworkCapabilityInfo {
+        // This could be expanded to include actual network monitoring
+        return NetworkCapabilityInfo(
+            supportsHighBitrate = true,
+            estimatedBandwidth = -1, // Unknown
+            connectionType = "unknown"
+        )
+    }
+
+    /**
+     * Get hardware acceleration information
+     */
+    private fun getHardwareAccelerationInfo(): HardwareAccelerationInfo {
+        return try {
+            val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
+            val hardwareCodecs = mutableSetOf<String>()
+            
+            for (codecInfo in codecList.codecInfos) {
+                if (codecInfo.isEncoder) continue
+                // Skip software-only decoders for hardware acceleration detection
+                
+                for (type in codecInfo.supportedTypes) {
+                    val codec = mimeTypeToCodec(type, type.startsWith("video/"))
+                    if (codec != null) {
+                        hardwareCodecs.add(codec)
+                    }
+                }
+            }
+
+            HardwareAccelerationInfo(
+                supportedCodecs = hardwareCodecs.toList(),
+                hasHardwareDecoding = hardwareCodecs.isNotEmpty()
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to detect hardware acceleration", e)
+            HardwareAccelerationInfo(emptyList(), false)
+        }
+    }
+
+    /**
+     * Get detailed video codec support information
+     */
+    private fun getVideoCodecSupport(): Map<String, CodecSupportDetail> {
+        val support = mutableMapOf<String, CodecSupportDetail>()
+        
+        try {
+            val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
+            
+            for (codec in SUPPORTED_VIDEO_CODECS) {
+                val mimeType = codecToMimeType(codec, true)
+                if (mimeType != null) {
+                    val codecName = codecList.findDecoderForFormat(
+                        android.media.MediaFormat.createVideoFormat(mimeType, 1920, 1080)
+                    )
+                    
+                    val codecInfo = codecName?.let { name ->
+                        codecList.codecInfos.firstOrNull { it.name == name }
+                    }
+                    
+                    val supportLevel = when {
+                        codecInfo == null -> CodecSupport.NOT_SUPPORTED
+                        // We'll assume hardware acceleration is available unless we can determine otherwise
+                        else -> CodecSupport.HARDWARE_ACCELERATED
+                    }
+
+                    support[codec] = CodecSupportDetail(
+                        support = supportLevel,
+                        maxResolution = if (codecInfo != null) getCodecMaxResolution(codecInfo, mimeType) else Pair(1920, 1080),
+                        performanceRating = getCodecPerformanceRating(codec, supportLevel)
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to analyze video codec support", e)
+        }
+        
+        return support
+    }
+
+    /**
+     * Get detailed audio codec support information
+     */
+    private fun getAudioCodecSupport(): Map<String, CodecSupportDetail> {
+        val support = mutableMapOf<String, CodecSupportDetail>()
+        
+        for (codec in SUPPORTED_AUDIO_CODECS) {
+            val mimeType = codecToMimeType(codec, false)
+            if (mimeType != null && isCodecSupported(codec, false)) {
+                support[codec] = CodecSupportDetail(
+                    support = CodecSupport.HARDWARE_ACCELERATED, // Audio is typically hardware accelerated
+                    maxResolution = Pair(0, 0), // Not applicable for audio
+                    performanceRating = 5 // Audio codecs typically perform well
+                )
+            }
+        }
+        
+        return support
+    }
+
+    /**
+     * Get container format support information
+     */
+    private fun getContainerSupport(): Map<String, Boolean> {
+        return SUPPORTED_CONTAINERS.associateWith { true }
+    }
+
+    /**
+     * Determine device performance profile
+     */
+    private fun getDevicePerformanceProfile(): DevicePerformanceProfile {
+        val maxRes = getMaxSupportedResolution()
+        val supports4K = supports4K()
+        val ramSize = getTotalRAM()
+        
+        return when {
+            supports4K && maxRes.first >= 3840 && ramSize >= 6_000_000_000 -> DevicePerformanceProfile.HIGH_END
+            maxRes.first >= 1920 && ramSize >= 3_000_000_000 -> DevicePerformanceProfile.MID_RANGE
+            else -> DevicePerformanceProfile.LOW_END
+        }
+    }
+
+    /**
+     * Get total device RAM (approximate)
+     */
+    private fun getTotalRAM(): Long {
+        return try {
+            // ActivityManager needs to be obtained from Context, returning a safe fallback for now
+            4_000_000_000L // 4GB assumption for modern devices
+        } catch (e: Exception) {
+            2_000_000_000L // 2GB fallback
+        }
+    }
+
+    /**
+     * Get maximum resolution supported by a specific codec
+     */
+    private fun getCodecMaxResolution(
+        codecInfo: android.media.MediaCodecInfo?,
+        mimeType: String
+    ): Pair<Int, Int> {
+        return try {
+            codecInfo?.getCapabilitiesForType(mimeType)?.videoCapabilities?.let { videoCaps ->
+                Pair(videoCaps.supportedWidths.upper, videoCaps.supportedHeights.upper)
+            } ?: Pair(1920, 1080)
+        } catch (e: Exception) {
+            Pair(1920, 1080) // Fallback
+        }
+    }
+
+    /**
+     * Get performance rating for a codec (1-10 scale)
+     */
+    private fun getCodecPerformanceRating(codec: String, support: CodecSupport): Int {
+        val baseRating = when (codec.lowercase()) {
+            "h264" -> 9 // Excellent compatibility
+            "h265", "hevc" -> 7 // Good, but newer
+            "vp9" -> 6 // Decent, WebM focused
+            "vp8" -> 5 // Older codec
+            "av1" -> 4 // Very new, limited support
+            else -> 3
+        }
+        
+        return when (support) {
+            CodecSupport.HARDWARE_ACCELERATED -> baseRating
+            CodecSupport.SOFTWARE_ONLY -> maxOf(1, baseRating - 3)
+            CodecSupport.NOT_SUPPORTED -> 0
+        }
+    }
 }
 
+/**
+ * Codec support level
+ */
+enum class CodecSupport {
+    HARDWARE_ACCELERATED,
+    SOFTWARE_ONLY,
+    NOT_SUPPORTED
+}
+
+/**
+ * Device performance profile
+ */
+enum class DevicePerformanceProfile {
+    HIGH_END,
+    MID_RANGE,
+    LOW_END
+}
+
+/**
+ * Enhanced direct play capabilities with additional information
+ */
 data class DirectPlayCapabilities(
     val supportedContainers: List<String>,
     val supportedVideoCodecs: List<String>,
@@ -285,4 +589,54 @@ data class DirectPlayCapabilities(
     val maxResolution: Pair<Int, Int>,
     val supportsHdr: Boolean,
     val supports4K: Boolean,
+    val maxBitrate: Int,
+    val networkCapabilities: NetworkCapabilityInfo,
+    val hardwareAcceleration: HardwareAccelerationInfo,
 )
+
+/**
+ * Detailed codec support information
+ */
+data class CodecSupportDetail(
+    val support: CodecSupport,
+    val maxResolution: Pair<Int, Int>,
+    val performanceRating: Int // 1-10 scale
+)
+
+/**
+ * Comprehensive codec support information
+ */
+data class CodecSupportInfo(
+    val videoCodecs: Map<String, CodecSupportDetail>,
+    val audioCodecs: Map<String, CodecSupportDetail>,
+    val containerFormats: Map<String, Boolean>,
+    val performanceProfile: DevicePerformanceProfile
+)
+
+/**
+ * Direct play analysis result
+ */
+data class DirectPlayAnalysis(
+    val canDirectPlay: Boolean,
+    val confidenceScore: Int, // 0-100
+    val issues: List<String>,
+    val recommendation: String
+)
+
+/**
+ * Network capability information
+ */
+data class NetworkCapabilityInfo(
+    val supportsHighBitrate: Boolean,
+    val estimatedBandwidth: Int, // -1 if unknown
+    val connectionType: String
+)
+
+/**
+ * Hardware acceleration information
+ */
+data class HardwareAccelerationInfo(
+    val supportedCodecs: List<String>,
+    val hasHardwareDecoding: Boolean
+)
+

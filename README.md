@@ -36,7 +36,7 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 
 ### **Core Technologies**
 - **Language:** Kotlin 2.2.10
-- **UI Framework:** Jetpack Compose (2025.08.00 BOM)
+- **UI Framework:** Jetpack Compose (2025.08.01 BOM)
 - **Architecture:** MVVM + Repository Pattern
 - **Dependency Injection:** Hilt 2.57.1
 - **Async Programming:** Kotlin Coroutines 1.10.2
@@ -58,6 +58,7 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 - **Android 8.0** (API level 26) or higher
 - **Active Jellyfin server** (version 10.8.0 or later recommended)
 - **Internet connection** for streaming
+- **Java 17** with core library desugaring enabled
 
 ## 🚀 Getting Started
 
@@ -85,6 +86,11 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
    ./gradlew assembleDebug
    # Or use Android Studio's Run button
    ```
+   
+   Optional:
+   ```bash
+   ./gradlew installDebug    # Install on a connected device/emulator
+   ```
 
 ### First Launch Setup
 
@@ -105,6 +111,13 @@ app/src/main/java/com/rpeters/jellyfin/
 ├── ui/                          # Compose screens, navigation, and viewmodels
 └── utils/                       # Utility classes
 ```
+
+Additional paths:
+- Module: `:app`
+- Resources: `app/src/main/res`
+- Manifest: `app/src/main/AndroidManifest.xml`
+- Unit tests: `app/src/test/java`
+- Instrumentation tests: `app/src/androidTest/java`
 
 ## 🎯 Key Components
 
@@ -138,23 +151,25 @@ Quick access to your favorite content:
 
 ## 🔧 Development
 
-### **Running Tests**
-```bash
-# Unit tests
-./gradlew testDebugUnitTest
+### **Build, Test, Lint, Coverage**
+- **Build debug APK:** `./gradlew assembleDebug`
+- **Install debug APK:** `./gradlew installDebug`
+- **Unit tests (JVM):** `./gradlew testDebugUnitTest`
+- **Instrumentation tests:** `./gradlew connectedAndroidTest` (device/emulator required; uses `HiltTestRunner`)
+- **Android Lint:** `./gradlew lintDebug`
+- **Coverage (JaCoCo):** `./gradlew jacocoTestReport` (HTML/XML under `app/build/reports`)
 
-# Lint checks
-./gradlew lintDebug
+### **Codex/Web/CI Environment Setup**
+- Ensure an Android SDK is available and set `ANDROID_SDK_ROOT` (or `ANDROID_HOME`).
+- If no SDK is installed, run `./setup.sh` to install cmdline-tools, accept licenses, and provision the SDK (Linux/macOS shells).
+- Generate `local.properties` from your env: `scripts/gen-local-properties.sh` (bash) or `scripts/gen-local-properties.ps1` (PowerShell).
+- Then build as usual: `./gradlew assembleDebug`.
 
-# Build verification
-./gradlew assembleDebug
-```
-
-### **Code Style**
-- **Kotlin coding conventions** followed
-- **Material 3 design guidelines** implemented
-- **MVVM architecture** patterns
-- **Clean code** principles
+### **Code Style & Naming**
+- **Kotlin conventions**, 4-space indent, ~120 char lines
+- **Material 3** UI, unidirectional data flow, **MVVM** with ViewModels
+- **DI via Hilt**; repositories for data access
+- Names: Classes `PascalCase`, functions/vars `camelCase`, constants `UPPER_SNAKE_CASE`
 
 ### **CI/CD**
 Automated workflows for:
@@ -229,6 +244,43 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - Provide detailed reproduction steps
 - Include device/OS information
 - Attach logs when possible
+
+### **Conventional Commits**
+Follow Conventional Commits for all commit messages:
+- `feat:` new feature
+- `fix:` bug fix
+- `docs:` documentation only changes
+- `refactor:` code change that neither fixes a bug nor adds a feature
+Examples: `feat: add movie detail screen`, `fix: prevent crash on empty library`.
+
+### **Branching**
+- `feature/...` for new features
+- `bugfix/...` for bug fixes
+- `hotfix/...` for urgent fixes
+- `docs/...` for documentation updates
+
+### **PR Checklist**
+- Clear description and linked issue(s)
+- Screenshots/GIFs for UI changes
+- Tests added/updated where applicable
+- `./gradlew testDebugUnitTest` passes
+- `./gradlew lintDebug` passes
+- Docs updated (README/CHANGELOG if needed)
+- Note affected areas and test coverage in the PR body
+
+## 🧪 Testing Guidelines
+- Focus tests on ViewModel/Repository logic
+- Use JUnit4, MockK, Turbine, AndroidX Test
+- Mock network and I/O; avoid real server calls in unit tests
+- Name tests descriptively (e.g., `loadMovieDetails_updates_state_on_success`)
+- Coverage via `jacocoTestReport`; generated/DI classes are already filtered
+ - Hilt testing is configured; use `HiltAndroidRule` and `HiltTestRunner` for instrumented tests
+
+## 🔒 Security & Configuration
+- Never commit secrets/keystores. Use Android Keystore/Encrypted storage.
+- Network config at `app/src/main/res/xml/network_security_config.xml`.
+- Min SDK 26, Target/Compile SDK 36.
+- Keep dependency versions centralized in `gradle/libs.versions.toml`.
 
 ## 📄 License
 

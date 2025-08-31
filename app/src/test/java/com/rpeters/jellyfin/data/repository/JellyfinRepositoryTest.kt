@@ -3,7 +3,7 @@ package com.rpeters.jellyfin.data.repository
 import android.content.Context
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
-import com.rpeters.jellyfin.di.JellyfinClientFactory
+import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +20,7 @@ import org.junit.Test
  */
 class JellyfinRepositoryTest {
 
-    private val mockClientFactory = mockk<JellyfinClientFactory>(relaxed = true)
+    private val mockSessionManager = mockk<JellyfinSessionManager>(relaxed = true)
     private val mockCredentialManager = mockk<SecureCredentialManager>(relaxed = true)
     private val mockContext = mockk<Context>(relaxed = true)
     private val serverFlow = MutableStateFlow<JellyfinServer?>(null)
@@ -33,7 +33,7 @@ class JellyfinRepositoryTest {
     }
     private val mockStreamRepository = mockk<JellyfinStreamRepository>(relaxed = true)
     private val repository = JellyfinRepository(
-        mockClientFactory,
+        mockSessionManager,
         mockCredentialManager,
         mockContext,
         mockAuthRepository,

@@ -34,6 +34,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.ui.screens.BooksScreen
+import com.rpeters.jellyfin.ui.screens.AlbumDetailScreen
+import com.rpeters.jellyfin.ui.screens.ItemDetailScreen
 import com.rpeters.jellyfin.ui.screens.FavoritesScreen
 import com.rpeters.jellyfin.ui.screens.HomeScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
@@ -404,17 +406,65 @@ fun JellyfinNavGraph(
             MusicScreen(
                 onBackClick = { navController.popBackStack() },
                 viewModel = viewModel,
+                onItemClick = { item ->
+                    item.id?.let { id ->
+                        when (item.type) {
+                            org.jellyfin.sdk.model.api.BaseItemKind.MUSIC_ALBUM -> {
+                                navController.navigate(Screen.AlbumDetail.createRoute(id.toString()))
+                            }
+                            org.jellyfin.sdk.model.api.BaseItemKind.AUDIO -> {
+                                // For individual songs, play directly or navigate to detailed view
+                                navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
+                            }
+                            org.jellyfin.sdk.model.api.BaseItemKind.MUSIC_ARTIST -> {
+                                // For artists, show artist detail (could be ItemDetail or create ArtistDetail)
+                                navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
+                            }
+                            else -> {
+                                navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
+                            }
+                        }
+                    }
+                },
             )
         }
 
         composable(Screen.HomeVideos.route) {
             HomeVideosScreen(
                 onBackClick = { navController.popBackStack() },
+                viewModel = mainViewModel,
             )
         }
 
         composable(Screen.Books.route) {
             BooksScreen(
+                onBackClick = { navController.popBackStack() },
+            )
+        }
+
+        composable(
+            route = Screen.AlbumDetail.route,
+            arguments = listOf(
+                navArgument(Screen.ALBUM_ID_ARG) { type = NavType.StringType },
+            ),
+        ) { backStackEntry ->
+            val albumId = backStackEntry.arguments?.getString(Screen.ALBUM_ID_ARG) ?: return@composable
+            AlbumDetailScreen(
+                albumId = albumId,
+                onBackClick = { navController.popBackStack() },
+                mainViewModel = mainViewModel,
+            )
+        }
+
+        composable(
+            route = Screen.ItemDetail.route,
+            arguments = listOf(
+                navArgument(Screen.ITEM_ID_ARG) { type = NavType.StringType },
+            ),
+        ) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString(Screen.ITEM_ID_ARG) ?: return@composable
+            ItemDetailScreen(
+                itemId = itemId,
                 onBackClick = { navController.popBackStack() },
             )
         }
@@ -441,6 +491,11 @@ fun JellyfinNavGraph(
                 libraryId = libraryId,
                 collectionType = collectionType,
                 viewModel = viewModel,
+                onItemClick = { item ->
+                    item.id?.let { id ->
+                        navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
+                    }
+                },
             )
         }
 

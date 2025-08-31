@@ -16,9 +16,9 @@ import javax.inject.Singleton
 @Singleton
 class JellyfinSearchRepository @Inject constructor(
     authRepository: JellyfinAuthRepository,
-    clientFactory: com.rpeters.jellyfin.di.JellyfinClientFactory,
+    sessionManager: com.rpeters.jellyfin.data.session.JellyfinSessionManager,
     cache: JellyfinCache,
-) : BaseJellyfinRepository(authRepository, clientFactory, cache) {
+) : BaseJellyfinRepository(authRepository, sessionManager, cache) {
 
     /**
      * Search for items across all content types with optional filtering.

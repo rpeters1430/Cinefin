@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.common.ApiResult
-import com.rpeters.jellyfin.di.JellyfinClientFactory
+import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -22,7 +22,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class ConnectionOptimizer @Inject constructor(
-    private val clientFactory: JellyfinClientFactory,
+    private val sessionManager: JellyfinSessionManager,
     @ApplicationContext private val context: Context,
 ) {
     companion object {
@@ -212,7 +212,7 @@ class ConnectionOptimizer @Inject constructor(
         return try {
             withTimeoutOrNull(CONNECTION_TIMEOUT_MS) {
                 // Skip normalization since we're testing the exact URL variations
-                val client = clientFactory.getClient(url, skipNormalization = true)
+                val client = sessionManager.getClientForUrl(url)
                 val response = client.systemApi.getPublicSystemInfo()
                 ApiResult.Success(response.content)
             } ?: ApiResult.Error("Connection timeout for $url")

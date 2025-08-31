@@ -954,22 +954,8 @@ class MainAppViewModel @Inject constructor(
                 return@launch
             }
 
-            // Check if the library still exists to prevent 400 errors from removed libraries
+            // Try to locate the library (may not be loaded yet during navigation)
             val currentLibraries = _appState.value.libraries
-            val libraryExists = currentLibraries.any { it.id?.toString() == libraryId }
-
-            if (!libraryExists) {
-                if (BuildConfig.DEBUG) {
-                    Log.w("MainAppViewModel", "loadHomeVideos: Library $libraryId no longer exists, skipping API call")
-                }
-                // Remove any cached data for this library
-                val updated = _appState.value.homeVideosByLibrary.toMutableMap()
-                updated.remove(libraryId)
-                _appState.value = _appState.value.copy(homeVideosByLibrary = updated)
-                return@launch
-            }
-
-            // Get the library to determine its collection type
             val library = currentLibraries.find { it.id?.toString() == libraryId }
             val collectionType = library?.collectionType?.toString()?.lowercase()
 

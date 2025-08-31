@@ -41,72 +41,18 @@ class OptimizedClientFactory @Inject constructor(
     }
 
     /**
-     * Create optimized HTTP client with connection pooling
+     * Create ApiClient bound to the current token for the given server URL.
+     * Note: Jellyfin SDK uses its own Ktor client; OkHttp interceptors here would have no effect.
      */
-    private fun createOptimizedClient(serverUrl: String): ApiClient {
-        val okHttpClient = OkHttpClient.Builder()
-            .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .connectionPool(
-                ConnectionPool(
-                    CONNECTION_POOL_SIZE,
-                    CONNECTION_KEEP_ALIVE_MINUTES,
-                    TimeUnit.MINUTES,
-                ),
-            )
-            .addInterceptor(createTokenInterceptor())
-            .addInterceptor(createOptimizedInterceptor())
-            .addInterceptor(createLoggingInterceptor())
-            .build()
-
+    private fun createOptimizedClient(serverUrl: String, token: String?): ApiClient {
+        // Build the Jellyfin ApiClient with the current token so requests include X-Emby-Token
         return jellyfin.createApi(
             baseUrl = serverUrl,
-            accessToken = null,
+            accessToken = token,
         )
     }
 
-    /**
-     * Token interceptor that fetches the current token at request time
-     * with proper synchronization and authentication state checking
-     */
-    private fun createTokenInterceptor(): Interceptor {
-        return Interceptor { chain ->
-            val authRepository = authRepositoryProvider.get()
-            
-            // Check if authentication is in progress and wait if necessary
-            if (authRepository.isAuthenticating.value) {
-                Log.d("TokenInterceptor", "Authentication in progress, waiting...")
-                // Wait for authentication to complete with timeout
-                var waitTime = 0L
-                val maxWaitTime = 10000L // 10 seconds
-                val pollInterval = 100L
-                
-                while (authRepository.isAuthenticating.value && waitTime < maxWaitTime) {
-                    Thread.sleep(pollInterval)
-                    waitTime += pollInterval
-                }
-                
-                if (waitTime >= maxWaitTime) {
-                    Log.w("TokenInterceptor", "Timeout waiting for authentication to complete")
-                }
-            }
-            
-            val token = runBlocking { authRepository.token() }
-            val tokenTail = token?.takeLast(6) ?: "null"
-            Log.d("TokenInterceptor", "Attaching token to request: ...$tokenTail")
-            
-            val request = chain.request().newBuilder()
-                .apply {
-                    token?.let { 
-                        // Use only X-Emby-Token header, not both - duplicate headers can confuse Jellyfin server
-                        addHeader("X-Emby-Token", it)
-                    }
-                }
-                .build()
-            chain.proceed(request)
-        }
-    }
+    // Note: Token/header interceptors using OkHttp are not applicable to Jellyfin SDK (Ktor-backed)
 
     /**
      * Optimized interceptor with keep-alive and compression
@@ -150,13 +96,16 @@ class OptimizedClientFactory @Inject constructor(
     }
     
     /**
-     * Get an optimized client for a server URL with proper token handling
+     * Get an ApiClient keyed by (serverUrl, currentToken). When the token changes,
+     * a new client is created and cached under a new key.
      */
     fun getOptimizedClient(serverUrl: String): ApiClient {
+        val token = runBlocking { authRepositoryProvider.get().token() }
+        val key = "$serverUrl|${token ?: ""}"
         return synchronized(clientLock) {
-            clients.getOrPut(serverUrl) {
-                logDebug("Creating new optimized client for: $serverUrl")
-                createOptimizedClient(serverUrl)
+            clients.getOrPut(key) {
+                logDebug("Creating new optimized client for: $serverUrl (token tail: ${token?.takeLast(6) ?: "null"})")
+                createOptimizedClient(serverUrl, token)
             }
         }
     }

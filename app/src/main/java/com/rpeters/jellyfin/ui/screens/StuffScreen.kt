@@ -44,6 +44,7 @@ fun StuffScreen(
     collectionType: String?,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
+    onItemClick: (BaseItemDto) -> Unit = {},
 ) {
     if (BuildConfig.DEBUG) {
         android.util.Log.d("StuffScreen", "StuffScreen started: libraryId=$libraryId, collectionType=$collectionType")
@@ -55,6 +56,13 @@ fun StuffScreen(
         android.util.Log.d("StuffScreen", "App state homeVideosByLibrary size: ${appState.homeVideosByLibrary.size}")
         appState.homeVideosByLibrary.forEach { (id, items) ->
             android.util.Log.d("StuffScreen", "homeVideosByLibrary[$id]: ${items.size} items")
+        }
+    }
+
+    // Ensure libraries are available if navigating directly here
+    LaunchedEffect(Unit) {
+        if (appState.libraries.isEmpty()) {
+            viewModel.loadInitialData()
         }
     }
 
@@ -172,6 +180,7 @@ fun StuffScreen(
                 StuffGrid(
                     stuffItems = stuffItems,
                     getImageUrl = { item -> viewModel.getImageUrl(item) },
+                    onItemClick = onItemClick,
                     isLoadingMore = appState.isLoadingMore,
                     hasMoreItems = appState.hasMoreItems,
                     onLoadMore = { viewModel.loadMoreItems() },
@@ -199,6 +208,7 @@ fun StuffScreen(
 fun StuffGrid(
     stuffItems: List<BaseItemDto>,
     getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -218,7 +228,29 @@ fun StuffGrid(
                 imageUrl = getImageUrl(stuffItem) ?: "",
                 rating = (stuffItem.communityRating as? Double)?.toFloat(),
                 isFavorite = stuffItem.userData?.isFavorite == true,
-                onCardClick = { /* TODO: Handle item click, e.g., navigate to details screen */ },
+                onCardClick = { onItemClick(stuffItem) },
+                onPlayClick = {
+                    // For home videos, trigger playback
+                    when (stuffItem.type) {
+                        BaseItemKind.VIDEO -> {
+                            // TODO: Implement video playback
+                            onItemClick(stuffItem) // For now, navigate to detail screen
+                        }
+                        BaseItemKind.PHOTO -> {
+                            // TODO: Implement photo viewer
+                            onItemClick(stuffItem) // For now, navigate to detail screen  
+                        }
+                        else -> {
+                            onItemClick(stuffItem) // Navigate to detail screen
+                        }
+                    }
+                },
+                onFavoriteClick = {
+                    // TODO: Implement favorite toggle
+                },
+                onMoreClick = {
+                    // TODO: Show context menu with download, share options
+                },
             )
         }
 
@@ -257,6 +289,7 @@ fun StuffGridPreview() {
     StuffGrid(
         stuffItems = emptyList(),
         getImageUrl = { null },
+        onItemClick = {},
         isLoadingMore = false,
         hasMoreItems = false,
         onLoadMore = {},

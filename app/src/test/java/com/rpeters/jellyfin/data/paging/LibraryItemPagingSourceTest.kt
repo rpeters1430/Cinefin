@@ -89,7 +89,7 @@ class LibraryItemPagingSourceTest {
                 startIndex = 0,
                 limit = 20,
             )
-        } returns ApiResult.Error(errorMessage, null, com.rpeters.jellyfin.data.repository.common.ErrorType.NETWORK_ERROR)
+        } returns ApiResult.Error(errorMessage, null, com.rpeters.jellyfin.data.repository.common.ErrorType.NETWORK)
 
         // When
         val result = pagingSource.load(

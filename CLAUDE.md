@@ -25,10 +25,15 @@ This is a Jellyfin Android client application built with Kotlin and Jetpack Comp
   - `JellyfinMediaRepository` - Media content and metadata
   - `JellyfinSearchRepository` - Search functionality
   - `JellyfinUserRepository` - User management and preferences
+- **Enhanced Playback System**:
+  - `EnhancedPlaybackManager` - Intelligent Direct Play vs transcoding decision engine
+  - `DeviceCapabilities` - Real-time codec detection and performance profiling
+  - `EnhancedPlaybackUtils` - UI-friendly wrapper for playback functionality
+  - `PlaybackRecommendationViewModel` - Manages playback recommendations and notifications
 - **ViewModels**: Manage UI state and business logic (`MainAppViewModel`, `ServerConnectionViewModel`, etc.)
 - **Secure Storage**: `SecureCredentialManager` for encrypted credential persistence with biometric support
-- **Client Factory**: `JellyfinClientFactory` manages API client instances with token-based authentication
-- **Data Models**: `JellyfinServer`, `ApiResult<T>` for structured data handling
+- **Client Factory**: `OptimizedClientFactory` manages API client instances with token-based authentication
+- **Data Models**: `JellyfinServer`, `ApiResult<T>`, `PlaybackResult<T>` for structured data handling
 - **Error Handling**: Centralized `ErrorHandler` with comprehensive error types and retry mechanisms
 
 ## Common Development Commands
@@ -73,6 +78,8 @@ This is a Jellyfin Android client application built with Kotlin and Jetpack Comp
 - `app/src/main/java/com/rpeters/jellyfin/data/SecureCredentialManager.kt` - Encrypted credential storage with biometric support
 - `app/src/main/java/com/rpeters/jellyfin/data/repository/JellyfinRepositoryCoordinator.kt` - Repository coordination and delegation
 - `app/src/main/java/com/rpeters/jellyfin/data/cache/OptimizedCacheManager.kt` - Performance-optimized caching
+- `app/src/main/java/com/rpeters/jellyfin/data/playback/EnhancedPlaybackManager.kt` - Advanced playback decision engine
+- `app/src/main/java/com/rpeters/jellyfin/data/DeviceCapabilities.kt` - Device codec and performance analysis
 
 ### Dependency Injection
 - `app/src/main/java/com/rpeters/jellyfin/di/NetworkModule.kt` - Network-related dependencies (Jellyfin SDK, OkHttp)
@@ -84,6 +91,8 @@ This is a Jellyfin Android client application built with Kotlin and Jetpack Comp
 - `app/src/main/java/com/rpeters/jellyfin/ui/screens/` - Compose screens for different features
 - `app/src/main/java/com/rpeters/jellyfin/ui/theme/` - Material 3 theme definitions
 - `app/src/main/java/com/rpeters/jellyfin/ui/components/` - Reusable UI components including expressive and accessible variants
+- `app/src/main/java/com/rpeters/jellyfin/ui/components/PlaybackRecommendationNotifications.kt` - Playback recommendation UI system
+- `app/src/main/java/com/rpeters/jellyfin/ui/utils/EnhancedPlaybackUtils.kt` - Enhanced playback utilities for UI integration
 
 ### Navigation
 - `app/src/main/java/com/rpeters/jellyfin/ui/navigation/AppDestinations.kt` - App navigation destinations
@@ -113,6 +122,28 @@ The app uses a comprehensive `ApiResult<T>` sealed class with specific error typ
 - **Offline Support**: Download management with `OfflineDownloadManager` and playback capabilities
 - **Cast Integration**: Google Cast framework support with Media3 for Chromecast
 
+## Enhanced Playback System
+
+### Intelligent Direct Play Detection
+The app uses an advanced playback decision engine that automatically determines the optimal playback method:
+
+- **Real-time Codec Analysis**: `DeviceCapabilities` analyzes device support for video/audio codecs using `MediaCodecList`
+- **Network Quality Assessment**: Dynamic network conditions evaluation for streaming decisions
+- **Performance Profiling**: Device tier detection (HIGH_END, MID_RANGE, LOW_END) for optimal quality selection
+- **Playback Result Types**: Sealed class hierarchy (`PlaybackResult.DirectPlay`, `PlaybackResult.Transcoding`, `PlaybackResult.Error`)
+
+### Playback Recommendation System
+- **User Notifications**: Proactive recommendations displayed as non-intrusive notifications
+- **Capability Analysis**: `PlaybackCapabilityAnalysis` provides detailed technical insights
+- **Recommendation Types**: Categorized as Optimal, Info, Warning, or Error with appropriate UI styling
+- **Smart Recommendations**: Context-aware suggestions based on network conditions and device capabilities
+
+### UI Integration
+- **Status Indicators**: Visual badges showing Direct Play/Transcoding status on media cards
+- **Detail Screen Enhancement**: Comprehensive playback capability display with technical details
+- **Recommendation Notifications**: Multiple display modes (floating overlay, in-context, compact status)
+- **Quality Indicators**: Animated network quality indicators with bandwidth estimation
+
 ## UI Components and Patterns
 
 ### Compose Architecture
@@ -138,6 +169,15 @@ The app uses a comprehensive `ApiResult<T>` sealed class with specific error typ
 - Always wrap API calls in try-catch blocks
 - Use `handleException()` in repository for consistent error mapping
 - Implement retry mechanisms for network failures
+- Use `PlaybackResult.Error` for playback-specific error handling
+- Gracefully handle codec analysis failures with fallback values
+
+### Enhanced Playback Integration
+- Always use `EnhancedPlaybackUtils` for media playback initiation
+- Pass `enhancedPlaybackUtils` parameter to media card components for status indicators
+- Handle playback recommendations through `PlaybackRecommendationViewModel`
+- Use `PlaybackCapabilityAnalysis` for detailed technical information display
+- Implement playback status indicators on all media browsing screens
 
 ### Testing Strategy
 - Unit tests for repository and business logic using JUnit 4 and MockK
@@ -189,6 +229,21 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 - Implement proper error handling and logging
 - Use SecureLogger for all logging to prevent sensitive information leakage
 - Prefer data classes for model objects and sealed classes for state management
+
+### Commit Conventions
+Follow Conventional Commits specification:
+- `feat:` new feature (e.g., `feat: add movie detail screen with cast information`)
+- `fix:` bug fix (e.g., `fix: resolve crash when loading empty library`)
+- `docs:` documentation only changes
+- `refactor:` code change that neither fixes a bug nor adds a feature
+- `test:` adding missing tests or correcting existing tests
+- `perf:` performance improvements
+
+### Branch Naming
+- `feature/description` - for new features
+- `bugfix/description` - for bug fixes  
+- `hotfix/description` - for urgent fixes
+- `docs/description` - for documentation updates
 
 ### Security Considerations
 - Never log sensitive information (tokens, passwords)

@@ -9,7 +9,7 @@ import com.rpeters.jellyfin.data.network.TokenProvider
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
-import com.rpeters.jellyfin.di.JellyfinClientFactory
+import org.jellyfin.sdk.Jellyfin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,7 +25,7 @@ import javax.inject.Singleton
 
 @Singleton
 class JellyfinAuthRepository @Inject constructor(
-    private val clientFactory: JellyfinClientFactory,
+    private val jellyfin: Jellyfin,
     private val secureCredentialManager: SecureCredentialManager,
 ) : TokenProvider {
     private val authMutex = Mutex()
@@ -60,7 +60,10 @@ class JellyfinAuthRepository @Inject constructor(
 
     suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
         return try {
-            val client = clientFactory.getClient(serverUrl, null)
+            val client = jellyfin.createApi(
+                baseUrl = serverUrl,
+                accessToken = null,
+            )
             val response = client.systemApi.getPublicSystemInfo()
             ApiResult.Success(response.content)
         } catch (e: Exception) {
@@ -89,7 +92,10 @@ class JellyfinAuthRepository @Inject constructor(
         try {
             Log.d(TAG, "authenticateUser: Attempting authentication for user '$username'")
 
-            val client = clientFactory.getClient(serverUrl, null)
+            val client = jellyfin.createApi(
+                baseUrl = serverUrl,
+                accessToken = null,
+            )
             val response = client.userApi.authenticateUserByName(
                 AuthenticateUserByName(
                     username = username,

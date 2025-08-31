@@ -55,6 +55,13 @@ fun HomeVideosScreen(
         android.util.Log.d("HomeVideosScreen", "HomeVideosScreen started")
     }
     val appState by viewModel.appState.collectAsState()
+    
+    // Ensure libraries are loaded if we arrived here directly
+    LaunchedEffect(Unit) {
+        if (appState.libraries.isEmpty()) {
+            viewModel.loadInitialData()
+        }
+    }
 
     // Find all Home Videos libraries (there might be more than one)
     val homeVideosLibraries = remember(appState.libraries) {

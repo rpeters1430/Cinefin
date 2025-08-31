@@ -1,7 +1,7 @@
 package com.rpeters.jellyfin.data.repository
 
 import com.rpeters.jellyfin.data.SecureCredentialManager
-import com.rpeters.jellyfin.di.JellyfinClientFactory
+import org.jellyfin.sdk.Jellyfin
 import io.mockk.*
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
@@ -12,16 +12,16 @@ class JellyfinAuthRepositoryTest {
 
     private lateinit var authRepository: JellyfinAuthRepository
     private lateinit var mockCredentialManager: SecureCredentialManager
-    private lateinit var mockClientFactory: JellyfinClientFactory
+    private lateinit var mockJellyfin: Jellyfin
 
     @Before
     fun setup() {
         // Create mocks
         mockCredentialManager = mockk(relaxed = true)
-        mockClientFactory = mockk(relaxed = true)
+        mockJellyfin = mockk(relaxed = true)
 
         // Initialize repository
-        authRepository = JellyfinAuthRepository(mockClientFactory, mockCredentialManager)
+        authRepository = JellyfinAuthRepository(mockJellyfin, mockCredentialManager)
     }
 
     @Test
@@ -34,7 +34,7 @@ class JellyfinAuthRepositoryTest {
     fun `repository has expected dependencies`() {
         // Test that the repository is properly constructed with its dependencies
         assertNotNull("Repository should have credential manager", mockCredentialManager)
-        assertNotNull("Repository should have client factory", mockClientFactory)
+        assertNotNull("Repository should have Jellyfin instance", mockJellyfin)
     }
 
     @Test

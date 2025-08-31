@@ -2,7 +2,7 @@ package com.rpeters.jellyfin.data.repository
 
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.common.ApiResult
-import com.rpeters.jellyfin.di.JellyfinClientFactory
+import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.impl.annotations.MockK
@@ -25,7 +25,7 @@ class JellyfinMediaRepositoryTest {
     private lateinit var authRepository: JellyfinAuthRepository
 
     @MockK
-    private lateinit var clientFactory: JellyfinClientFactory
+    private lateinit var sessionManager: JellyfinSessionManager
 
     @MockK
     private lateinit var cache: JellyfinCache
@@ -44,7 +44,7 @@ class JellyfinMediaRepositoryTest {
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        repository = JellyfinMediaRepository(authRepository, clientFactory, cache, healthChecker)
+        repository = JellyfinMediaRepository(authRepository, sessionManager, cache, healthChecker)
 
         // Mock API client setup
         coEvery { apiClient.itemsApi } returns itemsApi
@@ -287,7 +287,7 @@ class JellyfinMediaRepositoryTest {
 
         coEvery {
             repository.getUserLibraries()
-        } returns ApiResult.Error(errorMessage, null, com.rpeters.jellyfin.data.repository.common.ErrorType.NETWORK_ERROR)
+        } returns ApiResult.Error(errorMessage, null, com.rpeters.jellyfin.data.repository.common.ErrorType.NETWORK)
 
         // When
         val result = repository.getUserLibraries()
@@ -296,6 +296,6 @@ class JellyfinMediaRepositoryTest {
         assertTrue(result is ApiResult.Error<List<BaseItemDto>>)
         val errorResult = result as ApiResult.Error<List<BaseItemDto>>
         assertEquals(errorMessage, errorResult.message)
-        assertEquals(com.rpeters.jellyfin.data.repository.common.ErrorType.NETWORK_ERROR, errorResult.errorType)
+        assertEquals(com.rpeters.jellyfin.data.repository.common.ErrorType.NETWORK, errorResult.errorType)
     }
 }

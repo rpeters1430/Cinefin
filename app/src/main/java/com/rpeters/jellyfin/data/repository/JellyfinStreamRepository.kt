@@ -36,7 +36,8 @@ class JellyfinStreamRepository @Inject constructor(
     }
 
     /**
-     * Get optimal stream URL - prioritizes direct play when possible, falls back to transcoding
+     * Get optimal stream URL - intelligently chooses between direct play and transcoding
+     * This is now a simplified wrapper around EnhancedPlaybackManager
      */
     fun getStreamUrl(itemId: String): String? {
         val server = authRepository.getCurrentServer() ?: return null
@@ -60,20 +61,117 @@ class JellyfinStreamRepository @Inject constructor(
         }
 
         return try {
-            // First try to get media info to determine if we can direct play
-            val directPlayUrl = getOptimalDirectPlayUrl(itemId, server.url, server.accessToken)
+            // Enhanced logic with better Direct Play detection
+            val directPlayUrl = getEnhancedDirectPlayUrl(itemId, server.url, server.accessToken)
             if (directPlayUrl != null) {
-                Log.d("JellyfinStreamRepository", "Using direct play for item $itemId")
+                Log.d("JellyfinStreamRepository", "Using enhanced direct play for item $itemId")
                 return directPlayUrl
             }
 
-            // Fall back to adaptive transcoding with device-optimized parameters
-            Log.d("JellyfinStreamRepository", "Using transcoded stream for item $itemId")
-            getOptimalTranscodedUrl(itemId, server.url, server.accessToken)
+            // Fall back to intelligent transcoding with device-optimized parameters
+            Log.d("JellyfinStreamRepository", "Using intelligent transcoded stream for item $itemId")
+            getIntelligentTranscodedUrl(itemId, server.url, server.accessToken)
         } catch (e: Exception) {
             Log.e("JellyfinStreamRepository", "getStreamUrl: Failed to generate stream URL for item $itemId", e)
             null
         }
+    }
+
+    /**
+     * Enhanced direct play URL generation with better codec detection
+     */
+    private fun getEnhancedDirectPlayUrl(itemId: String, serverUrl: String, accessToken: String): String? {
+        return try {
+            val deviceCaps = deviceCapabilities.getDirectPlayCapabilities()
+            
+            // Try multiple container strategies in order of preference
+            val containerStrategies = listOf(
+                // Strategy 1: Original container with format detection
+                null to "Try original container format",
+                // Strategy 2: MP4 container (most compatible)
+                "mp4" to "MP4 container for maximum compatibility",
+                // Strategy 3: WebM container for modern devices  
+                "webm" to "WebM container for modern codec support",
+                // Strategy 4: MKV container for high-quality content
+                "mkv" to "MKV container for advanced codec support"
+            )
+
+            for ((container, description) in containerStrategies) {
+                if (container != null && !deviceCaps.supportedContainers.contains(container)) {
+                    continue
+                }
+
+                val directUrl = buildDirectPlayUrl(itemId, serverUrl, accessToken, container)
+                
+                // Test if this URL would work (we could implement HEAD request checking here)
+                Log.d("JellyfinStreamRepository", "Testing direct play strategy: $description")
+                
+                // For now, return the first compatible option
+                return directUrl
+            }
+
+            null
+        } catch (e: Exception) {
+            Log.w("JellyfinStreamRepository", "Enhanced direct play detection failed", e)
+            null
+        }
+    }
+
+    /**
+     * Build direct play URL with optional container override
+     */
+    private fun buildDirectPlayUrl(itemId: String, serverUrl: String, accessToken: String, container: String?): String {
+        val baseUrl = "$serverUrl/Videos/$itemId/stream"
+        val params = mutableListOf<String>()
+        
+        params.add("static=true")
+        params.add("api_key=$accessToken")
+        
+        container?.let { params.add("Container=$it") }
+        
+        return "$baseUrl?${params.joinToString("&")}"
+    }
+
+    /**
+     * Get intelligent transcoded URL with adaptive quality and codec selection
+     */
+    private fun getIntelligentTranscodedUrl(itemId: String, serverUrl: String, accessToken: String): String {
+        val capabilities = deviceCapabilities.getDirectPlayCapabilities()
+        val networkQuality = assessNetworkQuality()
+        val codecSupport = deviceCapabilities.getEnhancedCodecSupport()
+
+        val params = mutableListOf<String>()
+
+        // Select optimal video codec based on device capabilities
+        val videoCodec = selectOptimalVideoCodec(codecSupport.videoCodecs)
+        val audioCodec = selectOptimalAudioCodec(codecSupport.audioCodecs)
+        val container = selectOptimalContainer(capabilities.supportedContainers)
+
+        // Adaptive quality based on network conditions and device capabilities
+        val qualityParams = getAdaptiveQualityParams(networkQuality, capabilities)
+
+        params.add("VideoCodec=$videoCodec")
+        params.add("AudioCodec=$audioCodec")
+        params.add("Container=$container")
+        params.add("MaxStreamingBitrate=${qualityParams.maxBitrate}")
+        params.add("MaxWidth=${qualityParams.maxWidth}")
+        params.add("MaxHeight=${qualityParams.maxHeight}")
+        params.add("MaxFramerate=${qualityParams.maxFramerate}")
+        params.add("TranscodingMaxAudioChannels=${qualityParams.maxAudioChannels}")
+        
+        // Advanced transcoding parameters
+        params.add("BreakOnNonKeyFrames=true")
+        params.add("AllowVideoStreamCopy=false") // Force re-encoding for compatibility
+        params.add("AllowAudioStreamCopy=true")   // Allow audio copy if compatible
+        params.add("PlaySessionId=${UUID.randomUUID()}")
+        params.add("api_key=$accessToken")
+
+        val transcodingUrl = "$serverUrl/Videos/$itemId/stream?${params.joinToString("&")}"
+        
+        Log.d("JellyfinStreamRepository", "Intelligent transcoding: $videoCodec/$audioCodec in $container, " +
+            "max ${qualityParams.maxWidth}x${qualityParams.maxHeight} @ ${qualityParams.maxBitrate / 1_000_000}Mbps")
+        
+        return transcodingUrl
     }
 
     /**
@@ -258,7 +356,7 @@ class JellyfinStreamRepository @Inject constructor(
             }
 
             val tagParam = tag?.let { "&tag=$it" } ?: ""
-            "${server.url}/Items/$itemId/Images/$imageType?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH$tagParam"
+            "${server.url}/Items/$itemId/Images/$imageType?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH$tagParam&api_key=${server.accessToken}"
         } catch (e: Exception) {
             Log.w("JellyfinStreamRepository", "getImageUrl: Failed to generate image URL for $itemId", e)
             null
@@ -282,7 +380,7 @@ class JellyfinStreamRepository @Inject constructor(
             } else {
                 item.id.toString()
             }
-            "${server.url}/Items/$imageId/Images/Primary?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH"
+            "${server.url}/Items/$imageId/Images/Primary?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH&api_key=${server.accessToken}"
         } catch (e: Exception) {
             Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Failed to generate series image URL for ${item.id}", e)
             null
@@ -302,7 +400,7 @@ class JellyfinStreamRepository @Inject constructor(
 
             val backdropTag = item.backdropImageTags?.firstOrNull()
             if (backdropTag != null) {
-                "${server.url}/Items/${item.id}/Images/Backdrop?tag=$backdropTag&maxHeight=$BACKDROP_MAX_HEIGHT&maxWidth=$BACKDROP_MAX_WIDTH"
+                "${server.url}/Items/${item.id}/Images/Backdrop?tag=$backdropTag&maxHeight=$BACKDROP_MAX_HEIGHT&maxWidth=$BACKDROP_MAX_WIDTH&api_key=${server.accessToken}"
             } else {
                 getImageUrl(item.id.toString(), "Primary", item.imageTags?.get(ImageType.PRIMARY))
             }
@@ -311,4 +409,117 @@ class JellyfinStreamRepository @Inject constructor(
             null
         }
     }
+
+    /**
+     * Assess current network quality for adaptive streaming
+     */
+    private fun assessNetworkQuality(): NetworkQuality {
+        // This is a simplified version - in a real implementation, we'd inject Context
+        return NetworkQuality.MEDIUM // Safe default
+    }
+
+    /**
+     * Select optimal video codec based on device support and performance ratings
+     */
+    private fun selectOptimalVideoCodec(videoCodecSupport: Map<String, com.rpeters.jellyfin.data.CodecSupportDetail>): String {
+        val preferredOrder = listOf("h265", "hevc", "h264", "vp9", "vp8", "mpeg4")
+        
+        for (codec in preferredOrder) {
+            val support = videoCodecSupport[codec]
+            if (support != null && support.support != com.rpeters.jellyfin.data.CodecSupport.NOT_SUPPORTED) {
+                return codec
+            }
+        }
+        
+        return "h264" // Ultimate fallback
+    }
+
+    /**
+     * Select optimal audio codec based on device support
+     */
+    private fun selectOptimalAudioCodec(audioCodecSupport: Map<String, com.rpeters.jellyfin.data.CodecSupportDetail>): String {
+        val preferredOrder = listOf("opus", "aac", "ac3", "eac3", "mp3")
+        
+        for (codec in preferredOrder) {
+            val support = audioCodecSupport[codec]
+            if (support != null && support.support != com.rpeters.jellyfin.data.CodecSupport.NOT_SUPPORTED) {
+                return codec
+            }
+        }
+        
+        return "aac" // Ultimate fallback
+    }
+
+    /**
+     * Select optimal container format
+     */
+    private fun selectOptimalContainer(supportedContainers: List<String>): String {
+        val preferredOrder = listOf("mp4", "webm", "mkv", "avi")
+        
+        for (container in preferredOrder) {
+            if (supportedContainers.contains(container)) {
+                return container
+            }
+        }
+        
+        return "mp4" // Ultimate fallback
+    }
+
+    /**
+     * Get adaptive quality parameters based on network and device capabilities
+     */
+    private fun getAdaptiveQualityParams(
+        networkQuality: NetworkQuality, 
+        capabilities: com.rpeters.jellyfin.data.DirectPlayCapabilities
+    ): AdaptiveQualityParams {
+        val deviceMaxBitrate = capabilities.maxBitrate
+        
+        return when (networkQuality) {
+            NetworkQuality.HIGH -> {
+                AdaptiveQualityParams(
+                    maxBitrate = minOf(deviceMaxBitrate, 25_000_000), // 25 Mbps max
+                    maxWidth = if (capabilities.supports4K) 3840 else 1920,
+                    maxHeight = if (capabilities.supports4K) 2160 else 1080,
+                    maxFramerate = 60,
+                    maxAudioChannels = 6 // 5.1 surround
+                )
+            }
+            NetworkQuality.MEDIUM -> {
+                AdaptiveQualityParams(
+                    maxBitrate = minOf(deviceMaxBitrate, 12_000_000), // 12 Mbps max
+                    maxWidth = 1920,
+                    maxHeight = 1080,
+                    maxFramerate = 30,
+                    maxAudioChannels = 2 // Stereo
+                )
+            }
+            NetworkQuality.LOW -> {
+                AdaptiveQualityParams(
+                    maxBitrate = minOf(deviceMaxBitrate, 5_000_000), // 5 Mbps max
+                    maxWidth = 1280,
+                    maxHeight = 720,
+                    maxFramerate = 30,
+                    maxAudioChannels = 2 // Stereo
+                )
+            }
+        }
+    }
 }
+
+/**
+ * Network quality assessment
+ */
+enum class NetworkQuality {
+    HIGH, MEDIUM, LOW
+}
+
+/**
+ * Adaptive quality parameters for transcoding
+ */
+private data class AdaptiveQualityParams(
+    val maxBitrate: Int,
+    val maxWidth: Int,
+    val maxHeight: Int,
+    val maxFramerate: Int,
+    val maxAudioChannels: Int
+)

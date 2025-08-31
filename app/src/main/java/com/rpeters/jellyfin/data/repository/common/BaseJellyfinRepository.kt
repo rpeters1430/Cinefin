@@ -6,7 +6,7 @@ import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
-import com.rpeters.jellyfin.di.JellyfinClientFactory
+import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import com.rpeters.jellyfin.ui.utils.RetryManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
@@ -23,7 +23,7 @@ import javax.inject.Inject
  */
 open class BaseJellyfinRepository @Inject constructor(
     protected val authRepository: JellyfinAuthRepository,
-    private val clientFactory: JellyfinClientFactory,
+    protected val sessionManager: JellyfinSessionManager,
     protected val cache: JellyfinCache,
 ) {
     // Mutex to prevent race conditions in token refresh
@@ -34,7 +34,7 @@ open class BaseJellyfinRepository @Inject constructor(
      * Client creation involves static initialization that performs file I/O.
      */
     protected suspend fun getClient(serverUrl: String, accessToken: String?): ApiClient =
-        clientFactory.getClient(serverUrl, accessToken)
+        sessionManager.getClientForUrl(serverUrl)
 
     fun validateServer(): JellyfinServer {
         val currentServer = authRepository.getCurrentServer()
@@ -57,9 +57,7 @@ open class BaseJellyfinRepository @Inject constructor(
                     val refreshResult = authRepository.forceReAuthenticate()
                     if (refreshResult) {
                         Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Proactive force token refresh successful")
-                        authRepository.getCurrentServer()?.let { server ->
-                            clientFactory.refreshClient(server.url, server.accessToken)
-                        }
+                        sessionManager.invalidateClients()
                     } else {
                         Logger.w(LogCategory.NETWORK, javaClass.simpleName, "Proactive force token refresh failed")
                         // Don't throw here - let the subsequent API call handle the 401
@@ -78,9 +76,10 @@ open class BaseJellyfinRepository @Inject constructor(
         operation: suspend (ApiClient) -> T,
     ): T {
         return executeWithTokenRefresh {
-            val server = validateServer()
-            val client = clientFactory.getClient(server.url)
-            operation(client)
+            // Delegate to session manager for token/401 handling
+            sessionManager.executeWithAuth(operationName) { _, client ->
+                operation(client)
+            }
         }
     }
 
@@ -105,7 +104,7 @@ open class BaseJellyfinRepository @Inject constructor(
                     val currentServer = authRepository.getCurrentServer()
                     if (currentServer?.accessToken != null && !authRepository.isTokenExpired()) {
                         Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token already refreshed by another thread, retrying operation")
-                        clientFactory.invalidateClient(currentServer.id)
+                        sessionManager.invalidateClients()
                         // Add small delay to ensure client cache is properly cleared
                         kotlinx.coroutines.delay(50)
                         return@withLock operation()
@@ -125,14 +124,7 @@ open class BaseJellyfinRepository @Inject constructor(
 
                         // Authentication completed, retry operation
                         Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication completed by another thread, retrying operation")
-                        authRepository.getCurrentServer()?.let { server ->
-                            clientFactory.invalidateClient(server.id)
-                            // Ensure we have a fresh token before retrying
-                            if (server.accessToken == null || authRepository.isTokenExpired()) {
-                                Logger.w(LogCategory.NETWORK, javaClass.simpleName, "Token still invalid after waiting, forcing re-authentication")
-                                throw Exception("Authentication failed: Token still invalid after refresh")
-                            }
-                        }
+                        sessionManager.invalidateClients()
                         // Add small delay to ensure client cache is properly cleared
                         kotlinx.coroutines.delay(50)
                         return@withLock operation()
@@ -141,10 +133,8 @@ open class BaseJellyfinRepository @Inject constructor(
                     val refreshResult = authRepository.forceReAuthenticate()
                     if (refreshResult) {
                         Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Force token refresh successful, retrying operation")
-                        // Clear client factory to ensure new token is used
-                        authRepository.getCurrentServer()?.let { server ->
-                            clientFactory.invalidateClient(server.id)
-                        }
+                        // Invalidate clients to ensure new token is used
+                        sessionManager.invalidateClients()
 
                         // Retry the operation with refreshed token
                         // Note: The operation closure should re-fetch server state for updated tokens
