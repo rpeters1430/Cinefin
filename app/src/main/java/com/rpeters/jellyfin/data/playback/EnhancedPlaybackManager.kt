@@ -8,12 +8,9 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
-import com.rpeters.jellyfin.data.repository.common.ApiResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.BaseItemKind
-import org.jellyfin.sdk.model.api.MediaStream
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PlaybackInfoResponse
 import javax.inject.Inject
@@ -33,12 +30,12 @@ class EnhancedPlaybackManager @Inject constructor(
 
     companion object {
         private const val TAG = "EnhancedPlaybackManager"
-        
+
         // Network quality thresholds (in Mbps)
         private const val HIGH_QUALITY_THRESHOLD = 25
         private const val MEDIUM_QUALITY_THRESHOLD = 10
         private const val LOW_QUALITY_THRESHOLD = 3
-        
+
         // Direct play bitrate thresholds
         private const val DIRECT_PLAY_MAX_BITRATE = 100_000_000 // 100 Mbps
         private const val WIFI_DIRECT_PLAY_THRESHOLD = 50_000_000 // 50 Mbps
@@ -51,7 +48,7 @@ class EnhancedPlaybackManager @Inject constructor(
     suspend fun getOptimalPlaybackUrl(item: BaseItemDto): PlaybackResult {
         return withContext(Dispatchers.IO) {
             try {
-                val itemId = item.id?.toString() 
+                val itemId = item.id?.toString()
                     ?: return@withContext PlaybackResult.Error("Item ID is null")
 
                 if (BuildConfig.DEBUG) {
@@ -91,8 +88,8 @@ class EnhancedPlaybackManager @Inject constructor(
      * Analyze if Direct Play is possible based on device capabilities and network conditions
      */
     private suspend fun analyzeDirectPlayCapability(
-        item: BaseItemDto, 
-        playbackInfo: PlaybackInfoResponse
+        item: BaseItemDto,
+        playbackInfo: PlaybackInfoResponse,
     ): PlaybackResult.DirectPlay? {
         val mediaSources = playbackInfo.mediaSources
         if (mediaSources.isNullOrEmpty()) {
@@ -104,9 +101,9 @@ class EnhancedPlaybackManager @Inject constructor(
         for (mediaSource in mediaSources) {
             val canDirectPlay = canDirectPlayMediaSource(mediaSource, item)
             if (canDirectPlay) {
-                val directPlayUrl = mediaSource.path 
+                val directPlayUrl = mediaSource.path
                     ?: streamRepository.getDirectStreamUrl(item.id.toString(), mediaSource.container)
-                    
+
                 if (directPlayUrl != null) {
                     return PlaybackResult.DirectPlay(
                         url = directPlayUrl,
@@ -114,7 +111,7 @@ class EnhancedPlaybackManager @Inject constructor(
                         videoCodec = getVideoCodec(mediaSource),
                         audioCodec = getAudioCodec(mediaSource),
                         bitrate = mediaSource.bitrate ?: 0,
-                        reason = "Device supports all codecs and container format"
+                        reason = "Device supports all codecs and container format",
                     )
                 }
             }
@@ -128,7 +125,7 @@ class EnhancedPlaybackManager @Inject constructor(
      */
     private fun canDirectPlayMediaSource(
         mediaSource: org.jellyfin.sdk.model.api.MediaSourceInfo,
-        item: BaseItemDto
+        item: BaseItemDto,
     ): Boolean {
         // Check container support
         val container = mediaSource.container
@@ -143,9 +140,9 @@ class EnhancedPlaybackManager @Inject constructor(
             val videoCodec = videoStream.codec
             val width = videoStream.width ?: 0
             val height = videoStream.height ?: 0
-            
+
             if (!deviceCapabilities.canPlayVideoCodec(videoCodec, width, height)) {
-                Log.d(TAG, "Video codec '$videoCodec' at ${width}x${height} not supported for Direct Play")
+                Log.d(TAG, "Video codec '$videoCodec' at ${width}x$height not supported for Direct Play")
                 return false
             }
         }
@@ -199,7 +196,7 @@ class EnhancedPlaybackManager @Inject constructor(
      */
     private fun getOptimalTranscodingUrl(
         item: BaseItemDto,
-        playbackInfo: PlaybackInfoResponse
+        playbackInfo: PlaybackInfoResponse,
     ): PlaybackResult.Transcoding {
         val itemId = item.id.toString()
         val networkQuality = getNetworkQuality()
@@ -212,7 +209,7 @@ class EnhancedPlaybackManager @Inject constructor(
                 maxHeight = if (deviceCaps.supports4K) 2160 else 1080,
                 videoCodec = getBestVideoCodec(deviceCaps.supportedVideoCodecs),
                 audioCodec = getBestAudioCodec(deviceCaps.supportedAudioCodecs),
-                container = "mp4"
+                container = "mp4",
             )
             NetworkQuality.MEDIUM -> TranscodingParams(
                 maxBitrate = 8_000_000, // 8 Mbps
@@ -220,7 +217,7 @@ class EnhancedPlaybackManager @Inject constructor(
                 maxHeight = 1080,
                 videoCodec = "h264", // Most compatible
                 audioCodec = "aac",
-                container = "mp4"
+                container = "mp4",
             )
             NetworkQuality.LOW -> TranscodingParams(
                 maxBitrate = 3_000_000, // 3 Mbps
@@ -228,7 +225,7 @@ class EnhancedPlaybackManager @Inject constructor(
                 maxHeight = 720,
                 videoCodec = "h264",
                 audioCodec = "aac",
-                container = "mp4"
+                container = "mp4",
             )
         }
 
@@ -239,7 +236,7 @@ class EnhancedPlaybackManager @Inject constructor(
             maxHeight = transcodingParams.maxHeight,
             videoCodec = transcodingParams.videoCodec,
             audioCodec = transcodingParams.audioCodec,
-            container = transcodingParams.container
+            container = transcodingParams.container,
         ) ?: streamRepository.getStreamUrl(itemId) // Fallback to default
 
         return PlaybackResult.Transcoding(
@@ -249,7 +246,7 @@ class EnhancedPlaybackManager @Inject constructor(
             targetVideoCodec = transcodingParams.videoCodec,
             targetAudioCodec = transcodingParams.audioCodec,
             targetContainer = transcodingParams.container,
-            reason = "Optimized for $networkQuality network quality"
+            reason = "Optimized for $networkQuality network quality",
         )
     }
 
@@ -343,7 +340,7 @@ private data class TranscodingParams(
     val maxHeight: Int,
     val videoCodec: String,
     val audioCodec: String,
-    val container: String
+    val container: String,
 )
 
 /**
@@ -356,7 +353,7 @@ sealed class PlaybackResult {
         val videoCodec: String?,
         val audioCodec: String?,
         val bitrate: Int,
-        val reason: String
+        val reason: String,
     ) : PlaybackResult()
 
     data class Transcoding(
@@ -366,7 +363,7 @@ sealed class PlaybackResult {
         val targetVideoCodec: String,
         val targetAudioCodec: String,
         val targetContainer: String,
-        val reason: String
+        val reason: String,
     ) : PlaybackResult()
 
     data class Error(val message: String) : PlaybackResult()

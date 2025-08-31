@@ -91,12 +91,12 @@ fun AlbumDetailScreen(
                         imageUrl = mainViewModel.getImageUrl(track) ?: "",
                         rating = null,
                         isFavorite = track.userData?.isFavorite == true,
-                        onCardClick = { 
+                        onCardClick = {
                             // Play this specific track
                             // TODO: Implement track playback
                         },
                         onPlayClick = {
-                            // Play this specific track  
+                            // Play this specific track
                             // TODO: Implement track playback
                         },
                         onFavoriteClick = {
@@ -134,4 +134,3 @@ private fun AlbumHeader(
         )
     }
 }
-

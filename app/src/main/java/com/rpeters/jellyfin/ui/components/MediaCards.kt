@@ -138,20 +138,20 @@ fun MediaCard(
                     .align(Alignment.TopEnd)
                     .padding(8.dp),
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 // Playback status indicator
                 enhancedPlaybackUtils?.let { utils ->
                     PlaybackStatusIndicator(
                         item = item,
                         enhancedPlaybackUtils = utils,
-                        modifier = Modifier
+                        modifier = Modifier,
                     )
                 }
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     // Favorite indicator
                     if (item.userData?.isFavorite == true) {
@@ -400,14 +400,14 @@ fun RecentlyAddedCard(
                         .align(Alignment.TopEnd)
                         .padding(8.dp),
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     // Playback status indicator
                     enhancedPlaybackUtils?.let { utils ->
                         PlaybackStatusIndicator(
                             item = item,
                             enhancedPlaybackUtils = utils,
-                            modifier = Modifier
+                            modifier = Modifier,
                         )
                     }
 

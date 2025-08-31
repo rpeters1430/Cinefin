@@ -29,4 +29,3 @@ object AppConstants {
         const val WATCHED_THRESHOLD_PERCENT = Constants.Playback.WATCHED_THRESHOLD_PERCENT
     }
 }
-

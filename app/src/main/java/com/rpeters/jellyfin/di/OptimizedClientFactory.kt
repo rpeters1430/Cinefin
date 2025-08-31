@@ -6,15 +6,10 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import okhttp3.ConnectionPool
 import okhttp3.Interceptor
-import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
@@ -94,7 +89,7 @@ class OptimizedClientFactory @Inject constructor(
             Log.d(TAG, message)
         }
     }
-    
+
     /**
      * Get an ApiClient keyed by (serverUrl, currentToken). When the token changes,
      * a new client is created and cached under a new key.
@@ -109,7 +104,7 @@ class OptimizedClientFactory @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Invalidate client cache for a server
      */
@@ -125,7 +120,7 @@ class OptimizedClientFactory @Inject constructor(
             }
         }
     }
-    
+
     /**
      * Clear all cached clients
      */

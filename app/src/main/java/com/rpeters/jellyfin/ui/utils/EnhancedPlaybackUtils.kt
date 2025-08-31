@@ -6,9 +6,7 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
 import com.rpeters.jellyfin.data.playback.PlaybackResult
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -54,18 +52,18 @@ class EnhancedPlaybackUtils @Inject constructor(
                                 videoCodec = playbackResult.videoCodec,
                                 audioCodec = playbackResult.audioCodec,
                                 bitrate = playbackResult.bitrate,
-                                reason = playbackResult.reason
+                                reason = playbackResult.reason,
                             )
-                            
+
                             if (BuildConfig.DEBUG) {
                                 Log.d(TAG, "Direct Play: ${playbackResult.reason}")
                             }
-                            
+
                             // Start playback using existing media player
                             startMediaPlayback(item, playbackInfo.url)
                             onPlaybackStarted(playbackResult.url, playbackInfo)
                         }
-                        
+
                         is PlaybackResult.Transcoding -> {
                             val playbackInfo = PlaybackInfo(
                                 url = playbackResult.url,
@@ -74,20 +72,23 @@ class EnhancedPlaybackUtils @Inject constructor(
                                 videoCodec = playbackResult.targetVideoCodec,
                                 audioCodec = playbackResult.targetAudioCodec,
                                 bitrate = playbackResult.targetBitrate,
-                                reason = playbackResult.reason
+                                reason = playbackResult.reason,
                             )
-                            
+
                             if (BuildConfig.DEBUG) {
                                 Log.d(TAG, "Transcoding: ${playbackResult.reason}")
-                                Log.d(TAG, "Target: ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} " +
-                                    "in ${playbackResult.targetContainer} @ ${playbackResult.targetBitrate / 1_000_000}Mbps")
+                                Log.d(
+                                    TAG,
+                                    "Target: ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} " +
+                                        "in ${playbackResult.targetContainer} @ ${playbackResult.targetBitrate / 1_000_000}Mbps",
+                                )
                             }
-                            
+
                             // Start transcoded playback
                             startMediaPlayback(item, playbackInfo.url)
                             onPlaybackStarted(playbackResult.url, playbackInfo)
                         }
-                        
+
                         is PlaybackResult.Error -> {
                             Log.e(TAG, "Playback failed: ${playbackResult.message}")
                             onPlaybackError(playbackResult.message)
@@ -112,20 +113,20 @@ class EnhancedPlaybackUtils @Inject constructor(
                 // Use video player
                 MediaPlayerUtils.playMedia(context, streamUrl, item)
             }
-            
+
             BaseItemKind.AUDIO -> {
                 // For audio, we could start an audio-specific player
                 // For now, use the video player which can handle audio-only content
                 MediaPlayerUtils.playMedia(context, streamUrl, item)
             }
-            
+
             BaseItemKind.MUSIC_ALBUM -> {
                 // For albums, we might want to play the first track or show a playlist
                 Log.d(TAG, "Album playback - would typically get first track or create playlist")
                 // Could be enhanced to get album tracks and play the first one
                 MediaPlayerUtils.playMedia(context, streamUrl, item)
             }
-            
+
             else -> {
                 // Generic media playback
                 MediaPlayerUtils.playMedia(context, streamUrl, item)
@@ -140,7 +141,7 @@ class EnhancedPlaybackUtils @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val playbackResult = enhancedPlaybackManager.getOptimalPlaybackUrl(item)
-                
+
                 when (playbackResult) {
                     is PlaybackResult.DirectPlay -> {
                         PlaybackCapabilityAnalysis(
@@ -150,10 +151,10 @@ class EnhancedPlaybackUtils @Inject constructor(
                             details = "Direct Play: ${playbackResult.reason}",
                             codecs = "${playbackResult.videoCodec ?: "N/A"}/${playbackResult.audioCodec ?: "N/A"}",
                             container = playbackResult.container,
-                            estimatedBandwidth = playbackResult.bitrate
+                            estimatedBandwidth = playbackResult.bitrate,
                         )
                     }
-                    
+
                     is PlaybackResult.Transcoding -> {
                         PlaybackCapabilityAnalysis(
                             canPlay = true,
@@ -162,10 +163,10 @@ class EnhancedPlaybackUtils @Inject constructor(
                             details = "Transcoding: ${playbackResult.reason}",
                             codecs = "${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec}",
                             container = playbackResult.targetContainer,
-                            estimatedBandwidth = playbackResult.targetBitrate
+                            estimatedBandwidth = playbackResult.targetBitrate,
                         )
                     }
-                    
+
                     is PlaybackResult.Error -> {
                         PlaybackCapabilityAnalysis(
                             canPlay = false,
@@ -174,7 +175,7 @@ class EnhancedPlaybackUtils @Inject constructor(
                             details = "Error: ${playbackResult.message}",
                             codecs = "N/A",
                             container = "N/A",
-                            estimatedBandwidth = 0
+                            estimatedBandwidth = 0,
                         )
                     }
                 }
@@ -187,7 +188,7 @@ class EnhancedPlaybackUtils @Inject constructor(
                     details = "Analysis failed: ${e.message}",
                     codecs = "N/A",
                     container = "N/A",
-                    estimatedBandwidth = 0
+                    estimatedBandwidth = 0,
                 )
             }
         }
@@ -199,63 +200,62 @@ class EnhancedPlaybackUtils @Inject constructor(
     suspend fun getPlaybackRecommendations(item: BaseItemDto): List<PlaybackRecommendation> {
         return withContext(Dispatchers.IO) {
             val recommendations = mutableListOf<PlaybackRecommendation>()
-            
+
             try {
                 val analysis = analyzePlaybackCapabilities(item)
-                
+
                 when (analysis.preferredMethod) {
                     PlaybackMethod.DIRECT_PLAY -> {
                         recommendations.add(
                             PlaybackRecommendation(
                                 type = RecommendationType.OPTIMAL,
                                 message = "Optimal playback quality - Direct Play enabled",
-                                details = "Your device can play this media without transcoding for best quality and performance."
-                            )
+                                details = "Your device can play this media without transcoding for best quality and performance.",
+                            ),
                         )
                     }
-                    
+
                     PlaybackMethod.TRANSCODING -> {
                         recommendations.add(
                             PlaybackRecommendation(
                                 type = RecommendationType.INFO,
                                 message = "Media will be transcoded for compatibility",
-                                details = "The server will convert this media to a compatible format. Quality may be adjusted based on your network conditions."
-                            )
+                                details = "The server will convert this media to a compatible format. Quality may be adjusted based on your network conditions.",
+                            ),
                         )
-                        
+
                         if (analysis.expectedQuality.contains("720p") || analysis.expectedQuality.contains("Low")) {
                             recommendations.add(
                                 PlaybackRecommendation(
                                     type = RecommendationType.WARNING,
                                     message = "Quality reduced due to network or device limitations",
-                                    details = "Consider using WiFi for better quality or check device storage space."
-                                )
+                                    details = "Consider using WiFi for better quality or check device storage space.",
+                                ),
                             )
                         }
                     }
-                    
+
                     PlaybackMethod.UNAVAILABLE -> {
                         recommendations.add(
                             PlaybackRecommendation(
                                 type = RecommendationType.ERROR,
                                 message = "Cannot play this media",
-                                details = analysis.details
-                            )
+                                details = analysis.details,
+                            ),
                         )
                     }
                 }
-                
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to generate playback recommendations", e)
                 recommendations.add(
                     PlaybackRecommendation(
                         type = RecommendationType.ERROR,
                         message = "Unable to analyze playback compatibility",
-                        details = "Please try again or contact support if the problem persists."
-                    )
+                        details = "Please try again or contact support if the problem persists.",
+                    ),
                 )
             }
-            
+
             recommendations
         }
     }
@@ -263,7 +263,7 @@ class EnhancedPlaybackUtils @Inject constructor(
     private fun determineQualityFromBitrate(bitrate: Int): String {
         return when {
             bitrate >= 20_000_000 -> "4K/Ultra High"
-            bitrate >= 10_000_000 -> "1080p/High" 
+            bitrate >= 10_000_000 -> "1080p/High"
             bitrate >= 5_000_000 -> "720p/Medium"
             bitrate >= 2_000_000 -> "480p/Low"
             else -> "Audio/Very Low"
@@ -290,7 +290,7 @@ data class PlaybackInfo(
     val videoCodec: String?,
     val audioCodec: String?,
     val bitrate: Int,
-    val reason: String
+    val reason: String,
 )
 
 /**
@@ -303,7 +303,7 @@ data class PlaybackCapabilityAnalysis(
     val details: String,
     val codecs: String,
     val container: String,
-    val estimatedBandwidth: Int
+    val estimatedBandwidth: Int,
 )
 
 /**
@@ -312,7 +312,7 @@ data class PlaybackCapabilityAnalysis(
 data class PlaybackRecommendation(
     val type: RecommendationType,
     val message: String,
-    val details: String
+    val details: String,
 )
 
 /**
@@ -321,7 +321,7 @@ data class PlaybackRecommendation(
 enum class PlaybackMethod {
     DIRECT_PLAY,
     TRANSCODING,
-    UNAVAILABLE
+    UNAVAILABLE,
 }
 
 /**
@@ -329,7 +329,7 @@ enum class PlaybackMethod {
  */
 enum class RecommendationType {
     OPTIMAL,
-    INFO, 
+    INFO,
     WARNING,
-    ERROR
+    ERROR,
 }

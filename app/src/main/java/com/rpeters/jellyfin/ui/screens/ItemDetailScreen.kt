@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,20 +20,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+<<<<<<< HEAD
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
-import com.rpeters.jellyfin.ui.components.PlaybackCapabilityDetails
 import com.rpeters.jellyfin.ui.components.InContextPlaybackRecommendation
+import com.rpeters.jellyfin.ui.components.PlaybackCapabilityDetails
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.viewmodel.PlaybackRecommendationViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -88,7 +87,7 @@ fun ItemDetailScreen(
     val playbackAnalysis = viewModel.playbackAnalysis
     val recommendations by recommendationViewModel.recommendations.collectAsState()
 
-    LaunchedEffect(itemId) { 
+    LaunchedEffect(itemId) {
         viewModel.load(itemId)
     }
 
@@ -129,8 +128,8 @@ fun ItemDetailScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                errorState.value?.let { 
-                    Text(text = it, color = MaterialTheme.colorScheme.error) 
+                errorState.value?.let {
+                    Text(text = it, color = MaterialTheme.colorScheme.error)
                 }
             }
 
@@ -142,12 +141,12 @@ fun ItemDetailScreen(
                             Text(
                                 text = "Playback Recommendations",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                             recommendations.forEach { recommendation ->
                                 InContextPlaybackRecommendation(
                                     recommendation = recommendation,
-                                    modifier = Modifier.padding(bottom = 8.dp)
+                                    modifier = Modifier.padding(bottom = 8.dp),
                                 )
                             }
                         }
@@ -159,7 +158,7 @@ fun ItemDetailScreen(
                     playbackAnalysis.value?.let { analysis ->
                         PlaybackCapabilityDetails(
                             analysis = analysis,
-                            modifier = Modifier.padding(bottom = 16.dp)
+                            modifier = Modifier.padding(bottom = 16.dp),
                         )
                     }
                 }
@@ -170,13 +169,13 @@ fun ItemDetailScreen(
                         Text(
                             text = "Media Details",
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
-                        
+
                         Text(text = "Name: ${item.name}")
                         item.runTimeTicks?.let { ticks ->
                             val minutes = (ticks / 10_000_000L) / 60
-                            Text(text = "Runtime: ${minutes} min")
+                            Text(text = "Runtime: $minutes min")
                         }
                         item.productionYear?.let { year -> Text(text = "Year: $year") }
                         item.dateCreated?.let { date -> Text(text = "Date: $date") }
@@ -187,14 +186,14 @@ fun ItemDetailScreen(
                 item {
                     val videoStream = item.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
                     val audioStream = item.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }
-                    
+
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             text = "Technical Details",
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
-                        
+
                         videoStream?.codec?.let { Text(text = "Video codec: $it") }
                         audioStream?.codec?.let { Text(text = "Audio codec: $it") }
                         item.container?.let { Text(text = "Container: $it") }
@@ -203,14 +202,14 @@ fun ItemDetailScreen(
                         audioStream?.bitRate?.let { Text(text = "Audio bitrate: ${it / 1000} kbps") }
                         videoStream?.width?.let { width ->
                             videoStream.height?.let { height ->
-                                Text(text = "Resolution: ${width}x${height}")
+                                Text(text = "Resolution: ${width}x$height")
                             }
                         }
-                        videoStream?.aspectRatio?.let { 
-                            Text(text = "Aspect ratio: $it") 
+                        videoStream?.aspectRatio?.let {
+                            Text(text = "Aspect ratio: $it")
                         }
-                        videoStream?.averageFrameRate?.let { 
-                            Text(text = "Frame rate: ${"%.2f".format(it)} fps") 
+                        videoStream?.averageFrameRate?.let {
+                            Text(text = "Frame rate: ${"%.2f".format(it)} fps")
                         }
                     }
                 }
@@ -218,4 +217,3 @@ fun ItemDetailScreen(
         }
     }
 }
-

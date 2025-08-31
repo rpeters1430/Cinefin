@@ -238,7 +238,7 @@ fun StuffGrid(
                         }
                         BaseItemKind.PHOTO -> {
                             // TODO: Implement photo viewer
-                            onItemClick(stuffItem) // For now, navigate to detail screen  
+                            onItemClick(stuffItem) // For now, navigate to detail screen
                         }
                         else -> {
                             onItemClick(stuffItem) // Navigate to detail screen

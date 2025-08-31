@@ -33,12 +33,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.rpeters.jellyfin.BuildConfig
-import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.AlbumDetailScreen
-import com.rpeters.jellyfin.ui.screens.ItemDetailScreen
+import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.FavoritesScreen
 import com.rpeters.jellyfin.ui.screens.HomeScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
+import com.rpeters.jellyfin.ui.screens.ItemDetailScreen
 import com.rpeters.jellyfin.ui.screens.LibraryScreen
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.screens.MovieDetailScreen
