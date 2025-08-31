@@ -12,8 +12,8 @@ import com.rpeters.jellyfin.data.model.QuickConnectResult
 import com.rpeters.jellyfin.data.model.QuickConnectState
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
-import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.data.session.JellyfinSessionManager
+import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.ui.utils.ErrorHandler
 import com.rpeters.jellyfin.ui.utils.OfflineManager
 import dagger.hilt.android.qualifiers.ApplicationContext

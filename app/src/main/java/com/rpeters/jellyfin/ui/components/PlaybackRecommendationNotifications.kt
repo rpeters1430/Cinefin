@@ -16,7 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.utils.PlaybackRecommendation
@@ -31,18 +30,18 @@ fun PlaybackRecommendationNotification(
     recommendations: List<PlaybackRecommendation>,
     modifier: Modifier = Modifier,
     onDismiss: (PlaybackRecommendation) -> Unit = {},
-    autoHideDelayMs: Long = 5000L
+    autoHideDelayMs: Long = 5000L,
 ) {
     LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
     ) {
         itemsIndexed(recommendations) { index, recommendation ->
             PlaybackRecommendationCard(
                 recommendation = recommendation,
                 onDismiss = { onDismiss(recommendation) },
-                autoHideDelayMs = autoHideDelayMs
+                autoHideDelayMs = autoHideDelayMs,
             )
         }
     }
@@ -56,7 +55,7 @@ fun PlaybackRecommendationCard(
     recommendation: PlaybackRecommendation,
     onDismiss: () -> Unit,
     autoHideDelayMs: Long = 5000L,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var isVisible by remember { mutableStateOf(true) }
 
@@ -73,28 +72,28 @@ fun PlaybackRecommendationCard(
         visible = isVisible,
         enter = fadeIn() + expandVertically(),
         exit = fadeOut() + shrinkVertically(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         val (backgroundColor, textColor, icon) = when (recommendation.type) {
             RecommendationType.OPTIMAL -> Triple(
                 Color(0xFF4CAF50),
                 Color.White,
-                Icons.Filled.CheckCircle
+                Icons.Filled.CheckCircle,
             )
             RecommendationType.INFO -> Triple(
                 MaterialTheme.colorScheme.primaryContainer,
                 MaterialTheme.colorScheme.onPrimaryContainer,
-                Icons.Filled.Info
+                Icons.Filled.Info,
             )
             RecommendationType.WARNING -> Triple(
                 Color(0xFFFF9800),
                 Color.White,
-                Icons.Filled.Warning
+                Icons.Filled.Warning,
             )
             RecommendationType.ERROR -> Triple(
                 MaterialTheme.colorScheme.errorContainer,
                 MaterialTheme.colorScheme.onErrorContainer,
-                Icons.Filled.Error
+                Icons.Filled.Error,
             )
         }
 
@@ -104,37 +103,37 @@ fun PlaybackRecommendationCard(
                 .padding(vertical = 4.dp),
             colors = CardDefaults.cardColors(containerColor = backgroundColor),
             shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.Top,
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = textColor,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
 
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
                         text = recommendation.message,
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
-                        color = textColor
+                        color = textColor,
                     )
 
                     if (recommendation.details.isNotEmpty()) {
                         Text(
                             text = recommendation.details,
                             style = MaterialTheme.typography.bodySmall,
-                            color = textColor.copy(alpha = 0.9f)
+                            color = textColor.copy(alpha = 0.9f),
                         )
                     }
                 }
@@ -142,13 +141,13 @@ fun PlaybackRecommendationCard(
                 IconButton(
                     onClick = {
                         isVisible = false
-                    }
+                    },
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Close,
                         contentDescription = "Dismiss",
                         tint = textColor.copy(alpha = 0.7f),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
@@ -163,12 +162,12 @@ fun PlaybackRecommendationCard(
 fun FloatingPlaybackRecommendations(
     recommendations: List<PlaybackRecommendation>,
     modifier: Modifier = Modifier,
-    onDismiss: (PlaybackRecommendation) -> Unit = {}
+    onDismiss: (PlaybackRecommendation) -> Unit = {},
 ) {
     AnimatedVisibility(
         visible = recommendations.isNotEmpty(),
         enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
+        exit = fadeOut() + shrinkVertically(),
     ) {
         Surface(
             modifier = modifier
@@ -176,12 +175,12 @@ fun FloatingPlaybackRecommendations(
                 .padding(16.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
             shape = RoundedCornerShape(16.dp),
-            shadowElevation = 8.dp
+            shadowElevation = 8.dp,
         ) {
             PlaybackRecommendationNotification(
                 recommendations = recommendations,
                 onDismiss = onDismiss,
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(8.dp),
             )
         }
     }
@@ -195,43 +194,43 @@ fun CompactPlaybackStatus(
     hasRecommendations: Boolean,
     recommendationCount: Int,
     onExpand: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = hasRecommendations,
-        modifier = modifier
+        modifier = modifier,
     ) {
         Card(
             modifier = Modifier.padding(8.dp),
             onClick = onExpand,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
             ),
-            shape = RoundedCornerShape(20.dp)
+            shape = RoundedCornerShape(20.dp),
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = Icons.Filled.Lightbulb,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
 
                 Text(
                     text = "$recommendationCount tip${if (recommendationCount != 1) "s" else ""}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
 
                 Icon(
                     imageVector = Icons.Filled.ExpandMore,
                     contentDescription = "Expand",
                     modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }
         }
@@ -244,7 +243,7 @@ fun CompactPlaybackStatus(
 @Composable
 fun InContextPlaybackRecommendation(
     recommendation: PlaybackRecommendation,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val (borderColor, backgroundColor) = when (recommendation.type) {
         RecommendationType.OPTIMAL -> Pair(Color(0xFF4CAF50), Color(0xFF4CAF50).copy(alpha = 0.1f))
@@ -257,11 +256,11 @@ fun InContextPlaybackRecommendation(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             val icon = when (recommendation.type) {
                 RecommendationType.OPTIMAL -> Icons.Filled.CheckCircle
@@ -274,24 +273,24 @@ fun InContextPlaybackRecommendation(
                 imageVector = icon,
                 contentDescription = null,
                 tint = borderColor,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
 
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
                     text = recommendation.message,
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
                 if (recommendation.details.isNotEmpty()) {
                     Text(
                         text = recommendation.details,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

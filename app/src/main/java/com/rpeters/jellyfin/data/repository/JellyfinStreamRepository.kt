@@ -83,17 +83,17 @@ class JellyfinStreamRepository @Inject constructor(
     private fun getEnhancedDirectPlayUrl(itemId: String, serverUrl: String, accessToken: String): String? {
         return try {
             val deviceCaps = deviceCapabilities.getDirectPlayCapabilities()
-            
+
             // Try multiple container strategies in order of preference
             val containerStrategies = listOf(
                 // Strategy 1: Original container with format detection
                 null to "Try original container format",
                 // Strategy 2: MP4 container (most compatible)
                 "mp4" to "MP4 container for maximum compatibility",
-                // Strategy 3: WebM container for modern devices  
+                // Strategy 3: WebM container for modern devices
                 "webm" to "WebM container for modern codec support",
                 // Strategy 4: MKV container for high-quality content
-                "mkv" to "MKV container for advanced codec support"
+                "mkv" to "MKV container for advanced codec support",
             )
 
             for ((container, description) in containerStrategies) {
@@ -102,10 +102,10 @@ class JellyfinStreamRepository @Inject constructor(
                 }
 
                 val directUrl = buildDirectPlayUrl(itemId, serverUrl, accessToken, container)
-                
+
                 // Test if this URL would work (we could implement HEAD request checking here)
                 Log.d("JellyfinStreamRepository", "Testing direct play strategy: $description")
-                
+
                 // For now, return the first compatible option
                 return directUrl
             }
@@ -123,12 +123,12 @@ class JellyfinStreamRepository @Inject constructor(
     private fun buildDirectPlayUrl(itemId: String, serverUrl: String, accessToken: String, container: String?): String {
         val baseUrl = "$serverUrl/Videos/$itemId/stream"
         val params = mutableListOf<String>()
-        
+
         params.add("static=true")
         params.add("api_key=$accessToken")
-        
+
         container?.let { params.add("Container=$it") }
-        
+
         return "$baseUrl?${params.joinToString("&")}"
     }
 
@@ -158,19 +158,22 @@ class JellyfinStreamRepository @Inject constructor(
         params.add("MaxHeight=${qualityParams.maxHeight}")
         params.add("MaxFramerate=${qualityParams.maxFramerate}")
         params.add("TranscodingMaxAudioChannels=${qualityParams.maxAudioChannels}")
-        
+
         // Advanced transcoding parameters
         params.add("BreakOnNonKeyFrames=true")
         params.add("AllowVideoStreamCopy=false") // Force re-encoding for compatibility
-        params.add("AllowAudioStreamCopy=true")   // Allow audio copy if compatible
+        params.add("AllowAudioStreamCopy=true") // Allow audio copy if compatible
         params.add("PlaySessionId=${UUID.randomUUID()}")
         params.add("api_key=$accessToken")
 
         val transcodingUrl = "$serverUrl/Videos/$itemId/stream?${params.joinToString("&")}"
-        
-        Log.d("JellyfinStreamRepository", "Intelligent transcoding: $videoCodec/$audioCodec in $container, " +
-            "max ${qualityParams.maxWidth}x${qualityParams.maxHeight} @ ${qualityParams.maxBitrate / 1_000_000}Mbps")
-        
+
+        Log.d(
+            "JellyfinStreamRepository",
+            "Intelligent transcoding: $videoCodec/$audioCodec in $container, " +
+                "max ${qualityParams.maxWidth}x${qualityParams.maxHeight} @ ${qualityParams.maxBitrate / 1_000_000}Mbps",
+        )
+
         return transcodingUrl
     }
 
@@ -423,14 +426,14 @@ class JellyfinStreamRepository @Inject constructor(
      */
     private fun selectOptimalVideoCodec(videoCodecSupport: Map<String, com.rpeters.jellyfin.data.CodecSupportDetail>): String {
         val preferredOrder = listOf("h265", "hevc", "h264", "vp9", "vp8", "mpeg4")
-        
+
         for (codec in preferredOrder) {
             val support = videoCodecSupport[codec]
             if (support != null && support.support != com.rpeters.jellyfin.data.CodecSupport.NOT_SUPPORTED) {
                 return codec
             }
         }
-        
+
         return "h264" // Ultimate fallback
     }
 
@@ -439,14 +442,14 @@ class JellyfinStreamRepository @Inject constructor(
      */
     private fun selectOptimalAudioCodec(audioCodecSupport: Map<String, com.rpeters.jellyfin.data.CodecSupportDetail>): String {
         val preferredOrder = listOf("opus", "aac", "ac3", "eac3", "mp3")
-        
+
         for (codec in preferredOrder) {
             val support = audioCodecSupport[codec]
             if (support != null && support.support != com.rpeters.jellyfin.data.CodecSupport.NOT_SUPPORTED) {
                 return codec
             }
         }
-        
+
         return "aac" // Ultimate fallback
     }
 
@@ -455,13 +458,13 @@ class JellyfinStreamRepository @Inject constructor(
      */
     private fun selectOptimalContainer(supportedContainers: List<String>): String {
         val preferredOrder = listOf("mp4", "webm", "mkv", "avi")
-        
+
         for (container in preferredOrder) {
             if (supportedContainers.contains(container)) {
                 return container
             }
         }
-        
+
         return "mp4" // Ultimate fallback
     }
 
@@ -469,11 +472,11 @@ class JellyfinStreamRepository @Inject constructor(
      * Get adaptive quality parameters based on network and device capabilities
      */
     private fun getAdaptiveQualityParams(
-        networkQuality: NetworkQuality, 
-        capabilities: com.rpeters.jellyfin.data.DirectPlayCapabilities
+        networkQuality: NetworkQuality,
+        capabilities: com.rpeters.jellyfin.data.DirectPlayCapabilities,
     ): AdaptiveQualityParams {
         val deviceMaxBitrate = capabilities.maxBitrate
-        
+
         return when (networkQuality) {
             NetworkQuality.HIGH -> {
                 AdaptiveQualityParams(
@@ -481,7 +484,7 @@ class JellyfinStreamRepository @Inject constructor(
                     maxWidth = if (capabilities.supports4K) 3840 else 1920,
                     maxHeight = if (capabilities.supports4K) 2160 else 1080,
                     maxFramerate = 60,
-                    maxAudioChannels = 6 // 5.1 surround
+                    maxAudioChannels = 6, // 5.1 surround
                 )
             }
             NetworkQuality.MEDIUM -> {
@@ -490,7 +493,7 @@ class JellyfinStreamRepository @Inject constructor(
                     maxWidth = 1920,
                     maxHeight = 1080,
                     maxFramerate = 30,
-                    maxAudioChannels = 2 // Stereo
+                    maxAudioChannels = 2, // Stereo
                 )
             }
             NetworkQuality.LOW -> {
@@ -499,7 +502,7 @@ class JellyfinStreamRepository @Inject constructor(
                     maxWidth = 1280,
                     maxHeight = 720,
                     maxFramerate = 30,
-                    maxAudioChannels = 2 // Stereo
+                    maxAudioChannels = 2, // Stereo
                 )
             }
         }
@@ -521,5 +524,5 @@ private data class AdaptiveQualityParams(
     val maxWidth: Int,
     val maxHeight: Int,
     val maxFramerate: Int,
-    val maxAudioChannels: Int
+    val maxAudioChannels: Int,
 )

@@ -1,9 +1,9 @@
 package com.rpeters.jellyfin.data.repository
 
 import com.rpeters.jellyfin.data.SecureCredentialManager
-import org.jellyfin.sdk.Jellyfin
 import io.mockk.*
 import kotlinx.coroutines.test.runTest
+import org.jellyfin.sdk.Jellyfin
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test

@@ -1,7 +1,7 @@
 package com.rpeters.jellyfin.data.repository
 
-import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.DeviceCapabilities
+import com.rpeters.jellyfin.data.JellyfinServer
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -23,6 +23,7 @@ class JellyfinStreamRepositoryTest {
 
     @MockK
     private lateinit var authRepository: JellyfinAuthRepository
+
     @MockK
     private lateinit var deviceCapabilities: DeviceCapabilities
 

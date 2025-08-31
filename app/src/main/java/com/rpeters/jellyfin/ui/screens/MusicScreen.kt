@@ -520,7 +520,7 @@ private fun ExpressiveMusicCard(
         rating = rating,
         isFavorite = isFavorite,
         onCardClick = onClick,
-        onPlayClick = { 
+        onPlayClick = {
             // Use enhanced playback system if available
             if (playbackUtils != null && coroutineScope != null) {
                 coroutineScope.launch {
@@ -532,7 +532,7 @@ private fun ExpressiveMusicCard(
                         onPlaybackError = { error ->
                             android.util.Log.e("MusicScreen", "Playback failed: $error")
                             // Could show user-friendly error message
-                        }
+                        },
                     )
                 }
             } else {
@@ -556,11 +556,11 @@ private fun ExpressiveMusicCard(
                 }
             }
         },
-        onFavoriteClick = { 
+        onFavoriteClick = {
             // TODO: Implement favorite toggle
             // This would typically call a ViewModel method to update favorite status
         },
-        onMoreClick = { 
+        onMoreClick = {
             // TODO: Show context menu with options like:
             // - Add to queue
             // - Download

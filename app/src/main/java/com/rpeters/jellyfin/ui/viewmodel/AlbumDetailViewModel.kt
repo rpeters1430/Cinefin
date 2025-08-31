@@ -58,4 +58,3 @@ class AlbumDetailViewModel @Inject constructor(
         }
     }
 }
-

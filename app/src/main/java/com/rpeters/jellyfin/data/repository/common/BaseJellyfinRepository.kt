@@ -5,8 +5,8 @@ import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
-import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.data.session.JellyfinSessionManager
+import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.ui.utils.RetryManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
