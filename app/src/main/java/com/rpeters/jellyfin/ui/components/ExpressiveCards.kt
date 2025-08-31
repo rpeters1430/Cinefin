@@ -47,7 +47,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import com.rpeters.jellyfin.ui.image.ImageQuality
+import com.rpeters.jellyfin.ui.image.ImageSize
+import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 
 /**
@@ -185,10 +187,12 @@ private fun MediaCardContent(
                 .fillMaxWidth()
                 .height(220.dp),
         ) {
-            AsyncImage(
-                model = imageUrl,
+            OptimizedImage(
+                imageUrl = imageUrl,
                 contentDescription = title,
                 contentScale = ContentScale.Crop,
+                size = ImageSize.POSTER,
+                quality = ImageQuality.MEDIUM,
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
@@ -337,10 +341,12 @@ fun ExpressiveCompactCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Image
-            AsyncImage(
-                model = imageUrl,
+            OptimizedImage(
+                imageUrl = imageUrl,
                 contentDescription = title,
                 contentScale = ContentScale.Crop,
+                size = ImageSize.THUMBNAIL,
+                quality = ImageQuality.MEDIUM,
                 modifier = Modifier
                     .size(60.dp)
                     .clip(RoundedCornerShape(8.dp)),

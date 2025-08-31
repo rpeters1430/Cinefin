@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -52,7 +53,7 @@ fun LibraryGridSection(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
 
-        // Use a vertical arrangement for compact cards
+        // Note: This sits inside a parent LazyColumn; avoid nested vertical scrollables.
         Column(
             modifier = Modifier.padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),

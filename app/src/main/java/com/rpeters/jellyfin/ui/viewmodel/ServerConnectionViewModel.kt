@@ -19,6 +19,8 @@ import com.rpeters.jellyfin.utils.ServerUrlValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -136,8 +138,11 @@ class ServerConnectionViewModel @Inject constructor(
                 currentUrl = serverUrl,
             )
 
-            // First test server connection with enhanced feedback
-            when (val serverResult = repository.testServerConnection(normalizedServerUrl)) {
+            // First test server connection with enhanced feedback (IO dispatcher)
+            val serverResult = withContext(Dispatchers.IO) {
+                repository.testServerConnection(normalizedServerUrl)
+            }
+            when (serverResult) {
                 is ApiResult.Success -> {
                     val serverInfo = serverResult.data
                     _connectionState.value = _connectionState.value.copy(
@@ -145,8 +150,11 @@ class ServerConnectionViewModel @Inject constructor(
                         connectionPhase = ConnectionPhase.Authenticating,
                     )
 
-                    // Now authenticate with enhanced feedback
-                    when (val authResult = repository.authenticateUser(normalizedServerUrl, username, password)) {
+                    // Now authenticate with enhanced feedback (IO dispatcher)
+                    val authResult = withContext(Dispatchers.IO) {
+                        repository.authenticateUser(normalizedServerUrl, username, password)
+                    }
+                    when (authResult) {
                         is ApiResult.Success -> {
                             // Save credentials only when the user opted in
                             if (_connectionState.value.rememberLogin) {

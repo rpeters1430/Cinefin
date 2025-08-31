@@ -42,6 +42,7 @@ object NetworkModule {
     fun provideOkHttpClient(
         @ApplicationContext context: Context,
         connectivityChecker: ConnectivityChecker,
+        authRepositoryProvider: Provider<JellyfinAuthRepository>,
     ): OkHttpClient {
         val cacheDir = java.io.File(context.cacheDir, "http_cache")
         val cache = okhttp3.Cache(cacheDir, 150L * 1024 * 1024) // 150 MB
@@ -60,6 +61,19 @@ object NetworkModule {
             .withStrictModeTagger()
             .cache(cache)
             .addInterceptor(authInterceptor)
+            // Inject Jellyfin token as header instead of query params
+            .addInterceptor { chain ->
+                val token = authRepositoryProvider.get().getCurrentServer()?.accessToken
+                val original = chain.request()
+                if (!token.isNullOrBlank()) {
+                    val updated = original.newBuilder()
+                        .header("X-Emby-Token", token)
+                        .build()
+                    chain.proceed(updated)
+                } else {
+                    chain.proceed(original)
+                }
+            }
             .addInterceptor(CachePolicyInterceptor(connectivityChecker))
 
         if (BuildConfig.DEBUG) {
@@ -108,15 +122,11 @@ object NetworkModule {
                     }
                     .build(),
             )
-            .crossfade(true)
+            // Disable crossfade animations to reduce jank during fast scroll
+            .crossfade(false)
             .respectCacheHeaders(true)
             .allowRgb565(true)
             .allowHardware(true)
-            .apply {
-                if (BuildConfig.DEBUG) {
-                    logger(DebugLogger())
-                }
-            }
             .build()
     }
 

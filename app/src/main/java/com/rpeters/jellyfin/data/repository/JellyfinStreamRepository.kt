@@ -62,7 +62,7 @@ class JellyfinStreamRepository @Inject constructor(
 
         return try {
             // Enhanced logic with better Direct Play detection
-            val directPlayUrl = getEnhancedDirectPlayUrl(itemId, server.url, server.accessToken)
+            val directPlayUrl = getEnhancedDirectPlayUrl(itemId, server.url)
             if (directPlayUrl != null) {
                 Log.d("JellyfinStreamRepository", "Using enhanced direct play for item $itemId")
                 return directPlayUrl
@@ -70,7 +70,7 @@ class JellyfinStreamRepository @Inject constructor(
 
             // Fall back to intelligent transcoding with device-optimized parameters
             Log.d("JellyfinStreamRepository", "Using intelligent transcoded stream for item $itemId")
-            getIntelligentTranscodedUrl(itemId, server.url, server.accessToken)
+            getIntelligentTranscodedUrl(itemId, server.url)
         } catch (e: Exception) {
             Log.e("JellyfinStreamRepository", "getStreamUrl: Failed to generate stream URL for item $itemId", e)
             null
@@ -80,7 +80,7 @@ class JellyfinStreamRepository @Inject constructor(
     /**
      * Enhanced direct play URL generation with better codec detection
      */
-    private fun getEnhancedDirectPlayUrl(itemId: String, serverUrl: String, accessToken: String): String? {
+    private fun getEnhancedDirectPlayUrl(itemId: String, serverUrl: String): String? {
         return try {
             val deviceCaps = deviceCapabilities.getDirectPlayCapabilities()
 
@@ -101,7 +101,7 @@ class JellyfinStreamRepository @Inject constructor(
                     continue
                 }
 
-                val directUrl = buildDirectPlayUrl(itemId, serverUrl, accessToken, container)
+                val directUrl = buildDirectPlayUrl(itemId, serverUrl, container)
 
                 // Test if this URL would work (we could implement HEAD request checking here)
                 Log.d("JellyfinStreamRepository", "Testing direct play strategy: $description")
@@ -120,12 +120,12 @@ class JellyfinStreamRepository @Inject constructor(
     /**
      * Build direct play URL with optional container override
      */
-    private fun buildDirectPlayUrl(itemId: String, serverUrl: String, accessToken: String, container: String?): String {
+    private fun buildDirectPlayUrl(itemId: String, serverUrl: String, container: String?): String {
         val baseUrl = "$serverUrl/Videos/$itemId/stream"
         val params = mutableListOf<String>()
 
         params.add("static=true")
-        params.add("api_key=$accessToken")
+        // Auth handled by OkHttp interceptor (X-Emby-Token)
 
         container?.let { params.add("Container=$it") }
 
@@ -135,7 +135,7 @@ class JellyfinStreamRepository @Inject constructor(
     /**
      * Get intelligent transcoded URL with adaptive quality and codec selection
      */
-    private fun getIntelligentTranscodedUrl(itemId: String, serverUrl: String, accessToken: String): String {
+    private fun getIntelligentTranscodedUrl(itemId: String, serverUrl: String): String {
         val capabilities = deviceCapabilities.getDirectPlayCapabilities()
         val networkQuality = assessNetworkQuality()
         val codecSupport = deviceCapabilities.getEnhancedCodecSupport()
@@ -164,7 +164,6 @@ class JellyfinStreamRepository @Inject constructor(
         params.add("AllowVideoStreamCopy=false") // Force re-encoding for compatibility
         params.add("AllowAudioStreamCopy=true") // Allow audio copy if compatible
         params.add("PlaySessionId=${UUID.randomUUID()}")
-        params.add("api_key=$accessToken")
 
         val transcodingUrl = "$serverUrl/Videos/$itemId/stream?${params.joinToString("&")}"
 
@@ -221,7 +220,7 @@ class JellyfinStreamRepository @Inject constructor(
             params.add("Container=$container")
             params.add("TranscodingMaxAudioChannels=$DEFAULT_MAX_AUDIO_CHANNELS")
             params.add("BreakOnNonKeyFrames=true")
-            params.add("api_key=${server.accessToken}")
+            // Auth via header (OkHttp interceptor)
 
             "${server.url}/Videos/$itemId/master.m3u8?${params.joinToString("&")}"
         } catch (e: Exception) {
@@ -239,8 +238,7 @@ class JellyfinStreamRepository @Inject constructor(
             "VideoCodec=$DEFAULT_VIDEO_CODEC&" +
             "AudioCodec=$DEFAULT_AUDIO_CODEC&" +
             "MaxStreamingBitrate=$DEFAULT_MAX_BITRATE&" +
-            "PlaySessionId=${UUID.randomUUID()}&" +
-            "api_key=${server.accessToken}"
+            "PlaySessionId=${UUID.randomUUID()}"
     }
 
     /**
@@ -252,8 +250,7 @@ class JellyfinStreamRepository @Inject constructor(
             "VideoCodec=$DEFAULT_VIDEO_CODEC&" +
             "AudioCodec=$DEFAULT_AUDIO_CODEC&" +
             "MaxStreamingBitrate=$DEFAULT_MAX_BITRATE&" +
-            "PlaySessionId=${UUID.randomUUID()}&" +
-            "api_key=${server.accessToken}"
+            "PlaySessionId=${UUID.randomUUID()}"
     }
 
     /**
@@ -261,7 +258,7 @@ class JellyfinStreamRepository @Inject constructor(
      */
     fun getDownloadUrl(itemId: String): String? {
         val server = authRepository.getCurrentServer() ?: return null
-        return "${server.url}/Items/$itemId/Download?api_key=${server.accessToken}"
+        return "${server.url}/Items/$itemId/Download"
     }
 
     /**
@@ -270,7 +267,7 @@ class JellyfinStreamRepository @Inject constructor(
     fun getDirectStreamUrl(itemId: String, container: String? = null): String? {
         val server = authRepository.getCurrentServer() ?: return null
         val containerParam = container?.let { "&Container=$it" } ?: ""
-        return "${server.url}/Videos/$itemId/stream?static=true&api_key=${server.accessToken}$containerParam"
+        return "${server.url}/Videos/$itemId/stream?static=true$containerParam"
     }
 
     /**
@@ -283,14 +280,14 @@ class JellyfinStreamRepository @Inject constructor(
 
             // Try MP4 container first (most compatible)
             if (deviceCapabilities.canPlayContainer("mp4")) {
-                val mp4Url = "$serverUrl/Videos/$itemId/stream?static=true&Container=mp4&api_key=$accessToken"
+                val mp4Url = "$serverUrl/Videos/$itemId/stream?static=true&Container=mp4"
                 Log.d("JellyfinStreamRepository", "Trying direct play with MP4 container")
                 return mp4Url
             }
 
             // Try original container (MKV is supported on newer Android versions)
             if (deviceCapabilities.canPlayContainer("mkv")) {
-                val directUrl = "$serverUrl/Videos/$itemId/stream?static=true&api_key=$accessToken"
+                val directUrl = "$serverUrl/Videos/$itemId/stream?static=true"
                 Log.d("JellyfinStreamRepository", "Trying direct play with original container")
                 return directUrl
             }
@@ -340,7 +337,7 @@ class JellyfinStreamRepository @Inject constructor(
         params.add("MaxHeight=${maxRes.second}")
         params.add("TranscodingMaxAudioChannels=2")
         params.add("BreakOnNonKeyFrames=true")
-        params.add("api_key=$accessToken")
+        // Auth via header
 
         Log.d("JellyfinStreamRepository", "Transcoding with: $videoCodec/$audioCodec in $container, max ${maxRes.first}x${maxRes.second}")
 
@@ -359,7 +356,7 @@ class JellyfinStreamRepository @Inject constructor(
             }
 
             val tagParam = tag?.let { "&tag=$it" } ?: ""
-            "${server.url}/Items/$itemId/Images/$imageType?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH$tagParam&api_key=${server.accessToken}"
+            "${server.url}/Items/$itemId/Images/$imageType?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH$tagParam"
         } catch (e: Exception) {
             Log.w("JellyfinStreamRepository", "getImageUrl: Failed to generate image URL for $itemId", e)
             null
@@ -383,7 +380,7 @@ class JellyfinStreamRepository @Inject constructor(
             } else {
                 item.id.toString()
             }
-            "${server.url}/Items/$imageId/Images/Primary?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH&api_key=${server.accessToken}"
+            "${server.url}/Items/$imageId/Images/Primary?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH"
         } catch (e: Exception) {
             Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Failed to generate series image URL for ${item.id}", e)
             null
@@ -403,7 +400,7 @@ class JellyfinStreamRepository @Inject constructor(
 
             val backdropTag = item.backdropImageTags?.firstOrNull()
             if (backdropTag != null) {
-                "${server.url}/Items/${item.id}/Images/Backdrop?tag=$backdropTag&maxHeight=$BACKDROP_MAX_HEIGHT&maxWidth=$BACKDROP_MAX_WIDTH&api_key=${server.accessToken}"
+                "${server.url}/Items/${item.id}/Images/Backdrop?tag=$backdropTag&maxHeight=$BACKDROP_MAX_HEIGHT&maxWidth=$BACKDROP_MAX_WIDTH"
             } else {
                 getImageUrl(item.id.toString(), "Primary", item.imageTags?.get(ImageType.PRIMARY))
             }

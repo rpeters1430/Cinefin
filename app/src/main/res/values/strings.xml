@@ -59,6 +59,18 @@
     <string name="sign_out">Sign Out</string>
     <string name="sign_in">Sign In</string>
     <string name="settings">Settings</string>
+
+    <!-- Login / Server Connection -->
+    <string name="server_url_label">Server URL</string>
+    <string name="server_url_placeholder">https://jellyfin.example.com</string>
+    <string name="username_label">Username</string>
+    <string name="password_label">Password</string>
+    <string name="connect">Connect</string>
+    <string name="connecting">Connecting…</string>
+    <string name="remember_login">Remember login</string>
+    <string name="hide_password">Hide password</string>
+    <string name="show_password">Show password</string>
+    <string name="invalid_server_url">Invalid server URL</string>
     
     <!-- Placeholders -->
     <string name="title_placeholder">Title</string>

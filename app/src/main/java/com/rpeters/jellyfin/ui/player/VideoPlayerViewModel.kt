@@ -126,6 +126,11 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
+    // Lightweight fetch for technical info without initializing playback UI
+    suspend fun fetchPlaybackInfo(itemId: String) = withContext(Dispatchers.IO) {
+        repository.getPlaybackInfo(itemId)
+    }
+
     fun initializePlayer(itemId: String, itemName: String, startPosition: Long) {
         Log.d("VideoPlayer", "Initializing player for: $itemName")
 
@@ -159,7 +164,7 @@ class VideoPlayerViewModel @Inject constructor(
                     mediaSource.supportsDirectPlay == true -> {
                         val container = mediaSource.container
                         Log.d("VideoPlayer", "Using direct play with container: $container")
-                        "${repository.getCurrentServer()?.url}/Videos/$itemId/stream.$container?static=true&mediaSourceId=${mediaSource.id}&api_key=${repository.getCurrentServer()?.accessToken}"
+                        "${repository.getCurrentServer()?.url}/Videos/$itemId/stream.$container?static=true&mediaSourceId=${mediaSource.id}"
                     }
                     // Direct stream - server remuxes without transcoding
                     mediaSource.supportsDirectStream == true -> {
@@ -186,7 +191,19 @@ class VideoPlayerViewModel @Inject constructor(
                     val renderersFactory = DefaultRenderersFactory(context)
                         .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
 
+                    // Ensure HTTP requests carry the token header
+                    val token = repository.getCurrentServer()?.accessToken
+                    val httpFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
+                        .apply {
+                            if (!token.isNullOrBlank()) {
+                                setDefaultRequestProperties(mapOf("X-Emby-Token" to token))
+                            }
+                        }
+                    val dataSourceFactory = androidx.media3.datasource.DefaultDataSource.Factory(context, httpFactory)
+                    val mediaSourceFactory = androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
+
                     exoPlayer = ExoPlayer.Builder(context)
+                        .setMediaSourceFactory(mediaSourceFactory)
                         .setRenderersFactory(renderersFactory)
                         .build()
 

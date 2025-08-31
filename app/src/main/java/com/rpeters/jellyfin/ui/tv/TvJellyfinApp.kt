@@ -37,36 +37,11 @@ fun TvJellyfinApp(
     useDynamicColor: Boolean = true,
 ) {
     JellyfinAndroidTheme(dynamicColor = useDynamicColor) {
-        val navController = rememberNavController()
-        val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
-        // Simplified approach for now
-        val startDestination = "server_connection"
-
         Scaffold(
             modifier = Modifier.fillMaxSize(),
         ) { innerPadding ->
-            // For TV, we'll simplify the navigation and use a more direct approach
-            if (false) { // Disable for now
-                TvHomeScreen(
-                    onItemSelect = { itemId ->
-                        // Handle item selection
-                    },
-                    onLibrarySelect = { libraryId ->
-                        // Handle library selection
-                    },
-                    modifier = Modifier.padding(innerPadding),
-                )
-            } else {
-                TvServerConnectionScreen(
-                    onConnect = { serverUrl, username, password ->
-                        connectionViewModel.connectToServer(serverUrl, username, password)
-                    },
-                    isConnecting = false,
-                    errorMessage = null,
-                    savedServerUrl = "",
-                    savedUsername = "",
-                )
-            }
+            // TV-specific navigation host (Phase 1 Step 1.1)
+            TvNavGraph()
         }
     }
 }

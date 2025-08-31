@@ -90,6 +90,14 @@ fun TvContentCarousel(
                 }
             }
         }
+
+        // Request initial focus on first carousel when screen loads
+        LaunchedEffect(Unit) {
+            if (items.isNotEmpty()) {
+                focusRequester.requestFocus()
+                focusedItem = items.first()
+            }
+        }
     }
 }
 

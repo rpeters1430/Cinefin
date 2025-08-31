@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,8 +49,12 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.ui.components.MediaCard
+import com.rpeters.jellyfin.ui.image.ImageSize
+import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.components.WatchProgressBar
-import com.rpeters.jellyfin.ui.screens.home.EnhancedContentCarousel
+import com.rpeters.jellyfin.ui.components.CarouselItem
+import com.rpeters.jellyfin.ui.components.ExpressiveHeroCarousel
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
 import com.rpeters.jellyfin.ui.screens.home.LibraryGridSection
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.utils.PerformanceTracker
@@ -114,6 +119,25 @@ fun HomeScreen(
         }
     }
 }
+
+private fun itemSubtitle(item: BaseItemDto): String = when (item.type?.toString()) {
+    "Episode" -> item.seriesName ?: ""
+    "Series" -> item.productionYear?.toString() ?: ""
+    "Audio" -> item.artists?.firstOrNull() ?: ""
+    "Movie" -> item.productionYear?.toString() ?: ""
+    else -> ""
+}
+
+private fun BaseItemDto.toCarouselItem(
+    titleOverride: String,
+    subtitleOverride: String,
+    imageUrl: String,
+): CarouselItem = CarouselItem(
+    id = this.id?.toString() ?: (this.name ?: "") + hashCode(),
+    title = titleOverride,
+    subtitle = subtitleOverride,
+    imageUrl = imageUrl,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -209,19 +233,40 @@ fun HomeContent(
             }
         }
     }
+    // Precompute derived data to minimize recompositions during scroll
+    val continueWatchingItems by remember(appState.allItems) { mutableStateOf(getContinueWatchingItems(appState)) }
+    val recentMovies by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes["MOVIE"]?.take(8) ?: emptyList()) }
+    val recentTVShows by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes["SERIES"]?.take(8) ?: emptyList()) }
+    val featuredItems by remember(recentMovies, recentTVShows) { mutableStateOf((recentMovies + recentTVShows).take(10)) }
+    val orderedLibraries by remember(appState.libraries) {
+        mutableStateOf(
+            appState.libraries.sortedBy { library ->
+                when (library.collectionType?.toString()?.lowercase(Locale.getDefault())) {
+                    "movies" -> 0
+                    "tvshows" -> 1
+                    "music" -> 2
+                    else -> 3
+                }
+            },
+        )
+    }
+    val recentEpisodes by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes["EPISODE"]?.take(15) ?: emptyList()) }
+    val recentMusic by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes["AUDIO"]?.take(15) ?: emptyList()) }
+
     Box(
         modifier = modifier,
     ) {
+        val listState = rememberLazyListState()
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            item { HomeHeader(currentServer) }
+            item(key = "home_header", contentType = "header") { HomeHeader(currentServer) }
 
             // Continue Watching Section
-            val continueWatchingItems = getContinueWatchingItems(appState)
             if (continueWatchingItems.isNotEmpty()) {
-                item {
+                item(key = "continue_watching", contentType = "continueWatching") {
                     ContinueWatchingSection(
                         items = continueWatchingItems,
                         getImageUrl = getImageUrl,
@@ -230,32 +275,40 @@ fun HomeContent(
                 }
             }
 
-            val recentMovies = appState.recentlyAddedByTypes["MOVIE"]?.take(8) ?: emptyList()
-            val recentTVShows = appState.recentlyAddedByTypes["SERIES"]?.take(8) ?: emptyList()
-            val featuredItems = (recentMovies + recentTVShows).take(10)
-
             if (featuredItems.isNotEmpty()) {
-                item {
-                    EnhancedContentCarousel(
-                        items = featuredItems,
-                        getImageUrl = getImageUrl,
-                        getBackdropUrl = getBackdropUrl,
-                        getSeriesImageUrl = getSeriesImageUrl,
-                        onItemClick = onItemClick,
-                        title = "Featured",
+                item(key = "featured", contentType = "carousel") {
+                    val featured = remember(featuredItems) {
+                        featuredItems.map { it.toCarouselItem(
+                            titleOverride = it.name ?: "Unknown",
+                            subtitleOverride = itemSubtitle(it),
+                            imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it) ?: getImageUrl(it) ?: "",
+                        ) }
+                    }
+                    ExpressiveHeroCarousel(
+                        items = featured,
+                        onItemClick = { selected ->
+                            featuredItems.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
+                        },
+                        onPlayClick = { selected ->
+                            featuredItems.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
+                        },
                     )
                 }
             }
 
             if (appState.libraries.isNotEmpty()) {
-                item {
-                    val orderedLibraries = appState.libraries.sortedBy { library ->
-                        when (library.collectionType?.toString()?.lowercase(Locale.getDefault())) {
-                            "movies" -> 0
-                            "tvshows" -> 1
-                            "music" -> 2
-                            else -> 3
-                        }
+                item(key = "libraries", contentType = "libraries") {
+                    val orderedLibraries by remember(appState.libraries) {
+                        mutableStateOf(
+                            appState.libraries.sortedBy { library ->
+                                when (library.collectionType?.toString()?.lowercase(Locale.getDefault())) {
+                                    "movies" -> 0
+                                    "tvshows" -> 1
+                                    "music" -> 2
+                                    else -> 3
+                                }
+                            },
+                        )
                     }
                     LibraryGridSection(
                         libraries = orderedLibraries,
@@ -267,56 +320,78 @@ fun HomeContent(
             }
 
             if (recentMovies.isNotEmpty()) {
-                item {
-                    EnhancedContentCarousel(
-                        items = recentMovies.take(15),
-                        getImageUrl = getImageUrl,
-                        getBackdropUrl = getBackdropUrl,
-                        getSeriesImageUrl = getSeriesImageUrl,
-                        onItemClick = onItemClick,
+                item(key = "recent_movies", contentType = "carousel") {
+                    val items = remember(recentMovies) {
+                        recentMovies.take(15).map { it.toCarouselItem(
+                            titleOverride = it.name ?: "Unknown",
+                            subtitleOverride = itemSubtitle(it),
+                            imageUrl = getImageUrl(it) ?: "",
+                        ) }
+                    }
+                    ExpressiveMediaCarousel(
                         title = "Recently Added Movies",
+                        items = items,
+                        onItemClick = { selected ->
+                            recentMovies.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
+                        },
                     )
                 }
             }
 
-            val recentEpisodes = appState.recentlyAddedByTypes["EPISODE"]?.take(15) ?: emptyList()
             if (recentEpisodes.isNotEmpty()) {
-                item {
-                    EnhancedContentCarousel(
-                        items = recentEpisodes,
-                        getImageUrl = getImageUrl,
-                        getBackdropUrl = getBackdropUrl,
-                        getSeriesImageUrl = getSeriesImageUrl,
-                        onItemClick = onItemClick,
+                item(key = "recent_episodes", contentType = "carousel") {
+                    val items = remember(recentEpisodes) {
+                        recentEpisodes.map { it.toCarouselItem(
+                            titleOverride = it.name ?: "Unknown",
+                            subtitleOverride = itemSubtitle(it),
+                            imageUrl = getSeriesImageUrl(it) ?: getImageUrl(it) ?: "",
+                        ) }
+                    }
+                    ExpressiveMediaCarousel(
                         title = "Recently Added TV Episodes",
+                        items = items,
+                        onItemClick = { selected ->
+                            recentEpisodes.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
+                        },
                     )
                 }
             }
 
-            val recentMusic = appState.recentlyAddedByTypes["AUDIO"]?.take(15) ?: emptyList()
             if (recentMusic.isNotEmpty()) {
-                item {
-                    EnhancedContentCarousel(
-                        items = recentMusic,
-                        getImageUrl = getImageUrl,
-                        getBackdropUrl = getBackdropUrl,
-                        getSeriesImageUrl = getSeriesImageUrl,
-                        onItemClick = onItemClick,
+                item(key = "recent_music", contentType = "carousel") {
+                    val items = remember(recentMusic) {
+                        recentMusic.map { it.toCarouselItem(
+                            titleOverride = it.name ?: "Unknown",
+                            subtitleOverride = itemSubtitle(it),
+                            imageUrl = getImageUrl(it) ?: "",
+                        ) }
+                    }
+                    ExpressiveMediaCarousel(
                         title = "Recently Added Music",
+                        items = items,
+                        onItemClick = { selected ->
+                            recentMusic.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
+                        },
                     )
                 }
             }
 
             val recentVideos = appState.recentlyAddedByTypes["VIDEO"]?.take(15) ?: emptyList()
             if (recentVideos.isNotEmpty()) {
-                item {
-                    EnhancedContentCarousel(
-                        items = recentVideos,
-                        getImageUrl = getImageUrl,
-                        getBackdropUrl = getBackdropUrl,
-                        getSeriesImageUrl = getSeriesImageUrl,
-                        onItemClick = onItemClick,
+                item(key = "recent_home_videos", contentType = "carousel") {
+                    val items = remember(recentVideos) {
+                        recentVideos.map { it.toCarouselItem(
+                            titleOverride = it.name ?: "Unknown",
+                            subtitleOverride = itemSubtitle(it),
+                            imageUrl = getBackdropUrl(it) ?: getImageUrl(it) ?: "",
+                        ) }
+                    }
+                    ExpressiveMediaCarousel(
                         title = "Recently Added Home Videos",
+                        items = items,
+                        onItemClick = { selected ->
+                            recentVideos.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
+                        },
                     )
                 }
             }
@@ -526,7 +601,9 @@ private fun ContinueWatchingSection(
         }
 
         // Horizontal scrolling list of continue watching items
+        val rowState = rememberLazyListState()
         LazyRow(
+            state = rowState,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(horizontal = 4.dp),
         ) {
@@ -560,39 +637,11 @@ private fun ContinueWatchingCard(
     ) {
         Column {
             Box {
-                coil.compose.SubcomposeAsyncImage(
-                    model = getImageUrl(item),
+                OptimizedImage(
+                    imageUrl = getImageUrl(item),
                     contentDescription = item.name,
-                    loading = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(240.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    },
-                    error = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(240.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = when (item.type) {
-                                    BaseItemKind.MOVIE -> Icons.Default.Movie
-                                    BaseItemKind.EPISODE -> Icons.Default.Tv
-                                    else -> Icons.Default.PlayArrow
-                                },
-                                contentDescription = "No image",
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    },
                     contentScale = ContentScale.Crop,
+                    size = ImageSize.POSTER,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(240.dp),

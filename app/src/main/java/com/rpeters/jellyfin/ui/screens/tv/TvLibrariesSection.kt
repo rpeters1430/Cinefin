@@ -55,6 +55,13 @@ fun TvLibrariesSection(
             )
         }
     }
+
+    // Request initial focus on libraries row
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        if (libraries.isNotEmpty()) {
+            focusRequester.requestFocus()
+        }
+    }
 }
 
 @Composable
