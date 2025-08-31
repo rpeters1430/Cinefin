@@ -4,7 +4,6 @@ import android.content.Context
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
-import coil.util.DebugLogger
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.cache.JellyfinCache

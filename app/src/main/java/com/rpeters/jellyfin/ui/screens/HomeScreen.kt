@@ -14,18 +14,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,13 +45,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.JellyfinServer
-import com.rpeters.jellyfin.ui.components.MediaCard
-import com.rpeters.jellyfin.ui.image.ImageSize
-import com.rpeters.jellyfin.ui.image.OptimizedImage
-import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveHeroCarousel
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
+import com.rpeters.jellyfin.ui.components.MediaCard
+import com.rpeters.jellyfin.ui.components.WatchProgressBar
+import com.rpeters.jellyfin.ui.image.ImageSize
+import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.screens.home.LibraryGridSection
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.utils.PerformanceTracker
@@ -278,11 +275,13 @@ fun HomeContent(
             if (featuredItems.isNotEmpty()) {
                 item(key = "featured", contentType = "carousel") {
                     val featured = remember(featuredItems) {
-                        featuredItems.map { it.toCarouselItem(
-                            titleOverride = it.name ?: "Unknown",
-                            subtitleOverride = itemSubtitle(it),
-                            imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it) ?: getImageUrl(it) ?: "",
-                        ) }
+                        featuredItems.map {
+                            it.toCarouselItem(
+                                titleOverride = it.name ?: "Unknown",
+                                subtitleOverride = itemSubtitle(it),
+                                imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it) ?: getImageUrl(it) ?: "",
+                            )
+                        }
                     }
                     ExpressiveHeroCarousel(
                         items = featured,
@@ -322,11 +321,13 @@ fun HomeContent(
             if (recentMovies.isNotEmpty()) {
                 item(key = "recent_movies", contentType = "carousel") {
                     val items = remember(recentMovies) {
-                        recentMovies.take(15).map { it.toCarouselItem(
-                            titleOverride = it.name ?: "Unknown",
-                            subtitleOverride = itemSubtitle(it),
-                            imageUrl = getImageUrl(it) ?: "",
-                        ) }
+                        recentMovies.take(15).map {
+                            it.toCarouselItem(
+                                titleOverride = it.name ?: "Unknown",
+                                subtitleOverride = itemSubtitle(it),
+                                imageUrl = getImageUrl(it) ?: "",
+                            )
+                        }
                     }
                     ExpressiveMediaCarousel(
                         title = "Recently Added Movies",
@@ -341,11 +342,13 @@ fun HomeContent(
             if (recentEpisodes.isNotEmpty()) {
                 item(key = "recent_episodes", contentType = "carousel") {
                     val items = remember(recentEpisodes) {
-                        recentEpisodes.map { it.toCarouselItem(
-                            titleOverride = it.name ?: "Unknown",
-                            subtitleOverride = itemSubtitle(it),
-                            imageUrl = getSeriesImageUrl(it) ?: getImageUrl(it) ?: "",
-                        ) }
+                        recentEpisodes.map {
+                            it.toCarouselItem(
+                                titleOverride = it.name ?: "Unknown",
+                                subtitleOverride = itemSubtitle(it),
+                                imageUrl = getSeriesImageUrl(it) ?: getImageUrl(it) ?: "",
+                            )
+                        }
                     }
                     ExpressiveMediaCarousel(
                         title = "Recently Added TV Episodes",
@@ -360,11 +363,13 @@ fun HomeContent(
             if (recentMusic.isNotEmpty()) {
                 item(key = "recent_music", contentType = "carousel") {
                     val items = remember(recentMusic) {
-                        recentMusic.map { it.toCarouselItem(
-                            titleOverride = it.name ?: "Unknown",
-                            subtitleOverride = itemSubtitle(it),
-                            imageUrl = getImageUrl(it) ?: "",
-                        ) }
+                        recentMusic.map {
+                            it.toCarouselItem(
+                                titleOverride = it.name ?: "Unknown",
+                                subtitleOverride = itemSubtitle(it),
+                                imageUrl = getImageUrl(it) ?: "",
+                            )
+                        }
                     }
                     ExpressiveMediaCarousel(
                         title = "Recently Added Music",
@@ -380,11 +385,13 @@ fun HomeContent(
             if (recentVideos.isNotEmpty()) {
                 item(key = "recent_home_videos", contentType = "carousel") {
                     val items = remember(recentVideos) {
-                        recentVideos.map { it.toCarouselItem(
-                            titleOverride = it.name ?: "Unknown",
-                            subtitleOverride = itemSubtitle(it),
-                            imageUrl = getBackdropUrl(it) ?: getImageUrl(it) ?: "",
-                        ) }
+                        recentVideos.map {
+                            it.toCarouselItem(
+                                titleOverride = it.name ?: "Unknown",
+                                subtitleOverride = itemSubtitle(it),
+                                imageUrl = getBackdropUrl(it) ?: getImageUrl(it) ?: "",
+                            )
+                        }
                     }
                     ExpressiveMediaCarousel(
                         title = "Recently Added Home Videos",

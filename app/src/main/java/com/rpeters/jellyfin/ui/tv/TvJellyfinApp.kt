@@ -17,11 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.compose.rememberNavController
-import com.rpeters.jellyfin.ui.screens.tv.TvHomeScreen
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
-import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
