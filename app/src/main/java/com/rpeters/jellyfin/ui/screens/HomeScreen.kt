@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -45,6 +46,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.painter.ColorPainter
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import coil.compose.AsyncImage
+import coil.imageLoader
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import coil.size.Scale
+import kotlinx.coroutines.flow.collect
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.ui.components.MediaCard
@@ -525,8 +535,35 @@ private fun ContinueWatchingSection(
             )
         }
 
+        val listState = rememberLazyListState()
+        val context = LocalContext.current
+        val imageLoader = context.imageLoader
+        val density = LocalDensity.current
+        val imageWidth = with(density) { 160.dp.roundToPx() }
+        val imageHeight = with(density) { 240.dp.roundToPx() }
+
+        LaunchedEffect(listState, items) {
+            snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+                .collect { lastVisible ->
+                    val start = (lastVisible ?: -1) + 1
+                    val end = start + 3
+                    for (index in start until end) {
+                        items.getOrNull(index)?.let { prefetchItem ->
+                            val request = ImageRequest.Builder(context)
+                                .data(getImageUrl(prefetchItem))
+                                .size(imageWidth, imageHeight)
+                                .scale(Scale.FILL)
+                                .memoryCachePolicy(CachePolicy.ENABLED)
+                                .build()
+                            imageLoader.enqueue(request)
+                        }
+                    }
+                }
+        }
+
         // Horizontal scrolling list of continue watching items
         LazyRow(
+            state = listState,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(horizontal = 4.dp),
         ) {
@@ -560,38 +597,19 @@ private fun ContinueWatchingCard(
     ) {
         Column {
             Box {
-                coil.compose.SubcomposeAsyncImage(
-                    model = getImageUrl(item),
+                val context = LocalContext.current
+                val density = LocalDensity.current
+                val request = ImageRequest.Builder(context)
+                    .data(getImageUrl(item))
+                    .size(with(density) { 160.dp.roundToPx() }, with(density) { 240.dp.roundToPx() })
+                    .scale(Scale.FILL)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .build()
+                AsyncImage(
+                    model = request,
                     contentDescription = item.name,
-                    loading = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(240.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    },
-                    error = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(240.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = when (item.type) {
-                                    BaseItemKind.MOVIE -> Icons.Default.Movie
-                                    BaseItemKind.EPISODE -> Icons.Default.Tv
-                                    else -> Icons.Default.PlayArrow
-                                },
-                                contentDescription = "No image",
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    },
+                    placeholder = ColorPainter(MaterialTheme.colorScheme.surfaceVariant),
+                    error = ColorPainter(MaterialTheme.colorScheme.surfaceVariant),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
