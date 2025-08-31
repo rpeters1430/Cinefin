@@ -13,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.theme.Quality4K
@@ -69,7 +68,7 @@ fun PlaybackStatusIndicator(
     analysis?.let { analysisData ->
         PlaybackStatusBadge(
             analysis = analysisData,
-            modifier = modifier
+            modifier = modifier,
         )
     }
 }
@@ -86,17 +85,17 @@ fun PlaybackStatusBadge(
         PlaybackMethod.DIRECT_PLAY -> Triple(
             "Direct Play",
             Color(0xFF4CAF50), // Green
-            Icons.Filled.PlayCircle
+            Icons.Filled.PlayCircle,
         )
         PlaybackMethod.TRANSCODING -> Triple(
             "Transcode",
             Color(0xFFFF9800), // Orange
-            Icons.Filled.Transform
+            Icons.Filled.Transform,
         )
         PlaybackMethod.UNAVAILABLE -> Triple(
             "Unavailable",
             Color(0xFFF44336), // Red
-            Icons.Filled.Error
+            Icons.Filled.Error,
         )
     }
 
@@ -108,7 +107,7 @@ fun PlaybackStatusBadge(
         Row(
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Icon(
                 imageVector = statusIcon,
@@ -136,29 +135,29 @@ fun PlaybackCapabilityDetails(
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = "Playback Capabilities",
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 PlaybackStatusBadge(analysis = analysis)
-                
+
                 Text(
                     text = analysis.expectedQuality,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
 
@@ -166,37 +165,37 @@ fun PlaybackCapabilityDetails(
                 Text(
                     text = analysis.details,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
                     Text(
                         text = "Codecs",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = analysis.codecs,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                
+
                 Column {
                     Text(
                         text = "Container",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = analysis.container,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
@@ -206,7 +205,7 @@ fun PlaybackCapabilityDetails(
                 Text(
                     text = "Estimated Bandwidth: ${"%.1f".format(bandwidthMbps)} Mbps",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -223,12 +222,12 @@ fun NetworkQualityIndicator(
 ) {
     val animatedQuality by animateFloatAsState(
         targetValue = qualityLevel,
-        label = "network_quality"
+        label = "network_quality",
     )
 
     val (qualityText, qualityColor) = when {
         animatedQuality >= 0.8f -> "Excellent" to Color(0xFF4CAF50)
-        animatedQuality >= 0.6f -> "Good" to Color(0xFF8BC34A) 
+        animatedQuality >= 0.6f -> "Good" to Color(0xFF8BC34A)
         animatedQuality >= 0.4f -> "Fair" to Color(0xFFFF9800)
         animatedQuality >= 0.2f -> "Poor" to Color(0xFFFF5722)
         else -> "Very Poor" to Color(0xFFF44336)
@@ -242,13 +241,13 @@ fun NetworkQualityIndicator(
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Box(
                 modifier = Modifier
                     .size(8.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onPrimary)
+                    .background(MaterialTheme.colorScheme.onPrimary),
             )
             Text(
                 text = qualityText,

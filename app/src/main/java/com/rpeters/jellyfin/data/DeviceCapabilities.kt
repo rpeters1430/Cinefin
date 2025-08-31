@@ -117,7 +117,7 @@ class DeviceCapabilities @Inject constructor() {
             videoCodecs = getVideoCodecSupport(),
             audioCodecs = getAudioCodecSupport(),
             containerFormats = getContainerSupport(),
-            performanceProfile = getDevicePerformanceProfile()
+            performanceProfile = getDevicePerformanceProfile(),
         )
     }
 
@@ -130,7 +130,7 @@ class DeviceCapabilities @Inject constructor() {
         audioCodec: String?,
         width: Int = 0,
         height: Int = 0,
-        bitrate: Int = 0
+        bitrate: Int = 0,
     ): DirectPlayAnalysis {
         var score = 100
         val issues = mutableListOf<String>()
@@ -383,8 +383,8 @@ class DeviceCapabilities @Inject constructor() {
         val performanceProfile = getDevicePerformanceProfile()
         return when (performanceProfile) {
             DevicePerformanceProfile.HIGH_END -> 100_000_000 // 100 Mbps
-            DevicePerformanceProfile.MID_RANGE -> 50_000_000  // 50 Mbps
-            DevicePerformanceProfile.LOW_END -> 25_000_000    // 25 Mbps
+            DevicePerformanceProfile.MID_RANGE -> 50_000_000 // 50 Mbps
+            DevicePerformanceProfile.LOW_END -> 25_000_000 // 25 Mbps
         }
     }
 
@@ -396,7 +396,7 @@ class DeviceCapabilities @Inject constructor() {
         return NetworkCapabilityInfo(
             supportsHighBitrate = true,
             estimatedBandwidth = -1, // Unknown
-            connectionType = "unknown"
+            connectionType = "unknown",
         )
     }
 
@@ -407,11 +407,11 @@ class DeviceCapabilities @Inject constructor() {
         return try {
             val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
             val hardwareCodecs = mutableSetOf<String>()
-            
+
             for (codecInfo in codecList.codecInfos) {
                 if (codecInfo.isEncoder) continue
                 // Skip software-only decoders for hardware acceleration detection
-                
+
                 for (type in codecInfo.supportedTypes) {
                     val codec = mimeTypeToCodec(type, type.startsWith("video/"))
                     if (codec != null) {
@@ -422,7 +422,7 @@ class DeviceCapabilities @Inject constructor() {
 
             HardwareAccelerationInfo(
                 supportedCodecs = hardwareCodecs.toList(),
-                hasHardwareDecoding = hardwareCodecs.isNotEmpty()
+                hasHardwareDecoding = hardwareCodecs.isNotEmpty(),
             )
         } catch (e: Exception) {
             Log.w(TAG, "Failed to detect hardware acceleration", e)
@@ -435,21 +435,21 @@ class DeviceCapabilities @Inject constructor() {
      */
     private fun getVideoCodecSupport(): Map<String, CodecSupportDetail> {
         val support = mutableMapOf<String, CodecSupportDetail>()
-        
+
         try {
             val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
-            
+
             for (codec in SUPPORTED_VIDEO_CODECS) {
                 val mimeType = codecToMimeType(codec, true)
                 if (mimeType != null) {
                     val codecName = codecList.findDecoderForFormat(
-                        android.media.MediaFormat.createVideoFormat(mimeType, 1920, 1080)
+                        android.media.MediaFormat.createVideoFormat(mimeType, 1920, 1080),
                     )
-                    
+
                     val codecInfo = codecName?.let { name ->
                         codecList.codecInfos.firstOrNull { it.name == name }
                     }
-                    
+
                     val supportLevel = when {
                         codecInfo == null -> CodecSupport.NOT_SUPPORTED
                         // We'll assume hardware acceleration is available unless we can determine otherwise
@@ -459,14 +459,14 @@ class DeviceCapabilities @Inject constructor() {
                     support[codec] = CodecSupportDetail(
                         support = supportLevel,
                         maxResolution = if (codecInfo != null) getCodecMaxResolution(codecInfo, mimeType) else Pair(1920, 1080),
-                        performanceRating = getCodecPerformanceRating(codec, supportLevel)
+                        performanceRating = getCodecPerformanceRating(codec, supportLevel),
                     )
                 }
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to analyze video codec support", e)
         }
-        
+
         return support
     }
 
@@ -475,18 +475,18 @@ class DeviceCapabilities @Inject constructor() {
      */
     private fun getAudioCodecSupport(): Map<String, CodecSupportDetail> {
         val support = mutableMapOf<String, CodecSupportDetail>()
-        
+
         for (codec in SUPPORTED_AUDIO_CODECS) {
             val mimeType = codecToMimeType(codec, false)
             if (mimeType != null && isCodecSupported(codec, false)) {
                 support[codec] = CodecSupportDetail(
                     support = CodecSupport.HARDWARE_ACCELERATED, // Audio is typically hardware accelerated
                     maxResolution = Pair(0, 0), // Not applicable for audio
-                    performanceRating = 5 // Audio codecs typically perform well
+                    performanceRating = 5, // Audio codecs typically perform well
                 )
             }
         }
-        
+
         return support
     }
 
@@ -504,7 +504,7 @@ class DeviceCapabilities @Inject constructor() {
         val maxRes = getMaxSupportedResolution()
         val supports4K = supports4K()
         val ramSize = getTotalRAM()
-        
+
         return when {
             supports4K && maxRes.first >= 3840 && ramSize >= 6_000_000_000 -> DevicePerformanceProfile.HIGH_END
             maxRes.first >= 1920 && ramSize >= 3_000_000_000 -> DevicePerformanceProfile.MID_RANGE
@@ -529,7 +529,7 @@ class DeviceCapabilities @Inject constructor() {
      */
     private fun getCodecMaxResolution(
         codecInfo: android.media.MediaCodecInfo?,
-        mimeType: String
+        mimeType: String,
     ): Pair<Int, Int> {
         return try {
             codecInfo?.getCapabilitiesForType(mimeType)?.videoCapabilities?.let { videoCaps ->
@@ -552,7 +552,7 @@ class DeviceCapabilities @Inject constructor() {
             "av1" -> 4 // Very new, limited support
             else -> 3
         }
-        
+
         return when (support) {
             CodecSupport.HARDWARE_ACCELERATED -> baseRating
             CodecSupport.SOFTWARE_ONLY -> maxOf(1, baseRating - 3)
@@ -567,7 +567,7 @@ class DeviceCapabilities @Inject constructor() {
 enum class CodecSupport {
     HARDWARE_ACCELERATED,
     SOFTWARE_ONLY,
-    NOT_SUPPORTED
+    NOT_SUPPORTED,
 }
 
 /**
@@ -576,7 +576,7 @@ enum class CodecSupport {
 enum class DevicePerformanceProfile {
     HIGH_END,
     MID_RANGE,
-    LOW_END
+    LOW_END,
 }
 
 /**
@@ -600,7 +600,7 @@ data class DirectPlayCapabilities(
 data class CodecSupportDetail(
     val support: CodecSupport,
     val maxResolution: Pair<Int, Int>,
-    val performanceRating: Int // 1-10 scale
+    val performanceRating: Int, // 1-10 scale
 )
 
 /**
@@ -610,7 +610,7 @@ data class CodecSupportInfo(
     val videoCodecs: Map<String, CodecSupportDetail>,
     val audioCodecs: Map<String, CodecSupportDetail>,
     val containerFormats: Map<String, Boolean>,
-    val performanceProfile: DevicePerformanceProfile
+    val performanceProfile: DevicePerformanceProfile,
 )
 
 /**
@@ -620,7 +620,7 @@ data class DirectPlayAnalysis(
     val canDirectPlay: Boolean,
     val confidenceScore: Int, // 0-100
     val issues: List<String>,
-    val recommendation: String
+    val recommendation: String,
 )
 
 /**
@@ -629,7 +629,7 @@ data class DirectPlayAnalysis(
 data class NetworkCapabilityInfo(
     val supportsHighBitrate: Boolean,
     val estimatedBandwidth: Int, // -1 if unknown
-    val connectionType: String
+    val connectionType: String,
 )
 
 /**
@@ -637,6 +637,5 @@ data class NetworkCapabilityInfo(
  */
 data class HardwareAccelerationInfo(
     val supportedCodecs: List<String>,
-    val hasHardwareDecoding: Boolean
+    val hasHardwareDecoding: Boolean,
 )
-

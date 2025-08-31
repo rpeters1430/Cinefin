@@ -18,7 +18,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class PlaybackRecommendationViewModel @Inject constructor(
-    private val enhancedPlaybackUtils: EnhancedPlaybackUtils
+    private val enhancedPlaybackUtils: EnhancedPlaybackUtils,
 ) : ViewModel() {
 
     companion object {
@@ -42,14 +42,13 @@ class PlaybackRecommendationViewModel @Inject constructor(
             try {
                 _isLoading.value = true
                 _currentItem.value = item
-                
+
                 SecureLogger.d(TAG, "Analyzing playback recommendations for: ${item.name}")
-                
+
                 val recommendations = enhancedPlaybackUtils.getPlaybackRecommendations(item)
                 _recommendations.value = recommendations
-                
+
                 SecureLogger.d(TAG, "Found ${recommendations.size} playback recommendations")
-                
             } catch (e: Exception) {
                 SecureLogger.e(TAG, "Failed to analyze playback recommendations", e)
                 _recommendations.value = emptyList()
@@ -94,9 +93,9 @@ class PlaybackRecommendationViewModel @Inject constructor(
      * Check if there are any critical recommendations (warnings or errors)
      */
     fun hasCriticalRecommendations(): Boolean {
-        return _recommendations.value.any { 
-            it.type == com.rpeters.jellyfin.ui.utils.RecommendationType.WARNING || 
-            it.type == com.rpeters.jellyfin.ui.utils.RecommendationType.ERROR 
+        return _recommendations.value.any {
+            it.type == com.rpeters.jellyfin.ui.utils.RecommendationType.WARNING ||
+                it.type == com.rpeters.jellyfin.ui.utils.RecommendationType.ERROR
         }
     }
 

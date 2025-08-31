@@ -7,7 +7,6 @@ import coil.memory.MemoryCache
 import coil.util.DebugLogger
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
-import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
@@ -15,27 +14,22 @@ import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.network.CachePolicyInterceptor
 import com.rpeters.jellyfin.network.ConnectivityChecker
-import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.withStrictModeTagger
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
 import org.jellyfin.sdk.Jellyfin
-import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.createJellyfin
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
 import java.io.File
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
 
@@ -152,7 +146,6 @@ object NetworkModule {
         return OptimizedClientFactory(context, jellyfin, authRepositoryProvider)
     }
 
-
     @Provides
     @Singleton
     fun provideJellyfinCache(@ApplicationContext context: Context): JellyfinCache {
@@ -171,7 +164,7 @@ object NetworkModule {
         @ApplicationContext context: Context,
         repository: JellyfinRepository,
         streamRepository: JellyfinStreamRepository,
-        deviceCapabilities: DeviceCapabilities
+        deviceCapabilities: DeviceCapabilities,
     ): EnhancedPlaybackManager {
         return EnhancedPlaybackManager(context, repository, streamRepository, deviceCapabilities)
     }

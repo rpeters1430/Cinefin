@@ -8,4 +8,3 @@ class JellyfinUserRepositoryTest {
     @Test
     fun placeholder() {}
 }
-
