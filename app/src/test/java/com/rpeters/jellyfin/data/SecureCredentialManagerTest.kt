@@ -13,7 +13,7 @@ class SecureCredentialManagerTest {
 
     @Test
     fun `generateKey normalizes server URL`() {
-        val keyA = manager.generateKey("HTTPS://Example.com/", "user")
+        val keyA = manager.generateKey("HTTPS://Example.com:8920/", "user")
         val keyB = manager.generateKey("https://example.com", "user")
         assertEquals(keyA, keyB)
     }
@@ -24,18 +24,24 @@ class SecureCredentialManagerTest {
         val username = "user"
         val password = "secret"
 
-        val variantWithSlash = "https://Example.com/"
-        val variantUpper = "HTTPS://example.COM"
+        val variantWithPort = "https://Example.com:8096/"
+        val variantCanonical = "https://example.com"
 
-        store[manager.generateKey(variantWithSlash, username)] = password
+        store[manager.generateKey(variantWithPort, username)] = password
 
-        val retrieved = store[manager.generateKey(variantUpper, username)]
+        val retrieved = store[manager.generateKey(variantCanonical, username)]
         assertEquals(password, retrieved)
     }
 
     @Test
     fun `normalizeServerUrl trims and lowercases`() {
         val normalized = normalizeServerUrl(" HTTPS://Example.com/ ")
+        assertEquals("https://example.com", normalized)
+    }
+
+    @Test
+    fun `normalizeServerUrl removes port`() {
+        val normalized = normalizeServerUrl("https://example.com:8096/")
         assertEquals("https://example.com", normalized)
     }
 }

@@ -18,25 +18,30 @@ This caused:
 
 ### 1. URL Normalization Function
 ```kotlin
-private fun normalizeServerUrl(serverUrl: String): String {
+fun normalizeServerUrl(input: String): String {
+    var url = input.trim()
+    if (!url.startsWith("http://", true) && !url.startsWith("https://", true)) {
+        url = "https://$url"
+    }
     return try {
-        val uri = URI(serverUrl.trimEnd('/'))
-        val scheme = uri.scheme ?: "https"
-        val host = uri.host ?: return serverUrl
-        val path = uri.path?.takeIf { it.isNotEmpty() && it != "/" } ?: ""
-        
-        // Normalize to use hostname without port for consistent credential storage
-        "$scheme://$host$path"
+        val uri = URI(url)
+        val scheme = (uri.scheme ?: "https").lowercase()
+        val host = uri.host?.lowercase() ?: return input
+        val path = uri.rawPath?.trimEnd('/') ?: ""
+        buildString {
+            append(scheme).append("://").append(host)
+            if (path.isNotEmpty()) append(path)
+        }
     } catch (e: Exception) {
-        Log.w("JellyfinAuthRepository", "Failed to normalize server URL: $serverUrl", e)
-        serverUrl
+        Log.w("JellyfinAuthRepository", "Failed to normalize server URL: $input", e)
+        input
     }
 }
 ```
 
 ### 2. Consistent Credential Operations
-- **Storage**: `savePassword(normalizeServerUrl(serverUrl), username, password)`
-- **Lookup**: `getPassword(server.normalizedUrl ?: normalizeServerUrl(server.url), username)`
+- **Storage**: `savePassword(serverUrl, username, password)` (normalization handled internally)
+- **Lookup**: `getPassword(server.url, username)` with legacy key migration
 
 ### 3. Updated JellyfinServer Data Storage
 ```kotlin
