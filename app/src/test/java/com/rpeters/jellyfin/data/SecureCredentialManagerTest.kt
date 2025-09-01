@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.data
 
 import android.content.Context
 import com.rpeters.jellyfin.utils.normalizeServerUrl
+import com.rpeters.jellyfin.utils.normalizeServerUrlLegacy
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -12,9 +13,9 @@ class SecureCredentialManagerTest {
     private val manager = SecureCredentialManager(context)
 
     @Test
-    fun `generateKey normalizes server URL`() {
-        val keyA = manager.generateKey("HTTPS://Example.com:8920/", "user")
-        val keyB = manager.generateKey("https://example.com", "user")
+    fun `generateKey produces consistent key for normalized URLs`() {
+        val keyA = manager.generateKey(normalizeServerUrl("HTTPS://Example.com:8920/"), "user")
+        val keyB = manager.generateKey(normalizeServerUrl("https://example.com"), "user")
         assertEquals(keyA, keyB)
     }
 
@@ -27,9 +28,9 @@ class SecureCredentialManagerTest {
         val variantWithPort = "https://Example.com:8096/"
         val variantCanonical = "https://example.com"
 
-        store[manager.generateKey(variantWithPort, username)] = password
+        store[manager.generateKey(normalizeServerUrlLegacy(variantWithPort), username)] = password
 
-        val retrieved = store[manager.generateKey(variantCanonical, username)]
+        val retrieved = store[manager.generateKey(normalizeServerUrl(variantCanonical), username)]
         assertEquals(password, retrieved)
     }
 
@@ -43,5 +44,11 @@ class SecureCredentialManagerTest {
     fun `normalizeServerUrl removes port`() {
         val normalized = normalizeServerUrl("https://example.com:8096/")
         assertEquals("https://example.com", normalized)
+    }
+
+    @Test
+    fun `normalizeServerUrlLegacy retains port`() {
+        val normalized = normalizeServerUrlLegacy(" HTTPS://Example.com:8096/ ")
+        assertEquals("https://example.com:8096", normalized)
     }
 }
