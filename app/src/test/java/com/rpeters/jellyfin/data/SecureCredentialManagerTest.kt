@@ -1,60 +1,50 @@
 package com.rpeters.jellyfin.data
 
 import android.content.Context
-import io.mockk.*
+import com.rpeters.jellyfin.utils.normalizeServerUrl
+import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.*
-import org.junit.Before
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/**
- * Basic test suite for SecureCredentialManager.
- *
- * Tests core functionality and security patterns.
- */
 class SecureCredentialManagerTest {
+    private val context: Context = mockk(relaxed = true)
+    private val manager = SecureCredentialManager(context)
+    private val generateKeyMethod = SecureCredentialManager::class.java.getDeclaredMethod(
+        "generateKey",
+        String::class.java,
+        String::class.java,
+    ).apply { isAccessible = true }
 
-    private lateinit var mockContext: Context
-
-    @Before
-    fun setup() {
-        mockContext = mockk(relaxed = true)
+    private fun generateKey(url: String, username: String): String {
+        return generateKeyMethod.invoke(manager, url, username) as String
     }
 
     @Test
-    fun `SecureCredentialManager can be instantiated`() {
-        // Act & Assert
-        val manager = SecureCredentialManager(mockContext)
-        assertNotNull("Manager should be created", manager)
+    fun `generateKey normalizes server URL`() {
+        val keyA = generateKey("HTTPS://Example.com/", "user")
+        val keyB = generateKey("https://example.com", "user")
+        assertEquals(keyA, keyB)
     }
 
     @Test
-    fun `security patterns are followed`() {
-        // This test ensures the credential manager follows security best practices
-        // by validating its structure and dependencies
-        val manager = SecureCredentialManager(mockContext)
+    fun `credentials saved with url variant are retrievable`() = runTest {
+        val store = mutableMapOf<String, String>()
+        val username = "user"
+        val password = "secret"
 
-        // Manager should be configured for secure operations
-        assertNotNull("Manager should be configured for security", manager)
+        val variantWithSlash = "https://Example.com/"
+        val variantUpper = "HTTPS://example.COM"
+
+        store[generateKey(variantWithSlash, username)] = password
+
+        val retrieved = store[generateKey(variantUpper, username)]
+        assertEquals(password, retrieved)
     }
 
     @Test
-    fun `encryption patterns are secure`() = runTest {
-        // Test that the encryption implementation follows secure patterns
-        val manager = SecureCredentialManager(mockContext)
-
-        // The manager should be ready to handle encryption operations
-        assertNotNull("Manager should be ready for encryption", manager)
-    }
-
-    @Test
-    fun `manager handles initialization properly`() {
-        // Test that the manager initializes without throwing exceptions
-        try {
-            val manager = SecureCredentialManager(mockContext)
-            assertNotNull("Manager should initialize successfully", manager)
-        } catch (e: Exception) {
-            fail("Manager initialization should not throw exceptions: ${e.message}")
-        }
+    fun `normalizeServerUrl trims and lowercases`() {
+        val normalized = normalizeServerUrl(" HTTPS://Example.com/ ")
+        assertEquals("https://example.com", normalized)
     }
 }

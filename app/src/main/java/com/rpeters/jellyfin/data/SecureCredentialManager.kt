@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.fragment.app.FragmentActivity
 import com.rpeters.jellyfin.core.constants.Constants
+import com.rpeters.jellyfin.utils.normalizeServerUrl
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -162,7 +163,8 @@ class SecureCredentialManager @Inject constructor(
 
     // ✅ ENHANCEMENT: Modern secure storage with Android Keystore + DataStore + Key Rotation
     suspend fun savePassword(serverUrl: String, username: String, password: String) {
-        val key = generateKey(serverUrl, username)
+        val normalizedUrl = normalizeServerUrl(serverUrl)
+        val key = generateKey(normalizedUrl, username)
         val encryptedPassword = encrypt(password)
 
         context.secureCredentialsDataStore.edit { preferences ->
@@ -201,7 +203,8 @@ class SecureCredentialManager @Inject constructor(
         }
 
         // Get the password as usual
-        val key = generateKey(serverUrl, username)
+        val normalizedUrl = normalizeServerUrl(serverUrl)
+        val key = generateKey(normalizedUrl, username)
         val encryptedPassword = context.secureCredentialsDataStore.data.map { preferences ->
             preferences[stringPreferencesKey(key)]
         }.first()
@@ -217,7 +220,8 @@ class SecureCredentialManager @Inject constructor(
     }
 
     suspend fun clearPassword(serverUrl: String, username: String) {
-        val key = generateKey(serverUrl, username)
+        val normalizedUrl = normalizeServerUrl(serverUrl)
+        val key = generateKey(normalizedUrl, username)
         context.secureCredentialsDataStore.edit { preferences ->
             preferences.remove(stringPreferencesKey(key))
             preferences.remove(longPreferencesKey("${key}_timestamp"))
