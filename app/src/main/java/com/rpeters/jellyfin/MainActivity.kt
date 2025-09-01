@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,6 +25,8 @@ class MainActivity : ComponentActivity() {
         val deviceType = MainThreadMonitor.measureMainThreadImpact("getDeviceType") {
             DeviceTypeUtils.getDeviceType(this)
         }
+
+        Log.i("MainActivity", "isTvDevice=${deviceType == DeviceTypeUtils.DeviceType.TV}")
 
         setContent {
             when (deviceType) {

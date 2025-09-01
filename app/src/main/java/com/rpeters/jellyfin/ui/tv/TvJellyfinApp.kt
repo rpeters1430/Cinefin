@@ -3,6 +3,11 @@ package com.rpeters.jellyfin.ui.tv
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -16,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
@@ -66,25 +72,32 @@ fun TvServerConnectionScreen(
         username = savedUsername ?: ""
     }
 
+    val screenH = LocalConfiguration.current.screenHeightDp.dp
+
     androidx.compose.foundation.layout.Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(48.dp),
+            .safeContentPadding()
+            .imePadding()
+            .padding(horizontal = 32.dp, vertical = 24.dp),
         contentAlignment = androidx.compose.ui.Alignment.Center,
     ) {
         androidx.tv.material3.Card(
             onClick = { /* No-op, card is not clickable */ },
             modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .padding(24.dp),
+                .fillMaxWidth(0.7f)
+                .heightIn(max = screenH - 96.dp)
+                .padding(0.dp),
             colors = androidx.tv.material3.CardDefaults.colors(
                 containerColor = TvMaterialTheme.colorScheme.surface,
             ),
         ) {
+            val scrollState = rememberScrollState()
             androidx.compose.foundation.layout.Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(32.dp),
+                    .padding(24.dp)
+                    .verticalScroll(scrollState),
                 horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(24.dp),
             ) {
@@ -109,6 +122,8 @@ fun TvServerConnectionScreen(
                     label = { androidx.compose.material3.Text("Server URL") },
                     placeholder = { androidx.compose.material3.Text("https://jellyfin.example.com") },
                     singleLine = true,
+                    maxLines = 1,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isConnecting,
                 )
@@ -119,6 +134,8 @@ fun TvServerConnectionScreen(
                     onValueChange = { username = it },
                     label = { androidx.compose.material3.Text("Username") },
                     singleLine = true,
+                    maxLines = 1,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Next),
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isConnecting,
                 )
@@ -144,6 +161,8 @@ fun TvServerConnectionScreen(
                         }
                     },
                     singleLine = true,
+                    maxLines = 1,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isConnecting,
                 )
