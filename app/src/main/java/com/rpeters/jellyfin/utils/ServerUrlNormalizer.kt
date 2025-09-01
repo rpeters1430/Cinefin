@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.utils
 
 import java.net.URI
+import java.net.URISyntaxException
 
 /**
  * Normalize a Jellyfin server URL by trimming whitespace, removing trailing slashes
@@ -11,13 +12,17 @@ fun normalizeServerUrl(input: String): String {
     if (!url.startsWith("http://", ignoreCase = true) && !url.startsWith("https://", ignoreCase = true)) {
         url = "https://$url"
     }
-    val uri = URI(url)
-    val scheme = (uri.scheme ?: "https").lowercase()
-    val host = (uri.host ?: uri.authority ?: "").lowercase()
-    val port = if (uri.port != -1) ":${uri.port}" else ""
-    val path = uri.rawPath?.trimEnd('/') ?: ""
-    return buildString {
-        append(scheme).append("://").append(host).append(port)
-        if (path.isNotEmpty()) append(path)
+    return try {
+        val uri = URI(url)
+        val scheme = (uri.scheme ?: "https").lowercase()
+        val host = uri.host?.lowercase() ?: ""
+        val port = if (uri.port != -1) ":${uri.port}" else ""
+        val path = uri.rawPath?.trimEnd('/') ?: ""
+        buildString {
+            append(scheme).append("://").append(host).append(port)
+            if (path.isNotEmpty()) append(path)
+        }
+    } catch (_: URISyntaxException) {
+        url
     }
 }

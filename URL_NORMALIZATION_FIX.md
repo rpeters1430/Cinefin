@@ -36,13 +36,13 @@ private fun normalizeServerUrl(serverUrl: String): String {
 
 ### 2. Consistent Credential Operations
 - **Storage**: `savePassword(normalizeServerUrl(serverUrl), username, password)`
-- **Lookup**: `getPassword(server.originalServerUrl ?: normalizeServerUrl(server.url), username)`
+- **Lookup**: `getPassword(server.normalizedUrl ?: normalizeServerUrl(server.url), username)`
 
 ### 3. Updated JellyfinServer Data Storage
 ```kotlin
 val server = JellyfinServer(
     // ... other fields
-    originalServerUrl = normalizeServerUrl(serverUrl), // Store normalized URL
+    normalizedUrl = normalizeServerUrl(serverUrl),
 )
 ```
 
@@ -51,7 +51,7 @@ val server = JellyfinServer(
 ### JellyfinAuthRepository.kt
 1. **Added `normalizeServerUrl()` function** - Removes port numbers for consistent URL formatting
 2. **Updated `authenticateUser()`** - Uses normalized URL for credential storage
-3. **Updated `reAuthenticate()`** - Uses stored `originalServerUrl` with fallback to normalized current URL
+3. **Updated `reAuthenticate()`** - Uses stored `normalizedUrl` with fallback to normalized current URL
 4. **Enhanced logging** - Shows which URL is used for credential operations
 
 ## Testing Verification
@@ -98,7 +98,7 @@ The fix normalizes URLs by:
 
 ### Error Prevention
 - **Safe parsing** with try/catch blocks
-- **Fallback mechanisms** if `originalServerUrl` is null
+- **Fallback mechanisms** if `normalizedUrl` is null
 - **Enhanced logging** for debugging credential operations
 
 ### Future Considerations
