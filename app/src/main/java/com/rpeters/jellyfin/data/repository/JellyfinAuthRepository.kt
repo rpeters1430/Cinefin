@@ -129,7 +129,7 @@ class JellyfinAuthRepository @Inject constructor(
 
             // Save credentials for token refresh
             try {
-                secureCredentialManager.savePassword(normalizedServerUrl, username, password)
+                secureCredentialManager.savePassword(serverUrl, username, password)
                 Log.d(TAG, "authenticateUser: Saved credentials for user '$username'")
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to save credentials for token refresh", e)
@@ -173,10 +173,9 @@ class JellyfinAuthRepository @Inject constructor(
         val server = _currentServer.value ?: return false
         val username = server.username ?: return false
         val serverUrl = server.url
-        val normalizedServerUrl = server.normalizedUrl ?: normalizeServerUrl(serverUrl)
 
         try {
-            val password = secureCredentialManager.getPassword(normalizedServerUrl, username)
+            val password = secureCredentialManager.getPassword(serverUrl, username)
             if (password == null) {
                 Log.w(TAG, "reAuthenticate: No saved password found for user $username")
                 return false
@@ -215,8 +214,7 @@ class JellyfinAuthRepository @Inject constructor(
             val server = _currentServer.value
             if (server != null && server.username != null) {
                 try {
-                    val normalizedServerUrl = server.normalizedUrl ?: normalizeServerUrl(server.url)
-                    secureCredentialManager.clearPassword(normalizedServerUrl, server.username)
+                    secureCredentialManager.clearPassword(server.url, server.username)
                     Log.d(TAG, "logout: Cleared saved credentials for user ${server.username}")
                 } catch (e: Exception) {
                     Log.w(TAG, "logout: Failed to clear credentials", e)

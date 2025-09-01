@@ -163,17 +163,16 @@ class SecureCredentialManager @Inject constructor(
 
     // ✅ ENHANCEMENT: Modern secure storage with Android Keystore + DataStore + Key Rotation
     suspend fun savePassword(serverUrl: String, username: String, password: String) {
-        val normalizedUrl = normalizeServerUrl(serverUrl)
-        val key = generateKey(normalizedUrl, username)
+        val keys = generateKeys(serverUrl, username)
         val encryptedPassword = encrypt(password)
-        val legacyKey = generateKey(serverUrl.trim(), username)
 
-        context.secureCredentialsDataStore.edit { preferences ->
-            preferences[stringPreferencesKey(key)] = encryptedPassword
-            preferences[longPreferencesKey("${key}_timestamp")] = System.currentTimeMillis()
-            // Clean up legacy entry if present
-            preferences.remove(stringPreferencesKey(legacyKey))
-            preferences.remove(longPreferencesKey("${legacyKey}_timestamp"))
+        context.secureCredentialsDataStore.edit { prefs ->
+            prefs[stringPreferencesKey(keys.newKey)] = encryptedPassword
+            prefs[longPreferencesKey("${keys.newKey}_timestamp")] = System.currentTimeMillis()
+            if (keys.newKey != keys.legacyKey) {
+                prefs.remove(stringPreferencesKey(keys.legacyKey))
+                prefs.remove(longPreferencesKey("${keys.legacyKey}_timestamp"))
+            }
         }
     }
 
@@ -205,23 +204,14 @@ class SecureCredentialManager @Inject constructor(
             }
         }
 
-        // Get the password as usual
-        val normalizedUrl = normalizeServerUrl(serverUrl)
-        val key = generateKey(normalizedUrl, username)
+        val keys = generateKeys(serverUrl, username)
         val preferences = context.secureCredentialsDataStore.data.first()
-        var encryptedPassword = preferences[stringPreferencesKey(key)]
+        var encryptedPassword = preferences[stringPreferencesKey(keys.newKey)]
 
         if (encryptedPassword == null) {
-            val legacyKey = generateKey(serverUrl.trim(), username)
-            encryptedPassword = preferences[stringPreferencesKey(legacyKey)]
+            encryptedPassword = preferences[stringPreferencesKey(keys.legacyKey)]
             if (encryptedPassword != null) {
-                context.secureCredentialsDataStore.edit { prefs ->
-                    prefs[stringPreferencesKey(key)] = encryptedPassword
-                    prefs[longPreferencesKey("${key}_timestamp")] =
-                        prefs[longPreferencesKey("${legacyKey}_timestamp")] ?: System.currentTimeMillis()
-                    prefs.remove(stringPreferencesKey(legacyKey))
-                    prefs.remove(longPreferencesKey("${legacyKey}_timestamp"))
-                }
+                migrateLegacyCredential(keys, encryptedPassword)
             }
         }
 
@@ -236,14 +226,14 @@ class SecureCredentialManager @Inject constructor(
     }
 
     suspend fun clearPassword(serverUrl: String, username: String) {
-        val normalizedUrl = normalizeServerUrl(serverUrl)
-        val key = generateKey(normalizedUrl, username)
-        val legacyKey = generateKey(serverUrl.trim(), username)
-        context.secureCredentialsDataStore.edit { preferences ->
-            preferences.remove(stringPreferencesKey(key))
-            preferences.remove(longPreferencesKey("${key}_timestamp"))
-            preferences.remove(stringPreferencesKey(legacyKey))
-            preferences.remove(longPreferencesKey("${legacyKey}_timestamp"))
+        val keys = generateKeys(serverUrl, username)
+        context.secureCredentialsDataStore.edit { prefs ->
+            prefs.remove(stringPreferencesKey(keys.newKey))
+            prefs.remove(longPreferencesKey("${keys.newKey}_timestamp"))
+            if (keys.newKey != keys.legacyKey) {
+                prefs.remove(stringPreferencesKey(keys.legacyKey))
+                prefs.remove(longPreferencesKey("${keys.legacyKey}_timestamp"))
+            }
         }
     }
 
@@ -255,6 +245,27 @@ class SecureCredentialManager @Inject constructor(
 
     suspend fun clearCredentials() {
         clearAllPasswords()
+    }
+
+    private data class CredentialKeys(val newKey: String, val legacyKey: String)
+
+    private fun generateKeys(serverUrl: String, username: String): CredentialKeys {
+        val normalizedUrl = normalizeServerUrl(serverUrl)
+        val newKey = generateKey(normalizedUrl, username)
+        val legacyKey = generateKey(serverUrl.trim(), username)
+        return CredentialKeys(newKey, legacyKey)
+    }
+
+    private suspend fun migrateLegacyCredential(keys: CredentialKeys, encryptedPassword: String) {
+        context.secureCredentialsDataStore.edit { prefs ->
+            prefs[stringPreferencesKey(keys.newKey)] = encryptedPassword
+            prefs[longPreferencesKey("${keys.newKey}_timestamp")] =
+                prefs[longPreferencesKey("${keys.legacyKey}_timestamp")] ?: System.currentTimeMillis()
+            if (keys.newKey != keys.legacyKey) {
+                prefs.remove(stringPreferencesKey(keys.legacyKey))
+                prefs.remove(longPreferencesKey("${keys.legacyKey}_timestamp"))
+            }
+        }
     }
 
     // ✅ ENHANCEMENT: Improved key generation with cryptographically secure hashing
