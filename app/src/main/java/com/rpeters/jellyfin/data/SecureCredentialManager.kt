@@ -5,6 +5,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -17,7 +18,6 @@ import com.rpeters.jellyfin.utils.normalizeServerUrl
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.security.KeyStore
 import java.security.MessageDigest
@@ -166,11 +166,14 @@ class SecureCredentialManager @Inject constructor(
         val normalizedUrl = normalizeServerUrl(serverUrl)
         val key = generateKey(normalizedUrl, username)
         val encryptedPassword = encrypt(password)
+        val legacyKey = generateKey(serverUrl.trim(), username)
 
         context.secureCredentialsDataStore.edit { preferences ->
             preferences[stringPreferencesKey(key)] = encryptedPassword
-            // Store timestamp for potential future use in credential expiration
             preferences[longPreferencesKey("${key}_timestamp")] = System.currentTimeMillis()
+            // Clean up legacy entry if present
+            preferences.remove(stringPreferencesKey(legacyKey))
+            preferences.remove(longPreferencesKey("${legacyKey}_timestamp"))
         }
     }
 
@@ -205,9 +208,22 @@ class SecureCredentialManager @Inject constructor(
         // Get the password as usual
         val normalizedUrl = normalizeServerUrl(serverUrl)
         val key = generateKey(normalizedUrl, username)
-        val encryptedPassword = context.secureCredentialsDataStore.data.map { preferences ->
-            preferences[stringPreferencesKey(key)]
-        }.first()
+        val preferences = context.secureCredentialsDataStore.data.first()
+        var encryptedPassword = preferences[stringPreferencesKey(key)]
+
+        if (encryptedPassword == null) {
+            val legacyKey = generateKey(serverUrl.trim(), username)
+            encryptedPassword = preferences[stringPreferencesKey(legacyKey)]
+            if (encryptedPassword != null) {
+                context.secureCredentialsDataStore.edit { prefs ->
+                    prefs[stringPreferencesKey(key)] = encryptedPassword
+                    prefs[longPreferencesKey("${key}_timestamp")] =
+                        prefs[longPreferencesKey("${legacyKey}_timestamp")] ?: System.currentTimeMillis()
+                    prefs.remove(stringPreferencesKey(legacyKey))
+                    prefs.remove(longPreferencesKey("${legacyKey}_timestamp"))
+                }
+            }
+        }
 
         return encryptedPassword?.let { decrypt(it) }
     }
@@ -222,9 +238,12 @@ class SecureCredentialManager @Inject constructor(
     suspend fun clearPassword(serverUrl: String, username: String) {
         val normalizedUrl = normalizeServerUrl(serverUrl)
         val key = generateKey(normalizedUrl, username)
+        val legacyKey = generateKey(serverUrl.trim(), username)
         context.secureCredentialsDataStore.edit { preferences ->
             preferences.remove(stringPreferencesKey(key))
             preferences.remove(longPreferencesKey("${key}_timestamp"))
+            preferences.remove(stringPreferencesKey(legacyKey))
+            preferences.remove(longPreferencesKey("${legacyKey}_timestamp"))
         }
     }
 
@@ -239,7 +258,8 @@ class SecureCredentialManager @Inject constructor(
     }
 
     // ✅ ENHANCEMENT: Improved key generation with cryptographically secure hashing
-    private fun generateKey(serverUrl: String, username: String): String {
+    @VisibleForTesting
+    internal fun generateKey(serverUrl: String, username: String): String {
         require(serverUrl.isNotBlank()) { "Server URL cannot be blank" }
         require(username.isNotBlank()) { "Username cannot be blank" }
 
