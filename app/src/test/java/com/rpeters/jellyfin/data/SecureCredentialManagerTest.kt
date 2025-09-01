@@ -10,20 +10,11 @@ import org.junit.Test
 class SecureCredentialManagerTest {
     private val context: Context = mockk(relaxed = true)
     private val manager = SecureCredentialManager(context)
-    private val generateKeyMethod = SecureCredentialManager::class.java.getDeclaredMethod(
-        "generateKey",
-        String::class.java,
-        String::class.java,
-    ).apply { isAccessible = true }
-
-    private fun generateKey(url: String, username: String): String {
-        return generateKeyMethod.invoke(manager, url, username) as String
-    }
 
     @Test
     fun `generateKey normalizes server URL`() {
-        val keyA = generateKey("HTTPS://Example.com/", "user")
-        val keyB = generateKey("https://example.com", "user")
+        val keyA = manager.generateKey("HTTPS://Example.com/", "user")
+        val keyB = manager.generateKey("https://example.com", "user")
         assertEquals(keyA, keyB)
     }
 
@@ -36,9 +27,9 @@ class SecureCredentialManagerTest {
         val variantWithSlash = "https://Example.com/"
         val variantUpper = "HTTPS://example.COM"
 
-        store[generateKey(variantWithSlash, username)] = password
+        store[manager.generateKey(variantWithSlash, username)] = password
 
-        val retrieved = store[generateKey(variantUpper, username)]
+        val retrieved = store[manager.generateKey(variantUpper, username)]
         assertEquals(password, retrieved)
     }
 
