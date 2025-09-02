@@ -264,7 +264,7 @@ fun TvJellyfinApp(
     // Root composable for the TV experience.
     // Hosts the navigation graph for all TV screens.
     TvMaterialTheme {
-        Box(modifier = modifier.fillMaxSize()) {
+        Surface(modifier = modifier.fillMaxSize()) {
             TvNavGraph()
         }
     }
