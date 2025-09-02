@@ -71,7 +71,7 @@ fun TvHomeScreen(
     }
 
     val initialFocusRequester = remember { FocusRequester() }
-    LaunchedEffect(firstCarouselId) {
+    LaunchedEffect(Unit) {
         initialFocusRequester.requestInitialFocus(condition = firstCarouselId != null)
     }
 
