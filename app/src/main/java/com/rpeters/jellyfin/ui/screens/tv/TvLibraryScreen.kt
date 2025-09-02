@@ -28,7 +28,7 @@ fun TvLibraryScreen(
     val items = when (library?.collectionType) {
         org.jellyfin.sdk.model.api.CollectionType.MOVIES -> appState.allMovies
         org.jellyfin.sdk.model.api.CollectionType.TVSHOWS -> appState.allTVShows
-        org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> appState.homeVideosByLibrary[libraryId] ?: emptyList()
+        org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> appState.itemsByLibrary[libraryId] ?: emptyList()
         else -> emptyList()
     }
 

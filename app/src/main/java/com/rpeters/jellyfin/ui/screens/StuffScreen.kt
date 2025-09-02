@@ -53,9 +53,9 @@ fun StuffScreen(
 
     if (BuildConfig.DEBUG) {
         android.util.Log.d("StuffScreen", "App state libraries count: ${appState.libraries.size}")
-        android.util.Log.d("StuffScreen", "App state homeVideosByLibrary size: ${appState.homeVideosByLibrary.size}")
-        appState.homeVideosByLibrary.forEach { (id, items) ->
-            android.util.Log.d("StuffScreen", "homeVideosByLibrary[$id]: ${items.size} items")
+        android.util.Log.d("StuffScreen", "App state itemsByLibrary size: ${appState.itemsByLibrary.size}")
+        appState.itemsByLibrary.forEach { (id, items) ->
+            android.util.Log.d("StuffScreen", "itemsByLibrary[$id]: ${items.size} items")
         }
     }
 
@@ -82,8 +82,8 @@ fun StuffScreen(
     }
 
     // Filter stuff items from the library-specific home videos
-    val stuffItems = remember(appState.homeVideosByLibrary, libraryId, type) {
-        val items = appState.homeVideosByLibrary[libraryId] ?: emptyList()
+    val stuffItems = remember(appState.itemsByLibrary, libraryId, type) {
+        val items = appState.itemsByLibrary[libraryId] ?: emptyList()
         if (BuildConfig.DEBUG) {
             android.util.Log.d("StuffScreen", "libraryId=$libraryId, type=$type, items.size=${items.size}")
             if (items.isNotEmpty()) {

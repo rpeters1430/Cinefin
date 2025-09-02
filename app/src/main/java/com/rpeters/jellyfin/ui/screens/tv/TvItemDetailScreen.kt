@@ -54,7 +54,7 @@ fun TvItemDetailScreen(
         appState.allMovies.firstOrNull { it.id?.toString() == id }
             ?: appState.allTVShows.firstOrNull { it.id?.toString() == id }
             ?: appState.recentlyAdded.firstOrNull { it.id?.toString() == id }
-            ?: appState.homeVideosByLibrary.values.asSequence().flatten().firstOrNull { it.id?.toString() == id }
+            ?: appState.itemsByLibrary.values.asSequence().flatten().firstOrNull { it.id?.toString() == id }
     }
 
     Column(

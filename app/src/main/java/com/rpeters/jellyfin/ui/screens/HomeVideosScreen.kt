@@ -83,12 +83,12 @@ fun HomeVideosScreen(
     }
 
     // Get home videos items from all libraries
-    val homeVideosItems = remember(appState.homeVideosByLibrary, homeVideosLibraries) {
+    val homeVideosItems = remember(appState.itemsByLibrary, homeVideosLibraries) {
         val allItems = mutableListOf<BaseItemDto>()
 
         homeVideosLibraries.forEach { library ->
             library.id?.let { libraryId ->
-                val items = appState.homeVideosByLibrary[libraryId.toString()] ?: emptyList()
+                val items = appState.itemsByLibrary[libraryId.toString()] ?: emptyList()
                 if (BuildConfig.DEBUG) {
                     android.util.Log.d("HomeVideosScreen", "Found ${items.size} items in library: $libraryId")
                     if (items.isNotEmpty()) {

@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import org.jellyfin.sdk.model.api.CollectionType
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -39,7 +39,7 @@ data class MainAppState(
     val allMovies: List<BaseItemDto> = emptyList(),
     val allTVShows: List<BaseItemDto> = emptyList(),
     val allItems: List<BaseItemDto> = emptyList(),
-    val homeVideosByLibrary: Map<String, List<BaseItemDto>> = emptyMap(),
+    val itemsByLibrary: Map<String, List<BaseItemDto>> = emptyMap(),
 
     // Loading states
     val isLoading: Boolean = false,
@@ -345,23 +345,70 @@ class MainAppViewModel @Inject constructor(
         }
     }
 
-    fun loadLibraryTypeData(libraryType: LibraryType, forceRefresh: Boolean = false) {
-        when (libraryType) {
-            LibraryType.MOVIES -> loadAllMovies(reset = true)
-            LibraryType.TV_SHOWS -> loadAllTVShows(reset = true)
-            LibraryType.MUSIC -> loadInitialData(forceRefresh)
-            LibraryType.STUFF -> loadInitialData(forceRefresh)
+    fun loadLibraryTypeData(library: BaseItemDto, libraryType: LibraryType, forceRefresh: Boolean = false) {
+        viewModelScope.launch {
+            if (!ensureValidToken()) return@launch
+
+            val libraryId = library.id?.toString() ?: return@launch
+
+            _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
+
+            when (
+                val result = mediaRepository.getLibraryItems(
+                    parentId = libraryId,
+                    itemTypes = libraryType.itemKinds.joinToString(",") { it.name },
+                )
+            ) {
+                is ApiResult.Success -> {
+                    val updated = _appState.value.itemsByLibrary.toMutableMap()
+                    updated[libraryId] = result.data
+                    _appState.value = _appState.value.copy(
+                        itemsByLibrary = updated,
+                        isLoading = false,
+                    )
+                }
+                is ApiResult.Error -> {
+                    _appState.value = _appState.value.copy(
+                        isLoading = false,
+                        errorMessage = "Failed to load library items: ${result.message}",
+                    )
+                }
+                is ApiResult.Loading -> {
+                    // no-op
+                }
+            }
         }
     }
 
-    fun getLibraryTypeData(libraryType: LibraryType): List<BaseItemDto> {
-        return when (libraryType) {
-            LibraryType.MOVIES -> _appState.value.allMovies
-            LibraryType.TV_SHOWS -> _appState.value.allTVShows
-            LibraryType.MUSIC, LibraryType.STUFF -> {
-                _appState.value.allItems.filter { libraryType.itemKinds.contains(it.type) }
+    fun loadLibraryTypeData(libraryType: LibraryType, forceRefresh: Boolean = false) {
+        val library = _appState.value.libraries.firstOrNull { lib ->
+            when (libraryType) {
+                LibraryType.MOVIES -> lib.collectionType == org.jellyfin.sdk.model.api.CollectionType.MOVIES
+                LibraryType.TV_SHOWS -> lib.collectionType == org.jellyfin.sdk.model.api.CollectionType.TVSHOWS
+                LibraryType.MUSIC -> lib.collectionType == org.jellyfin.sdk.model.api.CollectionType.MUSIC
+                LibraryType.STUFF -> true
             }
         }
+        if (library != null) {
+            loadLibraryTypeData(library, libraryType, forceRefresh)
+        }
+    }
+
+    fun getLibraryTypeData(library: BaseItemDto): List<BaseItemDto> {
+        val id = library.id?.toString() ?: return emptyList()
+        return _appState.value.itemsByLibrary[id] ?: emptyList()
+    }
+
+    fun getLibraryTypeData(libraryType: LibraryType): List<BaseItemDto> {
+        val library = _appState.value.libraries.firstOrNull { lib ->
+            when (libraryType) {
+                LibraryType.MOVIES -> lib.collectionType == org.jellyfin.sdk.model.api.CollectionType.MOVIES
+                LibraryType.TV_SHOWS -> lib.collectionType == org.jellyfin.sdk.model.api.CollectionType.TVSHOWS
+                LibraryType.MUSIC -> lib.collectionType == org.jellyfin.sdk.model.api.CollectionType.MUSIC
+                LibraryType.STUFF -> true
+            }
+        } ?: return emptyList()
+        return getLibraryTypeData(library)
     }
 
     fun clearError() {
@@ -605,8 +652,8 @@ class MainAppViewModel @Inject constructor(
     }
 
     fun loadHomeVideos(libraryId: String) {
-        // Simplified implementation
-        loadLibraryTypeData(LibraryType.STUFF)
+        val library = BaseItemDto(id = UUID.fromString(libraryId))
+        loadLibraryTypeData(library, LibraryType.STUFF)
     }
 
     fun loadMusic() = loadLibraryTypeData(LibraryType.MUSIC)

@@ -97,9 +97,9 @@ class MainAppViewModelHomeVideosTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         val state = viewModel.appState.value
-        assertEquals(listOf(itemA), state.homeVideosByLibrary[libraryA])
-        assertEquals(listOf(itemB), state.homeVideosByLibrary[libraryB])
-        assertTrue(state.homeVideosByLibrary[libraryA]?.none { it.name == "B" } == true)
-        assertTrue(state.homeVideosByLibrary[libraryB]?.none { it.name == "A" } == true)
+        assertEquals(listOf(itemA), state.itemsByLibrary[libraryA])
+        assertEquals(listOf(itemB), state.itemsByLibrary[libraryB])
+        assertTrue(state.itemsByLibrary[libraryA]?.none { it.name == "B" } == true)
+        assertTrue(state.itemsByLibrary[libraryB]?.none { it.name == "A" } == true)
     }
 }
