@@ -339,6 +339,27 @@ fun HomeContent(
                 }
             }
 
+            if (recentTVShows.isNotEmpty()) {
+                item(key = "recent_tvshows", contentType = "carousel") {
+                    val items = remember(recentTVShows) {
+                        recentTVShows.take(15).map {
+                            it.toCarouselItem(
+                                titleOverride = it.name ?: "Unknown",
+                                subtitleOverride = itemSubtitle(it),
+                                imageUrl = getImageUrl(it) ?: "",
+                            )
+                        }
+                    }
+                    ExpressiveMediaCarousel(
+                        title = "Recently Added TV Shows",
+                        items = items,
+                        onItemClick = { selected ->
+                            recentTVShows.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
+                        },
+                    )
+                }
+            }
+
             if (recentEpisodes.isNotEmpty()) {
                 item(key = "recent_episodes", contentType = "carousel") {
                     val items = remember(recentEpisodes) {
