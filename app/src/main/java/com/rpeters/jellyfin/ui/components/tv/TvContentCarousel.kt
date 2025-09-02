@@ -82,11 +82,17 @@ fun TvContentCarousel(
                 }
             },
         ) { focusModifier ->
+            val rowModifier = if (focusRequester != null) {
+                focusModifier.focusRequester(focusRequester)
+            } else {
+                focusModifier
+            }
+
             LazyRow(
                 state = lazyListState,
                 contentPadding = PaddingValues(horizontal = 56.dp),
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = focusRequester?.let { focusModifier.focusRequester(it) } ?: focusModifier,
+                modifier = rowModifier,
             ) {
                 items(items, key = { it.id?.toString() ?: "" }) { item ->
                     val itemIndex = items.indexOf(item)
