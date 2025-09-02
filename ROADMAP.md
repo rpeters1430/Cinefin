@@ -48,7 +48,7 @@ These are focused, near-term items discovered during code review to solidify aut
 - [~] **Focus Management System**
   - [x] Initial focus set on first carousel and libraries row
   - [x] Simple focus glow/elevation on cards
-  - [x] Central FocusManager util implemented via `TvFocusManager` (save/restore focus per row/screen)
+  - [x] Central FocusManager util implemented via [`TvFocusManager`](app/src/main/java/com/rpeters/jellyfin/ui/tv/TvFocusManager.kt) (save/restore focus per row/screen)
   - [ ] TV remote shortcuts; keyboard navigation parity
 
 - [ ] **Adaptive Layout System**
