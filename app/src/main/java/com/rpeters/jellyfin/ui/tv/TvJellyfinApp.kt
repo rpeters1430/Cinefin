@@ -27,7 +27,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
-import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
@@ -65,7 +64,7 @@ fun TvServerConnectionScreen(
     var username by remember { mutableStateOf(savedUsername ?: "") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
-    
+
     val focusManager = LocalFocusManager.current
     val serverUrlFocusRequester = remember { FocusRequester() }
     val usernameFocusRequester = remember { FocusRequester() }
@@ -76,7 +75,7 @@ fun TvServerConnectionScreen(
         serverUrl = savedServerUrl ?: ""
         username = savedUsername ?: ""
     }
-    
+
     // Auto-focus the appropriate field on start
     LaunchedEffect(Unit) {
         when {
@@ -109,9 +108,9 @@ fun TvServerConnectionScreen(
                 focusedBorder = androidx.tv.material3.Border(
                     border = androidx.compose.foundation.BorderStroke(
                         width = 2.dp,
-                        color = TvMaterialTheme.colorScheme.primary
-                    )
-                )
+                        color = TvMaterialTheme.colorScheme.primary,
+                    ),
+                ),
             ),
         ) {
             val scrollState = rememberScrollState()
@@ -147,10 +146,10 @@ fun TvServerConnectionScreen(
                     maxLines = 1,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Uri,
-                        imeAction = androidx.compose.ui.text.input.ImeAction.Next
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Next,
                     ),
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                        onNext = { usernameFocusRequester.requestFocus() }
+                        onNext = { usernameFocusRequester.requestFocus() },
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -168,10 +167,10 @@ fun TvServerConnectionScreen(
                     maxLines = 1,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
-                        imeAction = androidx.compose.ui.text.input.ImeAction.Next
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Next,
                     ),
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                        onNext = { passwordFocusRequester.requestFocus() }
+                        onNext = { passwordFocusRequester.requestFocus() },
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -204,7 +203,7 @@ fun TvServerConnectionScreen(
                     maxLines = 1,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
-                        imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Done,
                     ),
                     keyboardActions = androidx.compose.foundation.text.KeyboardActions(
                         onDone = {
@@ -212,7 +211,7 @@ fun TvServerConnectionScreen(
                             if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
                                 onConnect(serverUrl, username, password)
                             }
-                        }
+                        },
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -253,7 +252,7 @@ fun TvServerConnectionScreen(
                         .fillMaxWidth()
                         .tvKeyboardHandler(
                             focusManager = focusManager,
-                            onBack = { focusManager.clearFocus() }
+                            onBack = { focusManager.clearFocus() },
                         ),
                 ) {
                     if (isConnecting) {

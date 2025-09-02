@@ -10,14 +10,13 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 
 /**
  * TV remote control shortcuts and keyboard navigation handler
  */
 object TvKeyboardHandler {
-    
+
     /**
      * Handle global TV remote shortcuts
      */
@@ -33,7 +32,7 @@ object TvKeyboardHandler {
         onSearch: (() -> Unit)? = null,
     ): Boolean {
         if (keyEvent.type != KeyEventType.KeyDown) return false
-        
+
         return when (keyEvent.key) {
             // Navigation keys
             Key.Back, Key.Escape -> {
@@ -48,7 +47,7 @@ object TvKeyboardHandler {
                 onMenu?.invoke()
                 true
             }
-            
+
             // Media control keys
             Key.MediaPlay, Key.MediaPause, Key.MediaPlayPause, Key.Spacebar -> {
                 onPlayPause?.invoke()
@@ -74,25 +73,25 @@ object TvKeyboardHandler {
                 // Handle rewind functionality
                 true
             }
-            
+
             // Search key
             Key.Search, Key.F -> {
                 onSearch?.invoke()
                 true
             }
-            
+
             // Info/Details key
             Key.Info, Key.I -> {
                 // Handle info/details functionality
                 true
             }
-            
+
             // Guide key
             Key.Guide, Key.G -> {
                 // Handle guide functionality
                 true
             }
-            
+
             // Channel up/down (for library navigation)
             Key.ChannelUp -> {
                 // Handle previous library/section
@@ -102,7 +101,7 @@ object TvKeyboardHandler {
                 // Handle next library/section
                 true
             }
-            
+
             // Number keys for quick navigation
             Key.One -> {
                 // Quick access to home
@@ -124,17 +123,17 @@ object TvKeyboardHandler {
                 // Quick access to settings
                 true
             }
-            
+
             // Color keys (red, green, yellow, blue)
             Key.Unknown -> {
                 // Handle color keys if needed
                 false
             }
-            
+
             else -> false
         }
     }
-    
+
     /**
      * Handle contextual navigation within content screens
      */
@@ -147,9 +146,9 @@ object TvKeyboardHandler {
         onMore: (() -> Unit)? = null,
     ): Boolean {
         if (keyEvent.type != KeyEventType.KeyDown) return false
-        
+
         return when (keyEvent.key) {
-            // Quick actions  
+            // Quick actions
             Key.F -> {
                 onFavorite?.invoke()
                 true
@@ -162,7 +161,7 @@ object TvKeyboardHandler {
                 onMore?.invoke()
                 true
             }
-            
+
             else -> false
         }
     }
@@ -196,7 +195,7 @@ fun Modifier.tvKeyboardHandler(
             onPlayPause = onPlayPause,
             onSearch = onSearch,
         )
-        
+
         if (globalHandled) {
             true
         } else {
@@ -248,7 +247,7 @@ object TvKeyBindings {
         • Channel Up: Previous library
         • Channel Down: Next library
     """
-    
+
     /**
      * Get help text for current screen context
      */
@@ -273,7 +272,7 @@ enum class TvScreenType {
     DETAILS,
     PLAYER,
     SEARCH,
-    SETTINGS
+    SETTINGS,
 }
 
 /**
@@ -295,7 +294,7 @@ data class TvControllerConfig(
     val enableQuickAccess: Boolean = true,
     val enableColorKeys: Boolean = false,
     val enableVoiceSearch: Boolean = true,
-    val customKeyBindings: Map<Key, String> = emptyMap()
+    val customKeyBindings: Map<Key, String> = emptyMap(),
 )
 
 /**
@@ -303,20 +302,20 @@ data class TvControllerConfig(
  */
 class TvControllerManager {
     private var config = TvControllerConfig()
-    
+
     fun updateConfig(newConfig: TvControllerConfig) {
         config = newConfig
     }
-    
+
     fun getConfig(): TvControllerConfig = config
-    
+
     fun isKeyEnabled(key: Key): Boolean {
         return when {
-            key in listOf(Key.DirectionUp, Key.DirectionDown, Key.DirectionLeft, Key.DirectionRight) -> 
+            key in listOf(Key.DirectionUp, Key.DirectionDown, Key.DirectionLeft, Key.DirectionRight) ->
                 config.enableDpadNavigation
-            key in listOf(Key.MediaPlay, Key.MediaPause, Key.MediaStop) -> 
+            key in listOf(Key.MediaPlay, Key.MediaPause, Key.MediaStop) ->
                 config.enableMediaKeys
-            key in listOf(Key.One, Key.Two, Key.Three, Key.Four, Key.Five) -> 
+            key in listOf(Key.One, Key.Two, Key.Three, Key.Four, Key.Five) ->
                 config.enableQuickAccess
             else -> true
         }

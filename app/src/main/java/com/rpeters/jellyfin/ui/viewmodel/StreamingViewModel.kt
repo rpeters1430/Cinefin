@@ -74,7 +74,7 @@ class StreamingViewModel @Inject constructor(
             withContext(Dispatchers.IO) {
                 castManager.initialize()
             }
-            
+
             val image = getImageUrl(item)
             val backdrop = getBackdropUrl(item)
             castManager.loadPreview(item, imageUrl = image, backdropUrl = backdrop)
