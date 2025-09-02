@@ -45,7 +45,7 @@ class AuthenticationViewModel @Inject constructor(
             authRepository.isAuthenticating.collect { isAuthenticating ->
                 _authState.value = _authState.value.copy(
                     isAuthenticating = isAuthenticating,
-                    isAuthenticated = authRepository.isUserAuthenticated()
+                    isAuthenticated = authRepository.isUserAuthenticated(),
                 )
             }
         }
@@ -100,18 +100,18 @@ class AuthenticationViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 SecureLogger.d("AuthenticationViewModel", "Manual authentication refresh requested")
             }
-            
+
             _authState.value = _authState.value.copy(isAuthenticating = true, errorMessage = null)
-            
+
             try {
                 val success = authRepository.forceReAuthenticate()
-                
+
                 _authState.value = _authState.value.copy(
                     isAuthenticating = false,
                     isAuthenticated = success,
-                    errorMessage = if (!success) "Failed to refresh authentication" else null
+                    errorMessage = if (!success) "Failed to refresh authentication" else null,
                 )
-                
+
                 if (BuildConfig.DEBUG) {
                     SecureLogger.d("AuthenticationViewModel", "Authentication refresh completed: $success")
                 }
@@ -120,7 +120,7 @@ class AuthenticationViewModel @Inject constructor(
                 _authState.value = _authState.value.copy(
                     isAuthenticating = false,
                     isAuthenticated = false,
-                    errorMessage = "Failed to refresh authentication: ${e.message}"
+                    errorMessage = "Failed to refresh authentication: ${e.message}",
                 )
             }
         }
@@ -134,20 +134,20 @@ class AuthenticationViewModel @Inject constructor(
             try {
                 userRepository.logout()
                 credentialManager.clearCredentials()
-                
+
                 _authState.value = _authState.value.copy(
                     isAuthenticated = false,
                     isAuthenticating = false,
-                    errorMessage = null
+                    errorMessage = null,
                 )
-                
+
                 if (BuildConfig.DEBUG) {
                     SecureLogger.d("AuthenticationViewModel", "User logged out successfully")
                 }
             } catch (e: Exception) {
                 SecureLogger.e("AuthenticationViewModel", "Error during logout", e)
                 _authState.value = _authState.value.copy(
-                    errorMessage = "Logout failed: ${e.message}"
+                    errorMessage = "Logout failed: ${e.message}",
                 )
             }
         }

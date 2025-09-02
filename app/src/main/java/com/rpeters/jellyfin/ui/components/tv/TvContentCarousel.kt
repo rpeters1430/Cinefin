@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.components.tv
 
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,16 +12,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -56,7 +51,7 @@ fun TvContentCarousel(
         TvSkeletonCarousel(
             title = if (isLoading) "Loading..." else title,
             itemCount = if (isLoading) 6 else 0,
-            modifier = modifier
+            modifier = modifier,
         )
         return
     }
@@ -82,7 +77,7 @@ fun TvContentCarousel(
                 if (isFocused && index < items.size) {
                     onItemFocus(items[index])
                 }
-            }
+            },
         ) { focusModifier ->
             LazyRow(
                 state = lazyListState,

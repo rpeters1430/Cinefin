@@ -49,7 +49,7 @@ fun TvHomeScreen(
 
     TvScreenFocusScope(
         screenKey = "tv_home",
-        focusManager = tvFocusManager
+        focusManager = tvFocusManager,
     ) {
         Box(
             modifier = modifier
@@ -75,7 +75,7 @@ fun TvHomeScreen(
                     onRetry = {
                         viewModel.loadInitialData(forceRefresh = true)
                     },
-                    onDismiss = { viewModel.clearError() }
+                    onDismiss = { viewModel.clearError() },
                 )
                 return@Box
             }
@@ -85,10 +85,10 @@ fun TvHomeScreen(
                 TvEmptyState(
                     title = "No Content Available",
                     message = "Connect to your Jellyfin server and add some media to get started.",
-                    onAction = { 
+                    onAction = {
                         viewModel.loadInitialData(forceRefresh = true)
                     },
-                    actionText = "Refresh"
+                    actionText = "Refresh",
                 )
                 return@Box
             }
@@ -120,7 +120,7 @@ fun TvHomeScreen(
                     isLoading = appState.isLoading,
                 )
 
-                // TV Shows  
+                // TV Shows
                 val recentTvShows = appState.recentlyAddedByTypes["SERIES"]?.take(10) ?: emptyList()
                 TvContentCarousel(
                     items = recentTvShows,

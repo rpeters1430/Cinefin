@@ -39,7 +39,7 @@ fun TvNavGraph(
                 lifecycle = lifecycleOwner.lifecycle,
                 minActiveState = Lifecycle.State.STARTED,
             )
-            
+
             // Navigate to Home when successfully connected
             LaunchedEffect(connectionState.isConnected) {
                 if (connectionState.isConnected) {
@@ -48,7 +48,7 @@ fun TvNavGraph(
                     }
                 }
             }
-            
+
             TvServerConnectionScreen(
                 onConnect = { serverUrl, username, password ->
                     connectionViewModel.connectToServer(serverUrl, username, password)

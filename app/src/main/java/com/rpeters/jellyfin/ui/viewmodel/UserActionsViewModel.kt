@@ -40,17 +40,17 @@ class UserActionsViewModel @Inject constructor(
     fun loadFavorites() {
         viewModelScope.launch {
             _userActionsState.value = _userActionsState.value.copy(
-                isLoadingFavorites = true, 
-                errorMessage = null
+                isLoadingFavorites = true,
+                errorMessage = null,
             )
 
             when (val result = userRepository.getFavorites()) {
                 is ApiResult.Success -> {
                     _userActionsState.value = _userActionsState.value.copy(
                         favorites = result.data,
-                        isLoadingFavorites = false
+                        isLoadingFavorites = false,
                     )
-                    
+
                     if (BuildConfig.DEBUG) {
                         Log.d("UserActionsViewModel", "loadFavorites: Loaded ${result.data.size} favorites")
                     }
@@ -58,9 +58,9 @@ class UserActionsViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     _userActionsState.value = _userActionsState.value.copy(
                         isLoadingFavorites = false,
-                        errorMessage = "Failed to load favorites: ${result.message}"
+                        errorMessage = "Failed to load favorites: ${result.message}",
                     )
-                    
+
                     Log.e("UserActionsViewModel", "loadFavorites: Failed to load favorites: ${result.message}")
                 }
                 is ApiResult.Loading -> {
@@ -77,39 +77,39 @@ class UserActionsViewModel @Inject constructor(
         viewModelScope.launch {
             _userActionsState.value = _userActionsState.value.copy(
                 isProcessingAction = true,
-                errorMessage = null
+                errorMessage = null,
             )
-            
+
             val currentFavoriteState = item.userData?.isFavorite ?: false
             val newFavoriteState = !currentFavoriteState
-            
+
             when (val result = userRepository.toggleFavorite(item.id.toString(), newFavoriteState)) {
                 is ApiResult.Success -> {
                     _userActionsState.value = _userActionsState.value.copy(
                         isProcessingAction = false,
-                        successMessage = if (newFavoriteState) "Added to favorites" else "Removed from favorites"
+                        successMessage = if (newFavoriteState) "Added to favorites" else "Removed from favorites",
                     )
-                    
+
                     if (BuildConfig.DEBUG) {
                         Log.d("UserActionsViewModel", "Successfully toggled favorite for ${item.name}")
                     }
-                    
+
                     // Update local favorites list
                     val updatedFavorites = if (newFavoriteState) {
                         _userActionsState.value.favorites + item
                     } else {
                         _userActionsState.value.favorites.filterNot { it.id == item.id }
                     }
-                    
+
                     _userActionsState.value = _userActionsState.value.copy(favorites = updatedFavorites)
                     onSuccess?.invoke()
                 }
                 is ApiResult.Error -> {
                     _userActionsState.value = _userActionsState.value.copy(
                         isProcessingAction = false,
-                        errorMessage = "Failed to update favorite: ${result.message}"
+                        errorMessage = "Failed to update favorite: ${result.message}",
                     )
-                    
+
                     Log.e("UserActionsViewModel", "Failed to toggle favorite: ${result.message}")
                 }
                 is ApiResult.Loading -> {
@@ -126,28 +126,28 @@ class UserActionsViewModel @Inject constructor(
         viewModelScope.launch {
             _userActionsState.value = _userActionsState.value.copy(
                 isProcessingAction = true,
-                errorMessage = null
+                errorMessage = null,
             )
 
             when (val result = userRepository.markAsWatched(item.id.toString())) {
                 is ApiResult.Success -> {
                     _userActionsState.value = _userActionsState.value.copy(
                         isProcessingAction = false,
-                        successMessage = "Marked as watched"
+                        successMessage = "Marked as watched",
                     )
-                    
+
                     if (BuildConfig.DEBUG) {
                         Log.d("UserActionsViewModel", "Successfully marked ${item.name} as watched")
                     }
-                    
+
                     onSuccess?.invoke()
                 }
                 is ApiResult.Error -> {
                     _userActionsState.value = _userActionsState.value.copy(
                         isProcessingAction = false,
-                        errorMessage = "Failed to mark as watched: ${result.message}"
+                        errorMessage = "Failed to mark as watched: ${result.message}",
                     )
-                    
+
                     Log.e("UserActionsViewModel", "Failed to mark as watched: ${result.message}")
                 }
                 is ApiResult.Loading -> {
@@ -164,28 +164,28 @@ class UserActionsViewModel @Inject constructor(
         viewModelScope.launch {
             _userActionsState.value = _userActionsState.value.copy(
                 isProcessingAction = true,
-                errorMessage = null
+                errorMessage = null,
             )
 
             when (val result = userRepository.markAsUnwatched(item.id.toString())) {
                 is ApiResult.Success -> {
                     _userActionsState.value = _userActionsState.value.copy(
                         isProcessingAction = false,
-                        successMessage = "Marked as unwatched"
+                        successMessage = "Marked as unwatched",
                     )
-                    
+
                     if (BuildConfig.DEBUG) {
                         Log.d("UserActionsViewModel", "Successfully marked ${item.name} as unwatched")
                     }
-                    
+
                     onSuccess?.invoke()
                 }
                 is ApiResult.Error -> {
                     _userActionsState.value = _userActionsState.value.copy(
                         isProcessingAction = false,
-                        errorMessage = "Failed to mark as unwatched: ${result.message}"
+                        errorMessage = "Failed to mark as unwatched: ${result.message}",
                     )
-                    
+
                     Log.e("UserActionsViewModel", "Failed to mark as unwatched: ${result.message}")
                 }
                 is ApiResult.Loading -> {
@@ -202,32 +202,32 @@ class UserActionsViewModel @Inject constructor(
         viewModelScope.launch {
             _userActionsState.value = _userActionsState.value.copy(
                 isProcessingAction = true,
-                errorMessage = null
+                errorMessage = null,
             )
 
             when (val result = userRepository.deleteItemAsAdmin(item.id.toString())) {
                 is ApiResult.Success -> {
                     _userActionsState.value = _userActionsState.value.copy(
                         isProcessingAction = false,
-                        successMessage = "Item deleted successfully"
+                        successMessage = "Item deleted successfully",
                     )
-                    
+
                     if (BuildConfig.DEBUG) {
                         Log.d("UserActionsViewModel", "Successfully deleted ${item.name}")
                     }
-                    
+
                     // Remove from favorites if it was favorited
                     val updatedFavorites = _userActionsState.value.favorites.filterNot { it.id == item.id }
                     _userActionsState.value = _userActionsState.value.copy(favorites = updatedFavorites)
-                    
+
                     onResult(true, null)
                 }
                 is ApiResult.Error -> {
                     _userActionsState.value = _userActionsState.value.copy(
                         isProcessingAction = false,
-                        errorMessage = "Failed to delete item: ${result.message}"
+                        errorMessage = "Failed to delete item: ${result.message}",
                     )
-                    
+
                     Log.e("UserActionsViewModel", "Failed to delete item: ${result.message}")
                     onResult(false, result.message)
                 }
@@ -258,7 +258,7 @@ class UserActionsViewModel @Inject constructor(
     fun clearMessages() {
         _userActionsState.value = _userActionsState.value.copy(
             errorMessage = null,
-            successMessage = null
+            successMessage = null,
         )
     }
 }

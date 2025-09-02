@@ -23,7 +23,7 @@ enum class DeviceFormFactor {
     TABLET,
     TV,
     DESKTOP,
-    FOLDABLE
+    FOLDABLE,
 }
 
 /**
@@ -32,7 +32,7 @@ enum class DeviceFormFactor {
 enum class ScreenOrientation {
     PORTRAIT,
     LANDSCAPE,
-    TV_LANDSCAPE // Always landscape for TV, optimized for viewing distance
+    TV_LANDSCAPE, // Always landscape for TV, optimized for viewing distance
 }
 
 /**
@@ -53,19 +53,19 @@ data class AdaptiveLayoutConfig(
     val useLargeText: Boolean,
     val useCondensedLayout: Boolean,
 ) {
-    
+
     /**
      * Determine if this layout supports TV-optimized focus navigation
      */
     val supportsFocusNavigation: Boolean
         get() = isTV || formFactor == DeviceFormFactor.DESKTOP
-    
+
     /**
      * Determine if this layout should use TV-specific components
      */
     val useTvComponents: Boolean
         get() = isTV
-    
+
     /**
      * Get the appropriate spacing for this layout
      */
@@ -75,7 +75,7 @@ data class AdaptiveLayoutConfig(
             isTablet -> 24.dp
             else -> 16.dp
         }
-    
+
     /**
      * Get the appropriate header size for this layout
      */
@@ -94,7 +94,7 @@ data class AdaptiveLayoutConfig(
 fun rememberAdaptiveLayoutConfig(windowSizeClass: WindowSizeClass): AdaptiveLayoutConfig {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
-    
+
     return remember(windowSizeClass, configuration.orientation) {
         createAdaptiveLayoutConfig(context, windowSizeClass, configuration)
     }
@@ -106,15 +106,15 @@ fun rememberAdaptiveLayoutConfig(windowSizeClass: WindowSizeClass): AdaptiveLayo
 private fun createAdaptiveLayoutConfig(
     context: Context,
     windowSizeClass: WindowSizeClass,
-    configuration: Configuration
+    configuration: Configuration,
 ): AdaptiveLayoutConfig {
     val isTV = detectTVDevice(context)
     val isTablet = detectTabletDevice(windowSizeClass, configuration)
     val isFoldable = detectFoldableDevice(context)
-    
+
     val formFactor = determineFormFactor(isTV, isTablet, isFoldable, windowSizeClass)
     val orientation = determineOrientation(configuration, isTV)
-    
+
     return AdaptiveLayoutConfig(
         formFactor = formFactor,
         orientation = orientation,
@@ -147,7 +147,7 @@ private fun detectTabletDevice(windowSizeClass: WindowSizeClass, configuration: 
     return when (windowSizeClass.widthSizeClass) {
         WindowWidthSizeClass.Medium, WindowWidthSizeClass.Expanded -> {
             // Additional checks for tablet characteristics
-            val isLargeScreen = (configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK) >= 
+            val isLargeScreen = (configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK) >=
                 Configuration.SCREENLAYOUT_SIZE_LARGE
             isLargeScreen || windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded
         }
@@ -162,9 +162,9 @@ private fun detectFoldableDevice(context: Context): Boolean {
     // This is a simplified check - in production you'd use WindowManager APIs
     // or device-specific checks for foldable detection
     val display = context.resources.displayMetrics
-    val aspectRatio = maxOf(display.widthPixels, display.heightPixels).toFloat() / 
-                     minOf(display.widthPixels, display.heightPixels).toFloat()
-    
+    val aspectRatio = maxOf(display.widthPixels, display.heightPixels).toFloat() /
+        minOf(display.widthPixels, display.heightPixels).toFloat()
+
     // Foldables often have unusual aspect ratios when unfolded
     return aspectRatio > 2.1f
 }
@@ -176,7 +176,7 @@ private fun determineFormFactor(
     isTV: Boolean,
     isTablet: Boolean,
     isFoldable: Boolean,
-    windowSizeClass: WindowSizeClass
+    windowSizeClass: WindowSizeClass,
 ): DeviceFormFactor {
     return when {
         isTV -> DeviceFormFactor.TV
@@ -283,11 +283,11 @@ object ResponsiveBreakpoints {
     const val COMPACT_WIDTH_DP = 600
     const val MEDIUM_WIDTH_DP = 840
     const val COMPACT_HEIGHT_DP = 480
-    
+
     // TV-specific breakpoints
     const val TV_MIN_WIDTH_DP = 960
     const val TV_OPTIMAL_WIDTH_DP = 1920
-    
+
     // Content sizing breakpoints
     const val MIN_ITEM_SIZE_DP = 120
     const val MAX_ITEM_SIZE_DP = 300
