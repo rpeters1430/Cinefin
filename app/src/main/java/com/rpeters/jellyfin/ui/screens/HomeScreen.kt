@@ -232,8 +232,8 @@ fun HomeContent(
     }
     // Precompute derived data to minimize recompositions during scroll
     val continueWatchingItems by remember(appState.allItems) { mutableStateOf(getContinueWatchingItems(appState)) }
-    val recentMovies by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes["MOVIE"]?.take(8) ?: emptyList()) }
-    val recentTVShows by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes["SERIES"]?.take(8) ?: emptyList()) }
+    val recentMovies by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(8) ?: emptyList()) }
+    val recentTVShows by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(8) ?: emptyList()) }
     val featuredItems by remember(recentMovies, recentTVShows) { mutableStateOf((recentMovies + recentTVShows).take(10)) }
     val orderedLibraries by remember(appState.libraries) {
         mutableStateOf(
@@ -247,8 +247,8 @@ fun HomeContent(
             },
         )
     }
-    val recentEpisodes by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes["EPISODE"]?.take(15) ?: emptyList()) }
-    val recentMusic by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes["AUDIO"]?.take(15) ?: emptyList()) }
+    val recentEpisodes by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(15) ?: emptyList()) }
+    val recentMusic by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]?.take(15) ?: emptyList()) }
 
     Box(
         modifier = modifier,
@@ -381,7 +381,7 @@ fun HomeContent(
                 }
             }
 
-            val recentVideos = appState.recentlyAddedByTypes["VIDEO"]?.take(15) ?: emptyList()
+            val recentVideos = appState.recentlyAddedByTypes[BaseItemKind.VIDEO.name]?.take(15) ?: emptyList()
             if (recentVideos.isNotEmpty()) {
                 item(key = "recent_home_videos", contentType = "carousel") {
                     val items = remember(recentVideos) {

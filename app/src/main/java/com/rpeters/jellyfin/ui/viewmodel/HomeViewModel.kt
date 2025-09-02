@@ -201,17 +201,7 @@ class HomeViewModel @Inject constructor(
             when (result) {
                 is ApiResult.Success -> {
                     if (result.data.isNotEmpty()) {
-                        val typeName = when (contentType) {
-                            BaseItemKind.MOVIE -> "Movies"
-                            BaseItemKind.SERIES -> "TV Shows"
-                            BaseItemKind.EPISODE -> "Episodes"
-                            BaseItemKind.AUDIO -> "Music"
-                            BaseItemKind.BOOK -> "Books"
-                            BaseItemKind.AUDIO_BOOK -> "Audiobooks"
-                            BaseItemKind.VIDEO -> "Videos"
-                            else -> "Other"
-                        }
-                        results[typeName] = result.data
+                        results[contentType.name] = result.data
                     }
                 }
                 is ApiResult.Error -> {

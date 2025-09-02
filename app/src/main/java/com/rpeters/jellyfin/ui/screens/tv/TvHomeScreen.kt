@@ -29,6 +29,7 @@ import com.rpeters.jellyfin.ui.tv.TvScreenFocusScope
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
 import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import org.jellyfin.sdk.model.api.BaseItemKind
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
@@ -108,7 +109,7 @@ fun TvHomeScreen(
                 )
 
                 // Recently added movies
-                val recentMovies = appState.recentlyAddedByTypes["MOVIE"]?.take(10) ?: emptyList()
+                val recentMovies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(10) ?: emptyList()
                 TvContentCarousel(
                     items = recentMovies,
                     title = "Recently Added Movies",
@@ -121,7 +122,7 @@ fun TvHomeScreen(
                 )
 
                 // TV Shows
-                val recentTvShows = appState.recentlyAddedByTypes["SERIES"]?.take(10) ?: emptyList()
+                val recentTvShows = appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(10) ?: emptyList()
                 TvContentCarousel(
                     items = recentTvShows,
                     title = "Recently Added TV Shows",
