@@ -124,7 +124,7 @@ fun MusicScreen(
         val libraryMusic = appState.allItems.filter {
             it.type in listOf(BaseItemKind.MUSIC_ALBUM, BaseItemKind.MUSIC_ARTIST, BaseItemKind.AUDIO)
         }
-        val recentMusic = appState.recentlyAddedByTypes["AUDIO"] ?: emptyList()
+        val recentMusic = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name] ?: emptyList()
 
         // Combine library music with recent music, removing duplicates
         val combined = (libraryMusic + recentMusic).distinctBy { it.id }

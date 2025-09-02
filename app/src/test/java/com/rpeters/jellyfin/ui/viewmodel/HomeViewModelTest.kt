@@ -4,6 +4,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import io.mockk.MockKAnnotations
+import io.mockk.any
 import io.mockk.coEvery
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
@@ -169,9 +170,9 @@ class HomeViewModelTest {
         val state = viewModel.homeState.first()
         assertFalse(state.isLoading)
 
-        val moviesList = state.recentlyAddedByTypes["Movies"]
-        val seriesList = state.recentlyAddedByTypes["TV Shows"]
-        val musicList = state.recentlyAddedByTypes["Music"]
+        val moviesList = state.recentlyAddedByTypes[BaseItemKind.MOVIE.name]
+        val seriesList = state.recentlyAddedByTypes[BaseItemKind.SERIES.name]
+        val musicList = state.recentlyAddedByTypes[BaseItemKind.AUDIO.name]
 
         assertEquals(1, moviesList?.size)
         assertEquals("Recent Movie", moviesList?.get(0)?.name)
@@ -181,6 +182,37 @@ class HomeViewModelTest {
 
         assertTrue(musicList?.isEmpty() == true)
         assertNull(state.errorMessage)
+    }
+
+    @Test
+    fun `loadRecentlyAddedByTypes uses enum names as keys`() = runTest {
+        // Given
+        val mockMovies = listOf(
+            mockk<BaseItemDto> {
+                coEvery { id } returns java.util.UUID.randomUUID()
+                coEvery { name } returns "Recent Movie"
+                coEvery { type } returns BaseItemKind.MOVIE
+            },
+        )
+
+        val mockSeries = listOf(
+            mockk<BaseItemDto> {
+                coEvery { id } returns java.util.UUID.randomUUID()
+                coEvery { name } returns "Recent Series"
+                coEvery { type } returns BaseItemKind.SERIES
+            },
+        )
+
+        coEvery { mediaRepository.getRecentlyAddedByType(any(), 20) } returns ApiResult.Success(emptyList())
+        coEvery { mediaRepository.getRecentlyAddedByType(BaseItemKind.MOVIE, 20) } returns ApiResult.Success(mockMovies)
+        coEvery { mediaRepository.getRecentlyAddedByType(BaseItemKind.SERIES, 20) } returns ApiResult.Success(mockSeries)
+
+        // When
+        viewModel.loadRecentlyAddedByTypes()
+
+        // Then
+        val state = viewModel.homeState.first()
+        assertEquals(setOf(BaseItemKind.MOVIE.name, BaseItemKind.SERIES.name), state.recentlyAddedByTypes.keys)
     }
 
     @Test
