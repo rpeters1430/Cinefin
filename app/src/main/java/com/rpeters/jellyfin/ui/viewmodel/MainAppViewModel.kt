@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.CollectionType
 import javax.inject.Inject
 
 /**
@@ -385,11 +386,38 @@ class MainAppViewModel @Inject constructor(
                 _appState.value = currentState.copy(isLoadingMovies = true)
             }
 
-            // Simplified movie loading
-            when (val result = repository.getFavorites()) { // Placeholder - would use actual movie loading
+            val movieLibrary = _appState.value.libraries.firstOrNull {
+                it.collectionType == CollectionType.MOVIES
+            }
+            if (movieLibrary == null) {
+                _appState.value = _appState.value.copy(
+                    isLoadingMovies = false,
+                    hasMoreMovies = false,
+                    errorMessage = "No movie library available",
+                )
+                return@launch
+            }
+
+            val pageSize = 50
+            val page = if (reset) 0 else currentState.moviesPage + 1
+            val startIndex = page * pageSize
+
+            when (
+                val result = mediaRepository.getLibraryItems(
+                    parentId = movieLibrary.id?.toString(),
+                    itemTypes = "Movie",
+                    startIndex = startIndex,
+                    limit = pageSize,
+                    collectionType = "movies",
+                )
+            ) {
                 is ApiResult.Success -> {
+                    val newMovies = result.data
+                    val allMovies = if (reset) newMovies else currentState.allMovies + newMovies
                     _appState.value = _appState.value.copy(
-                        allMovies = result.data.filter { it.type?.name == "Movie" },
+                        allMovies = allMovies,
+                        moviesPage = page,
+                        hasMoreMovies = newMovies.size == pageSize,
                         isLoadingMovies = false,
                     )
                 }
@@ -399,9 +427,7 @@ class MainAppViewModel @Inject constructor(
                         errorMessage = "Failed to load movies: ${result.message}",
                     )
                 }
-                is ApiResult.Loading -> {
-                    // Already handled
-                }
+                is ApiResult.Loading -> Unit
             }
         }
     }
@@ -426,11 +452,38 @@ class MainAppViewModel @Inject constructor(
                 _appState.value = currentState.copy(isLoadingTVShows = true)
             }
 
-            // Simplified TV show loading
-            when (val result = repository.getFavorites()) { // Placeholder - would use actual TV loading
+            val tvLibrary = _appState.value.libraries.firstOrNull {
+                it.collectionType == CollectionType.TVSHOWS
+            }
+            if (tvLibrary == null) {
+                _appState.value = _appState.value.copy(
+                    isLoadingTVShows = false,
+                    hasMoreTVShows = false,
+                    errorMessage = "No TV show library available",
+                )
+                return@launch
+            }
+
+            val pageSize = 50
+            val page = if (reset) 0 else currentState.tvShowsPage + 1
+            val startIndex = page * pageSize
+
+            when (
+                val result = mediaRepository.getLibraryItems(
+                    parentId = tvLibrary.id?.toString(),
+                    itemTypes = "Series",
+                    startIndex = startIndex,
+                    limit = pageSize,
+                    collectionType = "tvshows",
+                )
+            ) {
                 is ApiResult.Success -> {
+                    val newTVShows = result.data
+                    val allTVShows = if (reset) newTVShows else currentState.allTVShows + newTVShows
                     _appState.value = _appState.value.copy(
-                        allTVShows = result.data.filter { it.type?.name == "Series" },
+                        allTVShows = allTVShows,
+                        tvShowsPage = page,
+                        hasMoreTVShows = newTVShows.size == pageSize,
                         isLoadingTVShows = false,
                     )
                 }
@@ -440,9 +493,7 @@ class MainAppViewModel @Inject constructor(
                         errorMessage = "Failed to load TV shows: ${result.message}",
                     )
                 }
-                is ApiResult.Loading -> {
-                    // Already handled
-                }
+                is ApiResult.Loading -> Unit
             }
         }
     }
