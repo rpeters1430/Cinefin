@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.tv
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,8 +42,10 @@ fun TvNavGraph(
             )
 
             // Navigate to Home when successfully connected
-            LaunchedEffect(connectionState.isConnected) {
+            LaunchedEffect(connectionState.isConnected, connectionState.isConnecting, connectionState.errorMessage) {
+                Log.d("TvNavGraph", "Connection state changed - isConnected: ${connectionState.isConnected}, isConnecting: ${connectionState.isConnecting}, error: ${connectionState.errorMessage}")
                 if (connectionState.isConnected) {
+                    Log.d("TvNavGraph", "Navigating to TV home screen")
                     navController.navigate(TvRoutes.Home) {
                         popUpTo(TvRoutes.ServerConnection) { inclusive = true }
                     }
