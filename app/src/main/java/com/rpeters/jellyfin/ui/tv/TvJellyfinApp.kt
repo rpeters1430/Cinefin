@@ -261,15 +261,11 @@ fun TvServerConnectionScreen(
 fun TvJellyfinApp(
     modifier: Modifier = Modifier,
 ) {
-    // This is the main TV app entry point
-    // For now, it just shows a placeholder
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = "TV App - Work in Progress",
-            style = TvMaterialTheme.typography.displayMedium,
-        )
+    // Root composable for the TV experience.
+    // Hosts the navigation graph for all TV screens.
+    TvMaterialTheme {
+        Surface(modifier = modifier.fillMaxSize()) {
+            TvNavGraph()
+        }
     }
 }
