@@ -82,11 +82,7 @@ fun TvContentCarousel(
                 }
             },
         ) { focusModifier ->
-            val rowModifier = if (focusRequester != null) {
-                focusModifier.focusRequester(focusRequester)
-            } else {
-                focusModifier
-            }
+            val rowModifier = focusRequester?.let { focusModifier.focusRequester(it) } ?: focusModifier
 
             LazyRow(
                 state = lazyListState,
