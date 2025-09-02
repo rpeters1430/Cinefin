@@ -14,6 +14,7 @@ import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +28,7 @@ import com.rpeters.jellyfin.ui.components.tv.TvErrorBanner
 import com.rpeters.jellyfin.ui.components.tv.TvFullScreenLoading
 import com.rpeters.jellyfin.ui.tv.TvScreenFocusScope
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
+import com.rpeters.jellyfin.ui.tv.requestInitialFocus
 import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -47,6 +49,22 @@ fun TvHomeScreen(
     val context = LocalContext.current
     val windowSizeClass = calculateWindowSizeClass(context as androidx.activity.ComponentActivity)
     val layoutConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
+
+    val recentMovies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(10) ?: emptyList()
+    val recentTvShows = appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(10) ?: emptyList()
+    val allMovies = appState.allMovies.take(10)
+    val allTvShows = appState.allTVShows.take(10)
+
+    val firstCarouselId = when {
+        recentMovies.isNotEmpty() -> "recent_movies"
+        recentTvShows.isNotEmpty() -> "recent_tv_shows"
+        allMovies.isNotEmpty() -> "all_movies"
+        allTvShows.isNotEmpty() -> "all_tv_shows"
+        else -> null
+    }
+
+    val initialFocusRequester = remember { FocusRequester() }
+    initialFocusRequester.requestInitialFocus(condition = firstCarouselId != null)
 
     TvScreenFocusScope(
         screenKey = "tv_home",
@@ -109,7 +127,6 @@ fun TvHomeScreen(
                 )
 
                 // Recently added movies
-                val recentMovies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(10) ?: emptyList()
                 TvContentCarousel(
                     items = recentMovies,
                     title = "Recently Added Movies",
@@ -119,10 +136,10 @@ fun TvHomeScreen(
                     },
                     carouselId = "recent_movies",
                     isLoading = appState.isLoading,
+                    focusRequester = if (firstCarouselId == "recent_movies") initialFocusRequester else null,
                 )
 
                 // TV Shows
-                val recentTvShows = appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(10) ?: emptyList()
                 TvContentCarousel(
                     items = recentTvShows,
                     title = "Recently Added TV Shows",
@@ -132,11 +149,12 @@ fun TvHomeScreen(
                     },
                     carouselId = "recent_tv_shows",
                     isLoading = appState.isLoading,
+                    focusRequester = if (firstCarouselId == "recent_tv_shows") initialFocusRequester else null,
                 )
 
                 // All movies
                 TvContentCarousel(
-                    items = appState.allMovies.take(10),
+                    items = allMovies,
                     title = "Movies",
                     onItemFocus = { /* Handle focus if needed */ },
                     onItemSelect = { item ->
@@ -144,11 +162,12 @@ fun TvHomeScreen(
                     },
                     carouselId = "all_movies",
                     isLoading = appState.isLoadingMovies,
+                    focusRequester = if (firstCarouselId == "all_movies") initialFocusRequester else null,
                 )
 
                 // All TV shows
                 TvContentCarousel(
-                    items = appState.allTVShows.take(10),
+                    items = allTvShows,
                     title = "TV Shows",
                     onItemFocus = { /* Handle focus if needed */ },
                     onItemSelect = { item ->
@@ -156,6 +175,7 @@ fun TvHomeScreen(
                     },
                     carouselId = "all_tv_shows",
                     isLoading = appState.isLoadingTVShows,
+                    focusRequester = if (firstCarouselId == "all_tv_shows") initialFocusRequester else null,
                 )
 
                 // Libraries section

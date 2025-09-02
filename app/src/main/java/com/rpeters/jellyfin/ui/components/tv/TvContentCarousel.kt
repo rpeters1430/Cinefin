@@ -18,6 +18,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -45,6 +47,7 @@ fun TvContentCarousel(
     viewModel: MainAppViewModel = hiltViewModel(),
     carouselId: String = title.replace(" ", "_").lowercase(),
     isLoading: Boolean = false,
+    focusRequester: FocusRequester? = null,
 ) {
     // Show skeleton if loading or no items
     if (isLoading || items.isEmpty()) {
@@ -83,7 +86,7 @@ fun TvContentCarousel(
                 state = lazyListState,
                 contentPadding = PaddingValues(horizontal = 56.dp),
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = focusModifier,
+                modifier = focusRequester?.let { focusModifier.focusRequester(it) } ?: focusModifier,
             ) {
                 items(items, key = { it.id?.toString() ?: "" }) { item ->
                     val itemIndex = items.indexOf(item)
