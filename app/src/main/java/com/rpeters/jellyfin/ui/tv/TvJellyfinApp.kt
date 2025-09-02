@@ -122,7 +122,7 @@ fun TvServerConnectionScreen(
                     imeAction = ImeAction.Next,
                 ),
                 keyboardActions = KeyboardActions(
-                    onNext = { 
+                    onNext = {
                         usernameFocusRequester.requestFocus()
                     },
                 ),
@@ -145,7 +145,7 @@ fun TvServerConnectionScreen(
                     imeAction = ImeAction.Next,
                 ),
                 keyboardActions = KeyboardActions(
-                    onNext = { 
+                    onNext = {
                         passwordFocusRequester.requestFocus()
                     },
                 ),
@@ -215,7 +215,7 @@ fun TvServerConnectionScreen(
 
             // Spacer to ensure button is visible
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Connect button
             Button(
                 onClick = {
@@ -236,12 +236,12 @@ fun TvServerConnectionScreen(
                 if (isConnecting) {
                     Row(
                         horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
                             color = TvMaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
+                            strokeWidth = 2.dp,
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Connecting...", style = TvMaterialTheme.typography.labelLarge)
@@ -250,7 +250,7 @@ fun TvServerConnectionScreen(
                     Text("Connect", style = TvMaterialTheme.typography.labelLarge)
                 }
             }
-            
+
             // Bottom spacer to ensure scrolling works properly
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -259,17 +259,17 @@ fun TvServerConnectionScreen(
 
 @Composable
 fun TvJellyfinApp(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     // This is the main TV app entry point
     // For now, it just shows a placeholder
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = "TV App - Work in Progress",
-            style = TvMaterialTheme.typography.displayMedium
+            style = TvMaterialTheme.typography.displayMedium,
         )
     }
 }
