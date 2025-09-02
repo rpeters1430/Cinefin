@@ -57,16 +57,15 @@ class MediaLibraryViewModel @Inject constructor(
      */
     fun loadLibraries(forceRefresh: Boolean = false) {
         viewModelScope.launch {
-
             _libraryState.value = _libraryState.value.copy(isLoadingLibraries = true, errorMessage = null)
 
             when (val result = mediaRepository.getUserLibraries()) {
                 is ApiResult.Success -> {
                     _libraryState.value = _libraryState.value.copy(
                         libraries = result.data,
-                        isLoadingLibraries = false
+                        isLoadingLibraries = false,
                     )
-                    
+
                     if (BuildConfig.DEBUG) {
                         Log.d("MediaLibraryViewModel", "loadLibraries: Loaded ${result.data.size} libraries")
                     }
@@ -76,7 +75,7 @@ class MediaLibraryViewModel @Inject constructor(
                         Log.e("MediaLibraryViewModel", "loadLibraries: Failed to load libraries: ${result.message}")
                         _libraryState.value = _libraryState.value.copy(
                             isLoadingLibraries = false,
-                            errorMessage = "Failed to load libraries: ${result.message}"
+                            errorMessage = "Failed to load libraries: ${result.message}",
                         )
                     } else {
                         _libraryState.value = _libraryState.value.copy(isLoadingLibraries = false)
@@ -94,16 +93,15 @@ class MediaLibraryViewModel @Inject constructor(
      */
     fun loadRecentlyAdded() {
         viewModelScope.launch {
-
             _libraryState.value = _libraryState.value.copy(isLoadingRecentlyAdded = true)
 
             when (val result = mediaRepository.getRecentlyAdded()) {
                 is ApiResult.Success -> {
                     _libraryState.value = _libraryState.value.copy(
                         recentlyAdded = result.data,
-                        isLoadingRecentlyAdded = false
+                        isLoadingRecentlyAdded = false,
                     )
-                    
+
                     if (BuildConfig.DEBUG) {
                         Log.d("MediaLibraryViewModel", "loadRecentlyAdded: Loaded ${result.data.size} items")
                     }
@@ -113,7 +111,7 @@ class MediaLibraryViewModel @Inject constructor(
                         Log.e("MediaLibraryViewModel", "loadRecentlyAdded: Failed: ${result.message}")
                         _libraryState.value = _libraryState.value.copy(
                             isLoadingRecentlyAdded = false,
-                            errorMessage = "Failed to load recent items: ${result.message}"
+                            errorMessage = "Failed to load recent items: ${result.message}",
                         )
                     } else {
                         _libraryState.value = _libraryState.value.copy(isLoadingRecentlyAdded = false)
@@ -131,7 +129,6 @@ class MediaLibraryViewModel @Inject constructor(
      */
     fun loadMovies(reset: Boolean = false) {
         viewModelScope.launch {
-
             val currentState = _libraryState.value
 
             if (reset) {
@@ -139,7 +136,7 @@ class MediaLibraryViewModel @Inject constructor(
                     allMovies = emptyList(),
                     moviesPage = 0,
                     hasMoreMovies = true,
-                    isLoadingMovies = true
+                    isLoadingMovies = true,
                 )
             } else {
                 if (currentState.isLoadingMovies || !currentState.hasMoreMovies) {
@@ -168,20 +165,22 @@ class MediaLibraryViewModel @Inject constructor(
                 _libraryState.value = _libraryState.value.copy(
                     isLoadingMovies = false,
                     hasMoreMovies = false,
-                    errorMessage = "No movie libraries available"
+                    errorMessage = "No movie libraries available",
                 )
                 return@launch
             }
 
             val movieLibraryId = movieLibraries.first().id.toString()
 
-            when (val result = mediaRepository.getLibraryItems(
-                parentId = movieLibraryId,
-                itemTypes = "Movie",
-                startIndex = startIndex,
-                limit = pageSize,
-                collectionType = "movies"
-            )) {
+            when (
+                val result = mediaRepository.getLibraryItems(
+                    parentId = movieLibraryId,
+                    itemTypes = "Movie",
+                    startIndex = startIndex,
+                    limit = pageSize,
+                    collectionType = "movies",
+                )
+            ) {
                 is ApiResult.Success -> {
                     val newMovies = result.data
                     val allMovies = if (reset) {
@@ -195,7 +194,7 @@ class MediaLibraryViewModel @Inject constructor(
                         moviesPage = page,
                         hasMoreMovies = newMovies.size == pageSize,
                         isLoadingMovies = false,
-                        errorMessage = null
+                        errorMessage = null,
                     )
 
                     if (BuildConfig.DEBUG) {
@@ -207,7 +206,7 @@ class MediaLibraryViewModel @Inject constructor(
                         Log.e("MediaLibraryViewModel", "loadMovies: Failed to load page $page: ${result.message}")
                         _libraryState.value = _libraryState.value.copy(
                             isLoadingMovies = false,
-                            errorMessage = if (reset) "Failed to load movies: ${result.message}" else result.message
+                            errorMessage = if (reset) "Failed to load movies: ${result.message}" else result.message,
                         )
                     } else {
                         _libraryState.value = _libraryState.value.copy(isLoadingMovies = false)
@@ -225,7 +224,6 @@ class MediaLibraryViewModel @Inject constructor(
      */
     fun loadTVShows(reset: Boolean = false) {
         viewModelScope.launch {
-
             val currentState = _libraryState.value
 
             if (reset) {
@@ -233,7 +231,7 @@ class MediaLibraryViewModel @Inject constructor(
                     allTVShows = emptyList(),
                     tvShowsPage = 0,
                     hasMoreTVShows = true,
-                    isLoadingTVShows = true
+                    isLoadingTVShows = true,
                 )
             } else {
                 if (currentState.isLoadingTVShows || !currentState.hasMoreTVShows) {
@@ -261,20 +259,22 @@ class MediaLibraryViewModel @Inject constructor(
                 _libraryState.value = _libraryState.value.copy(
                     isLoadingTVShows = false,
                     hasMoreTVShows = false,
-                    errorMessage = "No TV show libraries available"
+                    errorMessage = "No TV show libraries available",
                 )
                 return@launch
             }
 
             val tvLibraryId = tvLibraries.first().id.toString()
 
-            when (val result = mediaRepository.getLibraryItems(
-                parentId = tvLibraryId,
-                itemTypes = "Series",
-                startIndex = startIndex,
-                limit = pageSize,
-                collectionType = "tvshows"
-            )) {
+            when (
+                val result = mediaRepository.getLibraryItems(
+                    parentId = tvLibraryId,
+                    itemTypes = "Series",
+                    startIndex = startIndex,
+                    limit = pageSize,
+                    collectionType = "tvshows",
+                )
+            ) {
                 is ApiResult.Success -> {
                     val newTVShows = result.data
                     val allTVShows = if (reset) {
@@ -288,7 +288,7 @@ class MediaLibraryViewModel @Inject constructor(
                         tvShowsPage = page,
                         hasMoreTVShows = newTVShows.size == pageSize,
                         isLoadingTVShows = false,
-                        errorMessage = null
+                        errorMessage = null,
                     )
 
                     if (BuildConfig.DEBUG) {
@@ -300,7 +300,7 @@ class MediaLibraryViewModel @Inject constructor(
                         Log.e("MediaLibraryViewModel", "loadTVShows: Failed to load page $page: ${result.message}")
                         _libraryState.value = _libraryState.value.copy(
                             isLoadingTVShows = false,
-                            errorMessage = if (reset) "Failed to load TV shows: ${result.message}" else result.message
+                            errorMessage = if (reset) "Failed to load TV shows: ${result.message}" else result.message,
                         )
                     } else {
                         _libraryState.value = _libraryState.value.copy(isLoadingTVShows = false)
@@ -367,7 +367,7 @@ class MediaLibraryViewModel @Inject constructor(
             val musicLibraries = currentState.libraries.filter {
                 it.collectionType == CollectionType.MUSIC
             }
-            
+
             if (musicLibraries.isEmpty()) {
                 Log.w("MediaLibraryViewModel", "No music libraries found")
                 return@launch
@@ -401,21 +401,22 @@ class MediaLibraryViewModel @Inject constructor(
     private suspend fun loadLibraryItems(
         libraryId: String,
         itemTypes: String,
-        collectionType: String?
+        collectionType: String?,
     ) {
-
-        when (val result = mediaRepository.getLibraryItems(
-            parentId = libraryId,
-            itemTypes = itemTypes,
-            startIndex = 0,
-            limit = 50,
-            collectionType = collectionType
-        )) {
+        when (
+            val result = mediaRepository.getLibraryItems(
+                parentId = libraryId,
+                itemTypes = itemTypes,
+                startIndex = 0,
+                limit = 50,
+                collectionType = collectionType,
+            )
+        ) {
             is ApiResult.Success -> {
                 val currentItems = _libraryState.value.allItems.toMutableList()
                 currentItems.addAll(result.data)
                 _libraryState.value = _libraryState.value.copy(allItems = currentItems)
-                
+
                 if (BuildConfig.DEBUG) {
                     Log.d("MediaLibraryViewModel", "loadLibraryItems: Loaded ${result.data.size} items from library $libraryId")
                 }
@@ -424,7 +425,7 @@ class MediaLibraryViewModel @Inject constructor(
                 if (result.errorType != ErrorType.OPERATION_CANCELLED) {
                     Log.e("MediaLibraryViewModel", "loadLibraryItems: Failed to load items: ${result.message}")
                     _libraryState.value = _libraryState.value.copy(
-                        errorMessage = "Failed to load library items: ${result.message}"
+                        errorMessage = "Failed to load library items: ${result.message}",
                     )
                 }
             }

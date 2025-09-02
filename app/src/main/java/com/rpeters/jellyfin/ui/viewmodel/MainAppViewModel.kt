@@ -35,7 +35,7 @@ data class MainAppState(
     val allTVShows: List<BaseItemDto> = emptyList(),
     val allItems: List<BaseItemDto> = emptyList(),
     val homeVideosByLibrary: Map<String, List<BaseItemDto>> = emptyMap(),
-    
+
     // Loading states
     val isLoading: Boolean = false,
     val isLoadingMovies: Boolean = false,
@@ -44,30 +44,30 @@ data class MainAppState(
     val hasMoreTVShows: Boolean = true,
     val moviesPage: Int = 0,
     val tvShowsPage: Int = 0,
-    
+
     // Search
     val searchResults: List<BaseItemDto> = emptyList(),
     val searchQuery: String = "",
     val isSearching: Boolean = false,
-    
+
     // User data
     val favorites: List<BaseItemDto> = emptyList(),
-    
+
     // Pagination (legacy)
     val isLoadingMore: Boolean = false,
     val hasMoreItems: Boolean = true,
     val currentPage: Int = 0,
     val loadedLibraryTypes: Set<String> = emptySet(),
-    
+
     val errorMessage: String? = null,
 )
 
 /**
  * Refactored MainAppViewModel that delegates to smaller, focused repositories.
  * This reduces complexity from 1778 lines to ~200 lines (90% reduction) and prevents merge conflicts.
- * 
+ *
  * ROADMAP Step 4 Implementation:
- * - Removed duplicated ensureValidTokenWithWait methods  
+ * - Removed duplicated ensureValidTokenWithWait methods
  * - Reduced massive size to prevent merge artifacts
  * - Simplified by delegating to specialized repositories
  */
@@ -108,31 +108,31 @@ class MainAppViewModel @Inject constructor(
     fun loadInitialData(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             if (!ensureValidToken()) return@launch
-            
+
             _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
-            
+
             try {
                 // Load libraries
                 when (val librariesResult = mediaRepository.getUserLibraries()) {
                     is ApiResult.Success -> {
                         val libraries = librariesResult.data
-                        
+
                         // Load recently added
                         val recentlyAdded = when (val recentResult = mediaRepository.getRecentlyAdded()) {
                             is ApiResult.Success -> recentResult.data
                             else -> emptyList()
                         }
-                        
+
                         _appState.value = _appState.value.copy(
                             libraries = libraries,
                             recentlyAdded = recentlyAdded,
-                            isLoading = false
+                            isLoading = false,
                         )
                     }
                     is ApiResult.Error -> {
                         _appState.value = _appState.value.copy(
                             isLoading = false,
-                            errorMessage = "Failed to load data: ${librariesResult.message}"
+                            errorMessage = "Failed to load data: ${librariesResult.message}",
                         )
                     }
                     is ApiResult.Loading -> {
@@ -142,7 +142,7 @@ class MainAppViewModel @Inject constructor(
             } catch (e: Exception) {
                 _appState.value = _appState.value.copy(
                     isLoading = false,
-                    errorMessage = "Error loading data: ${e.message}"
+                    errorMessage = "Error loading data: ${e.message}",
                 )
             }
         }
@@ -156,7 +156,7 @@ class MainAppViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
-                        errorMessage = "Failed to load favorites: ${result.message}"
+                        errorMessage = "Failed to load favorites: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -165,27 +165,27 @@ class MainAppViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun search(query: String) {
         viewModelScope.launch {
             _appState.value = _appState.value.copy(
                 searchQuery = query,
                 isSearching = true,
-                errorMessage = null
+                errorMessage = null,
             )
 
             when (val result = repository.searchItems(query)) {
                 is ApiResult.Success -> {
                     _appState.value = _appState.value.copy(
                         searchResults = result.data,
-                        isSearching = false
+                        isSearching = false,
                     )
                 }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         searchResults = emptyList(),
                         isSearching = false,
-                        errorMessage = "Search failed: ${result.message}"
+                        errorMessage = "Search failed: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -199,10 +199,10 @@ class MainAppViewModel @Inject constructor(
         _appState.value = _appState.value.copy(
             searchQuery = "",
             searchResults = emptyList(),
-            isSearching = false
+            isSearching = false,
         )
     }
-    
+
     fun toggleFavorite(item: BaseItemDto) {
         viewModelScope.launch {
             val currentFavoriteState = item.userData?.isFavorite ?: false
@@ -212,7 +212,7 @@ class MainAppViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
-                        errorMessage = "Failed to update favorite: ${result.message}"
+                        errorMessage = "Failed to update favorite: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -221,14 +221,14 @@ class MainAppViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun markAsWatched(item: BaseItemDto) {
         viewModelScope.launch {
             when (val result = userRepository.markAsWatched(item.id.toString())) {
                 is ApiResult.Success -> loadInitialData()
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
-                        errorMessage = "Failed to mark as watched: ${result.message}"
+                        errorMessage = "Failed to mark as watched: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -237,23 +237,23 @@ class MainAppViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun markAsUnwatched(item: BaseItemDto) {
         viewModelScope.launch {
             when (val result = userRepository.markAsUnwatched(item.id.toString())) {
                 is ApiResult.Success -> loadInitialData()
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
-                        errorMessage = "Failed to mark as unwatched: ${result.message}"
+                        errorMessage = "Failed to mark as unwatched: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
-                    // Handle loading state  
+                    // Handle loading state
                 }
             }
         }
     }
-    
+
     fun deleteItem(item: BaseItemDto, onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
         viewModelScope.launch {
             when (val result = userRepository.deleteItemAsAdmin(item.id.toString())) {
@@ -264,13 +264,13 @@ class MainAppViewModel @Inject constructor(
                         favorites = _appState.value.favorites.filterNot { it.id == item.id },
                         searchResults = _appState.value.searchResults.filterNot { it.id == item.id },
                         allMovies = _appState.value.allMovies.filterNot { it.id == item.id },
-                        allTVShows = _appState.value.allTVShows.filterNot { it.id == item.id }
+                        allTVShows = _appState.value.allTVShows.filterNot { it.id == item.id },
                     )
                     onResult(true, null)
                 }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
-                        errorMessage = "Failed to delete item: ${result.message}"
+                        errorMessage = "Failed to delete item: ${result.message}",
                     )
                     onResult(false, result.message)
                 }
@@ -294,12 +294,12 @@ class MainAppViewModel @Inject constructor(
                 repository.validateAndRefreshTokenManually()
             } catch (e: Exception) {
                 _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to refresh authentication: ${e.message}"
+                    errorMessage = "Failed to refresh authentication: ${e.message}",
                 )
             }
         }
     }
-    
+
     fun loadLibraryTypeData(libraryType: LibraryType, forceRefresh: Boolean = false) {
         when (libraryType) {
             LibraryType.MOVIES -> loadAllMovies(reset = true)
@@ -308,7 +308,7 @@ class MainAppViewModel @Inject constructor(
             LibraryType.STUFF -> loadInitialData(forceRefresh)
         }
     }
-    
+
     fun getLibraryTypeData(libraryType: LibraryType): List<BaseItemDto> {
         return when (libraryType) {
             LibraryType.MOVIES -> _appState.value.allMovies
@@ -318,23 +318,23 @@ class MainAppViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun clearError() {
         _appState.value = _appState.value.copy(errorMessage = null)
     }
-    
+
     // Movie and TV show operations - simplified implementations
     fun loadAllMovies(reset: Boolean = false) {
         viewModelScope.launch {
             if (!ensureValidToken()) return@launch
-            
+
             val currentState = _appState.value
             if (reset) {
                 _appState.value = currentState.copy(
                     allMovies = emptyList(),
                     moviesPage = 0,
                     hasMoreMovies = true,
-                    isLoadingMovies = true
+                    isLoadingMovies = true,
                 )
             } else {
                 if (currentState.isLoadingMovies || !currentState.hasMoreMovies) return@launch
@@ -346,13 +346,13 @@ class MainAppViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     _appState.value = _appState.value.copy(
                         allMovies = result.data.filter { it.type?.name == "Movie" },
-                        isLoadingMovies = false
+                        isLoadingMovies = false,
                     )
                 }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         isLoadingMovies = false,
-                        errorMessage = "Failed to load movies: ${result.message}"
+                        errorMessage = "Failed to load movies: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -364,18 +364,18 @@ class MainAppViewModel @Inject constructor(
 
     fun loadMoreMovies() = loadAllMovies(reset = false)
     fun refreshMovies() = loadAllMovies(reset = true)
-    
+
     fun loadAllTVShows(reset: Boolean = false) {
         viewModelScope.launch {
             if (!ensureValidToken()) return@launch
-            
+
             val currentState = _appState.value
             if (reset) {
                 _appState.value = currentState.copy(
                     allTVShows = emptyList(),
                     tvShowsPage = 0,
                     hasMoreTVShows = true,
-                    isLoadingTVShows = true
+                    isLoadingTVShows = true,
                 )
             } else {
                 if (currentState.isLoadingTVShows || !currentState.hasMoreTVShows) return@launch
@@ -387,13 +387,13 @@ class MainAppViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     _appState.value = _appState.value.copy(
                         allTVShows = result.data.filter { it.type?.name == "Series" },
-                        isLoadingTVShows = false
+                        isLoadingTVShows = false,
                     )
                 }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         isLoadingTVShows = false,
-                        errorMessage = "Failed to load TV shows: ${result.message}"
+                        errorMessage = "Failed to load TV shows: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -415,7 +415,7 @@ class MainAppViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
-                        errorMessage = "Failed to load movie details: ${result.message}"
+                        errorMessage = "Failed to load movie details: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -426,22 +426,22 @@ class MainAppViewModel @Inject constructor(
     }
 
     // Streaming operations (direct repository calls)
-    fun getImageUrl(item: BaseItemDto): String? = 
+    fun getImageUrl(item: BaseItemDto): String? =
         streamRepository.getImageUrl(item.id.toString(), "Primary", null)
-        
-    fun getBackdropUrl(item: BaseItemDto): String? = 
+
+    fun getBackdropUrl(item: BaseItemDto): String? =
         streamRepository.getBackdropUrl(item)
-        
-    fun getSeriesImageUrl(item: BaseItemDto): String? = 
+
+    fun getSeriesImageUrl(item: BaseItemDto): String? =
         streamRepository.getSeriesImageUrl(item)
-        
-    fun getStreamUrl(item: BaseItemDto): String? = 
+
+    fun getStreamUrl(item: BaseItemDto): String? =
         streamRepository.getStreamUrl(item.id.toString())
-        
-    fun getDownloadUrl(item: BaseItemDto): String? = 
+
+    fun getDownloadUrl(item: BaseItemDto): String? =
         streamRepository.getDownloadUrl(item.id.toString())
-        
-    fun getDirectStreamUrl(item: BaseItemDto, container: String? = null): String? = 
+
+    fun getDirectStreamUrl(item: BaseItemDto, container: String? = null): String? =
         streamRepository.getDirectStreamUrl(item.id.toString(), container)
 
     @UnstableApi
@@ -481,7 +481,7 @@ class MainAppViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
-                        errorMessage = "Failed to load series details: ${result.message}"
+                        errorMessage = "Failed to load series details: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -499,7 +499,7 @@ class MainAppViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
-                        errorMessage = "Failed to load episode details: ${result.message}"
+                        errorMessage = "Failed to load episode details: ${result.message}",
                     )
                 }
                 is ApiResult.Loading -> {
@@ -516,7 +516,7 @@ class MainAppViewModel @Inject constructor(
 
     fun loadMusic() = loadLibraryTypeData(LibraryType.MUSIC)
     fun loadStuff() = loadLibraryTypeData(LibraryType.STUFF)
-    
+
     // Helper methods
     fun clearLoadedLibraryTypes() {
         // Simplified - just clear state

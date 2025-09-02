@@ -53,23 +53,23 @@ fun Modifier.shimmer(): Modifier = composed {
         targetValue = 1000f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
+            repeatMode = RepeatMode.Restart,
         ),
-        label = "shimmer_translate"
+        label = "shimmer_translate",
     )
 
     val shimmerColors = listOf(
         Color.Transparent,
         Color.White.copy(alpha = 0.3f),
-        Color.Transparent
+        Color.Transparent,
     )
 
     background(
         brush = Brush.linearGradient(
             colors = shimmerColors,
             start = Offset(translateAnim - 200f, translateAnim - 200f),
-            end = Offset(translateAnim, translateAnim)
-        )
+            end = Offset(translateAnim, translateAnim),
+        ),
     )
 }
 
@@ -78,7 +78,7 @@ fun Modifier.shimmer(): Modifier = composed {
  */
 @Composable
 fun TvSkeletonCard(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.width(240.dp),
@@ -91,7 +91,7 @@ fun TvSkeletonCard(
                 .size(240.dp, 360.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(TvMaterialTheme.colorScheme.surfaceVariant)
-                .shimmer()
+                .shimmer(),
         )
 
         // Skeleton title
@@ -101,7 +101,7 @@ fun TvSkeletonCard(
                 .height(20.dp)
                 .clip(RoundedCornerShape(4.dp))
                 .background(TvMaterialTheme.colorScheme.surfaceVariant)
-                .shimmer()
+                .shimmer(),
         )
 
         // Skeleton subtitle
@@ -111,7 +111,7 @@ fun TvSkeletonCard(
                 .height(16.dp)
                 .clip(RoundedCornerShape(4.dp))
                 .background(TvMaterialTheme.colorScheme.surfaceVariant)
-                .shimmer()
+                .shimmer(),
         )
     }
 }
@@ -123,13 +123,13 @@ fun TvSkeletonCard(
 fun TvSkeletonCarousel(
     title: String = "Loading...",
     itemCount: Int = 6,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         // Skeleton title
         Row(
             modifier = Modifier.padding(start = 56.dp, top = 24.dp, bottom = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             if (title == "Loading...") {
                 Box(
@@ -138,7 +138,7 @@ fun TvSkeletonCarousel(
                         .height(28.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .background(TvMaterialTheme.colorScheme.surfaceVariant)
-                        .shimmer()
+                        .shimmer(),
                 )
             } else {
                 TvText(
@@ -169,7 +169,7 @@ fun TvErrorBanner(
     onRetry: (() -> Unit)? = null,
     onDismiss: (() -> Unit)? = null,
     icon: ImageVector = Icons.Default.Error,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     TvCard(
         onClick = { /* Non-interactive card */ },
@@ -246,7 +246,7 @@ fun TvWarningBanner(
     message: String,
     onAction: (() -> Unit)? = null,
     actionText: String = "OK",
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     TvCard(
         onClick = { /* Non-interactive card */ },
@@ -309,7 +309,7 @@ fun TvWarningBanner(
 @Composable
 fun TvFullScreenLoading(
     message: String = "Loading...",
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
@@ -345,7 +345,7 @@ fun TvEmptyState(
     message: String,
     onAction: (() -> Unit)? = null,
     actionText: String = "Refresh",
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier
