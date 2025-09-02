@@ -43,7 +43,7 @@ These are focused, near-term items discovered during code review to solidify aut
   - [x] TvContentCarousel with auto-scroll for focused item
   - [x] TvLibraryCard section for libraries
   - [x] Basic TvItemDetailScreen (poster, backdrop, overview, Play/Resume)
-  - [ ] TV loading/error states (skeleton, banners)
+  - [x] TV loading/error states (skeleton, banners)
 
 - [~] **Focus Management System**
   - [x] Initial focus set on first carousel and libraries row
