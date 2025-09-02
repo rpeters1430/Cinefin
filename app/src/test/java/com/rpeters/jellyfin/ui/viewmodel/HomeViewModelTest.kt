@@ -180,7 +180,7 @@ class HomeViewModelTest {
         assertEquals(1, seriesList?.size)
         assertEquals("Recent Series", seriesList?.get(0)?.name)
 
-        assertTrue(musicList?.isEmpty() == true)
+        assertNull(musicList)
         assertNull(state.errorMessage)
     }
 

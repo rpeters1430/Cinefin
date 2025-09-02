@@ -232,8 +232,8 @@ fun HomeContent(
     }
     // Precompute derived data to minimize recompositions during scroll
     val continueWatchingItems by remember(appState.allItems) { mutableStateOf(getContinueWatchingItems(appState)) }
-    val recentMovies by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(8) ?: emptyList()) }
-    val recentTVShows by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(8) ?: emptyList()) }
+    val recentMovies = remember(appState.recentlyAddedByTypes) { appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(8) ?: emptyList() }
+    val recentTVShows = remember(appState.recentlyAddedByTypes) { appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(8) ?: emptyList() }
     val featuredItems by remember(recentMovies, recentTVShows) { mutableStateOf((recentMovies + recentTVShows).take(10)) }
     val orderedLibraries by remember(appState.libraries) {
         mutableStateOf(
@@ -247,8 +247,8 @@ fun HomeContent(
             },
         )
     }
-    val recentEpisodes by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(15) ?: emptyList()) }
-    val recentMusic by remember(appState.recentlyAddedByTypes) { mutableStateOf(appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]?.take(15) ?: emptyList()) }
+    val recentEpisodes = remember(appState.recentlyAddedByTypes) { appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(15) ?: emptyList() }
+    val recentMusic = remember(appState.recentlyAddedByTypes) { appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]?.take(15) ?: emptyList() }
 
     Box(
         modifier = modifier,
