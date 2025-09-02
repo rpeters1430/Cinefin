@@ -15,12 +15,15 @@ import com.rpeters.jellyfin.ui.player.CastManager
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 import javax.inject.Inject
 
 /**
@@ -105,6 +108,38 @@ class MainAppViewModel @Inject constructor(
 
     // SIMPLIFIED PUBLIC API - Direct repository calls
 
+    /**
+     * Load recently added content grouped by item type.
+     * Fetches several [BaseItemKind] categories in parallel and returns a map
+     * keyed by each type's name (e.g. "MOVIE", "SERIES").
+     */
+    private suspend fun loadRecentlyAddedByTypes(forceRefresh: Boolean = false): Map<String, List<BaseItemDto>> = coroutineScope {
+        val contentTypes = listOf(
+            BaseItemKind.MOVIE,
+            BaseItemKind.SERIES,
+            BaseItemKind.EPISODE,
+            BaseItemKind.AUDIO,
+            BaseItemKind.BOOK,
+            BaseItemKind.AUDIO_BOOK,
+            BaseItemKind.VIDEO,
+        )
+
+        val deferredResults = contentTypes.map { contentType ->
+            async {
+                contentType.name to mediaRepository.getRecentlyAddedByType(contentType, forceRefresh = forceRefresh)
+            }
+        }
+
+        val results = mutableMapOf<String, List<BaseItemDto>>()
+        deferredResults.forEach { deferred ->
+            val (typeName, result) = deferred.await()
+            if (result is ApiResult.Success && result.data.isNotEmpty()) {
+                results[typeName] = result.data
+            }
+        }
+        results
+    }
+
     fun loadInitialData(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             if (!ensureValidToken()) return@launch
@@ -112,20 +147,23 @@ class MainAppViewModel @Inject constructor(
             _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
 
             try {
-                // Load libraries
-                when (val librariesResult = mediaRepository.getUserLibraries()) {
+                val librariesDeferred = async { mediaRepository.getUserLibraries(forceRefresh) }
+                val recentDeferred = async { mediaRepository.getRecentlyAdded(forceRefresh = forceRefresh) }
+                val recentByTypesDeferred = async { loadRecentlyAddedByTypes(forceRefresh) }
+
+                when (val librariesResult = librariesDeferred.await()) {
                     is ApiResult.Success -> {
                         val libraries = librariesResult.data
-
-                        // Load recently added
-                        val recentlyAdded = when (val recentResult = mediaRepository.getRecentlyAdded()) {
+                        val recentlyAdded = when (val recentResult = recentDeferred.await()) {
                             is ApiResult.Success -> recentResult.data
                             else -> emptyList()
                         }
+                        val recentlyAddedByTypes = recentByTypesDeferred.await()
 
                         _appState.value = _appState.value.copy(
                             libraries = libraries,
                             recentlyAdded = recentlyAdded,
+                            recentlyAddedByTypes = recentlyAddedByTypes,
                             isLoading = false,
                         )
                     }
