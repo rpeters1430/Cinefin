@@ -155,7 +155,7 @@ class MediaLibraryViewModel @Inject constructor(
                 } else {
                     _libraryState.value = _libraryState.value.copy(
                         isLoadingMovies = false,
-                        errorMessage = (result as? ApiResult.Error)?.message ?: "Failed to load libraries"
+                        errorMessage = (result as? ApiResult.Error)?.message ?: "Failed to load libraries",
                     )
                     return@launch
                 }
@@ -256,7 +256,7 @@ class MediaLibraryViewModel @Inject constructor(
                 } else {
                     _libraryState.value = _libraryState.value.copy(
                         isLoadingTVShows = false,
-                        errorMessage = (result as? ApiResult.Error)?.message ?: "Failed to load libraries"
+                        errorMessage = (result as? ApiResult.Error)?.message ?: "Failed to load libraries",
                     )
                     return@launch
                 }
@@ -349,7 +349,7 @@ class MediaLibraryViewModel @Inject constructor(
                     result.data
                 } else {
                     _libraryState.value = _libraryState.value.copy(
-                        errorMessage = (result as? ApiResult.Error)?.message ?: "Failed to load libraries"
+                        errorMessage = (result as? ApiResult.Error)?.message ?: "Failed to load libraries",
                     )
                     return@launch
                 }
