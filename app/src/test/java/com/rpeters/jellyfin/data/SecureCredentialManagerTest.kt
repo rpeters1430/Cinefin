@@ -15,7 +15,7 @@ class SecureCredentialManagerTest {
     @Test
     fun `generateKey produces consistent key for normalized URLs`() {
         val keyA = manager.generateKey(normalizeServerUrl("HTTPS://Example.com:8920/"), "user")
-        val keyB = manager.generateKey(normalizeServerUrl("https://example.com"), "user")
+        val keyB = manager.generateKey(normalizeServerUrl("https://example.com:8920"), "user")
         assertEquals(keyA, keyB)
     }
 
@@ -26,7 +26,7 @@ class SecureCredentialManagerTest {
         val password = "secret"
 
         val variantWithPort = "https://Example.com:8096/"
-        val variantCanonical = "https://example.com"
+        val variantCanonical = "https://example.com:8096"
 
         store[manager.generateKey(normalizeServerUrlLegacy(variantWithPort), username)] = password
 
@@ -41,9 +41,9 @@ class SecureCredentialManagerTest {
     }
 
     @Test
-    fun `normalizeServerUrl removes port`() {
+    fun `normalizeServerUrl retains port`() {
         val normalized = normalizeServerUrl("https://example.com:8096/")
-        assertEquals("https://example.com", normalized)
+        assertEquals("https://example.com:8096", normalized)
     }
 
     @Test
