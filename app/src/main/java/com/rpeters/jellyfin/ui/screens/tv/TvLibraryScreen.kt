@@ -10,8 +10,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.screens.LibraryType
+import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
@@ -27,15 +27,15 @@ fun TvLibraryScreen(
 
     // Choose items based on library type - use itemsByLibrary for library-specific data
     val items = when (library?.collectionType) {
-        org.jellyfin.sdk.model.api.CollectionType.MOVIES -> 
+        org.jellyfin.sdk.model.api.CollectionType.MOVIES ->
             appState.itemsByLibrary[libraryId] ?: appState.allMovies
-        org.jellyfin.sdk.model.api.CollectionType.TVSHOWS -> 
+        org.jellyfin.sdk.model.api.CollectionType.TVSHOWS ->
             appState.itemsByLibrary[libraryId] ?: appState.allTVShows
-        org.jellyfin.sdk.model.api.CollectionType.MUSIC -> 
+        org.jellyfin.sdk.model.api.CollectionType.MUSIC ->
             appState.itemsByLibrary[libraryId] ?: emptyList()
-        org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS -> 
+        org.jellyfin.sdk.model.api.CollectionType.HOMEVIDEOS ->
             appState.itemsByLibrary[libraryId] ?: emptyList()
-        else -> 
+        else ->
             appState.itemsByLibrary[libraryId] ?: emptyList()
     }
 
@@ -88,13 +88,13 @@ fun TvLibraryScreen(
                     // Retry loading
                     library?.let { lib ->
                         when (lib.collectionType) {
-                            org.jellyfin.sdk.model.api.CollectionType.MOVIES -> 
+                            org.jellyfin.sdk.model.api.CollectionType.MOVIES ->
                                 viewModel.loadLibraryTypeData(lib, LibraryType.MOVIES, forceRefresh = true)
-                            org.jellyfin.sdk.model.api.CollectionType.TVSHOWS -> 
+                            org.jellyfin.sdk.model.api.CollectionType.TVSHOWS ->
                                 viewModel.loadLibraryTypeData(lib, LibraryType.TV_SHOWS, forceRefresh = true)
-                            org.jellyfin.sdk.model.api.CollectionType.MUSIC -> 
+                            org.jellyfin.sdk.model.api.CollectionType.MUSIC ->
                                 viewModel.loadLibraryTypeData(lib, LibraryType.MUSIC, forceRefresh = true)
-                            else -> 
+                            else ->
                                 viewModel.loadHomeVideos(lib.id.toString())
                         }
                     }

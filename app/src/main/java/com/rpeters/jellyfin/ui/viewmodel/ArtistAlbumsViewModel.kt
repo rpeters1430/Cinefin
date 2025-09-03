@@ -5,12 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import javax.inject.Inject
 
 data class ArtistAlbumsState(
     val albums: List<BaseItemDto> = emptyList(),
@@ -36,4 +36,3 @@ class ArtistAlbumsViewModel @Inject constructor(
         }
     }
 }
-

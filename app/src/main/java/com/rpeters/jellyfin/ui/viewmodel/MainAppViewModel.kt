@@ -384,8 +384,11 @@ class MainAppViewModel @Inject constructor(
             }
 
             val itemTypesArg: String? =
-                if (library.collectionType == CollectionType.HOMEVIDEOS) null
-                else mapKindsToApiNames(libraryType.itemKinds)
+                if (library.collectionType == CollectionType.HOMEVIDEOS) {
+                    null
+                } else {
+                    mapKindsToApiNames(libraryType.itemKinds)
+                }
 
             when (
                 val result = mediaRepository.getLibraryItems(
