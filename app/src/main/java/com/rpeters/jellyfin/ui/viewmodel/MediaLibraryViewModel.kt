@@ -145,11 +145,22 @@ class MediaLibraryViewModel @Inject constructor(
                 _libraryState.value = currentState.copy(isLoadingMovies = true)
             }
 
-            // Ensure libraries are loaded
-            if (currentState.libraries.isEmpty()) {
-                loadLibraries()
-                // Wait for libraries to load before continuing
-                return@launch
+            // Ensure libraries are loaded before proceeding
+            val libraries = if (currentState.libraries.isEmpty()) {
+                // ✅ FIX: Await the result of loadLibraries to fix race condition
+                val result = mediaRepository.getUserLibraries()
+                if (result is ApiResult.Success) {
+                    _libraryState.value = _libraryState.value.copy(libraries = result.data)
+                    result.data
+                } else {
+                    _libraryState.value = _libraryState.value.copy(
+                        isLoadingMovies = false,
+                        errorMessage = (result as? ApiResult.Error)?.message ?: "Failed to load libraries",
+                    )
+                    return@launch
+                }
+            } else {
+                currentState.libraries
             }
 
             val pageSize = 50
@@ -157,9 +168,7 @@ class MediaLibraryViewModel @Inject constructor(
             val startIndex = page * pageSize
 
             // Get movie libraries
-            val movieLibraries = currentState.libraries.filter {
-                it.collectionType == CollectionType.MOVIES
-            }
+            val movieLibraries = libraries.filter { it.collectionType == CollectionType.MOVIES }
 
             if (movieLibraries.isEmpty()) {
                 _libraryState.value = _libraryState.value.copy(
@@ -170,51 +179,48 @@ class MediaLibraryViewModel @Inject constructor(
                 return@launch
             }
 
-            val movieLibraryId = movieLibraries.first().id.toString()
+            // ✅ FIX: Fetch from all movie libraries, not just the first one
+            val allNewMovies = mutableListOf<BaseItemDto>()
+            var hasMore = false
+            var lastError: String? = null
 
-            when (
-                val result = mediaRepository.getLibraryItems(
-                    parentId = movieLibraryId,
-                    itemTypes = "Movie",
-                    startIndex = startIndex,
-                    limit = pageSize,
-                    collectionType = "movies",
-                )
-            ) {
-                is ApiResult.Success -> {
-                    val newMovies = result.data
-                    val allMovies = if (reset) {
-                        newMovies
-                    } else {
-                        currentState.allMovies + newMovies
-                    }
-
-                    _libraryState.value = _libraryState.value.copy(
-                        allMovies = allMovies,
-                        moviesPage = page,
-                        hasMoreMovies = newMovies.size == pageSize,
-                        isLoadingMovies = false,
-                        errorMessage = null,
+            movieLibraries.forEach { library ->
+                when (
+                    val result = mediaRepository.getLibraryItems(
+                        parentId = library.id.toString(),
+                        itemTypes = "Movie",
+                        startIndex = startIndex,
+                        limit = pageSize,
+                        collectionType = "movies",
                     )
+                ) {
+                    is ApiResult.Success -> {
+                        allNewMovies.addAll(result.data)
+                        if (result.data.size == pageSize) {
+                            hasMore = true // If any library has a full page, we can load more
+                        }
+                    }
+                    is ApiResult.Error -> {
+                        if (!result.message.contains("Job was cancelled", ignoreCase = true)) {
+                            Log.e("MediaLibraryViewModel", "loadMovies: Failed to load page $page for library ${library.id}: ${result.message}")
+                            lastError = result.message
+                        }
+                    }
+                    is ApiResult.Loading -> { /* Handled */ }
+                }
+            }
 
-                    if (BuildConfig.DEBUG) {
-                        Log.d("MediaLibraryViewModel", "loadMovies: Loaded ${newMovies.size} movies for page $page")
-                    }
-                }
-                is ApiResult.Error -> {
-                    if (!result.message.contains("Job was cancelled", ignoreCase = true)) {
-                        Log.e("MediaLibraryViewModel", "loadMovies: Failed to load page $page: ${result.message}")
-                        _libraryState.value = _libraryState.value.copy(
-                            isLoadingMovies = false,
-                            errorMessage = if (reset) "Failed to load movies: ${result.message}" else result.message,
-                        )
-                    } else {
-                        _libraryState.value = _libraryState.value.copy(isLoadingMovies = false)
-                    }
-                }
-                is ApiResult.Loading -> {
-                    // Already handled
-                }
+            val finalMovies = if (reset) allNewMovies else currentState.allMovies + allNewMovies
+            _libraryState.value = _libraryState.value.copy(
+                allMovies = finalMovies,
+                moviesPage = page,
+                hasMoreMovies = hasMore,
+                isLoadingMovies = false,
+                errorMessage = lastError,
+            )
+
+            if (BuildConfig.DEBUG) {
+                Log.d("MediaLibraryViewModel", "loadMovies: Loaded ${allNewMovies.size} movies for page $page from ${movieLibraries.size} libraries")
             }
         }
     }
@@ -240,10 +246,22 @@ class MediaLibraryViewModel @Inject constructor(
                 _libraryState.value = currentState.copy(isLoadingTVShows = true)
             }
 
-            // Ensure libraries are loaded
-            if (currentState.libraries.isEmpty()) {
-                loadLibraries()
-                return@launch
+            // Ensure libraries are loaded before proceeding
+            val libraries = if (currentState.libraries.isEmpty()) {
+                // ✅ FIX: Await the result of loadLibraries to fix race condition
+                val result = mediaRepository.getUserLibraries()
+                if (result is ApiResult.Success) {
+                    _libraryState.value = _libraryState.value.copy(libraries = result.data)
+                    result.data
+                } else {
+                    _libraryState.value = _libraryState.value.copy(
+                        isLoadingTVShows = false,
+                        errorMessage = (result as? ApiResult.Error)?.message ?: "Failed to load libraries",
+                    )
+                    return@launch
+                }
+            } else {
+                currentState.libraries
             }
 
             val pageSize = 50
@@ -251,9 +269,7 @@ class MediaLibraryViewModel @Inject constructor(
             val startIndex = page * pageSize
 
             // Get TV show libraries
-            val tvLibraries = currentState.libraries.filter {
-                it.collectionType == CollectionType.TVSHOWS
-            }
+            val tvLibraries = libraries.filter { it.collectionType == CollectionType.TVSHOWS }
 
             if (tvLibraries.isEmpty()) {
                 _libraryState.value = _libraryState.value.copy(
@@ -264,51 +280,48 @@ class MediaLibraryViewModel @Inject constructor(
                 return@launch
             }
 
-            val tvLibraryId = tvLibraries.first().id.toString()
+            // ✅ FIX: Fetch from all TV show libraries, not just the first one
+            val allNewTVShows = mutableListOf<BaseItemDto>()
+            var hasMore = false
+            var lastError: String? = null
 
-            when (
-                val result = mediaRepository.getLibraryItems(
-                    parentId = tvLibraryId,
-                    itemTypes = "Series",
-                    startIndex = startIndex,
-                    limit = pageSize,
-                    collectionType = "tvshows",
-                )
-            ) {
-                is ApiResult.Success -> {
-                    val newTVShows = result.data
-                    val allTVShows = if (reset) {
-                        newTVShows
-                    } else {
-                        currentState.allTVShows + newTVShows
-                    }
-
-                    _libraryState.value = _libraryState.value.copy(
-                        allTVShows = allTVShows,
-                        tvShowsPage = page,
-                        hasMoreTVShows = newTVShows.size == pageSize,
-                        isLoadingTVShows = false,
-                        errorMessage = null,
+            tvLibraries.forEach { library ->
+                when (
+                    val result = mediaRepository.getLibraryItems(
+                        parentId = library.id.toString(),
+                        itemTypes = "Series",
+                        startIndex = startIndex,
+                        limit = pageSize,
+                        collectionType = "tvshows",
                     )
+                ) {
+                    is ApiResult.Success -> {
+                        allNewTVShows.addAll(result.data)
+                        if (result.data.size == pageSize) {
+                            hasMore = true // If any library has a full page, we can load more
+                        }
+                    }
+                    is ApiResult.Error -> {
+                        if (!result.message.contains("Job was cancelled", ignoreCase = true)) {
+                            Log.e("MediaLibraryViewModel", "loadTVShows: Failed to load page $page for library ${library.id}: ${result.message}")
+                            lastError = result.message
+                        }
+                    }
+                    is ApiResult.Loading -> { /* Handled */ }
+                }
+            }
 
-                    if (BuildConfig.DEBUG) {
-                        Log.d("MediaLibraryViewModel", "loadTVShows: Loaded ${newTVShows.size} TV shows for page $page")
-                    }
-                }
-                is ApiResult.Error -> {
-                    if (!result.message.contains("Job was cancelled", ignoreCase = true)) {
-                        Log.e("MediaLibraryViewModel", "loadTVShows: Failed to load page $page: ${result.message}")
-                        _libraryState.value = _libraryState.value.copy(
-                            isLoadingTVShows = false,
-                            errorMessage = if (reset) "Failed to load TV shows: ${result.message}" else result.message,
-                        )
-                    } else {
-                        _libraryState.value = _libraryState.value.copy(isLoadingTVShows = false)
-                    }
-                }
-                is ApiResult.Loading -> {
-                    // Already handled
-                }
+            val finalTVShows = if (reset) allNewTVShows else currentState.allTVShows + allNewTVShows
+            _libraryState.value = _libraryState.value.copy(
+                allTVShows = finalTVShows,
+                tvShowsPage = page,
+                hasMoreTVShows = hasMore,
+                isLoadingTVShows = false,
+                errorMessage = lastError,
+            )
+
+            if (BuildConfig.DEBUG) {
+                Log.d("MediaLibraryViewModel", "loadTVShows: Loaded ${allNewTVShows.size} TV shows for page $page from ${tvLibraries.size} libraries")
             }
         }
     }
@@ -327,23 +340,30 @@ class MediaLibraryViewModel @Inject constructor(
             return
         }
 
-        when (libraryType) {
-            LibraryType.MOVIES -> {
-                loadMovies(reset = true)
-                loadedLibraryTypes.add(typeKey)
+        viewModelScope.launch {
+            // ✅ FIX: Ensure libraries are loaded before proceeding to load content
+            val libraries = if (_libraryState.value.libraries.isEmpty() || forceRefresh) {
+                val result = mediaRepository.getUserLibraries(forceRefresh = forceRefresh)
+                if (result is ApiResult.Success) {
+                    _libraryState.value = _libraryState.value.copy(libraries = result.data)
+                    result.data
+                } else {
+                    _libraryState.value = _libraryState.value.copy(
+                        errorMessage = (result as? ApiResult.Error)?.message ?: "Failed to load libraries",
+                    )
+                    return@launch
+                }
+            } else {
+                _libraryState.value.libraries
             }
-            LibraryType.TV_SHOWS -> {
-                loadTVShows(reset = true)
-                loadedLibraryTypes.add(typeKey)
+
+            when (libraryType) {
+                LibraryType.MOVIES -> loadMovies(reset = true)
+                LibraryType.TV_SHOWS -> loadTVShows(reset = true)
+                LibraryType.MUSIC -> loadMusicContent(libraries)
+                LibraryType.STUFF -> loadOtherContent(libraries)
             }
-            LibraryType.MUSIC -> {
-                loadMusicContent()
-                loadedLibraryTypes.add(typeKey)
-            }
-            LibraryType.STUFF -> {
-                loadOtherContent()
-                loadedLibraryTypes.add(typeKey)
-            }
+            loadedLibraryTypes.add(typeKey)
         }
     }
 
@@ -360,41 +380,33 @@ class MediaLibraryViewModel @Inject constructor(
         }
     }
 
-    private fun loadMusicContent() {
-        // Implementation for loading music content
-        viewModelScope.launch {
-            val currentState = _libraryState.value
-            val musicLibraries = currentState.libraries.filter {
-                it.collectionType == CollectionType.MUSIC
-            }
+    private suspend fun loadMusicContent(libraries: List<BaseItemDto>) {
+        val musicLibraries = libraries.filter { it.collectionType == CollectionType.MUSIC }
 
-            if (musicLibraries.isEmpty()) {
-                Log.w("MediaLibraryViewModel", "No music libraries found")
-                return@launch
-            }
+        if (musicLibraries.isEmpty()) {
+            Log.w("MediaLibraryViewModel", "No music libraries found")
+            return
+        }
 
-            // Load music items from first music library
-            val musicLibraryId = musicLibraries.first().id.toString()
-            loadLibraryItems(musicLibraryId, "MusicAlbum,MusicArtist,Audio", "music")
+        // ✅ FIX: Process all music libraries, not just the first one
+        musicLibraries.forEach { library ->
+            loadLibraryItems(library.id.toString(), "MusicAlbum,MusicArtist,Audio", "music")
         }
     }
 
-    private fun loadOtherContent() {
-        // Implementation for loading other content types
-        viewModelScope.launch {
-            val currentState = _libraryState.value
-            val otherLibraries = currentState.libraries.filter {
-                it.collectionType !in setOf(CollectionType.MOVIES, CollectionType.TVSHOWS, CollectionType.MUSIC)
-            }
+    private suspend fun loadOtherContent(libraries: List<BaseItemDto>) {
+        val otherLibraries = libraries.filter {
+            it.collectionType !in setOf(CollectionType.MOVIES, CollectionType.TVSHOWS, CollectionType.MUSIC)
+        }
 
-            if (otherLibraries.isEmpty()) {
-                Log.w("MediaLibraryViewModel", "No other content libraries found")
-                return@launch
-            }
+        if (otherLibraries.isEmpty()) {
+            Log.w("MediaLibraryViewModel", "No other content libraries found")
+            return
+        }
 
-            // Load items from first other library
-            val otherLibraryId = otherLibraries.first().id.toString()
-            loadLibraryItems(otherLibraryId, "Video,Audio,Photo,Book,AudioBook", null)
+        // ✅ FIX: Process all "other" libraries
+        otherLibraries.forEach { library ->
+            loadLibraryItems(library.id.toString(), "Video,Audio,Photo,Book,AudioBook", null)
         }
     }
 
