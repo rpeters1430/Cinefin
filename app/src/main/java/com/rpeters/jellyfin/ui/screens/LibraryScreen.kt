@@ -222,7 +222,6 @@ fun getLibraryIcon(collectionType: org.jellyfin.sdk.model.api.CollectionType?): 
         "tvshows" -> Icons.Default.Tv
         "music" -> Icons.Default.MusicNote
         "books" -> Icons.AutoMirrored.Filled.LibraryBooks
-        "photos" -> Icons.Default.Photo
         "homevideos" -> Icons.Default.Photo
         "musicvideos" -> Icons.Default.Audiotrack
         "playlists" -> Icons.Default.BookmarkBorder

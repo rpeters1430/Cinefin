@@ -406,7 +406,6 @@ class MainAppViewModel @Inject constructor(
                         BaseItemKind.BOOK -> "Book"
                         BaseItemKind.AUDIO_BOOK -> "AudioBook"
                         BaseItemKind.VIDEO -> "Video"
-                        BaseItemKind.PHOTO -> "Photo"
                         else -> null
                     }
                 }.joinToString(",")
@@ -417,7 +416,6 @@ class MainAppViewModel @Inject constructor(
                 CollectionType.TVSHOWS -> "tvshows"
                 CollectionType.MUSIC -> "music"
                 CollectionType.HOMEVIDEOS -> "homevideos"
-                CollectionType.PHOTOS -> "photos"
                 CollectionType.BOOKS -> "books"
                 else -> null
             }
