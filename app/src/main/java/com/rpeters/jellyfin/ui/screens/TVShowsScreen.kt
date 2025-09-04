@@ -134,12 +134,7 @@ fun TVShowsScreen(
     var viewMode by remember { mutableStateOf(TVShowViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
 
-    // Trigger load when libraries are available (prevents early no-op)
-    LaunchedEffect(appState.libraries) {
-        if (appState.libraries.isNotEmpty()) {
-            viewModel.loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = false)
-        }
-    }
+    // TV show data is loaded via NavGraph effect
 
     // Get items provided by the unified library loader (Series only)
     val tvShowItems = remember(appState.itemsByLibrary, appState.libraries) {
