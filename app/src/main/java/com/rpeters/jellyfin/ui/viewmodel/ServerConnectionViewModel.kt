@@ -102,7 +102,7 @@ class ServerConnectionViewModel @Inject constructor(
 
                 // ✅ FIX: Don't automatically clear saved credentials when disconnected
                 // This was causing "Remember Login" to fail because credentials were being
-                // cleared whenever the connection was lost. Credentials should only be 
+                // cleared whenever the connection was lost. Credentials should only be
                 // cleared when the user explicitly logs out or disables "Remember Login".
             }
         }
@@ -173,10 +173,11 @@ class ServerConnectionViewModel @Inject constructor(
                             // ✅ FIX: Don't clear saved credentials on auth failure unless
                             // it's specifically an authentication error (401/403)
                             // Network errors or temporary failures shouldn't clear saved credentials
-                            if (authResult.message?.contains("401") == true || 
+                            if (authResult.message?.contains("401") == true ||
                                 authResult.message?.contains("403") == true ||
                                 authResult.message?.contains("Unauthorized") == true ||
-                                authResult.message?.contains("Invalid username or password") == true) {
+                                authResult.message?.contains("Invalid username or password") == true
+                            ) {
                                 // Only clear for actual auth failures, not network errors
                                 clearSavedCredentials()
                             }
@@ -511,7 +512,7 @@ class ServerConnectionViewModel @Inject constructor(
         viewModelScope.launch {
             // Clear saved credentials when user explicitly logs out
             clearSavedCredentials()
-            
+
             // Reset connection state
             _connectionState.value = ConnectionState()
         }

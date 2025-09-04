@@ -127,17 +127,17 @@ fun MusicScreen(
         appState.libraries.forEach { lib ->
             Log.d("MusicScreen-Debug", "    - ${lib.name}(${lib.collectionType}) id=${lib.id}")
         }
-        
+
         Log.d("MusicScreen-Debug", "  ItemsByLibrary keys: ${appState.itemsByLibrary.keys}")
         appState.itemsByLibrary.forEach { (libType, items) ->
             Log.d("MusicScreen-Debug", "    - $libType: ${items.size} items")
         }
-        
+
         Log.d("MusicScreen-Debug", "  RecentlyAddedByTypes keys: ${appState.recentlyAddedByTypes.keys}")
         appState.recentlyAddedByTypes.forEach { (itemType, items) ->
             Log.d("MusicScreen-Debug", "    - $itemType: ${items.size} items")
         }
-        
+
         val musicData = viewModel.getLibraryTypeData(LibraryType.MUSIC)
         Log.d("MusicScreen-Debug", "  getLibraryTypeData(MUSIC): ${musicData.size} items")
     }
@@ -173,7 +173,7 @@ fun MusicScreen(
                 it.userData?.played != true
             }
         }
-        
+
         Log.d("MusicScreen-Filter", "🎵 Filter applied: $selectedFilter")
         Log.d("MusicScreen-Filter", "  Before filter: ${musicItems.size} items")
         Log.d("MusicScreen-Filter", "  After filter: ${filtered.size} items")

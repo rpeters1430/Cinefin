@@ -236,7 +236,7 @@ fun HomeVideosGrid(
                 imageUrl = getImageUrl(homeVideoItem) ?: "",
                 rating = (homeVideoItem.communityRating as? Double)?.toFloat(),
                 isFavorite = homeVideoItem.userData?.isFavorite == true,
-                onCardClick = { 
+                onCardClick = {
                     onItemClick?.invoke(homeVideoItem)
                 },
             )

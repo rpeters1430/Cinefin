@@ -304,7 +304,7 @@ fun JellyfinNavGraph(
                 Log.d("NavGraph-Movies", "  Libraries count: ${appState.libraries.size}")
                 Log.d("NavGraph-Movies", "  Is loading: ${appState.isLoading}")
                 Log.d("NavGraph-Movies", "  Current movies data: ${viewModel.getLibraryTypeData(LibraryType.MOVIES).size} items")
-                
+
                 // Ensure libraries are loaded first
                 if (appState.libraries.isEmpty() && !appState.isLoading) {
                     Log.d("NavGraph-Movies", "  📥 Loading initial data...")
@@ -353,7 +353,7 @@ fun JellyfinNavGraph(
                 Log.d("NavGraph-TVShows", "  Libraries count: ${appState.libraries.size}")
                 Log.d("NavGraph-TVShows", "  Is loading: ${appState.isLoading}")
                 Log.d("NavGraph-TVShows", "  Current TV shows data: ${viewModel.getLibraryTypeData(LibraryType.TV_SHOWS).size} items")
-                
+
                 // Ensure libraries are loaded first
                 if (appState.libraries.isEmpty() && !appState.isLoading) {
                     Log.d("NavGraph-TVShows", "  📥 Loading initial data...")
@@ -451,7 +451,7 @@ fun JellyfinNavGraph(
                 Log.d("NavGraph-Music", "  Libraries count: ${appState.libraries.size}")
                 Log.d("NavGraph-Music", "  Is loading: ${appState.isLoading}")
                 Log.d("NavGraph-Music", "  Current music data: ${viewModel.getLibraryTypeData(LibraryType.MUSIC).size} items")
-                
+
                 // Ensure libraries are loaded first
                 if (appState.libraries.isEmpty() && !appState.isLoading) {
                     Log.d("NavGraph-Music", "  📥 Loading initial data...")
@@ -498,7 +498,7 @@ fun JellyfinNavGraph(
                 Log.d("NavGraph-HomeVideos", "🏠 HomeVideos screen entered - Initial state check")
                 Log.d("NavGraph-HomeVideos", "  Libraries count: ${appState.libraries.size}")
                 Log.d("NavGraph-HomeVideos", "  Is loading: ${appState.isLoading}")
-                
+
                 // Ensure libraries are loaded first
                 if (appState.libraries.isEmpty() && !appState.isLoading) {
                     Log.d("NavGraph-HomeVideos", "  📥 Loading initial data...")

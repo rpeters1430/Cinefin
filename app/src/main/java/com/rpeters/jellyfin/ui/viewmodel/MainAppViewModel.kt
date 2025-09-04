@@ -457,10 +457,10 @@ class MainAppViewModel @Inject constructor(
         if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
             android.util.Log.d(
                 "MainAppViewModel",
-                "loadLibraryTypeData: called for ${libraryType.name}, current libraries: ${currentLibraries.map { "${it.name}(${it.collectionType})" }}"
+                "loadLibraryTypeData: called for ${libraryType.name}, current libraries: ${currentLibraries.map { "${it.name}(${it.collectionType})" }}",
             )
         }
-        
+
         val library = currentLibraries.firstOrNull { lib ->
             when (libraryType) {
                 LibraryType.MOVIES -> lib.collectionType == org.jellyfin.sdk.model.api.CollectionType.MOVIES
@@ -730,7 +730,7 @@ class MainAppViewModel @Inject constructor(
         viewModelScope.launch {
             // Set loading state
             _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
-            
+
             when (val result = repository.getEpisodeDetails(episodeId)) {
                 is ApiResult.Success -> {
                     val episode = result.data
@@ -738,13 +738,13 @@ class MainAppViewModel @Inject constructor(
                     val updatedAllItems = _appState.value.allItems.toMutableList()
                     updatedAllItems.removeAll { it.id?.toString() == episodeId }
                     updatedAllItems.add(episode)
-                    
+
                     _appState.value = _appState.value.copy(
                         allItems = updatedAllItems,
                         isLoading = false,
-                        errorMessage = null
+                        errorMessage = null,
                     )
-                    
+
                     android.util.Log.d("MainAppViewModel", "✅ Episode loaded: ${episode.name} (${episode.id})")
                 }
                 is ApiResult.Error -> {
@@ -761,7 +761,7 @@ class MainAppViewModel @Inject constructor(
         }
     }
 
-    // ✅ IMPROVED: Enhanced addOrUpdateItem method 
+    // ✅ IMPROVED: Enhanced addOrUpdateItem method
     fun addOrUpdateItem(item: BaseItemDto) {
         val updatedAllItems = _appState.value.allItems.toMutableList()
         updatedAllItems.removeAll { it.id == item.id }
