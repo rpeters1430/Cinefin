@@ -227,8 +227,8 @@ fun MoviesScreen(
     ) { paddingValues ->
         // Determine current screen state
         val currentState = when {
-            isLoading && movies.isEmpty() -> MovieScreenState.LOADING
-            movies.isEmpty() && !isLoading -> MovieScreenState.EMPTY
+            isLoading -> MovieScreenState.LOADING
+            movies.isEmpty() -> MovieScreenState.EMPTY
             else -> MovieScreenState.CONTENT
         }
 

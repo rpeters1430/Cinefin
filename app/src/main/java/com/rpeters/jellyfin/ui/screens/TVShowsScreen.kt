@@ -325,7 +325,7 @@ fun TVShowsScreen(
             // Content with Expressive animations
             AnimatedContent(
                 targetState = when {
-                    appState.isLoadingTVShows && tvShowItems.isEmpty() -> TVShowContentState.LOADING
+                    appState.isLoadingTVShows -> TVShowContentState.LOADING
                     appState.errorMessage != null -> TVShowContentState.ERROR
                     filteredAndSortedTVShows.isEmpty() -> TVShowContentState.EMPTY
                     else -> TVShowContentState.CONTENT

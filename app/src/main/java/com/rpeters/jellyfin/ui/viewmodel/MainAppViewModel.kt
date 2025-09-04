@@ -148,7 +148,10 @@ class MainAppViewModel @Inject constructor(
             android.util.Log.d("MainAppViewModel-Initial", "🚀 Starting loadInitialData (forceRefresh=$forceRefresh)")
             android.util.Log.d("MainAppViewModel-Initial", "  Current libraries count: ${_appState.value.libraries.size}")
 
-            _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
+            _appState.value = _appState.value.copy(
+                isLoading = true,
+                errorMessage = null,
+            )
 
             try {
                 coroutineScope {
@@ -375,7 +378,20 @@ class MainAppViewModel @Inject constructor(
             android.util.Log.d("MainAppViewModel-Load", "  ItemKinds: ${libraryType.itemKinds}")
             android.util.Log.d("MainAppViewModel-Load", "  ForceRefresh: $forceRefresh")
 
-            _appState.value = _appState.value.copy(isLoading = true, errorMessage = null)
+            _appState.value = _appState.value.copy(
+                isLoading = true,
+                errorMessage = null,
+                isLoadingMovies = if (libraryType == LibraryType.MOVIES) {
+                    true
+                } else {
+                    _appState.value.isLoadingMovies
+                },
+                isLoadingTVShows = if (libraryType == LibraryType.TV_SHOWS) {
+                    true
+                } else {
+                    _appState.value.isLoadingTVShows
+                },
+            )
 
             // Map BaseItemKind to Jellyfin API item type names
             fun mapKindsToApiNames(kinds: List<BaseItemKind>): String =
@@ -435,6 +451,16 @@ class MainAppViewModel @Inject constructor(
                     _appState.value = _appState.value.copy(
                         itemsByLibrary = updated,
                         isLoading = false,
+                        isLoadingMovies = if (libraryType == LibraryType.MOVIES) {
+                            false
+                        } else {
+                            _appState.value.isLoadingMovies
+                        },
+                        isLoadingTVShows = if (libraryType == LibraryType.TV_SHOWS) {
+                            false
+                        } else {
+                            _appState.value.isLoadingTVShows
+                        },
                     )
                     android.util.Log.d("MainAppViewModel-Load", "✅ State updated - itemsByLibrary now has ${updated.size} libraries")
                 }
@@ -443,6 +469,16 @@ class MainAppViewModel @Inject constructor(
                     _appState.value = _appState.value.copy(
                         isLoading = false,
                         errorMessage = "Failed to load library items: ${result.message}",
+                        isLoadingMovies = if (libraryType == LibraryType.MOVIES) {
+                            false
+                        } else {
+                            _appState.value.isLoadingMovies
+                        },
+                        isLoadingTVShows = if (libraryType == LibraryType.TV_SHOWS) {
+                            false
+                        } else {
+                            _appState.value.isLoadingTVShows
+                        },
                     )
                 }
                 is ApiResult.Loading -> {
