@@ -60,6 +60,7 @@ import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MovieDetailViewModel
+import com.rpeters.jellyfin.ui.viewmodel.TVEpisodeDetailViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import kotlinx.coroutines.flow.map
@@ -756,10 +757,14 @@ fun JellyfinNavGraph(
                 return@composable
             }
             val viewModel = hiltViewModel<MainAppViewModel>()
+            val detailViewModel = hiltViewModel<TVEpisodeDetailViewModel>()
             val lifecycleOwner = LocalLifecycleOwner.current
             val appState by viewModel.appState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
                 minActiveState = Lifecycle.State.STARTED,
+            )
+            val detailState by detailViewModel.state.collectAsStateWithLifecycle(
+                lifecycle = lifecycleOwner.lifecycle,
             )
 
             val episode = appState.allItems.find { item ->
@@ -778,6 +783,10 @@ fun JellyfinNavGraph(
 
                     val seriesInfo = episode.seriesId?.let { seriesId ->
                         appState.allItems.find { it.id?.toString() == seriesId.toString() }
+                    }
+
+                    LaunchedEffect(episode.id) {
+                        detailViewModel.loadEpisodeAnalysis(episode)
                     }
 
                     TVEpisodeDetailScreen(
@@ -851,6 +860,7 @@ fun JellyfinNavGraph(
                         onFavoriteClick = { episodeItem ->
                             viewModel.toggleFavorite(episodeItem)
                         },
+                        playbackAnalysis = detailState.playbackAnalysis,
                     )
 
                     LaunchedEffect(episode.id) {
