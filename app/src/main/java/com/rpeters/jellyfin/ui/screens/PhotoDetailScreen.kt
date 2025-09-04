@@ -26,7 +26,7 @@ fun PhotoDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     var isFavorite by remember { mutableStateOf(item.userData?.isFavorite == true) }
-
+    val isFavorite = item.userData?.isFavorite == true
     Scaffold(
         topBar = {
             TopAppBar(
