@@ -99,13 +99,13 @@ fun HomeVideosScreen(
             }
         }
 
-        // Filter for videos and photos - handle both enum and string types
+        // Filter for videos only - handle both enum and string types
         val filteredItems = allItems.filter { item ->
             when {
                 // Handle BaseItemKind enum (preferred)
-                item.type == BaseItemKind.VIDEO || item.type == BaseItemKind.PHOTO -> true
+                item.type == BaseItemKind.VIDEO -> true
                 // Handle string types from API response
-                item.type?.toString() == "Video" || item.type?.toString() == "Photo" -> true
+                item.type?.toString() == "Video" -> true
                 // Also include common home video related types
                 item.type?.toString() == "Movie" -> true
                 else -> false

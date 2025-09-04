@@ -47,7 +47,6 @@ import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.screens.MovieDetailScreen
 import com.rpeters.jellyfin.ui.screens.MoviesScreen
 import com.rpeters.jellyfin.ui.screens.MusicScreen
-import com.rpeters.jellyfin.ui.screens.PhotoDetailScreen
 import com.rpeters.jellyfin.ui.screens.ProfileScreen
 import com.rpeters.jellyfin.ui.screens.QuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.SearchScreen
@@ -65,6 +64,7 @@ import com.rpeters.jellyfin.ui.viewmodel.MovieDetailViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import com.rpeters.jellyfin.ui.viewmodel.TVEpisodeDetailViewModel
+import com.rpeters.jellyfin.ui.screens.ItemDetailViewModel
 import kotlinx.coroutines.flow.map
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.CollectionType
@@ -509,19 +509,17 @@ fun JellyfinNavGraph(
                 }
             }
 
-            // ✅ Updated: route to specific detail screens based on item type
+            // Navigate to home video detail for video items
             HomeVideosScreen(
                 onBackClick = { navController.popBackStack() },
                 viewModel = viewModel,
                 onItemClick = { id ->
                     val item = appState.itemsByLibrary.values.flatten()
                         .find { it.id?.toString() == id }
-                    when (item?.type) {
-                        org.jellyfin.sdk.model.api.BaseItemKind.VIDEO ->
-                            navController.navigate(Screen.HomeVideoDetail.createRoute(id))
-                        org.jellyfin.sdk.model.api.BaseItemKind.PHOTO ->
-                            navController.navigate(Screen.PhotoDetail.createRoute(id))
-                        else -> navController.navigate(Screen.ItemDetail.createRoute(id))
+                    if (item?.type == org.jellyfin.sdk.model.api.BaseItemKind.VIDEO) {
+                        navController.navigate(Screen.HomeVideoDetail.createRoute(id))
+                    } else {
+                        navController.navigate(Screen.ItemDetail.createRoute(id))
                     }
                 },
             )
@@ -575,21 +573,20 @@ fun JellyfinNavGraph(
                 Log.e("NavGraph", "HomeVideoDetail navigation cancelled: videoId is null or blank")
                 return@composable
             }
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
-            val appState by viewModel.appState.collectAsStateWithLifecycle(
-                lifecycle = lifecycleOwner.lifecycle,
-                minActiveState = Lifecycle.State.STARTED,
-            )
-            val item = appState.itemsByLibrary.values.flatten().find { it.id?.toString() == videoId }
+            val mainViewModel = hiltViewModel<MainAppViewModel>()
+            val detailViewModel = hiltViewModel<ItemDetailViewModel>()
+            LaunchedEffect(videoId) { detailViewModel.load(videoId) }
+            val item by detailViewModel.item
+            val playbackAnalysis by detailViewModel.playbackAnalysis
+            val error by detailViewModel.error
             if (item != null) {
                 HomeVideoDetailScreen(
-                    item = item,
-                    getImageUrl = { viewModel.getImageUrl(it) },
-                    getBackdropUrl = { viewModel.getBackdropUrl(it) },
+                    item = item!!,
+                    getImageUrl = { mainViewModel.getImageUrl(it) },
+                    getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
                     onBackClick = { navController.popBackStack() },
                     onPlayClick = { videoItem ->
-                        val streamUrl = viewModel.getStreamUrl(videoItem)
+                        val streamUrl = mainViewModel.getStreamUrl(videoItem)
                         if (streamUrl != null) {
                             MediaPlayerUtils.playMedia(
                                 context = navController.context,
@@ -598,47 +595,19 @@ fun JellyfinNavGraph(
                             )
                         }
                     },
-                    onFavoriteClick = { videoItem -> viewModel.toggleFavorite(videoItem) },
+                    onFavoriteClick = { videoItem -> mainViewModel.toggleFavorite(videoItem) },
                     onShareClick = { videoItem ->
                         ShareUtils.shareMedia(context = navController.context, item = videoItem)
                     },
+                    playbackAnalysis = playbackAnalysis,
                 )
-            } else {
+            } else if (error != null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Video not found")
+                    Text(error ?: "Video not found")
                 }
-            }
-        }
-
-        composable(
-            route = Screen.PhotoDetail.route,
-            arguments = listOf(navArgument(Screen.PHOTO_ID_ARG) { type = NavType.StringType }),
-        ) { backStackEntry ->
-            val photoId = backStackEntry.arguments?.getString(Screen.PHOTO_ID_ARG)
-            if (photoId.isNullOrBlank()) {
-                Log.e("NavGraph", "PhotoDetail navigation cancelled: photoId is null or blank")
-                return@composable
-            }
-            val viewModel = hiltViewModel<MainAppViewModel>()
-            val lifecycleOwner = LocalLifecycleOwner.current
-            val appState by viewModel.appState.collectAsStateWithLifecycle(
-                lifecycle = lifecycleOwner.lifecycle,
-                minActiveState = Lifecycle.State.STARTED,
-            )
-            val item = appState.itemsByLibrary.values.flatten().find { it.id?.toString() == photoId }
-            if (item != null) {
-                PhotoDetailScreen(
-                    item = item,
-                    getImageUrl = { viewModel.getImageUrl(it) },
-                    onBackClick = { navController.popBackStack() },
-                    onFavoriteClick = { photoItem -> viewModel.toggleFavorite(photoItem) },
-                    onShareClick = { photoItem ->
-                        ShareUtils.shareMedia(context = navController.context, item = photoItem)
-                    },
-                )
             } else {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Photo not found")
+                    CircularProgressIndicator()
                 }
             }
         }
@@ -686,12 +655,10 @@ fun JellyfinNavGraph(
                 onItemClick = { id ->
                     val item = appState.itemsByLibrary.values.flatten()
                         .find { it.id?.toString() == id }
-                    when (item?.type) {
-                        org.jellyfin.sdk.model.api.BaseItemKind.VIDEO ->
-                            navController.navigate(Screen.HomeVideoDetail.createRoute(id))
-                        org.jellyfin.sdk.model.api.BaseItemKind.PHOTO ->
-                            navController.navigate(Screen.PhotoDetail.createRoute(id))
-                        else -> navController.navigate(Screen.ItemDetail.createRoute(id))
+                    if (item?.type == org.jellyfin.sdk.model.api.BaseItemKind.VIDEO) {
+                        navController.navigate(Screen.HomeVideoDetail.createRoute(id))
+                    } else {
+                        navController.navigate(Screen.ItemDetail.createRoute(id))
                     }
                 },
             )

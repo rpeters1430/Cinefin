@@ -97,7 +97,7 @@ enum class LibraryType(
         displayName = "Stuff",
         icon = Icons.Default.Widgets,
         color = BookPurple,
-        itemKinds = listOf(BaseItemKind.BOOK, BaseItemKind.AUDIO_BOOK, BaseItemKind.VIDEO, BaseItemKind.PHOTO),
+        itemKinds = listOf(BaseItemKind.BOOK, BaseItemKind.AUDIO_BOOK, BaseItemKind.VIDEO),
     ),
 }
 

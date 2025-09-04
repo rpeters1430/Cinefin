@@ -193,7 +193,6 @@ class OptimizedMainAppViewModel @Inject constructor(
             libs.firstOrNull()?.let { lib ->
                 val itemTypes = when (collectionType) {
                     CollectionType.HOMEVIDEOS -> listOf(BaseItemKind.VIDEO)
-                    CollectionType.PHOTOS -> listOf(BaseItemKind.PHOTO)
                     CollectionType.BOOKS -> listOf(BaseItemKind.BOOK, BaseItemKind.AUDIO_BOOK)
                     else -> null // Let server decide
                 }
