@@ -75,11 +75,13 @@ import coil.request.ImageRequest
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveFloatingToolbar
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
+import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.Quality4K
 import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
+import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.time.format.DateTimeFormatter
@@ -99,6 +101,7 @@ fun TVEpisodeDetailScreen(
     onMarkWatchedClick: (BaseItemDto) -> Unit = {},
     onMarkUnwatchedClick: (BaseItemDto) -> Unit = {},
     onFavoriteClick: (BaseItemDto) -> Unit = {},
+    playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     modifier: Modifier = Modifier,
 ) {
     var isLoading by remember { mutableStateOf(false) }
@@ -184,6 +187,7 @@ fun TVEpisodeDetailScreen(
                                 onMarkWatchedClick = onMarkWatchedClick,
                                 onMarkUnwatchedClick = onMarkUnwatchedClick,
                                 onFavoriteClick = onFavoriteClick,
+                                playbackAnalysis = playbackAnalysis,
                             )
                         }
 
@@ -687,6 +691,7 @@ private fun ExpressiveEpisodeActions(
     onMarkWatchedClick: (BaseItemDto) -> Unit,
     onMarkUnwatchedClick: (BaseItemDto) -> Unit,
     onFavoriteClick: (BaseItemDto) -> Unit,
+    playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     modifier: Modifier = Modifier,
 ) {
     val actionsScale by animateFloatAsState(
@@ -712,12 +717,21 @@ private fun ExpressiveEpisodeActions(
             modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                text = "Quick Actions",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Quick Actions",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                playbackAnalysis?.let { analysis ->
+                    PlaybackStatusBadge(analysis = analysis)
+                }
+            }
 
             // Primary Actions Row
             Row(
