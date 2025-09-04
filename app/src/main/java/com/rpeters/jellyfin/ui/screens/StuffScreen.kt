@@ -99,7 +99,6 @@ fun StuffScreen(
                 it.type == BaseItemKind.BOOK || it.type == BaseItemKind.AUDIO_BOOK
             }
             "homevideos" -> items.filter { it.type == BaseItemKind.VIDEO }
-            "photos" -> items.filter { it.type == BaseItemKind.PHOTO }
             else -> {
                 // For "stuff" or "mixed" libraries, show all items
                 // This is more permissive than the previous filtering
@@ -120,7 +119,6 @@ fun StuffScreen(
     val loadingMessage = when (type) {
         "books" -> "Loading books..."
         "homevideos" -> "Loading videos..."
-        "photos" -> "Loading photos..."
         else -> "Loading items..."
     }
 
@@ -165,7 +163,6 @@ fun StuffScreen(
                     val emptyMessage = when (type) {
                         "books" -> "No books found"
                         "homevideos" -> "No videos found"
-                        "photos" -> "No photos found"
                         else -> "No items found"
                     }
                     Text(
@@ -233,9 +230,6 @@ fun StuffGrid(
                     // For home videos, trigger playback
                     when (stuffItem.type) {
                         BaseItemKind.VIDEO -> {
-                            stuffItem.id?.toString()?.let(onItemClick)
-                        }
-                        BaseItemKind.PHOTO -> {
                             stuffItem.id?.toString()?.let(onItemClick)
                         }
                         else -> {
