@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
+import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +16,7 @@ import javax.inject.Inject
 
 data class MovieDetailState(
     val movie: BaseItemDto? = null,
+    val playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
 )
@@ -21,6 +24,7 @@ data class MovieDetailState(
 @HiltViewModel
 class MovieDetailViewModel @Inject constructor(
     private val repository: JellyfinRepository,
+    private val enhancedPlaybackUtils: EnhancedPlaybackUtils,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MovieDetailState())
@@ -28,11 +32,17 @@ class MovieDetailViewModel @Inject constructor(
 
     fun loadMovieDetails(movieId: String) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+            _state.value = _state.value.copy(isLoading = true, errorMessage = null, playbackAnalysis = null)
             when (val result = repository.getMovieDetails(movieId)) {
                 is ApiResult.Success -> {
+                    val analysis = try {
+                        enhancedPlaybackUtils.analyzePlaybackCapabilities(result.data)
+                    } catch (e: Exception) {
+                        null
+                    }
                     _state.value = _state.value.copy(
                         movie = result.data,
+                        playbackAnalysis = analysis,
                         isLoading = false,
                     )
                 }
