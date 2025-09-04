@@ -73,6 +73,7 @@ class ItemDetailViewModel @Inject constructor(
     }
 }
 
+@Deprecated("Use HomeVideoDetailScreen or PhotoDetailScreen for media items")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItemDetailScreen(

@@ -48,7 +48,7 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 @Composable
 fun HomeVideosScreen(
     onBackClick: () -> Unit = {},
-    onItemClick: ((BaseItemDto) -> Unit)? = null,
+    onItemClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
 ) {
@@ -219,7 +219,7 @@ fun HomeVideosGrid(
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
-    onItemClick: ((BaseItemDto) -> Unit)? = null,
+    onItemClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
@@ -237,7 +237,7 @@ fun HomeVideosGrid(
                 rating = (homeVideoItem.communityRating as? Double)?.toFloat(),
                 isFavorite = homeVideoItem.userData?.isFavorite == true,
                 onCardClick = {
-                    onItemClick?.invoke(homeVideoItem)
+                    homeVideoItem.id?.toString()?.let { onItemClick?.invoke(it) }
                 },
             )
         }
