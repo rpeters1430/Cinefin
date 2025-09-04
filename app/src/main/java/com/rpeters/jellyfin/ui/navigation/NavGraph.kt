@@ -42,6 +42,7 @@ import com.rpeters.jellyfin.ui.screens.HomeScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideoDetailScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
 import com.rpeters.jellyfin.ui.screens.ItemDetailScreen
+import com.rpeters.jellyfin.ui.screens.ItemDetailViewModel
 import com.rpeters.jellyfin.ui.screens.LibraryScreen
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.screens.MovieDetailScreen
@@ -64,7 +65,6 @@ import com.rpeters.jellyfin.ui.viewmodel.MovieDetailViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import com.rpeters.jellyfin.ui.viewmodel.TVEpisodeDetailViewModel
-import com.rpeters.jellyfin.ui.screens.ItemDetailViewModel
 import kotlinx.coroutines.flow.map
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.CollectionType
