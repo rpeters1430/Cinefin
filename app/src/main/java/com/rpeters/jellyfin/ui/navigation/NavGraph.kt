@@ -820,6 +820,7 @@ fun JellyfinNavGraph(
                         ShareUtils.shareMedia(context = navController.context, item = movieItem)
                     },
                     relatedItems = relatedItems,
+                    playbackAnalysis = detailState.playbackAnalysis,
                 )
             } else if (appState.isLoading || detailState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
