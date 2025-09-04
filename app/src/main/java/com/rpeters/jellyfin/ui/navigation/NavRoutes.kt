@@ -46,6 +46,12 @@ sealed class Screen(val route: String) {
     object ArtistDetail : Screen("artist_detail/{artistId}") {
         fun createRoute(artistId: String) = "artist_detail/$artistId"
     }
+    object HomeVideoDetail : Screen("home_video_detail/{videoId}") {
+        fun createRoute(videoId: String) = "home_video_detail/$videoId"
+    }
+    object PhotoDetail : Screen("photo_detail/{photoId}") {
+        fun createRoute(photoId: String) = "photo_detail/$photoId"
+    }
     object ItemDetail : Screen("item_detail/{itemId}") {
         fun createRoute(itemId: String) = "item_detail/$itemId"
     }
@@ -58,6 +64,8 @@ sealed class Screen(val route: String) {
         const val EPISODE_ID_ARG = "episodeId"
         const val ALBUM_ID_ARG = "albumId"
         const val ARTIST_ID_ARG = "artistId"
+        const val VIDEO_ID_ARG = "videoId"
+        const val PHOTO_ID_ARG = "photoId"
         const val ITEM_ID_ARG = "itemId"
         const val LIBRARY_ID_ARG = "libraryId"
         const val COLLECTION_TYPE_ARG = "collectionType"

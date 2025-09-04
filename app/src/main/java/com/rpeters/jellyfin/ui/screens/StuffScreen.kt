@@ -44,7 +44,7 @@ fun StuffScreen(
     collectionType: String?,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
-    onItemClick: (BaseItemDto) -> Unit = {},
+    onItemClick: (String) -> Unit = {},
 ) {
     if (BuildConfig.DEBUG) {
         android.util.Log.d("StuffScreen", "StuffScreen started: libraryId=$libraryId, collectionType=$collectionType")
@@ -208,7 +208,7 @@ fun StuffScreen(
 fun StuffGrid(
     stuffItems: List<BaseItemDto>,
     getImageUrl: (BaseItemDto) -> String?,
-    onItemClick: (BaseItemDto) -> Unit,
+    onItemClick: (String) -> Unit,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -228,20 +228,18 @@ fun StuffGrid(
                 imageUrl = getImageUrl(stuffItem) ?: "",
                 rating = (stuffItem.communityRating as? Double)?.toFloat(),
                 isFavorite = stuffItem.userData?.isFavorite == true,
-                onCardClick = { onItemClick(stuffItem) },
+                onCardClick = { onItemClick(stuffItem.id?.toString() ?: "") },
                 onPlayClick = {
                     // For home videos, trigger playback
                     when (stuffItem.type) {
                         BaseItemKind.VIDEO -> {
-                            // TODO: Implement video playback
-                            onItemClick(stuffItem) // For now, navigate to detail screen
+                            stuffItem.id?.toString()?.let(onItemClick)
                         }
                         BaseItemKind.PHOTO -> {
-                            // TODO: Implement photo viewer
-                            onItemClick(stuffItem) // For now, navigate to detail screen
+                            stuffItem.id?.toString()?.let(onItemClick)
                         }
                         else -> {
-                            onItemClick(stuffItem) // Navigate to detail screen
+                            stuffItem.id?.toString()?.let(onItemClick)
                         }
                     }
                 },

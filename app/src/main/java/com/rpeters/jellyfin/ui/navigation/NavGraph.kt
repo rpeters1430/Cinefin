@@ -39,6 +39,7 @@ import com.rpeters.jellyfin.ui.screens.ArtistDetailScreen
 import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.FavoritesScreen
 import com.rpeters.jellyfin.ui.screens.HomeScreen
+import com.rpeters.jellyfin.ui.screens.HomeVideoDetailScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
 import com.rpeters.jellyfin.ui.screens.ItemDetailScreen
 import com.rpeters.jellyfin.ui.screens.LibraryScreen
@@ -46,6 +47,7 @@ import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.screens.MovieDetailScreen
 import com.rpeters.jellyfin.ui.screens.MoviesScreen
 import com.rpeters.jellyfin.ui.screens.MusicScreen
+import com.rpeters.jellyfin.ui.screens.PhotoDetailScreen
 import com.rpeters.jellyfin.ui.screens.ProfileScreen
 import com.rpeters.jellyfin.ui.screens.QuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.SearchScreen
@@ -506,24 +508,19 @@ fun JellyfinNavGraph(
                 }
             }
 
-            // ✅ FIXED: Add onItemClick functionality for HomeVideos
+            // ✅ Updated: route to specific detail screens based on item type
             HomeVideosScreen(
                 onBackClick = { navController.popBackStack() },
                 viewModel = viewModel,
-                onItemClick = { item ->
-                    item.id?.let { id ->
-                        when (item.type) {
-                            org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
-                                navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
-                            }
-                            org.jellyfin.sdk.model.api.BaseItemKind.PHOTO -> {
-                                // Could add photo viewer navigation here
-                                navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
-                            }
-                            else -> {
-                                navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
-                            }
-                        }
+                onItemClick = { id ->
+                    val item = appState.itemsByLibrary.values.flatten()
+                        .find { it.id?.toString() == id }
+                    when (item?.type) {
+                        org.jellyfin.sdk.model.api.BaseItemKind.VIDEO ->
+                            navController.navigate(Screen.HomeVideoDetail.createRoute(id))
+                        org.jellyfin.sdk.model.api.BaseItemKind.PHOTO ->
+                            navController.navigate(Screen.PhotoDetail.createRoute(id))
+                        else -> navController.navigate(Screen.ItemDetail.createRoute(id))
                     }
                 },
             )
@@ -569,6 +566,83 @@ fun JellyfinNavGraph(
         }
 
         composable(
+            route = Screen.HomeVideoDetail.route,
+            arguments = listOf(navArgument(Screen.VIDEO_ID_ARG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val videoId = backStackEntry.arguments?.getString(Screen.VIDEO_ID_ARG)
+            if (videoId.isNullOrBlank()) {
+                Log.e("NavGraph", "HomeVideoDetail navigation cancelled: videoId is null or blank")
+                return@composable
+            }
+            val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
+            val appState by viewModel.appState.collectAsStateWithLifecycle(
+                lifecycle = lifecycleOwner.lifecycle,
+                minActiveState = Lifecycle.State.STARTED,
+            )
+            val item = appState.itemsByLibrary.values.flatten().find { it.id?.toString() == videoId }
+            if (item != null) {
+                HomeVideoDetailScreen(
+                    item = item,
+                    getImageUrl = { viewModel.getImageUrl(it) },
+                    getBackdropUrl = { viewModel.getBackdropUrl(it) },
+                    onBackClick = { navController.popBackStack() },
+                    onPlayClick = { videoItem ->
+                        val streamUrl = viewModel.getStreamUrl(videoItem)
+                        if (streamUrl != null) {
+                            MediaPlayerUtils.playMedia(
+                                context = navController.context,
+                                streamUrl = streamUrl,
+                                item = videoItem,
+                            )
+                        }
+                    },
+                    onFavoriteClick = { videoItem -> viewModel.toggleFavorite(videoItem) },
+                    onShareClick = { videoItem ->
+                        ShareUtils.shareMedia(context = navController.context, item = videoItem)
+                    },
+                )
+            } else {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Video not found")
+                }
+            }
+        }
+
+        composable(
+            route = Screen.PhotoDetail.route,
+            arguments = listOf(navArgument(Screen.PHOTO_ID_ARG) { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val photoId = backStackEntry.arguments?.getString(Screen.PHOTO_ID_ARG)
+            if (photoId.isNullOrBlank()) {
+                Log.e("NavGraph", "PhotoDetail navigation cancelled: photoId is null or blank")
+                return@composable
+            }
+            val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
+            val appState by viewModel.appState.collectAsStateWithLifecycle(
+                lifecycle = lifecycleOwner.lifecycle,
+                minActiveState = Lifecycle.State.STARTED,
+            )
+            val item = appState.itemsByLibrary.values.flatten().find { it.id?.toString() == photoId }
+            if (item != null) {
+                PhotoDetailScreen(
+                    item = item,
+                    getImageUrl = { viewModel.getImageUrl(it) },
+                    onBackClick = { navController.popBackStack() },
+                    onFavoriteClick = { photoItem -> viewModel.toggleFavorite(photoItem) },
+                    onShareClick = { photoItem ->
+                        ShareUtils.shareMedia(context = navController.context, item = photoItem)
+                    },
+                )
+            } else {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Photo not found")
+                }
+            }
+        }
+
+        composable(
             route = Screen.ItemDetail.route,
             arguments = listOf(
                 navArgument(Screen.ITEM_ID_ARG) { type = NavType.StringType },
@@ -598,14 +672,25 @@ fun JellyfinNavGraph(
                 return@composable
             }
             val viewModel = hiltViewModel<MainAppViewModel>()
+            val lifecycleOwner = LocalLifecycleOwner.current
+            val appState by viewModel.appState.collectAsStateWithLifecycle(
+                lifecycle = lifecycleOwner.lifecycle,
+                minActiveState = Lifecycle.State.STARTED,
+            )
 
             StuffScreen(
                 libraryId = libraryId,
                 collectionType = collectionType,
                 viewModel = viewModel,
-                onItemClick = { item ->
-                    item.id?.let { id ->
-                        navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
+                onItemClick = { id ->
+                    val item = appState.itemsByLibrary.values.flatten()
+                        .find { it.id?.toString() == id }
+                    when (item?.type) {
+                        org.jellyfin.sdk.model.api.BaseItemKind.VIDEO ->
+                            navController.navigate(Screen.HomeVideoDetail.createRoute(id))
+                        org.jellyfin.sdk.model.api.BaseItemKind.PHOTO ->
+                            navController.navigate(Screen.PhotoDetail.createRoute(id))
+                        else -> navController.navigate(Screen.ItemDetail.createRoute(id))
                     }
                 },
             )
