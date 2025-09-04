@@ -67,6 +67,7 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.ShimmerBox
+import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.theme.JellyfinBlue80
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
 import com.rpeters.jellyfin.ui.theme.MotionTokens
@@ -74,6 +75,7 @@ import com.rpeters.jellyfin.ui.theme.MovieRed
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.theme.getContentTypeColor
+import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
@@ -92,6 +94,7 @@ fun MovieDetailScreen(
     onFavoriteClick: (BaseItemDto) -> Unit = {},
     onShareClick: (BaseItemDto) -> Unit = {},
     relatedItems: List<BaseItemDto> = emptyList(),
+    playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     modifier: Modifier = Modifier,
 ) {
     var isFavorite by remember { mutableStateOf(movie.userData?.isFavorite == true) }
@@ -226,6 +229,7 @@ fun MovieDetailScreen(
                 ExpressiveMovieInfoCard(
                     movie = movie,
                     getImageUrl = getImageUrl,
+                    playbackAnalysis = playbackAnalysis,
                 )
             }
 
@@ -470,6 +474,7 @@ private fun ExpressiveMovieHero(
 private fun ExpressiveMovieInfoCard(
     movie: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
+    playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     modifier: Modifier = Modifier,
 ) {
     val cardScale by animateFloatAsState(
@@ -546,6 +551,11 @@ private fun ExpressiveMovieInfoCard(
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
+
+                // Playback capability badge
+                playbackAnalysis?.let { analysis ->
+                    PlaybackStatusBadge(analysis = analysis)
+                }
 
                 // Production year and runtime with enhanced styling
                 Row(
