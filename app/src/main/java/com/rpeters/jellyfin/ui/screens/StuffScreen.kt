@@ -160,11 +160,11 @@ fun StuffScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
-        val emptyMessage = when (type) {
-            "books" -> "No books found"
-            "homevideos" -> "No videos found"
-            else -> "No items found"
-        }
+                    val emptyMessage = when (type) {
+                        "books" -> "No books found"
+                        "homevideos" -> "No videos found"
+                        else -> "No items found"
+                    }
                     Text(
                         text = emptyMessage,
                         style = MaterialTheme.typography.titleMedium,
@@ -226,17 +226,17 @@ fun StuffGrid(
                 rating = (stuffItem.communityRating as? Double)?.toFloat(),
                 isFavorite = stuffItem.userData?.isFavorite == true,
                 onCardClick = { onItemClick(stuffItem.id?.toString() ?: "") },
-                    onPlayClick = {
-                        // For home videos, trigger playback
-                        when (stuffItem.type) {
-                            BaseItemKind.VIDEO -> {
-                                stuffItem.id?.toString()?.let(onItemClick)
-                            }
-                            else -> {
-                                stuffItem.id?.toString()?.let(onItemClick)
-                            }
+                onPlayClick = {
+                    // For home videos, trigger playback
+                    when (stuffItem.type) {
+                        BaseItemKind.VIDEO -> {
+                            stuffItem.id?.toString()?.let(onItemClick)
                         }
-                    },
+                        else -> {
+                            stuffItem.id?.toString()?.let(onItemClick)
+                        }
+                    }
+                },
                 onFavoriteClick = {
                     // TODO: Implement favorite toggle
                 },
