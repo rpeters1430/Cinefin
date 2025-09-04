@@ -142,9 +142,12 @@ fun MusicScreen(
         Log.d("MusicScreen-Debug", "  getLibraryTypeData(MUSIC): ${musicData.size} items")
     }
 
-    // Trigger load when libraries are available
+    // Trigger load only if music data hasn't been loaded yet
     LaunchedEffect(appState.libraries) {
-        if (appState.libraries.isNotEmpty()) {
+        if (
+            appState.libraries.isNotEmpty() &&
+            viewModel.getLibraryTypeData(LibraryType.MUSIC).isEmpty()
+        ) {
             viewModel.loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = false)
         }
     }
