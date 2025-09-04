@@ -29,7 +29,7 @@ fun HomeVideoDetailScreen(
     onShareClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    var isFavorite by remember { mutableStateOf(item.userData?.isFavorite == true) }
+    val isFavorite = item.userData?.isFavorite == true
 
     Scaffold(
         topBar = {
