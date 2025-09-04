@@ -228,7 +228,7 @@ fun StuffGrid(
                 imageUrl = getImageUrl(stuffItem) ?: "",
                 rating = (stuffItem.communityRating as? Double)?.toFloat(),
                 isFavorite = stuffItem.userData?.isFavorite == true,
-                onCardClick = { stuffItem.id?.toString()?.let(onItemClick) },
+                onCardClick = { onItemClick(stuffItem.id?.toString() ?: "") },
                 onPlayClick = {
                     // For home videos, trigger playback
                     when (stuffItem.type) {
