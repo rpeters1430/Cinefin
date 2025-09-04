@@ -144,7 +144,6 @@ fun TVShowsScreen(
     // Get items provided by the unified library loader (Series only)
     val tvShowItems = remember(appState.itemsByLibrary, appState.libraries) {
         viewModel.getLibraryTypeData(LibraryType.TV_SHOWS)
-            .filter { it.type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES }
     }
 
     // Apply filtering and sorting with proper keys to prevent unnecessary recomputation

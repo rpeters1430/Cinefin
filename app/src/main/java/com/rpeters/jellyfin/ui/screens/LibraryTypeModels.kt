@@ -85,7 +85,7 @@ enum class LibraryType(
         displayName = "TV Shows",
         icon = Icons.Default.Tv,
         color = SeriesBlue,
-        itemKinds = listOf(BaseItemKind.SERIES, BaseItemKind.EPISODE),
+        itemKinds = listOf(BaseItemKind.SERIES),
     ),
     MUSIC(
         displayName = "Music",

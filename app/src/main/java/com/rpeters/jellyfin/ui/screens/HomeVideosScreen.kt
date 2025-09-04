@@ -48,6 +48,7 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 @Composable
 fun HomeVideosScreen(
     onBackClick: () -> Unit = {},
+    onItemClick: ((BaseItemDto) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
 ) {
@@ -56,13 +57,6 @@ fun HomeVideosScreen(
     }
     val appState by viewModel.appState.collectAsState()
 
-    // Ensure libraries are loaded if we arrived here directly
-    LaunchedEffect(Unit) {
-        if (appState.libraries.isEmpty()) {
-            viewModel.loadInitialData()
-        }
-    }
-
     // Find all Home Videos libraries (there might be more than one)
     val homeVideosLibraries = remember(appState.libraries) {
         appState.libraries.filter { library ->
@@ -70,14 +64,19 @@ fun HomeVideosScreen(
         }
     }
 
-    // Load home videos for all libraries
+    // ✅ FIXED: Only load home videos if we have libraries but no data yet
     LaunchedEffect(homeVideosLibraries) {
-        homeVideosLibraries.forEach { library ->
-            library.id?.let { libraryId ->
-                if (BuildConfig.DEBUG) {
-                    android.util.Log.d("HomeVideosScreen", "Loading home videos for library: $libraryId")
+        if (homeVideosLibraries.isNotEmpty()) {
+            homeVideosLibraries.forEach { library ->
+                library.id?.let { libraryId ->
+                    val currentItems = appState.itemsByLibrary[libraryId.toString()] ?: emptyList()
+                    if (currentItems.isEmpty()) {
+                        if (BuildConfig.DEBUG) {
+                            android.util.Log.d("HomeVideosScreen", "Loading home videos for library: $libraryId")
+                        }
+                        viewModel.loadHomeVideos(libraryId.toString())
+                    }
                 }
-                viewModel.loadHomeVideos(libraryId.toString())
             }
         }
     }
@@ -189,6 +188,7 @@ fun HomeVideosScreen(
                         isLoadingMore = appState.isLoadingMore,
                         hasMoreItems = appState.hasMoreItems,
                         onLoadMore = { viewModel.loadMoreItems() },
+                        onItemClick = onItemClick,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues),
@@ -219,6 +219,7 @@ fun HomeVideosGrid(
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
+    onItemClick: ((BaseItemDto) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
@@ -235,7 +236,9 @@ fun HomeVideosGrid(
                 imageUrl = getImageUrl(homeVideoItem) ?: "",
                 rating = (homeVideoItem.communityRating as? Double)?.toFloat(),
                 isFavorite = homeVideoItem.userData?.isFavorite == true,
-                onCardClick = { /* TODO: Handle item click, e.g., navigate to details screen */ },
+                onCardClick = { 
+                    onItemClick?.invoke(homeVideoItem)
+                },
             )
         }
 

@@ -298,8 +298,21 @@ fun JellyfinNavGraph(
             var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
             var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
 
-            LaunchedEffect(appState.libraries) {
-                if (appState.libraries.isNotEmpty()) {
+            // ✅ FIXED: Consolidated LaunchedEffect to prevent double loading
+            LaunchedEffect(Unit) {
+                Log.d("NavGraph-Movies", "🎬 Movies screen entered - Initial state check")
+                Log.d("NavGraph-Movies", "  Libraries count: ${appState.libraries.size}")
+                Log.d("NavGraph-Movies", "  Is loading: ${appState.isLoading}")
+                Log.d("NavGraph-Movies", "  Current movies data: ${viewModel.getLibraryTypeData(LibraryType.MOVIES).size} items")
+                
+                // Ensure libraries are loaded first
+                if (appState.libraries.isEmpty() && !appState.isLoading) {
+                    Log.d("NavGraph-Movies", "  📥 Loading initial data...")
+                    viewModel.loadInitialData()
+                } else if (appState.libraries.isNotEmpty() && viewModel.getLibraryTypeData(LibraryType.MOVIES).isEmpty()) {
+                    Log.d("NavGraph-Movies", "🔄 Libraries loaded (${appState.libraries.size}) - Loading MOVIES data...")
+                    val availableLibraries = appState.libraries.map { "${it.name}(${it.collectionType})" }
+                    Log.d("NavGraph-Movies", "  Available libraries: $availableLibraries")
                     viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
                 }
             }
@@ -329,13 +342,37 @@ fun JellyfinNavGraph(
         // TV Shows Screen - Use shared MainAppViewModel instance
         composable(Screen.TVShows.route) {
             val viewModel = mainViewModel
+            val appState by viewModel.appState.collectAsStateWithLifecycle(
+                lifecycle = LocalLifecycleOwner.current.lifecycle,
+                minActiveState = Lifecycle.State.STARTED,
+            )
+
+            // ✅ FIXED: Consolidated LaunchedEffect to prevent double loading
+            LaunchedEffect(Unit) {
+                Log.d("NavGraph-TVShows", "📺 TV Shows screen entered - Initial state check")
+                Log.d("NavGraph-TVShows", "  Libraries count: ${appState.libraries.size}")
+                Log.d("NavGraph-TVShows", "  Is loading: ${appState.isLoading}")
+                Log.d("NavGraph-TVShows", "  Current TV shows data: ${viewModel.getLibraryTypeData(LibraryType.TV_SHOWS).size} items")
+                
+                // Ensure libraries are loaded first
+                if (appState.libraries.isEmpty() && !appState.isLoading) {
+                    Log.d("NavGraph-TVShows", "  📥 Loading initial data...")
+                    viewModel.loadInitialData()
+                } else if (appState.libraries.isNotEmpty() && viewModel.getLibraryTypeData(LibraryType.TV_SHOWS).isEmpty()) {
+                    Log.d("NavGraph-TVShows", "🔄 Libraries loaded (${appState.libraries.size}) - Loading TV_SHOWS data...")
+                    val availableLibraries = appState.libraries.map { "${it.name}(${it.collectionType})" }
+                    Log.d("NavGraph-TVShows", "  Available libraries: $availableLibraries")
+                    viewModel.loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = false)
+                }
+            }
 
             TVShowsScreen(
                 onTVShowClick = { seriesId ->
                     try {
+                        Log.d("NavGraph-TVShows", "🎯 Navigating to TV Seasons: $seriesId")
                         navController.navigate(Screen.TVSeasons.createRoute(seriesId))
                     } catch (e: Exception) {
-                        Log.e("NavGraph", "Failed to navigate to TV Seasons: $seriesId", e)
+                        Log.e("NavGraph-TVShows", "Failed to navigate to TV Seasons: $seriesId", e)
                     }
                 },
                 onBackClick = { navController.popBackStack() },
@@ -403,9 +440,28 @@ fun JellyfinNavGraph(
         // Music Screen - Always available
         composable(Screen.Music.route) {
             val viewModel = mainViewModel
+            val appState by viewModel.appState.collectAsStateWithLifecycle(
+                lifecycle = LocalLifecycleOwner.current.lifecycle,
+                minActiveState = Lifecycle.State.STARTED,
+            )
 
+            // ✅ FIXED: Single LaunchedEffect to prevent double loading
             LaunchedEffect(Unit) {
-                viewModel.loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = false)
+                Log.d("NavGraph-Music", "🎵 Music screen entered - Initial state check")
+                Log.d("NavGraph-Music", "  Libraries count: ${appState.libraries.size}")
+                Log.d("NavGraph-Music", "  Is loading: ${appState.isLoading}")
+                Log.d("NavGraph-Music", "  Current music data: ${viewModel.getLibraryTypeData(LibraryType.MUSIC).size} items")
+                
+                // Ensure libraries are loaded first
+                if (appState.libraries.isEmpty() && !appState.isLoading) {
+                    Log.d("NavGraph-Music", "  📥 Loading initial data...")
+                    viewModel.loadInitialData()
+                } else if (appState.libraries.isNotEmpty() && viewModel.getLibraryTypeData(LibraryType.MUSIC).isEmpty()) {
+                    Log.d("NavGraph-Music", "🔄 Libraries loaded (${appState.libraries.size}) - Loading MUSIC data...")
+                    val availableLibraries = appState.libraries.map { "${it.name}(${it.collectionType})" }
+                    Log.d("NavGraph-Music", "  Available libraries: $availableLibraries")
+                    viewModel.loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = false)
+                }
             }
 
             MusicScreen(
@@ -431,9 +487,45 @@ fun JellyfinNavGraph(
         }
 
         composable(Screen.HomeVideos.route) {
+            val viewModel = mainViewModel
+            val appState by viewModel.appState.collectAsStateWithLifecycle(
+                lifecycle = LocalLifecycleOwner.current.lifecycle,
+                minActiveState = Lifecycle.State.STARTED,
+            )
+
+            // ✅ FIXED: Single LaunchedEffect for consistent loading
+            LaunchedEffect(Unit) {
+                Log.d("NavGraph-HomeVideos", "🏠 HomeVideos screen entered - Initial state check")
+                Log.d("NavGraph-HomeVideos", "  Libraries count: ${appState.libraries.size}")
+                Log.d("NavGraph-HomeVideos", "  Is loading: ${appState.isLoading}")
+                
+                // Ensure libraries are loaded first
+                if (appState.libraries.isEmpty() && !appState.isLoading) {
+                    Log.d("NavGraph-HomeVideos", "  📥 Loading initial data...")
+                    viewModel.loadInitialData()
+                }
+            }
+
+            // ✅ FIXED: Add onItemClick functionality for HomeVideos
             HomeVideosScreen(
                 onBackClick = { navController.popBackStack() },
-                viewModel = mainViewModel,
+                viewModel = viewModel,
+                onItemClick = { item ->
+                    item.id?.let { id ->
+                        when (item.type) {
+                            org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
+                                navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
+                            }
+                            org.jellyfin.sdk.model.api.BaseItemKind.PHOTO -> {
+                                // Could add photo viewer navigation here
+                                navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
+                            }
+                            else -> {
+                                navController.navigate(Screen.ItemDetail.createRoute(id.toString()))
+                            }
+                        }
+                    }
+                },
             )
         }
 

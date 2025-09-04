@@ -100,10 +100,10 @@ class ServerConnectionViewModel @Inject constructor(
                     isConnecting = false,
                 )
 
-                // Clear saved credentials when disconnected
-                if (!isConnected) {
-                    clearSavedCredentials()
-                }
+                // ✅ FIX: Don't automatically clear saved credentials when disconnected
+                // This was causing "Remember Login" to fail because credentials were being
+                // cleared whenever the connection was lost. Credentials should only be 
+                // cleared when the user explicitly logs out or disables "Remember Login".
             }
         }
     }
@@ -170,8 +170,16 @@ class ServerConnectionViewModel @Inject constructor(
                             )
                         }
                         is ApiResult.Error -> {
-                            // Clear saved credentials on auth failure
-                            clearSavedCredentials()
+                            // ✅ FIX: Don't clear saved credentials on auth failure unless
+                            // it's specifically an authentication error (401/403)
+                            // Network errors or temporary failures shouldn't clear saved credentials
+                            if (authResult.message?.contains("401") == true || 
+                                authResult.message?.contains("403") == true ||
+                                authResult.message?.contains("Unauthorized") == true ||
+                                authResult.message?.contains("Invalid username or password") == true) {
+                                // Only clear for actual auth failures, not network errors
+                                clearSavedCredentials()
+                            }
                             _connectionState.value = _connectionState.value.copy(
                                 isConnecting = false,
                                 errorMessage = authResult.message,
@@ -494,6 +502,19 @@ class ServerConnectionViewModel @Inject constructor(
 
         // Clean up the job reference when polling completes
         quickConnectPollingJob = null
+    }
+
+    /**
+     * Explicit logout method that clears saved credentials and disconnects
+     */
+    fun logout() {
+        viewModelScope.launch {
+            // Clear saved credentials when user explicitly logs out
+            clearSavedCredentials()
+            
+            // Reset connection state
+            _connectionState.value = ConnectionState()
+        }
     }
 
     override fun onCleared() {
