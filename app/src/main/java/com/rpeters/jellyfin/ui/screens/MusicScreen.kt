@@ -142,16 +142,6 @@ fun MusicScreen(
         Log.d("MusicScreen-Debug", "  getLibraryTypeData(MUSIC): ${musicData.size} items")
     }
 
-    // Trigger load only if music data hasn't been loaded yet
-    LaunchedEffect(appState.libraries) {
-        if (
-            appState.libraries.isNotEmpty() &&
-            viewModel.getLibraryTypeData(LibraryType.MUSIC).isEmpty()
-        ) {
-            viewModel.loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = false)
-        }
-    }
-
     // Get music items via unified loader and enrich with recent audio
     val musicItems = remember(appState.itemsByLibrary, appState.recentlyAddedByTypes, appState.libraries) {
         val libraryMusic = viewModel.getLibraryTypeData(LibraryType.MUSIC)
