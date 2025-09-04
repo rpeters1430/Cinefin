@@ -138,7 +138,10 @@ fun HomeVideoDetailScreen(
                         .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    IconButton(onClick = { isFavorite = !isFavorite; onFavoriteClick(item) }) {
+                    IconButton(onClick = {
+                        isFavorite = !isFavorite
+                        onFavoriteClick(item)
+                    }) {
                         Icon(
                             imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                             contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
