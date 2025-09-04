@@ -35,4 +35,3 @@ class TVEpisodeDetailViewModel @Inject constructor(
         }
     }
 }
-
