@@ -77,6 +77,7 @@ data class MainAppState(
  * - Reduced massive size to prevent merge artifacts
  * - Simplified by delegating to specialized repositories
  */
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MainAppViewModel @Inject constructor(
     private val repository: JellyfinRepository,
@@ -116,37 +117,55 @@ class MainAppViewModel @Inject constructor(
      * Fetches several [BaseItemKind] categories in parallel and returns a map
      * keyed by each type's name (e.g. "MOVIE", "SERIES").
      */
-    private suspend fun loadRecentlyAddedByTypes(forceRefresh: Boolean = false): Map<String, List<BaseItemDto>> = coroutineScope {
-        val contentTypes = listOf(
-            BaseItemKind.MOVIE,
-            BaseItemKind.SERIES,
-            BaseItemKind.EPISODE,
-            BaseItemKind.AUDIO,
-            BaseItemKind.BOOK,
-            BaseItemKind.AUDIO_BOOK,
-            BaseItemKind.VIDEO,
-        )
+    private suspend fun loadRecentlyAddedByTypes(forceRefresh: Boolean = false): Map<String, List<BaseItemDto>> =
+        coroutineScope {
+            val contentTypes = listOf(
+                BaseItemKind.MOVIE,
+                BaseItemKind.SERIES,
+                BaseItemKind.EPISODE,
+                BaseItemKind.AUDIO,
+                BaseItemKind.BOOK,
+                BaseItemKind.AUDIO_BOOK,
+                BaseItemKind.VIDEO,
+            )
 
-        contentTypes.map { contentType ->
-            async {
-                mediaRepository.getRecentlyAddedByType(contentType, forceRefresh = forceRefresh).let { result ->
-                    if (result is ApiResult.Success && result.data.isNotEmpty()) {
-                        contentType.name to result.data
-                    } else {
-                        null
-                    }
+            contentTypes.map { contentType ->
+                async {
+                    mediaRepository.getRecentlyAddedByType(contentType, forceRefresh = forceRefresh)
+                        .let { result ->
+                            if (result is ApiResult.Success && result.data.isNotEmpty()) {
+                                contentType.name to result.data
+                            } else {
+                                null
+                            }
+                        }
                 }
-            }
-        }.awaitAll().filterNotNull().toMap()
-    }
+            }.awaitAll().filterNotNull().toMap()
+        }
 
     fun loadInitialData(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             if (!ensureValidToken()) return@launch
 
+            // Prevent concurrent executions that cause frame drops
+            val currentState = _appState.value
+            if (currentState.isLoading && !forceRefresh) {
+                android.util.Log.d(
+                    "MainAppViewModel-Initial",
+                    "⏭️ Skipping loadInitialData - already loading"
+                )
+                return@launch
+            }
+
             // ✅ DEBUG: Log initial data loading start
-            android.util.Log.d("MainAppViewModel-Initial", "🚀 Starting loadInitialData (forceRefresh=$forceRefresh)")
-            android.util.Log.d("MainAppViewModel-Initial", "  Current libraries count: ${_appState.value.libraries.size}")
+            android.util.Log.d(
+                "MainAppViewModel-Initial",
+                "🚀 Starting loadInitialData (forceRefresh=$forceRefresh)"
+            )
+            android.util.Log.d(
+                "MainAppViewModel-Initial",
+                "  Current libraries count: ${currentState.libraries.size}"
+            )
 
             _appState.value = _appState.value.copy(
                 isLoading = true,
@@ -154,10 +173,14 @@ class MainAppViewModel @Inject constructor(
             )
 
             try {
-                coroutineScope {
-                    val librariesDeferred = async { mediaRepository.getUserLibraries(forceRefresh = forceRefresh) }
-                    val recentDeferred = async { mediaRepository.getRecentlyAdded(forceRefresh = forceRefresh) }
-                    val recentByTypesDeferred = async { loadRecentlyAddedByTypes(forceRefresh = forceRefresh) }
+                // Execute heavy work on IO dispatcher to prevent main thread blocking
+                withContext(Dispatchers.IO) {
+                    val librariesDeferred =
+                        async { mediaRepository.getUserLibraries(forceRefresh = forceRefresh) }
+                    val recentDeferred =
+                        async { mediaRepository.getRecentlyAdded(forceRefresh = forceRefresh) }
+                    val recentByTypesDeferred =
+                        async { loadRecentlyAddedByTypes(forceRefresh = forceRefresh) }
 
                     awaitAll(librariesDeferred, recentDeferred, recentByTypesDeferred)
 
@@ -166,8 +189,14 @@ class MainAppViewModel @Inject constructor(
                     val recentlyAddedByTypes = recentByTypesDeferred.getCompleted()
 
                     android.util.Log.d("MainAppViewModel-Initial", "📦 API calls completed:")
-                    android.util.Log.d("MainAppViewModel-Initial", "  Libraries result: ${if (librariesResult is ApiResult.Success) "Success (${librariesResult.data.size})" else librariesResult::class.simpleName}")
-                    android.util.Log.d("MainAppViewModel-Initial", "  Recent result: ${if (recentResult is ApiResult.Success) "Success (${recentResult.data.size})" else recentResult::class.simpleName}")
+                    android.util.Log.d(
+                        "MainAppViewModel-Initial",
+                        "  Libraries result: ${if (librariesResult is ApiResult.Success) "Success (${librariesResult.data.size})" else librariesResult::class.simpleName}"
+                    )
+                    android.util.Log.d(
+                        "MainAppViewModel-Initial",
+                        "  Recent result: ${if (recentResult is ApiResult.Success) "Success (${recentResult.data.size})" else recentResult::class.simpleName}"
+                    )
 
                     when (librariesResult) {
                         is ApiResult.Success -> {
@@ -180,7 +209,10 @@ class MainAppViewModel @Inject constructor(
 
                             android.util.Log.d("MainAppViewModel-Initial", "✅ Setting new state:")
                             libraries.forEach { lib ->
-                                android.util.Log.d("MainAppViewModel-Initial", "  Library: ${lib.name} (${lib.collectionType}) id=${lib.id}")
+                                android.util.Log.d(
+                                    "MainAppViewModel-Initial",
+                                    "  Library: ${lib.name} (${lib.collectionType}) id=${lib.id}"
+                                )
                             }
 
                             _appState.value = _appState.value.copy(
@@ -190,14 +222,19 @@ class MainAppViewModel @Inject constructor(
                                 isLoading = false,
                             )
 
-                            android.util.Log.d("MainAppViewModel-Initial", "🎯 loadInitialData completed - Libraries now: ${libraries.size}")
+                            android.util.Log.d(
+                                "MainAppViewModel-Initial",
+                                "🎯 loadInitialData completed - Libraries now: ${libraries.size}"
+                            )
                         }
+
                         is ApiResult.Error -> {
                             _appState.value = _appState.value.copy(
                                 isLoading = false,
                                 errorMessage = "Failed to load libraries: ${librariesResult.message}",
                             )
                         }
+
                         is ApiResult.Loading -> {
                             // Already handled
                         }
@@ -218,11 +255,13 @@ class MainAppViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     _appState.value = _appState.value.copy(favorites = result.data)
                 }
+
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to load favorites: ${result.message}",
                     )
                 }
+
                 is ApiResult.Loading -> {
                     // Handle loading state
                 }
@@ -245,6 +284,7 @@ class MainAppViewModel @Inject constructor(
                         isSearching = false,
                     )
                 }
+
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         searchResults = emptyList(),
@@ -252,6 +292,7 @@ class MainAppViewModel @Inject constructor(
                         errorMessage = "Search failed: ${result.message}",
                     )
                 }
+
                 is ApiResult.Loading -> {
                     // Already handled
                 }
@@ -270,15 +311,18 @@ class MainAppViewModel @Inject constructor(
     fun toggleFavorite(item: BaseItemDto) {
         viewModelScope.launch {
             val currentFavoriteState = item.userData?.isFavorite ?: false
-            when (val result = userRepository.toggleFavorite(item.id.toString(), !currentFavoriteState)) {
+            when (val result =
+                userRepository.toggleFavorite(item.id.toString(), !currentFavoriteState)) {
                 is ApiResult.Success -> {
                     loadInitialData() // Refresh data
                 }
+
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to update favorite: ${result.message}",
                     )
                 }
+
                 is ApiResult.Loading -> {
                     // Handle loading state
                 }
@@ -295,6 +339,7 @@ class MainAppViewModel @Inject constructor(
                         errorMessage = "Failed to mark as watched: ${result.message}",
                     )
                 }
+
                 is ApiResult.Loading -> {
                     // Handle loading state
                 }
@@ -311,6 +356,7 @@ class MainAppViewModel @Inject constructor(
                         errorMessage = "Failed to mark as unwatched: ${result.message}",
                     )
                 }
+
                 is ApiResult.Loading -> {
                     // Handle loading state
                 }
@@ -332,12 +378,14 @@ class MainAppViewModel @Inject constructor(
                     )
                     onResult(true, null)
                 }
+
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to delete item: ${result.message}",
                     )
                     onResult(false, result.message)
                 }
+
                 is ApiResult.Loading -> {
                     // Handle loading state
                 }
@@ -364,7 +412,11 @@ class MainAppViewModel @Inject constructor(
         }
     }
 
-    fun loadLibraryTypeData(library: BaseItemDto, libraryType: LibraryType, forceRefresh: Boolean = false) {
+    fun loadLibraryTypeData(
+        library: BaseItemDto,
+        libraryType: LibraryType,
+        forceRefresh: Boolean = false
+    ) {
         viewModelScope.launch {
             if (!ensureValidToken()) return@launch
 
@@ -372,7 +424,10 @@ class MainAppViewModel @Inject constructor(
 
             // ✅ DEBUG: Enhanced logging for library loading
             android.util.Log.d("MainAppViewModel-Load", "🔄 Starting loadLibraryTypeData:")
-            android.util.Log.d("MainAppViewModel-Load", "  Library: ${library.name} (${library.collectionType})")
+            android.util.Log.d(
+                "MainAppViewModel-Load",
+                "  Library: ${library.name} (${library.collectionType})"
+            )
             android.util.Log.d("MainAppViewModel-Load", "  LibraryType: ${libraryType.name}")
             android.util.Log.d("MainAppViewModel-Load", "  LibraryId: $libraryId")
             android.util.Log.d("MainAppViewModel-Load", "  ItemKinds: ${libraryType.itemKinds}")
@@ -440,9 +495,15 @@ class MainAppViewModel @Inject constructor(
                 )
             ) {
                 is ApiResult.Success -> {
-                    android.util.Log.d("MainAppViewModel-Load", "✅ API Success: ${result.data.size} items loaded")
+                    android.util.Log.d(
+                        "MainAppViewModel-Load",
+                        "✅ API Success: ${result.data.size} items loaded"
+                    )
                     result.data.take(3).forEach { item ->
-                        android.util.Log.d("MainAppViewModel-Load", "    Sample item: ${item.name} (${item.type})")
+                        android.util.Log.d(
+                            "MainAppViewModel-Load",
+                            "    Sample item: ${item.name} (${item.type})"
+                        )
                     }
                     val updated = _appState.value.itemsByLibrary.toMutableMap()
                     updated[libraryId] = result.data
@@ -460,8 +521,12 @@ class MainAppViewModel @Inject constructor(
                             _appState.value.isLoadingTVShows
                         },
                     )
-                    android.util.Log.d("MainAppViewModel-Load", "✅ State updated - itemsByLibrary now has ${updated.size} libraries")
+                    android.util.Log.d(
+                        "MainAppViewModel-Load",
+                        "✅ State updated - itemsByLibrary now has ${updated.size} libraries"
+                    )
                 }
+
                 is ApiResult.Error -> {
                     android.util.Log.e("MainAppViewModel-Load", "❌ API Error: ${result.message}")
                     _appState.value = _appState.value.copy(
@@ -479,6 +544,7 @@ class MainAppViewModel @Inject constructor(
                         },
                     )
                 }
+
                 is ApiResult.Loading -> {
                     android.util.Log.d("MainAppViewModel-Load", "⏳ API Loading...")
                 }
@@ -497,9 +563,9 @@ class MainAppViewModel @Inject constructor(
 
         val library = currentLibraries.firstOrNull { lib ->
             when (libraryType) {
-                LibraryType.MOVIES -> lib.collectionType == org.jellyfin.sdk.model.api.CollectionType.MOVIES
-                LibraryType.TV_SHOWS -> lib.collectionType == org.jellyfin.sdk.model.api.CollectionType.TVSHOWS
-                LibraryType.MUSIC -> lib.collectionType == org.jellyfin.sdk.model.api.CollectionType.MUSIC
+                LibraryType.MOVIES -> lib.collectionType == CollectionType.MOVIES
+                LibraryType.TV_SHOWS -> lib.collectionType == CollectionType.TVSHOWS
+                LibraryType.MUSIC -> lib.collectionType == CollectionType.MUSIC
                 LibraryType.STUFF -> true
             }
         }
@@ -529,9 +595,9 @@ class MainAppViewModel @Inject constructor(
     fun getLibraryTypeData(libraryType: LibraryType): List<BaseItemDto> {
         val library = _appState.value.libraries.firstOrNull { lib ->
             when (libraryType) {
-                LibraryType.MOVIES -> lib.collectionType == org.jellyfin.sdk.model.api.CollectionType.MOVIES
-                LibraryType.TV_SHOWS -> lib.collectionType == org.jellyfin.sdk.model.api.CollectionType.TVSHOWS
-                LibraryType.MUSIC -> lib.collectionType == org.jellyfin.sdk.model.api.CollectionType.MUSIC
+                LibraryType.MOVIES -> lib.collectionType == CollectionType.MOVIES
+                LibraryType.TV_SHOWS -> lib.collectionType == CollectionType.TVSHOWS
+                LibraryType.MUSIC -> lib.collectionType == CollectionType.MUSIC
                 LibraryType.STUFF -> true
             }
         } ?: return emptyList()
@@ -595,12 +661,14 @@ class MainAppViewModel @Inject constructor(
                         isLoadingMovies = false,
                     )
                 }
+
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         isLoadingMovies = false,
                         errorMessage = "Failed to load movies: ${result.message}",
                     )
                 }
+
                 is ApiResult.Loading -> Unit
             }
         }
@@ -661,12 +729,14 @@ class MainAppViewModel @Inject constructor(
                         isLoadingTVShows = false,
                     )
                 }
+
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         isLoadingTVShows = false,
                         errorMessage = "Failed to load TV shows: ${result.message}",
                     )
                 }
+
                 is ApiResult.Loading -> Unit
             }
         }
@@ -682,11 +752,13 @@ class MainAppViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     // Could update combined state if needed
                 }
+
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to load movie details: ${result.message}",
                     )
                 }
+
                 is ApiResult.Loading -> {
                     _appState.value = _appState.value.copy(isLoading = true)
                 }
@@ -748,11 +820,13 @@ class MainAppViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     // Add to state if needed
                 }
+
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to load series details: ${result.message}",
                     )
                 }
+
                 is ApiResult.Loading -> {
                     // Handle loading state
                 }
@@ -779,15 +853,23 @@ class MainAppViewModel @Inject constructor(
                         errorMessage = null,
                     )
 
-                    android.util.Log.d("MainAppViewModel", "✅ Episode loaded: ${episode.name} (${episode.id})")
+                    android.util.Log.d(
+                        "MainAppViewModel",
+                        "✅ Episode loaded: ${episode.name} (${episode.id})"
+                    )
                 }
+
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         isLoading = false,
                         errorMessage = "Failed to load episode details: ${result.message}",
                     )
-                    android.util.Log.e("MainAppViewModel", "❌ Failed to load episode $episodeId: ${result.message}")
+                    android.util.Log.e(
+                        "MainAppViewModel",
+                        "❌ Failed to load episode $episodeId: ${result.message}"
+                    )
                 }
+
                 is ApiResult.Loading -> {
                     _appState.value = _appState.value.copy(isLoading = true)
                 }

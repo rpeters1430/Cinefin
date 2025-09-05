@@ -55,6 +55,7 @@ This is a Jellyfin Android client application built with Kotlin and Jetpack Comp
 ./gradlew connectedAndroidTest    # Run instrumentation tests on connected devices
 ./gradlew connectedDebugAndroidTest # Run debug instrumentation tests
 ./gradlew ciTest                  # Run CI test suite (unit + instrumentation tests)
+./gradlew jacocoTestReport        # Generate test coverage report
 ```
 
 ### Code Quality Commands
