@@ -160,7 +160,7 @@ fun TVShowsScreen(
 
             TVShowFilter.IN_PROGRESS -> tvShowItems.filter {
                 (it.userData?.playedPercentage ?: 0.0) > 0.0 &&
-                        (it.userData?.playedPercentage ?: 0.0) < 100.0
+                    (it.userData?.playedPercentage ?: 0.0) < 100.0
             }
 
             TVShowFilter.HIGH_RATED -> tvShowItems.filter { it.hasHighRating() }
@@ -334,7 +334,7 @@ fun TVShowsScreen(
                 },
                 transitionSpec = {
                     fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it / 4 } togetherWith
-                            fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
+                        fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
                 },
                 label = "tv_shows_content",
             ) { contentState ->
@@ -414,7 +414,7 @@ private fun TVShowsContent(
         targetState = viewMode,
         transitionSpec = {
             fadeIn(MotionTokens.expressiveEnter) togetherWith
-                    fadeOut(MotionTokens.expressiveExit)
+                fadeOut(MotionTokens.expressiveExit)
         },
         label = "view_mode_transition",
     ) { currentViewMode ->

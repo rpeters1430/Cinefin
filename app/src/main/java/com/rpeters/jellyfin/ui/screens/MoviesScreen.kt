@@ -109,47 +109,47 @@ fun MoviesScreen(
             MovieFilter.ACTION -> movie.genres?.any {
                 it.contains(
                     "Action",
-                    ignoreCase = true
+                    ignoreCase = true,
                 )
             } == true
 
             MovieFilter.COMEDY -> movie.genres?.any {
                 it.contains(
                     "Comedy",
-                    ignoreCase = true
+                    ignoreCase = true,
                 )
             } == true
 
             MovieFilter.DRAMA -> movie.genres?.any {
                 it.contains(
                     "Drama",
-                    ignoreCase = true
+                    ignoreCase = true,
                 )
             } == true
 
             MovieFilter.SCI_FI -> movie.genres?.any {
                 it.contains("Science Fiction", ignoreCase = true) ||
-                        it.contains("Sci-Fi", ignoreCase = true) ||
-                        it.contains("Fantasy", ignoreCase = true)
+                    it.contains("Sci-Fi", ignoreCase = true) ||
+                    it.contains("Fantasy", ignoreCase = true)
             } == true
         }
     }.sortedWith { movie1, movie2 ->
         when (selectedSort) {
             MovieSortOrder.NAME -> (movie1.name ?: "").compareTo(movie2.name ?: "")
             MovieSortOrder.YEAR -> (movie2.productionYear ?: 0).compareTo(
-                movie1.productionYear ?: 0
+                movie1.productionYear ?: 0,
             )
 
             MovieSortOrder.RATING -> (movie2.communityRating ?: 0f).compareTo(
-                movie1.communityRating ?: 0f
+                movie1.communityRating ?: 0f,
             )
 
             MovieSortOrder.RECENTLY_ADDED -> movie2.dateCreated?.compareTo(
-                movie1.dateCreated ?: java.time.LocalDateTime.MIN
+                movie1.dateCreated ?: java.time.LocalDateTime.MIN,
             ) ?: 0
 
             MovieSortOrder.RUNTIME -> (movie2.runTimeTicks ?: 0L).compareTo(
-                movie1.runTimeTicks ?: 0L
+                movie1.runTimeTicks ?: 0L,
             )
         }
     }

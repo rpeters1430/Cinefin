@@ -67,7 +67,7 @@ import kotlin.math.roundToInt
 
 @OptIn(
     ExperimentalMaterial3Api::class,
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 @Composable
 fun HomeScreen(
@@ -233,12 +233,12 @@ fun HomeContent(
         if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
             android.util.Log.d(
                 "HomeScreen",
-                "Received state - Libraries: ${appState.libraries.size}, RecentlyAddedByTypes: ${appState.recentlyAddedByTypes.mapValues { it.value.size }}"
+                "Received state - Libraries: ${appState.libraries.size}, RecentlyAddedByTypes: ${appState.recentlyAddedByTypes.mapValues { it.value.size }}",
             )
             appState.libraries.forEachIndexed { index, library ->
                 android.util.Log.d(
                     "HomeScreen",
-                    "Library $index: ${library.name} (${library.collectionType})"
+                    "Library $index: ${library.name} (${library.collectionType})",
                 )
             }
         }
@@ -246,7 +246,7 @@ fun HomeContent(
     // Precompute derived data to minimize recompositions during scroll
     val continueWatchingItems by remember(appState.allItems) {
         mutableStateOf(
-            getContinueWatchingItems(appState)
+            getContinueWatchingItems(appState),
         )
     }
     val recentMovies = remember(appState.recentlyAddedByTypes) {
@@ -257,7 +257,7 @@ fun HomeContent(
     }
     val featuredItems by remember(
         recentMovies,
-        recentTVShows
+        recentTVShows,
     ) { mutableStateOf((recentMovies + recentTVShows).take(10)) }
     val recentEpisodes = remember(appState.recentlyAddedByTypes) {
         appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(15) ?: emptyList()
@@ -296,7 +296,7 @@ fun HomeContent(
                                 titleOverride = it.name ?: "Unknown",
                                 subtitleOverride = itemSubtitle(it),
                                 imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it)
-                                ?: getImageUrl(it) ?: "",
+                                    ?: getImageUrl(it) ?: "",
                             )
                         }
                     }
@@ -319,8 +319,10 @@ fun HomeContent(
                     val orderedLibraries by remember(appState.libraries) {
                         mutableStateOf(
                             appState.libraries.sortedBy { library ->
-                                when (library.collectionType?.toString()
-                                    ?.lowercase(Locale.getDefault())) {
+                                when (
+                                    library.collectionType?.toString()
+                                        ?.lowercase(Locale.getDefault())
+                                ) {
                                     "movies" -> 0
                                     "tvshows" -> 1
                                     "music" -> 2
@@ -581,7 +583,7 @@ private fun getContinueWatchingItems(appState: MainAppState): List<BaseItemDto> 
     return appState.allItems.filter { item ->
         val percentage = item.userData?.playedPercentage ?: 0.0
         percentage > 0.0 && percentage < 100.0 &&
-                (item.type == BaseItemKind.MOVIE || item.type == BaseItemKind.EPISODE)
+            (item.type == BaseItemKind.MOVIE || item.type == BaseItemKind.EPISODE)
     }.sortedByDescending { it.userData?.lastPlayedDate }.take(8)
 }
 
