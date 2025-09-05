@@ -86,6 +86,7 @@ fun TVSeasonScreen(
     seriesId: String,
     onBackClick: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
+    getBackdropUrl: (BaseItemDto) -> String?,
     onSeasonClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -195,6 +196,7 @@ fun TVSeasonScreen(
                         TVSeasonContent(
                             state = state,
                             getImageUrl = getImageUrl,
+                            getBackdropUrl = getBackdropUrl,
                             onSeasonClick = onSeasonClick,
                             modifier = Modifier.padding(innerPadding),
                         )
@@ -225,6 +227,7 @@ fun TVSeasonScreen(
 private fun TVSeasonContent(
     state: TVSeasonState,
     getImageUrl: (BaseItemDto) -> String?,
+    getBackdropUrl: (BaseItemDto) -> String?,
     onSeasonClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -239,6 +242,7 @@ private fun TVSeasonContent(
                 SeriesDetailsHeader(
                     series = series,
                     getImageUrl = getImageUrl,
+                    getBackdropUrl = getBackdropUrl,
                 )
             }
         }
@@ -363,6 +367,7 @@ private fun TVSeasonContent(
 private fun SeriesDetailsHeader(
     series: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
+    getBackdropUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
 ) {
     val headerScale by animateFloatAsState(
@@ -387,7 +392,7 @@ private fun SeriesDetailsHeader(
         Box {
             // Background Image with enhanced loading
             SubcomposeAsyncImage(
-                model = getImageUrl(series),
+                model = getBackdropUrl(series).takeIf { !it.isNullOrBlank() } ?: getImageUrl(series),
                 contentDescription = series.name,
                 loading = {
                     ExpressiveLoadingCard(

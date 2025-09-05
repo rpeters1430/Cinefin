@@ -432,6 +432,7 @@ fun JellyfinNavGraph(
                 seriesId = seriesId,
                 onBackClick = { navController.popBackStack() },
                 getImageUrl = { item -> viewModel.getImageUrl(item) },
+                getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
                 onSeasonClick = { seasonId ->
                     navController.navigate(Screen.TVEpisodes.createRoute(seasonId))
                 },
