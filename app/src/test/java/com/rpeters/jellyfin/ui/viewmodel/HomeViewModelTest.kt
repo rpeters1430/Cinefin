@@ -3,8 +3,8 @@ package com.rpeters.jellyfin.ui.viewmodel
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.data.repository.common.ErrorType
 import io.mockk.MockKAnnotations
-import io.mockk.any
 import io.mockk.coEvery
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
@@ -98,7 +98,10 @@ class HomeViewModelTest {
     fun `loadLibraries handles error correctly`() = runTest {
         // Given
         val errorMessage = "Failed to load libraries"
-        coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error(errorMessage, "NETWORK_ERROR")
+        coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error(
+            errorMessage,
+            errorType = ErrorType.NETWORK
+        )
 
         // When
         viewModel.loadLibraries()
@@ -159,9 +162,24 @@ class HomeViewModelTest {
             },
         )
 
-        coEvery { mediaRepository.getRecentlyAddedByType(BaseItemKind.MOVIE, 20) } returns ApiResult.Success(mockMovies)
-        coEvery { mediaRepository.getRecentlyAddedByType(BaseItemKind.SERIES, 20) } returns ApiResult.Success(mockSeries)
-        coEvery { mediaRepository.getRecentlyAddedByType(BaseItemKind.AUDIO, 20) } returns ApiResult.Success(emptyList())
+        coEvery {
+            mediaRepository.getRecentlyAddedByType(
+                BaseItemKind.MOVIE,
+                20
+            )
+        } returns ApiResult.Success(mockMovies)
+        coEvery {
+            mediaRepository.getRecentlyAddedByType(
+                BaseItemKind.SERIES,
+                20
+            )
+        } returns ApiResult.Success(mockSeries)
+        coEvery {
+            mediaRepository.getRecentlyAddedByType(
+                BaseItemKind.AUDIO,
+                20
+            )
+        } returns ApiResult.Success(emptyList())
 
         // When
         viewModel.loadRecentlyAddedByTypes()
@@ -203,16 +221,28 @@ class HomeViewModelTest {
             },
         )
 
-        coEvery { mediaRepository.getRecentlyAddedByType(any(), 20) } returns ApiResult.Success(emptyList())
-        coEvery { mediaRepository.getRecentlyAddedByType(BaseItemKind.MOVIE, 20) } returns ApiResult.Success(mockMovies)
-        coEvery { mediaRepository.getRecentlyAddedByType(BaseItemKind.SERIES, 20) } returns ApiResult.Success(mockSeries)
+        coEvery {
+            mediaRepository.getRecentlyAddedByType(
+                BaseItemKind.MOVIE,
+                20
+            )
+        } returns ApiResult.Success(mockMovies)
+        coEvery {
+            mediaRepository.getRecentlyAddedByType(
+                BaseItemKind.SERIES,
+                20
+            )
+        } returns ApiResult.Success(mockSeries)
 
         // When
         viewModel.loadRecentlyAddedByTypes()
 
         // Then
         val state = viewModel.homeState.first()
-        assertEquals(setOf(BaseItemKind.MOVIE.name, BaseItemKind.SERIES.name), state.recentlyAddedByTypes.keys)
+        assertEquals(
+            setOf(BaseItemKind.MOVIE.name, BaseItemKind.SERIES.name),
+            state.recentlyAddedByTypes.keys
+        )
     }
 
     @Test
@@ -236,7 +266,6 @@ class HomeViewModelTest {
 
         coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Success(mockLibraries)
         coEvery { mediaRepository.getRecentlyAdded(50) } returns ApiResult.Success(mockRecentItems)
-        coEvery { mediaRepository.getRecentlyAddedByType(any(), 20) } returns ApiResult.Success(emptyList())
 
         // When
         viewModel.refreshAll()
@@ -253,7 +282,10 @@ class HomeViewModelTest {
     @Test
     fun `clearError removes error message`() = runTest {
         // Given - set an error first
-        coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error("Error", "NETWORK_ERROR")
+        coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error(
+            "Error",
+            errorType = ErrorType.NETWORK
+        )
         viewModel.loadLibraries()
 
         // Verify error is set
@@ -286,7 +318,6 @@ class HomeViewModelTest {
         // Given
         coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Success(emptyList())
         coEvery { mediaRepository.getRecentlyAdded(50) } returns ApiResult.Success(emptyList())
-        coEvery { mediaRepository.getRecentlyAddedByType(any(), 20) } returns ApiResult.Success(emptyList())
 
         // When
         viewModel.refreshAll()
@@ -302,8 +333,14 @@ class HomeViewModelTest {
         val libraryError = "Library error"
         val recentError = "Recent items error"
 
-        coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error(libraryError, "LIBRARY_ERROR")
-        coEvery { mediaRepository.getRecentlyAdded(50) } returns ApiResult.Error(recentError, "RECENT_ERROR")
+        coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error(
+            libraryError,
+            errorType = ErrorType.NETWORK
+        )
+        coEvery { mediaRepository.getRecentlyAdded(50) } returns ApiResult.Error(
+            recentError,
+            errorType = ErrorType.SERVER_ERROR
+        )
 
         // When
         viewModel.loadLibraries()

@@ -118,7 +118,7 @@ class HomeViewModel @Inject constructor(
     /**
      * Load user libraries.
      */
-    private suspend fun loadLibraries(forceRefresh: Boolean = false) {
+    internal suspend fun loadLibraries(forceRefresh: Boolean = false) {
         val result = mediaRepository.getUserLibraries(forceRefresh)
 
         when (result) {
@@ -145,7 +145,7 @@ class HomeViewModel @Inject constructor(
     /**
      * Load recently added content across all types.
      */
-    private suspend fun loadRecentlyAdded(forceRefresh: Boolean = false) {
+    internal suspend fun loadRecentlyAdded(forceRefresh: Boolean = false) {
         val result = mediaRepository.getRecentlyAdded(RECENTLY_ADDED_LIMIT, forceRefresh)
 
         when (result) {
@@ -171,7 +171,7 @@ class HomeViewModel @Inject constructor(
      * Load recently added content organized by type.
      * Now optimized to run all API calls in parallel instead of sequential.
      */
-    private suspend fun loadRecentlyAddedByTypes(forceRefresh: Boolean = false) {
+    internal suspend fun loadRecentlyAddedByTypes(forceRefresh: Boolean = false) {
         val contentTypes = listOf(
             BaseItemKind.MOVIE,
             BaseItemKind.SERIES,
@@ -229,6 +229,11 @@ class HomeViewModel @Inject constructor(
     fun clearError() {
         _homeState.value = _homeState.value.copy(errorMessage = null)
     }
+
+    /**
+     * Backwards-compatible refresh API expected by older tests.
+     */
+    fun refreshAll() = refreshHomeData()
 
     /**
      * Clean up resources when ViewModel is cleared.

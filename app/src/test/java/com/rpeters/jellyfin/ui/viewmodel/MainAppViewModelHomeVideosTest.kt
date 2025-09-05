@@ -2,8 +2,10 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.JellyfinSearchRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
@@ -38,6 +40,9 @@ class MainAppViewModelHomeVideosTest {
     private lateinit var repository: JellyfinRepository
 
     @MockK
+    private lateinit var authRepository: JellyfinAuthRepository
+
+    @MockK
     private lateinit var mediaRepository: JellyfinMediaRepository
 
     @MockK
@@ -45,6 +50,9 @@ class MainAppViewModelHomeVideosTest {
 
     @MockK
     private lateinit var streamRepository: JellyfinStreamRepository
+
+    @MockK
+    private lateinit var searchRepository: JellyfinSearchRepository
 
     @MockK
     private lateinit var credentialManager: SecureCredentialManager
@@ -61,17 +69,17 @@ class MainAppViewModelHomeVideosTest {
         Dispatchers.setMain(dispatcher)
 
         coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Success(emptyList())
-        coEvery { mediaRepository.getRecentlyAdded(any()) } returns ApiResult.Success(emptyList())
-        coEvery { mediaRepository.getRecentlyAddedByType(any(), any()) } returns ApiResult.Success(emptyList())
 
         every { repository.currentServer } returns MutableStateFlow(null)
         every { repository.isConnected } returns MutableStateFlow(true)
 
         viewModel = MainAppViewModel(
             repository,
+            authRepository,
             mediaRepository,
             userRepository,
             streamRepository,
+            searchRepository,
             credentialManager,
             castManager,
         )
@@ -89,8 +97,24 @@ class MainAppViewModelHomeVideosTest {
         val itemA = BaseItemDto(id = UUID.randomUUID(), name = "A", type = BaseItemKind.VIDEO)
         val itemB = BaseItemDto(id = UUID.randomUUID(), name = "B", type = BaseItemKind.VIDEO)
 
-        coEvery { mediaRepository.getLibraryItems(parentId = libraryA, itemTypes = any(), startIndex = any(), limit = any()) } returns ApiResult.Success(listOf(itemA))
-        coEvery { mediaRepository.getLibraryItems(parentId = libraryB, itemTypes = any(), startIndex = any(), limit = any()) } returns ApiResult.Success(listOf(itemB))
+        coEvery {
+            mediaRepository.getLibraryItems(
+                parentId = libraryA,
+                itemTypes = "Book,AudioBook,Video",
+                startIndex = 0,
+                limit = 100,
+                collectionType = null
+            )
+        } returns ApiResult.Success(listOf(itemA))
+        coEvery {
+            mediaRepository.getLibraryItems(
+                parentId = libraryB,
+                itemTypes = "Book,AudioBook,Video",
+                startIndex = 0,
+                limit = 100,
+                collectionType = null
+            )
+        } returns ApiResult.Success(listOf(itemB))
 
         viewModel.loadHomeVideos(libraryA)
         viewModel.loadHomeVideos(libraryB)

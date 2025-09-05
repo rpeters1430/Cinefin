@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.utils
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
@@ -29,6 +30,7 @@ class EnhancedPlaybackUtils @Inject constructor(
     /**
      * Play media item with intelligent Direct Play/transcoding detection
      */
+    @Suppress("UnsafeOptInUsageError")
     suspend fun playMedia(
         item: BaseItemDto,
         onPlaybackStarted: (String, PlaybackInfo) -> Unit = { _, _ -> },
@@ -80,7 +82,7 @@ class EnhancedPlaybackUtils @Inject constructor(
                                 Log.d(
                                     TAG,
                                     "Target: ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} " +
-                                        "in ${playbackResult.targetContainer} @ ${playbackResult.targetBitrate / 1_000_000}Mbps",
+                                            "in ${playbackResult.targetContainer} @ ${playbackResult.targetBitrate / 1_000_000}Mbps",
                                 )
                             }
 
@@ -107,6 +109,8 @@ class EnhancedPlaybackUtils @Inject constructor(
     /**
      * Start media playback using the appropriate player based on media type
      */
+    @androidx.media3.common.util.UnstableApi
+    @SuppressLint("UnsafeOptInUsageError")
     private fun startMediaPlayback(item: BaseItemDto, streamUrl: String) {
         when (item.type) {
             BaseItemKind.VIDEO, BaseItemKind.MOVIE, BaseItemKind.EPISODE -> {
@@ -224,7 +228,10 @@ class EnhancedPlaybackUtils @Inject constructor(
                             ),
                         )
 
-                        if (analysis.expectedQuality.contains("720p") || analysis.expectedQuality.contains("Low")) {
+                        if (analysis.expectedQuality.contains("720p") || analysis.expectedQuality.contains(
+                                "Low"
+                            )
+                        ) {
                             recommendations.add(
                                 PlaybackRecommendation(
                                     type = RecommendationType.WARNING,
