@@ -35,7 +35,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -47,8 +51,8 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveHeroCarousel
-import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
 import com.rpeters.jellyfin.ui.components.MediaCard
+import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
@@ -61,7 +65,10 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import java.util.Locale
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class
+)
 @Composable
 fun HomeScreen(
     appState: MainAppState,
@@ -208,7 +215,7 @@ private fun HomeTopBar(
     )
 }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeContent(
     appState: MainAppState,
@@ -224,31 +231,40 @@ fun HomeContent(
     // ✅ DEBUG: Log received state for UI troubleshooting
     LaunchedEffect(appState.libraries.size, appState.recentlyAddedByTypes.size) {
         if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
-            android.util.Log.d("HomeScreen", "Received state - Libraries: ${appState.libraries.size}, RecentlyAddedByTypes: ${appState.recentlyAddedByTypes.mapValues { it.value.size }}")
+            android.util.Log.d(
+                "HomeScreen",
+                "Received state - Libraries: ${appState.libraries.size}, RecentlyAddedByTypes: ${appState.recentlyAddedByTypes.mapValues { it.value.size }}"
+            )
             appState.libraries.forEachIndexed { index, library ->
-                android.util.Log.d("HomeScreen", "Library $index: ${library.name} (${library.collectionType})")
+                android.util.Log.d(
+                    "HomeScreen",
+                    "Library $index: ${library.name} (${library.collectionType})"
+                )
             }
         }
     }
     // Precompute derived data to minimize recompositions during scroll
-    val continueWatchingItems by remember(appState.allItems) { mutableStateOf(getContinueWatchingItems(appState)) }
-    val recentMovies = remember(appState.recentlyAddedByTypes) { appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(8) ?: emptyList() }
-    val recentTVShows = remember(appState.recentlyAddedByTypes) { appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(8) ?: emptyList() }
-    val featuredItems by remember(recentMovies, recentTVShows) { mutableStateOf((recentMovies + recentTVShows).take(10)) }
-    val orderedLibraries by remember(appState.libraries) {
+    val continueWatchingItems by remember(appState.allItems) {
         mutableStateOf(
-            appState.libraries.sortedBy { library ->
-                when (library.collectionType?.toString()?.lowercase(Locale.getDefault())) {
-                    "movies" -> 0
-                    "tvshows" -> 1
-                    "music" -> 2
-                    else -> 3
-                }
-            },
+            getContinueWatchingItems(appState)
         )
     }
-    val recentEpisodes = remember(appState.recentlyAddedByTypes) { appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(15) ?: emptyList() }
-    val recentMusic = remember(appState.recentlyAddedByTypes) { appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]?.take(15) ?: emptyList() }
+    val recentMovies = remember(appState.recentlyAddedByTypes) {
+        appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(8) ?: emptyList()
+    }
+    val recentTVShows = remember(appState.recentlyAddedByTypes) {
+        appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(8) ?: emptyList()
+    }
+    val featuredItems by remember(
+        recentMovies,
+        recentTVShows
+    ) { mutableStateOf((recentMovies + recentTVShows).take(10)) }
+    val recentEpisodes = remember(appState.recentlyAddedByTypes) {
+        appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(15) ?: emptyList()
+    }
+    val recentMusic = remember(appState.recentlyAddedByTypes) {
+        appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]?.take(15) ?: emptyList()
+    }
 
     Box(
         modifier = modifier,
@@ -279,17 +295,20 @@ fun HomeContent(
                             it.toCarouselItem(
                                 titleOverride = it.name ?: "Unknown",
                                 subtitleOverride = itemSubtitle(it),
-                                imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it) ?: getImageUrl(it) ?: "",
+                                imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it)
+                                ?: getImageUrl(it) ?: "",
                             )
                         }
                     }
                     ExpressiveHeroCarousel(
                         items = featured,
                         onItemClick = { selected ->
-                            featuredItems.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
+                            featuredItems.firstOrNull { it.id?.toString() == selected.id }
+                                ?.let(onItemClick)
                         },
                         onPlayClick = { selected ->
-                            featuredItems.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
+                            featuredItems.firstOrNull { it.id?.toString() == selected.id }
+                                ?.let(onItemClick)
                         },
                     )
                 }
@@ -300,7 +319,8 @@ fun HomeContent(
                     val orderedLibraries by remember(appState.libraries) {
                         mutableStateOf(
                             appState.libraries.sortedBy { library ->
-                                when (library.collectionType?.toString()?.lowercase(Locale.getDefault())) {
+                                when (library.collectionType?.toString()
+                                    ?.lowercase(Locale.getDefault())) {
                                     "movies" -> 0
                                     "tvshows" -> 1
                                     "music" -> 2
@@ -319,107 +339,58 @@ fun HomeContent(
             }
 
             if (recentMovies.isNotEmpty()) {
-                item(key = "recent_movies", contentType = "carousel") {
-                    val items = remember(recentMovies) {
-                        recentMovies.take(15).map {
-                            it.toCarouselItem(
-                                titleOverride = it.name ?: "Unknown",
-                                subtitleOverride = itemSubtitle(it),
-                                imageUrl = getImageUrl(it) ?: "",
-                            )
-                        }
-                    }
-                    ExpressiveMediaCarousel(
+                item(key = "recent_movies", contentType = "poster_row") {
+                    PosterRowSection(
                         title = "Recently Added Movies",
-                        items = items,
-                        onItemClick = { selected ->
-                            recentMovies.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
-                        },
+                        items = recentMovies.take(15),
+                        getImageUrl = getImageUrl,
+                        onItemClick = onItemClick,
                     )
                 }
             }
 
             if (recentTVShows.isNotEmpty()) {
-                item(key = "recent_tvshows", contentType = "carousel") {
-                    val items = remember(recentTVShows) {
-                        recentTVShows.take(15).map {
-                            it.toCarouselItem(
-                                titleOverride = it.name ?: "Unknown",
-                                subtitleOverride = itemSubtitle(it),
-                                imageUrl = getImageUrl(it) ?: "",
-                            )
-                        }
-                    }
-                    ExpressiveMediaCarousel(
+                item(key = "recent_tvshows", contentType = "poster_row") {
+                    PosterRowSection(
                         title = "Recently Added TV Shows",
-                        items = items,
-                        onItemClick = { selected ->
-                            recentTVShows.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
-                        },
+                        items = recentTVShows.take(15),
+                        getImageUrl = getImageUrl,
+                        onItemClick = onItemClick,
                     )
                 }
             }
 
             if (recentEpisodes.isNotEmpty()) {
-                item(key = "recent_episodes", contentType = "carousel") {
-                    val items = remember(recentEpisodes) {
-                        recentEpisodes.map {
-                            it.toCarouselItem(
-                                titleOverride = it.name ?: "Unknown",
-                                subtitleOverride = itemSubtitle(it),
-                                imageUrl = getSeriesImageUrl(it) ?: getImageUrl(it) ?: "",
-                            )
-                        }
-                    }
-                    ExpressiveMediaCarousel(
+                item(key = "recent_episodes", contentType = "poster_row") {
+                    PosterRowSection(
                         title = "Recently Added TV Episodes",
-                        items = items,
-                        onItemClick = { selected ->
-                            recentEpisodes.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
-                        },
+                        items = recentEpisodes.take(15),
+                        getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
+                        onItemClick = onItemClick,
                     )
                 }
             }
 
             if (recentMusic.isNotEmpty()) {
-                item(key = "recent_music", contentType = "carousel") {
-                    val items = remember(recentMusic) {
-                        recentMusic.map {
-                            it.toCarouselItem(
-                                titleOverride = it.name ?: "Unknown",
-                                subtitleOverride = itemSubtitle(it),
-                                imageUrl = getImageUrl(it) ?: "",
-                            )
-                        }
-                    }
-                    ExpressiveMediaCarousel(
+                item(key = "recent_music", contentType = "music_row") {
+                    SquareRowSection(
                         title = "Recently Added Music",
-                        items = items,
-                        onItemClick = { selected ->
-                            recentMusic.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
-                        },
+                        items = recentMusic.take(15),
+                        getImageUrl = getImageUrl,
+                        onItemClick = onItemClick,
                     )
                 }
             }
 
-            val recentVideos = appState.recentlyAddedByTypes[BaseItemKind.VIDEO.name]?.take(15) ?: emptyList()
+            val recentVideos =
+                appState.recentlyAddedByTypes[BaseItemKind.VIDEO.name]?.take(15) ?: emptyList()
             if (recentVideos.isNotEmpty()) {
-                item(key = "recent_home_videos", contentType = "carousel") {
-                    val items = remember(recentVideos) {
-                        recentVideos.map {
-                            it.toCarouselItem(
-                                titleOverride = it.name ?: "Unknown",
-                                subtitleOverride = itemSubtitle(it),
-                                imageUrl = getBackdropUrl(it) ?: getImageUrl(it) ?: "",
-                            )
-                        }
-                    }
-                    ExpressiveMediaCarousel(
+                item(key = "recent_home_videos", contentType = "media_row") {
+                    MediaRowSection(
                         title = "Recently Added Home Videos",
-                        items = items,
-                        onItemClick = { selected ->
-                            recentVideos.firstOrNull { it.id?.toString() == selected.id }?.let(onItemClick)
-                        },
+                        items = recentVideos,
+                        getImageUrl = { item -> getBackdropUrl(item) ?: getImageUrl(item) },
+                        onItemClick = onItemClick,
                     )
                 }
             }
@@ -579,11 +550,22 @@ fun SearchResultsContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     rowItems.forEach { item ->
-                        MediaCard(
-                            item = item,
-                            getImageUrl = getImageUrl,
-                            modifier = Modifier.weight(1f),
-                        )
+                        // Use poster cards for movies and TV shows, regular cards for others
+                        if (item.type == BaseItemKind.MOVIE || item.type == BaseItemKind.SERIES) {
+                            PosterMediaCard(
+                                item = item,
+                                getImageUrl = getImageUrl,
+                                modifier = Modifier.weight(1f),
+                                showTitle = true,
+                                showMetadata = true,
+                            )
+                        } else {
+                            MediaCard(
+                                item = item,
+                                getImageUrl = getImageUrl,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                     if (rowItems.size == 1) {
                         Spacer(modifier = Modifier.weight(1f))
@@ -599,7 +581,7 @@ private fun getContinueWatchingItems(appState: MainAppState): List<BaseItemDto> 
     return appState.allItems.filter { item ->
         val percentage = item.userData?.playedPercentage ?: 0.0
         percentage > 0.0 && percentage < 100.0 &&
-            (item.type == BaseItemKind.MOVIE || item.type == BaseItemKind.EPISODE)
+                (item.type == BaseItemKind.MOVIE || item.type == BaseItemKind.EPISODE)
     }.sortedByDescending { it.userData?.lastPlayedDate }.take(8)
 }
 
@@ -717,6 +699,119 @@ private fun ContinueWatchingCard(
                     text = "${watchedPercentage.roundToInt()}% watched",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PosterRowSection(
+    title: String,
+    items: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+
+        val listState = rememberLazyListState()
+
+        LazyRow(
+            state = listState,
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(items) { item ->
+                PosterMediaCard(
+                    item = item,
+                    getImageUrl = getImageUrl,
+                    onClick = onItemClick,
+                    showTitle = true,
+                    showMetadata = true,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SquareRowSection(
+    title: String,
+    items: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+
+        val listState = rememberLazyListState()
+
+        LazyRow(
+            state = listState,
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(items) { item ->
+                MediaCard(
+                    item = item,
+                    getImageUrl = getImageUrl,
+                    onClick = onItemClick,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MediaRowSection(
+    title: String,
+    items: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+
+        val listState = rememberLazyListState()
+
+        LazyRow(
+            state = listState,
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(items) { item ->
+                MediaCard(
+                    item = item,
+                    getImageUrl = getImageUrl,
+                    onClick = onItemClick,
                 )
             }
         }
