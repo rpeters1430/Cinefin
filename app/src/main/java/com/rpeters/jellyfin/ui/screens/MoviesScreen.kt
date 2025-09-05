@@ -64,7 +64,7 @@ import com.rpeters.jellyfin.data.models.MovieViewMode
 import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFloatingToolbar
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
-import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
+import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.MovieRed
@@ -104,23 +104,53 @@ fun MoviesScreen(
                 val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
                 (movie.productionYear as? Int ?: 0) >= currentYear - 2
             }
+
             MovieFilter.HIGH_RATED -> (movie.communityRating as? Double ?: 0.0) >= 7.5
-            MovieFilter.ACTION -> movie.genres?.any { it.contains("Action", ignoreCase = true) } == true
-            MovieFilter.COMEDY -> movie.genres?.any { it.contains("Comedy", ignoreCase = true) } == true
-            MovieFilter.DRAMA -> movie.genres?.any { it.contains("Drama", ignoreCase = true) } == true
+            MovieFilter.ACTION -> movie.genres?.any {
+                it.contains(
+                    "Action",
+                    ignoreCase = true
+                )
+            } == true
+
+            MovieFilter.COMEDY -> movie.genres?.any {
+                it.contains(
+                    "Comedy",
+                    ignoreCase = true
+                )
+            } == true
+
+            MovieFilter.DRAMA -> movie.genres?.any {
+                it.contains(
+                    "Drama",
+                    ignoreCase = true
+                )
+            } == true
+
             MovieFilter.SCI_FI -> movie.genres?.any {
                 it.contains("Science Fiction", ignoreCase = true) ||
-                    it.contains("Sci-Fi", ignoreCase = true) ||
-                    it.contains("Fantasy", ignoreCase = true)
+                        it.contains("Sci-Fi", ignoreCase = true) ||
+                        it.contains("Fantasy", ignoreCase = true)
             } == true
         }
     }.sortedWith { movie1, movie2 ->
         when (selectedSort) {
             MovieSortOrder.NAME -> (movie1.name ?: "").compareTo(movie2.name ?: "")
-            MovieSortOrder.YEAR -> (movie2.productionYear ?: 0).compareTo(movie1.productionYear ?: 0)
-            MovieSortOrder.RATING -> (movie2.communityRating ?: 0f).compareTo(movie1.communityRating ?: 0f)
-            MovieSortOrder.RECENTLY_ADDED -> movie2.dateCreated?.compareTo(movie1.dateCreated ?: java.time.LocalDateTime.MIN) ?: 0
-            MovieSortOrder.RUNTIME -> (movie2.runTimeTicks ?: 0L).compareTo(movie1.runTimeTicks ?: 0L)
+            MovieSortOrder.YEAR -> (movie2.productionYear ?: 0).compareTo(
+                movie1.productionYear ?: 0
+            )
+
+            MovieSortOrder.RATING -> (movie2.communityRating ?: 0f).compareTo(
+                movie1.communityRating ?: 0f
+            )
+
+            MovieSortOrder.RECENTLY_ADDED -> movie2.dateCreated?.compareTo(
+                movie1.dateCreated ?: java.time.LocalDateTime.MIN
+            ) ?: 0
+
+            MovieSortOrder.RUNTIME -> (movie2.runTimeTicks ?: 0L).compareTo(
+                movie1.runTimeTicks ?: 0L
+            )
         }
     }
 
@@ -247,6 +277,7 @@ fun MoviesScreen(
                             .padding(paddingValues),
                     )
                 }
+
                 MovieScreenState.EMPTY -> {
                     ExpressiveEmptyState(
                         icon = Icons.Default.Movie,
@@ -258,6 +289,7 @@ fun MoviesScreen(
                             .padding(paddingValues),
                     )
                 }
+
                 MovieScreenState.CONTENT -> {
                     Box(modifier = Modifier.fillMaxSize()) {
                         MoviesContent(
@@ -416,6 +448,7 @@ private fun MoviesContent(
                     onLoadMore = onLoadMore,
                 )
             }
+
             MovieViewMode.LIST -> {
                 MoviesList(
                     movies = filteredAndSortedMovies,
@@ -454,17 +487,16 @@ private fun MoviesGrid(
                 label = "movie_card_scale",
             )
 
-            ExpressiveMediaCard(
-                title = movie.name ?: "Unknown Movie",
-                subtitle = movie.productionYear?.toString() ?: "",
-                imageUrl = getImageUrl(movie) ?: "",
-                rating = movie.communityRating?.toFloat(),
-                isFavorite = movie.userData?.isFavorite == true,
-                onCardClick = { onMovieClick(movie) },
+            PosterMediaCard(
+                item = movie,
+                getImageUrl = getImageUrl,
+                onClick = onMovieClick,
                 modifier = Modifier.graphicsLayer {
                     scaleX = scale
                     scaleY = scale
                 },
+                showTitle = true,
+                showMetadata = true,
             )
         }
 
@@ -514,7 +546,8 @@ private fun MoviesList(
                         val minutes = (ticks / 10_000_000 / 60).toInt()
                         val hours = minutes / 60
                         val remainingMinutes = minutes % 60
-                        val runtime = if (hours > 0) " • ${hours}h ${remainingMinutes}m" else " • ${minutes}m"
+                        val runtime =
+                            if (hours > 0) " • ${hours}h ${remainingMinutes}m" else " • ${minutes}m"
                         append(runtime)
                     }
                 },
@@ -588,7 +621,7 @@ private fun ExpressiveEmptyState(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
-    iconTint: androidx.compose.ui.graphics.Color,
+    iconTint: Color,
     modifier: Modifier = Modifier,
 ) {
     Box(

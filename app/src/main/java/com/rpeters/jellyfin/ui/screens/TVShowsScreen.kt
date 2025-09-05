@@ -67,9 +67,9 @@ import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
 import com.rpeters.jellyfin.ui.components.ExpressiveDotsLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveFloatingToolbar
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
-import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
 import com.rpeters.jellyfin.ui.components.MediaType
+import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -153,13 +153,16 @@ fun TVShowsScreen(
             TVShowFilter.RECENT -> tvShowItems.filter {
                 ((it.productionYear as? Number)?.toInt() ?: 0) >= 2020
             }
+
             TVShowFilter.UNWATCHED -> tvShowItems.filter {
                 it.userData?.played != true
             }
+
             TVShowFilter.IN_PROGRESS -> tvShowItems.filter {
                 (it.userData?.playedPercentage ?: 0.0) > 0.0 &&
-                    (it.userData?.playedPercentage ?: 0.0) < 100.0
+                        (it.userData?.playedPercentage ?: 0.0) < 100.0
             }
+
             TVShowFilter.HIGH_RATED -> tvShowItems.filter { it.hasHighRating() }
         }
 
@@ -169,9 +172,11 @@ fun TVShowsScreen(
             TVShowSortOrder.YEAR_DESC -> filtered.sortedByDescending {
                 (it.productionYear as? Number)?.toInt() ?: 0
             }
+
             TVShowSortOrder.YEAR_ASC -> filtered.sortedBy {
                 (it.productionYear as? Number)?.toInt() ?: 0
             }
+
             TVShowSortOrder.RATING_DESC -> filtered.sortedByDescending { it.getRatingAsDouble() }
             TVShowSortOrder.RATING_ASC -> filtered.sortedBy { it.getRatingAsDouble() }
             TVShowSortOrder.DATE_ADDED_DESC -> filtered.sortedByDescending { it.dateCreated }
@@ -179,9 +184,11 @@ fun TVShowsScreen(
             TVShowSortOrder.LAST_PLAYED_DESC -> filtered.sortedByDescending {
                 it.userData?.lastPlayedDate
             }
+
             TVShowSortOrder.EPISODE_COUNT_DESC -> filtered.sortedByDescending {
                 it.childCount ?: 0
             }
+
             TVShowSortOrder.EPISODE_COUNT_ASC -> filtered.sortedBy {
                 it.childCount ?: 0
             }
@@ -206,11 +213,6 @@ fun TVShowsScreen(
                     // View mode toggle with Expressive animation
                     SingleChoiceSegmentedButtonRow {
                         TVShowViewMode.entries.forEachIndexed { index, mode ->
-                            val scale by animateFloatAsState(
-                                targetValue = if (viewMode == mode) 1.1f else 1.0f,
-                                animationSpec = MotionTokens.expressiveEnter,
-                                label = "segmented_button_scale",
-                            )
                             SegmentedButton(
                                 shape = SegmentedButtonDefaults.itemShape(
                                     index = index,
@@ -332,7 +334,7 @@ fun TVShowsScreen(
                 },
                 transitionSpec = {
                     fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it / 4 } togetherWith
-                        fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
+                            fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
                 },
                 label = "tv_shows_content",
             ) { contentState ->
@@ -367,7 +369,7 @@ fun TVShowsScreen(
                             TVShowsContent(
                                 tvShows = filteredAndSortedTVShows,
                                 viewMode = viewMode,
-                                getImageUrl = { item -> viewModel.getBackdropUrl(item) },
+                                getImageUrl = { item -> viewModel.getImageUrl(item) },
                                 onTVShowClick = onTVShowClick,
                                 isLoadingMore = appState.isLoadingTVShows,
                                 hasMoreItems = appState.hasMoreTVShows,
@@ -412,7 +414,7 @@ private fun TVShowsContent(
         targetState = viewMode,
         transitionSpec = {
             fadeIn(MotionTokens.expressiveEnter) togetherWith
-                fadeOut(MotionTokens.expressiveExit)
+                    fadeOut(MotionTokens.expressiveExit)
         },
         label = "view_mode_transition",
     ) { currentViewMode ->
@@ -429,22 +431,16 @@ private fun TVShowsContent(
                         items = tvShows,
                         key = { tvShow -> tvShow.getItemKey() },
                     ) { tvShow ->
-                        ExpressiveMediaCard(
-                            title = tvShow.name ?: "Unknown",
-                            subtitle = tvShow.productionYear?.toString() ?: "",
-                            imageUrl = getImageUrl(tvShow) ?: "",
-                            rating = tvShow.communityRating?.toFloat(),
-                            isFavorite = tvShow.userData?.isFavorite == true,
-                            onCardClick = {
+                        PosterMediaCard(
+                            item = tvShow,
+                            getImageUrl = { getImageUrl(it) },
+                            onClick = { tvShow ->
                                 tvShow.id?.let { seriesId ->
                                     onTVShowClick(seriesId.toString())
                                 }
                             },
-                            onPlayClick = {
-                                tvShow.id?.let { seriesId ->
-                                    onTVShowClick(seriesId.toString())
-                                }
-                            },
+                            showTitle = true,
+                            showMetadata = true,
                         )
                     }
 
