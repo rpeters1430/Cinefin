@@ -27,7 +27,10 @@ enum class AspectRatioMode(val label: String, val resizeMode: Int) {
     FILL("Fill", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FILL),
     ZOOM("Zoom", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM),
     FIXED_WIDTH("Fixed Width", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH),
-    FIXED_HEIGHT("Fixed Height", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT),
+    FIXED_HEIGHT(
+        "Fixed Height",
+        androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT
+    ),
 }
 
 @UnstableApi
@@ -72,6 +75,12 @@ data class VideoPlayerState(
     val selectedAudioTrack: TrackInfo? = null,
     val availableSubtitleTracks: List<TrackInfo> = emptyList(),
     val selectedSubtitleTrack: TrackInfo? = null,
+    val playbackSpeed: Float = 1.0f,
+    // Skip segment markers (ms)
+    val introStartMs: Long? = null,
+    val introEndMs: Long? = null,
+    val outroStartMs: Long? = null,
+    val outroEndMs: Long? = null,
 )
 
 @UnstableApi
@@ -94,6 +103,8 @@ class VideoPlayerViewModel @Inject constructor(
 
     private var currentItemId: String? = null
     private var currentItemName: String? = null
+    private var defaultsApplied: Boolean = false
+    private var positionJob: kotlinx.coroutines.Job? = null
 
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -109,12 +120,22 @@ class VideoPlayerViewModel @Inject constructor(
             _playerState.value = _playerState.value.copy(
                 isLoading = playbackState == Player.STATE_BUFFERING,
                 isPlaying = exoPlayer?.isPlaying == true,
+                duration = exoPlayer?.duration ?: _playerState.value.duration,
+                bufferedPosition = exoPlayer?.bufferedPosition
+                    ?: _playerState.value.bufferedPosition,
+                currentPosition = exoPlayer?.currentPosition ?: _playerState.value.currentPosition,
             )
+
+            if (playbackState == Player.STATE_READY) {
+                startPositionUpdates()
+            }
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             Log.d("VideoPlayer", "Playing changed: $isPlaying")
             _playerState.value = _playerState.value.copy(isPlaying = isPlaying)
+
+            if (isPlaying) startPositionUpdates() else stopPositionUpdates()
         }
 
         override fun onPlayerError(error: PlaybackException) {
@@ -123,6 +144,80 @@ class VideoPlayerViewModel @Inject constructor(
                 error = "Playback error: ${error.message}",
                 isLoading = false,
             )
+        }
+
+        override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+            // Map current tracks to audio and subtitle lists with selection state
+            val audio = mutableListOf<TrackInfo>()
+            val text = mutableListOf<TrackInfo>()
+
+            tracks.groups.forEachIndexed { groupIndex, group ->
+                val trackType = group.type
+                val mediaGroup = group.mediaTrackGroup
+                for (i in 0 until mediaGroup.length) {
+                    val format = mediaGroup.getFormat(i)
+                    val isSelected = group.isTrackSelected(i)
+                    val display = buildString {
+                        format.label?.let { append(it) }
+                        if (isEmpty() && !format.language.isNullOrBlank()) append(format.language)
+                        if (format.channelCount != androidx.media3.common.Format.NO_VALUE && format.channelCount > 0) {
+                            if (isNotEmpty()) append(" • ")
+                            append("${format.channelCount}ch")
+                        }
+                        if (format.sampleRate != androidx.media3.common.Format.NO_VALUE && format.sampleRate > 0) {
+                            if (isNotEmpty()) append(" • ")
+                            append("${format.sampleRate}Hz")
+                        }
+                    }.ifBlank { "Track ${i + 1}" }
+
+                    val info = TrackInfo(
+                        groupIndex = groupIndex,
+                        trackIndex = i,
+                        format = format,
+                        isSelected = isSelected,
+                        displayName = display,
+                    )
+
+                    when (trackType) {
+                        androidx.media3.common.C.TRACK_TYPE_AUDIO -> audio += info
+                        androidx.media3.common.C.TRACK_TYPE_TEXT -> text += info
+                    }
+                }
+            }
+
+            _playerState.value = _playerState.value.copy(
+                availableAudioTracks = audio,
+                selectedAudioTrack = audio.firstOrNull { it.isSelected },
+                availableSubtitleTracks = text,
+                selectedSubtitleTrack = text.firstOrNull { it.isSelected },
+            )
+
+            // Apply one-time defaults: English audio if available; subtitles off
+            if (!defaultsApplied) {
+                defaultsApplied = true
+                val player = exoPlayer ?: return
+                val currentParams = player.trackSelectionParameters
+                val builder = currentParams.buildUpon()
+
+                // Prefer English audio
+                val preferredAudio = audio.firstOrNull {
+                    val lang = it.format.language ?: ""
+                    lang.startsWith("en", ignoreCase = true)
+                }
+                if (preferredAudio != null) {
+                    val group = tracks.groups.getOrNull(preferredAudio.groupIndex) ?: return
+                    val override = androidx.media3.common.TrackSelectionOverride(
+                        group.mediaTrackGroup,
+                        listOf(preferredAudio.trackIndex),
+                    )
+                    builder.clearOverridesOfType(androidx.media3.common.C.TRACK_TYPE_AUDIO)
+                    builder.addOverride(override)
+                }
+
+                // Disable text tracks by default
+                builder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, true)
+                player.trackSelectionParameters = builder.build()
+            }
         }
     }
 
@@ -148,6 +243,9 @@ class VideoPlayerViewModel @Inject constructor(
             try {
                 // Get playback info with our device profile for direct play
                 val playbackInfo = repository.getPlaybackInfo(itemId)
+
+                // Attempt to load chapter markers for intro/outro skip
+                loadSkipMarkers(itemId)
 
                 // Find the best media source for direct play
                 val mediaSource = playbackInfo.mediaSources?.find { source ->
@@ -183,8 +281,14 @@ class VideoPlayerViewModel @Inject constructor(
                 }
 
                 Log.d("VideoPlayer", "Stream URL: $streamUrl")
-                Log.d("VideoPlayer", "Media source supports direct play: ${mediaSource.supportsDirectPlay}")
-                Log.d("VideoPlayer", "Media source supports direct stream: ${mediaSource.supportsDirectStream}")
+                Log.d(
+                    "VideoPlayer",
+                    "Media source supports direct play: ${mediaSource.supportsDirectPlay}"
+                )
+                Log.d(
+                    "VideoPlayer",
+                    "Media source supports direct stream: ${mediaSource.supportsDirectStream}"
+                )
 
                 withContext(Dispatchers.Main) {
                     // Create ExoPlayer with FFmpeg extension renderer support for Vorbis
@@ -199,10 +303,14 @@ class VideoPlayerViewModel @Inject constructor(
                                 setDefaultRequestProperties(mapOf("X-Emby-Token" to token))
                             }
                         }
-                    val dataSourceFactory = androidx.media3.datasource.DefaultDataSource.Factory(context, httpFactory)
-                    val mediaSourceFactory = androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
+                    val dataSourceFactory =
+                        androidx.media3.datasource.DefaultDataSource.Factory(context, httpFactory)
+                    val mediaSourceFactory =
+                        androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
 
                     exoPlayer = ExoPlayer.Builder(context)
+                        .setSeekBackIncrementMs(10_000)
+                        .setSeekForwardIncrementMs(10_000)
                         .setMediaSourceFactory(mediaSourceFactory)
                         .setRenderersFactory(renderersFactory)
                         .build()
@@ -238,10 +346,63 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
+    private suspend fun loadSkipMarkers(itemId: String) {
+        try {
+            // Try episode first, then movie as a fallback
+            val item = when (val ep = repository.getEpisodeDetails(itemId)) {
+                is com.rpeters.jellyfin.data.repository.common.ApiResult.Success -> ep.data
+                else -> when (val mv = repository.getMovieDetails(itemId)) {
+                    is com.rpeters.jellyfin.data.repository.common.ApiResult.Success -> mv.data
+                    else -> null
+                }
+            }
+            if (item == null) return
+
+            val chapters = item.chapters ?: emptyList()
+            if (chapters.isEmpty()) return
+
+            fun ticksToMs(ticks: Long?): Long? = ticks?.let { it / 10_000 }
+
+            var introStart: Long? = null
+            var introEnd: Long? = null
+            var outroStart: Long? = null
+            var outroEnd: Long? = null
+
+            chapters.forEachIndexed { index, ch ->
+                val name = ch.name?.lowercase() ?: ""
+                val startMs = ticksToMs(ch.startPositionTicks)
+                val nextStartMs =
+                    chapters.getOrNull(index + 1)?.startPositionTicks?.let { it / 10_000 }
+                val endMs = nextStartMs
+
+                if (introStart == null && ("intro" in name || "opening" in name)) {
+                    introStart = startMs
+                    introEnd = endMs
+                }
+                if (outroStart == null && ("credits" in name || "outro" in name || "ending" in name)) {
+                    outroStart = startMs
+                    outroEnd = endMs
+                }
+            }
+
+            _playerState.value = _playerState.value.copy(
+                introStartMs = introStart,
+                introEndMs = introEnd,
+                outroStartMs = outroStart,
+                outroEndMs = outroEnd,
+            )
+        } catch (_: Exception) {
+            // Best effort; ignore failures
+        }
+    }
+
     fun togglePlayPause() {
         val player = exoPlayer ?: return
 
-        Log.d("VideoPlayer", "Toggle play/pause. Current state: playing=${player.isPlaying}, playWhenReady=${player.playWhenReady}")
+        Log.d(
+            "VideoPlayer",
+            "Toggle play/pause. Current state: playing=${player.isPlaying}, playWhenReady=${player.playWhenReady}"
+        )
 
         if (player.isPlaying) {
             player.pause()
@@ -269,16 +430,57 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun releasePlayer() {
         Log.d("VideoPlayer", "Releasing player")
-        exoPlayer?.removeListener(playerListener)
-        exoPlayer?.release()
+        stopPositionUpdates()
+        exoPlayer?.let { p ->
+            try {
+                p.removeListener(playerListener)
+                // Stop playback to flush decoders before releasing
+                p.stop()
+                // Clear any video surface to avoid surface detachment warnings
+                p.clearVideoSurface()
+            } catch (_: Exception) {
+            }
+            try {
+                p.release()
+            } catch (_: Exception) {
+            }
+        }
         exoPlayer = null
     }
 
+    private fun startPositionUpdates() {
+        if (positionJob?.isActive == true) return
+        val player = exoPlayer ?: return
+        positionJob = viewModelScope.launch(Dispatchers.Main) {
+            while (true) {
+                _playerState.value = _playerState.value.copy(
+                    currentPosition = player.currentPosition,
+                    bufferedPosition = player.bufferedPosition,
+                    duration = if (player.duration > 0) player.duration else _playerState.value.duration,
+                )
+                kotlinx.coroutines.delay(500)
+            }
+        }
+    }
+
+    private fun stopPositionUpdates() {
+        positionJob?.cancel()
+        positionJob = null
+    }
+
     // Placeholder methods for UI compatibility
-    fun changeQuality(quality: VideoQuality) { /* Not implemented yet */ }
+    fun changeQuality(quality: VideoQuality) { /* Not implemented yet */
+    }
+
     fun changeAspectRatio(aspectRatio: AspectRatioMode) {
         _playerState.value = _playerState.value.copy(selectedAspectRatio = aspectRatio)
     }
+
+    fun setPlaybackSpeed(speed: Float) {
+        exoPlayer?.setPlaybackSpeed(speed)
+        _playerState.value = _playerState.value.copy(playbackSpeed = speed)
+    }
+
     fun showCastDialog() {
         val devices = castManager.discoverDevices()
         _playerState.value = _playerState.value.copy(
@@ -286,12 +488,54 @@ class VideoPlayerViewModel @Inject constructor(
             showCastDialog = true,
         )
     }
-    fun showSubtitleDialog() { /* Not implemented yet */ }
-    fun selectAudioTrack(track: TrackInfo) { /* Not implemented yet */ }
-    fun selectSubtitleTrack(track: TrackInfo?) { /* Not implemented yet */ }
+
+    fun showSubtitleDialog() { /* UI handled in composable for now */
+    }
+
+    fun selectAudioTrack(track: TrackInfo) {
+        val player = exoPlayer ?: return
+        val params = player.trackSelectionParameters
+        val group = player.currentTracks.groups.getOrNull(track.groupIndex) ?: return
+        val override = androidx.media3.common.TrackSelectionOverride(
+            group.mediaTrackGroup,
+            listOf(track.trackIndex)
+        )
+        val newParams = params
+            .buildUpon()
+            .clearOverridesOfType(androidx.media3.common.C.TRACK_TYPE_AUDIO)
+            .addOverride(override)
+            .build()
+        player.trackSelectionParameters = newParams
+        // State will refresh via onTracksChanged
+    }
+
+    fun selectSubtitleTrack(track: TrackInfo?) {
+        val player = exoPlayer ?: return
+        val params = player.trackSelectionParameters
+        val builder = params.buildUpon()
+            .clearOverridesOfType(androidx.media3.common.C.TRACK_TYPE_TEXT)
+
+        if (track == null) {
+            // Turn off text tracks
+            builder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, true)
+        } else {
+            val group = player.currentTracks.groups.getOrNull(track.groupIndex) ?: return
+            val override = androidx.media3.common.TrackSelectionOverride(
+                group.mediaTrackGroup,
+                listOf(track.trackIndex)
+            )
+            builder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, false)
+            builder.addOverride(override)
+        }
+
+        player.trackSelectionParameters = builder.build()
+        // State will refresh via onTracksChanged
+    }
+
     fun hideSubtitleDialog() {
         _playerState.value = _playerState.value.copy(showSubtitleDialog = false)
     }
+
     fun selectCastDevice(deviceName: String) {
         val connected = castManager.connectToDevice(deviceName)
         _playerState.value = _playerState.value.copy(
@@ -300,7 +544,9 @@ class VideoPlayerViewModel @Inject constructor(
             showCastDialog = false,
         )
     }
+
     fun hideCastDialog() {
         _playerState.value = _playerState.value.copy(showCastDialog = false)
     }
 }
+

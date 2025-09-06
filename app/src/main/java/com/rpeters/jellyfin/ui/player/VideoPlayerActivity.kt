@@ -92,6 +92,7 @@ class VideoPlayerActivity : ComponentActivity() {
                             onPlayPause = playerViewModel::togglePlayPause,
                             onSeek = playerViewModel::seekTo,
                             onQualityChange = playerViewModel::changeQuality,
+                            onPlaybackSpeedChange = playerViewModel::setPlaybackSpeed,
                             onAspectRatioChange = playerViewModel::changeAspectRatio,
                             onCastClick = playerViewModel::showCastDialog,
                             onSubtitlesClick = playerViewModel::showSubtitleDialog,
@@ -103,6 +104,7 @@ class VideoPlayerActivity : ComponentActivity() {
                             onCastDeviceSelect = playerViewModel::selectCastDevice,
                             onCastDialogDismiss = playerViewModel::hideCastDialog,
                             exoPlayer = playerViewModel.exoPlayer,
+                            supportsPip = isPipSupported(),
                         )
                     }
                 }
@@ -112,6 +114,12 @@ class VideoPlayerActivity : ComponentActivity() {
             finish()
         }
     }
+
+    private fun isPipSupported(): Boolean {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+    }
+
 
     override fun onResume() {
         super.onResume()
@@ -136,11 +144,15 @@ class VideoPlayerActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(WindowInsetsCompat.Type.systemBars())
-        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
 
     private fun enterPictureInPictureModeCustom() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && packageManager.hasSystemFeature(
+                PackageManager.FEATURE_PICTURE_IN_PICTURE
+            )
+        ) {
             val aspectRatio = Rational(16, 9)
             val params = PictureInPictureParams.Builder()
                 .setAspectRatio(aspectRatio)

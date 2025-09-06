@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Sd
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -87,6 +88,7 @@ fun VideoPlayerScreen(
     onPlayPause: () -> Unit,
     onSeek: (Long) -> Unit,
     onQualityChange: (VideoQuality) -> Unit,
+    onPlaybackSpeedChange: (Float) -> Unit,
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onCastClick: () -> Unit,
     onSubtitlesClick: () -> Unit,
@@ -98,12 +100,15 @@ fun VideoPlayerScreen(
     onCastDeviceSelect: (String) -> Unit,
     onCastDialogDismiss: () -> Unit,
     exoPlayer: ExoPlayer?,
+    supportsPip: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var controlsVisible by remember { mutableStateOf(true) }
     var showQualityMenu by remember { mutableStateOf(false) }
     var showAspectRatioMenu by remember { mutableStateOf(false) }
     var showAudioDialog by remember { mutableStateOf(false) }
+    var showSubtitleDialog by remember { mutableStateOf(false) }
+    var showSpeedMenu by remember { mutableStateOf(false) }
 
     // Gesture feedback states
     var showSeekFeedback by remember { mutableStateOf(false) }
@@ -111,7 +116,7 @@ fun VideoPlayerScreen(
     var seekFeedbackIcon by remember { mutableStateOf(Icons.Default.FastForward) }
     var lastTapTime by remember { mutableLongStateOf(0L) }
 
-    val rememberedPlayer = remember(exoPlayer) { exoPlayer }
+    remember(exoPlayer) { exoPlayer }
 
     // Auto-hide seek feedback
     LaunchedEffect(showSeekFeedback) {
@@ -151,13 +156,15 @@ fun VideoPlayerScreen(
                             // Double tap detected
                             val isRightSide = offset.x > screenWidth / 2
                             val seekAmount = if (isRightSide) 10000L else -10000L
-                            val newPosition = (playerState.currentPosition + seekAmount).coerceAtLeast(0L)
+                            val newPosition =
+                                (playerState.currentPosition + seekAmount).coerceAtLeast(0L)
 
                             onSeek(newPosition)
 
                             // Show feedback
                             showSeekFeedback = true
-                            seekFeedbackIcon = if (isRightSide) Icons.Default.FastForward else Icons.Default.FastRewind
+                            seekFeedbackIcon =
+                                if (isRightSide) Icons.Default.FastForward else Icons.Default.FastRewind
                             seekFeedbackText = if (isRightSide) "+10s" else "-10s"
                             controlsVisible = false // Hide controls during seek
                         } else {
@@ -219,11 +226,22 @@ fun VideoPlayerScreen(
             modifier = Modifier.fillMaxSize(),
         )
 
-        // Add DisposableEffect to ensure proper cleanup and attachment
-        DisposableEffect(exoPlayer) {
+        // Ensure the PlayerView detaches cleanly to avoid setOutputSurface errors
+        DisposableEffect(Unit) {
             onDispose {
-                // Clear the player reference when exoPlayer changes or component disposes
-                // This will be handled by the update block above
+                // The AndroidView manages lifecycle, but explicitly clear association
+                // to avoid surface detachment warnings during rapid teardown.
+                // We cannot reference the composited playerView instance here,
+                // but releasing ExoPlayer clears the surface; this hook remains for clarity.
+            }
+        }
+
+        // Periodically sample current position from the player for UI elements like skip buttons
+        var currentPosMs by remember { mutableLongStateOf(0L) }
+        LaunchedEffect(exoPlayer) {
+            while (true) {
+                currentPosMs = exoPlayer?.currentPosition ?: 0L
+                delay(500)
             }
         }
 
@@ -297,6 +315,60 @@ fun VideoPlayerScreen(
             }
         }
 
+        // Skip Intro/Outro buttons
+        val showSkipIntro =
+            remember(playerState.introStartMs, playerState.introEndMs, currentPosMs) {
+                val s = playerState.introStartMs
+                val e = playerState.introEndMs
+                s != null && e != null && currentPosMs in s..e
+            }
+        val showSkipOutro = remember(playerState.outroStartMs, currentPosMs) {
+            val s = playerState.outroStartMs
+            s != null && currentPosMs >= s
+        }
+
+        if (showSkipIntro) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                Surface(color = Color.Black.copy(alpha = 0.6f), shape = CircleShape) {
+                    Text(
+                        text = "Skip Intro",
+                        color = Color.White,
+                        modifier = Modifier
+                            .clickable {
+                                val target = playerState.introEndMs ?: (currentPosMs + 10_000)
+                                onSeek(target)
+                            }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
+            }
+        }
+        if (showSkipOutro) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 64.dp, end = 16.dp)
+            ) {
+                Surface(color = Color.Black.copy(alpha = 0.6f), shape = CircleShape) {
+                    Text(
+                        text = "Skip Credits",
+                        color = Color.White,
+                        modifier = Modifier
+                            .clickable {
+                                val target =
+                                    playerState.outroEndMs ?: (exoPlayer?.duration ?: currentPosMs)
+                                onSeek(target)
+                            }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
+            }
+        }
+
         // Video Controls Overlay
         AnimatedVisibility(
             visible = controlsVisible,
@@ -308,16 +380,20 @@ fun VideoPlayerScreen(
                 onPlayPause = onPlayPause,
                 onSeek = onSeek,
                 onQualityChange = onQualityChange,
+                onPlaybackSpeedChange = onPlaybackSpeedChange,
                 onAspectRatioChange = onAspectRatioChange,
                 onCastClick = onCastClick,
                 onAudioTracksClick = { showAudioDialog = true },
-                onSubtitlesClick = onSubtitlesClick,
+                onSubtitlesClick = { showSubtitleDialog = true },
                 onPictureInPictureClick = onPictureInPictureClick,
                 onOrientationToggle = onOrientationToggle,
                 showQualityMenu = showQualityMenu,
                 onShowQualityMenu = { showQualityMenu = it },
                 showAspectRatioMenu = showAspectRatioMenu,
                 onShowAspectRatioMenu = { showAspectRatioMenu = it },
+                showSpeedMenu = showSpeedMenu,
+                onShowSpeedMenu = { showSpeedMenu = it },
+                supportsPip = supportsPip,
             )
         }
 
@@ -378,6 +454,43 @@ fun VideoPlayerScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showAudioDialog = false }) { Text("Close") }
+                },
+            )
+        }
+
+        // Subtitle Track Selection Dialog
+        if (showSubtitleDialog) {
+            AlertDialog(
+                onDismissRequest = { showSubtitleDialog = false },
+                title = { Text("Subtitles") },
+                text = {
+                    Column {
+                        TextButton(
+                            onClick = {
+                                onSubtitleTrackSelect(null)
+                                showSubtitleDialog = false
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("Off") }
+
+                        playerState.availableSubtitleTracks.forEach { track ->
+                            TextButton(
+                                onClick = {
+                                    onSubtitleTrackSelect(track)
+                                    showSubtitleDialog = false
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(
+                                    text = track.displayName,
+                                    fontWeight = if (track.isSelected) FontWeight.Bold else FontWeight.Normal,
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showSubtitleDialog = false }) { Text("Close") }
                 },
             )
         }
@@ -460,6 +573,7 @@ private fun VideoControlsOverlay(
     onPlayPause: () -> Unit,
     onSeek: (Long) -> Unit,
     onQualityChange: (VideoQuality) -> Unit,
+    onPlaybackSpeedChange: (Float) -> Unit,
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onCastClick: () -> Unit,
     onAudioTracksClick: () -> Unit,
@@ -470,6 +584,9 @@ private fun VideoControlsOverlay(
     onShowQualityMenu: (Boolean) -> Unit,
     showAspectRatioMenu: Boolean,
     onShowAspectRatioMenu: (Boolean) -> Unit,
+    showSpeedMenu: Boolean,
+    onShowSpeedMenu: (Boolean) -> Unit,
+    supportsPip: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -600,22 +717,64 @@ private fun VideoControlsOverlay(
 
                 // Subtitles button with expressive styling
                 if (playerState.availableSubtitleTracks.isNotEmpty()) {
-                    ExpressiveIconButton(
-                        icon = Icons.Default.ClosedCaption,
-                        contentDescription = "Subtitles",
-                        onClick = onSubtitlesClick,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        ExpressiveIconButton(
+                            icon = Icons.Default.ClosedCaption,
+                            contentDescription = "Subtitles",
+                            onClick = onSubtitlesClick,
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        )
+                        val subLabel = playerState.selectedSubtitleTrack?.format?.language?.take(2)
+                            ?.uppercase()
+                            ?: "Off"
+                        Surface(
+                            color = Color.White.copy(alpha = 0.12f),
+                            shape = CircleShape,
+                        ) {
+                            Text(
+                                text = subLabel,
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
+                        }
+                    }
                 }
 
                 // Audio format selection button with expressive styling
-                if (playerState.availableAudioTracks.size > 1) {
-                    ExpressiveIconButton(
-                        icon = Icons.Default.Audiotrack,
-                        contentDescription = "Audio Tracks",
-                        onClick = onAudioTracksClick,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
+                if (playerState.availableAudioTracks.size > 1 || playerState.availableAudioTracks.any {
+                        it.displayName.contains(
+                            "AD",
+                            true
+                        ) || it.displayName.contains("Commentary", true)
+                    }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        ExpressiveIconButton(
+                            icon = Icons.Default.Audiotrack,
+                            contentDescription = "Audio Tracks",
+                            onClick = onAudioTracksClick,
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        )
+                        val a = playerState.selectedAudioTrack?.format
+                        val lang = a?.language?.take(2)?.uppercase() ?: "--"
+                        val ch = when (val c = a?.channelCount ?: 0) {
+                            in 6..8 -> "5.1"
+                            2 -> "2.0"
+                            else -> if (c > 0) "$c" else ""
+                        }
+                        val audioLabel = if (ch.isNotEmpty()) "$lang $ch" else lang
+                        Surface(
+                            color = Color.White.copy(alpha = 0.12f),
+                            shape = CircleShape,
+                        ) {
+                            Text(
+                                text = audioLabel,
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
+                        }
+                    }
                 }
 
                 // Quality selection button with dynamic icon and expressive styling
@@ -698,13 +857,86 @@ private fun VideoControlsOverlay(
                     }
                 }
 
+                // Playback Speed control (chip with dropdown)
+                Box {
+                    Surface(
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .clip(CircleShape)
+                            .clickable { onShowSpeedMenu(true) },
+                        color = Color.White.copy(alpha = 0.1f),
+                        shape = CircleShape,
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Speed,
+                                contentDescription = "Playback speed",
+                                tint = Color.White,
+                            )
+                            Spacer(modifier = Modifier.size(6.dp))
+                            Text(
+                                text = String.format("%.2fx", playerState.playbackSpeed),
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = showSpeedMenu,
+                        onDismissRequest = { onShowSpeedMenu(false) },
+                    ) {
+                        val speeds = listOf(0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
+                        speeds.forEach { s ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = String.format("%.2fx", s),
+                                            fontWeight = if (s == playerState.playbackSpeed) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                        if (s == playerState.playbackSpeed) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Selected"
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    onPlaybackSpeedChange(s)
+                                    onShowSpeedMenu(false)
+                                },
+                            )
+                        }
+                    }
+                }
+
                 // Fullscreen button (right) - triggers PiP if not fullscreen with expressive styling
-                ExpressiveIconButton(
-                    icon = Icons.Default.Fullscreen,
-                    contentDescription = "Fullscreen / Picture in Picture",
-                    onClick = onPictureInPictureClick,
-                    modifier = Modifier.padding(start = 4.dp),
-                )
+                if (supportsPip) 1f else 0.4f
+                Surface(
+                    modifier = Modifier
+                        .padding(start = 4.dp)
+                        .clip(CircleShape),
+                    color = Color.White.copy(alpha = if (supportsPip) 0.1f else 0.05f),
+                    shape = CircleShape,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Fullscreen,
+                        contentDescription = "Fullscreen / Picture in Picture",
+                        tint = if (supportsPip) Color.White else Color.LightGray,
+                        modifier = Modifier
+                            .padding(12.dp)
+                            .size(24.dp)
+                            .let { mod -> if (supportsPip) mod.clickable { onPictureInPictureClick() } else mod },
+                    )
+                }
             }
         }
     }

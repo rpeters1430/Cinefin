@@ -27,8 +27,13 @@ class SeasonEpisodesViewModel @Inject constructor(
     val state: StateFlow<SeasonEpisodesState> = _state.asStateFlow()
 
     private var currentSeasonId: String? = null
+    private var loadInProgressFor: String? = null
 
     fun loadEpisodes(seasonId: String) {
+        // Prevent duplicate loads for the same season while a request is in flight
+        if (loadInProgressFor == seasonId) return
+        loadInProgressFor = seasonId
+
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null)
             currentSeasonId = seasonId
@@ -50,6 +55,8 @@ class SeasonEpisodesViewModel @Inject constructor(
                     // Already handled
                 }
             }
+            // Clear in‑flight marker once finished
+            if (loadInProgressFor == seasonId) loadInProgressFor = null
         }
     }
 

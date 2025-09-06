@@ -22,6 +22,16 @@ solidify authentication, stability, and UI responsiveness.
   loadInitialData() calls and moving heavy operations to background threads
 - ✅ **Main Thread Protection** - Implemented loading guards and Dispatchers.IO usage to prevent UI
   blocking during data loading
+- ? **Mobile Video Player Improvements**
+    - Playback speed control (0.75×–2×)
+    - Real audio/subtitle track selection via Media3 overrides
+    - Defaults applied per playback: English audio, subtitles off
+    - Skip Intro / Skip Credits from server chapters
+    - 10s seek increments aligned with double‑tap
+    - Progress/timeline updates fixed (position/duration ticker)
+    - Safer ExoPlayer teardown (stop + clear surface) to reduce codec warnings
+    - PiP button gated by device capability
+
 
 - [x] Fix client cache invalidation in `OptimizedClientFactory` so entries keyed by
   `serverUrl|token` are removed when invalidating by server URL.
@@ -36,11 +46,10 @@ solidify authentication, stability, and UI responsiveness.
   prevent concurrent API calls that caused 46 frame skips
 - [x] **Implement background thread execution** - Use `withContext(Dispatchers.IO)` for heavy async
   operations to prevent main thread blocking
-- [ ] **Move `TokenProvider` file to `app/src/main/java/com/rpeters/jellyfin/data/network/`** - File
-  exists in wrong package location `com.example.jellyfinandroid.data.network` but declares package
-  as `com.rpeters.jellyfin.data.network`
-- [ ] **Replace `runBlocking` in `OptimizedClientFactory.getOptimizedClient`** - Still uses
-  `runBlocking { authRepositoryProvider.get().token() }` on line 98
+- [x] **Move `TokenProvider` file to `app/src/main/java/com/rpeters/jellyfin/data/network/`** (was
+  under `com.example.jellyfinandroid.data.network`)
+- [x] **Replace `runBlocking` in `OptimizedClientFactory.getOptimizedClient`** — switched to
+  `suspend` + updated `JellyfinSessionManager`
 - [ ] Add unit tests for token expiry edge cases and single-flight re-auth (401 once → re-auth →
   success path; concurrent calls).
 - [ ] Optional: Add Coil auth header support for servers that disallow `api_key` query param (
@@ -104,17 +113,17 @@ solidify authentication, stability, and UI responsiveness.
       **Success Criteria**: ✅ Functional TV navigation with D-pad support, ✅ focus management
       working
 
-### **Major Step 1.2: Playback Experience for TV** ⏳ *Not Started*
+### **Major Step 1.2: Playback Experience for TV** ? *In Progress*
 
 **Target Completion**: Month 3
 
 #### Implementation Checklist:
 
 - [ ] **Enhanced Video Player for TV**
-    - [ ] Full-screen TV player with cinematic controls
+    - [~] Base player improvements complete on mobile; TV polish next
     - [ ] TV-optimized player UI with large, readable text
-    - [ ] Picture-in-picture support for TV multitasking
-    - [ ] Custom TV player controls with D-pad navigation
+    - [ ] Picture-in-picture actions for TV (play/pause)
+    - [ ] Custom TV player controls with D-pad navigation & focus rings
 
 - [ ] **Audio Visualization for TV**
     - [ ] TV-optimized music playback with visualizations

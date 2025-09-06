@@ -19,7 +19,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
@@ -43,7 +42,7 @@ object NetworkModule {
         connectivityChecker: ConnectivityChecker,
         authRepositoryProvider: Provider<JellyfinAuthRepository>,
     ): OkHttpClient {
-        val cacheDir = java.io.File(context.cacheDir, "http_cache")
+        val cacheDir = File(context.cacheDir, "http_cache")
         val cache = okhttp3.Cache(cacheDir, 150L * 1024 * 1024) // 150 MB
 
         val authInterceptor = okhttp3.Interceptor { chain ->
@@ -125,7 +124,10 @@ object NetworkModule {
             .crossfade(false)
             .respectCacheHeaders(true)
             .allowRgb565(true)
-            .allowHardware(true)
+            // Emulators often struggle with hardware bitmaps + lots of thumbnails.
+            // Prefer software bitmaps and cap work parallelism slightly to smooth scrolling.
+            .allowHardware(false)
+            .dispatcher(kotlinx.coroutines.Dispatchers.IO.limitedParallelism(4))
             .build()
     }
 

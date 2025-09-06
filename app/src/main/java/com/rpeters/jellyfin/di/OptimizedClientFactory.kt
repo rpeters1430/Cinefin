@@ -5,7 +5,6 @@ import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.logging.HttpLoggingInterceptor
 import org.jellyfin.sdk.Jellyfin
@@ -94,8 +93,8 @@ class OptimizedClientFactory @Inject constructor(
      * Get an ApiClient keyed by (serverUrl, currentToken). When the token changes,
      * a new client is created and cached under a new key.
      */
-    fun getOptimizedClient(serverUrl: String): ApiClient {
-        val token = runBlocking { authRepositoryProvider.get().token() }
+    suspend fun getOptimizedClient(serverUrl: String): ApiClient {
+        val token = authRepositoryProvider.get().token()
         val key = "$serverUrl|${token ?: ""}"
         return synchronized(clientLock) {
             clients.getOrPut(key) {

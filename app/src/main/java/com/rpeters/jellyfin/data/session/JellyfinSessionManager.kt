@@ -34,13 +34,13 @@ class JellyfinSessionManager @Inject constructor(
      * Returns an ApiClient for the provided server URL, bound to the current token.
      * A new client is created automatically when the token changes.
      */
-    fun getClientForUrl(serverUrl: String): ApiClient =
+    suspend fun getClientForUrl(serverUrl: String): ApiClient =
         optimizedClientFactory.getOptimizedClient(serverUrl)
 
     /**
      * Returns an ApiClient for the current authenticated server.
      */
-    fun getClient(): ApiClient = getClientForUrl(currentServerOrThrow().url)
+    suspend fun getClient(): ApiClient = getClientForUrl(currentServerOrThrow().url)
 
     /**
      * Executes an operation with proactive token validation and a single 401-driven retry.
