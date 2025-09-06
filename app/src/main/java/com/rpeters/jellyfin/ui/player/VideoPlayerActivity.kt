@@ -117,9 +117,8 @@ class VideoPlayerActivity : ComponentActivity() {
 
     private fun isPipSupported(): Boolean {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-                packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+            packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
     }
-
 
     override fun onResume() {
         super.onResume()
@@ -150,7 +149,7 @@ class VideoPlayerActivity : ComponentActivity() {
 
     private fun enterPictureInPictureModeCustom() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && packageManager.hasSystemFeature(
-                PackageManager.FEATURE_PICTURE_IN_PICTURE
+                PackageManager.FEATURE_PICTURE_IN_PICTURE,
             )
         ) {
             val aspectRatio = Rational(16, 9)

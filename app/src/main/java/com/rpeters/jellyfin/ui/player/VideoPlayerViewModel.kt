@@ -29,7 +29,7 @@ enum class AspectRatioMode(val label: String, val resizeMode: Int) {
     FIXED_WIDTH("Fixed Width", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH),
     FIXED_HEIGHT(
         "Fixed Height",
-        androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT
+        androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT,
     ),
 }
 
@@ -283,11 +283,11 @@ class VideoPlayerViewModel @Inject constructor(
                 Log.d("VideoPlayer", "Stream URL: $streamUrl")
                 Log.d(
                     "VideoPlayer",
-                    "Media source supports direct play: ${mediaSource.supportsDirectPlay}"
+                    "Media source supports direct play: ${mediaSource.supportsDirectPlay}",
                 )
                 Log.d(
                     "VideoPlayer",
-                    "Media source supports direct stream: ${mediaSource.supportsDirectStream}"
+                    "Media source supports direct stream: ${mediaSource.supportsDirectStream}",
                 )
 
                 withContext(Dispatchers.Main) {
@@ -401,7 +401,7 @@ class VideoPlayerViewModel @Inject constructor(
 
         Log.d(
             "VideoPlayer",
-            "Toggle play/pause. Current state: playing=${player.isPlaying}, playWhenReady=${player.playWhenReady}"
+            "Toggle play/pause. Current state: playing=${player.isPlaying}, playWhenReady=${player.playWhenReady}",
         )
 
         if (player.isPlaying) {
@@ -469,7 +469,8 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     // Placeholder methods for UI compatibility
-    fun changeQuality(quality: VideoQuality) { /* Not implemented yet */
+    fun changeQuality(quality: VideoQuality) {
+        /* Not implemented yet */
     }
 
     fun changeAspectRatio(aspectRatio: AspectRatioMode) {
@@ -489,7 +490,8 @@ class VideoPlayerViewModel @Inject constructor(
         )
     }
 
-    fun showSubtitleDialog() { /* UI handled in composable for now */
+    fun showSubtitleDialog() {
+        /* UI handled in composable for now */
     }
 
     fun selectAudioTrack(track: TrackInfo) {
@@ -498,7 +500,7 @@ class VideoPlayerViewModel @Inject constructor(
         val group = player.currentTracks.groups.getOrNull(track.groupIndex) ?: return
         val override = androidx.media3.common.TrackSelectionOverride(
             group.mediaTrackGroup,
-            listOf(track.trackIndex)
+            listOf(track.trackIndex),
         )
         val newParams = params
             .buildUpon()
@@ -522,7 +524,7 @@ class VideoPlayerViewModel @Inject constructor(
             val group = player.currentTracks.groups.getOrNull(track.groupIndex) ?: return
             val override = androidx.media3.common.TrackSelectionOverride(
                 group.mediaTrackGroup,
-                listOf(track.trackIndex)
+                listOf(track.trackIndex),
             )
             builder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, false)
             builder.addOverride(override)
@@ -549,4 +551,3 @@ class VideoPlayerViewModel @Inject constructor(
         _playerState.value = _playerState.value.copy(showCastDialog = false)
     }
 }
-

@@ -331,7 +331,7 @@ fun VideoPlayerScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(16.dp)
+                    .padding(16.dp),
             ) {
                 Surface(color = Color.Black.copy(alpha = 0.6f), shape = CircleShape) {
                     Text(
@@ -351,7 +351,7 @@ fun VideoPlayerScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 64.dp, end = 16.dp)
+                    .padding(top = 64.dp, end = 16.dp),
             ) {
                 Surface(color = Color.Black.copy(alpha = 0.6f), shape = CircleShape) {
                     Text(
@@ -745,9 +745,10 @@ private fun VideoControlsOverlay(
                 if (playerState.availableAudioTracks.size > 1 || playerState.availableAudioTracks.any {
                         it.displayName.contains(
                             "AD",
-                            true
+                            true,
                         ) || it.displayName.contains("Commentary", true)
-                    }) {
+                    }
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         ExpressiveIconButton(
                             icon = Icons.Default.Audiotrack,
@@ -895,16 +896,16 @@ private fun VideoControlsOverlay(
                                 text = {
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                        verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         Text(
                                             text = String.format("%.2fx", s),
-                                            fontWeight = if (s == playerState.playbackSpeed) FontWeight.Bold else FontWeight.Normal
+                                            fontWeight = if (s == playerState.playbackSpeed) FontWeight.Bold else FontWeight.Normal,
                                         )
                                         if (s == playerState.playbackSpeed) {
                                             Icon(
                                                 imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected"
+                                                contentDescription = "Selected",
                                             )
                                         }
                                     }
