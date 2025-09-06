@@ -56,6 +56,12 @@ fun TvHomeScreen(
     val windowSizeClass = calculateWindowSizeClass(context as androidx.activity.ComponentActivity)
     val layoutConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
 
+    // Ensure initial data is loaded when entering the TV home screen
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        // loadInitialData has internal guards against concurrent runs
+        viewModel.loadInitialData(forceRefresh = false)
+    }
+
     val recentMovies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(10) ?: emptyList()
     val recentTvShows = appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(10) ?: emptyList()
     val allMovies = appState.allMovies.take(10)

@@ -54,6 +54,7 @@ This is a Jellyfin Android client application built with Kotlin and Jetpack Comp
 ./gradlew testReleaseUnitTest     # Run release unit tests
 ./gradlew connectedAndroidTest    # Run instrumentation tests on connected devices
 ./gradlew connectedDebugAndroidTest # Run debug instrumentation tests
+./gradlew connectedCheck          # Run all device checks on currently connected devices
 ./gradlew ciTest                  # Run CI test suite (unit + instrumentation tests)
 ./gradlew jacocoTestReport        # Generate test coverage report
 ```
@@ -65,13 +66,14 @@ This is a Jellyfin Android client application built with Kotlin and Jetpack Comp
 ./gradlew lintRelease            # Run lint on release variant
 ./gradlew lintFix                # Apply safe lint suggestions automatically
 ./gradlew check                  # Run all verification tasks
+./gradlew checkJetifier          # Checks whether Jetifier is needed
 ```
 
 ## Key Architecture Files
 
 ### Application Layer
 - `app/src/main/java/com/rpeters/jellyfin/JellyfinApplication.kt` - Application class with Hilt setup and performance optimizations
-- `app/src/main/java/com/rpeters/jellyfin/MainActivity.kt` - Main activity with adaptive navigation
+- `app/src/main/java/com/rpeters/jellyfin/MainActivity.kt` - Main activity with adaptive navigation and TV detection
 
 ### Data Layer
 - `app/src/main/java/com/rpeters/jellyfin/data/repository/JellyfinRepository.kt` - Central repository for API calls
@@ -222,6 +224,7 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 - **Java**: Target/Source compatibility Version 17
 - **Android SDK**: Compile 36, Target 35, Min 26 (Android 8.0+) for broader device compatibility
 - **Package**: `com.rpeters.jellyfin` (actual package structure)
+- **Test Runner**: `HiltTestRunner` for instrumentation tests
 
 ### Code Style
 - Follow Kotlin coding conventions from CONTRIBUTING.md
