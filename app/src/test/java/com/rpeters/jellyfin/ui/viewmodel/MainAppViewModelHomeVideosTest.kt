@@ -103,7 +103,7 @@ class MainAppViewModelHomeVideosTest {
                 itemTypes = "Book,AudioBook,Video",
                 startIndex = 0,
                 limit = 100,
-                collectionType = null
+                collectionType = null,
             )
         } returns ApiResult.Success(listOf(itemA))
         coEvery {
@@ -112,7 +112,7 @@ class MainAppViewModelHomeVideosTest {
                 itemTypes = "Book,AudioBook,Video",
                 startIndex = 0,
                 limit = 100,
-                collectionType = null
+                collectionType = null,
             )
         } returns ApiResult.Success(listOf(itemB))
 

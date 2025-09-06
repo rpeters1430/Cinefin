@@ -82,7 +82,7 @@ class EnhancedPlaybackUtils @Inject constructor(
                                 Log.d(
                                     TAG,
                                     "Target: ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} " +
-                                            "in ${playbackResult.targetContainer} @ ${playbackResult.targetBitrate / 1_000_000}Mbps",
+                                        "in ${playbackResult.targetContainer} @ ${playbackResult.targetBitrate / 1_000_000}Mbps",
                                 )
                             }
 
@@ -229,7 +229,7 @@ class EnhancedPlaybackUtils @Inject constructor(
                         )
 
                         if (analysis.expectedQuality.contains("720p") || analysis.expectedQuality.contains(
-                                "Low"
+                                "Low",
                             )
                         ) {
                             recommendations.add(

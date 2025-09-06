@@ -100,7 +100,7 @@ class HomeViewModelTest {
         val errorMessage = "Failed to load libraries"
         coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error(
             errorMessage,
-            errorType = ErrorType.NETWORK
+            errorType = ErrorType.NETWORK,
         )
 
         // When
@@ -165,19 +165,19 @@ class HomeViewModelTest {
         coEvery {
             mediaRepository.getRecentlyAddedByType(
                 BaseItemKind.MOVIE,
-                20
+                20,
             )
         } returns ApiResult.Success(mockMovies)
         coEvery {
             mediaRepository.getRecentlyAddedByType(
                 BaseItemKind.SERIES,
-                20
+                20,
             )
         } returns ApiResult.Success(mockSeries)
         coEvery {
             mediaRepository.getRecentlyAddedByType(
                 BaseItemKind.AUDIO,
-                20
+                20,
             )
         } returns ApiResult.Success(emptyList())
 
@@ -224,13 +224,13 @@ class HomeViewModelTest {
         coEvery {
             mediaRepository.getRecentlyAddedByType(
                 BaseItemKind.MOVIE,
-                20
+                20,
             )
         } returns ApiResult.Success(mockMovies)
         coEvery {
             mediaRepository.getRecentlyAddedByType(
                 BaseItemKind.SERIES,
-                20
+                20,
             )
         } returns ApiResult.Success(mockSeries)
 
@@ -241,7 +241,7 @@ class HomeViewModelTest {
         val state = viewModel.homeState.first()
         assertEquals(
             setOf(BaseItemKind.MOVIE.name, BaseItemKind.SERIES.name),
-            state.recentlyAddedByTypes.keys
+            state.recentlyAddedByTypes.keys,
         )
     }
 
@@ -284,7 +284,7 @@ class HomeViewModelTest {
         // Given - set an error first
         coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error(
             "Error",
-            errorType = ErrorType.NETWORK
+            errorType = ErrorType.NETWORK,
         )
         viewModel.loadLibraries()
 
@@ -335,11 +335,11 @@ class HomeViewModelTest {
 
         coEvery { mediaRepository.getUserLibraries() } returns ApiResult.Error(
             libraryError,
-            errorType = ErrorType.NETWORK
+            errorType = ErrorType.NETWORK,
         )
         coEvery { mediaRepository.getRecentlyAdded(50) } returns ApiResult.Error(
             recentError,
-            errorType = ErrorType.SERVER_ERROR
+            errorType = ErrorType.SERVER_ERROR,
         )
 
         // When
