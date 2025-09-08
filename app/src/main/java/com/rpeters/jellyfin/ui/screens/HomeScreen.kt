@@ -38,8 +38,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -62,7 +62,6 @@ import com.rpeters.jellyfin.utils.PerformanceTracker
 import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import java.util.Locale
 import kotlin.math.roundToInt
 
 @OptIn(
@@ -243,27 +242,21 @@ fun HomeContent(
             }
         }
     }
-    // Precompute derived data to minimize recompositions during scroll
-    val continueWatchingItems by remember(appState.allItems) {
-        mutableStateOf(
-            getContinueWatchingItems(appState),
-        )
+    val continueWatchingItems = appState.continueWatching
+    val recentMovies by remember(appState.recentlyAddedByTypes) {
+        derivedStateOf { appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(8) ?: emptyList() }
     }
-    val recentMovies = remember(appState.recentlyAddedByTypes) {
-        appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(8) ?: emptyList()
+    val recentTVShows by remember(appState.recentlyAddedByTypes) {
+        derivedStateOf { appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(8) ?: emptyList() }
     }
-    val recentTVShows = remember(appState.recentlyAddedByTypes) {
-        appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(8) ?: emptyList()
+    val featuredItems by remember(recentMovies, recentTVShows) {
+        derivedStateOf { (recentMovies + recentTVShows).take(10) }
     }
-    val featuredItems by remember(
-        recentMovies,
-        recentTVShows,
-    ) { mutableStateOf((recentMovies + recentTVShows).take(10)) }
-    val recentEpisodes = remember(appState.recentlyAddedByTypes) {
-        appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(15) ?: emptyList()
+    val recentEpisodes by remember(appState.recentlyAddedByTypes) {
+        derivedStateOf { appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(15) ?: emptyList() }
     }
-    val recentMusic = remember(appState.recentlyAddedByTypes) {
-        appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]?.take(15) ?: emptyList()
+    val recentMusic by remember(appState.recentlyAddedByTypes) {
+        derivedStateOf { appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]?.take(15) ?: emptyList() }
     }
 
     Box(
@@ -290,14 +283,16 @@ fun HomeContent(
 
             if (featuredItems.isNotEmpty()) {
                 item(key = "featured", contentType = "carousel") {
-                    val featured = remember(featuredItems) {
-                        featuredItems.map {
-                            it.toCarouselItem(
-                                titleOverride = it.name ?: "Unknown",
-                                subtitleOverride = itemSubtitle(it),
-                                imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it)
-                                    ?: getImageUrl(it) ?: "",
-                            )
+                    val featured by remember(featuredItems) {
+                        derivedStateOf {
+                            featuredItems.map {
+                                it.toCarouselItem(
+                                    titleOverride = it.name ?: "Unknown",
+                                    subtitleOverride = itemSubtitle(it),
+                                    imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it)
+                                        ?: getImageUrl(it) ?: "",
+                                )
+                            }
                         }
                     }
                     ExpressiveHeroCarousel(
@@ -314,25 +309,10 @@ fun HomeContent(
                 }
             }
 
-            if (appState.libraries.isNotEmpty()) {
+            if (appState.sortedLibraries.isNotEmpty()) {
                 item(key = "libraries", contentType = "libraries") {
-                    val orderedLibraries by remember(appState.libraries) {
-                        mutableStateOf(
-                            appState.libraries.sortedBy { library ->
-                                when (
-                                    library.collectionType?.toString()
-                                        ?.lowercase(Locale.getDefault())
-                                ) {
-                                    "movies" -> 0
-                                    "tvshows" -> 1
-                                    "music" -> 2
-                                    else -> 3
-                                }
-                            },
-                        )
-                    }
                     LibraryGridSection(
-                        libraries = orderedLibraries,
+                        libraries = appState.sortedLibraries,
                         getImageUrl = getImageUrl,
                         onLibraryClick = onLibraryClick,
                         title = "Libraries",
@@ -576,15 +556,6 @@ fun SearchResultsContent(
             }
         }
     }
-}
-
-// Helper function to get continue watching items
-private fun getContinueWatchingItems(appState: MainAppState): List<BaseItemDto> {
-    return appState.allItems.filter { item ->
-        val percentage = item.userData?.playedPercentage ?: 0.0
-        percentage > 0.0 && percentage < 100.0 &&
-            (item.type == BaseItemKind.MOVIE || item.type == BaseItemKind.EPISODE)
-    }.sortedByDescending { it.userData?.lastPlayedDate }.take(8)
 }
 
 @Composable

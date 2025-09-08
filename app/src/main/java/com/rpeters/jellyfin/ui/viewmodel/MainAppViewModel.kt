@@ -27,6 +27,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.CollectionType
 import java.util.UUID
+import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -41,6 +42,8 @@ data class MainAppState(
     val allTVShows: List<BaseItemDto> = emptyList(),
     val allItems: List<BaseItemDto> = emptyList(),
     val itemsByLibrary: Map<String, List<BaseItemDto>> = emptyMap(),
+    val continueWatching: List<BaseItemDto> = emptyList(),
+    val sortedLibraries: List<BaseItemDto> = emptyList(),
 
     // Loading states
     val isLoading: Boolean = false,
@@ -108,6 +111,35 @@ class MainAppViewModel @Inject constructor(
                 false
             }
         }
+    }
+
+    private fun computeContinueWatching(state: MainAppState): List<BaseItemDto> {
+        return state.allItems.filter { item ->
+            val percentage = item.userData?.playedPercentage ?: 0.0
+            percentage > 0.0 && percentage < 100.0 &&
+                (item.type == BaseItemKind.MOVIE || item.type == BaseItemKind.EPISODE)
+        }.sortedByDescending { it.userData?.lastPlayedDate }.take(8)
+    }
+
+    private fun sortLibraries(libraries: List<BaseItemDto>): List<BaseItemDto> {
+        return libraries.sortedBy { library ->
+            when (library.collectionType?.toString()?.lowercase(Locale.getDefault())) {
+                "movies" -> 0
+                "tvshows" -> 1
+                "music" -> 2
+                else -> 3
+            }
+        }
+    }
+
+    private suspend fun updateStateWithDerived(base: MainAppState) {
+        val (continueWatching, sortedLibraries) = withContext(Dispatchers.IO) {
+            computeContinueWatching(base) to sortLibraries(base.libraries)
+        }
+        _appState.value = base.copy(
+            continueWatching = continueWatching,
+            sortedLibraries = sortedLibraries,
+        )
     }
 
     // SIMPLIFIED PUBLIC API - Direct repository calls
@@ -215,12 +247,13 @@ class MainAppViewModel @Inject constructor(
                                 )
                             }
 
-                            _appState.value = _appState.value.copy(
+                            val newState = _appState.value.copy(
                                 libraries = libraries,
                                 recentlyAdded = recentlyAdded,
                                 recentlyAddedByTypes = recentlyAddedByTypes,
                                 isLoading = false,
                             )
+                            updateStateWithDerived(newState)
 
                             android.util.Log.d(
                                 "MainAppViewModel-Initial",
@@ -849,11 +882,12 @@ class MainAppViewModel @Inject constructor(
                     updatedAllItems.removeAll { it.id?.toString() == episodeId }
                     updatedAllItems.add(episode)
 
-                    _appState.value = _appState.value.copy(
+                    val newState = _appState.value.copy(
                         allItems = updatedAllItems,
                         isLoading = false,
                         errorMessage = null,
                     )
+                    updateStateWithDerived(newState)
 
                     android.util.Log.d(
                         "MainAppViewModel",
@@ -881,11 +915,14 @@ class MainAppViewModel @Inject constructor(
 
     // ✅ IMPROVED: Enhanced addOrUpdateItem method
     fun addOrUpdateItem(item: BaseItemDto) {
-        val updatedAllItems = _appState.value.allItems.toMutableList()
-        updatedAllItems.removeAll { it.id == item.id }
-        updatedAllItems.add(item)
-        _appState.value = _appState.value.copy(allItems = updatedAllItems)
-        android.util.Log.d("MainAppViewModel", "📝 Item added/updated: ${item.name} (${item.id})")
+        viewModelScope.launch {
+            val updatedAllItems = _appState.value.allItems.toMutableList()
+            updatedAllItems.removeAll { it.id == item.id }
+            updatedAllItems.add(item)
+            val newState = _appState.value.copy(allItems = updatedAllItems)
+            updateStateWithDerived(newState)
+            android.util.Log.d("MainAppViewModel", "📝 Item added/updated: ${item.name} (${item.id})")
+        }
     }
 
     fun loadHomeVideos(libraryId: String) {
