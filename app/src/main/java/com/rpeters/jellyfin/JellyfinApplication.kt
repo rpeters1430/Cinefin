@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -24,7 +25,7 @@ class JellyfinApplication : Application(), ImageLoaderFactory {
     @Inject
     lateinit var imageLoader: ImageLoader
 
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     companion object {
         private const val TAG = "JellyfinApplication"
@@ -64,27 +65,31 @@ class JellyfinApplication : Application(), ImageLoaderFactory {
                 // Configure StrictMode with network optimizations
                 NetworkOptimizer.configureNetworkStrictMode()
 
-                SecureLogger.i(TAG, "Performance optimizations initialized")
+                withContext(Dispatchers.Main) {
+                    SecureLogger.i(TAG, "Performance optimizations initialized")
+                }
             } catch (e: Exception) {
-                SecureLogger.e(TAG, "Failed to initialize performance optimizations", e)
+                withContext(Dispatchers.Main) {
+                    SecureLogger.e(TAG, "Failed to initialize performance optimizations", e)
 
-                // Fallback to basic StrictMode if optimizations fail
-                if (BuildConfig.DEBUG) {
-                    StrictMode.setThreadPolicy(
-                        StrictMode.ThreadPolicy.Builder()
-                            .detectDiskReads()
-                            .detectDiskWrites()
-                            .detectNetwork()
-                            .penaltyLog()
-                            .build(),
-                    )
-                    StrictMode.setVmPolicy(
-                        StrictMode.VmPolicy.Builder()
-                            .detectLeakedClosableObjects()
-                            .detectUntaggedSockets()
-                            .penaltyLog()
-                            .build(),
-                    )
+                    // Fallback to basic StrictMode if optimizations fail
+                    if (BuildConfig.DEBUG) {
+                        StrictMode.setThreadPolicy(
+                            StrictMode.ThreadPolicy.Builder()
+                                .detectDiskReads()
+                                .detectDiskWrites()
+                                .detectNetwork()
+                                .penaltyLog()
+                                .build(),
+                        )
+                        StrictMode.setVmPolicy(
+                            StrictMode.VmPolicy.Builder()
+                                .detectLeakedClosableObjects()
+                                .detectUntaggedSockets()
+                                .penaltyLog()
+                                .build(),
+                        )
+                    }
                 }
             }
         }
