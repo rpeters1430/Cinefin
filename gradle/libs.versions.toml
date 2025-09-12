@@ -35,7 +35,7 @@ mockk = "1.14.5"
 kotlinxCoroutinesTest = "1.10.2"
 androidxArchCoreTest = "2.2.0"
 androidxTvMaterial = "1.1.0-alpha01"
-paging = "3.4.0-alpha03"
+paging = "3.4.0-alpha04"
 sdk = "36"
 
 [libraries]
