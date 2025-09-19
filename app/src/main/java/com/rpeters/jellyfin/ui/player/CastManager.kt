@@ -17,6 +17,7 @@ import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.common.images.WebImage
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,8 +26,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.ImageType
 import javax.inject.Inject
 import javax.inject.Singleton
+import java.util.Locale
 import com.google.android.gms.cast.MediaMetadata as CastMediaMetadata
 
 @UnstableApi
@@ -42,6 +45,7 @@ data class CastState(
 @Singleton
 class CastManager @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val streamRepository: JellyfinStreamRepository,
 ) {
 
     private val _castState = MutableStateFlow(CastState())
@@ -234,10 +238,7 @@ class CastManager @Inject constructor(
                 val metadata = CastMediaMetadata(CastMediaMetadata.MEDIA_TYPE_MOVIE).apply {
                     putString(CastMediaMetadata.KEY_TITLE, item.name ?: "Unknown Title")
                     putString(CastMediaMetadata.KEY_SUBTITLE, item.overview ?: "")
-
-                    // Add artwork if available - simplified for compatibility
-                    val imageUrl = buildImageUrl(item.id.toString(), "primary")
-                    addImage(WebImage(imageUrl.toUri()))
+                    attachCastArtwork(item)
                 }
 
                 // Build subtitle tracks for Cast
@@ -412,9 +413,80 @@ class CastManager @Inject constructor(
         )
     }
 
-    private fun buildImageUrl(itemId: String, imageTag: String): String {
-        // This would need to be updated to use the actual Jellyfin server URL
-        // For now, return a placeholder
-        return "https://example.com/jellyfin/Items/$itemId/Images/Primary?tag=$imageTag"
+    private fun CastMediaMetadata.attachCastArtwork(item: BaseItemDto) {
+        val backdropUrl = buildImageUrl(item, ImageType.BACKDROP)
+        val primaryUrl = buildImageUrl(item, ImageType.PRIMARY)
+        val added = mutableSetOf<String>()
+
+        backdropUrl?.let { url ->
+            if (added.add(url)) {
+                addImageIfAvailable(url, ImageType.BACKDROP)
+            }
+        }
+        primaryUrl?.let { url ->
+            if (added.add(url)) {
+                addImageIfAvailable(url, ImageType.PRIMARY)
+            }
+        }
+    }
+
+    private fun CastMediaMetadata.addImageIfAvailable(url: String?, imageType: ImageType) {
+        if (url.isNullOrBlank()) {
+            return
+        }
+
+        runCatching {
+            addImage(WebImage(url.toUri()))
+        }.onFailure { throwable ->
+            Log.w(
+                "CastManager",
+                "Failed to attach ${imageType.name.lowercase(Locale.ROOT)} image to cast metadata",
+                throwable,
+            )
+        }
+    }
+
+    private fun buildImageUrl(item: BaseItemDto, imageType: ImageType): String? {
+        val itemId = item.id?.toString()
+        if (itemId.isNullOrBlank()) {
+            Log.w(
+                "CastManager",
+                "buildImageUrl: Item missing ID; cannot load ${imageType.name.lowercase(Locale.ROOT)} image",
+            )
+            return null
+        }
+
+        val url = when (imageType) {
+            ImageType.BACKDROP -> streamRepository.getBackdropUrl(item)
+            else -> {
+                val tag = item.imageTags?.get(imageType)
+                    ?: if (imageType == ImageType.PRIMARY) {
+                        item.imageTags?.get(ImageType.PRIMARY)
+                    } else {
+                        null
+                    }
+                streamRepository.getImageUrl(itemId, imageType.toRequestType(), tag)
+            }
+        }
+
+        if (url.isNullOrBlank()) {
+            Log.w(
+                "CastManager",
+                "buildImageUrl: Unable to resolve ${imageType.name.lowercase(Locale.ROOT)} image for item $itemId",
+            )
+            return null
+        }
+
+        return url
+    }
+
+    private fun ImageType.toRequestType(): String {
+        return name.lowercase(Locale.ROOT).replaceFirstChar { character ->
+            if (character.isLowerCase()) {
+                character.titlecase(Locale.ROOT)
+            } else {
+                character.toString()
+            }
+        }
     }
 }
