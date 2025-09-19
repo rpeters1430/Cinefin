@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
 
 @UnstableApi
@@ -70,6 +71,7 @@ data class VideoPlayerState(
     val availableQualities: List<VideoQuality> = emptyList(),
     val selectedQuality: VideoQuality? = null,
     val isCasting: Boolean = false,
+    val isCastConnected: Boolean = false,
     val castDeviceName: String? = null,
     val availableAudioTracks: List<TrackInfo> = emptyList(),
     val selectedAudioTrack: TrackInfo? = null,
@@ -93,6 +95,11 @@ class VideoPlayerViewModel @Inject constructor(
 
     init {
         castManager.initialize()
+        viewModelScope.launch {
+            castManager.castState.collect { castState ->
+                handleCastState(castState)
+            }
+        }
     }
 
     private val _playerState = MutableStateFlow(VideoPlayerState())
@@ -105,6 +112,12 @@ class VideoPlayerViewModel @Inject constructor(
     private var currentItemName: String? = null
     private var defaultsApplied: Boolean = false
     private var positionJob: kotlinx.coroutines.Job? = null
+    private var currentMediaItem: MediaItem? = null
+    private var currentItemMetadata: BaseItemDto? = null
+    private var currentSubtitleSpecs: List<SubtitleSpec> = emptyList()
+    private var wasPlayingBeforeCast: Boolean = false
+    private var hasSentCastLoad: Boolean = false
+    private var lastCastState: CastState? = null
 
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -231,12 +244,21 @@ class VideoPlayerViewModel @Inject constructor(
 
         currentItemId = itemId
         currentItemName = itemName
+        currentMediaItem = null
+        currentItemMetadata = null
+        currentSubtitleSpecs = emptyList()
+        hasSentCastLoad = false
+        wasPlayingBeforeCast = false
 
         _playerState.value = _playerState.value.copy(
             itemId = itemId,
             itemName = itemName,
             isLoading = true,
             error = null,
+            introStartMs = null,
+            introEndMs = null,
+            outroStartMs = null,
+            outroEndMs = null,
         )
 
         viewModelScope.launch {
@@ -245,7 +267,12 @@ class VideoPlayerViewModel @Inject constructor(
                 val playbackInfo = repository.getPlaybackInfo(itemId)
 
                 // Attempt to load chapter markers for intro/outro skip
-                loadSkipMarkers(itemId)
+                currentItemMetadata = loadSkipMarkers(itemId)
+                if (lastCastState?.isConnected == true && !hasSentCastLoad) {
+                    if (startCastingIfReady()) {
+                        hasSentCastLoad = true
+                    }
+                }
 
                 // Find the best media source for direct play
                 val mediaSource = playbackInfo.mediaSources?.find { source ->
@@ -320,6 +347,7 @@ class VideoPlayerViewModel @Inject constructor(
 
                     // Create media item
                     val mediaItem = MediaItem.fromUri(streamUrl)
+                    currentMediaItem = mediaItem
 
                     // Set media and prepare
                     exoPlayer?.setMediaItem(mediaItem)
@@ -334,6 +362,12 @@ class VideoPlayerViewModel @Inject constructor(
                         exoPlayer?.seekTo(startPosition)
                     }
 
+                    if (lastCastState?.isConnected == true && !hasSentCastLoad) {
+                        if (startCastingIfReady()) {
+                            hasSentCastLoad = true
+                        }
+                    }
+
                     Log.d("VideoPlayer", "Player prepared successfully")
                 }
             } catch (e: Exception) {
@@ -346,8 +380,8 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadSkipMarkers(itemId: String) {
-        try {
+    private suspend fun loadSkipMarkers(itemId: String): BaseItemDto? {
+        return try {
             // Try episode first, then movie as a fallback
             val item = when (val ep = repository.getEpisodeDetails(itemId)) {
                 is com.rpeters.jellyfin.data.repository.common.ApiResult.Success -> ep.data
@@ -356,10 +390,27 @@ class VideoPlayerViewModel @Inject constructor(
                     else -> null
                 }
             }
-            if (item == null) return
+
+            if (item == null) {
+                _playerState.value = _playerState.value.copy(
+                    introStartMs = null,
+                    introEndMs = null,
+                    outroStartMs = null,
+                    outroEndMs = null,
+                )
+                return null
+            }
 
             val chapters = item.chapters ?: emptyList()
-            if (chapters.isEmpty()) return
+            if (chapters.isEmpty()) {
+                _playerState.value = _playerState.value.copy(
+                    introStartMs = null,
+                    introEndMs = null,
+                    outroStartMs = null,
+                    outroEndMs = null,
+                )
+                return item
+            }
 
             fun ticksToMs(ticks: Long?): Long? = ticks?.let { it / 10_000 }
 
@@ -391,9 +442,74 @@ class VideoPlayerViewModel @Inject constructor(
                 outroStartMs = outroStart,
                 outroEndMs = outroEnd,
             )
+
+            item
         } catch (_: Exception) {
-            // Best effort; ignore failures
+            null
         }
+    }
+
+    private suspend fun handleCastState(castState: CastState) {
+        val previous = lastCastState
+        lastCastState = castState
+
+        val currentState = _playerState.value
+        val hideDialog = castState.isConnected
+        _playerState.value = currentState.copy(
+            isCasting = castState.isCasting,
+            isCastConnected = castState.isConnected,
+            castDeviceName = castState.deviceName,
+            showCastDialog = if (hideDialog) false else currentState.showCastDialog,
+        )
+
+        if (castState.isConnected && previous?.isConnected != true && !hasSentCastLoad) {
+            if (startCastingIfReady()) {
+                hasSentCastLoad = true
+            }
+        }
+
+        if (previous?.isConnected == true && !castState.isConnected) {
+            hasSentCastLoad = false
+            if (wasPlayingBeforeCast) {
+                withContext(Dispatchers.Main) {
+                    exoPlayer?.play()
+                }
+            }
+            wasPlayingBeforeCast = false
+        }
+
+        if (castState.isCasting && previous?.isCasting != true) {
+            withContext(Dispatchers.Main) {
+                exoPlayer?.let { player ->
+                    if (!wasPlayingBeforeCast && player.isPlaying) {
+                        wasPlayingBeforeCast = true
+                    }
+                    player.pause()
+                }
+            }
+        }
+
+        if (!castState.isCasting && !castState.isConnected) {
+            wasPlayingBeforeCast = false
+        }
+    }
+
+    private suspend fun startCastingIfReady(): Boolean {
+        val mediaItem = currentMediaItem ?: return false
+        val metadata = currentItemMetadata ?: return false
+        val subtitles = currentSubtitleSpecs
+
+        withContext(Dispatchers.Main) {
+            exoPlayer?.let { player ->
+                if (!wasPlayingBeforeCast && player.isPlaying) {
+                    wasPlayingBeforeCast = true
+                }
+                player.pause()
+            }
+        }
+
+        castManager.startCasting(mediaItem, metadata, subtitles)
+        return true
     }
 
     fun togglePlayPause() {
@@ -540,11 +656,9 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun selectCastDevice(deviceName: String) {
         val connected = castManager.connectToDevice(deviceName)
-        _playerState.value = _playerState.value.copy(
-            isCasting = connected,
-            castDeviceName = if (connected) deviceName else null,
-            showCastDialog = false,
-        )
+        if (connected) {
+            _playerState.value = _playerState.value.copy(showCastDialog = false)
+        }
     }
 
     fun hideCastDialog() {
