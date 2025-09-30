@@ -470,6 +470,14 @@ class ServerConnectionViewModel @Inject constructor(
                             )
                             return
                         }
+                        "Denied" -> {
+                            _connectionState.value = _connectionState.value.copy(
+                                isQuickConnectActive = false,
+                                isQuickConnectPolling = false,
+                                errorMessage = "Quick Connect request was denied",
+                            )
+                            return
+                        }
                         else -> {
                             // Still waiting for approval
                             _connectionState.value = _connectionState.value.copy(

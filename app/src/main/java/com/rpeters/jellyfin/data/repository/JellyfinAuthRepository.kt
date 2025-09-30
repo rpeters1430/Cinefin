@@ -8,7 +8,6 @@ import com.rpeters.jellyfin.data.model.QuickConnectResult
 import com.rpeters.jellyfin.data.model.QuickConnectState
 import com.rpeters.jellyfin.data.network.TokenProvider
 import com.rpeters.jellyfin.data.repository.common.ApiResult
-import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.utils.normalizeServerUrl
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +16,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jellyfin.sdk.Jellyfin
+import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.exception.InvalidStatusException
+import org.jellyfin.sdk.api.client.extensions.quickConnectApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.model.api.AuthenticateUserByName
@@ -24,6 +26,7 @@ import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.jellyfin.sdk.model.api.QuickConnectResult as SdkQuickConnectResult
 
 @Singleton
 class JellyfinAuthRepository @Inject constructor(
@@ -63,10 +66,7 @@ class JellyfinAuthRepository @Inject constructor(
 
     suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
         return try {
-            val client = jellyfin.createApi(
-                baseUrl = serverUrl,
-                accessToken = null,
-            )
+            val client = createApiClient(serverUrl)
             val response = client.systemApi.getPublicSystemInfo()
             ApiResult.Success(response.content)
         } catch (e: Exception) {
@@ -96,10 +96,7 @@ class JellyfinAuthRepository @Inject constructor(
             Log.d(TAG, "authenticateUser: Attempting authentication for user '$username'")
             val normalizedServerUrl = normalizeServerUrl(serverUrl)
 
-            val client = jellyfin.createApi(
-                baseUrl = serverUrl,
-                accessToken = null,
-            )
+            val client = createApiClient(serverUrl)
             val response = client.userApi.authenticateUserByName(
                 AuthenticateUserByName(
                     username = username,
@@ -110,32 +107,13 @@ class JellyfinAuthRepository @Inject constructor(
             val authResult = response.content
             Log.d(TAG, "authenticateUser: Authentication successful for user '$username'")
 
-            // Update server state
-            val server = JellyfinServer(
-                id = authResult.serverId ?: "",
-                name = authResult.user?.name ?: username,
-                url = serverUrl,
-                isConnected = true,
-                userId = authResult.user?.id?.toString(),
-                username = username,
-                accessToken = authResult.accessToken,
-                loginTimestamp = timeProvider(),
-                normalizedUrl = normalizedServerUrl,
+            persistAuthenticationState(
+                serverUrl = serverUrl,
+                normalizedServerUrl = normalizedServerUrl,
+                authResult = authResult,
+                usernameHint = username,
+                password = password,
             )
-
-            _currentServer.value = server
-            _isConnected.value = true
-
-            // Update token state for TokenProvider
-            saveNewToken(authResult.accessToken)
-
-            // Save credentials for token refresh
-            try {
-                secureCredentialManager.savePassword(serverUrl, username, password)
-                Log.d(TAG, "authenticateUser: Saved credentials for user '$username'")
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to save credentials for token refresh", e)
-            }
 
             return ApiResult.Success(authResult)
         } catch (e: Exception) {
@@ -237,16 +215,117 @@ class JellyfinAuthRepository @Inject constructor(
         }
     }
 
-    // Quick Connect methods (stubs for now)
+    private fun createApiClient(serverUrl: String, accessToken: String? = null): ApiClient {
+        return jellyfin.createApi(
+            baseUrl = serverUrl,
+            accessToken = accessToken,
+        )
+    }
+
+    private suspend fun persistAuthenticationState(
+        serverUrl: String,
+        normalizedServerUrl: String = normalizeServerUrl(serverUrl),
+        authResult: AuthenticationResult,
+        usernameHint: String? = null,
+        password: String? = null,
+    ) {
+        val resolvedUsername = usernameHint ?: authResult.user?.name
+        val server = JellyfinServer(
+            id = authResult.serverId ?: "",
+            name = authResult.user?.name ?: resolvedUsername ?: serverUrl,
+            url = serverUrl,
+            isConnected = true,
+            userId = authResult.user?.id?.toString(),
+            username = resolvedUsername,
+            accessToken = authResult.accessToken,
+            loginTimestamp = System.currentTimeMillis(),
+            normalizedUrl = normalizedServerUrl,
+        )
+
+        _currentServer.value = server
+        _isConnected.value = true
+        saveNewToken(authResult.accessToken)
+
+        if (!password.isNullOrEmpty() && !resolvedUsername.isNullOrEmpty()) {
+            try {
+                secureCredentialManager.savePassword(serverUrl, resolvedUsername, password)
+                Log.d(TAG, "persistAuthenticationState: Saved credentials for user '$resolvedUsername'")
+            } catch (e: Exception) {
+                Log.w(TAG, "persistAuthenticationState: Failed to save credentials", e)
+            }
+        }
+    }
+
     suspend fun initiateQuickConnect(serverUrl: String): ApiResult<QuickConnectResult> {
-        return ApiResult.Error("Quick Connect not implemented yet", errorType = ErrorType.UNKNOWN)
+        return try {
+            val client = createApiClient(serverUrl)
+            val response = client.quickConnectApi.initiateQuickConnect()
+            ApiResult.Success(response.content.toDomainQuickConnectResult())
+        } catch (e: Exception) {
+            Log.e(TAG, "initiateQuickConnect: Failed to initiate", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to initiate Quick Connect: ${e.message}", e, errorType)
+        }
     }
 
     suspend fun getQuickConnectState(serverUrl: String, secret: String): ApiResult<QuickConnectState> {
-        return ApiResult.Error("Quick Connect not implemented yet", errorType = ErrorType.UNKNOWN)
+        return try {
+            val client = createApiClient(serverUrl)
+            val response = client.quickConnectApi.getQuickConnectState(secret)
+            val state = if (response.content.authenticated) {
+                QuickConnectState(state = "Approved")
+            } else {
+                QuickConnectState(state = "Pending")
+            }
+            ApiResult.Success(state)
+        } catch (e: InvalidStatusException) {
+            when (e.status) {
+                401, 403 -> ApiResult.Success(QuickConnectState(state = "Denied"))
+                404 -> ApiResult.Success(QuickConnectState(state = "Expired"))
+                else -> {
+                    Log.e(TAG, "getQuickConnectState: Failed with unexpected status", e)
+                    val errorType = RepositoryUtils.getErrorType(e)
+                    ApiResult.Error("Failed to check Quick Connect state: ${e.message}", e, errorType)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "getQuickConnectState: Failed", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error("Failed to check Quick Connect state: ${e.message}", e, errorType)
+        }
     }
 
-    suspend fun authenticateWithQuickConnect(serverUrl: String, secret: String): ApiResult<AuthenticationResult> {
-        return ApiResult.Error("Quick Connect not implemented yet", errorType = ErrorType.UNKNOWN)
+    suspend fun authenticateWithQuickConnect(
+        serverUrl: String,
+        secret: String,
+    ): ApiResult<AuthenticationResult> {
+        return authMutex.withLock {
+            _isAuthenticating.value = true
+            try {
+                val client = createApiClient(serverUrl)
+                val response = client.userApi.authenticateWithQuickConnect(secret)
+                val authResult = response.content
+
+                persistAuthenticationState(
+                    serverUrl = serverUrl,
+                    authResult = authResult,
+                )
+
+                ApiResult.Success(authResult)
+            } catch (e: Exception) {
+                Log.e(TAG, "authenticateWithQuickConnect: Authentication failed", e)
+                val errorType = RepositoryUtils.getErrorType(e)
+                ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
+            } finally {
+                _isAuthenticating.value = false
+            }
+        }
+    }
+
+    private fun SdkQuickConnectResult.toDomainQuickConnectResult(): QuickConnectResult {
+        return QuickConnectResult(
+            code = code,
+            secret = secret,
+        )
     }
 }
