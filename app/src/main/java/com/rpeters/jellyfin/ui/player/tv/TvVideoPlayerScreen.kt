@@ -21,10 +21,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
@@ -63,6 +63,11 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import com.rpeters.jellyfin.ui.player.TrackInfo
+import com.rpeters.jellyfin.ui.player.VideoPlayerState
+import com.rpeters.jellyfin.ui.player.VideoPlayerViewModel
+import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
+import kotlinx.coroutines.delay
 import androidx.tv.material3.Button as TvButton
 import androidx.tv.material3.ButtonDefaults as TvButtonDefaults
 import androidx.tv.material3.Card as TvCard
@@ -70,11 +75,6 @@ import androidx.tv.material3.CardDefaults as TvCardDefaults
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Surface as TvSurface
 import androidx.tv.material3.Text as TvText
-import com.rpeters.jellyfin.ui.player.TrackInfo
-import com.rpeters.jellyfin.ui.player.VideoPlayerState
-import com.rpeters.jellyfin.ui.player.VideoPlayerViewModel
-import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
-import kotlinx.coroutines.delay
 
 private const val SEEK_INTERVAL_MS = 30_000L
 
@@ -317,7 +317,9 @@ fun TvVideoPlayerScreen(
                         LinearProgressIndicator(
                             progress = if (state.duration > 0) {
                                 (state.bufferedPosition / state.duration.toFloat()).coerceIn(0f, 1f)
-                            } else 0f,
+                            } else {
+                                0f
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             color = MaterialTheme.colorScheme.primary,
                         )
@@ -591,7 +593,9 @@ private fun formatPlaybackPosition(positionMs: Long, durationMs: Long): String {
     } else {
         String.format("%02d:%02d", currentM, currentS)
     }
-    val totalFormatted = if (durationMs <= 0L) "--:--" else if (totalH > 0) {
+    val totalFormatted = if (durationMs <= 0L) {
+        "--:--"
+    } else if (totalH > 0) {
         String.format("%d:%02d:%02d", totalH, totalM, totalS)
     } else {
         String.format("%02d:%02d", totalM, totalS)
