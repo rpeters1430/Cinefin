@@ -30,6 +30,8 @@ object TvKeyboardHandler {
         onMenu: (() -> Unit)? = null,
         onPlayPause: (() -> Unit)? = null,
         onSearch: (() -> Unit)? = null,
+        onSeekForward: (() -> Unit)? = null,
+        onSeekBackward: (() -> Unit)? = null,
     ): Boolean {
         if (keyEvent.type != KeyEventType.KeyDown) return false
 
@@ -58,19 +60,19 @@ object TvKeyboardHandler {
                 true
             }
             Key.MediaSkipForward, Key.MediaNext -> {
-                // Handle next functionality
+                onSeekForward?.invoke()
                 true
             }
             Key.MediaSkipBackward, Key.MediaPrevious -> {
-                // Handle previous functionality
+                onSeekBackward?.invoke()
                 true
             }
             Key.MediaFastForward -> {
-                // Handle fast forward functionality
+                onSeekForward?.invoke()
                 true
             }
             Key.MediaRewind -> {
-                // Handle rewind functionality
+                onSeekBackward?.invoke()
                 true
             }
 
@@ -182,6 +184,8 @@ fun Modifier.tvKeyboardHandler(
     onFavorite: (() -> Unit)? = null,
     onWatched: (() -> Unit)? = null,
     onMore: (() -> Unit)? = null,
+    onSeekForward: (() -> Unit)? = null,
+    onSeekBackward: (() -> Unit)? = null,
 ): Modifier {
     return this.onKeyEvent { keyEvent ->
         // First try global TV keys
@@ -194,6 +198,8 @@ fun Modifier.tvKeyboardHandler(
             onMenu = onMenu,
             onPlayPause = onPlayPause,
             onSearch = onSearch,
+            onSeekForward = onSeekForward,
+            onSeekBackward = onSeekBackward,
         )
 
         if (globalHandled) {
