@@ -4,12 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,13 +24,16 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig
+import com.rpeters.jellyfin.ui.tv.TvFocusManager
 import com.rpeters.jellyfin.ui.tv.TvFocusableCarousel
-import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import androidx.tv.material3.Card as TvCard
@@ -41,6 +45,8 @@ import androidx.tv.material3.Text as TvText
 fun TvContentCarousel(
     items: List<BaseItemDto>,
     title: String,
+    layoutConfig: AdaptiveLayoutConfig,
+    focusManager: TvFocusManager,
     onItemFocus: (BaseItemDto) -> Unit = {},
     onItemSelect: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
@@ -59,15 +65,16 @@ fun TvContentCarousel(
         return
     }
 
-    val focusManager = rememberTvFocusManager()
     val lazyListState = rememberLazyListState()
     var focusedIndex by remember { mutableIntStateOf(0) }
+    val layoutDirection = LocalLayoutDirection.current
+    val horizontalPadding = layoutConfig.headerPadding.calculateStartPadding(layoutDirection)
 
     Column(modifier = modifier) {
         TvText(
             text = title,
             style = TvMaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(start = 56.dp, top = 24.dp, bottom = 16.dp),
+            modifier = Modifier.padding(start = horizontalPadding, top = 24.dp, bottom = 16.dp),
         )
 
         TvFocusableCarousel(
@@ -75,6 +82,7 @@ fun TvContentCarousel(
             focusManager = focusManager,
             lazyListState = lazyListState,
             itemCount = items.size,
+            focusRequester = focusRequester,
             onFocusChanged = { isFocused, index ->
                 focusedIndex = index
                 if (isFocused && index < items.size) {
@@ -82,26 +90,25 @@ fun TvContentCarousel(
                 }
             },
         ) { focusModifier ->
-            val rowModifier = focusRequester?.let { focusModifier.focusRequester(it) } ?: focusModifier
-
             LazyRow(
                 state = lazyListState,
-                contentPadding = PaddingValues(horizontal = 56.dp),
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = rowModifier,
+                contentPadding = PaddingValues(horizontal = horizontalPadding),
+                horizontalArrangement = Arrangement.spacedBy(layoutConfig.spacing),
+                modifier = focusModifier,
             ) {
-                items(items, key = { it.id?.toString() ?: "" }) { item ->
-                    val itemIndex = items.indexOf(item)
+                itemsIndexed(items, key = { index, item -> item.id?.toString() ?: index.toString() }) { index, item ->
                     TvContentCard(
                         item = item,
                         onItemFocus = {
-                            focusedIndex = itemIndex
+                            focusedIndex = index
                             onItemFocus(item)
                         },
                         onItemSelect = { onItemSelect(item) },
                         getImageUrl = viewModel::getImageUrl,
                         getSeriesImageUrl = viewModel::getSeriesImageUrl,
-                        isFocused = focusedIndex == itemIndex,
+                        isFocused = focusedIndex == index,
+                        posterWidth = layoutConfig.carouselItemWidth,
+                        posterHeight = layoutConfig.carouselItemHeight,
                     )
                 }
             }
@@ -118,10 +125,12 @@ fun TvContentCard(
     getSeriesImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
     isFocused: Boolean = false,
+    posterWidth: Dp = 240.dp,
+    posterHeight: Dp = 360.dp,
 ) {
     Column(
         modifier = modifier
-            .width(240.dp)
+            .width(posterWidth)
             .onFocusChanged { focusState ->
                 if (focusState.isFocused) {
                     onItemFocus()
@@ -132,7 +141,7 @@ fun TvContentCard(
     ) {
         TvCard(
             onClick = { onItemSelect() },
-            modifier = Modifier.size(240.dp, 360.dp),
+            modifier = Modifier.size(posterWidth, posterHeight),
             colors = TvCardDefaults.colors(
                 containerColor = TvMaterialTheme.colorScheme.surfaceVariant,
             ),

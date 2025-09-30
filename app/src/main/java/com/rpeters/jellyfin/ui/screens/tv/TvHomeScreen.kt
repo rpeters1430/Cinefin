@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
@@ -23,10 +21,13 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
-import com.rpeters.jellyfin.ui.components.tv.TvContentCarousel
+import com.rpeters.jellyfin.ui.adaptive.rememberWindowLayoutInfo
 import com.rpeters.jellyfin.ui.components.tv.TvEmptyState
 import com.rpeters.jellyfin.ui.components.tv.TvErrorBanner
 import com.rpeters.jellyfin.ui.components.tv.TvFullScreenLoading
+import com.rpeters.jellyfin.ui.screens.tv.adaptive.TabletHomeContent
+import com.rpeters.jellyfin.ui.screens.tv.adaptive.TvCarouselHomeContent
+import com.rpeters.jellyfin.ui.screens.tv.adaptive.TvHomeMediaSection
 import com.rpeters.jellyfin.ui.tv.TvScreenFocusScope
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
 import com.rpeters.jellyfin.ui.tv.requestInitialFocus
@@ -54,7 +55,8 @@ fun TvHomeScreen(
     val tvFocusManager = rememberTvFocusManager()
     val context = LocalContext.current
     val windowSizeClass = calculateWindowSizeClass(context as androidx.activity.ComponentActivity)
-    val layoutConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
+    val windowLayoutInfo = rememberWindowLayoutInfo()
+    val layoutConfig = rememberAdaptiveLayoutConfig(windowSizeClass, windowLayoutInfo)
 
     // Ensure initial data is loaded when entering the TV home screen
     androidx.compose.runtime.LaunchedEffect(Unit) {
@@ -67,16 +69,38 @@ fun TvHomeScreen(
     val allMovies = appState.allMovies.take(10)
     val allTvShows = appState.allTVShows.take(10)
 
-    val firstCarouselId = when {
-        recentMovies.isNotEmpty() -> RECENT_MOVIES_ID
-        recentTvShows.isNotEmpty() -> RECENT_TV_SHOWS_ID
-        allMovies.isNotEmpty() -> ALL_MOVIES_ID
-        allTvShows.isNotEmpty() -> ALL_TV_SHOWS_ID
-        else -> null
-    }
+    val sections = listOf(
+        TvHomeMediaSection(
+            id = RECENT_MOVIES_ID,
+            title = "Recently Added Movies",
+            items = recentMovies,
+            isLoading = appState.isLoading,
+        ),
+        TvHomeMediaSection(
+            id = RECENT_TV_SHOWS_ID,
+            title = "Recently Added TV Shows",
+            items = recentTvShows,
+            isLoading = appState.isLoading,
+        ),
+        TvHomeMediaSection(
+            id = ALL_MOVIES_ID,
+            title = "Movies",
+            items = allMovies,
+            isLoading = appState.isLoadingMovies,
+        ),
+        TvHomeMediaSection(
+            id = ALL_TV_SHOWS_ID,
+            title = "TV Shows",
+            items = allTvShows,
+            isLoading = appState.isLoadingTVShows,
+        ),
+    ).filter { it.items.isNotEmpty() || it.isLoading }
 
-    val initialFocusRequester = remember { FocusRequester() }
-    initialFocusRequester.requestInitialFocus(condition = firstCarouselId != null)
+    val firstSectionId = sections.firstOrNull()?.id
+    val initialFocusRequester = remember(layoutConfig.shouldShowDualPane) { FocusRequester() }
+    initialFocusRequester.requestInitialFocus(
+        condition = firstSectionId != null && layoutConfig.supportsFocusNavigation,
+    )
 
     TvScreenFocusScope(
         screenKey = "tv_home",
@@ -124,81 +148,51 @@ fun TvHomeScreen(
                 return@Box
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(bottom = 48.dp),
-                verticalArrangement = Arrangement.spacedBy(layoutConfig.spacing),
-            ) {
-                // Welcome header with adaptive padding
-                TvHomeHeader(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(layoutConfig.headerPadding),
-                )
-
-                // Recently added movies
-                TvContentCarousel(
-                    items = recentMovies,
-                    title = "Recently Added Movies",
-                    onItemFocus = { /* Handle focus if needed */ },
+            if (layoutConfig.shouldShowDualPane) {
+                TabletHomeContent(
+                    layoutConfig = layoutConfig,
+                    sections = sections,
+                    focusManager = tvFocusManager,
+                    modifier = Modifier.fillMaxSize(),
+                    header = {
+                        TvHomeHeader(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(layoutConfig.headerPadding),
+                        )
+                    },
                     onItemSelect = { item ->
                         item.id?.let { onItemSelect(it.toString()) }
                     },
-                    carouselId = RECENT_MOVIES_ID,
-                    isLoading = appState.isLoading,
-                    focusRequester = initialFocusRequester.takeIf { firstCarouselId == RECENT_MOVIES_ID },
+                    getImageUrl = viewModel::getImageUrl,
+                    getSeriesImageUrl = viewModel::getSeriesImageUrl,
+                    libraries = appState.libraries,
+                    onLibrarySelect = onLibrarySelect,
+                    isLoadingLibraries = appState.isLoading,
+                    initialFocusRequester = initialFocusRequester.takeIf { firstSectionId != null },
                 )
-
-                // TV Shows
-                TvContentCarousel(
-                    items = recentTvShows,
-                    title = "Recently Added TV Shows",
-                    onItemFocus = { /* Handle focus if needed */ },
+            } else {
+                TvCarouselHomeContent(
+                    layoutConfig = layoutConfig,
+                    sections = sections,
+                    focusManager = tvFocusManager,
+                    modifier = Modifier.fillMaxSize(),
+                    header = {
+                        TvHomeHeader(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(layoutConfig.headerPadding),
+                        )
+                    },
                     onItemSelect = { item ->
                         item.id?.let { onItemSelect(it.toString()) }
                     },
-                    carouselId = RECENT_TV_SHOWS_ID,
-                    isLoading = appState.isLoading,
-                    focusRequester = initialFocusRequester.takeIf { firstCarouselId == RECENT_TV_SHOWS_ID },
+                    libraries = appState.libraries,
+                    onLibrarySelect = onLibrarySelect,
+                    isLoadingLibraries = appState.isLoading,
+                    initialFocusRequester = initialFocusRequester,
+                    firstSectionId = firstSectionId,
                 )
-
-                // All movies
-                TvContentCarousel(
-                    items = allMovies,
-                    title = "Movies",
-                    onItemFocus = { /* Handle focus if needed */ },
-                    onItemSelect = { item ->
-                        item.id?.let { onItemSelect(it.toString()) }
-                    },
-                    carouselId = ALL_MOVIES_ID,
-                    isLoading = appState.isLoadingMovies,
-                    focusRequester = initialFocusRequester.takeIf { firstCarouselId == ALL_MOVIES_ID },
-                )
-
-                // All TV shows
-                TvContentCarousel(
-                    items = allTvShows,
-                    title = "TV Shows",
-                    onItemFocus = { /* Handle focus if needed */ },
-                    onItemSelect = { item ->
-                        item.id?.let { onItemSelect(it.toString()) }
-                    },
-                    carouselId = ALL_TV_SHOWS_ID,
-                    isLoading = appState.isLoadingTVShows,
-                    focusRequester = initialFocusRequester.takeIf { firstCarouselId == ALL_TV_SHOWS_ID },
-                )
-
-                // Libraries section
-                if (appState.libraries.isNotEmpty()) {
-                    TvLibrariesSection(
-                        libraries = appState.libraries,
-                        onLibrarySelect = onLibrarySelect,
-                        modifier = Modifier.fillMaxWidth(),
-                        isLoading = appState.isLoading,
-                    )
-                }
             }
         }
     }
