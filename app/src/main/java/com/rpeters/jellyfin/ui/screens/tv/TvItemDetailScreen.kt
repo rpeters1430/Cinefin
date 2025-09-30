@@ -43,6 +43,7 @@ fun TvItemDetailScreen(
     itemId: String?,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
+    onPlay: (itemId: String, itemName: String, startPositionMs: Long) -> Unit,
 ) {
     val appState by viewModel.appState.collectAsState()
     val userPrefs: UserPreferencesViewModel = hiltViewModel()
@@ -201,11 +202,10 @@ fun TvItemDetailScreen(
                         "Play"
                     }
                     TvButton(onClick = {
-                        item?.let {
-                            val streamUrl = viewModel.getStreamUrl(it)
-                            if (!streamUrl.isNullOrEmpty()) {
-                                MediaPlayerUtils.playMedia(context, streamUrl, it)
-                            }
+                        val id = item?.id?.toString()
+                        val title = item?.name ?: ""
+                        if (!id.isNullOrBlank()) {
+                            onPlay(id, title, resumeMs)
                         }
                     }) {
                         TvText(text = playLabel)
