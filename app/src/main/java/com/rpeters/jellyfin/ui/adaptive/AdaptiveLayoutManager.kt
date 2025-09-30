@@ -9,11 +9,16 @@ import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.window.layout.FoldingFeature
+import androidx.window.layout.WindowInfoTracker
+import androidx.window.layout.WindowLayoutInfo
 
 /**
  * Device form factor detection and adaptive layout management
@@ -36,6 +41,26 @@ enum class ScreenOrientation {
 }
 
 /**
+ * Posture hints derived from WindowLayoutInfo
+ */
+sealed class DevicePosture {
+    data object Normal : DevicePosture()
+    data object TableTop : DevicePosture()
+    data object Book : DevicePosture()
+    data class Separating(val orientation: FoldingFeature.Orientation) : DevicePosture()
+    data object Flat : DevicePosture()
+}
+
+/**
+ * Visibility behaviour for secondary/detail panes
+ */
+enum class DetailPaneVisibility {
+    NONE,
+    CONTEXTUAL,
+    DUAL_PANE,
+}
+
+/**
  * Layout configuration for different screen sizes and form factors
  */
 data class AdaptiveLayoutConfig(
@@ -45,6 +70,7 @@ data class AdaptiveLayoutConfig(
     val isTV: Boolean,
     val isTablet: Boolean,
     val isFoldable: Boolean,
+    val posture: DevicePosture,
     val contentPadding: PaddingValues,
     val navigationSuiteType: NavigationSuiteType,
     val gridColumns: Int,
@@ -58,7 +84,7 @@ data class AdaptiveLayoutConfig(
      * Determine if this layout supports TV-optimized focus navigation
      */
     val supportsFocusNavigation: Boolean
-        get() = isTV || formFactor == DeviceFormFactor.DESKTOP
+        get() = isTV || formFactor == DeviceFormFactor.DESKTOP || isTablet || isFoldable
 
     /**
      * Determine if this layout should use TV-specific components
@@ -67,12 +93,19 @@ data class AdaptiveLayoutConfig(
         get() = isTV
 
     /**
+     * Determine if landscape spacing rules should be preferred
+     */
+    val isLandscapeFirst: Boolean
+        get() = orientation != ScreenOrientation.PORTRAIT || posture != DevicePosture.Normal
+
+    /**
      * Get the appropriate spacing for this layout
      */
     val spacing: Dp
         get() = when {
-            isTV -> 32.dp
-            isTablet -> 24.dp
+            isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 32.dp else 28.dp
+            isLandscapeFirst && (isTablet || isFoldable) -> 24.dp
+            isTablet || isFoldable -> 20.dp
             else -> 16.dp
         }
 
@@ -81,10 +114,60 @@ data class AdaptiveLayoutConfig(
      */
     val headerPadding: PaddingValues
         get() = when {
-            isTV -> PaddingValues(horizontal = 56.dp, vertical = 24.dp)
-            isTablet -> PaddingValues(horizontal = 32.dp, vertical = 16.dp)
+            isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) {
+                PaddingValues(horizontal = 64.dp, vertical = 28.dp)
+            } else {
+                PaddingValues(horizontal = 56.dp, vertical = 24.dp)
+            }
+            isLandscapeFirst && (isTablet || isFoldable) -> PaddingValues(horizontal = 40.dp, vertical = 20.dp)
+            isTablet || isFoldable -> PaddingValues(horizontal = 32.dp, vertical = 16.dp)
             else -> PaddingValues(horizontal = 16.dp, vertical = 12.dp)
         }
+
+    /**
+     * Maximum rows that should be visible at a time for carousels or grids
+     */
+    val maxRows: Int
+        get() = when {
+            isTV && windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded -> 4
+            isTV -> 3
+            isLandscapeFirst -> 3
+            else -> 2
+        }
+
+    /**
+     * Determine how the detail pane should behave
+     */
+    val detailPaneVisibility: DetailPaneVisibility
+        get() = when {
+            isTV -> DetailPaneVisibility.NONE
+            isFoldable && posture is DevicePosture.Separating -> DetailPaneVisibility.DUAL_PANE
+            isFoldable && posture is DevicePosture.Book -> DetailPaneVisibility.DUAL_PANE
+            isTablet && windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded -> DetailPaneVisibility.DUAL_PANE
+            isLandscapeFirst && (isTablet || isFoldable) -> DetailPaneVisibility.CONTEXTUAL
+            isTablet || isFoldable -> DetailPaneVisibility.CONTEXTUAL
+            else -> DetailPaneVisibility.NONE
+        }
+
+    /**
+     * Convenience flag for dual-pane experiences
+     */
+    val shouldShowDualPane: Boolean
+        get() = detailPaneVisibility == DetailPaneVisibility.DUAL_PANE
+}
+
+/**
+ * Convenience helper to remember WindowLayoutInfo for adaptive decisions
+ */
+@Composable
+fun rememberWindowLayoutInfo(): WindowLayoutInfo {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val windowInfoTracker = remember { WindowInfoTracker.getOrCreate(context) }
+    val windowLayoutInfoState = windowInfoTracker
+        .windowLayoutInfo(lifecycleOwner)
+        .collectAsState(initial = WindowLayoutInfo(emptyList()))
+    return windowLayoutInfoState.value
 }
 
 /**
@@ -92,11 +175,23 @@ data class AdaptiveLayoutConfig(
  */
 @Composable
 fun rememberAdaptiveLayoutConfig(windowSizeClass: WindowSizeClass): AdaptiveLayoutConfig {
+    val windowLayoutInfo = rememberWindowLayoutInfo()
+    return rememberAdaptiveLayoutConfig(windowSizeClass, windowLayoutInfo)
+}
+
+/**
+ * Adaptive layout manager that accepts an explicit WindowLayoutInfo
+ */
+@Composable
+fun rememberAdaptiveLayoutConfig(
+    windowSizeClass: WindowSizeClass,
+    windowLayoutInfo: WindowLayoutInfo,
+): AdaptiveLayoutConfig {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
 
-    return remember(windowSizeClass, configuration.orientation) {
-        createAdaptiveLayoutConfig(context, windowSizeClass, configuration)
+    return remember(windowSizeClass, configuration.orientation, windowLayoutInfo) {
+        createAdaptiveLayoutConfig(context, windowSizeClass, configuration, windowLayoutInfo)
     }
 }
 
@@ -107,13 +202,14 @@ private fun createAdaptiveLayoutConfig(
     context: Context,
     windowSizeClass: WindowSizeClass,
     configuration: Configuration,
+    windowLayoutInfo: WindowLayoutInfo,
 ): AdaptiveLayoutConfig {
+    val posture = deriveDevicePosture(windowLayoutInfo)
     val isTV = detectTVDevice(context)
-    val isTablet = detectTabletDevice(windowSizeClass, configuration)
-    val isFoldable = detectFoldableDevice(context)
-
-    val formFactor = determineFormFactor(isTV, isTablet, isFoldable, windowSizeClass)
-    val orientation = determineOrientation(configuration, isTV)
+    val orientation = determineOrientation(configuration, isTV, posture)
+    val isTablet = detectTabletDevice(windowSizeClass, configuration, posture, orientation)
+    val isFoldable = detectFoldableDevice(windowLayoutInfo, context)
+    val formFactor = determineFormFactor(isTV, isTablet, isFoldable, windowSizeClass, posture)
 
     return AdaptiveLayoutConfig(
         formFactor = formFactor,
@@ -122,13 +218,15 @@ private fun createAdaptiveLayoutConfig(
         isTV = isTV,
         isTablet = isTablet,
         isFoldable = isFoldable,
-        contentPadding = calculateContentPadding(formFactor, isTV),
+        posture = posture,
+        contentPadding = calculateContentPadding(formFactor, orientation, posture, isTV),
         navigationSuiteType = determineNavigationSuiteType(windowSizeClass, isTV),
-        gridColumns = calculateGridColumns(windowSizeClass, isTV),
-        carouselItemWidth = calculateCarouselItemWidth(formFactor, isTV),
-        carouselItemHeight = calculateCarouselItemHeight(formFactor, isTV),
+        gridColumns = calculateGridColumns(windowSizeClass, isTV, posture, orientation, formFactor),
+        carouselItemWidth = calculateCarouselItemWidth(formFactor, isTV, orientation),
+        carouselItemHeight = calculateCarouselItemHeight(formFactor, isTV, orientation),
         useLargeText = isTV || (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded),
-        useCondensedLayout = windowSizeClass.heightSizeClass == WindowHeightSizeClass.Compact && !isTV,
+        useCondensedLayout = windowSizeClass.heightSizeClass == WindowHeightSizeClass.Compact &&
+            !isTV && posture != DevicePosture.TableTop,
     )
 }
 
@@ -141,31 +239,41 @@ private fun detectTVDevice(context: Context): Boolean {
 }
 
 /**
- * Detect if the device is a tablet
+ * Detect if the device is a tablet, considering posture hints
  */
-private fun detectTabletDevice(windowSizeClass: WindowSizeClass, configuration: Configuration): Boolean {
-    return when (windowSizeClass.widthSizeClass) {
+private fun detectTabletDevice(
+    windowSizeClass: WindowSizeClass,
+    configuration: Configuration,
+    posture: DevicePosture,
+    orientation: ScreenOrientation,
+): Boolean {
+    val baseTablet = when (windowSizeClass.widthSizeClass) {
         WindowWidthSizeClass.Medium, WindowWidthSizeClass.Expanded -> {
-            // Additional checks for tablet characteristics
             val isLargeScreen = (configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK) >=
                 Configuration.SCREENLAYOUT_SIZE_LARGE
             isLargeScreen || windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded
         }
         else -> false
     }
+
+    val postureSuggestsTablet = posture is DevicePosture.Book || posture is DevicePosture.Separating
+    val landscapeTableTop = posture is DevicePosture.TableTop && orientation != ScreenOrientation.PORTRAIT
+
+    return baseTablet || postureSuggestsTablet || landscapeTableTop
 }
 
 /**
- * Detect if the device is foldable
+ * Detect if the device is foldable based on WindowLayoutInfo
  */
-private fun detectFoldableDevice(context: Context): Boolean {
-    // This is a simplified check - in production you'd use WindowManager APIs
-    // or device-specific checks for foldable detection
+private fun detectFoldableDevice(windowLayoutInfo: WindowLayoutInfo, context: Context): Boolean {
+    if (windowLayoutInfo.displayFeatures.any { it is FoldingFeature }) {
+        return true
+    }
+
     val display = context.resources.displayMetrics
     val aspectRatio = maxOf(display.widthPixels, display.heightPixels).toFloat() /
         minOf(display.widthPixels, display.heightPixels).toFloat()
 
-    // Foldables often have unusual aspect ratios when unfolded
     return aspectRatio > 2.1f
 }
 
@@ -177,10 +285,11 @@ private fun determineFormFactor(
     isTablet: Boolean,
     isFoldable: Boolean,
     windowSizeClass: WindowSizeClass,
+    posture: DevicePosture,
 ): DeviceFormFactor {
     return when {
         isTV -> DeviceFormFactor.TV
-        isFoldable -> DeviceFormFactor.FOLDABLE
+        isFoldable || posture != DevicePosture.Normal -> DeviceFormFactor.FOLDABLE
         isTablet -> DeviceFormFactor.TABLET
         windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded -> DeviceFormFactor.DESKTOP
         else -> DeviceFormFactor.PHONE
@@ -188,23 +297,65 @@ private fun determineFormFactor(
 }
 
 /**
- * Determine screen orientation with TV considerations
+ * Determine screen orientation with TV and posture considerations
  */
-private fun determineOrientation(configuration: Configuration, isTV: Boolean): ScreenOrientation {
+private fun determineOrientation(
+    configuration: Configuration,
+    isTV: Boolean,
+    posture: DevicePosture,
+): ScreenOrientation {
     return when {
         isTV -> ScreenOrientation.TV_LANDSCAPE
+        posture is DevicePosture.TableTop -> ScreenOrientation.LANDSCAPE
+        posture is DevicePosture.Book -> ScreenOrientation.LANDSCAPE
+        posture is DevicePosture.Separating -> ScreenOrientation.LANDSCAPE
         configuration.orientation == Configuration.ORIENTATION_LANDSCAPE -> ScreenOrientation.LANDSCAPE
         else -> ScreenOrientation.PORTRAIT
     }
 }
 
 /**
- * Calculate content padding based on form factor
+ * Derive posture hints from WindowLayoutInfo
  */
-private fun calculateContentPadding(formFactor: DeviceFormFactor, isTV: Boolean): PaddingValues {
+private fun deriveDevicePosture(windowLayoutInfo: WindowLayoutInfo): DevicePosture {
+    val foldingFeature = windowLayoutInfo.displayFeatures
+        .filterIsInstance<FoldingFeature>()
+        .firstOrNull() ?: return DevicePosture.Normal
+
     return when {
-        isTV -> PaddingValues(horizontal = 48.dp, vertical = 24.dp)
-        formFactor == DeviceFormFactor.TABLET -> PaddingValues(horizontal = 24.dp, vertical = 16.dp)
+        foldingFeature.state == FoldingFeature.State.HALF_OPENED &&
+            foldingFeature.orientation == FoldingFeature.Orientation.HORIZONTAL -> DevicePosture.TableTop
+        foldingFeature.state == FoldingFeature.State.HALF_OPENED &&
+            foldingFeature.orientation == FoldingFeature.Orientation.VERTICAL -> DevicePosture.Book
+        foldingFeature.isSeparating -> DevicePosture.Separating(foldingFeature.orientation)
+        foldingFeature.state == FoldingFeature.State.FLAT -> DevicePosture.Flat
+        else -> DevicePosture.Normal
+    }
+}
+
+/**
+ * Calculate content padding based on form factor and orientation
+ */
+private fun calculateContentPadding(
+    formFactor: DeviceFormFactor,
+    orientation: ScreenOrientation,
+    posture: DevicePosture,
+    isTV: Boolean,
+): PaddingValues {
+    val prefersLandscapeSpacing = orientation != ScreenOrientation.PORTRAIT || posture != DevicePosture.Normal
+    return when {
+        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) {
+            PaddingValues(horizontal = 56.dp, vertical = 28.dp)
+        } else {
+            PaddingValues(horizontal = 48.dp, vertical = 24.dp)
+        }
+        formFactor == DeviceFormFactor.TABLET || formFactor == DeviceFormFactor.FOLDABLE -> {
+            if (prefersLandscapeSpacing) {
+                PaddingValues(horizontal = 32.dp, vertical = 20.dp)
+            } else {
+                PaddingValues(horizontal = 24.dp, vertical = 16.dp)
+            }
+        }
         formFactor == DeviceFormFactor.DESKTOP -> PaddingValues(horizontal = 32.dp, vertical = 20.dp)
         else -> PaddingValues(horizontal = 16.dp, vertical = 12.dp)
     }
@@ -213,7 +364,10 @@ private fun calculateContentPadding(formFactor: DeviceFormFactor, isTV: Boolean)
 /**
  * Determine the appropriate navigation suite type
  */
-private fun determineNavigationSuiteType(windowSizeClass: WindowSizeClass, isTV: Boolean): NavigationSuiteType {
+private fun determineNavigationSuiteType(
+    windowSizeClass: WindowSizeClass,
+    isTV: Boolean,
+): NavigationSuiteType {
     return when {
         isTV -> NavigationSuiteType.None // TV uses custom navigation
         windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded -> NavigationSuiteType.NavigationDrawer
@@ -223,39 +377,70 @@ private fun determineNavigationSuiteType(windowSizeClass: WindowSizeClass, isTV:
 }
 
 /**
- * Calculate grid columns based on screen size and device type
+ * Calculate grid columns based on screen size, posture, and device type
  */
-private fun calculateGridColumns(windowSizeClass: WindowSizeClass, isTV: Boolean): Int {
-    return when {
-        isTV -> when (windowSizeClass.widthSizeClass) {
+private fun calculateGridColumns(
+    windowSizeClass: WindowSizeClass,
+    isTV: Boolean,
+    posture: DevicePosture,
+    orientation: ScreenOrientation,
+    formFactor: DeviceFormFactor,
+): Int {
+    if (isTV) {
+        return when (windowSizeClass.widthSizeClass) {
             WindowWidthSizeClass.Expanded -> 6
             else -> 4
         }
-        windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded -> 4
-        windowSizeClass.widthSizeClass == WindowWidthSizeClass.Medium -> 3
+    }
+
+    val baseColumns = when (windowSizeClass.widthSizeClass) {
+        WindowWidthSizeClass.Expanded -> 4
+        WindowWidthSizeClass.Medium -> 3
         else -> 2
     }
+
+    val postureBonus = when (posture) {
+        is DevicePosture.Book, is DevicePosture.Separating -> 1
+        else -> 0
+    }
+    val landscapeBonus = if (orientation != ScreenOrientation.PORTRAIT && baseColumns < 4) 1 else 0
+    val target = baseColumns + postureBonus + landscapeBonus
+    val maxColumns = if (formFactor == DeviceFormFactor.TABLET || formFactor == DeviceFormFactor.FOLDABLE) 5 else 4
+
+    return target.coerceAtMost(maxColumns)
 }
 
 /**
- * Calculate carousel item width based on form factor
+ * Calculate carousel item width based on form factor and orientation
  */
-private fun calculateCarouselItemWidth(formFactor: DeviceFormFactor, isTV: Boolean): Dp {
+private fun calculateCarouselItemWidth(
+    formFactor: DeviceFormFactor,
+    isTV: Boolean,
+    orientation: ScreenOrientation,
+): Dp {
     return when {
-        isTV -> 240.dp
-        formFactor == DeviceFormFactor.TABLET -> 200.dp
+        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 240.dp else 220.dp
+        formFactor == DeviceFormFactor.TABLET || formFactor == DeviceFormFactor.FOLDABLE -> {
+            if (orientation == ScreenOrientation.PORTRAIT) 200.dp else 220.dp
+        }
         formFactor == DeviceFormFactor.DESKTOP -> 220.dp
         else -> 160.dp
     }
 }
 
 /**
- * Calculate carousel item height based on form factor
+ * Calculate carousel item height based on form factor and orientation
  */
-private fun calculateCarouselItemHeight(formFactor: DeviceFormFactor, isTV: Boolean): Dp {
+private fun calculateCarouselItemHeight(
+    formFactor: DeviceFormFactor,
+    isTV: Boolean,
+    orientation: ScreenOrientation,
+): Dp {
     return when {
-        isTV -> 360.dp
-        formFactor == DeviceFormFactor.TABLET -> 300.dp
+        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 360.dp else 320.dp
+        formFactor == DeviceFormFactor.TABLET || formFactor == DeviceFormFactor.FOLDABLE -> {
+            if (orientation == ScreenOrientation.PORTRAIT) 300.dp else 320.dp
+        }
         formFactor == DeviceFormFactor.DESKTOP -> 330.dp
         else -> 240.dp
     }
