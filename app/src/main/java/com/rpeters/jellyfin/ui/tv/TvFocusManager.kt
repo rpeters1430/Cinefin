@@ -132,10 +132,11 @@ fun TvFocusableCarousel(
     focusManager: TvFocusManager,
     lazyListState: LazyListState,
     itemCount: Int,
+    focusRequester: FocusRequester? = null,
     onFocusChanged: (Boolean, Int) -> Unit = { _, _ -> },
     content: @Composable (Modifier) -> Unit,
 ) {
-    val focusRequester = remember { FocusRequester() }
+    val actualFocusRequester = remember(focusRequester) { focusRequester ?: FocusRequester() }
     var isFocused by remember { mutableStateOf(false) }
     var focusedIndex by rememberSaveable { mutableIntStateOf(0) }
 
@@ -157,7 +158,7 @@ fun TvFocusableCarousel(
     }
 
     val focusModifier = Modifier
-        .focusRequester(focusRequester)
+        .focusRequester(actualFocusRequester)
         .focusable()
         .onFocusChanged { focusState ->
             isFocused = focusState.isFocused
@@ -191,10 +192,11 @@ fun TvFocusableGrid(
     lazyGridState: LazyGridState,
     itemCount: Int,
     columnsCount: Int,
+    focusRequester: FocusRequester? = null,
     onFocusChanged: (Boolean, Int) -> Unit = { _, _ -> },
     content: @Composable (Modifier) -> Unit,
 ) {
-    val focusRequester = remember { FocusRequester() }
+    val actualFocusRequester = remember(focusRequester) { focusRequester ?: FocusRequester() }
     var isFocused by remember { mutableStateOf(false) }
     var focusedIndex by rememberSaveable { mutableIntStateOf(0) }
 
@@ -216,7 +218,7 @@ fun TvFocusableGrid(
     }
 
     val focusModifier = Modifier
-        .focusRequester(focusRequester)
+        .focusRequester(actualFocusRequester)
         .focusable()
         .onFocusChanged { focusState ->
             isFocused = focusState.isFocused
