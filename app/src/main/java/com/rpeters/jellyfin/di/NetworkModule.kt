@@ -179,4 +179,10 @@ object NetworkModule {
     ): EnhancedPlaybackManager {
         return EnhancedPlaybackManager(context, repository, streamRepository, deviceCapabilities)
     }
+
+    @Provides
+    @Singleton
+    fun provideTimeProvider(): () -> Long {
+        return System::currentTimeMillis
+    }
 }

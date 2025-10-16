@@ -8,7 +8,10 @@
       "Bash(find:*)",
       "Bash(sed:*)",
       "Bash(.gradlew assembleDebug)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(where java)",
+      "Bash(dir:*)",
+      "Bash(gradlew.bat:*)"
     ],
     "deny": [],
     "ask": [],

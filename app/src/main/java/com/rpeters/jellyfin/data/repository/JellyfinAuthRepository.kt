@@ -303,7 +303,9 @@ class JellyfinAuthRepository @Inject constructor(
             _isAuthenticating.value = true
             try {
                 val client = createApiClient(serverUrl)
-                val response = client.userApi.authenticateWithQuickConnect(secret)
+                val response = client.userApi.authenticateWithQuickConnect(
+                    org.jellyfin.sdk.model.api.QuickConnectDto(secret = secret)
+                )
                 val authResult = response.content
 
                 persistAuthenticationState(
