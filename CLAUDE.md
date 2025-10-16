@@ -195,21 +195,21 @@ The app uses an advanced playback decision engine that automatically determines 
 Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.toml`. Key dependencies include:
 
 ### Core Android
-- Jetpack Compose BOM (2025.08.01)
-- Material 3 (1.5.0-alpha03) with adaptive navigation suite and expressive components
+- Jetpack Compose BOM (2025.10.00)
+- Material 3 (1.5.0-alpha06) with adaptive navigation suite and expressive components
 - AndroidX core libraries and lifecycle components
 - Media3 (1.8.0) for video playback with ExoPlayer and Jellyfin FFmpeg decoder
 - Coil (2.7.0) for image loading
-- Paging 3 (3.4.0-alpha03) for paginated content loading
+- Paging 3 (3.4.0-alpha04) for paginated content loading
 
 ### Jellyfin Integration
-- Jellyfin SDK (1.6.8) for API communication
+- Jellyfin SDK (1.7.1) for API communication
 - Retrofit (3.0.0) with Kotlinx Serialization
-- OkHttp (5.1.0) with logging interceptor
+- OkHttp (5.2.1) with logging interceptor
 - SLF4J Android (1.7.36) for SDK logging
 
 ### Architecture
-- Hilt (2.57.1) for dependency injection
+- Hilt (2.57.2) for dependency injection
 - Kotlin Coroutines (1.10.2) for async operations
 - DataStore Preferences (1.2.0-alpha02) for settings storage
 - AndroidX Security (1.1.0) for encrypted credential storage
@@ -219,7 +219,7 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 ## Development Notes
 
 ### Build Configuration
-- **Kotlin**: 2.2.10 with Compose compiler plugin
+- **Kotlin**: 2.2.20 with Compose compiler plugin
 - **Gradle**: 8.13.0 (AGP) with Kotlin DSL
 - **Java**: Target/Source compatibility Version 17
 - **Android SDK**: Compile 36, Target 35, Min 26 (Android 8.0+) for broader device compatibility

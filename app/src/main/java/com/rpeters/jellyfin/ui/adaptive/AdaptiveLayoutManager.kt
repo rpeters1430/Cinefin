@@ -162,10 +162,9 @@ data class AdaptiveLayoutConfig(
 @Composable
 fun rememberWindowLayoutInfo(): WindowLayoutInfo {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     val windowInfoTracker = remember { WindowInfoTracker.getOrCreate(context) }
     val windowLayoutInfoState = windowInfoTracker
-        .windowLayoutInfo(lifecycleOwner)
+        .windowLayoutInfo(context)
         .collectAsState(initial = WindowLayoutInfo(emptyList()))
     return windowLayoutInfoState.value
 }
