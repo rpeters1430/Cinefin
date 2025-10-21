@@ -9,6 +9,13 @@ import org.jellyfin.sdk.api.client.extensions.playStateApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.PlayMethod
+import org.jellyfin.sdk.model.api.PlaybackOrder
+import org.jellyfin.sdk.model.api.PlaybackProgressInfo
+import org.jellyfin.sdk.model.api.PlaybackStartInfo
+import org.jellyfin.sdk.model.api.PlaybackStopInfo
+import org.jellyfin.sdk.model.api.RepeatMode
+import org.jellyfin.sdk.model.api.UserItemDataDto
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -53,6 +60,91 @@ class JellyfinUserRepository @Inject constructor(
             val itemUuid = parseUuid(itemId, "item")
             client.playStateApi.markUnplayedItem(itemId = itemUuid, userId = userUuid)
             true
+        }
+
+    suspend fun getItemUserData(itemId: String): ApiResult<UserItemDataDto> =
+        withServerClient("getItemUserData") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val itemUuid = parseUuid(itemId, "item")
+            val response = client.itemsApi.getItemUserData(itemId = itemUuid, userId = userUuid)
+            response.content
+        }
+
+    suspend fun reportPlaybackStart(
+        itemId: String,
+        sessionId: String,
+        positionTicks: Long?,
+        mediaSourceId: String? = null,
+        isPaused: Boolean = false,
+        isMuted: Boolean = false,
+        canSeek: Boolean = true,
+    ): ApiResult<Unit> =
+        withServerClient("reportPlaybackStart") { _, client ->
+            val itemUuid = parseUuid(itemId, "item")
+            val info = PlaybackStartInfo(
+                canSeek = canSeek,
+                itemId = itemUuid,
+                sessionId = sessionId,
+                mediaSourceId = mediaSourceId,
+                isPaused = isPaused,
+                isMuted = isMuted,
+                positionTicks = positionTicks,
+                playMethod = PlayMethod.DIRECT_PLAY,
+                repeatMode = RepeatMode.REPEAT_NONE,
+                playbackOrder = PlaybackOrder.DEFAULT,
+                playSessionId = sessionId,
+            )
+            client.playStateApi.reportPlaybackStart(info)
+            Unit
+        }
+
+    suspend fun reportPlaybackProgress(
+        itemId: String,
+        sessionId: String,
+        positionTicks: Long?,
+        mediaSourceId: String? = null,
+        isPaused: Boolean = false,
+        isMuted: Boolean = false,
+        canSeek: Boolean = true,
+    ): ApiResult<Unit> =
+        withServerClient("reportPlaybackProgress") { _, client ->
+            val itemUuid = parseUuid(itemId, "item")
+            val info = PlaybackProgressInfo(
+                canSeek = canSeek,
+                itemId = itemUuid,
+                sessionId = sessionId,
+                mediaSourceId = mediaSourceId,
+                positionTicks = positionTicks,
+                isPaused = isPaused,
+                isMuted = isMuted,
+                playMethod = PlayMethod.DIRECT_PLAY,
+                repeatMode = RepeatMode.REPEAT_NONE,
+                playbackOrder = PlaybackOrder.DEFAULT,
+                playSessionId = sessionId,
+            )
+            client.playStateApi.reportPlaybackProgress(info)
+            Unit
+        }
+
+    suspend fun reportPlaybackStopped(
+        itemId: String,
+        sessionId: String,
+        positionTicks: Long?,
+        mediaSourceId: String? = null,
+        failed: Boolean = false,
+    ): ApiResult<Unit> =
+        withServerClient("reportPlaybackStopped") { _, client ->
+            val itemUuid = parseUuid(itemId, "item")
+            val info = PlaybackStopInfo(
+                itemId = itemUuid,
+                sessionId = sessionId,
+                mediaSourceId = mediaSourceId,
+                positionTicks = positionTicks,
+                playSessionId = sessionId,
+                failed = failed,
+            )
+            client.playStateApi.reportPlaybackStopped(info)
+            Unit
         }
 
     suspend fun getFavorites(): ApiResult<List<BaseItemDto>> =
