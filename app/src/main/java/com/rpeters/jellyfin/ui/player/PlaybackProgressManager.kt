@@ -4,7 +4,7 @@ import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.rpeters.jellyfin.BuildConfig
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -28,7 +28,7 @@ data class PlaybackProgress(
 
 @Singleton
 class PlaybackProgressManager @Inject constructor(
-    private val repository: JellyfinRepository,
+    private val userRepository: JellyfinUserRepository,
 ) : DefaultLifecycleObserver {
 
     private val _playbackProgress = MutableStateFlow(PlaybackProgress())
@@ -40,6 +40,7 @@ class PlaybackProgressManager @Inject constructor(
     private var currentItemId: String = ""
     private var lastReportedPosition: Long = 0L
     private var sessionId: String = ""
+    private var hasReportedStart: Boolean = false
 
     companion object {
         private const val PROGRESS_SYNC_INTERVAL = 10_000L // 10 seconds
@@ -55,6 +56,10 @@ class PlaybackProgressManager @Inject constructor(
         this.coroutineScope = scope
         this.currentItemId = itemId
         this.sessionId = sessionId
+        this.hasReportedStart = false
+        this.lastReportedPosition = 0L
+
+        _playbackProgress.value = PlaybackProgress(itemId = itemId)
 
         // Load existing progress from server
         scope.launch {
@@ -83,6 +88,13 @@ class PlaybackProgressManager @Inject constructor(
             isWatched = isWatched,
         )
 
+        if (!hasReportedStart) {
+            hasReportedStart = true
+            coroutineScope?.launch {
+                reportPlaybackStart(positionMs, durationMs)
+            }
+        }
+
         // Report progress if significant change
         if (kotlin.math.abs(positionMs - lastReportedPosition) >= MIN_POSITION_CHANGE) {
             coroutineScope?.launch {
@@ -97,7 +109,7 @@ class PlaybackProgressManager @Inject constructor(
 
         coroutineScope?.launch {
             try {
-                when (val result = repository.markAsWatched(currentItemId)) {
+                when (val result = userRepository.markAsWatched(currentItemId)) {
                     is ApiResult.Success -> {
                         _playbackProgress.value = _playbackProgress.value.copy(isWatched = true)
                         if (BuildConfig.DEBUG) {
@@ -122,7 +134,7 @@ class PlaybackProgressManager @Inject constructor(
 
         coroutineScope?.launch {
             try {
-                when (val result = repository.markAsUnwatched(currentItemId)) {
+                when (val result = userRepository.markAsUnwatched(currentItemId)) {
                     is ApiResult.Success -> {
                         _playbackProgress.value = _playbackProgress.value.copy(isWatched = false)
                         if (BuildConfig.DEBUG) {
@@ -150,12 +162,15 @@ class PlaybackProgressManager @Inject constructor(
             val progress = _playbackProgress.value
             if (progress.itemId.isNotEmpty()) {
                 reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
-                reportPlaybackStop()
+                reportPlaybackStop(progress.positionMs, progress.durationMs)
             }
         }
 
         currentItemId = ""
         lastReportedPosition = 0L
+        sessionId = ""
+        hasReportedStart = false
+        _playbackProgress.value = PlaybackProgress()
         if (BuildConfig.DEBUG) {
             Log.d("PlaybackProgressManager", "Stopped tracking")
         }
@@ -192,56 +207,96 @@ class PlaybackProgressManager @Inject constructor(
 
     private suspend fun loadExistingProgress(itemId: String) {
         try {
-            // In a real implementation, you would load the existing progress from the server
-            // For now, we'll simulate this by checking the item's userData
-            // This would typically be done through a dedicated API endpoint
             if (BuildConfig.DEBUG) {
                 Log.d("PlaybackProgressManager", "Loading existing progress for item: $itemId")
             }
+            getResumePosition(itemId)
         } catch (e: Exception) {
             Log.e("PlaybackProgressManager", "Failed to load existing progress", e)
         }
     }
 
     private suspend fun reportProgress(positionMs: Long, durationMs: Long, isWatched: Boolean) {
+        if (currentItemId.isEmpty()) return
         try {
-            val server = repository.getCurrentServer() ?: return
-            val positionTicks = positionMs * 10_000L // Convert to ticks (100ns units)
-
-            // This would be the proper Jellyfin API call for reporting progress
-            // For now, we'll simulate the API call
-            if (BuildConfig.DEBUG) {
-                Log.d("PlaybackProgressManager", "Reporting progress: ${positionMs}ms / ${durationMs}ms (${(positionMs.toFloat() / durationMs * 100).toInt()}%)")
+            val ticks = positionMs.toTicks()
+            when (
+                val result = userRepository.reportPlaybackProgress(
+                    itemId = currentItemId,
+                    sessionId = sessionId,
+                    positionTicks = ticks,
+                    isPaused = false,
+                    canSeek = durationMs > 0,
+                )
+            ) {
+                is ApiResult.Success -> {
+                    _playbackProgress.value = _playbackProgress.value.copy(
+                        lastSyncTime = System.currentTimeMillis(),
+                    )
+                    if (BuildConfig.DEBUG) {
+                        Log.d(
+                            "PlaybackProgressManager",
+                            "Reported progress at ${positionMs}ms for $currentItemId",
+                        )
+                    }
+                }
+                is ApiResult.Error -> {
+                    Log.e(
+                        "PlaybackProgressManager",
+                        "Failed to report progress: ${result.message}",
+                    )
+                }
+                else -> Unit
             }
-
-            _playbackProgress.value = _playbackProgress.value.copy(
-                lastSyncTime = System.currentTimeMillis(),
-            )
         } catch (e: Exception) {
             Log.e("PlaybackProgressManager", "Failed to report progress", e)
         }
     }
 
-    private suspend fun reportPlaybackStart() {
+    private suspend fun reportPlaybackStart(positionMs: Long, durationMs: Long) {
+        if (currentItemId.isEmpty()) return
         try {
-            val server = repository.getCurrentServer() ?: return
-
-            // Report playback start to Jellyfin
-            if (BuildConfig.DEBUG) {
-                Log.d("PlaybackProgressManager", "Reporting playback start for: $currentItemId")
+            val ticks = positionMs.toTicks()
+            val result = userRepository.reportPlaybackStart(
+                itemId = currentItemId,
+                sessionId = sessionId,
+                positionTicks = ticks,
+                isPaused = false,
+                canSeek = durationMs > 0,
+            )
+            if (result is ApiResult.Error) {
+                Log.e(
+                    "PlaybackProgressManager",
+                    "Failed to report playback start: ${result.message}",
+                )
+            } else if (BuildConfig.DEBUG) {
+                Log.d("PlaybackProgressManager", "Reported playback start for: $currentItemId")
             }
         } catch (e: Exception) {
             Log.e("PlaybackProgressManager", "Failed to report playback start", e)
         }
     }
 
-    private suspend fun reportPlaybackStop() {
+    private suspend fun reportPlaybackStop(positionMs: Long, durationMs: Long) {
+        if (currentItemId.isEmpty()) return
         try {
-            val server = repository.getCurrentServer() ?: return
-
-            // Report playback stop to Jellyfin
-            if (BuildConfig.DEBUG) {
-                Log.d("PlaybackProgressManager", "Reporting playback stop for: $currentItemId")
+            val ticks = positionMs.toTicks()
+            val result = userRepository.reportPlaybackStopped(
+                itemId = currentItemId,
+                sessionId = sessionId,
+                positionTicks = ticks,
+                failed = false,
+            )
+            if (result is ApiResult.Error) {
+                Log.e(
+                    "PlaybackProgressManager",
+                    "Failed to report playback stop: ${result.message}",
+                )
+            } else if (BuildConfig.DEBUG) {
+                Log.d(
+                    "PlaybackProgressManager",
+                    "Reported playback stop for: $currentItemId at ${positionMs}ms",
+                )
             }
         } catch (e: Exception) {
             Log.e("PlaybackProgressManager", "Failed to report playback stop", e)
@@ -252,10 +307,33 @@ class PlaybackProgressManager @Inject constructor(
      * Gets the resume position for an item based on previous playback progress
      */
     suspend fun getResumePosition(itemId: String): Long {
+        val current = _playbackProgress.value
+        if (current.itemId == itemId && current.lastSyncTime > 0) {
+            return current.positionMs
+        }
+
         return try {
-            // In a real implementation, this would query the Jellyfin API for the item's user data
-            // and return the last playback position
-            0L
+            when (val result = userRepository.getItemUserData(itemId)) {
+                is ApiResult.Success -> {
+                    val data = result.data
+                    val resumeMs = data.playbackPositionTicks / 10_000L
+                    val percentage = ((data.playedPercentage ?: 0.0) / 100.0).toFloat()
+                    lastReportedPosition = resumeMs
+                    _playbackProgress.value = _playbackProgress.value.copy(
+                        itemId = itemId,
+                        positionMs = resumeMs,
+                        percentageWatched = percentage.coerceIn(0f, 1f),
+                        isWatched = data.played,
+                        lastSyncTime = System.currentTimeMillis(),
+                    )
+                    resumeMs
+                }
+                is ApiResult.Error -> {
+                    Log.e("PlaybackProgressManager", "Failed to load resume position: ${result.message}")
+                    0L
+                }
+                else -> 0L
+            }
         } catch (e: Exception) {
             Log.e("PlaybackProgressManager", "Failed to get resume position", e)
             0L
@@ -270,3 +348,5 @@ class PlaybackProgressManager @Inject constructor(
         return (positionMs.toFloat() / durationMs.toFloat()) >= WATCHED_THRESHOLD
     }
 }
+
+private fun Long.toTicks(): Long = this * 10_000L

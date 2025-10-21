@@ -22,7 +22,6 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.mediaInfoApi
-import org.jellyfin.sdk.api.client.extensions.playStateApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.UUID
@@ -945,58 +944,6 @@ class JellyfinRepository @Inject constructor(
         } catch (e: Exception) {
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to toggle favorite: ${e.message}", e, errorType)
-        }
-    }
-
-    suspend fun markAsWatched(itemId: String): ApiResult<Boolean> {
-        val server = authRepository.getCurrentServer()
-        if (server?.accessToken == null || server.userId == null) {
-            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
-        }
-
-        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
-        if (userUuid == null) {
-            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
-        }
-
-        val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull()
-        if (itemUuid == null) {
-            return ApiResult.Error("Invalid item ID", errorType = ErrorType.NOT_FOUND)
-        }
-
-        return try {
-            val client = getClient(server.url, server.accessToken)
-            client.playStateApi.markPlayedItem(itemId = itemUuid, userId = userUuid)
-            ApiResult.Success(true)
-        } catch (e: Exception) {
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("Failed to mark as watched: ${e.message}", e, errorType)
-        }
-    }
-
-    suspend fun markAsUnwatched(itemId: String): ApiResult<Boolean> {
-        val server = authRepository.getCurrentServer()
-        if (server?.accessToken == null || server.userId == null) {
-            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
-        }
-
-        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
-        if (userUuid == null) {
-            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
-        }
-
-        val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull()
-        if (itemUuid == null) {
-            return ApiResult.Error("Invalid item ID", errorType = ErrorType.NOT_FOUND)
-        }
-
-        return try {
-            val client = getClient(server.url, server.accessToken)
-            client.playStateApi.markUnplayedItem(itemId = itemUuid, userId = userUuid)
-            ApiResult.Success(true)
-        } catch (e: Exception) {
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("Failed to mark as unwatched: ${e.message}", e, errorType)
         }
     }
 

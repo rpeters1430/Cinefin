@@ -91,6 +91,7 @@ class VideoPlayerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: JellyfinRepository,
     private val castManager: CastManager,
+    private val playbackProgressManager: PlaybackProgressManager,
 ) : ViewModel() {
 
     init {
@@ -104,6 +105,7 @@ class VideoPlayerViewModel @Inject constructor(
 
     private val _playerState = MutableStateFlow(VideoPlayerState())
     val playerState: StateFlow<VideoPlayerState> = _playerState.asStateFlow()
+    val playbackProgress: StateFlow<PlaybackProgress> = playbackProgressManager.playbackProgress
 
     var exoPlayer: ExoPlayer? = null
         private set
@@ -118,6 +120,7 @@ class VideoPlayerViewModel @Inject constructor(
     private var wasPlayingBeforeCast: Boolean = false
     private var hasSentCastLoad: Boolean = false
     private var lastCastState: CastState? = null
+    private var playbackSessionId: String? = null
 
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -242,6 +245,7 @@ class VideoPlayerViewModel @Inject constructor(
     fun initializePlayer(itemId: String, itemName: String, startPosition: Long) {
         Log.d("VideoPlayer", "Initializing player for: $itemName")
 
+        playbackProgressManager.stopTracking()
         currentItemId = itemId
         currentItemName = itemName
         currentMediaItem = null
@@ -249,6 +253,10 @@ class VideoPlayerViewModel @Inject constructor(
         currentSubtitleSpecs = emptyList()
         hasSentCastLoad = false
         wasPlayingBeforeCast = false
+
+        val sessionId = java.util.UUID.randomUUID().toString()
+        playbackSessionId = sessionId
+        playbackProgressManager.startTracking(itemId, viewModelScope, sessionId)
 
         _playerState.value = _playerState.value.copy(
             itemId = itemId,
@@ -263,6 +271,9 @@ class VideoPlayerViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
+                val resumePosition = playbackProgressManager.getResumePosition(itemId)
+                val initialStartPosition = if (startPosition > 0) startPosition else resumePosition
+
                 // Get playback info with our device profile for direct play
                 val playbackInfo = repository.getPlaybackInfo(itemId)
 
@@ -358,8 +369,8 @@ class VideoPlayerViewModel @Inject constructor(
                     _playerState.value = _playerState.value.copy(isPlaying = true)
 
                     // Seek to start position if specified
-                    if (startPosition > 0) {
-                        exoPlayer?.seekTo(startPosition)
+                    if (initialStartPosition > 0) {
+                        exoPlayer?.seekTo(initialStartPosition)
                     }
 
                     if (lastCastState?.isConnected == true && !hasSentCastLoad) {
@@ -547,6 +558,7 @@ class VideoPlayerViewModel @Inject constructor(
     fun releasePlayer() {
         Log.d("VideoPlayer", "Releasing player")
         stopPositionUpdates()
+        playbackProgressManager.stopTracking()
         exoPlayer?.let { p ->
             try {
                 p.removeListener(playerListener)
@@ -562,6 +574,7 @@ class VideoPlayerViewModel @Inject constructor(
             }
         }
         exoPlayer = null
+        playbackSessionId = null
     }
 
     private fun startPositionUpdates() {
@@ -569,11 +582,13 @@ class VideoPlayerViewModel @Inject constructor(
         val player = exoPlayer ?: return
         positionJob = viewModelScope.launch(Dispatchers.Main) {
             while (true) {
+                val duration = if (player.duration > 0) player.duration else _playerState.value.duration
                 _playerState.value = _playerState.value.copy(
                     currentPosition = player.currentPosition,
                     bufferedPosition = player.bufferedPosition,
-                    duration = if (player.duration > 0) player.duration else _playerState.value.duration,
+                    duration = duration,
                 )
+                playbackProgressManager.updateProgress(player.currentPosition, duration)
                 kotlinx.coroutines.delay(500)
             }
         }
