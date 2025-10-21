@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.player.audio
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -124,10 +125,15 @@ class AudioServiceConnection @Inject constructor(
             val token = SessionToken(appContext, ComponentName(appContext, AudioService::class.java))
             val future = MediaController.Builder(appContext, token).buildAsync()
             controllerFuture = future
-            val controller = future.await(appContext)
-            controller.addListener(controllerListener)
-            mediaController = controller
-            controller
+            try {
+                val controller = future.await(appContext)
+                controller.addListener(controllerListener)
+                mediaController = controller
+                controller
+            } catch (exception: Exception) {
+                controllerFuture = null
+                throw exception
+            }
         }
     }
 
@@ -140,8 +146,12 @@ class AudioServiceConnection @Inject constructor(
 
     fun releaseController() {
         mediaController?.let { controller ->
-            controller.removeListener(controllerListener)
-            controller.release()
+            try {
+                controller.removeListener(controllerListener)
+                controller.release()
+            } catch (exception: Exception) {
+                Log.w(TAG, "Error releasing MediaController", exception)
+            }
         }
         mediaController = null
         controllerFuture?.cancel(true)
@@ -155,7 +165,7 @@ class AudioServiceConnection @Inject constructor(
 
     private fun startService() {
         val intent = Intent(appContext, AudioService::class.java)
-        ContextCompat.startForegroundService(appContext, intent)
+        ContextCompat.startService(appContext, intent)
     }
 
     private fun updatePlaybackState(controller: MediaController) {
@@ -200,3 +210,5 @@ private suspend fun <T> ListenableFuture<T>.await(context: Context): T =
 
         continuation.invokeOnCancellation { cancel(true) }
     }
+
+private const val TAG = "AudioServiceConnection"

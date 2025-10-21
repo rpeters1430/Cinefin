@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -128,35 +127,11 @@ fun MusicScreen(
     var viewMode by remember { mutableStateOf(MusicViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
 
-    // ✅ DEBUG: Add debug logging for what MusicScreen receives
-    LaunchedEffect(appState.libraries, appState.itemsByLibrary, appState.recentlyAddedByTypes) {
-        Log.d("MusicScreen-Debug", "🎵 MusicScreen state changed:")
-        Log.d("MusicScreen-Debug", "  Libraries: ${appState.libraries.size}")
-        appState.libraries.forEach { lib ->
-            Log.d("MusicScreen-Debug", "    - ${lib.name}(${lib.collectionType}) id=${lib.id}")
-        }
-
-        Log.d("MusicScreen-Debug", "  ItemsByLibrary keys: ${appState.itemsByLibrary.keys}")
-        appState.itemsByLibrary.forEach { (libType, items) ->
-            Log.d("MusicScreen-Debug", "    - $libType: ${items.size} items")
-        }
-
-        Log.d("MusicScreen-Debug", "  RecentlyAddedByTypes keys: ${appState.recentlyAddedByTypes.keys}")
-        appState.recentlyAddedByTypes.forEach { (itemType, items) ->
-            Log.d("MusicScreen-Debug", "    - $itemType: ${items.size} items")
-        }
-
-        val musicData = viewModel.getLibraryTypeData(LibraryType.MUSIC)
-        Log.d("MusicScreen-Debug", "  getLibraryTypeData(MUSIC): ${musicData.size} items")
-    }
-
     // Get music items via unified loader and enrich with recent audio
     val musicItems = remember(appState.itemsByLibrary, appState.recentlyAddedByTypes, appState.libraries) {
         val libraryMusic = viewModel.getLibraryTypeData(LibraryType.MUSIC)
         val recentMusic = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name] ?: emptyList()
-        val combined = (libraryMusic + recentMusic).distinctBy { it.id }
-        Log.d("MusicScreen", "Music items loaded - Library: ${libraryMusic.size}, Recent: ${recentMusic.size}, Combined: ${combined.size}")
-        combined
+        (libraryMusic + recentMusic).distinctBy { it.id }
     }
 
     // Apply filtering and sorting
@@ -173,14 +148,6 @@ fun MusicScreen(
             MusicFilter.UNPLAYED -> musicItems.filter {
                 it.userData?.played != true
             }
-        }
-
-        Log.d("MusicScreen-Filter", "🎵 Filter applied: $selectedFilter")
-        Log.d("MusicScreen-Filter", "  Before filter: ${musicItems.size} items")
-        Log.d("MusicScreen-Filter", "  After filter: ${filtered.size} items")
-        if (musicItems.isNotEmpty()) {
-            val itemTypes = musicItems.groupBy { it.type }.mapValues { it.value.size }
-            Log.d("MusicScreen-Filter", "  Item types available: $itemTypes")
         }
 
         when (sortOrder) {

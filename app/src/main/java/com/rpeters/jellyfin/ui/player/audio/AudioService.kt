@@ -91,7 +91,7 @@ class AudioService : MediaLibraryService() {
 
     private fun resolveMediaItem(item: MediaItem): MediaItem {
         val extras = item.mediaMetadata.extras ?: Bundle.EMPTY
-        val streamUrl = extras.getString(EXTRA_STREAM_URL) ?: item.localConfiguration?.uri?.toString()
+        val streamUrl = extras.getString(EXTRA_STREAM_URL)
         val artworkUri = extras.getString(EXTRA_ARTWORK_URI)
         val metadataBuilder = item.mediaMetadata.buildUpon()
 
