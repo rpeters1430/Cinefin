@@ -6,9 +6,9 @@ import androidx.media3.common.MediaItem
 import com.rpeters.jellyfin.ui.player.audio.AudioPlaybackState
 import com.rpeters.jellyfin.ui.player.audio.AudioServiceConnection
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class AudioPlaybackViewModel @Inject constructor(
@@ -37,4 +37,3 @@ class AudioPlaybackViewModel @Inject constructor(
         audioServiceConnection.skipToNext()
     }
 }
-

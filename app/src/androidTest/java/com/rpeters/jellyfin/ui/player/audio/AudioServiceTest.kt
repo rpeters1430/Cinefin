@@ -12,13 +12,13 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.core.app.ServiceScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class AudioServiceTest {
@@ -93,4 +93,3 @@ class AudioServiceTest {
         return MediaController.Builder(context, token).buildAsync().get(5, TimeUnit.SECONDS)
     }
 }
-

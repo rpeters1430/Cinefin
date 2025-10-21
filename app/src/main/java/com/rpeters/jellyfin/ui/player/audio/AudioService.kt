@@ -5,7 +5,6 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -172,4 +171,3 @@ class AudioService : MediaLibraryService() {
 interface AudioServiceForegroundIntentProvider {
     fun sessionActivityIntent(): PendingIntent?
 }
-
