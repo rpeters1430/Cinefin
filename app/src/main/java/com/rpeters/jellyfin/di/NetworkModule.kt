@@ -13,6 +13,7 @@ import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.network.CachePolicyInterceptor
 import com.rpeters.jellyfin.network.ConnectivityChecker
+import com.rpeters.jellyfin.network.JellyfinAuthInterceptor
 import com.rpeters.jellyfin.utils.withStrictModeTagger
 import dagger.Module
 import dagger.Provides
@@ -40,38 +41,16 @@ object NetworkModule {
     fun provideOkHttpClient(
         @ApplicationContext context: Context,
         connectivityChecker: ConnectivityChecker,
-        authRepositoryProvider: Provider<JellyfinAuthRepository>,
+        authInterceptor: JellyfinAuthInterceptor,
     ): OkHttpClient {
         val cacheDir = File(context.cacheDir, "http_cache")
         val cache = okhttp3.Cache(cacheDir, 150L * 1024 * 1024) // 150 MB
-
-        val authInterceptor = okhttp3.Interceptor { chain ->
-            val originalRequest = chain.request()
-            val newRequest = originalRequest.newBuilder()
-                .addHeader("Connection", "keep-alive")
-                .addHeader("User-Agent", "JellyfinAndroid/1.0.0")
-                .addHeader("Accept-Encoding", "gzip, deflate")
-                .build()
-            chain.proceed(newRequest)
-        }
 
         val builder = OkHttpClient.Builder()
             .withStrictModeTagger()
             .cache(cache)
             .addInterceptor(authInterceptor)
-            // Inject Jellyfin token as header instead of query params
-            .addInterceptor { chain ->
-                val token = authRepositoryProvider.get().getCurrentServer()?.accessToken
-                val original = chain.request()
-                if (!token.isNullOrBlank()) {
-                    val updated = original.newBuilder()
-                        .header("X-Emby-Token", token)
-                        .build()
-                    chain.proceed(updated)
-                } else {
-                    chain.proceed(original)
-                }
-            }
+            .authenticator(authInterceptor)
             .addInterceptor(CachePolicyInterceptor(connectivityChecker))
 
         if (BuildConfig.DEBUG) {
@@ -90,6 +69,14 @@ object NetworkModule {
             .retryOnConnectionFailure(true)
             .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideJellyfinAuthInterceptor(
+        authRepositoryProvider: Provider<JellyfinAuthRepository>,
+    ): JellyfinAuthInterceptor {
+        return JellyfinAuthInterceptor(authRepositoryProvider)
     }
 
     @Provides

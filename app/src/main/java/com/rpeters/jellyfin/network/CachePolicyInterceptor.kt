@@ -16,22 +16,21 @@ class CachePolicyInterceptor(
             url.contains("/Sessions", true)
         val isImage = url.contains("/Items/", true) &&
             url.contains("/Images", true)
+        val isCacheable = !isWrite && !isAuth
 
-        val newReq = when {
-            isWrite || isAuth -> req.newBuilder()
-                .header("Cache-Control", "no-cache")
-                .build()
-            !connectivity.isOnline() -> req.newBuilder()
-                .cacheControl(
-                    CacheControl.Builder()
-                        .onlyIfCached()
-                        .maxStale(7, TimeUnit.DAYS)
-                        .build(),
-                )
-                .build()
-            else -> req
+        val requestBuilder = req.newBuilder()
+
+        when {
+            isWrite || isAuth -> requestBuilder.header("Cache-Control", "no-cache")
+            !connectivity.isOnline() && isCacheable -> requestBuilder.cacheControl(
+                CacheControl.Builder()
+                    .onlyIfCached()
+                    .maxStale(7, TimeUnit.DAYS)
+                    .build(),
+            )
         }
 
+        val newReq = requestBuilder.build()
         val resp = chain.proceed(newReq)
 
         if (isImage && resp.header("Cache-Control").isNullOrBlank()) {
@@ -39,6 +38,13 @@ class CachePolicyInterceptor(
                 .header("Cache-Control", "public, max-age=2592000")
                 .build()
         }
+
+        if (isCacheable && resp.header("Cache-Control").isNullOrBlank()) {
+            return resp.newBuilder()
+                .header("Cache-Control", "public, max-age=60")
+                .build()
+        }
+
         return resp
     }
 }
