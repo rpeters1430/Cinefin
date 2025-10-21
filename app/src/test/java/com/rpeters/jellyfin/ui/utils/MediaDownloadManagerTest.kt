@@ -1,9 +1,13 @@
 package com.rpeters.jellyfin.ui.utils
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Environment
+import androidx.core.content.ContextCompat
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.junit.Assert.assertEquals
@@ -30,11 +34,18 @@ class MediaDownloadManagerTest {
         val context = mockk<Context>()
         every { context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) } returns baseDir
 
+        mockkStatic(ContextCompat::class)
+        every { ContextCompat.checkSelfPermission(any(), any()) } returns PackageManager.PERMISSION_GRANTED
+
         val item = BaseItemDto(id = java.util.UUID.randomUUID(), name = "Video", type = BaseItemKind.MOVIE)
         val file = File(baseDir, "JellyfinAndroid/Movies/Video.mp4")
         file.parentFile?.mkdirs()
         file.writeText("data")
 
-        assertTrue(MediaDownloadManager.isDownloaded(context, item))
+        try {
+            assertTrue(MediaDownloadManager.isDownloaded(context, item, sdkInt = android.os.Build.VERSION_CODES.P))
+        } finally {
+            unmockkAll()
+        }
     }
 }
