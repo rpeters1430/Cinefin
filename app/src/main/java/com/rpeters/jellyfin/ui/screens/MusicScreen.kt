@@ -21,9 +21,13 @@ import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -60,6 +64,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
+import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -111,10 +116,13 @@ enum class MusicViewMode {
 fun MusicScreen(
     onBackClick: () -> Unit = {},
     viewModel: MainAppViewModel = hiltViewModel(),
+    audioPlaybackViewModel: AudioPlaybackViewModel = hiltViewModel(),
     onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val appState by viewModel.appState.collectAsState()
+    val playbackState by audioPlaybackViewModel.playbackState.collectAsState()
+    val playbackQueue by audioPlaybackViewModel.queue.collectAsState()
     var selectedFilter by remember { mutableStateOf(MusicFilter.ALL) }
     var sortOrder by remember { mutableStateOf(MusicSortOrder.TITLE_ASC) }
     var viewMode by remember { mutableStateOf(MusicViewMode.GRID) }
@@ -298,6 +306,92 @@ fun MusicScreen(
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
+            if (playbackState.isConnected && (playbackState.currentMediaItem != null || playbackQueue.isNotEmpty())) {
+                Card(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    ),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        val metadata = playbackState.currentMediaItem?.mediaMetadata
+                        val artistName = metadata?.artist?.toString().orEmpty()
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.now_playing),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = metadata?.title?.toString()
+                                    ?: stringResource(id = R.string.music_queue_empty),
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 2,
+                            )
+                            if (artistName.isNotBlank()) {
+                                Text(
+                                    text = artistName,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                )
+                            }
+                            val queueLabel = if (playbackQueue.isEmpty()) {
+                                stringResource(id = R.string.music_queue_empty)
+                            } else {
+                                stringResource(id = R.string.music_queue_size, playbackQueue.size)
+                            }
+                            Text(
+                                text = queueLabel,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        IconButton(onClick = audioPlaybackViewModel::toggleShuffle) {
+                            Icon(
+                                imageVector = Icons.Filled.Shuffle,
+                                contentDescription = stringResource(id = R.string.music_toggle_shuffle),
+                                tint = if (playbackState.shuffleEnabled) {
+                                    MusicGreen
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                            )
+                        }
+
+                        IconButton(onClick = audioPlaybackViewModel::togglePlayPause) {
+                            Icon(
+                                imageVector = if (playbackState.isPlaying) {
+                                    Icons.Filled.Pause
+                                } else {
+                                    Icons.Filled.PlayArrow
+                                },
+                                contentDescription = stringResource(id = R.string.music_play_pause),
+                            )
+                        }
+
+                        IconButton(onClick = audioPlaybackViewModel::skipToNext) {
+                            Icon(
+                                imageVector = Icons.Filled.SkipNext,
+                                contentDescription = stringResource(id = R.string.music_skip_next),
+                            )
+                        }
+                    }
+                }
+            }
+
             // Filter chips
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),

@@ -4,11 +4,22 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Bundle
 import android.util.Log
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.ui.player.VideoPlayerActivity
+import com.rpeters.jellyfin.ui.player.audio.AudioService
+import com.rpeters.jellyfin.ui.player.audio.AudioServiceConnection
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 
 @androidx.media3.common.util.UnstableApi
 object MediaPlayerUtils {
@@ -20,6 +31,11 @@ object MediaPlayerUtils {
      * Launches the internal video player with enhanced features
      */
     fun playMedia(context: Context, streamUrl: String, item: BaseItemDto) {
+        if (item.type == BaseItemKind.AUDIO || item.type == BaseItemKind.MUSIC_ALBUM) {
+            playAudio(context, streamUrl, item)
+            return
+        }
+
         try {
             if (BuildConfig.DEBUG) {
                 Log.d("MediaPlayerUtils", "Launching internal video player for: ${item.name}")
@@ -45,6 +61,47 @@ object MediaPlayerUtils {
             // Fallback to external player
             playMediaExternal(context, streamUrl, item)
         }
+    }
+
+    private fun playAudio(context: Context, streamUrl: String, item: BaseItemDto) {
+        val applicationContext = context.applicationContext
+        ContextCompat.startForegroundService(applicationContext, Intent(applicationContext, AudioService::class.java))
+
+        val connection = EntryPointAccessors.fromApplication(
+            applicationContext,
+            AudioServiceConnectionEntryPoint::class.java,
+        ).audioServiceConnection()
+
+        val mediaItem = buildAudioMediaItem(item, streamUrl)
+        connection.playNow(mediaItem)
+    }
+
+    private fun buildAudioMediaItem(item: BaseItemDto, streamUrl: String): MediaItem {
+        val extras = Bundle().apply {
+            putString(AudioService.EXTRA_STREAM_URL, streamUrl)
+            putString(AudioService.EXTRA_ITEM_ID, item.id?.toString())
+            putString(AudioService.EXTRA_ITEM_NAME, item.name)
+            putString(AudioService.EXTRA_ALBUM_NAME, item.album ?: item.albumId?.toString())
+            putString(AudioService.EXTRA_ARTIST_NAME, item.albumArtist ?: item.artists?.firstOrNull())
+            putLong(AudioService.EXTRA_DURATION, (item.runTimeTicks ?: 0L) / 10_000)
+        }
+
+        val mediaMetadata = MediaMetadata.Builder()
+            .setTitle(item.name)
+            .setArtist(item.albumArtist ?: item.artists?.joinToString(", "))
+            .setAlbumTitle(item.album)
+            .setExtras(extras)
+            .build()
+
+        val builder = MediaItem.Builder()
+            .setMediaId(item.id?.toString() ?: streamUrl)
+            .setMediaMetadata(mediaMetadata)
+
+        if (streamUrl.isNotBlank()) {
+            builder.setUri(streamUrl.toUri())
+        }
+
+        return builder.build()
     }
 
     /**
@@ -176,3 +233,9 @@ object MediaPlayerUtils {
 }
 
 class MediaPlayerException(message: String, cause: Throwable? = null) : Exception(message, cause)
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface AudioServiceConnectionEntryPoint {
+    fun audioServiceConnection(): AudioServiceConnection
+}

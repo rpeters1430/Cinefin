@@ -130,6 +130,12 @@
     <!-- Music Screen -->
     <string name="no_music_found">No music found</string>
     <string name="adjust_music_filters_hint">Try adjusting your filters or refresh the library</string>
+    <string name="now_playing">Now playing</string>
+    <string name="music_queue_size">%1$d tracks queued</string>
+    <string name="music_queue_empty">Queue is empty</string>
+    <string name="music_toggle_shuffle">Toggle shuffle</string>
+    <string name="music_play_pause">Play or pause</string>
+    <string name="music_skip_next">Skip to next</string>
     
     <!-- Music Filters -->
     <string name="filter_all_music">All Music</string>

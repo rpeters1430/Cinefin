@@ -118,16 +118,10 @@ class EnhancedPlaybackUtils @Inject constructor(
                 MediaPlayerUtils.playMedia(context, streamUrl, item)
             }
 
-            BaseItemKind.AUDIO -> {
-                // For audio, we could start an audio-specific player
-                // For now, use the video player which can handle audio-only content
-                MediaPlayerUtils.playMedia(context, streamUrl, item)
-            }
-
-            BaseItemKind.MUSIC_ALBUM -> {
-                // For albums, we might want to play the first track or show a playlist
-                Log.d(TAG, "Album playback - would typically get first track or create playlist")
-                // Could be enhanced to get album tracks and play the first one
+            BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM -> {
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "Routing audio playback through MediaSession service for ${item.name}")
+                }
                 MediaPlayerUtils.playMedia(context, streamUrl, item)
             }
 
