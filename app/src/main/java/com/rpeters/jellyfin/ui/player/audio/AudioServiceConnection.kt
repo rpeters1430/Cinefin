@@ -37,29 +37,10 @@ class AudioServiceConnection @Inject constructor(
     private val _playbackState = kotlinx.coroutines.flow.MutableStateFlow(AudioPlaybackState())
     private val _queueState = kotlinx.coroutines.flow.MutableStateFlow<List<MediaItem>>(emptyList())
 
-    private val controllerListener = object : MediaController.Listener {
-        override fun onConnected(controller: MediaController) {
-            _playbackState.value = _playbackState.value.copy(isConnected = true)
-            updatePlaybackState(controller)
-            updateQueue(controller)
-        }
-
-        override fun onDisconnected(controller: MediaController) {
-            _playbackState.value = AudioPlaybackState(isConnected = false)
-            _queueState.value = emptyList()
-            releaseController()
-        }
-
-        override fun onEvents(controller: MediaController, events: Player.Events) {
-            if (events.contains(Player.EVENT_MEDIA_ITEMS_CHANGED) ||
-                events.contains(Player.EVENT_MEDIA_ITEM_TRANSITION)
-            ) {
+    private val controllerListener = object : Player.Listener {
+        override fun onEvents(player: Player, events: Player.Events) {
+            mediaController?.let { controller ->
                 updateQueue(controller)
-            }
-            if (
-                events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED) ||
-                events.contains(Player.EVENT_PLAY_WHEN_READY_CHANGED)
-            ) {
                 updatePlaybackState(controller)
             }
         }
@@ -129,6 +110,9 @@ class AudioServiceConnection @Inject constructor(
                 val controller = future.await(appContext)
                 controller.addListener(controllerListener)
                 mediaController = controller
+                _playbackState.value = _playbackState.value.copy(isConnected = true)
+                updatePlaybackState(controller)
+                updateQueue(controller)
                 controller
             } catch (exception: Exception) {
                 controllerFuture = null
@@ -156,6 +140,8 @@ class AudioServiceConnection @Inject constructor(
         mediaController = null
         controllerFuture?.cancel(true)
         controllerFuture = null
+        _playbackState.value = AudioPlaybackState(isConnected = false)
+        _queueState.value = emptyList()
     }
 
     fun shutdown() {
@@ -165,7 +151,7 @@ class AudioServiceConnection @Inject constructor(
 
     private fun startService() {
         val intent = Intent(appContext, AudioService::class.java)
-        ContextCompat.startService(appContext, intent)
+        ContextCompat.startForegroundService(appContext, intent)
     }
 
     private fun updatePlaybackState(controller: MediaController) {

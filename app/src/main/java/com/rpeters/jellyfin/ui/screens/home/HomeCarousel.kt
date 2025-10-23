@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.screens.home
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,10 +28,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.components.ExpressiveCardType
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
+import com.rpeters.jellyfin.ui.accessibility.getAccessibilityDescription
 import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
@@ -82,7 +86,10 @@ private fun CarouselMovieCard(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.clickable { onClick(movie) },
+        modifier = modifier
+            .semantics { contentDescription = movie.getAccessibilityDescription() }
+            .clickable { onClick(movie) }
+            .focusable(),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(
@@ -217,7 +224,10 @@ private fun CarouselContentCard(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.clickable { onClick(item) },
+        modifier = modifier
+            .semantics { contentDescription = item.getAccessibilityDescription() }
+            .clickable { onClick(item) }
+            .focusable(),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(

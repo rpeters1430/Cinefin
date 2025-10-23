@@ -16,7 +16,6 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.storage.MediaStoreSaver
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import java.io.File
 import java.io.IOException
 
 /**
@@ -57,20 +56,15 @@ object MediaDownloadManager {
                 val fileName = generateFileName(item)
                 val subPath = generateSubPath(item)
                 val mimeType = getMimeType(item) ?: DEFAULT_MIME_TYPE
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    queryDownloadEntry(context, fileName, subPath)?.uri?.let { existingUri ->
-                        context.contentResolver.delete(existingUri, null, null)
-                    }
-                    val destinationUri = createDownloadUri(context, fileName, subPath, mimeType)
-                    if (destinationUri == null) {
-                        Log.w(TAG, "Unable to create MediaStore destination for ${item.name}")
-                        return null
-                    }
-                    setDestinationUri(destinationUri)
-                } else {
-                    val subFolder = "$DOWNLOADS_FOLDER/$subPath/$fileName"
-                    setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, subFolder)
+                queryDownloadEntry(context, fileName, subPath)?.uri?.let { existingUri ->
+                    context.contentResolver.delete(existingUri, null, null)
                 }
+                val destinationUri = createDownloadUri(context, fileName, subPath, mimeType)
+                if (destinationUri == null) {
+                    Log.w(TAG, "Unable to create MediaStore destination for ${item.name}")
+                    return null
+                }
+                setDestinationUri(destinationUri)
 
                 // Allow download only over WiFi by default for large media files
                 setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI)
@@ -111,16 +105,7 @@ object MediaDownloadManager {
             val fileName = generateFileName(item)
             val subPath = generateSubPath(item)
 
-            if (sdkInt >= Build.VERSION_CODES.Q) {
-                queryDownloadEntry(context, fileName, subPath) != null
-            } else {
-                val file = File(
-                    getDownloadBaseDir(context, sdkInt),
-                    "$DOWNLOADS_FOLDER/$subPath/$fileName",
-                )
-
-                file.exists() && file.length() > 0
-            }
+            queryDownloadEntry(context, fileName, subPath) != null
         } catch (e: Exception) {
             Log.e(TAG, "Error checking download status for ${item.name}: ${e.message}", e)
             false
@@ -143,20 +128,7 @@ object MediaDownloadManager {
             val fileName = generateFileName(item)
             val subPath = generateSubPath(item)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                queryDownloadEntry(context, fileName, subPath)?.uri?.toString()
-            } else {
-                val file = File(
-                    getDownloadBaseDir(context),
-                    "$DOWNLOADS_FOLDER/$subPath/$fileName",
-                )
-
-                if (file.exists() && file.length() > 0) {
-                    file.absolutePath
-                } else {
-                    null
-                }
-            }
+            queryDownloadEntry(context, fileName, subPath)?.uri?.toString()
         } catch (e: Exception) {
             Log.e(TAG, "Error getting local file path for ${item.name}: ${e.message}", e)
             null
@@ -179,42 +151,18 @@ object MediaDownloadManager {
             val fileName = generateFileName(item)
             val subPath = generateSubPath(item)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val entry = queryDownloadEntry(context, fileName, subPath)
-                if (entry?.uri != null) {
-                    val deleted = context.contentResolver.delete(entry.uri, null, null) > 0
-                    if (!deleted) {
-                        Log.w(TAG, "Failed to delete MediaStore entry for ${item.name}")
-                    }
-                    deleted
-                } else {
-                    if (BuildConfig.DEBUG) {
-                        Log.d(TAG, "MediaStore entry does not exist for ${item.name}")
-                    }
-                    true
+            val entry = queryDownloadEntry(context, fileName, subPath)
+            if (entry?.uri != null) {
+                val deleted = context.contentResolver.delete(entry.uri, null, null) > 0
+                if (!deleted) {
+                    Log.w(TAG, "Failed to delete MediaStore entry for ${item.name}")
                 }
+                deleted
             } else {
-                val file = File(
-                    getDownloadBaseDir(context),
-                    "$DOWNLOADS_FOLDER/$subPath/$fileName",
-                )
-
-                if (file.exists()) {
-                    val deleted = file.delete()
-                    if (deleted) {
-                        if (BuildConfig.DEBUG) {
-                            Log.i(TAG, "Deleted download for ${item.name}")
-                        }
-                    } else {
-                        Log.w(TAG, "Failed to delete download for ${item.name}")
-                    }
-                    deleted
-                } else {
-                    if (BuildConfig.DEBUG) {
-                        Log.d(TAG, "Download file does not exist for ${item.name}")
-                    }
-                    true // Consider it deleted if it doesn't exist
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "MediaStore entry does not exist for ${item.name}")
                 }
+                true
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error deleting download for ${item.name}: ${e.message}", e)
@@ -272,24 +220,7 @@ object MediaDownloadManager {
      */
     fun getTotalDownloadSize(context: Context): Long {
         return try {
-            if (!hasLegacyStoragePermission(context)) {
-                Log.w(TAG, "Missing storage permission for downloads directory")
-                return 0L
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                sumMediaStoreDownloads(context)
-            } else {
-                val downloadsDir = File(
-                    getDownloadBaseDir(context),
-                    DOWNLOADS_FOLDER,
-                )
-
-                if (downloadsDir.exists() && downloadsDir.isDirectory) {
-                    calculateDirectorySize(downloadsDir)
-                } else {
-                    0L
-                }
-            }
+            sumMediaStoreDownloads(context)
         } catch (e: Exception) {
             Log.e(TAG, "Error calculating total download size: ${e.message}", e)
             0L
@@ -304,24 +235,7 @@ object MediaDownloadManager {
      */
     fun clearAllDownloads(context: Context): Boolean {
         return try {
-            if (!hasLegacyStoragePermission(context)) {
-                Log.w(TAG, "Missing storage permission for downloads directory")
-                return false
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                deleteMediaStoreDownloads(context)
-            } else {
-                val downloadsDir = File(
-                    getDownloadBaseDir(context),
-                    DOWNLOADS_FOLDER,
-                )
-
-                if (downloadsDir.exists() && downloadsDir.isDirectory) {
-                    downloadsDir.deleteRecursively()
-                } else {
-                    true // Consider it cleared if directory doesn't exist
-                }
-            }
+            deleteMediaStoreDownloads(context)
         } catch (e: Exception) {
             Log.e(TAG, "Error clearing all downloads: ${e.message}", e)
             false
@@ -371,53 +285,18 @@ object MediaDownloadManager {
         ) >= 0
     }
 
-    internal fun getDownloadBaseDir(context: Context, sdkInt: Int = Build.VERSION.SDK_INT): File {
-        return if (sdkInt >= Build.VERSION_CODES.Q) {
-            context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-                ?: context.filesDir
-        } else {
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        }
-    }
-
     private fun hasStoragePermission(context: Context, item: BaseItemDto): Boolean {
-        return when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
-                val permission = when (item.type) {
-                    BaseItemKind.AUDIO -> Manifest.permission.READ_MEDIA_AUDIO
-                    BaseItemKind.MOVIE, BaseItemKind.EPISODE, BaseItemKind.MUSIC_VIDEO -> Manifest.permission.READ_MEDIA_VIDEO
-                    else -> null
-                }
-                permission?.let {
-                    ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-                } ?: true
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permission = when (item.type) {
+                BaseItemKind.AUDIO -> Manifest.permission.READ_MEDIA_AUDIO
+                BaseItemKind.MOVIE, BaseItemKind.EPISODE, BaseItemKind.MUSIC_VIDEO -> Manifest.permission.READ_MEDIA_VIDEO
+                else -> null
             }
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
-                true
-            }
-            else -> {
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                ) == PackageManager.PERMISSION_GRANTED
-            }
-        }
-    }
-
-    private fun hasLegacyStoragePermission(context: Context): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            true
+            permission?.let {
+                ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+            } ?: true
         } else {
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-            ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            ) == PackageManager.PERMISSION_GRANTED
+            true
         }
     }
 
@@ -455,21 +334,7 @@ object MediaDownloadManager {
         }
     }
 
-    private fun calculateDirectorySize(directory: File): Long {
-        var size = 0L
-        if (directory.isDirectory) {
-            directory.listFiles()?.forEach { file ->
-                size += if (file.isDirectory) {
-                    calculateDirectorySize(file)
-                } else {
-                    file.length()
-                }
-            }
-        } else {
-            size = directory.length()
-        }
-        return size
-    }
+    // Pre-API 29 legacy file-system helpers removed; MediaStore is used exclusively on supported devices.
 
     private fun queryDownloadEntry(context: Context, fileName: String, subPath: String): DownloadEntry? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null

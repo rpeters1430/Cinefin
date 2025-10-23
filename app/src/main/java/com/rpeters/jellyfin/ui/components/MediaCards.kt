@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,7 +65,8 @@ fun MediaCard(
             .width(280.dp)
             .aspectRatio(16f / 9f)
             .mediaCardSemantics(item) { onClick(item) }
-            .clickable { onClick(item) },
+            .clickable { onClick(item) }
+            .focusable(),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
@@ -297,7 +299,8 @@ fun PosterMediaCard(
         modifier = modifier
             .width(150.dp)
             .mediaCardSemantics(item) { onClick(item) }
-            .clickable { onClick(item) },
+            .clickable { onClick(item) }
+            .focusable(),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
@@ -506,7 +509,9 @@ fun RecentlyAddedCard(
     Card(
         modifier = modifier
             .width(140.dp)
-            .clickable { onClick(item) },
+            .mediaCardSemantics(item) { onClick(item) }
+            .clickable { onClick(item) }
+            .focusable(),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
