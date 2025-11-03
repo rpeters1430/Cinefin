@@ -54,6 +54,9 @@ class CastManager @Inject constructor(
     private var castContext: CastContext? = null
     private var castPlayer: CastPlayer? = null
 
+    // Store initialization job to prevent scope leak
+    private var initializationJob: kotlinx.coroutines.Job? = null
+
     private val sessionManagerListener = object : SessionManagerListener<CastSession> {
         override fun onSessionStarted(session: CastSession, sessionId: String) {
             if (BuildConfig.DEBUG) {
@@ -139,8 +142,12 @@ class CastManager @Inject constructor(
     }
 
     fun initialize() {
+        // Cancel any existing initialization job to prevent duplicate listeners
+        initializationJob?.cancel()
+
         // Cast framework requires main thread access for CastContext.getSharedInstance()
-        CoroutineScope(Dispatchers.Main).launch {
+        // Store the job to prevent scope leak
+        initializationJob = CoroutineScope(Dispatchers.Main).launch {
             try {
                 castContext = CastContext.getSharedInstance(context).apply {
                     sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
@@ -384,6 +391,10 @@ class CastManager @Inject constructor(
 
     fun release() {
         try {
+            // Cancel initialization job to prevent scope leak
+            initializationJob?.cancel()
+            initializationJob = null
+
             castContext?.sessionManager?.removeSessionManagerListener(sessionManagerListener, CastSession::class.java)
             castPlayer?.setSessionAvailabilityListener(null)
             castPlayer?.release()

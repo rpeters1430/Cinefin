@@ -182,29 +182,29 @@ object MediaDownloadManager {
             val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             val cursor = downloadManager.query(DownloadManager.Query().setFilterById(downloadId))
 
-            if (cursor.moveToFirst()) {
-                val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
-                val reasonIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
-                val totalSizeIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
-                val downloadedSizeIndex = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+            // Use 'use' block to ensure cursor is always closed, even if exception occurs
+            cursor.use {
+                if (it.moveToFirst()) {
+                    val statusIndex = it.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                    val reasonIndex = it.getColumnIndex(DownloadManager.COLUMN_REASON)
+                    val totalSizeIndex = it.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                    val downloadedSizeIndex = it.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
 
-                val status = cursor.getInt(statusIndex)
-                val reason = cursor.getInt(reasonIndex)
-                val totalSize = cursor.getLong(totalSizeIndex)
-                val downloadedSize = cursor.getLong(downloadedSizeIndex)
+                    val status = it.getInt(statusIndex)
+                    val reason = it.getInt(reasonIndex)
+                    val totalSize = it.getLong(totalSizeIndex)
+                    val downloadedSize = it.getLong(downloadedSizeIndex)
 
-                cursor.close()
-
-                DownloadStatus(
-                    status = status,
-                    reason = reason,
-                    totalSize = totalSize,
-                    downloadedSize = downloadedSize,
-                    progress = if (totalSize > 0) (downloadedSize.toFloat() / totalSize.toFloat()) else 0f,
-                )
-            } else {
-                cursor.close()
-                null
+                    DownloadStatus(
+                        status = status,
+                        reason = reason,
+                        totalSize = totalSize,
+                        downloadedSize = downloadedSize,
+                        progress = if (totalSize > 0) (downloadedSize.toFloat() / totalSize.toFloat()) else 0f,
+                    )
+                } else {
+                    null
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error getting download status for ID $downloadId: ${e.message}", e)

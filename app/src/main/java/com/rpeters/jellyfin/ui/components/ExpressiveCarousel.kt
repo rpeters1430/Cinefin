@@ -70,6 +70,8 @@ fun ExpressiveHeroCarousel(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 pageSpacing = 8.dp,
                 modifier = Modifier.height(280.dp),
+                // Add key to prevent incorrect recomposition and state reuse
+                key = { page -> items[page].id },
             ) { page ->
                 val item = items[page]
                 ExpressiveHeroCard(
@@ -119,7 +121,8 @@ fun ExpressiveMediaCarousel(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(items) { item ->
+            // Add key to prevent incorrect recomposition and state reuse
+            items(items, key = { it.id }) { item ->
                 ExpressiveMediaCard(
                     item = item,
                     onClick = { onItemClick(item) },

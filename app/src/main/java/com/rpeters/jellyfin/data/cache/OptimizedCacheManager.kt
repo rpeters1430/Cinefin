@@ -2,11 +2,14 @@ package com.rpeters.jellyfin.data.cache
 
 import android.util.Log
 import android.util.LruCache
-import com.rpeters.jellyfin.utils.PerformanceMonitor
+import com.rpeters.jellyfin.ui.utils.PerformanceMonitor
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.util.concurrent.ConcurrentHashMap
@@ -209,10 +212,12 @@ class OptimizedCacheManager @Inject constructor() {
 
     /**
      * Start periodic cleanup task.
+     * Runs while the scope is active and stops gracefully on cancellation.
      */
     private fun startPeriodicCleanup() {
         scope.launch {
-            while (true) {
+            // Use isActive instead of while(true) for proper cancellation support
+            while (isActive) {
                 delay(cleanupIntervalMs)
 
                 try {
@@ -223,11 +228,29 @@ class OptimizedCacheManager @Inject constructor() {
                     if (PerformanceMonitor.checkMemoryPressure()) {
                         optimizeCaches()
                     }
+                } catch (e: CancellationException) {
+                    // Re-throw to propagate cancellation properly
+                    Log.d("OptimizedCacheManager", "Periodic cleanup cancelled")
+                    throw e
                 } catch (e: Exception) {
                     Log.e("OptimizedCacheManager", "Error during periodic cleanup", e)
                 }
             }
         }
+    }
+
+    /**
+     * Shutdown the cache manager and cancel all background operations.
+     * Call this when the cache is no longer needed to prevent resource leaks.
+     */
+    fun shutdown() {
+        Log.i("OptimizedCacheManager", "Shutting down cache manager")
+        scope.cancel()
+        // Clear all caches
+        itemCache.evictAll()
+        listCache.evictAll()
+        stringCache.evictAll()
+        cacheMetrics.clear()
     }
 
     /**

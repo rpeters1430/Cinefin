@@ -146,15 +146,20 @@ class OfflineDownloadManager @Inject constructor(
 
                 val response = okHttpClient.newCall(request).execute()
 
-                if (!response.isSuccessful) {
-                    throw IOException("Download failed: ${response.code}")
-                }
+                // Use response in a use block to ensure proper resource cleanup
+                response.use {
+                    if (!it.isSuccessful) {
+                        throw IOException("Download failed: ${it.code}")
+                    }
 
-                downloadFile(response, download)
+                    downloadFile(it, download)
+                }
             } catch (e: CancellationException) {
                 if (BuildConfig.DEBUG) {
                     Log.d("OfflineDownloadManager", "Download cancelled: ${download.id}")
                 }
+                // Re-throw to propagate cancellation up the coroutine hierarchy
+                throw e
             }
         }
 
@@ -162,7 +167,11 @@ class OfflineDownloadManager @Inject constructor(
     }
 
     private suspend fun downloadFile(response: Response, download: OfflineDownload) {
-        val contentLength = response.body?.contentLength() ?: -1L
+        // Validate response body exists
+        val body = response.body
+            ?: throw IOException("Response body is null - cannot download file")
+
+        val contentLength = body.contentLength()
         val outputFile = File(download.localFilePath)
 
         // Create parent directories if they don't exist
@@ -172,7 +181,7 @@ class OfflineDownloadManager @Inject constructor(
         val existingSize = if (outputFile.exists()) outputFile.length() else 0L
         val startByte = if (download.status == DownloadStatus.PAUSED) existingSize else 0L
 
-        response.body?.byteStream()?.use { inputStream ->
+        body.byteStream().use { inputStream ->
             FileOutputStream(outputFile, download.status == DownloadStatus.PAUSED).use { outputStream ->
 
                 if (startByte > 0) {
@@ -210,11 +219,19 @@ class OfflineDownloadManager @Inject constructor(
                     updateDownloadBytes(download.id, totalBytesRead)
                 }
 
-                if (currentCoroutineContext().isActive && totalBytesRead == contentLength) {
+                // Mark as completed if still active and either:
+                // 1. We've read the expected content length, OR
+                // 2. Content length is unknown (negative) and stream ended naturally
+                if (currentCoroutineContext().isActive &&
+                    (totalBytesRead == contentLength || contentLength < 0)
+                ) {
                     updateDownloadStatus(download.id, DownloadStatus.COMPLETED)
                     downloadJobs.remove(download.id)
                     if (BuildConfig.DEBUG) {
-                        Log.d("OfflineDownloadManager", "Download completed: ${download.itemName}")
+                        Log.d(
+                            "OfflineDownloadManager",
+                            "Download completed: ${download.itemName} ($totalBytesRead bytes)",
+                        )
                     }
                 }
             }

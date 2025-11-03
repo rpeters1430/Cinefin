@@ -35,7 +35,9 @@ class PlaybackProgressManager @Inject constructor(
     val playbackProgress: StateFlow<PlaybackProgress> = _playbackProgress.asStateFlow()
 
     private var progressSyncJob: Job? = null
-    private var coroutineScope: CoroutineScope? = null
+    // Memory leak fix: Don't store reference to external scope
+    // Instead, pass scope through parameters or use internal scope for async operations
+    // private var coroutineScope: CoroutineScope? = null
 
     private var currentItemId: String = ""
     private var lastReportedPosition: Long = 0L
@@ -53,7 +55,7 @@ class PlaybackProgressManager @Inject constructor(
         scope: CoroutineScope,
         sessionId: String = java.util.UUID.randomUUID().toString(),
     ) {
-        this.coroutineScope = scope
+        // Don't store the scope - prevents memory leak
         this.currentItemId = itemId
         this.sessionId = sessionId
         this.hasReportedStart = false
@@ -90,80 +92,81 @@ class PlaybackProgressManager @Inject constructor(
 
         if (!hasReportedStart) {
             hasReportedStart = true
-            coroutineScope?.launch {
-                reportPlaybackStart(positionMs, durationMs)
+            // Use progressSyncJob's scope for fire-and-forget reporting
+            progressSyncJob?.let { job ->
+                kotlinx.coroutines.CoroutineScope(job.coroutineContext).launch {
+                    reportPlaybackStart(positionMs, durationMs)
+                }
             }
         }
 
         // Report progress if significant change
         if (kotlin.math.abs(positionMs - lastReportedPosition) >= MIN_POSITION_CHANGE) {
-            coroutineScope?.launch {
-                reportProgress(positionMs, durationMs, isWatched)
+            progressSyncJob?.let { job ->
+                kotlinx.coroutines.CoroutineScope(job.coroutineContext).launch {
+                    reportProgress(positionMs, durationMs, isWatched)
+                }
             }
             lastReportedPosition = positionMs
         }
     }
 
-    fun markAsWatched() {
+    // Made suspend to avoid storing scope reference (memory leak fix)
+    suspend fun markAsWatched() {
         if (currentItemId.isEmpty()) return
 
-        coroutineScope?.launch {
-            try {
-                when (val result = userRepository.markAsWatched(currentItemId)) {
-                    is ApiResult.Success -> {
-                        _playbackProgress.value = _playbackProgress.value.copy(isWatched = true)
-                        if (BuildConfig.DEBUG) {
-                            Log.d("PlaybackProgressManager", "Marked item as watched: $currentItemId")
-                        }
-                    }
-                    is ApiResult.Error -> {
-                        Log.e("PlaybackProgressManager", "Failed to mark as watched: ${result.message}")
-                    }
-                    is ApiResult.Loading -> {
-                        // Handle loading state if needed
+        try {
+            when (val result = userRepository.markAsWatched(currentItemId)) {
+                is ApiResult.Success -> {
+                    _playbackProgress.value = _playbackProgress.value.copy(isWatched = true)
+                    if (BuildConfig.DEBUG) {
+                        Log.d("PlaybackProgressManager", "Marked item as watched: $currentItemId")
                     }
                 }
-            } catch (e: Exception) {
-                Log.e("PlaybackProgressManager", "Error marking as watched", e)
+                is ApiResult.Error -> {
+                    Log.e("PlaybackProgressManager", "Failed to mark as watched: ${result.message}")
+                }
+                is ApiResult.Loading -> {
+                    // Handle loading state if needed
+                }
             }
+        } catch (e: Exception) {
+            Log.e("PlaybackProgressManager", "Error marking as watched", e)
         }
     }
 
-    fun markAsUnwatched() {
+    // Made suspend to avoid storing scope reference (memory leak fix)
+    suspend fun markAsUnwatched() {
         if (currentItemId.isEmpty()) return
 
-        coroutineScope?.launch {
-            try {
-                when (val result = userRepository.markAsUnwatched(currentItemId)) {
-                    is ApiResult.Success -> {
-                        _playbackProgress.value = _playbackProgress.value.copy(isWatched = false)
-                        if (BuildConfig.DEBUG) {
-                            Log.d("PlaybackProgressManager", "Marked item as unwatched: $currentItemId")
-                        }
-                    }
-                    is ApiResult.Error -> {
-                        Log.e("PlaybackProgressManager", "Failed to mark as unwatched: ${result.message}")
-                    }
-                    is ApiResult.Loading -> {
-                        // Handle loading state if needed
+        try {
+            when (val result = userRepository.markAsUnwatched(currentItemId)) {
+                is ApiResult.Success -> {
+                    _playbackProgress.value = _playbackProgress.value.copy(isWatched = false)
+                    if (BuildConfig.DEBUG) {
+                        Log.d("PlaybackProgressManager", "Marked item as unwatched: $currentItemId")
                     }
                 }
-            } catch (e: Exception) {
-                Log.e("PlaybackProgressManager", "Error marking as unwatched", e)
+                is ApiResult.Error -> {
+                    Log.e("PlaybackProgressManager", "Failed to mark as unwatched: ${result.message}")
+                }
+                is ApiResult.Loading -> {
+                    // Handle loading state if needed
+                }
             }
+        } catch (e: Exception) {
+            Log.e("PlaybackProgressManager", "Error marking as unwatched", e)
         }
     }
 
-    fun stopTracking() {
+    suspend fun stopTracking() {
         progressSyncJob?.cancel()
 
         // Final progress report
-        coroutineScope?.launch {
-            val progress = _playbackProgress.value
-            if (progress.itemId.isNotEmpty()) {
-                reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
-                reportPlaybackStop(progress.positionMs, progress.durationMs)
-            }
+        val progress = _playbackProgress.value
+        if (progress.itemId.isNotEmpty()) {
+            reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
+            reportPlaybackStop(progress.positionMs, progress.durationMs)
         }
 
         currentItemId = ""
@@ -179,17 +182,33 @@ class PlaybackProgressManager @Inject constructor(
     override fun onPause(owner: LifecycleOwner) {
         super.onPause(owner)
         // Report current progress when app is paused
-        coroutineScope?.launch {
-            val progress = _playbackProgress.value
-            if (progress.itemId.isNotEmpty()) {
-                reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
+        // Use progressSyncJob's scope for fire-and-forget reporting
+        progressSyncJob?.let { job ->
+            kotlinx.coroutines.CoroutineScope(job.coroutineContext).launch {
+                val progress = _playbackProgress.value
+                if (progress.itemId.isNotEmpty()) {
+                    reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
+                }
             }
         }
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
         super.onDestroy(owner)
-        stopTracking()
+        // stopTracking is now suspend, so launch in progressSyncJob's scope
+        progressSyncJob?.let { job ->
+            kotlinx.coroutines.CoroutineScope(job.coroutineContext).launch {
+                stopTracking()
+            }
+        } ?: run {
+            // If no job, just cancel and clear state
+            progressSyncJob?.cancel()
+            currentItemId = ""
+            lastReportedPosition = 0L
+            sessionId = ""
+            hasReportedStart = false
+            _playbackProgress.value = PlaybackProgress()
+        }
     }
 
     private fun startProgressSync(scope: CoroutineScope) {

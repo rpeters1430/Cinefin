@@ -32,6 +32,96 @@ class PerformanceMonitor @Inject constructor() {
         private const val MAX_PERFORMANCE_SAMPLES = 100
         private const val MAX_OPERATION_SAMPLES = 50 // Limit operation timing samples
         private const val MONITORING_ENABLED_ONLY_IN_DEBUG = true // Only run in debug builds
+
+        /**
+         * Memory information data class
+         */
+        data class MemoryInfo(
+            val usedMemoryMB: Long,
+            val totalMemoryMB: Long,
+            val freeMemoryMB: Long,
+            val maxMemoryMB: Long,
+            val usagePercentage: Float,
+        )
+
+        /**
+         * Get current memory usage information (static utility method)
+         */
+        @JvmStatic
+        fun getMemoryInfo(): MemoryInfo {
+            val runtime = Runtime.getRuntime()
+            val maxMemory = runtime.maxMemory()
+            val totalMemory = runtime.totalMemory()
+            val freeMemory = runtime.freeMemory()
+            val usedMemory = totalMemory - freeMemory
+
+            val usedMemoryMB = usedMemory / (1024 * 1024)
+            val totalMemoryMB = totalMemory / (1024 * 1024)
+            val freeMemoryMB = freeMemory / (1024 * 1024)
+            val maxMemoryMB = maxMemory / (1024 * 1024)
+            val usagePercentage = (usedMemory.toFloat() / maxMemory.toFloat()) * 100f
+
+            return MemoryInfo(
+                usedMemoryMB = usedMemoryMB,
+                totalMemoryMB = totalMemoryMB,
+                freeMemoryMB = freeMemoryMB,
+                maxMemoryMB = maxMemoryMB,
+                usagePercentage = usagePercentage,
+            )
+        }
+
+        /**
+         * Log memory usage with optional custom message
+         */
+        @JvmStatic
+        fun logMemoryUsage(message: String = "Memory Usage") {
+            val memoryInfo = getMemoryInfo()
+            if (BuildConfig.DEBUG) {
+                Log.d(
+                    TAG,
+                    "$message - Used: ${memoryInfo.usedMemoryMB}MB (${String.format("%.1f", memoryInfo.usagePercentage)}%), " +
+                        "Free: ${memoryInfo.freeMemoryMB}MB, Max: ${memoryInfo.maxMemoryMB}MB",
+                )
+            }
+        }
+
+        /**
+         * Check if memory usage is high and suggest garbage collection
+         */
+        @JvmStatic
+        fun checkMemoryPressure(): Boolean {
+            val memoryInfo = getMemoryInfo()
+            val isHighUsage = memoryInfo.usagePercentage > 80f
+
+            if (isHighUsage && BuildConfig.DEBUG) {
+                Log.w(TAG, "High memory usage detected: ${String.format("%.1f", memoryInfo.usagePercentage)}%")
+            }
+
+            return isHighUsage
+        }
+
+        /**
+         * Force garbage collection and log memory before/after (use sparingly)
+         * Note: Calling Thread.sleep in production is not recommended
+         */
+        @JvmStatic
+        suspend fun forceGarbageCollection(reason: String) {
+            val beforeMemory = getMemoryInfo()
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "GC Request ($reason) - Before: ${beforeMemory.usedMemoryMB}MB")
+            }
+
+            System.gc()
+
+            // Use coroutine delay instead of Thread.sleep
+            delay(100)
+
+            val afterMemory = getMemoryInfo()
+            val freedMB = beforeMemory.usedMemoryMB - afterMemory.usedMemoryMB
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "GC Request ($reason) - After: ${afterMemory.usedMemoryMB}MB (Freed: ${freedMB}MB)")
+            }
+        }
     }
 
     // Performance metrics

@@ -14,7 +14,28 @@ import kotlin.system.measureTimeMillis
 
 /**
  * Performance monitoring utilities for tracking app performance metrics.
+ *
+ * @deprecated This Object singleton version is deprecated.
+ * Use com.rpeters.jellyfin.ui.utils.PerformanceMonitor instead, which provides
+ * a comprehensive @Singleton Hilt-injected implementation with StateFlows and
+ * device tier detection. All static utility methods have been migrated to the
+ * companion object of the new implementation.
+ *
+ * Migration path:
+ * - Import: com.rpeters.jellyfin.ui.utils.PerformanceMonitor
+ * - Static methods (getMemoryInfo, checkMemoryPressure, etc.) remain available
+ *   through the companion object
+ *
+ * This file will be removed in a future release.
  */
+@Deprecated(
+    message = "Use com.rpeters.jellyfin.ui.utils.PerformanceMonitor instead",
+    replaceWith = ReplaceWith(
+        "PerformanceMonitor",
+        "com.rpeters.jellyfin.ui.utils.PerformanceMonitor",
+    ),
+    level = DeprecationLevel.WARNING,
+)
 object PerformanceMonitor {
     private const val TAG = "PerformanceMonitor"
 
