@@ -171,7 +171,9 @@ class EnhancedPlaybackManager @Inject constructor(
      * Check if network conditions are suitable for Direct Play
      */
     private fun isNetworkSuitableForDirectPlay(bitrate: Int): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        // Use safe cast to prevent ClassCastException if service is unavailable
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return false // Conservative: assume unsuitable if we can't check
         val activeNetwork = connectivityManager.activeNetwork ?: return false
         val networkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
 
@@ -254,7 +256,9 @@ class EnhancedPlaybackManager @Inject constructor(
      * Get current network quality assessment
      */
     private fun getNetworkQuality(): NetworkQuality {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        // Use safe cast to prevent ClassCastException if service is unavailable
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return NetworkQuality.UNKNOWN
         val activeNetwork = connectivityManager.activeNetwork
         val networkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
 

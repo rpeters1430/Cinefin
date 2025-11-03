@@ -103,6 +103,15 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        // Release player resources
+        releasePlayer()
+        // Release CastManager listeners to prevent memory leaks
+        castManager.release()
+        Log.d("VideoPlayer", "ViewModel cleared - resources released")
+    }
+
     private val _playerState = MutableStateFlow(VideoPlayerState())
     val playerState: StateFlow<VideoPlayerState> = _playerState.asStateFlow()
     val playbackProgress: StateFlow<PlaybackProgress> = playbackProgressManager.playbackProgress

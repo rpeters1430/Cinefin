@@ -94,6 +94,29 @@ class BiometricAuthManager(private val context: Context) {
     /**
      * Gets the appropriate authenticators based on the Android version.
      *
+     * SECURITY NOTE: This uses BIOMETRIC_WEAK on Android < 11 for compatibility.
+     *
+     * Security Trade-offs:
+     * - BIOMETRIC_STRONG: More secure but may not work on all devices (requires
+     *   liveness detection for face unlock, excludes some fingerprint sensors)
+     * - BIOMETRIC_WEAK: Works on more devices but may allow face recognition
+     *   without liveness detection or less secure iris recognition
+     *
+     * Current Implementation: Prioritizes device compatibility over maximum security
+     * for Android < 11 devices. Users on these older devices get authentication,
+     * but it may be less secure than on newer devices.
+     *
+     * Alternative Implementation (Maximum Security):
+     * To require BIOMETRIC_STRONG on all devices:
+     * ```
+     * BiometricManager.Authenticators.BIOMETRIC_STRONG or
+     *     BiometricManager.Authenticators.DEVICE_CREDENTIAL
+     * ```
+     * Note: This may prevent authentication on some devices, requiring PIN/password fallback.
+     *
+     * TODO: Consider adding a user setting to choose security level vs. compatibility
+     * TODO: Add warning UI for devices using BIOMETRIC_WEAK
+     *
      * @return Bitmask of authenticators
      */
     private fun getAuthenticators(): Int {
@@ -103,6 +126,7 @@ class BiometricAuthManager(private val context: Context) {
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL
         } else {
             // On older versions, use biometric or device credential
+            // Using BIOMETRIC_WEAK for compatibility with more devices
             BiometricManager.Authenticators.BIOMETRIC_WEAK or
                 BiometricManager.Authenticators.DEVICE_CREDENTIAL
         }

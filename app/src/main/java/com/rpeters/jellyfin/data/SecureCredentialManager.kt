@@ -97,7 +97,32 @@ class SecureCredentialManager @Inject constructor(
             )
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setUserAuthenticationRequired(false) // Could be set to true for biometric requirement
+                // SECURITY NOTE: User authentication not required for credential access
+                //
+                // Security Trade-offs:
+                // - false: Credentials can be decrypted without biometric/PIN prompt
+                //   • Pro: Better UX - no authentication prompt on every app launch
+                //   • Con: If device is unlocked, credentials accessible without additional auth
+                //
+                // - true: Requires biometric/PIN for every credential access
+                //   • Pro: Maximum security - credentials need authentication to decrypt
+                //   • Con: User must authenticate every time credentials are needed
+                //   • Requires: .setUserAuthenticationValidityDurationSeconds(300) for timeout
+                //
+                // Current Implementation: Prioritizes user experience over maximum security.
+                // The AndroidKeyStore still provides hardware-backed encryption, and device
+                // lock screen provides the primary security boundary.
+                //
+                // Alternative Implementation (Maximum Security):
+                // To require authentication for credential access:
+                // ```
+                // .setUserAuthenticationRequired(true)
+                // .setUserAuthenticationValidityDurationSeconds(300) // 5-minute validity
+                // ```
+                //
+                // TODO: Consider adding a user setting to enable/disable authentication requirement
+                // TODO: Add support for biometric-only keys (API 30+) using BiometricPrompt
+                .setUserAuthenticationRequired(false)
                 .build()
 
             keyGenerator.init(keyGenParameterSpec)
