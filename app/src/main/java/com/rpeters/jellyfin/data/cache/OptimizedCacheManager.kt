@@ -2,7 +2,7 @@ package com.rpeters.jellyfin.data.cache
 
 import android.util.Log
 import android.util.LruCache
-import com.rpeters.jellyfin.utils.PerformanceMonitor
+import com.rpeters.jellyfin.ui.utils.PerformanceMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

@@ -146,15 +146,20 @@ class OfflineDownloadManager @Inject constructor(
 
                 val response = okHttpClient.newCall(request).execute()
 
-                if (!response.isSuccessful) {
-                    throw IOException("Download failed: ${response.code}")
-                }
+                // Use response in a use block to ensure proper resource cleanup
+                response.use {
+                    if (!it.isSuccessful) {
+                        throw IOException("Download failed: ${it.code}")
+                    }
 
-                downloadFile(response, download)
+                    downloadFile(it, download)
+                }
             } catch (e: CancellationException) {
                 if (BuildConfig.DEBUG) {
                     Log.d("OfflineDownloadManager", "Download cancelled: ${download.id}")
                 }
+                // Re-throw to propagate cancellation up the coroutine hierarchy
+                throw e
             }
         }
 
