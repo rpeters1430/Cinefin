@@ -32,9 +32,9 @@ import kotlin.system.measureTimeMillis
     message = "Use com.rpeters.jellyfin.ui.utils.PerformanceMonitor instead",
     replaceWith = ReplaceWith(
         "PerformanceMonitor",
-        "com.rpeters.jellyfin.ui.utils.PerformanceMonitor"
+        "com.rpeters.jellyfin.ui.utils.PerformanceMonitor",
     ),
-    level = DeprecationLevel.WARNING
+    level = DeprecationLevel.WARNING,
 )
 object PerformanceMonitor {
     private const val TAG = "PerformanceMonitor"
