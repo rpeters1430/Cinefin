@@ -209,14 +209,16 @@ class DeviceCapabilities @Inject constructor() {
         if (supportedVideoCodecs == null) {
             supportedVideoCodecs = detectSupportedCodecs(true)
         }
-        return supportedVideoCodecs!!.toList()
+        // Use safe call with fallback to prevent NPE
+        return supportedVideoCodecs?.toList() ?: emptyList()
     }
 
     private fun getSupportedAudioCodecs(): List<String> {
         if (supportedAudioCodecs == null) {
             supportedAudioCodecs = detectSupportedCodecs(false)
         }
-        return supportedAudioCodecs!!.toList()
+        // Use safe call with fallback to prevent NPE
+        return supportedAudioCodecs?.toList() ?: emptyList()
     }
 
     private fun detectSupportedCodecs(isVideo: Boolean): Set<String> {
@@ -304,10 +306,14 @@ class DeviceCapabilities @Inject constructor() {
                 codecList.findDecoderForFormat(android.media.MediaFormat.createVideoFormat(mimeType, 1920, 1080)) != null
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to check codec support for $codec", e)
-                true // Assume supported if we can't check
+                // Safer to assume NOT supported if we can't check
+                // This prevents playback failures when codec is actually unsupported
+                false
             }
         } else {
-            true // Assume supported on older versions
+            // On older Android versions, check against detected codec list
+            val codecs = if (isVideo) getSupportedVideoCodecs() else getSupportedAudioCodecs()
+            codecs.contains(codec.lowercase())
         }
     }
 
@@ -364,7 +370,8 @@ class DeviceCapabilities @Inject constructor() {
                 Pair(1920, 1080) // Fallback to 1080p
             }
         }
-        return maxResolution!!
+        // Use safe call with safe default to prevent NPE
+        return maxResolution ?: Pair(1920, 1080)
     }
 
     private fun supportsHdr(): Boolean {
