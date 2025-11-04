@@ -42,8 +42,8 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 - **Async Programming:** Kotlin Coroutines 1.10.2
 
 ### **Networking & API**
-- **Jellyfin SDK:** 1.6.8 (Official Jellyfin Kotlin SDK)
-- **HTTP Client:** Retrofit 3.0.0 + OkHttp 5.1.0
+- **Jellyfin SDK:** 1.8.2 (Official Jellyfin Kotlin SDK)
+- **HTTP Client:** Retrofit 3.0.0 + OkHttp 5.3.0 (official Kotlinx Serialization converter)
 - **Serialization:** Kotlinx Serialization 1.9.0
 - **Image Loading:** Coil 2.7.0 with Compose integration
 
