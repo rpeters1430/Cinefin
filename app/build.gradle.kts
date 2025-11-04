@@ -148,6 +148,7 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.arch.core.testing)
+    testImplementation(libs.androidx.test.core)
 
     // Hilt testing
     testImplementation("com.google.dagger:hilt-android-testing:${libs.versions.hilt.get()}")
