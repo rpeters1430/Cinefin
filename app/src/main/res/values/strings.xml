@@ -71,6 +71,10 @@
     <string name="hide_password">Hide password</string>
     <string name="show_password">Show password</string>
     <string name="invalid_server_url">Invalid server URL</string>
+    <string name="biometric_activity_error">Biometric login requires an activity that supports fragments.</string>
+    <string name="biometric_unavailable_error">Biometric authentication is not available on this device.</string>
+    <string name="biometric_no_credentials_error">No saved credentials available for biometric login.</string>
+    <string name="biometric_failed_error">Biometric authentication was cancelled or failed. Please try again.</string>
     
     <!-- Placeholders -->
     <string name="title_placeholder">Title</string>

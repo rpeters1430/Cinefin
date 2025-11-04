@@ -10,6 +10,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
@@ -210,6 +211,10 @@ class ServerConnectionViewModel @Inject constructor(
         _connectionState.value = _connectionState.value.copy(errorMessage = null)
     }
 
+    fun showError(message: String) {
+        _connectionState.value = _connectionState.value.copy(errorMessage = message)
+    }
+
     private suspend fun saveCredentials(serverUrl: String, username: String, password: String) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SERVER_URL] = serverUrl
@@ -305,16 +310,32 @@ class ServerConnectionViewModel @Inject constructor(
      */
     fun autoLoginWithBiometric(activity: FragmentActivity) {
         val currentState = _connectionState.value
-        if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
-            viewModelScope.launch {
-                val savedPassword = getSavedPassword(activity)
-                if (savedPassword != null) {
-                    connectToServer(
-                        currentState.savedServerUrl,
-                        currentState.savedUsername,
-                        savedPassword,
-                    )
-                }
+
+        if (!secureCredentialManager.isBiometricAuthAvailable()) {
+            showError(context.getString(R.string.biometric_unavailable_error))
+            return
+        }
+
+        if (currentState.savedServerUrl.isBlank() || currentState.savedUsername.isBlank()) {
+            showError(context.getString(R.string.biometric_no_credentials_error))
+            return
+        }
+
+        if (!currentState.hasSavedPassword) {
+            showError(context.getString(R.string.biometric_no_credentials_error))
+            return
+        }
+
+        viewModelScope.launch {
+            val savedPassword = getSavedPassword(activity)
+            if (savedPassword != null) {
+                connectToServer(
+                    currentState.savedServerUrl,
+                    currentState.savedUsername,
+                    savedPassword,
+                )
+            } else {
+                showError(context.getString(R.string.biometric_failed_error))
             }
         }
     }

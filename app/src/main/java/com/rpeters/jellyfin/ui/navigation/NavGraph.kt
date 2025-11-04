@@ -20,8 +20,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -33,6 +35,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.screens.AlbumDetailScreen
 import com.rpeters.jellyfin.ui.screens.ArtistDetailScreen
 import com.rpeters.jellyfin.ui.screens.BooksScreen
@@ -108,6 +111,7 @@ fun JellyfinNavGraph(
         composable(Screen.ServerConnection.route) {
             val viewModel: ServerConnectionViewModel = hiltViewModel()
             val lifecycleOwner = LocalLifecycleOwner.current
+            val context = LocalContext.current
             val connectionState by viewModel.connectionState.collectAsStateWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
                 minActiveState = Lifecycle.State.STARTED,
@@ -138,7 +142,12 @@ fun JellyfinNavGraph(
                 onRememberLoginChange = { viewModel.setRememberLogin(it) },
                 onAutoLogin = { viewModel.autoLogin() },
                 onBiometricLogin = {
-                    // TODO: Implement biometric login
+                    val activity = context as? FragmentActivity
+                    if (activity != null) {
+                        viewModel.autoLoginWithBiometric(activity)
+                    } else {
+                        viewModel.showError(context.getString(R.string.biometric_activity_error))
+                    }
                 },
             )
         }

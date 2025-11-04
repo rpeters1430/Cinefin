@@ -2,9 +2,9 @@ package com.rpeters.jellyfin
 
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.fragment.app.FragmentActivity
 import com.rpeters.jellyfin.ui.JellyfinApp
 import com.rpeters.jellyfin.ui.tv.TvJellyfinApp
 import com.rpeters.jellyfin.utils.DeviceTypeUtils
@@ -13,7 +13,7 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @androidx.media3.common.util.UnstableApi
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
