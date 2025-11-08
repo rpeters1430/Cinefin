@@ -98,6 +98,88 @@ class AudioServiceConnection @Inject constructor(
         }
     }
 
+    fun skipToPrevious() {
+        controllerScope.launch {
+            val controller = ensureController()
+            controller.seekToPreviousMediaItem()
+        }
+    }
+
+    fun toggleRepeat() {
+        controllerScope.launch {
+            val controller = ensureController()
+            controller.repeatMode = when (controller.repeatMode) {
+                androidx.media3.common.Player.REPEAT_MODE_OFF -> androidx.media3.common.Player.REPEAT_MODE_ALL
+                androidx.media3.common.Player.REPEAT_MODE_ALL -> androidx.media3.common.Player.REPEAT_MODE_ONE
+                androidx.media3.common.Player.REPEAT_MODE_ONE -> androidx.media3.common.Player.REPEAT_MODE_OFF
+                else -> androidx.media3.common.Player.REPEAT_MODE_OFF
+            }
+            updatePlaybackState(controller)
+        }
+    }
+
+    fun seekTo(positionMs: Long) {
+        controllerScope.launch {
+            val controller = ensureController()
+            controller.seekTo(positionMs)
+        }
+    }
+
+    fun seekForward(amountMs: Long) {
+        controllerScope.launch {
+            val controller = ensureController()
+            val newPosition = (controller.currentPosition + amountMs).coerceAtMost(controller.duration)
+            controller.seekTo(newPosition)
+        }
+    }
+
+    fun seekBackward(amountMs: Long) {
+        controllerScope.launch {
+            val controller = ensureController()
+            val newPosition = (controller.currentPosition - amountMs).coerceAtLeast(0)
+            controller.seekTo(newPosition)
+        }
+    }
+
+    fun removeFromQueue(index: Int) {
+        controllerScope.launch {
+            val controller = ensureController()
+            if (index >= 0 && index < controller.mediaItemCount) {
+                controller.removeMediaItem(index)
+                updateQueue(controller)
+            }
+        }
+    }
+
+    fun clearQueue() {
+        controllerScope.launch {
+            val controller = ensureController()
+            controller.clearMediaItems()
+            updateQueue(controller)
+        }
+    }
+
+    fun skipToQueueItem(index: Int) {
+        controllerScope.launch {
+            val controller = ensureController()
+            if (index >= 0 && index < controller.mediaItemCount) {
+                controller.seekToDefaultPosition(index)
+            }
+        }
+    }
+
+    fun getCurrentPosition(): Long {
+        return mediaController?.currentPosition ?: 0L
+    }
+
+    fun getDuration(): Long {
+        return mediaController?.duration ?: 0L
+    }
+
+    fun getRepeatMode(): Int {
+        return mediaController?.repeatMode ?: androidx.media3.common.Player.REPEAT_MODE_OFF
+    }
+
     suspend fun ensureController(): MediaController {
         mediaController?.let { return it }
 
@@ -161,6 +243,9 @@ class AudioServiceConnection @Inject constructor(
             isPlaying = isPlaying,
             currentMediaItem = controller.currentMediaItem,
             shuffleEnabled = controller.shuffleModeEnabled,
+            repeatMode = controller.repeatMode,
+            currentPosition = controller.currentPosition,
+            duration = controller.duration,
         )
     }
 
@@ -179,6 +264,9 @@ data class AudioPlaybackState(
     val isPlaying: Boolean = false,
     val currentMediaItem: MediaItem? = null,
     val shuffleEnabled: Boolean = false,
+    val repeatMode: Int = androidx.media3.common.Player.REPEAT_MODE_OFF,
+    val currentPosition: Long = 0L,
+    val duration: Long = 0L,
 )
 
 private suspend fun <T> ListenableFuture<T>.await(context: Context): T =
