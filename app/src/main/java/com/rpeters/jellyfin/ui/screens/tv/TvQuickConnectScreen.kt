@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -356,7 +355,7 @@ fun TvQuickConnectScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Quick Connect allows you to sign in without typing your password on the TV. " +
-                        "Use your phone, tablet, or computer to authorize this connection.",
+                    "Use your phone, tablet, or computer to authorize this connection.",
                 style = TvMaterialTheme.typography.bodyMedium,
                 color = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
