@@ -15,23 +15,29 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.rpeters.jellyfin.ui.player.tv.TvAudioPlayerScreen
 import com.rpeters.jellyfin.ui.player.tv.TvVideoPlayerRoute
 import com.rpeters.jellyfin.ui.screens.tv.TvHomeScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvItemDetailScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvLibraryScreen
+import com.rpeters.jellyfin.ui.screens.tv.TvQuickConnectScreen
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 
 private object TvRoutes {
     const val ServerConnection = "tv_server_connection"
+    const val QuickConnect = "tv_quick_connect"
     const val Home = "tv_home"
     const val Library = "tv_library/{libraryId}"
     const val Item = "tv_item/{itemId}"
     const val Player = "tv_player/{itemId}?itemName={itemName}&startPosition={startPosition}"
+    const val AudioPlayer = "tv_audio_player"
 
     fun playerRoute(itemId: String, itemName: String, startPosition: Long = 0L): String {
         val encodedName = Uri.encode(itemName)
         return "tv_player/$itemId?itemName=$encodedName&startPosition=$startPosition"
     }
+
+    fun audioPlayerRoute(): String = AudioPlayer
 }
 
 @Composable
@@ -66,10 +72,51 @@ fun TvNavGraph(
                 onConnect = { serverUrl, username, password ->
                     connectionViewModel.connectToServer(serverUrl, username, password)
                 },
+                onQuickConnect = {
+                    navController.navigate(TvRoutes.QuickConnect)
+                },
                 isConnecting = connectionState.isConnecting,
                 errorMessage = connectionState.errorMessage,
                 savedServerUrl = connectionState.savedServerUrl,
                 savedUsername = connectionState.savedUsername,
+            )
+        }
+
+        composable(TvRoutes.QuickConnect) {
+            val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
+            val lifecycleOwner = LocalLifecycleOwner.current
+            val connectionState by connectionViewModel.connectionState.collectAsStateWithLifecycle(
+                lifecycle = lifecycleOwner.lifecycle,
+                minActiveState = Lifecycle.State.STARTED,
+            )
+
+            // Navigate to Home when successfully connected
+            LaunchedEffect(connectionState.isConnected) {
+                if (connectionState.isConnected) {
+                    Log.d("TvNavGraph", "Quick Connect successful, navigating to TV home")
+                    navController.navigate(TvRoutes.Home) {
+                        popUpTo(TvRoutes.ServerConnection) { inclusive = true }
+                    }
+                }
+            }
+
+            TvQuickConnectScreen(
+                serverUrl = connectionState.quickConnectServerUrl,
+                quickConnectCode = connectionState.quickConnectCode,
+                isConnecting = connectionState.isConnecting,
+                isPolling = connectionState.isQuickConnectPolling,
+                status = connectionState.quickConnectStatus,
+                errorMessage = connectionState.errorMessage,
+                onServerUrlChange = { url ->
+                    connectionViewModel.updateQuickConnectServerUrl(url)
+                },
+                onInitiateQuickConnect = {
+                    connectionViewModel.initiateQuickConnect()
+                },
+                onCancel = {
+                    connectionViewModel.cancelQuickConnect()
+                    navController.popBackStack()
+                },
             )
         }
 
@@ -129,6 +176,12 @@ fun TvNavGraph(
             } else {
                 navController.popBackStack()
             }
+        }
+
+        composable(TvRoutes.AudioPlayer) {
+            TvAudioPlayerScreen(
+                onBack = { navController.popBackStack() },
+            )
         }
     }
 }

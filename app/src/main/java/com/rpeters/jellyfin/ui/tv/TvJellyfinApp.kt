@@ -49,6 +49,7 @@ import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 @Composable
 fun TvServerConnectionScreen(
     onConnect: (String, String, String) -> Unit,
+    onQuickConnect: () -> Unit,
     isConnecting: Boolean,
     errorMessage: String?,
     savedServerUrl: String?,
@@ -65,6 +66,7 @@ fun TvServerConnectionScreen(
     val usernameFocusRequester = remember { FocusRequester() }
     val passwordFocusRequester = remember { FocusRequester() }
     val connectButtonFocusRequester = remember { FocusRequester() }
+    val quickConnectButtonFocusRequester = remember { FocusRequester() }
 
     // Update local state when saved values change
     LaunchedEffect(savedServerUrl, savedUsername) {
@@ -217,40 +219,72 @@ fun TvServerConnectionScreen(
             // Spacer to ensure button is visible
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Connect button
-            Button(
-                onClick = {
-                    Log.d("TvServerConnectionScreen", "Connect button clicked - serverUrl: '$serverUrl', username: '$username', password: '***'")
-                    if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
-                        Log.d("TvServerConnectionScreen", "Calling onConnect with credentials")
-                        onConnect(serverUrl, username, password)
-                    } else {
-                        Log.w("TvServerConnectionScreen", "Cannot connect - missing credentials")
-                    }
-                },
-                enabled = serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank() && !isConnecting,
+            // Action buttons row
+            Row(
                 modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(48.dp)
-                    .focusRequester(connectButtonFocusRequester),
+                    .fillMaxWidth(0.85f)
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
             ) {
-                if (isConnecting) {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = TvMaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp,
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Connecting...", style = TvMaterialTheme.typography.labelLarge)
+                // Connect button
+                Button(
+                    onClick = {
+                        Log.d("TvServerConnectionScreen", "Connect button clicked - serverUrl: '$serverUrl', username: '$username', password: '***'")
+                        if (serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()) {
+                            Log.d("TvServerConnectionScreen", "Calling onConnect with credentials")
+                            onConnect(serverUrl, username, password)
+                        } else {
+                            Log.w("TvServerConnectionScreen", "Cannot connect - missing credentials")
+                        }
+                    },
+                    enabled = serverUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank() && !isConnecting,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .focusRequester(connectButtonFocusRequester),
+                ) {
+                    if (isConnecting) {
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = TvMaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp,
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Connecting...", style = TvMaterialTheme.typography.labelLarge)
+                        }
+                    } else {
+                        Text("Sign In", style = TvMaterialTheme.typography.labelLarge)
                     }
-                } else {
-                    Text("Connect", style = TvMaterialTheme.typography.labelLarge)
+                }
+
+                // Quick Connect button
+                Button(
+                    onClick = {
+                        Log.d("TvServerConnectionScreen", "Quick Connect button clicked")
+                        onQuickConnect()
+                    },
+                    enabled = !isConnecting,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .focusRequester(quickConnectButtonFocusRequester),
+                ) {
+                    Text("Quick Connect", style = TvMaterialTheme.typography.labelLarge)
                 }
             }
+
+            // Help text for Quick Connect
+            Text(
+                text = "Tip: Use Quick Connect to sign in without typing your password on TV",
+                style = TvMaterialTheme.typography.bodySmall,
+                color = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 32.dp),
+            )
 
             // Bottom spacer to ensure scrolling works properly
             Spacer(modifier = Modifier.height(24.dp))

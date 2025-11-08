@@ -11,6 +11,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
@@ -442,14 +443,14 @@ class ServerConnectionViewModel @Inject constructor(
 
     private suspend fun pollQuickConnectState(serverUrl: String, secret: String) {
         var attempts = 0
-        val maxAttempts = 60 // 5 minutes with 5-second intervals
+        val maxAttempts = 150 // 5 minutes with 2-second intervals (300 seconds / 2 = 150 attempts)
 
         while (attempts < maxAttempts &&
             _connectionState.value.isQuickConnectPolling &&
             viewModelScope.isActive
         ) { // Check if coroutine is still active
             try {
-                delay(5000) // Wait 5 seconds between polls
+                delay(Constants.QUICK_CONNECT_POLL_INTERVAL_MS) // Wait between polls (2 seconds as per spec)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 // Job was cancelled, clean up and exit
                 quickConnectPollingJob = null
@@ -502,7 +503,7 @@ class ServerConnectionViewModel @Inject constructor(
                         else -> {
                             // Still waiting for approval
                             _connectionState.value = _connectionState.value.copy(
-                                quickConnectStatus = "Waiting for approval... (${attempts + 1}/60)",
+                                quickConnectStatus = "Waiting for approval... (${attempts + 1}/150)",
                             )
                         }
                     }
