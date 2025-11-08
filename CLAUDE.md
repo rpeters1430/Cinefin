@@ -25,16 +25,23 @@ This is a Jellyfin Android client application built with Kotlin and Jetpack Comp
   - `JellyfinMediaRepository` - Media content and metadata
   - `JellyfinSearchRepository` - Search functionality
   - `JellyfinUserRepository` - User management and preferences
+  - `JellyfinSystemRepository` - System and server information
+  - `JellyfinRepositoryCoordinator` - Coordinates repository delegation
 - **Enhanced Playback System**:
   - `EnhancedPlaybackManager` - Intelligent Direct Play vs transcoding decision engine
   - `DeviceCapabilities` - Real-time codec detection and performance profiling
   - `EnhancedPlaybackUtils` - UI-friendly wrapper for playback functionality
   - `PlaybackRecommendationViewModel` - Manages playback recommendations and notifications
+- **Session Management**:
+  - `JellyfinSessionManager` - Manages API client sessions and lifecycle
+  - Token refresh with proactive expiration handling (45-minute validity)
+  - Automatic reconnection on authentication failures
 - **ViewModels**: Manage UI state and business logic (`MainAppViewModel`, `ServerConnectionViewModel`, etc.)
 - **Secure Storage**: `SecureCredentialManager` for encrypted credential persistence with biometric support
 - **Client Factory**: `OptimizedClientFactory` manages API client instances with token-based authentication
 - **Data Models**: `JellyfinServer`, `ApiResult<T>`, `PlaybackResult<T>` for structured data handling
 - **Error Handling**: Centralized `ErrorHandler` with comprehensive error types and retry mechanisms
+- **Offline Support**: `OfflineDownloadManager` for managing downloaded content
 
 ## Common Development Commands
 
@@ -167,6 +174,8 @@ The app uses an advanced playback decision engine that automatically determines 
 - Use `StateFlow` for ViewModels and data streams
 - Leverage `collectAsState()` in Compose for reactive UI updates
 - Implement loading, success, and error states consistently
+- Use `ApiResult<T>` sealed class for API responses (Success, Error, Loading)
+- Centralize state in ViewModels, expose as read-only StateFlow
 
 ### Error Handling
 - Always wrap API calls in try-catch blocks
@@ -174,6 +183,8 @@ The app uses an advanced playback decision engine that automatically determines 
 - Implement retry mechanisms for network failures
 - Use `PlaybackResult.Error` for playback-specific error handling
 - Gracefully handle codec analysis failures with fallback values
+- Leverage `ErrorHandler` utility for centralized error handling
+- Use `ErrorType` enum for categorizing errors (Network, Authentication, Server, etc.)
 
 ### Enhanced Playback Integration
 - Always use `EnhancedPlaybackUtils` for media playback initiation
@@ -182,6 +193,21 @@ The app uses an advanced playback decision engine that automatically determines 
 - Use `PlaybackCapabilityAnalysis` for detailed technical information display
 - Implement playback status indicators on all media browsing screens
 
+### Repository Patterns
+- Repositories are specialized by concern (Auth, Media, Stream, Search, User, System)
+- Use `JellyfinRepositoryCoordinator` for cross-repository coordination
+- All repository methods return `ApiResult<T>` for consistent error handling
+- Repository operations use `withContext(Dispatchers.IO)` for background execution
+- Implement retry logic using `RetryStrategy` for transient failures
+
+### Performance Best Practices
+- Use `NetworkOptimizer` to ensure StrictMode compliance
+- Avoid network calls on the main thread
+- Use `ConcurrencyThrottler` to limit concurrent operations
+- Implement proper coroutine scoping in ViewModels (viewModelScope)
+- Use `ImageLoadingOptimizer` for efficient image loading with Coil
+- Cache frequently accessed data using `OptimizedCacheManager`
+
 ### Testing Strategy
 - Unit tests for repository and business logic using JUnit 4 and MockK
 - Mock external dependencies (network, storage) with MockK framework
@@ -189,29 +215,33 @@ The app uses an advanced playback decision engine that automatically determines 
 - Instrumentation tests for UI components using Espresso
 - Architecture Core Testing for LiveData and coroutines
 - Test files organized by feature in corresponding test directories
+- Use Turbine for testing StateFlow emissions
+- MockWebServer for network layer testing
+- Hilt testing with `@HiltAndroidTest` annotation
+- Test instrumentation arguments: `clearPackageData=true`, `useTestStorageService=true`
 
 ## Dependencies Management
 
 Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.toml`. Key dependencies include:
 
 ### Core Android
-- Jetpack Compose BOM (2025.10.00)
-- Material 3 (1.5.0-alpha06) with adaptive navigation suite and expressive components
+- Jetpack Compose BOM (2025.11.00)
+- Material 3 (1.5.0-alpha08) with adaptive navigation suite and expressive components
 - AndroidX core libraries and lifecycle components
-- Media3 (1.8.0) for video playback with ExoPlayer and Jellyfin FFmpeg decoder
+- Media3 (1.9.0-alpha01) for video playback with ExoPlayer and Jellyfin FFmpeg decoder
 - Coil (2.7.0) for image loading
 - Paging 3 (3.4.0-alpha04) for paginated content loading
 
 ### Jellyfin Integration
-- Jellyfin SDK (1.7.1) for API communication
+- Jellyfin SDK (1.8.2) for API communication
 - Retrofit (3.0.0) with Kotlinx Serialization
-- OkHttp (5.2.1) with logging interceptor
+- OkHttp (5.3.0) with logging interceptor
 - SLF4J Android (1.7.36) for SDK logging
 
 ### Architecture
 - Hilt (2.57.2) for dependency injection
 - Kotlin Coroutines (1.10.2) for async operations
-- DataStore Preferences (1.2.0-alpha02) for settings storage
+- DataStore Preferences (1.2.0-rc01) for settings storage
 - AndroidX Security (1.1.0) for encrypted credential storage
 - AndroidX Biometric (1.4.0-alpha04) for biometric authentication
 - AndroidX TV Material (1.1.0-alpha01) for Android TV support
@@ -219,12 +249,13 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 ## Development Notes
 
 ### Build Configuration
-- **Kotlin**: 2.2.20 with Compose compiler plugin
+- **Kotlin**: 2.2.21 with Compose compiler plugin
 - **Gradle**: 8.13.0 (AGP) with Kotlin DSL
 - **Java**: Target/Source compatibility Version 17
 - **Android SDK**: Compile 36, Target 35, Min 26 (Android 8.0+) for broader device compatibility
 - **Package**: `com.rpeters.jellyfin` (actual package structure)
 - **Test Runner**: `HiltTestRunner` for instrumentation tests
+- **Application ID**: `com.rpeters.jellyfin`
 
 ### Code Style
 - Follow Kotlin coding conventions from CONTRIBUTING.md
@@ -271,3 +302,53 @@ Follow Conventional Commits specification:
 - Cast support with `CastManager` and `CastOptionsProvider`
 - Track selection management for audio/subtitle streams
 - Dedicated `VideoPlayerActivity` for full-screen playback
+
+### Debugging and Performance
+- **LeakCanary** enabled in debug builds for memory leak detection
+- **SecureLogger** utility for safe logging (prevents sensitive data exposure)
+- **PerformanceMonitor** for tracking app performance metrics
+- **NetworkDebugger** for debugging network requests in debug builds
+- **StrictMode** configured for detecting threading and disk I/O issues
+- **Logger** class with application-wide file logging support
+- JaCoCo test coverage reports exclude generated code and DI modules
+
+### Utility Classes
+- **UrlNormalizer** / **ServerUrlNormalizer** - URL validation and normalization
+- **ServerUrlValidator** - Server URL validation before connection attempts
+- **DeviceTypeUtils** - Device type detection (phone, tablet, TV)
+- **PerformanceOptimizer** - Runtime performance optimization utilities
+- **NetworkOptimizer** - Network request optimization and StrictMode compliance
+- **ImageLoadingOptimizer** - Image loading performance optimizations
+- **ConcurrencyThrottler** - Limits concurrent operations to prevent resource exhaustion
+- **RetryManager** - Manages retry logic for failed operations
+- **RetryStrategy** - Configurable retry strategies for repository operations
+
+## Important Development Notes
+
+### Logging and Security
+- **ALWAYS use SecureLogger** instead of Android Log to prevent sensitive information leakage
+- SecureLogger automatically redacts tokens, passwords, and other sensitive data
+- Never log full server URLs, authentication tokens, or user credentials
+- Use `Logger.appContext` for application-wide file logging
+
+### Session and Authentication
+- Token validity is 45 minutes (proactive refresh before 60-minute server expiry)
+- Authentication state is managed by `JellyfinSessionManager` and `JellyfinAuthRepository`
+- Never manage API client instances directly - use `OptimizedClientFactory`
+- Automatic token refresh happens on 401 errors with `RE_AUTH_DELAY_MS` delay
+- Credentials are encrypted using AndroidKeyStore via `SecureCredentialManager`
+
+### Common Pitfalls
+- **Do not** create API client instances on the main thread
+- **Do not** bypass repository layer - always use specialized repositories
+- **Do not** use magic numbers - reference `Constants.kt` for all configuration values
+- **Do not** implement custom retry logic - use `RetryStrategy` and `RetryManager`
+- **Do not** hardcode image sizes - use Constants for `MAX_IMAGE_WIDTH/HEIGHT`
+- **Do not** skip error handling - always use `ApiResult<T>` pattern
+- **Remember** to use `viewModelScope` for coroutine launches in ViewModels
+
+### Proguard and Release Builds
+- Release builds have minification and resource shrinking enabled
+- Proguard rules are in `app/proguard-rules.pro`
+- Test that serialization classes are not obfuscated
+- Jellyfin SDK and networking libraries have keep rules
