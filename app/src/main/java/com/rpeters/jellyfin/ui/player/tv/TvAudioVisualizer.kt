@@ -213,8 +213,10 @@ private fun DrawScope.drawWaveform(
             val x = (i.toFloat() / samples) * width
             val normalizedX = x / waveLength
             val wavePhase = (normalizedX + phase / 360f) * 2 * Math.PI
-            val y = centerY + (sin(wavePhase.toFloat()) * amplitude *
-                               sin((normalizedX + phase / 720f) * Math.PI).toFloat())
+            val y = centerY + (
+                sin(wavePhase.toFloat()) * amplitude *
+                    sin((normalizedX + phase / 720f) * Math.PI).toFloat()
+                )
 
             if (i == 0) {
                 moveTo(x, y.toFloat())

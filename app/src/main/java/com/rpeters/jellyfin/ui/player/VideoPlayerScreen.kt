@@ -109,7 +109,7 @@ fun VideoPlayerScreen(
     // Use TV-optimized player for TV devices
     if (isTvDevice) {
         val pipState = com.rpeters.jellyfin.ui.player.tv.rememberPictureInPictureState(
-            supportsPip = supportsPip
+            supportsPip = supportsPip,
         ) {
             onPictureInPictureClick()
         }
