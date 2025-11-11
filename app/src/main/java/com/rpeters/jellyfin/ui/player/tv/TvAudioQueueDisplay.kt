@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
+import androidx.tv.material3.Border
 import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Card
@@ -102,6 +103,7 @@ fun TvAudioQueueDisplay(
         contentAlignment = Alignment.Center,
     ) {
         Card(
+            onClick = { },
             modifier = Modifier
                 .fillMaxWidth(0.7f)
                 .fillMaxHeight(0.8f),
@@ -277,9 +279,12 @@ private fun QueueTrackItem(
             },
         ),
         border = CardDefaults.border(
-            focusedBorder = androidx.compose.foundation.BorderStroke(
-                width = 3.dp,
-                color = MaterialTheme.colorScheme.primary,
+            focusedBorder = Border(
+                border = androidx.compose.foundation.BorderStroke(
+                    width = 3.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                ),
+                shape = RoundedCornerShape(8.dp),
             ),
         ),
         shape = CardDefaults.shape(RoundedCornerShape(8.dp)),

@@ -251,7 +251,7 @@ class VideoPlayerViewModel @Inject constructor(
         repository.getPlaybackInfo(itemId)
     }
 
-    fun initializePlayer(itemId: String, itemName: String, startPosition: Long) {
+    suspend fun initializePlayer(itemId: String, itemName: String, startPosition: Long) {
         Log.d("VideoPlayer", "Initializing player for: $itemName")
 
         playbackProgressManager.stopTracking()

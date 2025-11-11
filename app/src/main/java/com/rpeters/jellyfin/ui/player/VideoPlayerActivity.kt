@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -71,12 +73,13 @@ class VideoPlayerActivity : ComponentActivity() {
             val startPosition = intent.getLongExtra(EXTRA_START_POSITION, 0L)
 
             // Initialize player with error handling
-            try {
-                playerViewModel.initializePlayer(itemId, itemName, startPosition)
-            } catch (e: Exception) {
-                android.util.Log.e("VideoPlayerActivity", "Failed to initialize player", e)
-                finish()
-                return
+            lifecycleScope.launch {
+                try {
+                    playerViewModel.initializePlayer(itemId, itemName, startPosition)
+                } catch (e: Exception) {
+                    android.util.Log.e("VideoPlayerActivity", "Failed to initialize player", e)
+                    finish()
+                }
             }
 
             setContent {

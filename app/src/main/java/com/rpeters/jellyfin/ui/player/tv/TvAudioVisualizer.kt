@@ -73,6 +73,8 @@ private fun AnimatedWaveformVisualizer(
         ),
         label = "waveform_phase",
     )
+    val playingColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+    val pausedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
 
     Box(
         modifier = modifier
@@ -85,12 +87,12 @@ private fun AnimatedWaveformVisualizer(
             if (isPlaying) {
                 drawWaveform(
                     phase = phase,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                    color = playingColor,
                 )
             } else {
                 // Static waveform when paused
                 drawStaticWaveform(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    color = pausedColor,
                 )
             }
         }
@@ -117,6 +119,9 @@ private fun AnimatedSpectrumVisualizer(
     )
 
     val barCount = 32
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val pausedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
 
     Box(
         modifier = modifier
@@ -130,13 +135,13 @@ private fun AnimatedSpectrumVisualizer(
                 drawSpectrum(
                     barCount = barCount,
                     animationPhase = animationPhase,
-                    primaryColor = MaterialTheme.colorScheme.primary,
-                    secondaryColor = MaterialTheme.colorScheme.secondary,
+                    primaryColor = primaryColor,
+                    secondaryColor = secondaryColor,
                 )
             } else {
                 drawStaticSpectrum(
                     barCount = barCount,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    color = pausedColor,
                 )
             }
         }
@@ -171,6 +176,7 @@ private fun AnimatedCircularVisualizer(
         ),
         label = "circular_pulse",
     )
+    val activeColor = MaterialTheme.colorScheme.primary
 
     Box(
         modifier = modifier
@@ -184,7 +190,7 @@ private fun AnimatedCircularVisualizer(
                 drawCircularWaveform(
                     rotation = rotation,
                     pulse = pulse,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = activeColor,
                 )
             }
         }

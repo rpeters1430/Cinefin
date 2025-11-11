@@ -221,7 +221,7 @@ class EnhancedPlaybackManager @Inject constructor(
                 audioCodec = "aac",
                 container = "mp4",
             )
-            NetworkQuality.LOW -> TranscodingParams(
+            NetworkQuality.LOW, NetworkQuality.UNKNOWN -> TranscodingParams(
                 maxBitrate = 3_000_000, // 3 Mbps
                 maxWidth = 1280,
                 maxHeight = 720,
@@ -332,7 +332,7 @@ class EnhancedPlaybackManager @Inject constructor(
  * Network quality assessment
  */
 enum class NetworkQuality {
-    HIGH, MEDIUM, LOW
+    HIGH, MEDIUM, LOW, UNKNOWN
 }
 
 /**

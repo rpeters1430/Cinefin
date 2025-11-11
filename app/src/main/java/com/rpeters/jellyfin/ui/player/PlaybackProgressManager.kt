@@ -7,6 +7,7 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -94,7 +95,7 @@ class PlaybackProgressManager @Inject constructor(
             hasReportedStart = true
             // Use progressSyncJob's scope for fire-and-forget reporting
             progressSyncJob?.let { job ->
-                kotlinx.coroutines.CoroutineScope(job.coroutineContext).launch {
+                kotlinx.coroutines.CoroutineScope(job + Dispatchers.Default).launch {
                     reportPlaybackStart(positionMs, durationMs)
                 }
             }
@@ -103,7 +104,7 @@ class PlaybackProgressManager @Inject constructor(
         // Report progress if significant change
         if (kotlin.math.abs(positionMs - lastReportedPosition) >= MIN_POSITION_CHANGE) {
             progressSyncJob?.let { job ->
-                kotlinx.coroutines.CoroutineScope(job.coroutineContext).launch {
+                kotlinx.coroutines.CoroutineScope(job + Dispatchers.Default).launch {
                     reportProgress(positionMs, durationMs, isWatched)
                 }
             }
@@ -184,7 +185,7 @@ class PlaybackProgressManager @Inject constructor(
         // Report current progress when app is paused
         // Use progressSyncJob's scope for fire-and-forget reporting
         progressSyncJob?.let { job ->
-            kotlinx.coroutines.CoroutineScope(job.coroutineContext).launch {
+            kotlinx.coroutines.CoroutineScope(job + Dispatchers.Default).launch {
                 val progress = _playbackProgress.value
                 if (progress.itemId.isNotEmpty()) {
                     reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
@@ -197,7 +198,7 @@ class PlaybackProgressManager @Inject constructor(
         super.onDestroy(owner)
         // stopTracking is now suspend, so launch in progressSyncJob's scope
         progressSyncJob?.let { job ->
-            kotlinx.coroutines.CoroutineScope(job.coroutineContext).launch {
+            kotlinx.coroutines.CoroutineScope(job + Dispatchers.Default).launch {
                 stopTracking()
             }
         } ?: run {

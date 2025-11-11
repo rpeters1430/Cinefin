@@ -11,7 +11,14 @@
       "Bash(grep:*)",
       "Bash(where java)",
       "Bash(dir:*)",
-      "Bash(gradlew.bat:*)"
+      "Bash(gradlew.bat:*)",
+      "Bash(echo:*)",
+      "Bash(/home/rpeters1428/JellyfinAndroid/local.properties)",
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git log:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": [],

@@ -18,7 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.rpeters.jellyfin.ui.utils.PerformanceMonitor
+import com.rpeters.jellyfin.utils.PerformanceMonitor
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 /**
