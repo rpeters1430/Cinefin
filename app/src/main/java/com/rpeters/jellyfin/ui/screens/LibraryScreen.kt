@@ -35,6 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,15 +96,20 @@ fun LibraryScreen(
             ),
         )
 
-        Column(modifier = Modifier.padding(16.dp).fillMaxWidth().weight(1f)) {
-            Text(
-                text = stringResource(id = R.string.your_libraries),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 16.dp),
-            )
+        PullToRefreshBox(
+            isRefreshing = isLoading,
+            onRefresh = onRefresh,
+            modifier = Modifier.weight(1f),
+        ) {
+            Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+                Text(
+                    text = stringResource(id = R.string.your_libraries),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 16.dp),
+                )
 
-            when {
+                when {
                 isLoading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -161,6 +167,7 @@ fun LibraryScreen(
                         }
                     }
                 }
+            }
             }
         }
     }

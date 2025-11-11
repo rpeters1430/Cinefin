@@ -685,7 +685,7 @@ private fun TvSettingsSection(
 }
 
 private fun formatTime(timeMs: Long): String {
-    val totalSeconds = (timeMs / 1000).coerceAtLeast(0)
+    val totalSeconds = timeMs.coerceAtLeast(0) / 1000
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     val seconds = totalSeconds % 60
