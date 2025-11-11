@@ -45,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -262,6 +263,11 @@ fun MoviesScreen(
             else -> MovieScreenState.CONTENT
         }
 
+        PullToRefreshBox(
+            isRefreshing = isLoading,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize().padding(paddingValues),
+        ) {
         AnimatedContent(
             targetState = currentState,
             transitionSpec = {
@@ -272,9 +278,7 @@ fun MoviesScreen(
             when (state) {
                 MovieScreenState.LOADING -> {
                     MoviesLoadingContent(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues),
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
 
@@ -284,9 +288,7 @@ fun MoviesScreen(
                         title = "No movies found",
                         subtitle = "Try adjusting your filters or add some movies to your library",
                         iconTint = MovieRed,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues),
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
 
@@ -302,9 +304,7 @@ fun MoviesScreen(
                             isLoadingMore = isLoadingMore,
                             hasMoreItems = hasMoreItems,
                             onLoadMore = onLoadMore,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(paddingValues),
+                            modifier = Modifier.fillMaxSize(),
                         )
 
                         // Add ExpressiveFloatingToolbar for movies
@@ -325,6 +325,7 @@ fun MoviesScreen(
                     }
                 }
             }
+        }
         }
     }
 }

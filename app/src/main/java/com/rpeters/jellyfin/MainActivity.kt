@@ -28,10 +28,16 @@ class MainActivity : FragmentActivity() {
 
         Log.i("MainActivity", "isTvDevice=${deviceType == DeviceTypeUtils.DeviceType.TV}")
 
+        // Handle app shortcuts by extracting the destination extra from the intent
+        val shortcutDestination = intent?.getStringExtra("destination")
+        if (shortcutDestination != null) {
+            Log.d("MainActivity", "Shortcut destination: $shortcutDestination")
+        }
+
         setContent {
             when (deviceType) {
                 DeviceTypeUtils.DeviceType.TV -> TvJellyfinApp()
-                else -> JellyfinApp()
+                else -> JellyfinApp(initialDestination = shortcutDestination)
             }
         }
     }

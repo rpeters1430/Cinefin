@@ -79,10 +79,11 @@ solidify authentication, stability, and UI responsiveness.
 
 ## 📊 **Progress Overview**
 
-- **Total Phases**: 7 major phases
-- **Total Steps**: 14 major implementation steps
+- **Total Phases**: 8 major phases (1 new phase added: Mobile Core Experience)
+- **Total Steps**: 19 major implementation steps (5 new steps added)
 - **Current Status**: Phase 1.2 - TV Playback Experience ✅ *COMPLETE*
-- **Next Priority**: Phase 1.1 Polish (Similar content shelf, TV remote shortcuts) or Phase 2.1 - Advanced Audio System
+- **Next Priority**: Phase 1.5 - Mobile Core Experience (NEW - HIGH PRIORITY) or Phase 1.1 Polish
+- **Rationale for Priority Shift**: Mobile users likely represent the majority of the user base and deserve equal attention to the TV experience
 
 ---
 
@@ -174,6 +175,173 @@ solidify authentication, stability, and UI responsiveness.
 
 ---
 
+## 📱 **PHASE 1.5: Mobile Core Experience** 🔴 *HIGH PRIORITY - NEW*
+
+**Objective**: Elevate mobile experience to match TV platform quality with modern Android features
+
+**Rationale**: Mobile users likely represent the majority of the user base. While TV experience is excellent, mobile app needs equal attention with modern Android patterns, gesture controls, and platform integrations that users expect in 2025.
+
+### **Major Step 1.5.1: Modern Android Integration** ⏳ *Not Started*
+
+**Target Completion**: Months 3-4
+
+#### Implementation Checklist:
+
+- [ ] **Home Screen Widgets**
+    - [ ] "Now Playing" widget with playback controls
+    - [ ] "Continue Watching" widget showing 3-4 items
+    - [ ] Widget configuration and sizing options
+    - [ ] Deep link integration from widgets
+    - [ ] Widget preview images for picker
+
+- [ ] **App Shortcuts & Quick Actions**
+    - [ ] Static shortcuts (Search, Downloads, Favorites, Continue Watching)
+    - [ ] Dynamic shortcuts for recently played content
+    - [ ] Long-press launcher shortcuts
+    - [ ] Shortcut icons and labels
+
+- [ ] **System Integration**
+    - [ ] Quick Settings tile for playback control
+    - [ ] Share sheet integration for content recommendations
+    - [ ] Deep linking support (jellyfin://server/item/123)
+    - [ ] Intent filters for external content links
+    - [ ] Material You dynamic theming (full implementation beyond basics)
+    - [ ] Themed app icons (Android 13+)
+    - [ ] Predictive back gesture support (Android 13+)
+
+- [ ] **Notification Enhancements**
+    - [ ] Rich media notifications with large artwork
+    - [ ] Progress notifications for downloads
+    - [ ] Notification channels for different types
+    - [ ] Grouped notifications for multiple downloads
+
+**Dependencies**: Android 12+ APIs, Glance for widgets, WorkManager for notifications
+**Estimated Effort**: 3-4 weeks
+**Success Criteria**: Widgets functional, shortcuts working, deep linking tested
+
+### **Major Step 1.5.2: Mobile Gesture & Interaction System** ⏳ *Not Started*
+
+**Target Completion**: Month 4
+
+#### Implementation Checklist:
+
+- [ ] **Video Player Gestures**
+    - [ ] Swipe up/down on left for brightness control
+    - [ ] Swipe up/down on right for volume control
+    - [ ] Double-tap left/right to seek (enhance existing)
+    - [ ] Pinch-to-zoom gesture
+    - [ ] Long-press for playback speed menu
+    - [ ] Visual feedback overlays for gestures
+
+- [ ] **List & Content Gestures**
+    - [ ] Swipe-to-dismiss for continue watching items
+    - [ ] Pull-to-refresh on all content screens
+    - [ ] Long-press context menus on media cards
+    - [ ] Swipe actions for queue management
+    - [ ] Pinch-to-zoom for image galleries
+
+- [ ] **Haptic Feedback System**
+    - [ ] Haptic confirmation for button presses
+    - [ ] Seek feedback in video player
+    - [ ] Drag-and-drop confirmation haptics
+    - [ ] Error/success haptic patterns
+    - [ ] Configurable haptic intensity in settings
+    - [ ] Respect system haptic settings
+
+- [ ] **Touch Optimization**
+    - [ ] Minimum touch target size (48dp)
+    - [ ] Touch feedback animations
+    - [ ] Debouncing for rapid taps
+    - [ ] Edge-to-edge gesture support
+
+**Dependencies**: Compose gesture APIs, HapticFeedback API
+**Estimated Effort**: 2-3 weeks
+**Success Criteria**: All gestures working smoothly, haptic feedback consistent
+
+### **Major Step 1.5.3: Mobile Loading States & Animations** ⏳ *Not Started*
+
+**Target Completion**: Month 5
+
+#### Implementation Checklist:
+
+- [ ] **Loading States**
+    - [ ] Shimmer skeleton screens for all list views
+    - [ ] Progressive image loading with blur-up effect
+    - [ ] Loading placeholders for media cards
+    - [ ] Skeleton screens for detail pages
+    - [ ] Loading state animations
+
+- [ ] **Transitions & Animations**
+    - [ ] Shared element transitions between screens
+    - [ ] Hero animations for media items
+    - [ ] Smooth scroll animations with physics
+    - [ ] Card expansion animations
+    - [ ] Bottom sheet slide animations
+    - [ ] Fade transitions for content changes
+
+- [ ] **Empty & Error States**
+    - [ ] Illustrated empty states for each screen
+    - [ ] Actionable error messages with retry
+    - [ ] Helpful tips in empty states
+    - [ ] Connection error states
+    - [ ] Search no-results states with suggestions
+
+- [ ] **Performance Animations**
+    - [ ] 60fps animation guarantee
+    - [ ] GPU-accelerated transitions
+    - [ ] Reduce motion support for accessibility
+    - [ ] Animation interrupt handling
+
+**Dependencies**: Compose Animation APIs, Lottie for complex animations (optional)
+**Estimated Effort**: 2-3 weeks
+**Success Criteria**: Smooth animations at 60fps, all loading states implemented
+
+### **Major Step 1.5.4: Content Discovery Enhancements** ⏳ *Not Started*
+
+**Target Completion**: Month 5
+
+#### Implementation Checklist:
+
+- [ ] **Continue Watching Improvements**
+    - [ ] Smart positioning (most likely to resume first)
+    - [ ] Progress bars on all thumbnails
+    - [ ] Swipe-to-remove gesture
+    - [ ] "Mark as watched" quick action
+    - [ ] Auto-removal of completed items
+    - [ ] Restore accidentally removed items (undo)
+
+- [ ] **Recently Added Enhancements**
+    - [ ] Filter by type (movies/shows/music/books)
+    - [ ] Sort options (date added, name, rating)
+    - [ ] Mark as seen/unseen bulk actions
+    - [ ] "New" badges on unwatched content
+    - [ ] Expandable sections per content type
+
+- [ ] **Collections & Playlists UI**
+    - [ ] Create playlists from mobile
+    - [ ] Edit playlist metadata and artwork
+    - [ ] Drag-and-drop reordering
+    - [ ] Add to playlist from any screen
+    - [ ] Smart collection suggestions
+    - [ ] Share playlists with other users
+
+- [ ] **Quick Actions Everywhere**
+    - [ ] Favorite/unfavorite quick action
+    - [ ] Add to playlist quick action
+    - [ ] Download quick action
+    - [ ] Share quick action
+
+**Dependencies**: Existing repository layer, DragAndDrop APIs
+**Estimated Effort**: 3-4 weeks
+**Success Criteria**: Playlist management working, smart suggestions functional
+
+**Phase 1.5 Summary**:
+- **Total Estimated Effort**: 10-14 weeks
+- **Dependencies**: Android 12+ APIs, Compose gestures, existing architecture
+- **Success Metrics**: Widget adoption >30%, gesture usage >60%, animation smoothness 60fps
+
+---
+
 ### What's Next for 1.1 *(Updated based on current implementation)*
 
 - ✅ **Centralized FocusManager** - Fully implemented with TvFocusManager, save/restore focus, and
@@ -193,7 +361,7 @@ solidify authentication, stability, and UI responsiveness.
 
 ### **Major Step 2.1: Advanced Audio System** ⏳ *Not Started*
 
-**Target Completion**: Months 4-5
+**Target Completion**: Months 6-7 *(Updated timeline after Phase 1.5)*
 
 #### Implementation Checklist:
 
@@ -202,28 +370,50 @@ solidify authentication, stability, and UI responsiveness.
     - [ ] Media session integration for Android Auto/Bluetooth
     - [ ] Lock screen controls and artwork display
     - [ ] Audio focus management for interruptions
+    - [ ] Media button handling (headphone controls)
 
 - [ ] **Queue Management**
     - [ ] Add to queue, create playlists, shuffle/repeat
     - [ ] Smart queue suggestions based on listening history
     - [ ] Cross-fade and gapless playback support
     - [ ] Queue persistence across app restarts
+    - [ ] Drag-and-drop queue reordering on mobile
 
 - [ ] **Audio Visualizations**
-    - [ ] Spectrum analyzer and waveform displays
+    - [ ] Spectrum analyzer and waveform displays (enhance TV implementation)
     - [ ] Multiple visualization themes
     - [ ] Customizable visualization settings
     - [ ] Performance-optimized rendering
+    - [ ] Mobile-optimized layouts
 
 - [ ] **Enhanced Music Features**
     - [ ] Lyrics integration with synchronized display
     - [ ] Artist radio and smart playlists
     - [ ] Music discovery recommendations
     - [ ] Genre and mood-based browsing
+    - [ ] Sleep timer with fade-out
 
-**Dependencies**: Media3 Session (already included), MediaBrowserService
-**Estimated Effort**: 5-6 weeks
-**Success Criteria**: Background music playback, queue management, basic visualizations
+- [ ] **Mobile Audio Platform Integration** 🆕
+    - [ ] Android Auto full integration
+        - [ ] Car-optimized browsing interface
+        - [ ] Voice command support
+        - [ ] Safe driving UI compliance
+        - [ ] Album art and metadata display
+    - [ ] Wear OS companion app
+        - [ ] Now playing display on watch
+        - [ ] Basic playback controls (play/pause/skip)
+        - [ ] Volume control
+        - [ ] Browse recent/favorites
+    - [ ] Car mode UI (for non-Auto devices)
+        - [ ] Large touch targets
+        - [ ] Simplified navigation
+        - [ ] Voice control hints
+    - [ ] Equalizer integration (if device supports)
+    - [ ] Audio effects support (reverb, bass boost)
+
+**Dependencies**: Media3 Session (already included), MediaBrowserService, Android Auto APIs, Wear OS APIs
+**Estimated Effort**: 7-8 weeks *(extended for mobile integrations)*
+**Success Criteria**: Background music playback, Android Auto working, Wear OS controls functional, queue management complete
 
 ### **Major Step 2.2: Offline Content System** ⏳ *Not Started*
 
@@ -367,11 +557,167 @@ solidify authentication, stability, and UI responsiveness.
 
 ---
 
-## 📱 **PHASE 4: Mobile Experience Polish** 🟢 *Low Priority*
+## 👥 **PHASE 3.5: Social & Sharing Features** 🟡 *Medium Priority - NEW*
 
-### **Major Step 4.1: Adaptive UI System** ⏳ *Not Started*
+**Objective**: Enable social viewing experiences and content sharing while maintaining privacy
 
-**Target Completion**: Months 11-12
+**Rationale**: Social features enhance engagement and discovery. Users want to share recommendations and watch content together, especially for family/friend groups using Jellyfin.
+
+### **Major Step 3.5.1: Social Viewing Features** ⏳ *Not Started*
+
+**Target Completion**: Month 12
+
+#### Implementation Checklist:
+
+- [ ] **Watch Party / Watch Together**
+    - [ ] Create watch party session
+    - [ ] Share session link/code
+    - [ ] Synchronized playback across devices
+    - [ ] Host controls (play/pause/seek)
+    - [ ] Participant list and presence
+    - [ ] Chat integration (optional)
+    - [ ] Handle network latency and sync drift
+    - [ ] Privacy controls (who can join)
+
+- [ ] **Shared Watch Queues**
+    - [ ] Create shared queues with family/friends
+    - [ ] Add/remove items from shared queue
+    - [ ] Queue voting system
+    - [ ] "Up next" suggestions for groups
+    - [ ] Queue history and analytics
+
+- [ ] **Activity Feeds** (Privacy-Aware)
+    - [ ] Opt-in activity sharing
+    - [ ] "Recently watched" feed (if enabled)
+    - [ ] "Currently watching" status
+    - [ ] Favorites and ratings sharing
+    - [ ] Granular privacy controls per activity type
+
+**Dependencies**: WebSocket or real-time sync protocol, Server-side support
+**Estimated Effort**: 4-5 weeks
+**Success Criteria**: Watch party working with <2 second sync, privacy controls functional
+
+### **Major Step 3.5.2: Content Sharing & Recommendations** ⏳ *Not Started*
+
+**Target Completion**: Month 13
+
+#### Implementation Checklist:
+
+- [ ] **Share Content System**
+    - [ ] Share to messaging apps (WhatsApp, Telegram, etc.)
+    - [ ] Share to social media (with privacy warnings)
+    - [ ] Generate share links with metadata preview
+    - [ ] Share with server users directly
+    - [ ] Share collections and playlists
+    - [ ] Custom share message templates
+
+- [ ] **Recommendation Engine**
+    - [ ] "Recommend to user" action
+    - [ ] Recommendation inbox/notifications
+    - [ ] Accept/decline recommendations
+    - [ ] Recommendation reasons ("John thinks you'll like this")
+    - [ ] Recommendation tracking (what was watched)
+
+- [ ] **Comments & Ratings** (Server Integration)
+    - [ ] Display server comments if available
+    - [ ] Add comments from mobile
+    - [ ] Star ratings display and submission
+    - [ ] Like/dislike system
+    - [ ] Spoiler warnings for comments
+    - [ ] Comment moderation tools
+
+- [ ] **Family & Friends Discovery**
+    - [ ] "Friends who watched this"
+    - [ ] "Popular in your circle"
+    - [ ] Collaborative filtering recommendations
+    - [ ] Shared favorites showcase
+
+**Dependencies**: Jellyfin server APIs, Share intent system
+**Estimated Effort**: 3-4 weeks
+**Success Criteria**: Sharing working to major apps, recommendations functional, comments displaying
+
+**Phase 3.5 Summary**:
+- **Total Estimated Effort**: 7-9 weeks
+- **Privacy Focus**: All social features must be opt-in with clear privacy controls
+- **Success Metrics**: Watch party usage >10%, sharing adoption >25%, recommendations engagement >40%
+
+---
+
+## 📱 **PHASE 4: Mobile Experience Polish** 🟡 *Medium Priority (Elevated from Low)*
+
+### **Major Step 4.1: Onboarding & User Experience** ⏳ *Not Started*
+
+**Target Completion**: Months 14-15 *(Reordered - now higher priority)*
+
+#### Implementation Checklist:
+
+- [ ] **First-Run Experience**
+    - [ ] Welcome screen with app overview
+    - [ ] Feature highlights carousel
+    - [ ] Quick setup wizard
+    - [ ] Server connection guidance
+    - [ ] Permission request flow with explanations
+    - [ ] Skip option for advanced users
+
+- [ ] **Feature Discovery System**
+    - [ ] Contextual tooltips for new features
+    - [ ] "What's new" screen after updates
+    - [ ] Feature hints on first use
+    - [ ] Interactive tutorials for complex features
+    - [ ] Progress tracking for onboarding completion
+    - [ ] Achievement system for feature exploration
+
+- [ ] **In-App Help & Documentation**
+    - [ ] Help center with searchable articles
+    - [ ] FAQ section
+    - [ ] Troubleshooting guides
+    - [ ] Video tutorials (linked)
+    - [ ] Contact support integration
+    - [ ] Community forum links
+
+- [ ] **Settings & Customization Expansion** 🆕
+    - [ ] **Video Preferences**
+        - [ ] Default quality presets (Auto, High, Medium, Low)
+        - [ ] Auto-play next episode toggle
+        - [ ] Skip intro/credits default behavior
+        - [ ] Subtitle language preference
+        - [ ] Resume playback position handling
+    - [ ] **Audio Preferences**
+        - [ ] Default audio track language
+        - [ ] Audio normalization settings
+        - [ ] Crossfade duration
+        - [ ] Gapless playback toggle
+    - [ ] **Appearance Settings**
+        - [ ] Theme selection (System, Light, Dark, AMOLED Black)
+        - [ ] Custom accent colors (beyond Material You)
+        - [ ] Font size preferences (Small, Medium, Large, Extra Large)
+        - [ ] Grid vs List view defaults
+        - [ ] Thumbnail size preferences
+        - [ ] Animation speed controls
+    - [ ] **Network Settings**
+        - [ ] Cellular streaming quality limits
+        - [ ] Download over cellular toggle
+        - [ ] Bandwidth usage monitoring
+        - [ ] Connection quality indicators
+        - [ ] Streaming buffer size
+    - [ ] **Privacy & Data Settings**
+        - [ ] Analytics opt-out
+        - [ ] Crash reporting preferences
+        - [ ] Watch history privacy
+        - [ ] Activity sharing controls
+    - [ ] **Notification Preferences**
+        - [ ] Per-category notification controls
+        - [ ] Notification sound selection
+        - [ ] LED color preferences
+        - [ ] Do Not Disturb integration
+
+**Dependencies**: DataStore for preferences, existing settings infrastructure
+**Estimated Effort**: 4-5 weeks
+**Success Criteria**: Onboarding completion >80%, settings comprehensive, help articles accessible
+
+### **Major Step 4.2: Adaptive UI System** ⏳ *Not Started*
+
+**Target Completion**: Months 16-17 *(Reordered)*
 
 #### Implementation Checklist:
 
@@ -380,32 +726,37 @@ solidify authentication, stability, and UI responsiveness.
     - [ ] Hinge-aware layouts and content positioning
     - [ ] Seamless folded/unfolded transitions
     - [ ] Multi-window support on foldables
+    - [ ] Continuity between folded/unfolded states
 
 - [ ] **Tablet Optimization**
     - [ ] Multi-pane layouts for large screens
+    - [ ] Master-detail patterns
     - [ ] Split-screen support and optimization
     - [ ] Drag-and-drop functionality
     - [ ] Tablet-specific navigation patterns
+    - [ ] Stylus support for annotations (where applicable)
 
 - [ ] **Advanced Responsive Design**
     - [ ] Seamless portrait/landscape transitions
     - [ ] Content-aware layout adaptations
     - [ ] Dynamic typography scaling
     - [ ] Orientation-specific feature availability
+    - [ ] Safe area handling for notches/cameras
 
 - [ ] **Modern UI Enhancements**
     - [ ] Dynamic Island-style notifications (Android 13+)
     - [ ] Edge-to-edge design with gesture navigation
     - [ ] Adaptive refresh rates for smooth scrolling
-    - [ ] Haptic feedback integration
+    - [ ] Enhanced haptic feedback patterns
+    - [ ] Predictive back gesture animations
 
-**Dependencies**: WindowSizeClass, Adaptive Navigation Suite (already included)
-**Estimated Effort**: 4-5 weeks
-**Success Criteria**: Foldable support, tablet optimization, smooth responsive design
+**Dependencies**: WindowSizeClass, Adaptive Navigation Suite (already included), Foldable APIs
+**Estimated Effort**: 5-6 weeks
+**Success Criteria**: Foldable support working, tablet layouts optimized, responsive design seamless
 
-### **Major Step 4.2: Performance & Battery Optimization** ⏳ *Not Started*
+### **Major Step 4.3: Performance & Battery Optimization** ⏳ *Not Started*
 
-**Target Completion**: Month 13
+**Target Completion**: Month 18 *(Reordered)*
 
 #### Implementation Checklist:
 
@@ -436,6 +787,67 @@ solidify authentication, stability, and UI responsiveness.
 **Dependencies**: Performance monitoring tools, Battery optimization APIs
 **Estimated Effort**: 3-4 weeks
 **Success Criteria**: Improved battery life, memory efficiency, network optimization
+
+### **Major Step 4.4: Accessibility Excellence** 🟡 *Medium Priority - NEW*
+
+**Target Completion**: Months 19-20
+
+**Rationale**: Accessibility is both an ethical imperative and legal requirement in many jurisdictions. A fully accessible app opens the app to millions more users and demonstrates quality engineering.
+
+#### Implementation Checklist:
+
+- [ ] **Screen Reader Optimization**
+    - [ ] Complete TalkBack support audit
+    - [ ] Content descriptions for all interactive elements
+    - [ ] Semantic ordering of screen elements
+    - [ ] Meaningful announcements for state changes
+    - [ ] Custom accessibility actions where appropriate
+    - [ ] Live region announcements for dynamic content
+    - [ ] Accessibility traversal ordering
+
+- [ ] **Visual Accessibility**
+    - [ ] High contrast mode implementation
+    - [ ] Color blindness modes (Deuteranopia, Protanopia, Tritanopia)
+    - [ ] Text scaling support up to 200%
+    - [ ] Minimum contrast ratios (WCAG 2.1 AA: 4.5:1 for text)
+    - [ ] Focus indicators clearly visible
+    - [ ] No reliance on color alone for information
+    - [ ] Large text mode for all UI
+
+- [ ] **Motor Accessibility**
+    - [ ] Minimum touch target size 48dp enforcement
+    - [ ] Switch Access support
+    - [ ] Voice Access optimization
+    - [ ] Extended touch target areas
+    - [ ] Configurable touch and hold duration
+    - [ ] Gesture alternatives for all interactions
+
+- [ ] **Cognitive Accessibility**
+    - [ ] Reduce motion support for animations
+    - [ ] Clear and simple error messages
+    - [ ] Consistent navigation patterns
+    - [ ] Progress indicators for long operations
+    - [ ] Timeout warnings and extensions
+    - [ ] Clear focus states
+
+- [ ] **Keyboard Navigation**
+    - [ ] Full keyboard navigation support
+    - [ ] Visible focus indicators
+    - [ ] Logical tab order
+    - [ ] Keyboard shortcuts documentation
+    - [ ] Arrow key navigation in lists
+
+- [ ] **Testing & Compliance**
+    - [ ] WCAG 2.1 AA compliance audit
+    - [ ] Accessibility Scanner integration in CI
+    - [ ] Manual testing with screen readers
+    - [ ] User testing with accessibility needs
+    - [ ] Accessibility documentation
+    - [ ] Automated accessibility tests
+
+**Dependencies**: Android Accessibility APIs, Accessibility Scanner, Manual testing
+**Estimated Effort**: 4-5 weeks
+**Success Criteria**: WCAG 2.1 AA compliant, 95%+ Accessibility Scanner pass rate, TalkBack fully functional
 
 ---
 
@@ -597,46 +1009,70 @@ solidify authentication, stability, and UI responsiveness.
 
 ---
 
-## 📅 **Implementation Timeline Summary**
+## 📅 **Implementation Timeline Summary** *(Updated with Phase 1.5)*
 
-### **Immediate Focus (Months 1-3)**: TV Experience 🔴
+### **Completed (Months 1-2)**: TV Foundation ✅
 
 - Phase 1.1: TV Architecture Implementation ✅ *Complete*
-- Phase 1.2: TV Playback Experience ⏳ *In Progress*
+- Phase 1.2: TV Playback Experience ✅ *Complete*
 
-### **Short-term (Months 4-7)**: Media Enhancement 🟡
+### **Immediate Focus (Months 3-5)**: Mobile Core Experience 🔴 *NEW PRIORITY*
 
-- Phase 2.1: Advanced Audio System
+- **Phase 1.5: Mobile Core Experience** (10-14 weeks)
+  - Step 1.5.1: Modern Android Integration
+  - Step 1.5.2: Mobile Gesture & Interaction System
+  - Step 1.5.3: Mobile Loading States & Animations
+  - Step 1.5.4: Content Discovery Enhancements
+- Phase 1.1 Polish: TV refinements (Similar content, remote shortcuts)
+
+### **Short-term (Months 6-9)**: Media Enhancement 🟡
+
+- Phase 2.1: Advanced Audio System + Mobile Audio Platform Integration
 - Phase 2.2: Offline Content System
 - Phase 2.3: Advanced Video Features
 
-### **Medium-term (Months 8-10)**: Intelligence 🟡
+### **Medium-term (Months 10-13)**: Intelligence & Social 🟡
 
 - Phase 3.1: Advanced Search & Discovery
 - Phase 3.2: Personalization Engine
+- **Phase 3.5: Social & Sharing Features** (NEW)
 
-### **Long-term (Months 11-15)**: Polish & Connectivity 🟢
+### **Long-term (Months 14-20)**: Polish, Accessibility & Connectivity 🟡
 
-- Phase 4.1: Adaptive UI System
-- Phase 4.2: Performance Optimization
+- Phase 4.1: Onboarding & User Experience (expanded)
+- Phase 4.2: Adaptive UI System (Foldables, Tablets)
+- Phase 4.3: Performance & Battery Optimization
+- **Phase 4.4: Accessibility Excellence** (NEW)
 - Phase 5.1: Multi-Device Sync
 - Phase 5.2: Cloud Integration
 
-### **Future/Optional (Months 16+)**: Advanced Features 🔵
+### **Future/Optional (Months 21+)**: Advanced Features 🔵
 
 - Phase 6.1: Gaming Support
 - Phase 7.1: Modular Architecture
-- Phase 7.2: Testing & QA
+- Phase 7.2: Testing & QA Enhancement
 
 ---
 
-## 🎯 **Success Metrics & KPIs**
+## 🎯 **Success Metrics & KPIs** *(Updated)*
 
 ### **TV Experience Goals**
 
 - [ ] 4.5+ rating on Google TV Play Store
 - [ ] 50%+ TV usage for video content
 - [ ] Sub-3 second navigation response time on TV
+- [x] ✅ **D-pad navigation working** - Complete with focus management
+- [x] ✅ **TV video/audio players functional** - Complete with visualizations
+
+### **Mobile Experience Goals** 🆕
+
+- [ ] 4.5+ rating on Google Play Store
+- [ ] Sub-1 second screen transition time
+- [ ] 60%+ gesture control adoption in video player
+- [ ] 30%+ widget installation rate among active users
+- [ ] 80%+ onboarding completion rate
+- [ ] 50%+ app shortcut usage
+- [ ] 25%+ content sharing adoption
 
 ### **Performance Targets**
 
@@ -645,18 +1081,98 @@ solidify authentication, stability, and UI responsiveness.
 - [ ] 30% reduction in memory usage
 - [x] ✅ **Eliminate frame drops during data loading** - Fixed 46+ frame skipping issue
 - [x] ✅ **Prevent main thread blocking** - All heavy operations moved to background threads
+- [ ] 60fps animation smoothness across all screens
+- [ ] <100ms haptic feedback response time
+- [ ] ANR rate <0.1%
 
 ### **User Engagement**
 
 - [ ] 40% increase in daily active users
-- [ ] 30% mobile usage for music content
+- [ ] 45% daily return rate on mobile
+- [ ] 70% music playback on mobile devices
+- [ ] 30% mobile usage for music content (original)
 - [ ] 60% user retention after 30 days
+- [ ] 10%+ watch party adoption
+- [ ] 25%+ content sharing rate
 
 ### **Quality Standards**
 
 - [ ] 90% automated test coverage
 - [ ] Full accessibility compliance (WCAG 2.1 AA)
+- [ ] 95%+ Accessibility Scanner pass rate
 - [ ] Support for 95% of target devices
+- [ ] TalkBack 100% functional throughout app
+
+### **Platform Integration Goals** 🆕
+
+- [ ] Android Auto: 20%+ usage among music listeners
+- [ ] Wear OS: 15%+ adoption rate
+- [ ] Widget: 30%+ installation rate
+- [ ] Quick Settings Tile: 40%+ activation rate
+
+---
+
+## ⚡ **Quick Wins: Immediate Mobile Improvements** 🆕
+
+These features can be implemented quickly (1-2 weeks each) to deliver immediate value and user satisfaction while the larger Phase 1.5 is being planned:
+
+### **Week 1: Pull-to-Refresh & Swipe Gestures**
+- **Implementation**: Add `pullRefresh` modifier to home/library screens
+- **User Benefit**: Instant content refresh without button taps
+- **Files**: `HomeScreen.kt`, `LibraryScreen.kt`, `MoviesScreen.kt`, etc.
+- **Effort**: 2-3 days
+- **Dependencies**: Compose Material3 (already included)
+
+### **Week 2: App Shortcuts**
+- **Implementation**: Add 4 static shortcuts (Search, Downloads, Favorites, Continue Watching)
+- **User Benefit**: Quick access to common actions from launcher
+- **Files**: `shortcuts.xml`, update `AndroidManifest.xml`
+- **Effort**: 2-3 days
+- **Dependencies**: None (Android API 25+)
+
+### **Week 3: Haptic Feedback**
+- **Implementation**: Add haptic feedback to key interactions (buttons, seek, gestures)
+- **User Benefit**: Tactile confirmation of actions
+- **Files**: Create `HapticFeedbackHelper.kt`, update player controls and buttons
+- **Effort**: 3-4 days
+- **Dependencies**: `HapticFeedback` API (already available)
+
+### **Week 4: Shimmer Loading States**
+- **Implementation**: Replace plain loading indicators with shimmer skeletons
+- **User Benefit**: Better perceived performance, clearer loading feedback
+- **Files**: Create `ShimmerComponents.kt`, update all list screens
+- **Effort**: 4-5 days
+- **Dependencies**: Compose Animation (already included)
+
+### **Week 5: Material You Dynamic Colors**
+- **Implementation**: Full Material You theme support with dynamic colors
+- **User Benefit**: App matches user's wallpaper/theme
+- **Files**: Update `Theme.kt`, ensure `dynamicColor = true` is used
+- **Effort**: 2-3 days
+- **Dependencies**: Android 12+ (already targeting)
+
+### **Week 6: Swipe-to-Dismiss Continue Watching**
+- **Implementation**: Add swipe gesture to remove items from continue watching
+- **User Benefit**: Clean up continue watching list easily
+- **Files**: Update `ContinueWatchingSection.kt` or equivalent
+- **Effort**: 3-4 days
+- **Dependencies**: Compose gestures (already available)
+
+### **Week 7: Video Player Brightness/Volume Gestures**
+- **Implementation**: Swipe up/down on left/right for brightness/volume
+- **User Benefit**: Standard video player behavior users expect
+- **Files**: Update `VideoPlayerScreen.kt` or `ExpressiveVideoControls.kt`
+- **Effort**: 4-5 days
+- **Dependencies**: Window/Audio Manager APIs
+
+### **Week 8: Quick Settings Tile**
+- **Implementation**: Add playback control tile for notification shade
+- **User Benefit**: Quick media control without opening app
+- **Files**: Create `JellyfinTileService.kt`, update manifest
+- **Effort**: 3-4 days
+- **Dependencies**: TileService API (Android 7+)
+
+**Quick Wins Summary**: 8 impactful features implementable in ~8 weeks with 1 developer, providing immediate user value while Phase 1.5 is being planned and executed.
 
 ---
 
@@ -694,11 +1210,23 @@ solidify authentication, stability, and UI responsiveness.
 
 ---
 
-**Last Updated**: 2025-01-08
-**Version**: 1.3
+**Last Updated**: 2025-01-11
+**Version**: 2.0 - Major Mobile-First Update
 **Status**: Phase 1.1 Complete + Phase 1.2 Complete (TV Video Player, TV Audio Player, Quick Connect) + Mobile Video Player Improvements Complete + Performance Optimizations Implemented
+
+**What's New in v2.0**:
+- 🆕 **NEW Phase 1.5**: Mobile Core Experience (HIGH PRIORITY) - 4 major steps for modern Android integration
+- 🆕 **NEW Phase 3.5**: Social & Sharing Features - Watch parties, content sharing, recommendations
+- 🆕 **NEW Phase 4.4**: Accessibility Excellence - WCAG 2.1 AA compliance focus
+- ✨ **Enhanced Phase 2.1**: Android Auto, Wear OS, and mobile audio platform integration
+- 📱 **Enhanced Phase 4.1**: Comprehensive onboarding, settings expansion, and help system
+- ⚡ **NEW Section**: Quick Wins - 8 immediate improvements (1-2 weeks each)
+- 📊 **Expanded Metrics**: Mobile-specific KPIs and platform integration goals
+- 🔄 **Updated Timeline**: Reflects new mobile-first priority and realistic sequencing
+
+**Priority Shift Rationale**: Mobile users likely represent the majority of the user base. While the TV experience is excellent and complete, the mobile platform deserves equal engineering attention with modern Android patterns, gesture controls, widgets, and platform integrations that users expect in 2025.
 
 ---
 
 *This roadmap is a living document and will be updated as features are completed and priorities
-evolve.*
+evolve. Version 2.0 represents a significant expansion focusing on mobile experience parity with the completed TV platform.*

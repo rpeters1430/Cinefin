@@ -567,7 +567,16 @@ class VideoPlayerViewModel @Inject constructor(
     fun releasePlayer() {
         Log.d("VideoPlayer", "Releasing player")
         stopPositionUpdates()
-        playbackProgressManager.stopTracking()
+
+        // Stop tracking in a coroutine since it's a suspend function
+        viewModelScope.launch {
+            try {
+                playbackProgressManager.stopTracking()
+            } catch (e: Exception) {
+                Log.e("VideoPlayer", "Error stopping playback tracking: ${e.message}")
+            }
+        }
+
         exoPlayer?.let { p ->
             try {
                 p.removeListener(playerListener)
