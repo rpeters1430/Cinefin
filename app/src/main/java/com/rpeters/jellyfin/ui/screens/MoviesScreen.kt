@@ -268,64 +268,64 @@ fun MoviesScreen(
             onRefresh = onRefresh,
             modifier = Modifier.fillMaxSize().padding(paddingValues),
         ) {
-        AnimatedContent(
-            targetState = currentState,
-            transitionSpec = {
-                fadeIn() + slideInVertically { it / 2 } togetherWith fadeOut() + slideOutVertically { it / 2 }
-            },
-            label = "movies_content_animation",
-        ) { state ->
-            when (state) {
-                MovieScreenState.LOADING -> {
-                    MoviesLoadingContent(
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-
-                MovieScreenState.EMPTY -> {
-                    ExpressiveEmptyState(
-                        icon = Icons.Default.Movie,
-                        title = "No movies found",
-                        subtitle = "Try adjusting your filters or add some movies to your library",
-                        iconTint = MovieRed,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-
-                MovieScreenState.CONTENT -> {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        MoviesContent(
-                            filteredAndSortedMovies = filteredAndSortedMovies,
-                            selectedFilter = selectedFilter,
-                            onFilterChange = onFilterChange,
-                            viewMode = viewMode,
-                            onMovieClick = onMovieClick,
-                            getImageUrl = getImageUrl,
-                            isLoadingMore = isLoadingMore,
-                            hasMoreItems = hasMoreItems,
-                            onLoadMore = onLoadMore,
+            AnimatedContent(
+                targetState = currentState,
+                transitionSpec = {
+                    fadeIn() + slideInVertically { it / 2 } togetherWith fadeOut() + slideOutVertically { it / 2 }
+                },
+                label = "movies_content_animation",
+            ) { state ->
+                when (state) {
+                    MovieScreenState.LOADING -> {
+                        MoviesLoadingContent(
                             modifier = Modifier.fillMaxSize(),
                         )
+                    }
 
-                        // Add ExpressiveFloatingToolbar for movies
-                        if (filteredAndSortedMovies.isNotEmpty()) {
-                            ExpressiveFloatingToolbar(
-                                isVisible = filteredAndSortedMovies.isNotEmpty(),
-                                onPlayClick = { /* TODO: Implement play functionality */ },
-                                onQueueClick = { /* TODO: Implement queue functionality */ },
-                                onDownloadClick = { /* TODO: Implement download functionality */ },
-                                onCastClick = { /* TODO: Implement cast functionality */ },
-                                onFavoriteClick = { /* TODO: Implement favorite functionality */ },
-                                onShareClick = { /* TODO: Implement share functionality */ },
-                                onMoreClick = { /* TODO: Implement more options functionality */ },
-                                primaryAction = ToolbarAction.PLAY,
-                                modifier = Modifier.align(Alignment.BottomCenter),
+                    MovieScreenState.EMPTY -> {
+                        ExpressiveEmptyState(
+                            icon = Icons.Default.Movie,
+                            title = "No movies found",
+                            subtitle = "Try adjusting your filters or add some movies to your library",
+                            iconTint = MovieRed,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+
+                    MovieScreenState.CONTENT -> {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            MoviesContent(
+                                filteredAndSortedMovies = filteredAndSortedMovies,
+                                selectedFilter = selectedFilter,
+                                onFilterChange = onFilterChange,
+                                viewMode = viewMode,
+                                onMovieClick = onMovieClick,
+                                getImageUrl = getImageUrl,
+                                isLoadingMore = isLoadingMore,
+                                hasMoreItems = hasMoreItems,
+                                onLoadMore = onLoadMore,
+                                modifier = Modifier.fillMaxSize(),
                             )
+
+                            // Add ExpressiveFloatingToolbar for movies
+                            if (filteredAndSortedMovies.isNotEmpty()) {
+                                ExpressiveFloatingToolbar(
+                                    isVisible = filteredAndSortedMovies.isNotEmpty(),
+                                    onPlayClick = { /* TODO: Implement play functionality */ },
+                                    onQueueClick = { /* TODO: Implement queue functionality */ },
+                                    onDownloadClick = { /* TODO: Implement download functionality */ },
+                                    onCastClick = { /* TODO: Implement cast functionality */ },
+                                    onFavoriteClick = { /* TODO: Implement favorite functionality */ },
+                                    onShareClick = { /* TODO: Implement share functionality */ },
+                                    onMoreClick = { /* TODO: Implement more options functionality */ },
+                                    primaryAction = ToolbarAction.PLAY,
+                                    modifier = Modifier.align(Alignment.BottomCenter),
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
         }
     }
 }
