@@ -22,9 +22,9 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @androidx.media3.common.util.UnstableApi
 @AndroidEntryPoint
