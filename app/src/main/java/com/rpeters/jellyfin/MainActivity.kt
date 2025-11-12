@@ -1,14 +1,14 @@
 package com.rpeters.jellyfin
 
-import android.os.Bundle
 import android.content.Intent
+import android.os.Bundle
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.fragment.app.FragmentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.fragment.app.FragmentActivity
 import com.rpeters.jellyfin.ui.JellyfinApp
 import com.rpeters.jellyfin.ui.tv.TvJellyfinApp
 import com.rpeters.jellyfin.utils.DeviceTypeUtils
