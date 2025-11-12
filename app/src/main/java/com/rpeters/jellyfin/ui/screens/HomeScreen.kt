@@ -45,11 +45,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.ui.components.CarouselItem
@@ -60,8 +60,8 @@ import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.screens.home.LibraryGridSection
-import com.rpeters.jellyfin.ui.shortcuts.DynamicShortcutManager
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
+import com.rpeters.jellyfin.ui.viewmodel.SurfaceCoordinatorViewModel
 import com.rpeters.jellyfin.utils.PerformanceTracker
 import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.flow.collectLatest
@@ -255,8 +255,7 @@ fun HomeContent(
             getContinueWatchingItems(appState),
         )
     }
-    val context = LocalContext.current
-    val applicationContext = remember(context) { context.applicationContext }
+    val surfaceCoordinatorViewModel: SurfaceCoordinatorViewModel = hiltViewModel()
     val recentMovies = remember(appState.recentlyAddedByTypes) {
         appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(8) ?: emptyList()
     }
@@ -274,7 +273,7 @@ fun HomeContent(
         appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]?.take(15) ?: emptyList()
     }
 
-    LaunchedEffect(applicationContext) {
+    LaunchedEffect(surfaceCoordinatorViewModel) {
         snapshotFlow {
             continueWatchingItems.mapNotNull { item ->
                 val id = item.id?.toString() ?: return@mapNotNull null
@@ -283,10 +282,7 @@ fun HomeContent(
         }
             .distinctUntilChangedBy { it.first }
             .collectLatest { (_, items) ->
-                DynamicShortcutManager.updateContinueWatchingShortcuts(
-                    applicationContext,
-                    items,
-                )
+                surfaceCoordinatorViewModel.updateContinueWatching(items)
             }
     }
 
