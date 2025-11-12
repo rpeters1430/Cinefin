@@ -81,9 +81,9 @@ solidify authentication, stability, and UI responsiveness.
 
 - **Total Phases**: 8 major phases (1 new phase added: Mobile Core Experience)
 - **Total Steps**: 19 major implementation steps (5 new steps added)
-- **Current Status**: Phase 1.2 - TV Playback Experience ✅ *COMPLETE*
-- **Next Priority**: Phase 1.5 - Mobile Core Experience (Major Step 1.5.2 Kickoff)
-- **Rationale for Priority Shift**: Mobile users likely represent the majority of the user base and deserve equal attention to the TV experience
+- **Current Status**: Phase 1.5 - Mobile Core Experience 🟡 *In Progress*
+- **Next Priority**: Phase 1.5.1 implementation milestones with 1.5.2 gesture prototypes queued next
+- **Rationale for Priority Shift**: Mobile users likely represent the majority of the user base and deserve equal attention to the TV experience while capitalizing on modern Android capabilities
 
 ---
 
@@ -181,26 +181,43 @@ solidify authentication, stability, and UI responsiveness.
 
 **Rationale**: Mobile users likely represent the majority of the user base. While TV experience is excellent, mobile app needs equal attention with modern Android patterns, gesture controls, and platform integrations that users expect in 2025.
 
-### **Major Step 1.5.1: Modern Android Integration** ✅ *Planning Complete*
+### **Major Step 1.5.1: Modern Android Integration** 🟡 *In Progress*
 
 **Target Completion**: Months 3-4
 
-**Current Status**: Planning finalized — widget data sources, shortcut deep links, and notification integration flow defined for hand-off to implementation teams.
+**Current Status**: Implementation kickoff underway — Glance widget architecture and shortcut navigation contracts drafted, with notification scaffolding entering development.
+
+**Latest Progress Notes**:
+
+- ✅ Architectural RFC reviewed outlining shared "surface" modules for widgets, notifications, and shortcuts
+- ✅ `ModernAndroidIntegration.md` draft created to align engineers on API levels, testing matrix, and telemetry goals
+- 🛠️ Prototype Glance widget with sample data compiling locally (awaiting API wiring)
+- 🛠️ Launcher shortcuts now mapped to Navigation component destinations (pending UI polish)
+- 📋 Tracking board created to capture accessibility validation and QA scenarios for all surfaces
 
 #### Implementation Checklist:
 
+- [x] Produce Glance widget data contract shared across playback, continue watching, and downloads
+- [x] Define `ShortcutNavigator` abstraction to centralize deep link resolution
+- [ ] Create `ModernSurfaceCoordinator` to orchestrate widgets, shortcuts, notifications, and quick settings tile lifecycle
+- [ ] Author integration tests for widget/shortcut deep links hitting `MainActivity`
+- [ ] Document QA playbook for Android 12, 13, and 14 device families
 - [ ] **Home Screen Widgets**
     - [ ] "Now Playing" widget with playback controls
     - [ ] "Continue Watching" widget showing 3-4 items
     - [ ] Widget configuration and sizing options
-    - [ ] Deep link integration from widgets
+    - [ ] Deep link integration from widgets (Glance action → `ShortcutNavigator`)
     - [ ] Widget preview images for picker
+    - [ ] Compose tooling previews for each widget layout
+    - [ ] Snapshot tests validating dark/light theme support
 
 - [ ] **App Shortcuts & Quick Actions**
     - [ ] Static shortcuts (Search, Downloads, Favorites, Continue Watching)
     - [ ] Dynamic shortcuts for recently played content
     - [ ] Long-press launcher shortcuts
     - [ ] Shortcut icons and labels
+    - [ ] Analytics events for shortcut usage
+    - [ ] Automated regression test verifying shortcut count and targets
 
 - [ ] **System Integration**
     - [ ] Quick Settings tile for playback control
@@ -210,16 +227,19 @@ solidify authentication, stability, and UI responsiveness.
     - [ ] Material You dynamic theming (full implementation beyond basics)
     - [ ] Themed app icons (Android 13+)
     - [ ] Predictive back gesture support (Android 13+)
+    - [ ] Edge-to-edge layout compliance audit
 
 - [ ] **Notification Enhancements**
     - [ ] Rich media notifications with large artwork
     - [ ] Progress notifications for downloads
     - [ ] Notification channels for different types
     - [ ] Grouped notifications for multiple downloads
+    - [ ] Playback notification revamped with MediaStyle compact actions audit
+    - [ ] QA scenarios for Doze/Idle handling of long-running downloads
 
 **Dependencies**: Android 12+ APIs, Glance for widgets, WorkManager for notifications
-**Estimated Effort**: 3-4 weeks
-**Success Criteria**: Widgets functional, shortcuts working, deep linking tested
+**Estimated Effort**: 3-4 weeks (1 week allocated to integration tests & QA playbook)
+**Success Criteria**: Widgets functional, shortcuts working, deep linking tested, and shared coordinator verified via instrumentation tests
 
 ### **Major Step 1.5.2: Mobile Gesture & Interaction System** 🟡 *In Progress*
 
