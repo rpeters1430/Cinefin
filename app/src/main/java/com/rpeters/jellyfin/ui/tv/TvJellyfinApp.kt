@@ -46,9 +46,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Button
-import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
+import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 
 @Composable
 fun TvServerConnectionScreen(

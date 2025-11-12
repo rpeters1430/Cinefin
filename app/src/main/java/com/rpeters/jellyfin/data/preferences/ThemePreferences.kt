@@ -6,10 +6,13 @@ package com.rpeters.jellyfin.data.preferences
 enum class ThemeMode {
     /** Follow system dark mode setting */
     SYSTEM,
+
     /** Always use light theme */
     LIGHT,
+
     /** Always use dark theme */
     DARK,
+
     /** Always use pure black theme (AMOLED-optimized) */
     AMOLED_BLACK,
 }
@@ -20,8 +23,10 @@ enum class ThemeMode {
 enum class ContrastLevel {
     /** Standard contrast (default) */
     STANDARD,
+
     /** Medium contrast for better readability */
     MEDIUM,
+
     /** High contrast for maximum accessibility */
     HIGH,
 }
@@ -32,18 +37,25 @@ enum class ContrastLevel {
 enum class AccentColor {
     /** Default Jellyfin purple */
     JELLYFIN_PURPLE,
+
     /** Jellyfin blue */
     JELLYFIN_BLUE,
+
     /** Jellyfin teal */
     JELLYFIN_TEAL,
+
     /** Material purple */
     MATERIAL_PURPLE,
+
     /** Material blue */
     MATERIAL_BLUE,
+
     /** Material green */
     MATERIAL_GREEN,
+
     /** Material red */
     MATERIAL_RED,
+
     /** Material orange */
     MATERIAL_ORANGE,
 }
