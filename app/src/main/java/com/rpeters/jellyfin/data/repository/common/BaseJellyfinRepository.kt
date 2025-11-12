@@ -8,9 +8,11 @@ import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.ui.utils.RetryManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
@@ -70,12 +72,13 @@ open class BaseJellyfinRepository @Inject constructor(
     /**
      * Execute operation with 401-aware authentication handling.
      * This eliminates stale token issues and properly handles token refresh for 401 errors.
+     * ✅ STRICTMODE FIX: All network operations run on IO dispatcher
      */
     protected suspend fun <T> executeWithClient(
         operationName: String,
         operation: suspend (ApiClient) -> T,
-    ): T {
-        return executeWithTokenRefresh {
+    ): T = withContext(Dispatchers.IO) {
+        return@withContext executeWithTokenRefresh {
             // Delegate to session manager for token/401 handling
             sessionManager.executeWithAuth(operationName) { _, client ->
                 operation(client)
@@ -199,11 +202,12 @@ open class BaseJellyfinRepository @Inject constructor(
      * Legacy method for backward compatibility during transition.
      * Wraps a suspend block returning [ApiResult]. Any thrown exception
      * is converted to an [ApiResult.Error] with a best-effort error type.
+     * ✅ STRICTMODE FIX: All network operations run on IO dispatcher
      */
     protected suspend fun <T> executeLegacy(
         operationName: String,
         block: suspend () -> T,
-    ): ApiResult<T> =
+    ): ApiResult<T> = withContext(Dispatchers.IO) {
         try {
             // ensure proactive check + 401-aware retry
             val result = executeWithTokenRefresh { block() }
@@ -218,17 +222,19 @@ open class BaseJellyfinRepository @Inject constructor(
             val error = RepositoryUtils.getErrorType(e)
             ApiResult.Error(e.message ?: "Unknown error", e, error)
         }
+    }
 
     /**
      * Executes a block with automatic retry logic and error handling.
      * This provides smart retry behavior for all repository operations.
+     * ✅ STRICTMODE FIX: All network operations run on IO dispatcher
      */
     protected suspend fun <T> executeWithRetry(
         operationName: String,
         maxAttempts: Int = 3,
         block: suspend () -> T,
-    ): ApiResult<T> {
-        return RetryManager.withRetry(maxAttempts, operationName) { attempt ->
+    ): ApiResult<T> = withContext(Dispatchers.IO) {
+        return@withContext RetryManager.withRetry(maxAttempts, operationName) { attempt ->
             try {
                 val result = executeWithTokenRefresh { block() }
                 ApiResult.Success(result)
@@ -248,14 +254,15 @@ open class BaseJellyfinRepository @Inject constructor(
     /**
      * Executes a block with both retry logic and circuit breaker protection.
      * Use this for critical operations that should be protected from cascading failures.
+     * ✅ STRICTMODE FIX: All network operations run on IO dispatcher
      */
     protected suspend fun <T> executeWithRetryAndCircuitBreaker(
         operationName: String,
         maxAttempts: Int = 3,
         circuitBreakerKey: String = operationName,
         block: suspend () -> T,
-    ): ApiResult<T> {
-        return RetryManager.withRetryAndCircuitBreaker(maxAttempts, operationName, circuitBreakerKey) { attempt ->
+    ): ApiResult<T> = withContext(Dispatchers.IO) {
+        return@withContext RetryManager.withRetryAndCircuitBreaker(maxAttempts, operationName, circuitBreakerKey) { attempt ->
             try {
                 val result = executeWithTokenRefresh { block() }
                 ApiResult.Success(result)
@@ -275,6 +282,7 @@ open class BaseJellyfinRepository @Inject constructor(
     /**
      * Executes an operation with cache-first strategy and automatic fallback.
      * First checks cache, then tries network with retry, and caches successful results.
+     * ✅ STRICTMODE FIX: Cache checks on IO dispatcher to avoid disk reads on main thread
      */
     protected suspend fun executeWithCache(
         operationName: String,
@@ -282,15 +290,15 @@ open class BaseJellyfinRepository @Inject constructor(
         maxAttempts: Int = 3,
         cacheTtlMs: Long = 30 * 60 * 1000L, // 30 minutes default
         block: suspend () -> List<BaseItemDto>,
-    ): ApiResult<List<BaseItemDto>> {
+    ): ApiResult<List<BaseItemDto>> = withContext(Dispatchers.IO) {
         // Try cache first
         val cachedData = cache.getCachedItems(cacheKey)
         if (cachedData != null) {
-            return ApiResult.Success(cachedData)
+            return@withContext ApiResult.Success(cachedData)
         }
 
         // Cache miss, try network with retry
-        return executeWithRetryAndCircuitBreaker(operationName, maxAttempts, cacheKey) {
+        return@withContext executeWithRetryAndCircuitBreaker(operationName, maxAttempts, cacheKey) {
             val result = block()
             // Cache successful results
             cache.cacheItems(cacheKey, result, cacheTtlMs)
@@ -300,6 +308,7 @@ open class BaseJellyfinRepository @Inject constructor(
 
     /**
      * Force refresh data and update cache.
+     * ✅ STRICTMODE FIX: Cache operations on IO dispatcher to avoid disk I/O on main thread
      */
     protected suspend fun executeRefreshWithCache(
         operationName: String,
@@ -307,12 +316,12 @@ open class BaseJellyfinRepository @Inject constructor(
         maxAttempts: Int = 3,
         cacheTtlMs: Long = 30 * 60 * 1000L,
         block: suspend () -> List<BaseItemDto>,
-    ): ApiResult<List<BaseItemDto>> {
+    ): ApiResult<List<BaseItemDto>> = withContext(Dispatchers.IO) {
         // Invalidate existing cache
         cache.invalidateCache(cacheKey)
 
         // Execute with retry and cache result
-        return executeWithRetryAndCircuitBreaker(operationName, maxAttempts, cacheKey) {
+        return@withContext executeWithRetryAndCircuitBreaker(operationName, maxAttempts, cacheKey) {
             val result = block()
             // Cache the fresh results
             cache.cacheItems(cacheKey, result, cacheTtlMs)
