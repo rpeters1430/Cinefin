@@ -82,7 +82,7 @@ solidify authentication, stability, and UI responsiveness.
 - **Total Phases**: 8 major phases (1 new phase added: Mobile Core Experience)
 - **Total Steps**: 19 major implementation steps (5 new steps added)
 - **Current Status**: Phase 1.2 - TV Playback Experience ✅ *COMPLETE*
-- **Next Priority**: Phase 1.5 - Mobile Core Experience (NEW - HIGH PRIORITY) or Phase 1.1 Polish
+- **Next Priority**: Phase 1.5 - Mobile Core Experience (Major Step 1.5.2 Kickoff)
 - **Rationale for Priority Shift**: Mobile users likely represent the majority of the user base and deserve equal attention to the TV experience
 
 ---
@@ -181,9 +181,11 @@ solidify authentication, stability, and UI responsiveness.
 
 **Rationale**: Mobile users likely represent the majority of the user base. While TV experience is excellent, mobile app needs equal attention with modern Android patterns, gesture controls, and platform integrations that users expect in 2025.
 
-### **Major Step 1.5.1: Modern Android Integration** ⏳ *Not Started*
+### **Major Step 1.5.1: Modern Android Integration** ✅ *Planning Complete*
 
 **Target Completion**: Months 3-4
+
+**Current Status**: Planning finalized — widget data sources, shortcut deep links, and notification integration flow defined for hand-off to implementation teams.
 
 #### Implementation Checklist:
 
@@ -219,9 +221,11 @@ solidify authentication, stability, and UI responsiveness.
 **Estimated Effort**: 3-4 weeks
 **Success Criteria**: Widgets functional, shortcuts working, deep linking tested
 
-### **Major Step 1.5.2: Mobile Gesture & Interaction System** ⏳ *Not Started*
+### **Major Step 1.5.2: Mobile Gesture & Interaction System** 🟡 *In Progress*
 
 **Target Completion**: Month 4
+
+**Current Focus**: Establish gesture architecture blueprint and prioritize video player gesture prototypes before expanding to list and haptic interactions.
 
 #### Implementation Checklist:
 
@@ -1019,8 +1023,8 @@ solidify authentication, stability, and UI responsiveness.
 ### **Immediate Focus (Months 3-5)**: Mobile Core Experience 🔴 *NEW PRIORITY*
 
 - **Phase 1.5: Mobile Core Experience** (10-14 weeks)
-  - Step 1.5.1: Modern Android Integration
-  - Step 1.5.2: Mobile Gesture & Interaction System
+  - Step 1.5.1: Modern Android Integration ✅ (planning complete)
+  - Step 1.5.2: Mobile Gesture & Interaction System 🟡 (in progress)
   - Step 1.5.3: Mobile Loading States & Animations
   - Step 1.5.4: Content Discovery Enhancements
 - Phase 1.1 Polish: TV refinements (Similar content, remote shortcuts)
