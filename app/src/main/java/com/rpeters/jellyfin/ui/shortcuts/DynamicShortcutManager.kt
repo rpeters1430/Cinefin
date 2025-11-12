@@ -7,9 +7,8 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.rpeters.jellyfin.MainActivity
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.ui.navigation.Screen
-import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.BaseItemKind
+import com.rpeters.jellyfin.ui.surface.SurfaceMediaItem
+import com.rpeters.jellyfin.ui.surface.SurfaceMediaType
 
 /**
  * Helper responsible for publishing dynamic launcher shortcuts that mirror the user's
@@ -22,12 +21,12 @@ object DynamicShortcutManager {
     private const val MAX_CONTINUE_WATCHING_SHORTCUTS = 4
     private const val SHORT_LABEL_MAX_LENGTH = 24
 
-    fun updateContinueWatchingShortcuts(context: Context, items: List<BaseItemDto>) {
+    fun updateContinueWatchingShortcuts(context: Context, items: List<SurfaceMediaItem>) {
         val maxShortcuts = ShortcutManagerCompat.getMaxShortcutCountPerActivity(context)
         if (maxShortcuts <= 0) return
 
         val shortcuts = items
-            .filter { it.id != null && !it.name.isNullOrBlank() }
+            .filter { it.id.isNotBlank() && it.navigationRoute.isNotBlank() }
             .take(maxShortcuts.coerceAtMost(MAX_CONTINUE_WATCHING_SHORTCUTS))
             .mapNotNull { item ->
                 buildShortcut(context, item)
@@ -58,17 +57,10 @@ object DynamicShortcutManager {
         ShortcutManagerCompat.setDynamicShortcuts(context, preservedShortcuts + trimmedShortcuts)
     }
 
-    private fun buildShortcut(context: Context, item: BaseItemDto): ShortcutInfoCompat? {
-        val id = item.id?.toString() ?: return null
-        val route = when (item.type) {
-            BaseItemKind.MOVIE -> Screen.MovieDetail.createRoute(id)
-            BaseItemKind.EPISODE -> Screen.TVEpisodeDetail.createRoute(id)
-            else -> Screen.ItemDetail.createRoute(id)
-        }
-
-        val shortLabel = item.name?.take(SHORT_LABEL_MAX_LENGTH) ?: return null
+    private fun buildShortcut(context: Context, item: SurfaceMediaItem): ShortcutInfoCompat? {
+        val shortLabel = item.title.take(SHORT_LABEL_MAX_LENGTH).takeIf { it.isNotBlank() } ?: return null
         val longLabel = when (item.type) {
-            BaseItemKind.EPISODE ->
+            SurfaceMediaType.EPISODE ->
                 item.seriesName ?: context.getString(R.string.shortcut_continue_watching_long)
 
             else -> context.getString(R.string.shortcut_continue_watching_long)
@@ -76,11 +68,11 @@ object DynamicShortcutManager {
 
         val intent = Intent(context, MainActivity::class.java).apply {
             action = Intent.ACTION_VIEW
-            putExtra(MainActivity.EXTRA_SHORTCUT_DESTINATION, route)
+            putExtra(MainActivity.EXTRA_SHORTCUT_DESTINATION, item.navigationRoute)
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
 
-        return ShortcutInfoCompat.Builder(context, "$CONTINUE_PREFIX$id")
+        return ShortcutInfoCompat.Builder(context, "$CONTINUE_PREFIX${item.id}")
             .setShortLabel(shortLabel)
             .setLongLabel(longLabel)
             .setIcon(IconCompat.createWithResource(context, R.drawable.ic_shortcut_continue))

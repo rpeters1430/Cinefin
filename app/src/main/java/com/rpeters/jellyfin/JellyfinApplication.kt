@@ -6,6 +6,7 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
+import com.rpeters.jellyfin.ui.surface.ModernSurfaceCoordinator
 import com.rpeters.jellyfin.utils.NetworkOptimizer
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.HiltAndroidApp
@@ -24,6 +25,9 @@ class JellyfinApplication : Application(), ImageLoaderFactory {
     @Inject
     lateinit var imageLoader: ImageLoader
 
+    @Inject
+    lateinit var modernSurfaceCoordinator: ModernSurfaceCoordinator
+
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     companion object {
@@ -38,6 +42,8 @@ class JellyfinApplication : Application(), ImageLoaderFactory {
 
         // Configure performance optimizations first
         initializePerformanceOptimizations()
+
+        modernSurfaceCoordinator.initialize()
 
         setupUncaughtExceptionHandler()
         SecureLogger.i(TAG, "Application started")
