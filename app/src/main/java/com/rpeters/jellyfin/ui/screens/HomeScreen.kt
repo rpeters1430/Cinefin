@@ -41,9 +41,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,9 +60,12 @@ import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.screens.home.LibraryGridSection
+import com.rpeters.jellyfin.ui.shortcuts.DynamicShortcutManager
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.utils.PerformanceTracker
 import com.rpeters.jellyfin.utils.getItemKey
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import java.util.Locale
@@ -250,6 +255,8 @@ fun HomeContent(
             getContinueWatchingItems(appState),
         )
     }
+    val context = LocalContext.current
+    val applicationContext = remember(context) { context.applicationContext }
     val recentMovies = remember(appState.recentlyAddedByTypes) {
         appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(8) ?: emptyList()
     }
@@ -265,6 +272,22 @@ fun HomeContent(
     }
     val recentMusic = remember(appState.recentlyAddedByTypes) {
         appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]?.take(15) ?: emptyList()
+    }
+
+    LaunchedEffect(applicationContext) {
+        snapshotFlow {
+            continueWatchingItems.mapNotNull { item ->
+                val id = item.id?.toString() ?: return@mapNotNull null
+                Triple(id, item.name, item.seriesName)
+            } to continueWatchingItems
+        }
+            .distinctUntilChangedBy { it.first }
+            .collectLatest { (_, items) ->
+                DynamicShortcutManager.updateContinueWatchingShortcuts(
+                    applicationContext,
+                    items,
+                )
+            }
     }
 
     PullToRefreshBox(
