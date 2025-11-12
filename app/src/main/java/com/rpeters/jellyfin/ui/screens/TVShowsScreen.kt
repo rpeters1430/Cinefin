@@ -137,9 +137,8 @@ fun TVShowsScreen(
     // TV show data is loaded via NavGraph effect
 
     // Get items provided by the unified library loader (Series only)
-    val tvShowItems = remember(appState.itemsByLibrary, appState.libraries) {
-        viewModel.getLibraryTypeData(LibraryType.TV_SHOWS)
-    }
+    // Don't use remember() here - we want fresh data on every recomposition
+    val tvShowItems = viewModel.getLibraryTypeData(LibraryType.TV_SHOWS)
 
     // Apply filtering and sorting with proper keys to prevent unnecessary recomputation
     val filteredAndSortedTVShows = remember(tvShowItems, selectedFilter, sortOrder) {

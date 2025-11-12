@@ -128,11 +128,10 @@ fun MusicScreen(
     var showSortMenu by remember { mutableStateOf(false) }
 
     // Get music items via unified loader and enrich with recent audio
-    val musicItems = remember(appState.itemsByLibrary, appState.recentlyAddedByTypes, appState.libraries) {
-        val libraryMusic = viewModel.getLibraryTypeData(LibraryType.MUSIC)
-        val recentMusic = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name] ?: emptyList()
-        (libraryMusic + recentMusic).distinctBy { it.id }
-    }
+    // Don't use remember() here - we want fresh data on every recomposition
+    val libraryMusic = viewModel.getLibraryTypeData(LibraryType.MUSIC)
+    val recentMusic = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name] ?: emptyList()
+    val musicItems = (libraryMusic + recentMusic).distinctBy { it.id }
 
     // Apply filtering and sorting
     val filteredAndSortedMusic = remember(musicItems, selectedFilter, sortOrder) {
