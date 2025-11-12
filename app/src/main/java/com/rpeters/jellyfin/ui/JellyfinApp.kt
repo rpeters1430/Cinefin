@@ -14,14 +14,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.rememberNavController
 import com.rpeters.jellyfin.ui.components.BottomNavBar
 import com.rpeters.jellyfin.ui.navigation.JellyfinNavGraph
 import com.rpeters.jellyfin.ui.navigation.Screen
+import com.rpeters.jellyfin.ui.shortcuts.DynamicShortcutManager
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
-import com.rpeters.jellyfin.ui.shortcuts.DynamicShortcutManager
 
 /**
  * Root composable for the phone experience.

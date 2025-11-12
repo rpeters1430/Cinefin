@@ -64,12 +64,12 @@ import com.rpeters.jellyfin.ui.shortcuts.DynamicShortcutManager
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.utils.PerformanceTracker
 import com.rpeters.jellyfin.utils.getItemKey
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import java.util.Locale
 import kotlin.math.roundToInt
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChangedBy
 
 @OptIn(
     ExperimentalMaterial3Api::class,
