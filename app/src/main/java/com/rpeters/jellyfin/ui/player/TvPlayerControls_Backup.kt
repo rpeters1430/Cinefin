@@ -41,9 +41,9 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
+import kotlinx.coroutines.delay
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
-import kotlinx.coroutines.delay
 
 /**
  * TV-optimized video player screen with D-pad navigation and remote control support
