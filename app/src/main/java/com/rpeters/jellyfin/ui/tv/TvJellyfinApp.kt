@@ -43,8 +43,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
+import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
+import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
 
 @Composable
 fun TvServerConnectionScreen(
@@ -296,11 +300,18 @@ fun TvServerConnectionScreen(
 fun TvJellyfinApp(
     modifier: Modifier = Modifier,
 ) {
+    // Collect theme preferences
+    val themeViewModel: ThemePreferencesViewModel = hiltViewModel()
+    val themePreferences by themeViewModel.themePreferences.collectAsStateWithLifecycle()
+
     // Root composable for the TV experience.
     // Hosts the navigation graph for all TV screens.
-    TvMaterialTheme {
-        Surface(modifier = modifier.fillMaxSize()) {
-            TvNavGraph()
+    // Apply both Material You theme and TV Material Theme
+    JellyfinAndroidTheme(themePreferences = themePreferences) {
+        TvMaterialTheme {
+            Surface(modifier = modifier.fillMaxSize()) {
+                TvNavGraph()
+            }
         }
     }
 }
