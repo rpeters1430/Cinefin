@@ -19,6 +19,8 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 object DynamicShortcutManager {
 
     private const val CONTINUE_PREFIX = "continue_watching_"
+    private const val MAX_CONTINUE_WATCHING_SHORTCUTS = 4
+    private const val SHORT_LABEL_MAX_LENGTH = 24
 
     fun updateContinueWatchingShortcuts(context: Context, items: List<BaseItemDto>) {
         val maxShortcuts = ShortcutManagerCompat.getMaxShortcutCountPerActivity(context)
@@ -26,29 +28,34 @@ object DynamicShortcutManager {
 
         val shortcuts = items
             .filter { it.id != null && !it.name.isNullOrBlank() }
-            .take(maxShortcuts.coerceAtMost(4))
+            .take(maxShortcuts.coerceAtMost(MAX_CONTINUE_WATCHING_SHORTCUTS))
             .mapNotNull { item ->
                 buildShortcut(context, item)
             }
 
         val existingDynamic = ShortcutManagerCompat.getDynamicShortcuts(context)
+        val preservedShortcuts = existingDynamic.filterNot { it.id.startsWith(CONTINUE_PREFIX) }
+        val continueShortcutIds = existingDynamic
             .map { it.id }
             .filter { it.startsWith(CONTINUE_PREFIX) }
 
-        if (shortcuts.isEmpty()) {
-            if (existingDynamic.isNotEmpty()) {
-                ShortcutManagerCompat.removeDynamicShortcuts(context, existingDynamic)
+        val availableSlots = (maxShortcuts - preservedShortcuts.size).coerceAtLeast(0)
+        val trimmedShortcuts = shortcuts.take(availableSlots)
+
+        if (trimmedShortcuts.isEmpty()) {
+            if (continueShortcutIds.isNotEmpty()) {
+                ShortcutManagerCompat.setDynamicShortcuts(context, preservedShortcuts)
             }
             return
         }
 
-        val newIds = shortcuts.map { it.id }.toSet()
-        val toRemove = existingDynamic.filterNot { it in newIds }
+        val newIds = trimmedShortcuts.map { it.id }.toSet()
+        val toRemove = continueShortcutIds.filterNot { it in newIds }
         if (toRemove.isNotEmpty()) {
             ShortcutManagerCompat.removeDynamicShortcuts(context, toRemove)
         }
 
-        ShortcutManagerCompat.addDynamicShortcuts(context, shortcuts)
+        ShortcutManagerCompat.setDynamicShortcuts(context, preservedShortcuts + trimmedShortcuts)
     }
 
     private fun buildShortcut(context: Context, item: BaseItemDto): ShortcutInfoCompat? {
@@ -59,7 +66,7 @@ object DynamicShortcutManager {
             else -> Screen.ItemDetail.createRoute(id)
         }
 
-        val shortLabel = item.name?.take(24) ?: return null
+        val shortLabel = item.name?.take(SHORT_LABEL_MAX_LENGTH) ?: return null
         val longLabel = when (item.type) {
             BaseItemKind.EPISODE ->
                 item.seriesName ?: context.getString(R.string.shortcut_continue_watching_long)
@@ -69,7 +76,8 @@ object DynamicShortcutManager {
 
         val intent = Intent(context, MainActivity::class.java).apply {
             action = Intent.ACTION_VIEW
-            putExtra("destination", route)
+            putExtra(MainActivity.EXTRA_SHORTCUT_DESTINATION, route)
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
 
         return ShortcutInfoCompat.Builder(context, "$CONTINUE_PREFIX$id")

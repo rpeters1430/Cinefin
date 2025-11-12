@@ -41,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -67,6 +68,8 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import java.util.Locale
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -253,6 +256,7 @@ fun HomeContent(
         )
     }
     val context = LocalContext.current
+    val applicationContext = remember(context) { context.applicationContext }
     val recentMovies = remember(appState.recentlyAddedByTypes) {
         appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(8) ?: emptyList()
     }
@@ -270,8 +274,20 @@ fun HomeContent(
         appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]?.take(15) ?: emptyList()
     }
 
-    LaunchedEffect(continueWatchingItems) {
-        DynamicShortcutManager.updateContinueWatchingShortcuts(context, continueWatchingItems)
+    LaunchedEffect(applicationContext) {
+        snapshotFlow {
+            continueWatchingItems.mapNotNull { item ->
+                val id = item.id?.toString() ?: return@mapNotNull null
+                Triple(id, item.name, item.seriesName)
+            } to continueWatchingItems
+        }
+            .distinctUntilChangedBy { it.first }
+            .collectLatest { (_, items) ->
+                DynamicShortcutManager.updateContinueWatchingShortcuts(
+                    applicationContext,
+                    items,
+                )
+            }
     }
 
     PullToRefreshBox(
