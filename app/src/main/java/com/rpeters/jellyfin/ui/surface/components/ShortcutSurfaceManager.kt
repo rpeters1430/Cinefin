@@ -5,10 +5,10 @@ import com.rpeters.jellyfin.ui.shortcuts.DynamicShortcutManager
 import com.rpeters.jellyfin.ui.surface.ModernSurfaceSnapshot
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Publishes launcher shortcuts that mirror the current surface snapshot.

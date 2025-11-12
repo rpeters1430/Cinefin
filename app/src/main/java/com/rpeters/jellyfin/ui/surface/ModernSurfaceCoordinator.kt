@@ -4,20 +4,16 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.rpeters.jellyfin.ui.navigation.Screen
-import com.rpeters.jellyfin.ui.surface.components.NotificationSurfaceManager
-import com.rpeters.jellyfin.ui.surface.components.QuickSettingsTileManager
-import com.rpeters.jellyfin.ui.surface.components.ShortcutSurfaceManager
-import com.rpeters.jellyfin.ui.surface.components.WidgetSurfaceManager
 import com.rpeters.jellyfin.ui.surface.SurfaceLifecycleState.BACKGROUND
 import com.rpeters.jellyfin.ui.surface.SurfaceLifecycleState.FOREGROUND
 import com.rpeters.jellyfin.ui.surface.SurfaceMediaType.EPISODE
 import com.rpeters.jellyfin.ui.surface.SurfaceMediaType.MOVIE
 import com.rpeters.jellyfin.ui.surface.SurfaceMediaType.OTHER
+import com.rpeters.jellyfin.ui.surface.components.NotificationSurfaceManager
+import com.rpeters.jellyfin.ui.surface.components.QuickSettingsTileManager
+import com.rpeters.jellyfin.ui.surface.components.ShortcutSurfaceManager
+import com.rpeters.jellyfin.ui.surface.components.WidgetSurfaceManager
 import com.rpeters.jellyfin.utils.SecureLogger
-import java.util.concurrent.atomic.AtomicBoolean
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,6 +29,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Central orchestrator that translates domain state into Android surface updates.

@@ -2,10 +2,10 @@ package com.rpeters.jellyfin.ui.surface.components
 
 import com.rpeters.jellyfin.ui.surface.ModernSurfaceSnapshot
 import com.rpeters.jellyfin.utils.SecureLogger
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Placeholder quick settings tile manager. Future work will translate the

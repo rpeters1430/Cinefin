@@ -3,13 +3,13 @@ package com.rpeters.jellyfin.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.ui.surface.ModernSurfaceCoordinator
-import javax.inject.Inject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import javax.inject.Inject
 
 /**
  * Lightweight view model that funnels UI surface data into the
