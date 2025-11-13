@@ -26,10 +26,14 @@ private val Context.themeDataStore: DataStore<Preferences> by preferencesDataSto
  * Provides reactive access to theme settings across the application.
  */
 @Singleton
-open class ThemePreferencesRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
+open class ThemePreferencesRepository(
+    private val dataStore: DataStore<Preferences>,
 ) {
-    private val dataStore = context.themeDataStore
+
+    @Inject
+    constructor(
+        @ApplicationContext context: Context,
+    ) : this(context.themeDataStore)
 
     /**
      * Flow of current theme preferences.
@@ -51,19 +55,16 @@ open class ThemePreferencesRepository @Inject constructor(
                 themeMode = parseEnum(
                     value = preferences[PreferencesKeys.THEME_MODE],
                     default = defaults.themeMode,
-                    enumName = "ThemeMode",
                 ),
                 useDynamicColors = preferences[PreferencesKeys.USE_DYNAMIC_COLORS]
                     ?: defaults.useDynamicColors,
                 accentColor = parseEnum(
                     value = preferences[PreferencesKeys.ACCENT_COLOR],
                     default = defaults.accentColor,
-                    enumName = "AccentColor",
                 ),
                 contrastLevel = parseEnum(
                     value = preferences[PreferencesKeys.CONTRAST_LEVEL],
                     default = defaults.contrastLevel,
-                    enumName = "ContrastLevel",
                 ),
                 useThemedIcon = preferences[PreferencesKeys.USE_THEMED_ICON]
                     ?: defaults.useThemedIcon,
@@ -153,13 +154,11 @@ open class ThemePreferencesRepository @Inject constructor(
      * @param T The enum type to parse
      * @param value The string value to parse
      * @param default The default value to use if parsing fails
-     * @param enumName The name of the enum (for logging)
      * @return The parsed enum value or default if parsing fails
      */
     private inline fun <reified T : Enum<T>> parseEnum(
         value: String?,
         default: T,
-        enumName: String,
     ): T {
         if (value == null) return default
 
@@ -168,7 +167,7 @@ open class ThemePreferencesRepository @Inject constructor(
         } catch (e: IllegalArgumentException) {
             SecureLogger.w(
                 TAG,
-                "Invalid $enumName value '$value', using default: $default",
+                "Invalid ${T::class.simpleName ?: "Enum"} value '$value', using default: $default",
                 e,
             )
             default

@@ -4,6 +4,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import com.rpeters.jellyfin.data.preferences.AccentColor
 import com.rpeters.jellyfin.data.preferences.ContrastLevel
 import com.rpeters.jellyfin.data.preferences.ThemeMode
@@ -72,7 +73,7 @@ class ThemeTest {
         val originalPrimary = baseScheme.primary
 
         // When - Use reflection to access private function
-        val adjustedScheme = applyContrastLevelReflection(
+        val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
             isDark = true
@@ -89,7 +90,7 @@ class ThemeTest {
         val originalPrimary = baseScheme.primary
 
         // When
-        val adjustedScheme = applyContrastLevelReflection(
+        val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
             isDark = false
@@ -106,7 +107,7 @@ class ThemeTest {
         val originalOnPrimary = baseScheme.onPrimary
 
         // When
-        val adjustedScheme = applyContrastLevelReflection(
+        val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
             isDark = true
@@ -123,7 +124,7 @@ class ThemeTest {
         val originalOnPrimary = baseScheme.onPrimary
 
         // When
-        val adjustedScheme = applyContrastLevelReflection(
+        val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
             isDark = false
@@ -143,12 +144,12 @@ class ThemeTest {
         val baseScheme = darkColorScheme()
 
         // When
-        val mediumScheme = applyContrastLevelReflection(
+        val mediumScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
             isDark = true
         )
-        val highScheme = applyContrastLevelReflection(
+        val highScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
             isDark = true
@@ -164,12 +165,12 @@ class ThemeTest {
         val baseScheme = lightColorScheme()
 
         // When
-        val mediumScheme = applyContrastLevelReflection(
+        val mediumScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
             isDark = false
         )
-        val highScheme = applyContrastLevelReflection(
+        val highScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
             isDark = false
@@ -187,7 +188,7 @@ class ThemeTest {
         val originalBackground = baseScheme.background
 
         // When
-        val adjustedScheme = applyContrastLevelReflection(
+        val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
             isDark = true
@@ -205,7 +206,7 @@ class ThemeTest {
         val originalOutline = baseScheme.outline
 
         // When
-        val adjustedScheme = applyContrastLevelReflection(
+        val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
             isDark = true
@@ -228,7 +229,7 @@ class ThemeTest {
         val originalSecondaryContainer = baseScheme.secondaryContainer
 
         // When
-        val adjustedScheme = applyContrastLevelReflection(
+        val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
             isDark = true
@@ -266,7 +267,7 @@ class ThemeTest {
         val baseScheme = darkColorScheme()
 
         // When
-        val adjustedScheme = applyContrastLevelReflection(
+        val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.STANDARD,
             isDark = true
@@ -291,7 +292,7 @@ class ThemeTest {
         val factor = 1.2f
 
         // When
-        val adjusted = adjustBrightnessReflection(color, factor)
+        val adjusted = adjustBrightness(color, factor)
 
         // Then
         assertTrue(adjusted.red > color.red)
@@ -306,7 +307,7 @@ class ThemeTest {
         val factor = 0.8f
 
         // When
-        val adjusted = adjustBrightnessReflection(color, factor)
+        val adjusted = adjustBrightness(color, factor)
 
         // Then
         assertTrue(adjusted.red < color.red)
@@ -321,7 +322,7 @@ class ThemeTest {
         val factor = 1.2f
 
         // When
-        val adjusted = adjustBrightnessReflection(color, factor)
+        val adjusted = adjustBrightness(color, factor)
 
         // Then
         assertEquals(color.alpha, adjusted.alpha, 0.001f)
@@ -334,7 +335,7 @@ class ThemeTest {
         val factor = 2.0f
 
         // When
-        val adjusted = adjustBrightnessReflection(color, factor)
+        val adjusted = adjustBrightness(color, factor)
 
         // Then - Values should not exceed 1.0
         assertTrue(adjusted.red <= 1.0f)
@@ -353,7 +354,7 @@ class ThemeTest {
         val baseRatio = calculateContrastRatio(baseScheme.primary, baseScheme.onPrimary)
 
         // When
-        val adjustedScheme = applyContrastLevelReflection(
+        val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
             isDark = true
@@ -371,7 +372,7 @@ class ThemeTest {
         val baseRatio = calculateContrastRatio(baseScheme.surface, baseScheme.onSurface)
 
         // When - Medium contrast doesn't adjust surface in medium level, only high
-        val adjustedScheme = applyContrastLevelReflection(
+        val adjustedScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.MEDIUM,
             isDark = false
@@ -379,7 +380,7 @@ class ThemeTest {
 
         // For medium, surface might not change, but we test the concept
         // The important part is that HIGH contrast does adjust it
-        val highScheme = applyContrastLevelReflection(
+        val highScheme = applyContrastLevel(
             baseScheme,
             ContrastLevel.HIGH,
             isDark = false
@@ -432,203 +433,5 @@ class ThemeTest {
         val lighter = maxOf(lum1, lum2)
         val darker = minOf(lum1, lum2)
         return (lighter + 0.05f) / (darker + 0.05f)
-    }
-
-    /**
-     * Use reflection to access private applyContrastLevel function for testing.
-     */
-    private fun applyContrastLevelReflection(
-        colorScheme: ColorScheme,
-        contrastLevel: ContrastLevel,
-        isDark: Boolean
-    ): ColorScheme {
-        // Since the function is private, we'll simulate it here
-        // This is a test-only implementation that matches the actual logic
-        return when (contrastLevel) {
-            ContrastLevel.STANDARD -> colorScheme
-
-            ContrastLevel.MEDIUM -> colorScheme.copy(
-                primary = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.primary, 1.15f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.primary, 0.9f)
-                },
-                onPrimary = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onPrimary, 0.85f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onPrimary, 1.1f)
-                },
-                primaryContainer = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.primaryContainer, 1.15f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.primaryContainer, 0.9f)
-                },
-                onPrimaryContainer = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onPrimaryContainer, 0.85f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onPrimaryContainer, 1.1f)
-                },
-                secondary = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.secondary, 1.15f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.secondary, 0.9f)
-                },
-                onSecondary = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onSecondary, 0.85f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onSecondary, 1.1f)
-                },
-                secondaryContainer = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.secondaryContainer, 1.15f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.secondaryContainer, 0.9f)
-                },
-                onSecondaryContainer = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onSecondaryContainer, 0.85f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onSecondaryContainer, 1.1f)
-                },
-                tertiary = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.tertiary, 1.15f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.tertiary, 0.9f)
-                },
-                onTertiary = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onTertiary, 0.85f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onTertiary, 1.1f)
-                },
-                tertiaryContainer = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.tertiaryContainer, 1.15f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.tertiaryContainer, 0.9f)
-                },
-                onTertiaryContainer = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onTertiaryContainer, 0.85f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onTertiaryContainer, 1.1f)
-                },
-                outline = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.outline, 1.2f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.outline, 0.85f)
-                }
-            )
-
-            ContrastLevel.HIGH -> colorScheme.copy(
-                primary = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.primary, 1.3f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.primary, 0.8f)
-                },
-                onPrimary = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onPrimary, 0.7f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onPrimary, 1.25f)
-                },
-                primaryContainer = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.primaryContainer, 1.3f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.primaryContainer, 0.8f)
-                },
-                onPrimaryContainer = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onPrimaryContainer, 0.7f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onPrimaryContainer, 1.25f)
-                },
-                secondary = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.secondary, 1.3f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.secondary, 0.8f)
-                },
-                onSecondary = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onSecondary, 0.7f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onSecondary, 1.25f)
-                },
-                secondaryContainer = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.secondaryContainer, 1.3f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.secondaryContainer, 0.8f)
-                },
-                onSecondaryContainer = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onSecondaryContainer, 0.7f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onSecondaryContainer, 1.25f)
-                },
-                tertiary = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.tertiary, 1.3f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.tertiary, 0.8f)
-                },
-                onTertiary = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onTertiary, 0.7f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onTertiary, 1.25f)
-                },
-                tertiaryContainer = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.tertiaryContainer, 1.3f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.tertiaryContainer, 0.8f)
-                },
-                onTertiaryContainer = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onTertiaryContainer, 0.7f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onTertiaryContainer, 1.25f)
-                },
-                surface = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.surface, 1.15f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.surface, 0.95f)
-                },
-                onSurface = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onSurface, 0.7f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onSurface, 1.25f)
-                },
-                surfaceVariant = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.surfaceVariant, 1.15f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.surfaceVariant, 0.95f)
-                },
-                onSurfaceVariant = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onSurfaceVariant, 0.7f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onSurfaceVariant, 1.25f)
-                },
-                background = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.background, 1.15f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.background, 0.95f)
-                },
-                onBackground = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.onBackground, 0.7f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.onBackground, 1.25f)
-                },
-                outline = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.outline, 1.4f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.outline, 0.7f)
-                },
-                outlineVariant = if (isDark) {
-                    adjustBrightnessReflection(colorScheme.outlineVariant, 1.4f)
-                } else {
-                    adjustBrightnessReflection(colorScheme.outlineVariant, 0.7f)
-                }
-            )
-        }
-    }
-
-    /**
-     * Test implementation of adjustBrightness function.
-     */
-    private fun adjustBrightnessReflection(color: Color, factor: Float): Color {
-        return Color(
-            red = (color.red * factor).coerceIn(0f, 1f),
-            green = (color.green * factor).coerceIn(0f, 1f),
-            blue = (color.blue * factor).coerceIn(0f, 1f),
-            alpha = color.alpha
-        )
     }
 }

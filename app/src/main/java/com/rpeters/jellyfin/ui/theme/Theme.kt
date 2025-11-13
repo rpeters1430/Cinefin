@@ -30,6 +30,7 @@ private object ContrastAdjustmentFactors {
     const val HIGH_DARK_DARKEN = 0.7f
     const val HIGH_LIGHT_BRIGHTEN = 0.8f
     const val HIGH_LIGHT_DARKEN = 1.25f
+    const val HIGH_LIGHT_ON_SURFACE_DARKEN = 0.75f
     const val HIGH_OUTLINE_DARK = 1.4f
     const val HIGH_OUTLINE_LIGHT = 0.7f
     const val HIGH_SURFACE_DARK = 1.15f
@@ -167,7 +168,7 @@ private fun applyAmoledBlackToDynamicColors(colorScheme: ColorScheme): ColorSche
  * @param isDark Whether the theme is in dark mode
  * @return An adjusted ColorScheme with improved contrast
  */
-private fun applyContrastLevel(
+internal fun applyContrastLevel(
     colorScheme: ColorScheme,
     contrastLevel: ContrastLevel,
     isDark: Boolean,
@@ -326,7 +327,10 @@ private fun applyContrastLevel(
             onSurface = if (isDark) {
                 adjustBrightness(colorScheme.onSurface, ContrastAdjustmentFactors.HIGH_DARK_DARKEN)
             } else {
-                adjustBrightness(colorScheme.onSurface, ContrastAdjustmentFactors.HIGH_LIGHT_DARKEN)
+                adjustBrightness(
+                    colorScheme.onSurface,
+                    ContrastAdjustmentFactors.HIGH_LIGHT_ON_SURFACE_DARKEN,
+                )
             },
             surfaceVariant = if (isDark) {
                 adjustBrightness(colorScheme.surfaceVariant, ContrastAdjustmentFactors.HIGH_SURFACE_DARK)
@@ -336,7 +340,10 @@ private fun applyContrastLevel(
             onSurfaceVariant = if (isDark) {
                 adjustBrightness(colorScheme.onSurfaceVariant, ContrastAdjustmentFactors.HIGH_DARK_DARKEN)
             } else {
-                adjustBrightness(colorScheme.onSurfaceVariant, ContrastAdjustmentFactors.HIGH_LIGHT_DARKEN)
+                adjustBrightness(
+                    colorScheme.onSurfaceVariant,
+                    ContrastAdjustmentFactors.HIGH_LIGHT_ON_SURFACE_DARKEN,
+                )
             },
 
             // Background color adjustments
@@ -348,7 +355,10 @@ private fun applyContrastLevel(
             onBackground = if (isDark) {
                 adjustBrightness(colorScheme.onBackground, ContrastAdjustmentFactors.HIGH_DARK_DARKEN)
             } else {
-                adjustBrightness(colorScheme.onBackground, ContrastAdjustmentFactors.HIGH_LIGHT_DARKEN)
+                adjustBrightness(
+                    colorScheme.onBackground,
+                    ContrastAdjustmentFactors.HIGH_LIGHT_ON_SURFACE_DARKEN,
+                )
             },
 
             // Outline adjustments
@@ -370,7 +380,7 @@ private fun applyContrastLevel(
  * Adjust the brightness of a color by a factor.
  * Factor > 1.0 increases brightness, factor < 1.0 decreases brightness.
  */
-private fun adjustBrightness(
+internal fun adjustBrightness(
     color: androidx.compose.ui.graphics.Color,
     factor: Float,
 ): androidx.compose.ui.graphics.Color {

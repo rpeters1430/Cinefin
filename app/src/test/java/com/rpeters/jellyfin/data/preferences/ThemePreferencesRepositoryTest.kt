@@ -1,12 +1,8 @@
 package com.rpeters.jellyfin.data.preferences
 
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStoreFile
-import io.mockk.every
-import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
@@ -21,7 +17,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
 /**
  * Comprehensive unit tests for ThemePreferencesRepository.
@@ -38,24 +33,17 @@ class ThemePreferencesRepositoryTest {
 
     private lateinit var testDataStore: DataStore<Preferences>
     private lateinit var repository: ThemePreferencesRepository
-    private lateinit var mockContext: Context
 
     @Before
     fun setup() {
         // Create a test DataStore with a temporary file
-        mockContext = mockk<Context>(relaxed = true)
         val testFile = tmpFolder.newFile("test_theme_preferences.preferences_pb")
-
-        every { mockContext.filesDir } returns tmpFolder.root
-
         testDataStore = PreferenceDataStoreFactory.create(
             scope = testScope,
             produceFile = { testFile }
         )
 
-        // We need to create the repository with reflection to inject the test DataStore
-        // For simplicity, we'll use a wrapper approach
-        repository = TestThemePreferencesRepository(mockContext, testDataStore)
+        repository = ThemePreferencesRepository(testDataStore)
     }
 
     @After
@@ -317,7 +305,7 @@ class ThemePreferencesRepositoryTest {
         repository.setAccentColor(AccentColor.JELLYFIN_BLUE)
 
         // When - create new repository instance with same DataStore
-        val newRepository = TestThemePreferencesRepository(mockContext, testDataStore)
+        val newRepository = ThemePreferencesRepository(testDataStore)
         val preferences = newRepository.themePreferencesFlow.first()
 
         // Then - preferences should be persisted
@@ -325,110 +313,4 @@ class ThemePreferencesRepositoryTest {
         assertEquals(AccentColor.JELLYFIN_BLUE, preferences.accentColor)
     }
 
-    // ========================================================================
-    // HELPER CLASS
-    // ========================================================================
-
-    /**
-     * Test wrapper for ThemePreferencesRepository that allows injecting a test DataStore.
-     */
-    private class TestThemePreferencesRepository(
-        context: Context,
-        private val testDataStore: DataStore<Preferences>
-    ) : ThemePreferencesRepository(context) {
-
-        override val themePreferencesFlow = testDataStore.data
-            .catch { exception ->
-                if (exception is java.io.IOException) {
-                    emit(androidx.datastore.preferences.core.emptyPreferences())
-                } else {
-                    throw exception
-                }
-            }
-            .map { preferences ->
-                val defaults = ThemePreferences.DEFAULT
-                ThemePreferences(
-                    themeMode = parseEnumHelper(
-                        preferences[androidx.datastore.preferences.core.stringPreferencesKey("theme_mode")],
-                        defaults.themeMode
-                    ),
-                    useDynamicColors = preferences[androidx.datastore.preferences.core.booleanPreferencesKey("use_dynamic_colors")]
-                        ?: defaults.useDynamicColors,
-                    accentColor = parseEnumHelper(
-                        preferences[androidx.datastore.preferences.core.stringPreferencesKey("accent_color")],
-                        defaults.accentColor
-                    ),
-                    contrastLevel = parseEnumHelper(
-                        preferences[androidx.datastore.preferences.core.stringPreferencesKey("contrast_level")],
-                        defaults.contrastLevel
-                    ),
-                    useThemedIcon = preferences[androidx.datastore.preferences.core.booleanPreferencesKey("use_themed_icon")]
-                        ?: defaults.useThemedIcon,
-                    enableEdgeToEdge = preferences[androidx.datastore.preferences.core.booleanPreferencesKey("enable_edge_to_edge")]
-                        ?: defaults.enableEdgeToEdge,
-                    respectReduceMotion = preferences[androidx.datastore.preferences.core.booleanPreferencesKey("respect_reduce_motion")]
-                        ?: defaults.respectReduceMotion,
-                )
-            }
-
-        private inline fun <reified T : Enum<T>> parseEnumHelper(
-            value: String?,
-            default: T
-        ): T {
-            if (value == null) return default
-            return try {
-                enumValueOf<T>(value)
-            } catch (e: IllegalArgumentException) {
-                default
-            }
-        }
-
-        override suspend fun setThemeMode(themeMode: ThemeMode) {
-            testDataStore.edit { preferences ->
-                preferences[androidx.datastore.preferences.core.stringPreferencesKey("theme_mode")] = themeMode.name
-            }
-        }
-
-        override suspend fun setUseDynamicColors(useDynamicColors: Boolean) {
-            testDataStore.edit { preferences ->
-                preferences[androidx.datastore.preferences.core.booleanPreferencesKey("use_dynamic_colors")] = useDynamicColors
-            }
-        }
-
-        override suspend fun setAccentColor(accentColor: AccentColor) {
-            testDataStore.edit { preferences ->
-                preferences[androidx.datastore.preferences.core.stringPreferencesKey("accent_color")] = accentColor.name
-            }
-        }
-
-        override suspend fun setContrastLevel(contrastLevel: ContrastLevel) {
-            testDataStore.edit { preferences ->
-                preferences[androidx.datastore.preferences.core.stringPreferencesKey("contrast_level")] = contrastLevel.name
-            }
-        }
-
-        override suspend fun setUseThemedIcon(useThemedIcon: Boolean) {
-            testDataStore.edit { preferences ->
-                preferences[androidx.datastore.preferences.core.booleanPreferencesKey("use_themed_icon")] = useThemedIcon
-            }
-        }
-
-        override suspend fun setEnableEdgeToEdge(enableEdgeToEdge: Boolean) {
-            testDataStore.edit { preferences ->
-                preferences[androidx.datastore.preferences.core.booleanPreferencesKey("enable_edge_to_edge")] = enableEdgeToEdge
-            }
-        }
-
-        override suspend fun setRespectReduceMotion(respectReduceMotion: Boolean) {
-            testDataStore.edit { preferences ->
-                preferences[androidx.datastore.preferences.core.booleanPreferencesKey("respect_reduce_motion")] = respectReduceMotion
-            }
-        }
-
-        override suspend fun resetToDefaults() {
-            testDataStore.edit { preferences ->
-                preferences.clear()
-            }
-        }
-    }
 }

@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.screens.settings
 
 import android.os.Build
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsOff
@@ -23,9 +24,11 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Assume.assumeTrue
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
@@ -162,7 +165,7 @@ class AppearanceSettingsScreenTest {
         composeTestRule.onNodeWithContentDescription("Navigate back").performClick()
 
         // Then
-        assert(navigateBackCalled)
+        assertTrue(navigateBackCalled)
     }
 
     // ========================================================================
@@ -328,8 +331,7 @@ class AppearanceSettingsScreenTest {
         // Find and click the Dynamic Colors switch (it's in a Row with the text)
         composeTestRule.onNodeWithText("Dynamic Colors").performClick()
 
-        // Note: We can't easily test the switch directly, but the row is clickable
-        // In a real implementation, you might want to add testTag to the Switch
+        coVerify(exactly = 1) { mockViewModel.setUseDynamicColors(false) }
     }
 
     // ========================================================================
@@ -338,6 +340,8 @@ class AppearanceSettingsScreenTest {
 
     @Test
     fun `accent color section is hidden when dynamic colors enabled on Android 12+`() {
+        assumeTrue("Requires Android 12 or higher", Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+
         // Given
         preferencesFlow.value = ThemePreferences.DEFAULT.copy(useDynamicColors = true)
 
@@ -351,9 +355,8 @@ class AppearanceSettingsScreenTest {
             }
         }
 
-        // Then - Accent color section should not be visible if SDK >= S
-        // This test will vary based on actual SDK version
-        // We're checking the concept of conditional rendering
+        // Then - Accent color section should not be visible
+        composeTestRule.onNodeWithText("Accent Color").assertDoesNotExist()
     }
 
     @Test
@@ -396,7 +399,7 @@ class AppearanceSettingsScreenTest {
 
         composeTestRule.onNodeWithText("Respect Reduce Motion").performClick()
 
-        // Note: Similar to dynamic colors, testing the actual Switch requires testTag
+        coVerify(exactly = 1) { mockViewModel.setRespectReduceMotion(false) }
     }
 
     @Test
