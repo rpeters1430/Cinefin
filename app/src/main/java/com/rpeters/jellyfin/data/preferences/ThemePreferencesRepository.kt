@@ -146,5 +146,4 @@ class ThemePreferencesRepository @Inject constructor(
         val ENABLE_EDGE_TO_EDGE = booleanPreferencesKey("enable_edge_to_edge")
         val RESPECT_REDUCE_MOTION = booleanPreferencesKey("respect_reduce_motion")
     }
-
 }
