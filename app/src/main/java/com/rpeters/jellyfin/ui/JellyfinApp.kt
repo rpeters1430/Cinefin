@@ -22,6 +22,7 @@ import com.rpeters.jellyfin.ui.navigation.Screen
 import com.rpeters.jellyfin.ui.shortcuts.DynamicShortcutManager
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
+import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
 
 /**
  * Root composable for the phone experience.
@@ -38,7 +39,11 @@ fun JellyfinApp(
     initialDestination: String? = null,
     onShortcutConsumed: () -> Unit = {},
 ) {
-    JellyfinAndroidTheme(dynamicColor = useDynamicColor) {
+    // Collect theme preferences
+    val themeViewModel: ThemePreferencesViewModel = hiltViewModel()
+    val themePreferences by themeViewModel.themePreferences.collectAsStateWithLifecycle()
+
+    JellyfinAndroidTheme(themePreferences = themePreferences) {
         val navController = rememberNavController()
         val connectionViewModel: ServerConnectionViewModel = hiltViewModel()
         val connectionState by connectionViewModel.connectionState.collectAsStateWithLifecycle()
