@@ -16,10 +16,12 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Tonality
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,8 +37,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,6 +50,11 @@ import com.rpeters.jellyfin.data.preferences.AccentColor
 import com.rpeters.jellyfin.data.preferences.ContrastLevel
 import com.rpeters.jellyfin.data.preferences.ThemeMode
 import com.rpeters.jellyfin.ui.theme.getAccentColorForPreview
+import com.rpeters.jellyfin.ui.theme.getAccentColorName
+import com.rpeters.jellyfin.ui.theme.getContrastLevelDescription
+import com.rpeters.jellyfin.ui.theme.getContrastLevelName
+import com.rpeters.jellyfin.ui.theme.getThemeModeDescription
+import com.rpeters.jellyfin.ui.theme.getThemeModeName
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
 
 /**
@@ -148,7 +159,7 @@ fun AppearanceSettingsScreen(
             // Contrast Level Section
             SettingsSection(
                 title = "Contrast",
-                icon = Icons.Default.LightMode,
+                icon = Icons.Default.Tonality,
             ) {
                 ContrastLevel.entries.forEach { level ->
                     ContrastLevelOption(
@@ -164,7 +175,7 @@ fun AppearanceSettingsScreen(
             // Additional Settings
             SettingsSection(
                 title = "Accessibility",
-                icon = Icons.Default.LightMode,
+                icon = Icons.Default.Accessibility,
             ) {
                 SwitchSetting(
                     title = "Respect Reduce Motion",
@@ -192,7 +203,7 @@ private fun SettingsSection(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = "$title section icon",
                 tint = MaterialTheme.colorScheme.primary,
             )
             Text(
@@ -219,7 +230,10 @@ private fun ThemeModeOption(
                 role = Role.RadioButton,
                 onClick = onSelect,
             )
-            .padding(vertical = 8.dp),
+            .padding(vertical = 8.dp)
+            .semantics(mergeDescendants = true) {
+                stateDescription = if (selected) "Selected" else "Not selected"
+            },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(
@@ -229,21 +243,11 @@ private fun ThemeModeOption(
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(
-                text = when (mode) {
-                    ThemeMode.SYSTEM -> "System Default"
-                    ThemeMode.LIGHT -> "Light"
-                    ThemeMode.DARK -> "Dark"
-                    ThemeMode.AMOLED_BLACK -> "AMOLED Black"
-                },
+                text = getThemeModeName(mode),
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(
-                text = when (mode) {
-                    ThemeMode.SYSTEM -> "Follow system theme setting"
-                    ThemeMode.LIGHT -> "Always use light theme"
-                    ThemeMode.DARK -> "Always use dark theme"
-                    ThemeMode.AMOLED_BLACK -> "Pure black for OLED screens"
-                },
+                text = getThemeModeDescription(mode),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -293,50 +297,22 @@ private fun AccentColorGrid(
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // Row 1: Jellyfin colors
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            AccentColor.entries.take(3).forEach { color ->
-                AccentColorOption(
-                    color = color,
-                    selected = selectedColor == color,
-                    onSelect = { onColorSelect(color) },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-        // Row 2: Material colors part 1
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            AccentColor.entries.drop(3).take(3).forEach { color ->
-                AccentColorOption(
-                    color = color,
-                    selected = selectedColor == color,
-                    onSelect = { onColorSelect(color) },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-        // Row 3: Material colors part 2
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            AccentColor.entries.drop(6).forEach { color ->
-                AccentColorOption(
-                    color = color,
-                    selected = selectedColor == color,
-                    onSelect = { onColorSelect(color) },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            // Add empty spacers to fill the row
-            repeat(3 - AccentColor.entries.drop(6).size) {
-                Spacer(modifier = Modifier.weight(1f))
+        AccentColor.entries.chunked(3).forEach { rowColors ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                rowColors.forEach { color ->
+                    AccentColorOption(
+                        color = color,
+                        selected = selectedColor == color,
+                        onSelect = { onColorSelect(color) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                repeat(3 - rowColors.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
     }
@@ -349,11 +325,17 @@ private fun AccentColorOption(
     onSelect: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val previewColor = getAccentColorForPreview(color)
+    val contentColor = if (previewColor.luminance() > 0.5f) {
+        Color.Black
+    } else {
+        Color.White
+    }
     Card(
         onClick = onSelect,
         modifier = modifier.height(80.dp),
         colors = CardDefaults.cardColors(
-            containerColor = getAccentColorForPreview(color),
+            containerColor = previewColor,
         ),
     ) {
         Column(
@@ -368,18 +350,15 @@ private fun AccentColorOption(
                     imageVector = Icons.Default.Check,
                     contentDescription = "Selected",
                     modifier = Modifier.size(24.dp),
-                    tint = androidx.compose.ui.graphics.Color.White,
+                    tint = contentColor,
                 )
             } else {
                 Spacer(modifier = Modifier.size(24.dp))
             }
             Text(
-                text = color.name.replace("_", " ")
-                    .lowercase()
-                    .split(" ")
-                    .joinToString(" ") { it.capitalize() },
+                text = getAccentColorName(color),
                 style = MaterialTheme.typography.labelSmall,
-                color = androidx.compose.ui.graphics.Color.White,
+                color = contentColor,
             )
         }
     }
@@ -399,7 +378,10 @@ private fun ContrastLevelOption(
                 role = Role.RadioButton,
                 onClick = onSelect,
             )
-            .padding(vertical = 8.dp),
+            .padding(vertical = 8.dp)
+            .semantics(mergeDescendants = true) {
+                stateDescription = if (selected) "Selected" else "Not selected"
+            },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(
@@ -409,19 +391,11 @@ private fun ContrastLevelOption(
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(
-                text = when (level) {
-                    ContrastLevel.STANDARD -> "Standard"
-                    ContrastLevel.MEDIUM -> "Medium"
-                    ContrastLevel.HIGH -> "High"
-                },
+                text = getContrastLevelName(level),
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(
-                text = when (level) {
-                    ContrastLevel.STANDARD -> "Default contrast level"
-                    ContrastLevel.MEDIUM -> "Increased contrast for better readability"
-                    ContrastLevel.HIGH -> "Maximum contrast for accessibility"
-                },
+                text = getContrastLevelDescription(level),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

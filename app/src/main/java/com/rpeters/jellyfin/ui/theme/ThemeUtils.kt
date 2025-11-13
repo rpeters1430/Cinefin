@@ -2,6 +2,8 @@ package com.rpeters.jellyfin.ui.theme
 
 import androidx.compose.ui.graphics.Color
 import com.rpeters.jellyfin.data.preferences.AccentColor
+import com.rpeters.jellyfin.data.preferences.ContrastLevel
+import com.rpeters.jellyfin.data.preferences.ThemeMode
 
 /**
  * Get a preview color for an accent color selection.
@@ -23,23 +25,46 @@ fun getAccentColorForPreview(accentColor: AccentColor): Color {
 /**
  * Get a display name for a theme mode.
  */
-fun getThemeModeName(themeMode: com.rpeters.jellyfin.data.preferences.ThemeMode): String {
+fun getThemeModeName(themeMode: ThemeMode): String {
     return when (themeMode) {
-        com.rpeters.jellyfin.data.preferences.ThemeMode.SYSTEM -> "System Default"
-        com.rpeters.jellyfin.data.preferences.ThemeMode.LIGHT -> "Light"
-        com.rpeters.jellyfin.data.preferences.ThemeMode.DARK -> "Dark"
-        com.rpeters.jellyfin.data.preferences.ThemeMode.AMOLED_BLACK -> "AMOLED Black"
+        ThemeMode.SYSTEM -> "System Default"
+        ThemeMode.LIGHT -> "Light"
+        ThemeMode.DARK -> "Dark"
+        ThemeMode.AMOLED_BLACK -> "AMOLED Black"
+    }
+}
+
+/**
+ * Get a description for a theme mode.
+ */
+fun getThemeModeDescription(themeMode: ThemeMode): String {
+    return when (themeMode) {
+        ThemeMode.SYSTEM -> "Follow system theme setting"
+        ThemeMode.LIGHT -> "Always use light theme"
+        ThemeMode.DARK -> "Always use dark theme"
+        ThemeMode.AMOLED_BLACK -> "Pure black for OLED screens"
     }
 }
 
 /**
  * Get a display name for a contrast level.
  */
-fun getContrastLevelName(contrastLevel: com.rpeters.jellyfin.data.preferences.ContrastLevel): String {
+fun getContrastLevelName(contrastLevel: ContrastLevel): String {
     return when (contrastLevel) {
-        com.rpeters.jellyfin.data.preferences.ContrastLevel.STANDARD -> "Standard"
-        com.rpeters.jellyfin.data.preferences.ContrastLevel.MEDIUM -> "Medium"
-        com.rpeters.jellyfin.data.preferences.ContrastLevel.HIGH -> "High"
+        ContrastLevel.STANDARD -> "Standard"
+        ContrastLevel.MEDIUM -> "Medium"
+        ContrastLevel.HIGH -> "High"
+    }
+}
+
+/**
+ * Get a description for a contrast level.
+ */
+fun getContrastLevelDescription(contrastLevel: ContrastLevel): String {
+    return when (contrastLevel) {
+        ContrastLevel.STANDARD -> "Default contrast level"
+        ContrastLevel.MEDIUM -> "Increased contrast for better readability"
+        ContrastLevel.HIGH -> "Maximum contrast for accessibility"
     }
 }
 

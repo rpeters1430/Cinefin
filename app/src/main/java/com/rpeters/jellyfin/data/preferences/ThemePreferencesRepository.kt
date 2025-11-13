@@ -43,20 +43,25 @@ class ThemePreferencesRepository @Inject constructor(
             }
         }
         .map { preferences ->
+            val defaults = ThemePreferences.DEFAULT
             ThemePreferences(
-                themeMode = ThemeMode.valueOf(
-                    preferences[PreferencesKeys.THEME_MODE] ?: ThemeMode.SYSTEM.name,
-                ),
-                useDynamicColors = preferences[PreferencesKeys.USE_DYNAMIC_COLORS] ?: true,
-                accentColor = AccentColor.valueOf(
-                    preferences[PreferencesKeys.ACCENT_COLOR] ?: AccentColor.JELLYFIN_PURPLE.name,
-                ),
-                contrastLevel = ContrastLevel.valueOf(
-                    preferences[PreferencesKeys.CONTRAST_LEVEL] ?: ContrastLevel.STANDARD.name,
-                ),
-                useThemedIcon = preferences[PreferencesKeys.USE_THEMED_ICON] ?: true,
-                enableEdgeToEdge = preferences[PreferencesKeys.ENABLE_EDGE_TO_EDGE] ?: true,
-                respectReduceMotion = preferences[PreferencesKeys.RESPECT_REDUCE_MOTION] ?: true,
+                themeMode = preferences[PreferencesKeys.THEME_MODE]
+                    ?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() }
+                    ?: defaults.themeMode,
+                useDynamicColors = preferences[PreferencesKeys.USE_DYNAMIC_COLORS]
+                    ?: defaults.useDynamicColors,
+                accentColor = preferences[PreferencesKeys.ACCENT_COLOR]
+                    ?.let { runCatching { AccentColor.valueOf(it) }.getOrNull() }
+                    ?: defaults.accentColor,
+                contrastLevel = preferences[PreferencesKeys.CONTRAST_LEVEL]
+                    ?.let { runCatching { ContrastLevel.valueOf(it) }.getOrNull() }
+                    ?: defaults.contrastLevel,
+                useThemedIcon = preferences[PreferencesKeys.USE_THEMED_ICON]
+                    ?: defaults.useThemedIcon,
+                enableEdgeToEdge = preferences[PreferencesKeys.ENABLE_EDGE_TO_EDGE]
+                    ?: defaults.enableEdgeToEdge,
+                respectReduceMotion = preferences[PreferencesKeys.RESPECT_REDUCE_MOTION]
+                    ?: defaults.respectReduceMotion,
             )
         }
 
@@ -142,7 +147,4 @@ class ThemePreferencesRepository @Inject constructor(
         val RESPECT_REDUCE_MOTION = booleanPreferencesKey("respect_reduce_motion")
     }
 
-    companion object {
-        private const val TAG = "ThemePreferencesRepository"
-    }
 }
