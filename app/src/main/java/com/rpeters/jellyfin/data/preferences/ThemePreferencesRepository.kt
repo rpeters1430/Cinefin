@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -25,37 +26,46 @@ private val Context.themeDataStore: DataStore<Preferences> by preferencesDataSto
  * Provides reactive access to theme settings across the application.
  */
 @Singleton
-class ThemePreferencesRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
+open class ThemePreferencesRepository(
+    private val dataStore: DataStore<Preferences>,
 ) {
-    private val dataStore = context.themeDataStore
+
+    @Inject
+    constructor(
+        @ApplicationContext context: Context,
+    ) : this(context.themeDataStore)
 
     /**
      * Flow of current theme preferences.
      */
-    val themePreferencesFlow: Flow<ThemePreferences> = dataStore.data
+    open val themePreferencesFlow: Flow<ThemePreferences> = dataStore.data
         .catch { exception ->
             // If there's an error reading preferences, emit default values
             if (exception is IOException) {
+                SecureLogger.w(TAG, "IOException reading theme preferences, using defaults", exception)
                 emit(androidx.datastore.preferences.core.emptyPreferences())
             } else {
+                SecureLogger.e(TAG, "Unexpected error reading theme preferences", exception)
                 throw exception
             }
         }
         .map { preferences ->
             val defaults = ThemePreferences.DEFAULT
             ThemePreferences(
-                themeMode = preferences[PreferencesKeys.THEME_MODE]
-                    ?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() }
-                    ?: defaults.themeMode,
+                themeMode = parseEnum(
+                    value = preferences[PreferencesKeys.THEME_MODE],
+                    default = defaults.themeMode,
+                ),
                 useDynamicColors = preferences[PreferencesKeys.USE_DYNAMIC_COLORS]
                     ?: defaults.useDynamicColors,
-                accentColor = preferences[PreferencesKeys.ACCENT_COLOR]
-                    ?.let { runCatching { AccentColor.valueOf(it) }.getOrNull() }
-                    ?: defaults.accentColor,
-                contrastLevel = preferences[PreferencesKeys.CONTRAST_LEVEL]
-                    ?.let { runCatching { ContrastLevel.valueOf(it) }.getOrNull() }
-                    ?: defaults.contrastLevel,
+                accentColor = parseEnum(
+                    value = preferences[PreferencesKeys.ACCENT_COLOR],
+                    default = defaults.accentColor,
+                ),
+                contrastLevel = parseEnum(
+                    value = preferences[PreferencesKeys.CONTRAST_LEVEL],
+                    default = defaults.contrastLevel,
+                ),
                 useThemedIcon = preferences[PreferencesKeys.USE_THEMED_ICON]
                     ?: defaults.useThemedIcon,
                 enableEdgeToEdge = preferences[PreferencesKeys.ENABLE_EDGE_TO_EDGE]
@@ -68,7 +78,7 @@ class ThemePreferencesRepository @Inject constructor(
     /**
      * Update theme mode (System, Light, Dark, AMOLED Black).
      */
-    suspend fun setThemeMode(themeMode: ThemeMode) {
+    open suspend fun setThemeMode(themeMode: ThemeMode) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.THEME_MODE] = themeMode.name
         }
@@ -77,7 +87,7 @@ class ThemePreferencesRepository @Inject constructor(
     /**
      * Update dynamic colors setting.
      */
-    suspend fun setUseDynamicColors(useDynamicColors: Boolean) {
+    open suspend fun setUseDynamicColors(useDynamicColors: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.USE_DYNAMIC_COLORS] = useDynamicColors
         }
@@ -86,7 +96,7 @@ class ThemePreferencesRepository @Inject constructor(
     /**
      * Update custom accent color.
      */
-    suspend fun setAccentColor(accentColor: AccentColor) {
+    open suspend fun setAccentColor(accentColor: AccentColor) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.ACCENT_COLOR] = accentColor.name
         }
@@ -95,7 +105,7 @@ class ThemePreferencesRepository @Inject constructor(
     /**
      * Update contrast level.
      */
-    suspend fun setContrastLevel(contrastLevel: ContrastLevel) {
+    open suspend fun setContrastLevel(contrastLevel: ContrastLevel) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.CONTRAST_LEVEL] = contrastLevel.name
         }
@@ -104,7 +114,7 @@ class ThemePreferencesRepository @Inject constructor(
     /**
      * Update themed icon setting.
      */
-    suspend fun setUseThemedIcon(useThemedIcon: Boolean) {
+    open suspend fun setUseThemedIcon(useThemedIcon: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.USE_THEMED_ICON] = useThemedIcon
         }
@@ -113,7 +123,7 @@ class ThemePreferencesRepository @Inject constructor(
     /**
      * Update edge-to-edge layout setting.
      */
-    suspend fun setEnableEdgeToEdge(enableEdgeToEdge: Boolean) {
+    open suspend fun setEnableEdgeToEdge(enableEdgeToEdge: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.ENABLE_EDGE_TO_EDGE] = enableEdgeToEdge
         }
@@ -122,7 +132,7 @@ class ThemePreferencesRepository @Inject constructor(
     /**
      * Update reduce motion setting.
      */
-    suspend fun setRespectReduceMotion(respectReduceMotion: Boolean) {
+    open suspend fun setRespectReduceMotion(respectReduceMotion: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.RESPECT_REDUCE_MOTION] = respectReduceMotion
         }
@@ -131,9 +141,36 @@ class ThemePreferencesRepository @Inject constructor(
     /**
      * Reset all theme preferences to defaults.
      */
-    suspend fun resetToDefaults() {
+    open suspend fun resetToDefaults() {
         dataStore.edit { preferences ->
             preferences.clear()
+        }
+    }
+
+    /**
+     * Parse enum value from string with robust error handling.
+     * Logs warnings when invalid values are encountered and returns defaults.
+     *
+     * @param T The enum type to parse
+     * @param value The string value to parse
+     * @param default The default value to use if parsing fails
+     * @return The parsed enum value or default if parsing fails
+     */
+    private inline fun <reified T : Enum<T>> parseEnum(
+        value: String?,
+        default: T,
+    ): T {
+        if (value == null) return default
+
+        return try {
+            enumValueOf<T>(value)
+        } catch (e: IllegalArgumentException) {
+            SecureLogger.w(
+                TAG,
+                "Invalid ${T::class.simpleName ?: "Enum"} value '$value', using default: $default",
+                e,
+            )
+            default
         }
     }
 
@@ -145,5 +182,9 @@ class ThemePreferencesRepository @Inject constructor(
         val USE_THEMED_ICON = booleanPreferencesKey("use_themed_icon")
         val ENABLE_EDGE_TO_EDGE = booleanPreferencesKey("enable_edge_to_edge")
         val RESPECT_REDUCE_MOTION = booleanPreferencesKey("respect_reduce_motion")
+    }
+
+    companion object {
+        private const val TAG = "ThemePreferencesRepository"
     }
 }
