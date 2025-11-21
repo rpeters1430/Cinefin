@@ -313,28 +313,28 @@ fun JellyfinNavGraph(
             var selectedFilter by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieFilter.ALL) }
             var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
             var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
+            val moviesData = viewModel.getLibraryTypeData(LibraryType.MOVIES)
 
-            // ✅ FIXED: Consolidated LaunchedEffect to prevent double loading
-            LaunchedEffect(Unit) {
-                Log.d("NavGraph-Movies", "🎬 Movies screen entered - Initial state check")
+            LaunchedEffect(appState.libraries, appState.isLoading, appState.isLoadingMovies, moviesData.isEmpty()) {
+                Log.d("NavGraph-Movies", "🎬 Movies screen state update")
                 Log.d("NavGraph-Movies", "  Libraries count: ${appState.libraries.size}")
                 Log.d("NavGraph-Movies", "  Is loading: ${appState.isLoading}")
                 Log.d(
                     "NavGraph-Movies",
-                    "  Current movies data: ${viewModel.getLibraryTypeData(LibraryType.MOVIES).size} items",
+                    "  Current movies data: ${moviesData.size} items",
                 )
 
-                // Ensure libraries are loaded first
                 if (appState.libraries.isEmpty() && !appState.isLoading) {
                     Log.d("NavGraph-Movies", "  📥 Loading initial data...")
                     viewModel.loadInitialData()
-                } else if (appState.libraries.isNotEmpty() && viewModel.getLibraryTypeData(
-                        LibraryType.MOVIES,
-                    ).isEmpty()
+                } else if (
+                    appState.libraries.isNotEmpty() &&
+                    moviesData.isEmpty() &&
+                    !appState.isLoadingMovies
                 ) {
                     Log.d(
                         "NavGraph-Movies",
-                        "🔄 Libraries loaded (${appState.libraries.size}) - Loading MOVIES data...",
+                        "🔄 Libraries ready (${appState.libraries.size}) - Loading MOVIES data...",
                     )
                     val availableLibraries =
                         appState.libraries.map { "${it.name}(${it.collectionType})" }
@@ -377,28 +377,28 @@ fun JellyfinNavGraph(
                 lifecycle = LocalLifecycleOwner.current.lifecycle,
                 minActiveState = Lifecycle.State.STARTED,
             )
+            val tvShowsData = viewModel.getLibraryTypeData(LibraryType.TV_SHOWS)
 
-            // ✅ FIXED: Consolidated LaunchedEffect to prevent double loading
-            LaunchedEffect(Unit) {
-                Log.d("NavGraph-TVShows", "📺 TV Shows screen entered - Initial state check")
+            LaunchedEffect(appState.libraries, appState.isLoading, appState.isLoadingTVShows, tvShowsData.isEmpty()) {
+                Log.d("NavGraph-TVShows", "📺 TV Shows screen state update")
                 Log.d("NavGraph-TVShows", "  Libraries count: ${appState.libraries.size}")
                 Log.d("NavGraph-TVShows", "  Is loading: ${appState.isLoading}")
                 Log.d(
                     "NavGraph-TVShows",
-                    "  Current TV shows data: ${viewModel.getLibraryTypeData(LibraryType.TV_SHOWS).size} items",
+                    "  Current TV shows data: ${tvShowsData.size} items",
                 )
 
-                // Ensure libraries are loaded first
                 if (appState.libraries.isEmpty() && !appState.isLoading) {
                     Log.d("NavGraph-TVShows", "  📥 Loading initial data...")
                     viewModel.loadInitialData()
-                } else if (appState.libraries.isNotEmpty() && viewModel.getLibraryTypeData(
-                        LibraryType.TV_SHOWS,
-                    ).isEmpty()
+                } else if (
+                    appState.libraries.isNotEmpty() &&
+                    tvShowsData.isEmpty() &&
+                    !appState.isLoadingTVShows
                 ) {
                     Log.d(
                         "NavGraph-TVShows",
-                        "🔄 Libraries loaded (${appState.libraries.size}) - Loading TV_SHOWS data...",
+                        "🔄 Libraries ready (${appState.libraries.size}) - Loading TV_SHOWS data...",
                     )
                     val availableLibraries =
                         appState.libraries.map { "${it.name}(${it.collectionType})" }
@@ -486,28 +486,28 @@ fun JellyfinNavGraph(
                 lifecycle = LocalLifecycleOwner.current.lifecycle,
                 minActiveState = Lifecycle.State.STARTED,
             )
+            val musicData = viewModel.getLibraryTypeData(LibraryType.MUSIC)
 
-            // ✅ FIXED: Single LaunchedEffect to prevent double loading
-            LaunchedEffect(Unit) {
-                Log.d("NavGraph-Music", "🎵 Music screen entered - Initial state check")
+            LaunchedEffect(appState.libraries, appState.isLoading, musicData.isEmpty()) {
+                Log.d("NavGraph-Music", "🎵 Music screen state update")
                 Log.d("NavGraph-Music", "  Libraries count: ${appState.libraries.size}")
                 Log.d("NavGraph-Music", "  Is loading: ${appState.isLoading}")
                 Log.d(
                     "NavGraph-Music",
-                    "  Current music data: ${viewModel.getLibraryTypeData(LibraryType.MUSIC).size} items",
+                    "  Current music data: ${musicData.size} items",
                 )
 
-                // Ensure libraries are loaded first
                 if (appState.libraries.isEmpty() && !appState.isLoading) {
                     Log.d("NavGraph-Music", "  📥 Loading initial data...")
                     viewModel.loadInitialData()
-                } else if (appState.libraries.isNotEmpty() && viewModel.getLibraryTypeData(
-                        LibraryType.MUSIC,
-                    ).isEmpty()
+                } else if (
+                    appState.libraries.isNotEmpty() &&
+                    musicData.isEmpty() &&
+                    !appState.isLoading
                 ) {
                     Log.d(
                         "NavGraph-Music",
-                        "🔄 Libraries loaded (${appState.libraries.size}) - Loading MUSIC data...",
+                        "🔄 Libraries ready (${appState.libraries.size}) - Loading MUSIC data...",
                     )
                     val availableLibraries =
                         appState.libraries.map { "${it.name}(${it.collectionType})" }

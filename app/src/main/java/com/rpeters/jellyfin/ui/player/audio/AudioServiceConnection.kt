@@ -184,7 +184,6 @@ class AudioServiceConnection @Inject constructor(
         mediaController?.let { return it }
 
         return withContext(Dispatchers.Main) {
-            startService()
             val token = SessionToken(appContext, ComponentName(appContext, AudioService::class.java))
             val future = MediaController.Builder(appContext, token).buildAsync()
             controllerFuture = future
@@ -231,10 +230,9 @@ class AudioServiceConnection @Inject constructor(
         controllerScope.cancel()
     }
 
-    private fun startService() {
-        val intent = Intent(appContext, AudioService::class.java)
-        ContextCompat.startForegroundService(appContext, intent)
-    }
+    // No-op: Do not explicitly start a foreground service. The MediaController binding
+    // will start the MediaSessionService as needed, and Media3 will manage foreground state.
+    private fun startService() { /* intentionally left blank */ }
 
     private fun updatePlaybackState(controller: MediaController) {
         val isPlaying = controller.playWhenReady && controller.playbackState == Player.STATE_READY

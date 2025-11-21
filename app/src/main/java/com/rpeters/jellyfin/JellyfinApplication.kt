@@ -2,8 +2,9 @@ package com.rpeters.jellyfin
 
 import android.app.Application
 import android.os.StrictMode
-import coil.ImageLoader
-import coil.ImageLoaderFactory
+import coil3.ImageLoader
+import coil3.ImageLoaderFactory
+import coil3.SingletonImageLoader
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.ui.surface.ModernSurfaceCoordinator

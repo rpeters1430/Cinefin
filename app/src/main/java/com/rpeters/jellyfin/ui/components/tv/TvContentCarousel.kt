@@ -29,8 +29,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.tv.TvFocusManager
 import com.rpeters.jellyfin.ui.tv.TvFocusableCarousel

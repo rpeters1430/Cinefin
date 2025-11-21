@@ -65,7 +65,6 @@ object MediaPlayerUtils {
 
     private fun playAudio(context: Context, streamUrl: String, item: BaseItemDto) {
         val applicationContext = context.applicationContext
-        ContextCompat.startForegroundService(applicationContext, Intent(applicationContext, AudioService::class.java))
 
         val connection = EntryPointAccessors.fromApplication(
             applicationContext,

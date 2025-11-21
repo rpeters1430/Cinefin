@@ -62,7 +62,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
@@ -362,8 +364,8 @@ private fun ExpressiveMovieHero(
             },
     ) {
         // Enhanced backdrop with dynamic colors
-        coil.compose.SubcomposeAsyncImage(
-            model = coil.request.ImageRequest.Builder(LocalContext.current)
+        SubcomposeAsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
                 .data(getBackdropUrl(movie))
                 .crossfade(true)
                 .build(),
@@ -500,7 +502,7 @@ private fun ExpressiveMovieInfoCard(
             horizontalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             // Enhanced Movie Poster
-            coil.compose.SubcomposeAsyncImage(
+            SubcomposeAsyncImage(
                 model = getImageUrl(movie),
                 contentDescription = "${movie.name} poster",
                 loading = {

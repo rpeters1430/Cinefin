@@ -120,6 +120,7 @@ dependencies {
 
     // Image Loading
     implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
 
     // Media3 for video playback
     implementation(libs.androidx.media3.exoplayer)

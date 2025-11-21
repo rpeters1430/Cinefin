@@ -1,13 +1,18 @@
 package com.rpeters.jellyfin.utils
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
-import coil.Coil
-import coil.ImageLoader
-import coil.annotation.ExperimentalCoilApi
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
-import coil.util.DebugLogger
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.annotation.ExperimentalCoilApi
+import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.allowHardware
+import coil3.request.allowRgb565
+import coil3.request.crossfade
+import coil3.util.DebugLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,8 +31,8 @@ object ImageLoadingOptimizer {
             try {
                 val imageLoader = ImageLoader.Builder(context)
                     .memoryCache {
-                        MemoryCache.Builder(context)
-                            .maxSizePercent(0.20) // Increase to 20% for better performance
+                        MemoryCache.Builder()
+                            .maxSizePercent(context, 0.20) // Increase to 20% for better performance
                             .build()
                     }
                     .diskCache {
@@ -37,16 +42,22 @@ object ImageLoadingOptimizer {
                             .cleanupDispatcher(Dispatchers.IO)
                             .build()
                     }
-                    .okHttpClient(
-                        okHttpClient.newBuilder()
-                            .addInterceptor { chain ->
-                                val request = chain.request().newBuilder()
-                                    .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
-                                    .build()
-                                chain.proceed(request)
-                            }
-                            .build(),
-                    )
+                    .components {
+                        add(
+                            OkHttpNetworkFetcherFactory(
+                                callFactory = {
+                                    okHttpClient.newBuilder()
+                                        .addInterceptor { chain ->
+                                            val request = chain.request().newBuilder()
+                                                .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
+                                                .build()
+                                            chain.proceed(request)
+                                        }
+                                        .build()
+                                }
+                            )
+                        )
+                    }
                     .crossfade(100) // Fast crossfade
                     .respectCacheHeaders(true) // Honor server cache headers
                     .allowRgb565(true) // Use less memory per image
@@ -59,7 +70,7 @@ object ImageLoadingOptimizer {
                     .build()
 
                 // Set as singleton image loader
-                Coil.setImageLoader(imageLoader)
+                SingletonImageLoader.setSafe { imageLoader }
                 Log.d(TAG, "Coil image loader initialized successfully")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize Coil image loader", e)
@@ -76,8 +87,8 @@ object ImageLoadingOptimizer {
     fun clearImageCache(context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                Coil.imageLoader(context).memoryCache?.clear()
-                Coil.imageLoader(context).diskCache?.clear()
+                SingletonImageLoader.get(context).memoryCache?.clear()
+                SingletonImageLoader.get(context).diskCache?.clear()
                 Log.d(TAG, "Image cache cleared")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to clear image cache", e)
