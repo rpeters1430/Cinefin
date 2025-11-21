@@ -1,7 +1,6 @@
 package com.rpeters.jellyfin.utils
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.util.Log
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
@@ -54,8 +53,8 @@ object ImageLoadingOptimizer {
                                             chain.proceed(request)
                                         }
                                         .build()
-                                }
-                            )
+                                },
+                            ),
                         )
                     }
                     .crossfade(100) // Fast crossfade
