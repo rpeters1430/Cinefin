@@ -2,7 +2,6 @@ package com.rpeters.jellyfin.ui.player.audio
 
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
