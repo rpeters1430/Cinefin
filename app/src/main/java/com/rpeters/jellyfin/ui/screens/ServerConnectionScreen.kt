@@ -294,10 +294,10 @@ fun ServerConnectionScreen(
                 submitIfValid()
             },
             enabled =
-                serverUrl.isNotBlank() &&
-                    username.isNotBlank() &&
-                    passwordState.text.isNotBlank() &&
-                    !connectionState.isConnecting,
+            serverUrl.isNotBlank() &&
+                username.isNotBlank() &&
+                passwordState.text.isNotBlank() &&
+                !connectionState.isConnecting,
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (connectionState.isConnecting) {

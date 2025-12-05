@@ -1,7 +1,6 @@
 package com.rpeters.jellyfin.ui.image
 
 import android.content.Context
-import android.graphics.drawable.ColorDrawable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -18,7 +17,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
-import coil3.asImage
 import coil3.compose.SubcomposeAsyncImage
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
@@ -32,7 +30,6 @@ import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import java.io.File
 
 /**
  * Optimized image loading system using Coil with intelligent caching,
@@ -95,8 +92,8 @@ fun createOptimizedImageLoader(
         .components {
             add(
                 coil3.network.okhttp.OkHttpNetworkFetcherFactory(
-                    callFactory = { okHttpClient }
-                )
+                    callFactory = { okHttpClient },
+                ),
             )
         }
         // Coil 3.x: respectCacheHeaders removed from builder

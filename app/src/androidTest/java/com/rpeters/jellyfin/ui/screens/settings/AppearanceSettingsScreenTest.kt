@@ -39,7 +39,7 @@ class AppearanceSettingsScreenTest {
 
     @get:Rule
     val composeTestRule = createComposeRule(
-        effectContext = StandardTestDispatcher()
+        effectContext = StandardTestDispatcher(),
     )
 
     private lateinit var mockViewModel: ThemePreferencesViewModel

@@ -112,8 +112,8 @@ object NetworkModule {
                                     chain.proceed(request)
                                 }
                                 .build()
-                        }
-                    )
+                        },
+                    ),
                 )
             }
             // Coil 3.x: crossfade, allowRgb565, allowHardware are now request-level options
