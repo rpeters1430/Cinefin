@@ -28,7 +28,7 @@ class MediaCardsTest {
 
     @get:Rule
     val composeTestRule = createComposeRule(
-        effectContext = StandardTestDispatcher()
+        effectContext = StandardTestDispatcher(),
     )
 
     private fun createTestMovie(): BaseItemDto {
