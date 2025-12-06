@@ -70,8 +70,9 @@ fun LibraryTypeScreen(
     var viewMode by remember { mutableStateOf(ViewMode.GRID) }
     var selectedFilter by remember { mutableStateOf(FilterType.getDefault()) }
 
-    // ✅ FIX: Use library-specific data instead of generic allItems
-    val libraryItems = remember(libraryType, appState.allMovies, appState.allTVShows, appState.allItems) {
+    // ✅ FIX: Use library-specific data from itemsByLibrary map
+    // The remember() must depend on itemsByLibrary since getLibraryTypeData() reads from that map
+    val libraryItems = remember(libraryType, appState.itemsByLibrary) {
         viewModel.getLibraryTypeData(libraryType)
     }
 
