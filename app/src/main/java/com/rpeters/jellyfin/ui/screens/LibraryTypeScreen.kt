@@ -2,17 +2,13 @@
 
 package com.rpeters.jellyfin.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -32,6 +28,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlaceholderHighlight
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -40,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.carousel.rememberCarouselState
+import androidx.compose.material3.placeholder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -69,6 +67,7 @@ fun LibraryTypeScreen(
     val appState by viewModel.appState.collectAsState()
     var viewMode by remember { mutableStateOf(ViewMode.GRID) }
     var selectedFilter by remember { mutableStateOf(FilterType.getDefault()) }
+    var hasRequestedData by remember(libraryType) { mutableStateOf(false) }
 
     // ✅ FIX: Use library-specific data from itemsByLibrary map
     // The remember() must depend on itemsByLibrary since getLibraryTypeData() reads from that map
@@ -82,8 +81,11 @@ fun LibraryTypeScreen(
 
     // ✅ FIX: Load data on-demand when screen is first composed
     LaunchedEffect(libraryType) {
+        hasRequestedData = true
         viewModel.loadLibraryTypeData(libraryType, forceRefresh = false)
     }
+
+    val isInitialLoading = (appState.isLoading || !hasRequestedData) && libraryItems.isEmpty()
 
     Scaffold(
         topBar = {
@@ -151,51 +153,50 @@ fun LibraryTypeScreen(
                 libraryType = libraryType,
             )
 
-            AnimatedVisibility(
-                visible = displayItems.isNotEmpty(),
-                enter = fadeIn() + slideInVertically(),
-                exit = fadeOut() + slideOutVertically(),
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                when (viewMode) {
-                    ViewMode.GRID -> GridContent(
-                        items = displayItems,
-                        libraryType = libraryType,
-                        getImageUrl = { viewModel.getImageUrl(it) },
-                        onTVShowClick = onTVShowClick,
-                        isLoadingMore = appState.isLoadingMore,
-                        hasMoreItems = appState.hasMoreItems,
-                        onLoadMore = { viewModel.loadMoreItems() },
-                    )
-                    ViewMode.LIST -> ListContent(
-                        items = displayItems,
-                        libraryType = libraryType,
-                        getImageUrl = { viewModel.getImageUrl(it) },
-                        onTVShowClick = onTVShowClick,
-                        isLoadingMore = appState.isLoadingMore,
-                        hasMoreItems = appState.hasMoreItems,
-                        onLoadMore = { viewModel.loadMoreItems() },
-                    )
-                    ViewMode.CAROUSEL -> CarouselContent(
-                        items = displayItems,
-                        libraryType = libraryType,
-                        getImageUrl = { viewModel.getImageUrl(it) },
-                        onTVShowClick = onTVShowClick,
-                    )
+            when {
+                isInitialLoading -> {
+                    LibraryTypeLoadingPlaceholder(libraryType = libraryType)
+                }
+                displayItems.isNotEmpty() -> {
+                    when (viewMode) {
+                        ViewMode.GRID -> GridContent(
+                            items = displayItems,
+                            libraryType = libraryType,
+                            getImageUrl = { viewModel.getImageUrl(it) },
+                            onTVShowClick = onTVShowClick,
+                            isLoadingMore = appState.isLoadingMore,
+                            hasMoreItems = appState.hasMoreItems,
+                            onLoadMore = { viewModel.loadMoreItems() },
+                        )
+                        ViewMode.LIST -> ListContent(
+                            items = displayItems,
+                            libraryType = libraryType,
+                            getImageUrl = { viewModel.getImageUrl(it) },
+                            onTVShowClick = onTVShowClick,
+                            isLoadingMore = appState.isLoadingMore,
+                            hasMoreItems = appState.hasMoreItems,
+                            onLoadMore = { viewModel.loadMoreItems() },
+                        )
+                        ViewMode.CAROUSEL -> CarouselContent(
+                            items = displayItems,
+                            libraryType = libraryType,
+                            getImageUrl = { viewModel.getImageUrl(it) },
+                            onTVShowClick = onTVShowClick,
+                        )
+                    }
+                }
+                displayItems.isEmpty() && !appState.isLoading && appState.errorMessage == null -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "No items found",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
 
-            if (displayItems.isEmpty() && !appState.isLoading && appState.errorMessage == null) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "No items found",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-
-            if (appState.isLoading) {
+            if (appState.isLoading && displayItems.isNotEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = libraryType.color)
                 }
@@ -211,6 +212,28 @@ fun LibraryTypeScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun LibraryTypeLoadingPlaceholder(libraryType: LibraryType) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = LibraryScreenDefaults.GridMinItemSize),
+        contentPadding = PaddingValues(LibraryScreenDefaults.ContentPadding),
+        verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ContentPadding),
+        horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        items(LibraryScreenDefaults.LibraryTypePlaceholderCount) {
+            Card(
+                modifier = Modifier
+                    .height(LibraryScreenDefaults.LibraryTypePlaceholderHeight)
+                    .placeholder(true, highlight = PlaceholderHighlight.shimmer()),
+                colors = CardDefaults.cardColors(
+                    containerColor = libraryType.color.copy(alpha = LibraryScreenDefaults.PlaceholderContainerAlpha),
+                ),
+            ) {}
         }
     }
 }

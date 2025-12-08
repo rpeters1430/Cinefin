@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,14 +27,15 @@ import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlaceholderHighlight
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.placeholder
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -43,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.utils.SecureLogger
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,13 +112,8 @@ fun LibraryScreen(
                 )
 
                 when {
-                    isLoading -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator()
-                        }
+                    isLoading && errorMessage == null && libraries.isEmpty() -> {
+                        LibraryLoadingPlaceholder()
                     }
                     errorMessage != null -> {
                         Card(
@@ -160,7 +157,11 @@ fun LibraryScreen(
                                         try {
                                             onLibraryClick(library)
                                         } catch (e: Exception) {
-                                            Log.e("LibraryScreen", "Error navigating to library: ${library.name}", e)
+                                            SecureLogger.e(
+                                                tag = "LibraryScreen",
+                                                message = "Error navigating to library: ${library.name}",
+                                                throwable = e,
+                                            )
                                         }
                                     },
                                 )
@@ -169,6 +170,23 @@ fun LibraryScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun LibraryLoadingPlaceholder() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        repeat(LibraryScreenDefaults.LibraryPlaceholderCount) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(LibraryScreenDefaults.LibraryPlaceholderHeight)
+                    .placeholder(true, highlight = PlaceholderHighlight.shimmer()),
+            ) {}
         }
     }
 }

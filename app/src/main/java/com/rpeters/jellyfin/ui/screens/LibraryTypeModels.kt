@@ -60,6 +60,13 @@ object LibraryScreenDefaults {
     // Alpha values
     const val ColorAlpha = 0.2f
     const val IconAlpha = 0.6f
+
+    // Placeholder constants
+    const val LibraryPlaceholderCount = 5
+    val LibraryPlaceholderHeight = 72.dp
+    const val LibraryTypePlaceholderCount = 9
+    val LibraryTypePlaceholderHeight = 180.dp
+    const val PlaceholderContainerAlpha = 0.08f
 }
 
 /** Simple container for carousel sections. */
