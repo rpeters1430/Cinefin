@@ -53,6 +53,7 @@ import com.rpeters.jellyfin.ui.screens.ProfileScreen
 import com.rpeters.jellyfin.ui.screens.QuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.SearchScreen
 import com.rpeters.jellyfin.ui.screens.ServerConnectionScreen
+import com.rpeters.jellyfin.ui.screens.SettingsScreen
 import com.rpeters.jellyfin.ui.screens.StuffScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodeDetailScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodesScreen
@@ -820,6 +821,13 @@ fun JellyfinNavGraph(
                         popUpTo(0) { inclusive = true }
                     }
                 },
+                onSettingsClick = { navController.navigate(Screen.Settings.route) },
+                onBackClick = { navController.popBackStack() },
+            )
+        }
+
+        composable(Screen.Settings.route) {
+            SettingsScreen(
                 onBackClick = { navController.popBackStack() },
             )
         }

@@ -15,10 +15,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +42,7 @@ import com.rpeters.jellyfin.data.JellyfinServer
 fun ProfileScreen(
     currentServer: JellyfinServer?,
     onLogout: () -> Unit,
+    onSettingsClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
     showBackButton: Boolean = true,
     modifier: Modifier = Modifier,
@@ -153,6 +156,37 @@ fun ProfileScreen(
                         ProfileInfoRow("Server Name", server.name)
                         ProfileInfoRow("Server URL", server.url)
                         ProfileInfoRow("User ID", server.userId ?: "Unknown")
+                    }
+                }
+            }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    SettingsHeader(
+                        titleStyle = MaterialTheme.typography.titleMedium,
+                        horizontalSpacing = 8.dp,
+                    )
+
+                    FilledTonalButton(
+                        onClick = onSettingsClick,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = stringResource(id = R.string.settings_open))
                     }
                 }
             }

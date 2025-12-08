@@ -251,4 +251,48 @@
     <string name="shortcut_library">Library</string>
     <string name="shortcut_library_short">Library</string>
     <string name="shortcut_library_long">Browse library</string>
+
+    <!-- Settings -->
+    <string name="settings_recommendations_intro">Recommended controls for configuring the Jellyfin Android experience.</string>
+    <string name="settings_open">Open settings</string>
+
+    <string name="settings_appearance_title">Appearance</string>
+    <string name="settings_appearance_description">Controls how the app looks and adapts to the device.</string>
+    <string name="settings_appearance_theme">Theme mode (light, dark, system, plus AMOLED option).</string>
+    <string name="settings_appearance_dynamic_color">Dynamic color toggle to use Material You accents.</string>
+    <string name="settings_appearance_language">Language selection for UI and metadata.</string>
+    <string name="settings_appearance_layout">Home layout density and compact card toggle.</string>
+
+    <string name="settings_playback_title">Playback &amp; streaming</string>
+    <string name="settings_playback_description">Tune streaming quality and subtitle defaults for stable playback.</string>
+    <string name="settings_playback_quality">Default quality for Wi‑Fi vs. cellular, plus data saver mode.</string>
+    <string name="settings_playback_subtitles">Subtitle language, style, and default on/off.</string>
+    <string name="settings_playback_autoplay">Autoplay next episode and auto-skip credits/recaps.</string>
+    <string name="settings_playback_skip_intro">Intro/credits skip length controls with fallback when metadata is missing.</string>
+
+    <string name="settings_downloads_title">Downloads &amp; storage</string>
+    <string name="settings_downloads_description">Manage offline content to balance quality and free space.</string>
+    <string name="settings_downloads_quality">Download quality and audio track selection.</string>
+    <string name="settings_downloads_location">Storage location with free-space indicator.</string>
+    <string name="settings_downloads_wifi_only">Wi‑Fi only downloads and cellular warning prompt.</string>
+    <string name="settings_downloads_cleanup">Auto-cleanup for watched or expired downloads.</string>
+
+    <string name="settings_notifications_title">Notifications</string>
+    <string name="settings_notifications_description">Stay informed about downloads and server activity.</string>
+    <string name="settings_notifications_library">Library updates, new episodes, and upcoming premieres.</string>
+    <string name="settings_notifications_downloads">Download progress, completion, and failure alerts.</string>
+    <string name="settings_notifications_playback">Persistent notification controls while casting or playing audio.</string>
+
+    <string name="settings_privacy_title">Privacy &amp; security</string>
+    <string name="settings_privacy_description">Protect account access and control what we store locally.</string>
+    <string name="settings_privacy_biometric">Biometric/app lock and logout timer for shared devices.</string>
+    <string name="settings_privacy_cache">Image/cache size limits with one-tap clear option.</string>
+    <string name="settings_privacy_diagnostics">Crash/analytics opt-in with clear data visibility.</string>
+    <string name="settings_privacy_sensitive">Hide sensitive content titles in notifications and recents.</string>
+
+    <string name="settings_accessibility_title">Accessibility</string>
+    <string name="settings_accessibility_description">Make the app easier to use for different needs.</string>
+    <string name="settings_accessibility_text">Custom text size, contrast boost, and bold text.</string>
+    <string name="settings_accessibility_motion">Reduce motion/animations and disable autoplay previews.</string>
+    <string name="settings_accessibility_haptics">Haptic feedback toggle for key interactions.</string>
 </resources>
