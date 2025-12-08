@@ -52,8 +52,8 @@ import com.rpeters.jellyfin.ui.screens.MusicScreen
 import com.rpeters.jellyfin.ui.screens.ProfileScreen
 import com.rpeters.jellyfin.ui.screens.QuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.SearchScreen
-import com.rpeters.jellyfin.ui.screens.SettingsScreen
 import com.rpeters.jellyfin.ui.screens.ServerConnectionScreen
+import com.rpeters.jellyfin.ui.screens.SettingsScreen
 import com.rpeters.jellyfin.ui.screens.StuffScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodeDetailScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodesScreen
