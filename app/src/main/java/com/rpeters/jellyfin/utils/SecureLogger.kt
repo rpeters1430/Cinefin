@@ -17,6 +17,9 @@ object SecureLogger {
 
     private const val MAX_LOG_LENGTH = 4000 // Android Log limit
 
+    // Control log verbosity - set to false to reduce excessive logging
+    var enableVerboseLogging: Boolean = BuildConfig.DEBUG
+
     // Patterns to identify and sanitize sensitive data
     private val SENSITIVE_PATTERNS = listOf(
         // Authentication tokens
@@ -29,19 +32,39 @@ object SecureLogger {
         Pattern.compile("(sessionid|session_id|jsessionid)([\"\\s=:]+)([^\\s&\"\\}]+)", Pattern.CASE_INSENSITIVE),
         // User credentials in URLs
         Pattern.compile("(https?://[^:/]+):([^@]+)@", Pattern.CASE_INSENSITIVE),
+        // Android app data paths - redact full package-specific paths
+        Pattern.compile("/data/(data|app|user)/[^\\s]+", Pattern.CASE_INSENSITIVE),
+        // Android UIDs (typically 5-6 digits starting with 10000+)
+        Pattern.compile("\\bUID\\s*[=:]?\\s*\\d{5,6}\\b", Pattern.CASE_INSENSITIVE),
+        // Process IDs
+        Pattern.compile("\\b(pid|PID)[=:\\s]+(\\d+)\\b"),
+        // Android package paths with random identifiers
+        Pattern.compile("~~[A-Za-z0-9+/=_-]+~~/"),
     )
 
     private const val REPLACEMENT = "$1$2***"
 
     /**
      * Log debug message with automatic sanitization.
+     * Only logs in debug builds when verbose logging is enabled.
      */
     fun d(tag: String, message: String, data: Any? = null) {
-        if (BuildConfig.DEBUG) {
+        if (BuildConfig.DEBUG && enableVerboseLogging) {
             val sanitizedMessage = sanitizeForLogging(message)
             val sanitizedData = data?.let { sanitizeForLogging(it.toString()) } ?: ""
             val fullMessage = if (sanitizedData.isNotEmpty()) "$sanitizedMessage | Data: $sanitizedData" else sanitizedMessage
             logChunked(Log.DEBUG, tag, fullMessage)
+        }
+    }
+
+    /**
+     * Log verbose debug message - can be completely disabled in production.
+     * Use this for very frequent or detailed logging that may cause performance issues.
+     */
+    fun v(tag: String, message: String, data: Any? = null) {
+        // Verbose logging - only in debug with verbose enabled
+        if (BuildConfig.DEBUG && enableVerboseLogging) {
+            d(tag, "[VERBOSE] $message", data)
         }
     }
 
@@ -116,9 +139,14 @@ object SecureLogger {
     private fun sanitizeForLogging(text: String): String {
         var sanitized = text
 
-        // Apply all sensitive patterns
-        SENSITIVE_PATTERNS.forEach { pattern ->
-            sanitized = pattern.matcher(sanitized).replaceAll(REPLACEMENT)
+        // Apply credential/token patterns with $1$2*** replacement
+        for (i in 0..4) {
+            sanitized = SENSITIVE_PATTERNS[i].matcher(sanitized).replaceAll(REPLACEMENT)
+        }
+
+        // Apply path/UID patterns with simple *** replacement
+        for (i in 5 until SENSITIVE_PATTERNS.size) {
+            sanitized = SENSITIVE_PATTERNS[i].matcher(sanitized).replaceAll("***")
         }
 
         // Additional sanitization for common JWT tokens
@@ -129,6 +157,10 @@ object SecureLogger {
             Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", RegexOption.IGNORE_CASE),
             "UUID-***",
         )
+
+        // Sanitize file paths more aggressively
+        sanitized = sanitized.replace(Regex("/data/[^\\s]+"), "/data/***")
+        sanitized = sanitized.replace(Regex("/storage/emulated/\\d+/[^\\s]*"), "/storage/emulated/***/")
 
         // Limit length to prevent oversized logs
         return if (sanitized.length > MAX_LOG_LENGTH) {

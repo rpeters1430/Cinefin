@@ -1,7 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -16,12 +15,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
@@ -41,14 +42,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,15 +55,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
-import com.rpeters.jellyfin.ui.components.ExpressiveDotsLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveFloatingToolbar
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
@@ -72,6 +72,8 @@ import com.rpeters.jellyfin.ui.components.MediaType
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.theme.MotionTokens
+import com.rpeters.jellyfin.ui.theme.MusicGreen
+import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import com.rpeters.jellyfin.utils.getRatingAsDouble
@@ -81,15 +83,17 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 enum class TVShowFilter(val displayNameResId: Int) {
     ALL(R.string.filter_all_shows),
     FAVORITES(R.string.filter_favorites_shows),
+    UNWATCHED(R.string.filter_unwatched_shows),
+    IN_PROGRESS(R.string.filter_in_progress),
     CONTINUING(R.string.filter_continuing),
     ENDED(R.string.filter_ended),
     RECENT(R.string.filter_recent_shows),
-    UNWATCHED(R.string.filter_unwatched_shows),
-    IN_PROGRESS(R.string.filter_in_progress),
     HIGH_RATED(R.string.filter_high_rated_shows),
     ;
 
     companion object {
+        fun getBasicFilters() = listOf(ALL, FAVORITES, UNWATCHED, IN_PROGRESS)
+        fun getSmartFilters() = listOf(CONTINUING, ENDED, RECENT, HIGH_RATED)
         fun getAllFilters() = entries
     }
 }
@@ -126,6 +130,7 @@ fun TVShowsScreen(
     onTVShowClick: (String) -> Unit = {},
     onBackClick: () -> Unit = {},
     viewModel: MainAppViewModel = hiltViewModel(),
+    isLoading: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val appState by viewModel.appState.collectAsState()
@@ -139,6 +144,8 @@ fun TVShowsScreen(
     // Get items provided by the unified library loader (Series only)
     // Don't use remember() here - we want fresh data on every recomposition
     val tvShowItems = viewModel.getLibraryTypeData(LibraryType.TV_SHOWS)
+    // Merge NavGraph-provided loading state with the ViewModel flag to avoid flashing an empty state
+    val isLoadingState = isLoading || appState.isLoadingTVShows
 
     // Apply filtering and sorting with proper keys to prevent unnecessary recomputation
     val filteredAndSortedTVShows = remember(tvShowItems, selectedFilter, sortOrder) {
@@ -198,88 +205,98 @@ fun TVShowsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Tv,
-                            contentDescription = null,
+                        Text(
+                            text = "TV Shows",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                         )
                     }
                 },
                 actions = {
-                    // View mode toggle with Expressive animation
-                    SingleChoiceSegmentedButtonRow {
-                        TVShowViewMode.entries.forEachIndexed { index, mode ->
-                            SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(
-                                    index = index,
-                                    count = TVShowViewMode.entries.size,
-                                ),
-                                onClick = { viewMode = mode },
-                                selected = viewMode == mode,
-                                colors = SegmentedButtonDefaults.colors(
-                                    activeContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    activeContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    inactiveContainerColor = MaterialTheme.colorScheme.surface,
-                                    inactiveContentColor = MaterialTheme.colorScheme.onSurface,
-                                ),
-                                modifier = Modifier.padding(2.dp),
-                            ) {
-                                Icon(
-                                    imageVector = when (mode) {
-                                        TVShowViewMode.GRID -> Icons.Default.GridView
-                                        TVShowViewMode.LIST -> Icons.AutoMirrored.Filled.ViewList
-                                        TVShowViewMode.CAROUSEL -> Icons.Default.ViewCarousel
-                                    },
-                                    contentDescription = when (mode) {
-                                        TVShowViewMode.GRID -> stringResource(id = R.string.grid_view)
-                                        TVShowViewMode.LIST -> stringResource(id = R.string.list_view)
-                                        TVShowViewMode.CAROUSEL -> "Carousel view"
-                                    },
-                                    modifier = Modifier.padding(2.dp),
-                                )
-                            }
+                    // View mode toggle
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    ) {
+                        IconButton(
+                            onClick = {
+                                viewMode = when (viewMode) {
+                                    TVShowViewMode.GRID -> TVShowViewMode.LIST
+                                    TVShowViewMode.LIST -> TVShowViewMode.CAROUSEL
+                                    TVShowViewMode.CAROUSEL -> TVShowViewMode.GRID
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = when (viewMode) {
+                                    TVShowViewMode.GRID -> Icons.AutoMirrored.Filled.ViewList
+                                    TVShowViewMode.LIST -> Icons.Default.ViewCarousel
+                                    TVShowViewMode.CAROUSEL -> Icons.Default.GridView
+                                },
+                                contentDescription = "Toggle view mode",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
                         }
                     }
 
                     // Sort menu
-                    Box {
-                        IconButton(onClick = { showSortMenu = true }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Sort,
-                                contentDescription = stringResource(id = R.string.sort),
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showSortMenu,
-                            onDismissRequest = { showSortMenu = false },
-                        ) {
-                            TVShowSortOrder.getAllSortOrders().forEach { order ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(id = order.displayNameResId)) },
-                                    onClick = {
-                                        sortOrder = order
-                                        showSortMenu = false
-                                    },
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    ) {
+                        Box {
+                            IconButton(onClick = { showSortMenu = true }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Sort,
+                                    contentDescription = "Sort",
+                                    tint = MaterialTheme.colorScheme.primary,
                                 )
+                            }
+                            DropdownMenu(
+                                expanded = showSortMenu,
+                                onDismissRequest = { showSortMenu = false },
+                            ) {
+                                TVShowSortOrder.getAllSortOrders().forEach { order ->
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(id = order.displayNameResId)) },
+                                        onClick = {
+                                            sortOrder = order
+                                            showSortMenu = false
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
 
-                    IconButton(onClick = { viewModel.refreshTVShows() }) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = stringResource(id = R.string.refresh),
-                        )
+                    // Refresh button
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 4.dp,
+                        modifier = Modifier.padding(end = 8.dp, start = 4.dp),
+                    ) {
+                        IconButton(onClick = { viewModel.refreshTVShows() }) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh",
+                                tint = MusicGreen,
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    containerColor = Color.Transparent,
                 ),
             )
         },
@@ -290,43 +307,71 @@ fun TVShowsScreen(
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
-            // Filter chips
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                items(TVShowFilter.getAllFilters()) { filter ->
-                    FilterChip(
-                        onClick = { selectedFilter = filter },
-                        label = { Text(stringResource(id = filter.displayNameResId)) },
-                        selected = selectedFilter == filter,
-                        leadingIcon = if (filter == TVShowFilter.FAVORITES) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(2.dp),
+            // Filter chips with enhanced styling and organization
+            Column {
+                // Basic Filters
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                ) {
+                    items(TVShowFilter.getBasicFilters()) { filter ->
+                        FilterChip(
+                            onClick = { selectedFilter = filter },
+                            label = {
+                                Text(
+                                    text = stringResource(id = filter.displayNameResId),
+                                    fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
                                 )
-                            }
-                        } else {
-                            null
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        ),
-                    )
+                            },
+                            selected = selectedFilter == filter,
+                            leadingIcon = if (filter == TVShowFilter.FAVORITES) {
+                                {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
+                            } else {
+                                null
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ),
+                        )
+                    }
+                }
+
+                // Smart Filters
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                ) {
+                    items(TVShowFilter.getSmartFilters()) { filter ->
+                        FilterChip(
+                            onClick = { selectedFilter = filter },
+                            label = {
+                                Text(
+                                    text = stringResource(id = filter.displayNameResId),
+                                    fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
+                                )
+                            },
+                            selected = selectedFilter == filter,
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            ),
+                        )
+                    }
                 }
             }
 
             // Content with Expressive animations
             AnimatedContent(
                 targetState = when {
-                    appState.isLoadingTVShows -> TVShowContentState.LOADING
+                    isLoadingState -> TVShowContentState.LOADING
                     appState.errorMessage != null -> TVShowContentState.ERROR
                     filteredAndSortedTVShows.isEmpty() -> TVShowContentState.EMPTY
                     else -> TVShowContentState.CONTENT
@@ -420,7 +465,7 @@ private fun TVShowsContent(
         when (currentViewMode) {
             TVShowViewMode.GRID -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 180.dp),
+                    columns = GridCells.Adaptive(160.dp),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -430,6 +475,12 @@ private fun TVShowsContent(
                         items = tvShows,
                         key = { tvShow -> tvShow.getItemKey() },
                     ) { tvShow ->
+                        val scale by animateFloatAsState(
+                            targetValue = 1.0f,
+                            animationSpec = MotionTokens.expressiveEnter,
+                            label = "tv_show_card_scale",
+                        )
+
                         PosterMediaCard(
                             item = tvShow,
                             getImageUrl = { getImageUrl(it) },
@@ -440,6 +491,10 @@ private fun TVShowsContent(
                             },
                             showTitle = true,
                             showMetadata = true,
+                            modifier = Modifier.graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                            },
                         )
                     }
 
@@ -466,6 +521,12 @@ private fun TVShowsContent(
                         items = tvShows,
                         key = { tvShow -> tvShow.getItemKey() },
                     ) { tvShow ->
+                        val scale by animateFloatAsState(
+                            targetValue = 1.0f,
+                            animationSpec = MotionTokens.expressiveEnter,
+                            label = "tv_show_list_card_scale",
+                        )
+
                         ExpressiveCompactCard(
                             title = tvShow.name ?: "Unknown",
                             subtitle = buildString {
@@ -479,6 +540,10 @@ private fun TVShowsContent(
                                 }
                             },
                             leadingIcon = if (tvShow.userData?.isFavorite == true) Icons.Default.Star else null,
+                            modifier = Modifier.graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                            },
                         )
                     }
 
@@ -527,45 +592,37 @@ private fun TVShowsPaginationFooter(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LaunchedEffect(Unit) {
-        if (hasMoreItems && !isLoadingMore) {
-            onLoadMore()
-        }
-    }
-
-    AnimatedVisibility(
-        visible = isLoadingMore || !hasMoreItems,
-        enter = fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it },
-        exit = fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it },
-        modifier = modifier,
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (isLoadingMore) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    ExpressiveDotsLoading(
-                        modifier = Modifier.padding(8.dp),
-                    )
-                    Text(
-                        text = "Loading more TV Shows...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else if (!hasMoreItems) {
+        if (isLoadingMore) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                androidx.compose.material3.CircularProgressIndicator(
+                    color = SeriesBlue,
+                    modifier = Modifier.padding(8.dp),
+                )
                 Text(
-                    text = stringResource(id = R.string.no_more_tv_shows),
-                    style = MaterialTheme.typography.bodySmall,
+                    text = "Loading more TV shows...",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        } else if (hasMoreItems) {
+            TextButton(onClick = onLoadMore) {
+                Text("Load more")
+            }
+        } else {
+            Text(
+                text = "No more TV shows",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

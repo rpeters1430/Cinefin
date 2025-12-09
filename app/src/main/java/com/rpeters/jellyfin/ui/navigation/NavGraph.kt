@@ -67,6 +67,7 @@ import com.rpeters.jellyfin.ui.viewmodel.MovieDetailViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import com.rpeters.jellyfin.ui.viewmodel.TVEpisodeDetailViewModel
+import com.rpeters.jellyfin.utils.SecureLogger
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.CollectionType
 import java.util.Locale
@@ -98,7 +99,7 @@ fun JellyfinNavGraph(
                 }
             }
         } catch (e: Exception) {
-            Log.e("NavGraph", "Error determining library route for ${library.name}", e)
+            SecureLogger.e("NavGraph", "Error determining library route for ${library.name}", e)
             null
         }
     }
@@ -254,7 +255,7 @@ fun JellyfinNavGraph(
                             )
                         }
                     } catch (e: Exception) {
-                        Log.e("NavGraph", "Error navigating to library: ${library.name}", e)
+                        SecureLogger.e("NavGraph", "Error navigating to library: ${library.name}", e)
                     }
                 },
                 onSettingsClick = { navController.navigate(Screen.Profile.route) },
@@ -273,7 +274,7 @@ fun JellyfinNavGraph(
             LaunchedEffect(Unit) {
                 if (appState.libraries.isEmpty() && !appState.isLoading) {
                     if (BuildConfig.DEBUG) {
-                        Log.d("NavGraph", "Library screen - triggering initial data load")
+                        SecureLogger.v("NavGraph", "Library screen - triggering initial data load")
                     }
                     viewModel.loadInitialData()
                 }
@@ -296,7 +297,7 @@ fun JellyfinNavGraph(
                             )
                         }
                     } catch (e: Exception) {
-                        Log.e("NavGraph", "Error navigating to library: ${library.name}", e)
+                        SecureLogger.e("NavGraph", "Error navigating to library: ${library.name}", e)
                     }
                 },
                 onSettingsClick = { navController.navigate(Screen.Profile.route) },
@@ -315,38 +316,47 @@ fun JellyfinNavGraph(
             var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
             var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
             val moviesData = viewModel.getLibraryTypeData(LibraryType.MOVIES)
+            // Consider the global loading state so we don't flash an empty state before the first fetch finishes.
+            val isMoviesLoading = appState.isLoadingMovies || appState.isLoading ||
+                (appState.libraries.isEmpty() && moviesData.isEmpty())
 
-            LaunchedEffect(appState.libraries, appState.isLoading, appState.isLoadingMovies, moviesData.isEmpty()) {
-                Log.d("NavGraph-Movies", "🎬 Movies screen state update")
-                Log.d("NavGraph-Movies", "  Libraries count: ${appState.libraries.size}")
-                Log.d("NavGraph-Movies", "  Is loading: ${appState.isLoading}")
-                Log.d(
+            LaunchedEffect(appState.libraries, appState.isLoading, appState.isLoadingMovies, moviesData.isEmpty(), appState.errorMessage) {
+                SecureLogger.v("NavGraph-Movies", "🎬 Movies screen state update")
+                SecureLogger.v("NavGraph-Movies", "  Libraries count: ${appState.libraries.size}")
+                SecureLogger.v("NavGraph-Movies", "  Is loading: ${appState.isLoading}")
+                SecureLogger.v(
                     "NavGraph-Movies",
                     "  Current movies data: ${moviesData.size} items",
                 )
 
+                // Don't auto-load if there's an error message (prevents infinite retry)
+                if (appState.errorMessage != null) {
+                    SecureLogger.v("NavGraph-Movies", "  ⚠️ Error present, skipping auto-load: ${appState.errorMessage}")
+                    return@LaunchedEffect
+                }
+
                 if (appState.libraries.isEmpty() && !appState.isLoading) {
-                    Log.d("NavGraph-Movies", "  📥 Loading initial data...")
+                    SecureLogger.v("NavGraph-Movies", "  📥 Loading initial data...")
                     viewModel.loadInitialData()
                 } else if (
                     appState.libraries.isNotEmpty() &&
                     moviesData.isEmpty() &&
                     !appState.isLoadingMovies
                 ) {
-                    Log.d(
+                    SecureLogger.v(
                         "NavGraph-Movies",
                         "🔄 Libraries ready (${appState.libraries.size}) - Loading MOVIES data...",
                     )
                     val availableLibraries =
                         appState.libraries.map { "${it.name}(${it.collectionType})" }
-                    Log.d("NavGraph-Movies", "  Available libraries: $availableLibraries")
+                    SecureLogger.v("NavGraph-Movies", "  Available libraries: $availableLibraries")
                     viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
                 }
             }
 
             MoviesScreen(
                 movies = viewModel.getLibraryTypeData(LibraryType.MOVIES),
-                isLoading = appState.isLoadingMovies,
+                isLoading = isMoviesLoading,
                 isLoadingMore = false,
                 hasMoreItems = appState.hasMoreMovies,
                 selectedFilter = selectedFilter,
@@ -379,31 +389,40 @@ fun JellyfinNavGraph(
                 minActiveState = Lifecycle.State.STARTED,
             )
             val tvShowsData = viewModel.getLibraryTypeData(LibraryType.TV_SHOWS)
+            // Keep showing a loading state while libraries are still loading to avoid an initial empty flash.
+            val isTvShowsLoading = appState.isLoadingTVShows || appState.isLoading ||
+                (appState.libraries.isEmpty() && tvShowsData.isEmpty())
 
-            LaunchedEffect(appState.libraries, appState.isLoading, appState.isLoadingTVShows, tvShowsData.isEmpty()) {
-                Log.d("NavGraph-TVShows", "📺 TV Shows screen state update")
-                Log.d("NavGraph-TVShows", "  Libraries count: ${appState.libraries.size}")
-                Log.d("NavGraph-TVShows", "  Is loading: ${appState.isLoading}")
-                Log.d(
+            LaunchedEffect(appState.libraries, appState.isLoading, appState.isLoadingTVShows, tvShowsData.isEmpty(), appState.errorMessage) {
+                SecureLogger.v("NavGraph-TVShows", "📺 TV Shows screen state update")
+                SecureLogger.v("NavGraph-TVShows", "  Libraries count: ${appState.libraries.size}")
+                SecureLogger.v("NavGraph-TVShows", "  Is loading: ${appState.isLoading}")
+                SecureLogger.v(
                     "NavGraph-TVShows",
                     "  Current TV shows data: ${tvShowsData.size} items",
                 )
 
+                // Don't auto-load if there's an error message (prevents infinite retry)
+                if (appState.errorMessage != null) {
+                    SecureLogger.v("NavGraph-TVShows", "  ⚠️ Error present, skipping auto-load: ${appState.errorMessage}")
+                    return@LaunchedEffect
+                }
+
                 if (appState.libraries.isEmpty() && !appState.isLoading) {
-                    Log.d("NavGraph-TVShows", "  📥 Loading initial data...")
+                    SecureLogger.v("NavGraph-TVShows", "  📥 Loading initial data...")
                     viewModel.loadInitialData()
                 } else if (
                     appState.libraries.isNotEmpty() &&
                     tvShowsData.isEmpty() &&
                     !appState.isLoadingTVShows
                 ) {
-                    Log.d(
+                    SecureLogger.v(
                         "NavGraph-TVShows",
                         "🔄 Libraries ready (${appState.libraries.size}) - Loading TV_SHOWS data...",
                     )
                     val availableLibraries =
                         appState.libraries.map { "${it.name}(${it.collectionType})" }
-                    Log.d("NavGraph-TVShows", "  Available libraries: $availableLibraries")
+                    SecureLogger.v("NavGraph-TVShows", "  Available libraries: $availableLibraries")
                     viewModel.loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = false)
                 }
             }
@@ -411,14 +430,16 @@ fun JellyfinNavGraph(
             TVShowsScreen(
                 onTVShowClick = { seriesId ->
                     try {
-                        Log.d("NavGraph-TVShows", "🎯 Navigating to TV Seasons: $seriesId")
+                        SecureLogger.v("NavGraph-TVShows", "🎯 Navigating to TV Seasons: $seriesId")
                         navController.navigate(Screen.TVSeasons.createRoute(seriesId))
                     } catch (e: Exception) {
-                        Log.e("NavGraph-TVShows", "Failed to navigate to TV Seasons: $seriesId", e)
+                        SecureLogger.e("NavGraph-TVShows", "Failed to navigate to TV Seasons: $seriesId", e)
                     }
                 },
                 onBackClick = { navController.popBackStack() },
                 viewModel = viewModel,
+                // Surface the combined loading state so the screen doesn't briefly appear empty.
+                isLoading = isTvShowsLoading,
             )
         }
 
@@ -428,7 +449,7 @@ fun JellyfinNavGraph(
         ) { backStackEntry ->
             val seriesId = backStackEntry.arguments?.getString(Screen.SERIES_ID_ARG)
             if (seriesId.isNullOrBlank()) {
-                Log.e("NavGraph", "TVSeasons navigation cancelled: seriesId is null or blank")
+                SecureLogger.e("NavGraph", "TVSeasons navigation cancelled: seriesId is null or blank")
                 return@composable
             }
             val viewModel = hiltViewModel<MainAppViewModel>()
@@ -455,7 +476,7 @@ fun JellyfinNavGraph(
         ) { backStackEntry ->
             val seasonId = backStackEntry.arguments?.getString(Screen.SEASON_ID_ARG)
             if (seasonId.isNullOrBlank()) {
-                Log.e("NavGraph", "TVEpisodes navigation cancelled: seasonId is null or blank")
+                SecureLogger.e("NavGraph", "TVEpisodes navigation cancelled: seasonId is null or blank")
                 return@composable
             }
             val viewModel = hiltViewModel<SeasonEpisodesViewModel>()
@@ -490,29 +511,29 @@ fun JellyfinNavGraph(
             val musicData = viewModel.getLibraryTypeData(LibraryType.MUSIC)
 
             LaunchedEffect(appState.libraries, appState.isLoading, musicData.isEmpty()) {
-                Log.d("NavGraph-Music", "🎵 Music screen state update")
-                Log.d("NavGraph-Music", "  Libraries count: ${appState.libraries.size}")
-                Log.d("NavGraph-Music", "  Is loading: ${appState.isLoading}")
-                Log.d(
+                SecureLogger.v("NavGraph-Music", "🎵 Music screen state update")
+                SecureLogger.v("NavGraph-Music", "  Libraries count: ${appState.libraries.size}")
+                SecureLogger.v("NavGraph-Music", "  Is loading: ${appState.isLoading}")
+                SecureLogger.v(
                     "NavGraph-Music",
                     "  Current music data: ${musicData.size} items",
                 )
 
                 if (appState.libraries.isEmpty() && !appState.isLoading) {
-                    Log.d("NavGraph-Music", "  📥 Loading initial data...")
+                    SecureLogger.v("NavGraph-Music", "  📥 Loading initial data...")
                     viewModel.loadInitialData()
                 } else if (
                     appState.libraries.isNotEmpty() &&
                     musicData.isEmpty() &&
                     !appState.isLoading
                 ) {
-                    Log.d(
+                    SecureLogger.v(
                         "NavGraph-Music",
                         "🔄 Libraries ready (${appState.libraries.size}) - Loading MUSIC data...",
                     )
                     val availableLibraries =
                         appState.libraries.map { "${it.name}(${it.collectionType})" }
-                    Log.d("NavGraph-Music", "  Available libraries: $availableLibraries")
+                    SecureLogger.v("NavGraph-Music", "  Available libraries: $availableLibraries")
                     viewModel.loadLibraryTypeData(LibraryType.MUSIC, forceRefresh = false)
                 }
             }
@@ -550,13 +571,13 @@ fun JellyfinNavGraph(
 
             // ✅ FIXED: Single LaunchedEffect for consistent loading
             LaunchedEffect(Unit) {
-                Log.d("NavGraph-HomeVideos", "🏠 HomeVideos screen entered - Initial state check")
-                Log.d("NavGraph-HomeVideos", "  Libraries count: ${appState.libraries.size}")
-                Log.d("NavGraph-HomeVideos", "  Is loading: ${appState.isLoading}")
+                SecureLogger.v("NavGraph-HomeVideos", "🏠 HomeVideos screen entered - Initial state check")
+                SecureLogger.v("NavGraph-HomeVideos", "  Libraries count: ${appState.libraries.size}")
+                SecureLogger.v("NavGraph-HomeVideos", "  Is loading: ${appState.isLoading}")
 
                 // Ensure libraries are loaded first
                 if (appState.libraries.isEmpty() && !appState.isLoading) {
-                    Log.d("NavGraph-HomeVideos", "  📥 Loading initial data...")
+                    SecureLogger.v("NavGraph-HomeVideos", "  📥 Loading initial data...")
                     viewModel.loadInitialData()
                 }
             }
@@ -624,7 +645,7 @@ fun JellyfinNavGraph(
         ) { backStackEntry ->
             val videoId = backStackEntry.arguments?.getString(Screen.VIDEO_ID_ARG)
             if (videoId.isNullOrBlank()) {
-                Log.e("NavGraph", "HomeVideoDetail navigation cancelled: videoId is null or blank")
+                SecureLogger.e("NavGraph", "HomeVideoDetail navigation cancelled: videoId is null or blank")
                 return@composable
             }
             val mainViewModel = hiltViewModel<MainAppViewModel>()
@@ -739,7 +760,7 @@ fun JellyfinNavGraph(
             val libraryId = backStackEntry.arguments?.getString(Screen.LIBRARY_ID_ARG)
             val collectionType = backStackEntry.arguments?.getString(Screen.COLLECTION_TYPE_ARG)
             if (libraryId.isNullOrBlank()) {
-                Log.e("NavGraph", "Stuff navigation cancelled: libraryId is null or blank")
+                SecureLogger.e("NavGraph", "Stuff navigation cancelled: libraryId is null or blank")
                 return@composable
             }
             val viewModel = hiltViewModel<MainAppViewModel>()
@@ -838,7 +859,7 @@ fun JellyfinNavGraph(
         ) { backStackEntry ->
             val movieId = backStackEntry.arguments?.getString(Screen.MOVIE_ID_ARG)
             if (movieId.isNullOrBlank()) {
-                Log.e("NavGraph", "MovieDetail navigation cancelled: movieId is null or blank")
+                SecureLogger.e("NavGraph", "MovieDetail navigation cancelled: movieId is null or blank")
                 return@composable
             }
             val mainViewModel = hiltViewModel<MainAppViewModel>()
@@ -886,10 +907,10 @@ fun JellyfinNavGraph(
                                 item = movieItem,
                             )
                             if (BuildConfig.DEBUG) {
-                                Log.d("NavGraph", "Playing movie: ${movieItem.name}")
+                                SecureLogger.v("NavGraph", "Playing movie: ${movieItem.name}")
                             }
                         } else {
-                            Log.e(
+                            SecureLogger.e(
                                 "NavGraph",
                                 "No stream URL available for movie: ${movieItem.name}",
                             )
@@ -921,7 +942,7 @@ fun JellyfinNavGraph(
         ) { backStackEntry ->
             val episodeId = backStackEntry.arguments?.getString(Screen.EPISODE_ID_ARG)
             if (episodeId.isNullOrBlank()) {
-                Log.e(
+                SecureLogger.e(
                     "NavGraph",
                     "TVEpisodeDetail navigation cancelled: episodeId is null or blank",
                 )
@@ -952,7 +973,7 @@ fun JellyfinNavGraph(
             when {
                 episode != null -> {
                     if (BuildConfig.DEBUG) {
-                        Log.d(
+                        SecureLogger.v(
                             "NavGraph",
                             "TVEpisodeDetail: Found episode ${episode.name} (${episode.id}) in app state",
                         )
@@ -982,16 +1003,16 @@ fun JellyfinNavGraph(
                                         item = episodeItem,
                                     )
                                     if (BuildConfig.DEBUG) {
-                                        Log.d("NavGraph", "Playing episode: ${episodeItem.name}")
+                                        SecureLogger.v("NavGraph", "Playing episode: ${episodeItem.name}")
                                     }
                                 } else {
-                                    Log.e(
+                                    SecureLogger.e(
                                         "NavGraph",
                                         "No stream URL available for episode: ${episodeItem.name}",
                                     )
                                 }
                             } catch (e: Exception) {
-                                Log.e("NavGraph", "Failed to play episode: ${e.message}", e)
+                                SecureLogger.e("NavGraph", "Failed to play episode: ${e.message}", e)
                             }
                         },
                         onDownloadClick = { episodeItem ->
@@ -1008,25 +1029,25 @@ fun JellyfinNavGraph(
 
                                     if (downloadId != null) {
                                         if (BuildConfig.DEBUG) {
-                                            Log.d(
+                                            SecureLogger.v(
                                                 "NavGraph",
                                                 "Started download for episode: ${episodeItem.name} (ID: $downloadId)",
                                             )
                                         }
                                     } else {
-                                        Log.e(
+                                        SecureLogger.e(
                                             "NavGraph",
                                             "Failed to start download for episode: ${episodeItem.name}",
                                         )
                                     }
                                 } else {
-                                    Log.e(
+                                    SecureLogger.e(
                                         "NavGraph",
                                         "No download URL available for episode: ${episodeItem.name}",
                                     )
                                 }
                             } catch (e: Exception) {
-                                Log.e("NavGraph", "Failed to download episode: ${e.message}", e)
+                                SecureLogger.e("NavGraph", "Failed to download episode: ${e.message}", e)
                             }
                         },
                         onDeleteClick = { episodeItem ->
@@ -1063,7 +1084,7 @@ fun JellyfinNavGraph(
 
                 appState.isLoading -> {
                     if (BuildConfig.DEBUG) {
-                        Log.d(
+                        SecureLogger.v(
                             "NavGraph",
                             "TVEpisodeDetail: App state is loading, showing loading indicator",
                         )
@@ -1074,7 +1095,7 @@ fun JellyfinNavGraph(
                 }
 
                 !appState.errorMessage.isNullOrBlank() -> {
-                    Log.e(
+                    SecureLogger.e(
                         "NavGraph",
                         "TVEpisodeDetail: Error loading episode: ${appState.errorMessage}",
                     )
@@ -1110,7 +1131,7 @@ fun JellyfinNavGraph(
                 else -> {
                     // Episode not found - try to load it
                     LaunchedEffect(episodeId) {
-                        Log.d(
+                        SecureLogger.v(
                             "NavGraph",
                             "TVEpisodeDetail: Episode $episodeId not found in app state with ${appState.allItems.size} items, attempting to load it",
                         )

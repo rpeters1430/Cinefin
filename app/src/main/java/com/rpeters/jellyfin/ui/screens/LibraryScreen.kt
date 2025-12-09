@@ -31,11 +31,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PlaceholderHighlight
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.placeholder
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -44,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.shimmer
 import com.rpeters.jellyfin.utils.SecureLogger
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -185,7 +184,7 @@ private fun LibraryLoadingPlaceholder() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(LibraryScreenDefaults.LibraryPlaceholderHeight)
-                    .placeholder(true, highlight = PlaceholderHighlight.shimmer()),
+                    .shimmer(),
             ) {}
         }
     }

@@ -21,12 +21,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
@@ -99,6 +101,7 @@ fun VideoPlayerScreen(
     onSubtitleDialogDismiss: () -> Unit,
     onCastDeviceSelect: (String) -> Unit,
     onCastDialogDismiss: () -> Unit,
+    onClose: () -> Unit = {},
     exoPlayer: ExoPlayer?,
     supportsPip: Boolean,
     modifier: Modifier = Modifier,
@@ -283,18 +286,7 @@ fun VideoPlayerScreen(
             }
         }
 
-        // Loading indicator
-        if (playerState.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(48.dp),
-                )
-            }
-        }
+        // Loading indicator - removed duplicate (now only shows in play button)
 
         // Error message
         playerState.error?.let { error ->
@@ -425,6 +417,7 @@ fun VideoPlayerScreen(
                 onSubtitlesClick = { showSubtitleDialog = true },
                 onPictureInPictureClick = onPictureInPictureClick,
                 onOrientationToggle = onOrientationToggle,
+                onClose = onClose,
                 showQualityMenu = showQualityMenu,
                 onShowQualityMenu = { showQualityMenu = it },
                 showAspectRatioMenu = showAspectRatioMenu,
@@ -618,6 +611,7 @@ private fun VideoControlsOverlay(
     onSubtitlesClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     onOrientationToggle: () -> Unit,
+    onClose: () -> Unit,
     showQualityMenu: Boolean,
     onShowQualityMenu: (Boolean) -> Unit,
     showAspectRatioMenu: Boolean,
@@ -643,7 +637,7 @@ private fun VideoControlsOverlay(
                 ),
             ),
     ) {
-        // Top bar with item name and casting button
+        // Top bar with close button, item name, and casting button
         Row(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -652,6 +646,14 @@ private fun VideoControlsOverlay(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Close/Back button - top left
+            ExpressiveIconButton(
+                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Close player",
+                onClick = onClose,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+
             // Item name with expressive styling
             Text(
                 text = playerState.itemName,
@@ -660,7 +662,7 @@ private fun VideoControlsOverlay(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 16.dp),
+                    .padding(horizontal = 16.dp),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -733,7 +735,7 @@ private fun VideoControlsOverlay(
             }
 
             // Main control bar with the requested layout:
-            // Play/Pause | Progress Bar | Subtitles | Audio Format | Quality | Fullscreen
+            // Play/Pause | Stop | Progress Bar | Subtitles | Audio Format | Quality | Fullscreen
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -748,6 +750,14 @@ private fun VideoControlsOverlay(
                     onClick = onPlayPause,
                     isLoading = playerState.isLoading,
                     modifier = Modifier.size(48.dp),
+                )
+
+                // Stop button - stops playback and closes player
+                ExpressiveIconButton(
+                    icon = Icons.Default.Close,
+                    contentDescription = "Stop and close player",
+                    onClick = onClose,
+                    modifier = Modifier.padding(start = 8.dp),
                 )
 
                 // Spacer to push buttons to the right

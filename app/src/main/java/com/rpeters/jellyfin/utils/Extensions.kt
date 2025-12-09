@@ -83,7 +83,7 @@ fun BaseItemDto.getFormattedDuration(): String? {
 fun BaseItemDto.getWatchedPercentage(): Double {
     userData?.playedPercentage?.let { return it }
 
-    val positionTicks = userData?.playbackPositionTicks ?: playbackPositionTicks
+    val positionTicks = userData?.playbackPositionTicks
     val runtimeTicks = runTimeTicks
 
     return if (positionTicks != null && runtimeTicks != null && runtimeTicks > 0) {

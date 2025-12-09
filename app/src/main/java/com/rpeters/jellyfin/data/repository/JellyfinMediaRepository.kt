@@ -6,7 +6,9 @@ import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.common.ApiParameterValidator
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.BaseJellyfinRepository
+import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.repository.common.LibraryHealthChecker
+import com.rpeters.jellyfin.utils.SecureLogger
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -69,11 +71,14 @@ class JellyfinMediaRepository @Inject constructor(
 
         // Check if library is blocked due to repeated failures
         if (validatedParams.parentId != null && healthChecker.isLibraryBlocked(validatedParams.parentId)) {
-            android.util.Log.w(
+            SecureLogger.w(
                 "JellyfinMediaRepository",
-                "Library ${validatedParams.parentId} is blocked due to repeated failures, returning empty list",
+                "Library ${validatedParams.parentId} is blocked due to repeated failures",
             )
-            return ApiResult.Success(emptyList())
+            return ApiResult.Error(
+                "This library is temporarily unavailable due to repeated errors. Please try again in a moment.",
+                errorType = ErrorType.VALIDATION,
+            )
         }
 
         return withServerClient("getLibraryItems") { server, client ->
@@ -111,7 +116,7 @@ class JellyfinMediaRepository @Inject constructor(
                 itemKinds = listOf(BaseItemKind.PHOTO)
             }
 
-            android.util.Log.d(
+            SecureLogger.v(
                 "JellyfinMediaRepository",
                 "Making validated API call with parentId=${parent?.toString()}, itemTypes=${itemKinds?.joinToString { it.name }}, startIndex=${validatedParams.startIndex}, limit=${validatedParams.limit}",
             )
@@ -159,7 +164,7 @@ class JellyfinMediaRepository @Inject constructor(
                 items
             } catch (e: org.jellyfin.sdk.api.client.exception.InvalidStatusException) {
                 val errorMsg = try { e.message } catch (_: Throwable) { "Bad Request" }
-                android.util.Log.e(
+                SecureLogger.e(
                     "JellyfinMediaRepository",
                     "getLibraryItems ${e.status}: ${errorMsg ?: e.message}",
                 )
@@ -170,7 +175,7 @@ class JellyfinMediaRepository @Inject constructor(
 
                 // If we get a 400, try multiple fallback strategies
                 if (e.message?.contains("400") == true) {
-                    android.util.Log.w(
+                    SecureLogger.w(
                         "JellyfinMediaRepository",
                         "HTTP 400 error detected, attempting fallback strategies for parentId=$parentId, collectionType=$collectionType",
                     )
@@ -179,7 +184,7 @@ class JellyfinMediaRepository @Inject constructor(
                     if (!collectionType.isNullOrBlank() && !itemTypes.isNullOrBlank()) {
                         try {
                             val fallbackTypes = getDefaultTypesForCollection(collectionType)
-                            android.util.Log.d(
+                            SecureLogger.v(
                                 "JellyfinMediaRepository",
                                 "Fallback strategy 1: Using collection type defaults: ${fallbackTypes?.joinToString()}",
                             )
@@ -192,13 +197,13 @@ class JellyfinMediaRepository @Inject constructor(
                                 startIndex = validatedParams.startIndex,
                                 limit = validatedParams.limit,
                             )
-                            android.util.Log.d(
+                            SecureLogger.v(
                                 "JellyfinMediaRepository",
                                 "Fallback strategy 1 succeeded: ${response.content.items?.size ?: 0} items",
                             )
                             return@withServerClient response.content.items ?: emptyList()
                         } catch (fallbackException: Exception) {
-                            android.util.Log.w(
+                            SecureLogger.w(
                                 "JellyfinMediaRepository",
                                 "Fallback strategy 1 failed: ${fallbackException.message}",
                             )
@@ -207,7 +212,7 @@ class JellyfinMediaRepository @Inject constructor(
 
                     // Strategy 2: Try without any includeItemTypes (let server decide)
                     try {
-                        android.util.Log.d(
+                        SecureLogger.v(
                             "JellyfinMediaRepository",
                             "Fallback strategy 2: Requesting without includeItemTypes filter",
                         )
@@ -220,13 +225,13 @@ class JellyfinMediaRepository @Inject constructor(
                             startIndex = validatedParams.startIndex,
                             limit = validatedParams.limit,
                         )
-                        android.util.Log.d(
+                        SecureLogger.v(
                             "JellyfinMediaRepository",
                             "Fallback strategy 2 succeeded: ${response.content.items?.size ?: 0} items",
                         )
                         return@withServerClient response.content.items ?: emptyList()
                     } catch (fallbackException2: Exception) {
-                        android.util.Log.w(
+                        SecureLogger.w(
                             "JellyfinMediaRepository",
                             "Fallback strategy 2 also failed: ${fallbackException2.message}",
                         )
@@ -235,7 +240,7 @@ class JellyfinMediaRepository @Inject constructor(
                     // Strategy 3: Try without parentId (library-wide search)
                     if (parent != null) {
                         try {
-                            android.util.Log.d(
+                            SecureLogger.v(
                                 "JellyfinMediaRepository",
                                 "Fallback strategy 3: Requesting without parentId constraint",
                             )
@@ -248,13 +253,13 @@ class JellyfinMediaRepository @Inject constructor(
                                 startIndex = validatedParams.startIndex,
                                 limit = validatedParams.limit,
                             )
-                            android.util.Log.d(
+                            SecureLogger.v(
                                 "JellyfinMediaRepository",
                                 "Fallback strategy 3 succeeded: ${response.content.items?.size ?: 0} items",
                             )
                             return@withServerClient response.content.items ?: emptyList()
                         } catch (fallbackException3: Exception) {
-                            android.util.Log.w(
+                            SecureLogger.w(
                                 "JellyfinMediaRepository",
                                 "Fallback strategy 3 also failed: ${fallbackException3.message}",
                             )
@@ -262,7 +267,7 @@ class JellyfinMediaRepository @Inject constructor(
                     }
 
                     // Strategy 4: Return empty list as graceful degradation
-                    android.util.Log.w(
+                    SecureLogger.w(
                         "JellyfinMediaRepository",
                         "All fallback strategies failed for library ${validatedParams.parentId}, returning empty list",
                     )

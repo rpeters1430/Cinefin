@@ -1,7 +1,7 @@
 package com.rpeters.jellyfin.data.repository.common
 
-import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,7 +40,7 @@ class LibraryHealthChecker @Inject constructor() {
             updateHealthStatus(libraryId, LibraryHealthStatus.HEALTHY)
 
             if (BuildConfig.DEBUG) {
-                Log.d(TAG, "Library $libraryId marked as healthy")
+                SecureLogger.v(TAG, "Library $libraryId marked as healthy")
             }
         }
     }
@@ -56,7 +56,7 @@ class LibraryHealthChecker @Inject constructor() {
             libraryIssues[libraryId] = error
 
             if (BuildConfig.DEBUG) {
-                Log.w(TAG, "Library $libraryId failure count: $newCount ($error)")
+                SecureLogger.w(TAG, "Library $libraryId failure count: $newCount ($error)")
             }
 
             when {
@@ -68,7 +68,7 @@ class LibraryHealthChecker @Inject constructor() {
                     updateHealthStatus(libraryId, LibraryHealthStatus.BLOCKED)
 
                     if (BuildConfig.DEBUG) {
-                        Log.w(TAG, "Library $libraryId blocked for ${BLOCK_DURATION_MS / 1000} seconds due to repeated failures")
+                        SecureLogger.w(TAG, "Library $libraryId blocked for ${BLOCK_DURATION_MS / 1000} seconds due to repeated failures")
                     }
                 }
                 newCount >= 2 -> {
@@ -97,7 +97,7 @@ class LibraryHealthChecker @Inject constructor() {
                 updateHealthStatus(libraryId, LibraryHealthStatus.HEALTHY)
 
                 if (BuildConfig.DEBUG) {
-                    Log.d(TAG, "Library $libraryId block expired, marked as healthy")
+                    SecureLogger.v(TAG, "Library $libraryId block expired, marked as healthy")
                 }
                 return false
             }
@@ -140,7 +140,7 @@ class LibraryHealthChecker @Inject constructor() {
             updateHealthStatus(libraryId, LibraryHealthStatus.HEALTHY)
 
             if (BuildConfig.DEBUG) {
-                Log.d(TAG, "Manually cleared health status for library $libraryId")
+                SecureLogger.v(TAG, "Manually cleared health status for library $libraryId")
             }
         }
     }
@@ -194,7 +194,7 @@ class LibraryHealthChecker @Inject constructor() {
             }
 
             if (BuildConfig.DEBUG && expiredBlocks.isNotEmpty()) {
-                Log.d(TAG, "Cleaned up ${expiredBlocks.size} expired library blocks")
+                SecureLogger.v(TAG, "Cleaned up ${expiredBlocks.size} expired library blocks")
             }
         }
     }

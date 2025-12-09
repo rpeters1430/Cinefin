@@ -3,11 +3,11 @@ package com.rpeters.jellyfin.data.playback
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
+import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -52,7 +52,7 @@ class EnhancedPlaybackManager @Inject constructor(
                     ?: return@withContext PlaybackResult.Error("Item ID is null")
 
                 if (BuildConfig.DEBUG) {
-                    Log.d(TAG, "Getting optimal playback URL for: ${item.name} (${item.type})")
+                    SecureLogger.v(TAG, "Getting optimal playback URL for: ${item.name} (${item.type})")
                 }
 
                 // Get detailed playback info from server
@@ -65,7 +65,7 @@ class EnhancedPlaybackManager @Inject constructor(
                 val directPlayResult = analyzeDirectPlayCapability(item, playbackInfo)
                 if (directPlayResult != null) {
                     if (BuildConfig.DEBUG) {
-                        Log.d(TAG, "Direct Play available: ${directPlayResult.url}")
+                        SecureLogger.v(TAG, "Direct Play available: ${directPlayResult.url}")
                     }
                     return@withContext directPlayResult
                 }
@@ -73,12 +73,12 @@ class EnhancedPlaybackManager @Inject constructor(
                 // Fallback to optimized transcoding
                 val transcodingResult = getOptimalTranscodingUrl(item, playbackInfo)
                 if (BuildConfig.DEBUG) {
-                    Log.d(TAG, "Using transcoding: ${transcodingResult.url}")
+                    SecureLogger.v(TAG, "Using transcoding: ${transcodingResult.url}")
                 }
 
                 return@withContext transcodingResult
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to get optimal playback URL", e)
+                SecureLogger.e(TAG, "Failed to get optimal playback URL", e)
                 PlaybackResult.Error("Failed to get playback URL: ${e.message}")
             }
         }
@@ -93,7 +93,7 @@ class EnhancedPlaybackManager @Inject constructor(
     ): PlaybackResult.DirectPlay? {
         val mediaSources = playbackInfo.mediaSources
         if (mediaSources.isNullOrEmpty()) {
-            Log.d(TAG, "No media sources available for Direct Play analysis")
+            SecureLogger.v(TAG, "No media sources available for Direct Play analysis")
             return null
         }
 
@@ -130,7 +130,7 @@ class EnhancedPlaybackManager @Inject constructor(
         // Check container support
         val container = mediaSource.container
         if (!deviceCapabilities.canPlayContainer(container)) {
-            Log.d(TAG, "Container '$container' not supported for Direct Play")
+            SecureLogger.v(TAG, "Container '$container' not supported for Direct Play")
             return false
         }
 
@@ -142,7 +142,7 @@ class EnhancedPlaybackManager @Inject constructor(
             val height = videoStream.height ?: 0
 
             if (!deviceCapabilities.canPlayVideoCodec(videoCodec, width, height)) {
-                Log.d(TAG, "Video codec '$videoCodec' at ${width}x$height not supported for Direct Play")
+                SecureLogger.v(TAG, "Video codec '$videoCodec' at ${width}x$height not supported for Direct Play")
                 return false
             }
         }
@@ -152,7 +152,7 @@ class EnhancedPlaybackManager @Inject constructor(
         if (audioStream != null) {
             val audioCodec = audioStream.codec
             if (!deviceCapabilities.canPlayAudioCodec(audioCodec)) {
-                Log.d(TAG, "Audio codec '$audioCodec' not supported for Direct Play")
+                SecureLogger.v(TAG, "Audio codec '$audioCodec' not supported for Direct Play")
                 return false
             }
         }
@@ -160,7 +160,7 @@ class EnhancedPlaybackManager @Inject constructor(
         // Check network conditions for high-bitrate content
         val bitrate = mediaSource.bitrate ?: 0
         if (!isNetworkSuitableForDirectPlay(bitrate)) {
-            Log.d(TAG, "Network conditions not suitable for Direct Play (bitrate: ${bitrate / 1_000_000} Mbps)")
+            SecureLogger.v(TAG, "Network conditions not suitable for Direct Play (bitrate: ${bitrate / 1_000_000} Mbps)")
             return false
         }
 
@@ -283,7 +283,7 @@ class EnhancedPlaybackManager @Inject constructor(
         return try {
             repository.getPlaybackInfo(itemId)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get playback info for item $itemId", e)
+            SecureLogger.e(TAG, "Failed to get playback info for item $itemId", e)
             null
         }
     }
