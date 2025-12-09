@@ -249,11 +249,24 @@ fun LibraryTypeScreen(
 
     if (showManageSheet && selectedItem != null) {
         val item = selectedItem!!
+        val unknownName = stringResource(id = R.string.unknown)
+        val itemName = item.name ?: unknownName
+        val deleteSuccessMessage = stringResource(
+            id = R.string.library_actions_delete_success,
+            itemName,
+        )
+        val deleteFailureTemplate = stringResource(
+            id = R.string.library_actions_delete_failure,
+            itemName,
+            "%s",
+        )
+        val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
+        val dismissSheet = {
+            showManageSheet = false
+            selectedItem = null
+        }
         ModalBottomSheet(
-            onDismissRequest = {
-                showManageSheet = false
-                selectedItem = null
-            },
+            onDismissRequest = dismissSheet,
             sheetState = sheetState,
         ) {
             Column(
@@ -263,7 +276,7 @@ fun LibraryTypeScreen(
                 Text(
                     text = stringResource(
                         id = R.string.library_actions_sheet_title,
-                        item.name ?: stringResource(id = R.string.unknown),
+                        itemName,
                     ),
                     style = MaterialTheme.typography.titleMedium,
                 )
@@ -277,21 +290,13 @@ fun LibraryTypeScreen(
 
                 Button(
                     onClick = {
-                        showManageSheet = false
-                        selectedItem = null
+                        dismissSheet()
                         viewModel.deleteItem(item) { success, message ->
                             coroutineScope.launch {
                                 val text = if (success) {
-                                    stringResource(
-                                        id = R.string.library_actions_delete_success,
-                                        item.name ?: stringResource(id = R.string.unknown),
-                                    )
+                                    deleteSuccessMessage
                                 } else {
-                                    stringResource(
-                                        id = R.string.library_actions_delete_failure,
-                                        item.name ?: stringResource(id = R.string.unknown),
-                                        message ?: "",
-                                    )
+                                    String.format(deleteFailureTemplate, message ?: "")
                                 }
                                 snackbarHostState.showSnackbar(text)
                             }
@@ -307,13 +312,10 @@ fun LibraryTypeScreen(
 
                 OutlinedButton(
                     onClick = {
-                        showManageSheet = false
-                        selectedItem = null
+                        dismissSheet()
                         viewModel.refreshLibraryItems()
                         coroutineScope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = stringResource(id = R.string.library_actions_refresh_requested),
-                            )
+                            snackbarHostState.showSnackbar(message = refreshRequestedMessage)
                         }
                     },
                 ) {
