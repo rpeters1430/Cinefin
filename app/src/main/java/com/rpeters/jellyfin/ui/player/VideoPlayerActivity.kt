@@ -106,6 +106,7 @@ class VideoPlayerActivity : ComponentActivity() {
                             onSubtitleDialogDismiss = playerViewModel::hideSubtitleDialog,
                             onCastDeviceSelect = playerViewModel::selectCastDevice,
                             onCastDialogDismiss = playerViewModel::hideCastDialog,
+                            onClose = { finish() },
                             exoPlayer = playerViewModel.exoPlayer,
                             supportsPip = isPipSupported(),
                         )

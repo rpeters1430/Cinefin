@@ -28,7 +28,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PlaceholderHighlight
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -37,7 +36,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.material3.placeholder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.rpeters.jellyfin.ui.components.shimmer
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -229,7 +228,7 @@ private fun LibraryTypeLoadingPlaceholder(libraryType: LibraryType) {
             Card(
                 modifier = Modifier
                     .height(LibraryScreenDefaults.LibraryTypePlaceholderHeight)
-                    .placeholder(true, highlight = PlaceholderHighlight.shimmer()),
+                    .shimmer(),
                 colors = CardDefaults.cardColors(
                     containerColor = libraryType.color.copy(alpha = LibraryScreenDefaults.PlaceholderContainerAlpha),
                 ),
