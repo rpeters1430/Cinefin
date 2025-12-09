@@ -388,6 +388,7 @@ class MainAppViewModel @Inject constructor(
                         searchResults = _appState.value.searchResults.filterNot { it.id == itemId },
                         allMovies = _appState.value.allMovies.filterNot { it.id == itemId },
                         allTVShows = _appState.value.allTVShows.filterNot { it.id == itemId },
+                        allItems = _appState.value.allItems.filterNot { it.id == itemId },
                         itemsByLibrary = updatedLibraryItems,
                     )
                     onResult(true, null)
