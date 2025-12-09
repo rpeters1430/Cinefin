@@ -80,20 +80,35 @@ fun BaseItemDto.getFormattedDuration(): String? {
 /**
  * ✅ PHASE 3: Watch status utilities
  */
-fun BaseItemDto.isWatched(): Boolean = userData?.played == true
+fun BaseItemDto.getWatchedPercentage(): Double {
+    userData?.playedPercentage?.let { return it }
+
+    val positionTicks = userData?.playbackPositionTicks ?: playbackPositionTicks
+    val runtimeTicks = runTimeTicks
+
+    return if (positionTicks != null && runtimeTicks != null && runtimeTicks > 0) {
+        val percentage = (positionTicks.toDouble() / runtimeTicks.toDouble()) * 100.0
+        percentage.coerceIn(0.0, 100.0)
+    } else {
+        0.0
+    }
+}
+
+fun BaseItemDto.isWatched(): Boolean {
+    val watchedPercentage = getWatchedPercentage()
+    return userData?.played == true || watchedPercentage >= Constants.Playback.WATCHED_THRESHOLD_PERCENT
+}
 
 fun BaseItemDto.isPartiallyWatched(): Boolean {
-    val percentage = userData?.playedPercentage ?: 0.0
+    val percentage = getWatchedPercentage()
     return percentage > 0.0 && percentage < Constants.Playback.WATCHED_THRESHOLD_PERCENT
 }
 
 fun BaseItemDto.canResume(): Boolean {
-    val percentage = userData?.playedPercentage ?: 0.0
+    val percentage = getWatchedPercentage()
     return percentage > Constants.Playback.RESUME_THRESHOLD_PERCENT &&
         percentage < Constants.Playback.WATCHED_THRESHOLD_PERCENT
 }
-
-fun BaseItemDto.getWatchedPercentage(): Double = userData?.playedPercentage ?: 0.0
 
 /**
  * ✅ PHASE 3: Enhanced Watch status utilities for TV Shows
@@ -105,7 +120,12 @@ fun BaseItemDto.getUnwatchedEpisodeCount(): Int {
             userData?.unplayedItemCount ?: run {
                 val totalCount = childCount ?: 0
                 val playedCount = userData?.playedPercentage?.let { percentage ->
-                    if (percentage >= Constants.Playback.WATCHED_THRESHOLD_PERCENT) totalCount else 0
+                    // Assumes playedPercentage represents the fraction of episodes completed across the series
+                    when {
+                        percentage >= Constants.Playback.WATCHED_THRESHOLD_PERCENT -> totalCount
+                        percentage > 0 -> (totalCount * (percentage / 100.0)).toInt()
+                        else -> 0
+                    }
                 } ?: 0
                 maxOf(0, totalCount - playedCount)
             }
@@ -125,7 +145,10 @@ fun BaseItemDto.isCompletelyWatched(): Boolean {
     return when {
         type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
             // Series is completely watched if userData.played is true OR unplayedItemCount is 0
-            userData?.played == true || (userData?.unplayedItemCount ?: getUnwatchedEpisodeCount()) == 0
+            val seriesPercentage = userData?.playedPercentage ?: 0.0
+            userData?.played == true ||
+                seriesPercentage >= Constants.Playback.WATCHED_THRESHOLD_PERCENT ||
+                getUnwatchedEpisodeCount() == 0
         }
         type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> isWatched()
         type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> isWatched()
