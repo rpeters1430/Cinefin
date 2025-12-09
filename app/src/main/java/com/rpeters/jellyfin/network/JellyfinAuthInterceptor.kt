@@ -1,7 +1,7 @@
 package com.rpeters.jellyfin.network
 
-import android.util.Log
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
+import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import okhttp3.Authenticator
@@ -50,7 +50,7 @@ class JellyfinAuthInterceptor @Inject constructor(
         }
 
         if (!refreshed) {
-            Log.w(TAG, "Failed to refresh token after 401 (attempt $attempt)")
+            SecureLogger.w(TAG, "Failed to refresh token after 401 (attempt $attempt)")
             return null
         }
 
@@ -72,7 +72,7 @@ class JellyfinAuthInterceptor @Inject constructor(
         runBlocking(Dispatchers.IO) {
             val refreshed = repository.forceReAuthenticate()
             if (!refreshed) {
-                Log.w(TAG, "Token refresh failed during request preparation")
+                SecureLogger.w(TAG, "Token refresh failed during request preparation")
             }
         }
     }
@@ -124,7 +124,7 @@ class JellyfinAuthInterceptor @Inject constructor(
         }
 
         if (responseCount(response) >= MAX_AUTH_RETRIES) {
-            Log.w(TAG, "Max auth retries reached (${responseCount(response)})")
+            SecureLogger.w(TAG, "Max auth retries reached (${responseCount(response)})")
             return false
         }
 

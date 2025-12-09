@@ -2,7 +2,7 @@ package com.rpeters.jellyfin.data
 
 import android.media.MediaCodecList
 import android.os.Build
-import android.util.Log
+import com.rpeters.jellyfin.utils.SecureLogger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -72,7 +72,7 @@ class DeviceCapabilities @Inject constructor() {
         if (width > 0 && height > 0) {
             val maxRes = getMaxSupportedResolution()
             if (width > maxRes.first || height > maxRes.second) {
-                Log.d(TAG, "Resolution ${width}x$height exceeds device maximum ${maxRes.first}x${maxRes.second}")
+                SecureLogger.v(TAG, "Resolution ${width}x$height exceeds device maximum ${maxRes.first}x${maxRes.second}")
                 return false
             }
         }
@@ -237,7 +237,7 @@ class DeviceCapabilities @Inject constructor() {
                 }
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to detect supported codecs", e)
+            SecureLogger.w(TAG, "Failed to detect supported codecs", e)
             // Fallback to common codecs
             if (isVideo) {
                 supportedCodecs.addAll(setOf("h264", "mpeg4", "h263", "vp8"))
@@ -246,7 +246,7 @@ class DeviceCapabilities @Inject constructor() {
             }
         }
 
-        Log.d(TAG, "${if (isVideo) "Video" else "Audio"} codecs supported: $supportedCodecs")
+        SecureLogger.v(TAG, "${if (isVideo) "Video" else "Audio"} codecs supported: $supportedCodecs")
         return supportedCodecs
     }
 
@@ -305,7 +305,7 @@ class DeviceCapabilities @Inject constructor() {
                 val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
                 codecList.findDecoderForFormat(android.media.MediaFormat.createVideoFormat(mimeType, 1920, 1080)) != null
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to check codec support for $codec", e)
+                SecureLogger.w(TAG, "Failed to check codec support for $codec", e)
                 // Safer to assume NOT supported if we can't check
                 // This prevents playback failures when codec is actually unsupported
                 false
@@ -366,7 +366,7 @@ class DeviceCapabilities @Inject constructor() {
 
                 Pair(maxWidth, maxHeight)
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to detect max resolution", e)
+                SecureLogger.w(TAG, "Failed to detect max resolution", e)
                 Pair(1920, 1080) // Fallback to 1080p
             }
         }
@@ -432,7 +432,7 @@ class DeviceCapabilities @Inject constructor() {
                 hasHardwareDecoding = hardwareCodecs.isNotEmpty(),
             )
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to detect hardware acceleration", e)
+            SecureLogger.w(TAG, "Failed to detect hardware acceleration", e)
             HardwareAccelerationInfo(emptyList(), false)
         }
     }
@@ -471,7 +471,7 @@ class DeviceCapabilities @Inject constructor() {
                 }
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to analyze video codec support", e)
+            SecureLogger.w(TAG, "Failed to analyze video codec support", e)
         }
 
         return support

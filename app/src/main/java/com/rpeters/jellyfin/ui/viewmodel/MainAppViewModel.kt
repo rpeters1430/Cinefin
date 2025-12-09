@@ -13,6 +13,7 @@ import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.ui.player.CastManager
 import com.rpeters.jellyfin.ui.screens.LibraryType
+import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -150,7 +151,7 @@ class MainAppViewModel @Inject constructor(
             // Prevent concurrent executions that cause frame drops
             val currentState = _appState.value
             if (currentState.isLoading && !forceRefresh) {
-                android.util.Log.d(
+                SecureLogger.v(
                     "MainAppViewModel-Initial",
                     "⏭️ Skipping loadInitialData - already loading",
                 )
@@ -158,11 +159,11 @@ class MainAppViewModel @Inject constructor(
             }
 
             // ✅ DEBUG: Log initial data loading start
-            android.util.Log.d(
+            SecureLogger.v(
                 "MainAppViewModel-Initial",
                 "🚀 Starting loadInitialData (forceRefresh=$forceRefresh)",
             )
-            android.util.Log.d(
+            SecureLogger.v(
                 "MainAppViewModel-Initial",
                 "  Current libraries count: ${currentState.libraries.size}",
             )
@@ -188,12 +189,12 @@ class MainAppViewModel @Inject constructor(
                     val recentResult = recentDeferred.getCompleted()
                     val recentlyAddedByTypes = recentByTypesDeferred.getCompleted()
 
-                    android.util.Log.d("MainAppViewModel-Initial", "📦 API calls completed:")
-                    android.util.Log.d(
+                    SecureLogger.v("MainAppViewModel-Initial", "📦 API calls completed:")
+                    SecureLogger.v(
                         "MainAppViewModel-Initial",
                         "  Libraries result: ${if (librariesResult is ApiResult.Success) "Success (${librariesResult.data.size})" else librariesResult::class.simpleName}",
                     )
-                    android.util.Log.d(
+                    SecureLogger.v(
                         "MainAppViewModel-Initial",
                         "  Recent result: ${if (recentResult is ApiResult.Success) "Success (${recentResult.data.size})" else recentResult::class.simpleName}",
                     )
@@ -207,9 +208,9 @@ class MainAppViewModel @Inject constructor(
                                 emptyList()
                             }
 
-                            android.util.Log.d("MainAppViewModel-Initial", "✅ Setting new state:")
+                            SecureLogger.v("MainAppViewModel-Initial", "✅ Setting new state:")
                             libraries.forEach { lib ->
-                                android.util.Log.d(
+                                SecureLogger.v(
                                     "MainAppViewModel-Initial",
                                     "  Library: ${lib.name} (${lib.collectionType}) id=${lib.id}",
                                 )
@@ -222,7 +223,7 @@ class MainAppViewModel @Inject constructor(
                                 isLoading = false,
                             )
 
-                            android.util.Log.d(
+                            SecureLogger.v(
                                 "MainAppViewModel-Initial",
                                 "🎯 loadInitialData completed - Libraries now: ${libraries.size}",
                             )
@@ -425,15 +426,15 @@ class MainAppViewModel @Inject constructor(
             val libraryId = library.id?.toString() ?: return@launch
 
             // ✅ DEBUG: Enhanced logging for library loading
-            android.util.Log.d("MainAppViewModel-Load", "🔄 Starting loadLibraryTypeData:")
-            android.util.Log.d(
+            SecureLogger.v("MainAppViewModel-Load", "🔄 Starting loadLibraryTypeData:")
+            SecureLogger.v(
                 "MainAppViewModel-Load",
                 "  Library: ${library.name} (${library.collectionType})",
             )
-            android.util.Log.d("MainAppViewModel-Load", "  LibraryType: ${libraryType.name}")
-            android.util.Log.d("MainAppViewModel-Load", "  LibraryId: $libraryId")
-            android.util.Log.d("MainAppViewModel-Load", "  ItemKinds: ${libraryType.itemKinds}")
-            android.util.Log.d("MainAppViewModel-Load", "  ForceRefresh: $forceRefresh")
+            SecureLogger.v("MainAppViewModel-Load", "  LibraryType: ${libraryType.name}")
+            SecureLogger.v("MainAppViewModel-Load", "  LibraryId: $libraryId")
+            SecureLogger.v("MainAppViewModel-Load", "  ItemKinds: ${libraryType.itemKinds}")
+            SecureLogger.v("MainAppViewModel-Load", "  ForceRefresh: $forceRefresh")
 
             _appState.value = _appState.value.copy(
                 isLoading = true,
@@ -484,10 +485,10 @@ class MainAppViewModel @Inject constructor(
                     mapKindsToApiNames(libraryType.itemKinds)
                 }
 
-            android.util.Log.d("MainAppViewModel-Load", "  Calling API with:")
-            android.util.Log.d("MainAppViewModel-Load", "    parentId: $libraryId")
-            android.util.Log.d("MainAppViewModel-Load", "    itemTypes: $itemTypesArg")
-            android.util.Log.d("MainAppViewModel-Load", "    collectionType: $collectionTypeStr")
+            SecureLogger.v("MainAppViewModel-Load", "  Calling API with:")
+            SecureLogger.v("MainAppViewModel-Load", "    parentId: $libraryId")
+            SecureLogger.v("MainAppViewModel-Load", "    itemTypes: $itemTypesArg")
+            SecureLogger.v("MainAppViewModel-Load", "    collectionType: $collectionTypeStr")
 
             when (
                 val result = mediaRepository.getLibraryItems(
@@ -499,7 +500,7 @@ class MainAppViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     var items = result.data
                     if (items.isEmpty() && libraryType == LibraryType.TV_SHOWS) {
-                        android.util.Log.d(
+                        SecureLogger.v(
                             "MainAppViewModel-Load",
                             "TV shows empty with filter; retrying without itemTypes",
                         )
@@ -515,12 +516,12 @@ class MainAppViewModel @Inject constructor(
                             is ApiResult.Loading -> Unit
                         }
                     }
-                    android.util.Log.d(
+                    SecureLogger.v(
                         "MainAppViewModel-Load",
                         "✅ API Success: ${result.data.size} items loaded",
                     )
                     items.take(3).forEach { item ->
-                        android.util.Log.d(
+                        SecureLogger.v(
                             "MainAppViewModel-Load",
                             "    Sample item: ${item.name} (${item.type})",
                         )
@@ -541,14 +542,14 @@ class MainAppViewModel @Inject constructor(
                             _appState.value.isLoadingTVShows
                         },
                     )
-                    android.util.Log.d(
+                    SecureLogger.v(
                         "MainAppViewModel-Load",
                         "✅ State updated - itemsByLibrary now has ${updated.size} libraries",
                     )
                 }
 
                 is ApiResult.Error -> {
-                    android.util.Log.e("MainAppViewModel-Load", "❌ API Error: ${result.message}")
+                    SecureLogger.e("MainAppViewModel-Load", "❌ API Error: ${result.message}")
                     _appState.value = _appState.value.copy(
                         isLoading = false,
                         errorMessage = "Failed to load library items: ${result.message}",
@@ -566,7 +567,7 @@ class MainAppViewModel @Inject constructor(
                 }
 
                 is ApiResult.Loading -> {
-                    android.util.Log.d("MainAppViewModel-Load", "⏳ API Loading...")
+                    SecureLogger.v("MainAppViewModel-Load", "⏳ API Loading...")
                 }
             }
         }
@@ -576,7 +577,7 @@ class MainAppViewModel @Inject constructor(
         val library = findLibraryForType(libraryType)
         if (library != null) {
             if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
-                android.util.Log.d(
+                SecureLogger.v(
                     "MainAppViewModel",
                     "loadLibraryTypeData: triggering load for ${libraryType.name} (library=${library.name})",
                 )
@@ -636,7 +637,7 @@ class MainAppViewModel @Inject constructor(
                 } == true
             }?.also { matched ->
                 if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
-                    android.util.Log.d(
+                    SecureLogger.v(
                         "MainAppViewModel",
                         "findLibraryForType: using name-based fallback for ${libraryType.name}; matched=${matched.name}",
                     )
@@ -898,7 +899,7 @@ class MainAppViewModel @Inject constructor(
                         errorMessage = null,
                     )
 
-                    android.util.Log.d(
+                    SecureLogger.v(
                         "MainAppViewModel",
                         "✅ Episode loaded: ${episode.name} (${episode.id})",
                     )
@@ -909,7 +910,7 @@ class MainAppViewModel @Inject constructor(
                         isLoading = false,
                         errorMessage = "Failed to load episode details: ${result.message}",
                     )
-                    android.util.Log.e(
+                    SecureLogger.e(
                         "MainAppViewModel",
                         "❌ Failed to load episode $episodeId: ${result.message}",
                     )
@@ -928,7 +929,7 @@ class MainAppViewModel @Inject constructor(
         updatedAllItems.removeAll { it.id == item.id }
         updatedAllItems.add(item)
         _appState.value = _appState.value.copy(allItems = updatedAllItems)
-        android.util.Log.d("MainAppViewModel", "📝 Item added/updated: ${item.name} (${item.id})")
+        SecureLogger.v("MainAppViewModel", "📝 Item added/updated: ${item.name} (${item.id})")
     }
 
     fun loadHomeVideos(libraryId: String) {

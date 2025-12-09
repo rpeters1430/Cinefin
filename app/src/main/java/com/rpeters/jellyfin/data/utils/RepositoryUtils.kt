@@ -1,9 +1,9 @@
 package com.rpeters.jellyfin.data.utils
 
-import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.repository.common.ErrorType
+import com.rpeters.jellyfin.utils.SecureLogger
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import retrofit2.HttpException
 import java.util.*
@@ -37,7 +37,7 @@ object RepositoryUtils {
             // Return the first match that looks like an HTTP status code
             matches.firstOrNull { it in 400..599 }
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to extract status code from exception", e)
+            SecureLogger.w(TAG, "Failed to extract status code from exception", e)
             null
         }
     }
@@ -94,22 +94,22 @@ object RepositoryUtils {
      */
     fun validateServer(server: JellyfinServer?): JellyfinServer {
         if (server == null) {
-            Log.w(TAG, "validateServer: Server is null - user may not be authenticated or connection was lost")
+            SecureLogger.w(TAG, "validateServer: Server is null - user may not be authenticated or connection was lost")
             throw IllegalStateException("Server is not available. Please check your connection and try logging in again.")
         }
 
         if (server.accessToken == null) {
-            Log.w(TAG, "validateServer: Server has no access token - authentication may have expired")
+            SecureLogger.w(TAG, "validateServer: Server has no access token - authentication may have expired")
             throw IllegalStateException("Authentication token is missing. Please log in again.")
         }
 
         if (server.userId == null) {
-            Log.w(TAG, "validateServer: Server has no user ID - authentication may be incomplete")
+            SecureLogger.w(TAG, "validateServer: Server has no user ID - authentication may be incomplete")
             throw IllegalStateException("User authentication is incomplete. Please log in again.")
         }
 
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "validateServer: Server validation passed for user ${server.username} on ${server.url}")
+            SecureLogger.v(TAG, "validateServer: Server validation passed for user ${server.username} on ${server.url}")
         }
 
         return server

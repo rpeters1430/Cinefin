@@ -126,6 +126,7 @@ fun TVShowsScreen(
     onTVShowClick: (String) -> Unit = {},
     onBackClick: () -> Unit = {},
     viewModel: MainAppViewModel = hiltViewModel(),
+    isLoading: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val appState by viewModel.appState.collectAsState()
@@ -139,6 +140,8 @@ fun TVShowsScreen(
     // Get items provided by the unified library loader (Series only)
     // Don't use remember() here - we want fresh data on every recomposition
     val tvShowItems = viewModel.getLibraryTypeData(LibraryType.TV_SHOWS)
+    // Merge NavGraph-provided loading state with the ViewModel flag to avoid flashing an empty state
+    val isLoadingState = isLoading || appState.isLoadingTVShows
 
     // Apply filtering and sorting with proper keys to prevent unnecessary recomputation
     val filteredAndSortedTVShows = remember(tvShowItems, selectedFilter, sortOrder) {
@@ -326,7 +329,7 @@ fun TVShowsScreen(
             // Content with Expressive animations
             AnimatedContent(
                 targetState = when {
-                    appState.isLoadingTVShows -> TVShowContentState.LOADING
+                    isLoadingState -> TVShowContentState.LOADING
                     appState.errorMessage != null -> TVShowContentState.ERROR
                     filteredAndSortedTVShows.isEmpty() -> TVShowContentState.EMPTY
                     else -> TVShowContentState.CONTENT

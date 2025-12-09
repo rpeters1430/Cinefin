@@ -40,6 +40,10 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
         // Initialize Logger with application context for file logging
         Logger.appContext = this
 
+        // Configure logging verbosity - disable verbose logging in production to reduce log spam
+        // Set to true to enable detailed debug logging (codec detection, playback decisions, etc.)
+        SecureLogger.enableVerboseLogging = BuildConfig.DEBUG && false // Disabled by default even in debug
+
         // Configure performance optimizations first
         initializePerformanceOptimizations()
 

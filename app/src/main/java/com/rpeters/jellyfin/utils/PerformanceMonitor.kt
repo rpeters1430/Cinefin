@@ -2,7 +2,6 @@ package com.rpeters.jellyfin.utils
 
 import android.os.Build
 import android.os.Debug
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -84,7 +83,7 @@ object PerformanceMonitor {
      */
     fun logMemoryUsage(message: String = "Memory Usage") {
         val memoryInfo = getMemoryInfo()
-        Log.d(
+        SecureLogger.v(
             TAG,
             "$message - Used: ${memoryInfo.usedMemoryMB}MB (${String.format("%.1f", memoryInfo.usagePercentage)}%), " +
                 "Free: ${memoryInfo.freeMemoryMB}MB, Max: ${memoryInfo.maxMemoryMB}MB",
@@ -99,7 +98,7 @@ object PerformanceMonitor {
         val executionTime = measureTimeMillis {
             result = block()
         }
-        Log.d(TAG, "$tag executed in ${executionTime}ms")
+        SecureLogger.v(TAG, "$tag executed in ${executionTime}ms")
         return result
     }
 
@@ -108,7 +107,7 @@ object PerformanceMonitor {
      */
     fun forceGarbageCollection(reason: String) {
         val beforeMemory = getMemoryInfo()
-        Log.d(TAG, "GC Request ($reason) - Before: ${beforeMemory.usedMemoryMB}MB")
+        SecureLogger.v(TAG, "GC Request ($reason) - Before: ${beforeMemory.usedMemoryMB}MB")
 
         System.gc()
 
@@ -117,7 +116,7 @@ object PerformanceMonitor {
 
         val afterMemory = getMemoryInfo()
         val freedMB = beforeMemory.usedMemoryMB - afterMemory.usedMemoryMB
-        Log.d(TAG, "GC Request ($reason) - After: ${afterMemory.usedMemoryMB}MB (Freed: ${freedMB}MB)")
+        SecureLogger.v(TAG, "GC Request ($reason) - After: ${afterMemory.usedMemoryMB}MB (Freed: ${freedMB}MB)")
     }
 
     /**
@@ -128,7 +127,7 @@ object PerformanceMonitor {
         val isHighUsage = memoryInfo.usagePercentage > 80f
 
         if (isHighUsage) {
-            Log.w(TAG, "High memory usage detected: ${String.format("%.1f", memoryInfo.usagePercentage)}%")
+            SecureLogger.w(TAG, "High memory usage detected: ${String.format("%.1f", memoryInfo.usagePercentage)}%")
         }
 
         return isHighUsage
@@ -184,8 +183,8 @@ fun PerformanceTracker(
             val metrics = PerformanceMonitor.collectPerformanceMetrics(renderTime)
             onMetricsCollected(metrics)
 
-            // Log metrics
-            Log.d(
+            // Log metrics only if verbose logging is enabled
+            SecureLogger.v(
                 "PerformanceTracker",
                 "Memory: ${metrics.memory.usedMemoryMB}MB (${String.format("%.1f", metrics.memory.usagePercentage)}%), " +
                     "Render: ${metrics.renderTimeMs}ms",
@@ -227,6 +226,6 @@ suspend inline fun <T> measureSuspendTime(tag: String, crossinline block: suspen
     val executionTime = measureTimeMillis {
         result = block()
     }
-    Log.d("PerformanceMonitor", "$tag executed in ${executionTime}ms")
+    SecureLogger.v("PerformanceMonitor", "$tag executed in ${executionTime}ms")
     return result
 }
