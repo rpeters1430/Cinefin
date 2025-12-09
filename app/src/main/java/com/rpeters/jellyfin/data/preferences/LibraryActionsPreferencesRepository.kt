@@ -50,8 +50,18 @@ class LibraryActionsPreferencesRepository(
         }
 
     suspend fun setEnableManagementActions(enabled: Boolean) {
-        dataStore.edit { prefs ->
-            prefs[PreferencesKeys.ENABLE_MANAGEMENT_ACTIONS] = enabled
+        try {
+            dataStore.edit { prefs ->
+                prefs[PreferencesKeys.ENABLE_MANAGEMENT_ACTIONS] = enabled
+            }
+        } catch (exception: IOException) {
+            SecureLogger.e(
+                TAG,
+                "IOException saving library action preferences, keeping previous value",
+                exception,
+            )
+        } catch (exception: Exception) {
+            SecureLogger.e(TAG, "Unexpected error saving library action preferences", exception)
         }
     }
 
