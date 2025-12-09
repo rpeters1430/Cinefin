@@ -1,5 +1,7 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,29 +34,35 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
 /** Card representation of a library item used in multiple views. */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun LibraryItemCard(
     item: BaseItemDto,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
     onTVShowClick: ((String) -> Unit)? = null,
+    onItemLongPress: ((BaseItemDto) -> Unit)? = null,
     isCompact: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val cardModifier = modifier
+        .fillMaxWidth()
+        .combinedClickable(
+            onClick = {
+                if (libraryType == LibraryType.TV_SHOWS && item.type == BaseItemKind.SERIES) {
+                    item.id?.let { seriesId ->
+                        onTVShowClick?.invoke(seriesId.toString())
+                    }
+                }
+            },
+            onLongClick = { onItemLongPress?.invoke(item) },
+        )
+        .then(if (isCompact) Modifier.width(LibraryScreenDefaults.CompactCardWidth) else Modifier)
+
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(if (isCompact) Modifier.width(LibraryScreenDefaults.CompactCardWidth) else Modifier),
+        modifier = cardModifier,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(LibraryScreenDefaults.CardCornerRadius),
         elevation = CardDefaults.cardElevation(defaultElevation = LibraryScreenDefaults.CardElevation),
-        onClick = {
-            if (libraryType == LibraryType.TV_SHOWS && item.type == BaseItemKind.SERIES) {
-                item.id?.let { seriesId ->
-                    onTVShowClick?.invoke(seriesId.toString())
-                }
-            }
-        },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),

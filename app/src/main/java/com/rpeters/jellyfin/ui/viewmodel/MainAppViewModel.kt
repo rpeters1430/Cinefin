@@ -368,16 +368,28 @@ class MainAppViewModel @Inject constructor(
     }
 
     fun deleteItem(item: BaseItemDto, onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
+        val itemId = item.id
+        if (itemId == null) {
+            onResult(false, "Missing item id")
+            return
+        }
+
         viewModelScope.launch {
-            when (val result = userRepository.deleteItemAsAdmin(item.id.toString())) {
+            when (val result = userRepository.deleteItemAsAdmin(itemId.toString())) {
                 is ApiResult.Success -> {
+                    val updatedLibraryItems = _appState.value.itemsByLibrary.mapValues { (_, items) ->
+                        items.filterNot { it.id == itemId }
+                    }
+
                     // Remove from all state lists
                     _appState.value = _appState.value.copy(
-                        recentlyAdded = _appState.value.recentlyAdded.filterNot { it.id == item.id },
-                        favorites = _appState.value.favorites.filterNot { it.id == item.id },
-                        searchResults = _appState.value.searchResults.filterNot { it.id == item.id },
-                        allMovies = _appState.value.allMovies.filterNot { it.id == item.id },
-                        allTVShows = _appState.value.allTVShows.filterNot { it.id == item.id },
+                        recentlyAdded = _appState.value.recentlyAdded.filterNot { it.id == itemId },
+                        favorites = _appState.value.favorites.filterNot { it.id == itemId },
+                        searchResults = _appState.value.searchResults.filterNot { it.id == itemId },
+                        allMovies = _appState.value.allMovies.filterNot { it.id == itemId },
+                        allTVShows = _appState.value.allTVShows.filterNot { it.id == itemId },
+                        allItems = _appState.value.allItems.filterNot { it.id == itemId },
+                        itemsByLibrary = updatedLibraryItems,
                     )
                     onResult(true, null)
                 }
