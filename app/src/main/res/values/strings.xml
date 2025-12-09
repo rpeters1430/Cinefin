@@ -290,9 +290,24 @@
     <string name="settings_privacy_diagnostics">Crash/analytics opt-in with clear data visibility.</string>
     <string name="settings_privacy_sensitive">Hide sensitive content titles in notifications and recents.</string>
 
+    <string name="settings_library_management_title">Library management</string>
+    <string name="settings_library_management_description">Enable deletion and other power actions from item long-press menus.</string>
+    <string name="settings_library_management_toggle">Allow deleting media and showing manage actions</string>
+
     <string name="settings_accessibility_title">Accessibility</string>
     <string name="settings_accessibility_description">Make the app easier to use for different needs.</string>
     <string name="settings_accessibility_text">Custom text size, contrast boost, and bold text.</string>
     <string name="settings_accessibility_motion">Reduce motion/animations and disable autoplay previews.</string>
     <string name="settings_accessibility_haptics">Haptic feedback toggle for key interactions.</string>
+
+    <string name="library_actions_loading_more">Loading more…</string>
+    <string name="library_actions_no_more_items">No more items to load</string>
+    <string name="library_actions_management_disabled">Enable library management in Settings to manage items.</string>
+    <string name="library_actions_sheet_title">Manage %1$s</string>
+    <string name="library_actions_sheet_subtitle">These actions may permanently change the item on your server.</string>
+    <string name="library_actions_delete">Delete from library</string>
+    <string name="library_actions_refresh_metadata">Refresh metadata</string>
+    <string name="library_actions_delete_success">Deleted %1$s</string>
+    <string name="library_actions_delete_failure">Could not delete %1$s. %2$s</string>
+    <string name="library_actions_refresh_requested">Requested metadata refresh.</string>
 </resources>

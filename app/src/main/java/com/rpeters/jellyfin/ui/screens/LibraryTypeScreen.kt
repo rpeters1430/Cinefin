@@ -28,30 +28,44 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PlaceholderHighlight
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.material3.placeholder
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
+import kotlinx.coroutines.launch
 
 /**
  * Generic library screen used by multiple library types.
@@ -63,11 +77,32 @@ fun LibraryTypeScreen(
     onTVShowClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
+    libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
 ) {
     val appState by viewModel.appState.collectAsState()
+    val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
     var viewMode by remember { mutableStateOf(ViewMode.GRID) }
     var selectedFilter by remember { mutableStateOf(FilterType.getDefault()) }
     var hasRequestedData by remember(libraryType) { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var selectedItem by remember { mutableStateOf<BaseItemDto?>(null) }
+    var showManageSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    val managementEnabled = libraryActionPrefs.enableManagementActions
+    val managementDisabledMessage = stringResource(id = R.string.library_actions_management_disabled)
+
+    val handleItemLongPress: (BaseItemDto) -> Unit = { item ->
+        if (managementEnabled) {
+            selectedItem = item
+            showManageSheet = true
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(message = managementDisabledMessage)
+            }
+        }
+    }
 
     // ✅ FIX: Use library-specific data from itemsByLibrary map
     // The remember() must depend on itemsByLibrary since getLibraryTypeData() reads from that map
@@ -141,6 +176,7 @@ fun LibraryTypeScreen(
             )
         },
         modifier = modifier,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -164,6 +200,7 @@ fun LibraryTypeScreen(
                             libraryType = libraryType,
                             getImageUrl = { viewModel.getImageUrl(it) },
                             onTVShowClick = onTVShowClick,
+                            onItemLongPress = handleItemLongPress,
                             isLoadingMore = appState.isLoadingMore,
                             hasMoreItems = appState.hasMoreItems,
                             onLoadMore = { viewModel.loadMoreItems() },
@@ -173,6 +210,7 @@ fun LibraryTypeScreen(
                             libraryType = libraryType,
                             getImageUrl = { viewModel.getImageUrl(it) },
                             onTVShowClick = onTVShowClick,
+                            onItemLongPress = handleItemLongPress,
                             isLoadingMore = appState.isLoadingMore,
                             hasMoreItems = appState.hasMoreItems,
                             onLoadMore = { viewModel.loadMoreItems() },
@@ -182,6 +220,7 @@ fun LibraryTypeScreen(
                             libraryType = libraryType,
                             getImageUrl = { viewModel.getImageUrl(it) },
                             onTVShowClick = onTVShowClick,
+                            onItemLongPress = handleItemLongPress,
                         )
                     }
                 }
@@ -210,6 +249,82 @@ fun LibraryTypeScreen(
                             modifier = Modifier.padding(LibraryScreenDefaults.ContentPadding),
                         )
                     }
+                }
+            }
+        }
+    }
+
+    if (showManageSheet && selectedItem != null) {
+        val item = selectedItem!!
+        ModalBottomSheet(
+            onDismissRequest = {
+                showManageSheet = false
+                selectedItem = null
+            },
+            sheetState = sheetState,
+        ) {
+            Column(
+                modifier = Modifier.padding(LibraryScreenDefaults.ContentPadding),
+                verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.FilterChipSpacing),
+            ) {
+                Text(
+                    text = stringResource(
+                        id = R.string.library_actions_sheet_title,
+                        item.name ?: stringResource(id = R.string.unknown),
+                    ),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = stringResource(id = R.string.library_actions_sheet_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                HorizontalDivider()
+
+                Button(
+                    onClick = {
+                        showManageSheet = false
+                        selectedItem = null
+                        viewModel.deleteItem(item) { success, message ->
+                            coroutineScope.launch {
+                                val text = if (success) {
+                                    stringResource(
+                                        id = R.string.library_actions_delete_success,
+                                        item.name ?: stringResource(id = R.string.unknown),
+                                    )
+                                } else {
+                                    stringResource(
+                                        id = R.string.library_actions_delete_failure,
+                                        item.name ?: stringResource(id = R.string.unknown),
+                                        message ?: "",
+                                    )
+                                }
+                                snackbarHostState.showSnackbar(text)
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                ) {
+                    Text(text = stringResource(id = R.string.library_actions_delete))
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        showManageSheet = false
+                        selectedItem = null
+                        viewModel.refreshLibraryItems()
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = stringResource(id = R.string.library_actions_refresh_requested),
+                            )
+                        }
+                    },
+                ) {
+                    Text(text = stringResource(id = R.string.library_actions_refresh_metadata))
                 }
             }
         }
@@ -244,6 +359,7 @@ private fun GridContent(
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
     onTVShowClick: ((String) -> Unit)?,
+    onItemLongPress: (BaseItemDto) -> Unit,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -264,6 +380,7 @@ private fun GridContent(
                 libraryType = libraryType,
                 getImageUrl = getImageUrl,
                 onTVShowClick = onTVShowClick,
+                onItemLongPress = onItemLongPress,
                 isCompact = true,
             )
         }
@@ -281,6 +398,7 @@ private fun ListContent(
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
     onTVShowClick: ((String) -> Unit)?,
+    onItemLongPress: (BaseItemDto) -> Unit,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -299,6 +417,7 @@ private fun ListContent(
                 libraryType = libraryType,
                 getImageUrl = getImageUrl,
                 onTVShowClick = onTVShowClick,
+                onItemLongPress = onItemLongPress,
                 isCompact = false,
             )
         }
@@ -316,6 +435,7 @@ private fun CarouselContent(
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
     onTVShowClick: ((String) -> Unit)?,
+    onItemLongPress: (BaseItemDto) -> Unit,
 ) {
     val categories = remember(items) { organizeItemsForCarousel(items, libraryType) }
     LazyColumn(
@@ -333,6 +453,7 @@ private fun CarouselContent(
                 libraryType = libraryType,
                 getImageUrl = getImageUrl,
                 onTVShowClick = onTVShowClick,
+                onItemLongPress = onItemLongPress,
             )
         }
     }
