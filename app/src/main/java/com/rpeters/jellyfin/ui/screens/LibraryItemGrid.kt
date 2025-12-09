@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.rpeters.jellyfin.R
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 /** Footer composable used for pagination within grids and lists. */
@@ -51,14 +53,14 @@ fun PaginationFooter(
                     modifier = Modifier.size(LibraryScreenDefaults.ViewModeIconSize),
                 )
                 Text(
-                    text = "Loading more...",
+                    text = stringResource(id = R.string.library_actions_loading_more),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         } else if (!hasMoreItems) {
             Text(
-                text = "No more items to load",
+                text = stringResource(id = R.string.library_actions_no_more_items),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -76,6 +78,7 @@ fun CarouselSection(
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
     onTVShowClick: ((String) -> Unit)? = null,
+    onItemLongPress: ((BaseItemDto) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -100,6 +103,7 @@ fun CarouselSection(
                 libraryType = libraryType,
                 getImageUrl = getImageUrl,
                 onTVShowClick = onTVShowClick,
+                onItemLongPress = onItemLongPress,
                 isCompact = true,
             )
         }
