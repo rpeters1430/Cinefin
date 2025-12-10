@@ -1,7 +1,7 @@
 package com.rpeters.jellyfin.utils
 
 import android.content.Context
-import android.util.Log
+import androidx.annotation.VisibleForTesting
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.annotation.ExperimentalCoilApi
@@ -9,6 +9,7 @@ import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.util.DebugLogger
+import com.rpeters.jellyfin.utils.DevicePerformanceProfile.Companion.detect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,54 +23,17 @@ import java.io.File
 @OptIn(ExperimentalCoilApi::class)
 object ImageLoadingOptimizer {
     private const val TAG = "ImageLoadingOptimizer"
+    private const val BYTES_PER_MEGABYTE = 1024L * 1024L
 
     fun initializeCoil(context: Context, okHttpClient: OkHttpClient) {
         CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val performanceProfile = DevicePerformanceProfile.detect(context)
-                val imageHttpClient = okHttpClient.newBuilder()
-                    .addInterceptor { chain ->
-                        val request = chain.request().newBuilder()
-                            .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
-                            .build()
-                        chain.proceed(request)
-                    }
-                    .build()
-
-                val imageLoader = ImageLoader.Builder(context)
-                    .memoryCache {
-                        MemoryCache.Builder()
-                            .maxSizePercent(context, performanceProfile.memoryCachePercent)
-                            .build()
-                    }
-                    .diskCache {
-                        DiskCache.Builder()
-                            .directory(context.cacheDir.resolve("image_cache").toOkioPath())
-                            .maxSizeBytes(performanceProfile.diskCacheSizeMb * 1024 * 1024)
-                            .cleanupCoroutineContext(Dispatchers.IO)
-                            .build()
-                    }
-                    .components {
-                        add(
-                            OkHttpNetworkFetcherFactory(
-                                callFactory = { imageHttpClient },
-                            ),
-                        )
-                    }
-                    // Coil 3.x: crossfade, respectCacheHeaders, allowRgb565, allowHardware
-                    // are now request-level options, not builder options
-                    .apply {
-                        if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
-                            logger(DebugLogger())
-                        }
-                    }
-                    .build()
-
-                // Set as singleton image loader
+            runCatching {
+                val performanceProfile = detect(context)
+                val imageLoader = buildImageLoader(context, okHttpClient, performanceProfile)
                 SingletonImageLoader.setSafe { imageLoader }
-                Log.d(TAG, "Coil image loader initialized successfully")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to initialize Coil image loader", e)
+                SecureLogger.d(TAG, "Coil image loader initialized successfully")
+            }.onFailure { throwable ->
+                SecureLogger.e(TAG, "Failed to initialize Coil image loader", throwable)
             }
         }
     }
@@ -83,13 +47,66 @@ object ImageLoadingOptimizer {
     }
 
     fun clearImageCache(context: Context) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                SingletonImageLoader.get(context).memoryCache?.clear()
-                SingletonImageLoader.get(context).diskCache?.clear()
-                Log.d(TAG, "Image cache cleared")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to clear image cache", e)
+        clearImageCache(SingletonImageLoader.get(context))
+    }
+
+    @VisibleForTesting
+    internal fun buildImageLoader(
+        context: Context,
+        okHttpClient: OkHttpClient,
+        performanceProfile: DevicePerformanceProfile,
+    ): ImageLoader {
+        val imageHttpClient = okHttpClient.newBuilder()
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
+                    .build()
+                chain.proceed(request)
+            }
+            .build()
+
+        return ImageLoader.Builder(context)
+            .memoryCache {
+                MemoryCache.Builder()
+                    .maxSizePercent(context, performanceProfile.memoryCachePercent)
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(context.cacheDir.resolve("image_cache").toOkioPath())
+                    .maxSizeBytes(performanceProfile.diskCacheSizeMb * BYTES_PER_MEGABYTE)
+                    .cleanupCoroutineContext(Dispatchers.IO)
+                    .build()
+            }
+            .components {
+                add(
+                    OkHttpNetworkFetcherFactory(
+                        callFactory = { imageHttpClient },
+                    ),
+                )
+            }
+            // Coil 3.x: crossfade, respectCacheHeaders, allowRgb565, allowHardware
+            // are now request-level options, not builder options
+            .apply {
+                if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                    logger(DebugLogger())
+                }
+            }
+            .build()
+    }
+
+    @VisibleForTesting
+    internal fun clearImageCache(
+        imageLoader: ImageLoader,
+        dispatcher: kotlin.coroutines.CoroutineContext = Dispatchers.IO,
+    ) {
+        CoroutineScope(dispatcher).launch {
+            runCatching {
+                imageLoader.memoryCache?.clear()
+                imageLoader.diskCache?.clear()
+                SecureLogger.d(TAG, "Image cache cleared")
+            }.onFailure { throwable ->
+                SecureLogger.e(TAG, "Failed to clear image cache", throwable)
             }
         }
     }

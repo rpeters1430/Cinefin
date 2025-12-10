@@ -2,8 +2,6 @@ package com.rpeters.jellyfin.di
 
 import android.content.Context
 import coil3.ImageLoader
-import coil3.disk.DiskCache
-import coil3.memory.MemoryCache
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.cache.JellyfinCache
@@ -15,6 +13,8 @@ import com.rpeters.jellyfin.network.CachePolicyInterceptor
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.network.DeviceIdentityProvider
 import com.rpeters.jellyfin.network.JellyfinAuthInterceptor
+import com.rpeters.jellyfin.utils.DevicePerformanceProfile
+import com.rpeters.jellyfin.utils.ImageLoadingOptimizer
 import com.rpeters.jellyfin.utils.withStrictModeTagger
 import dagger.Module
 import dagger.Provides
@@ -24,7 +24,6 @@ import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.logging.HttpLoggingInterceptor
-import okio.Path.Companion.toOkioPath
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.createJellyfin
 import org.jellyfin.sdk.model.ClientInfo
@@ -87,39 +86,9 @@ object NetworkModule {
     fun provideImageLoader(
         @ApplicationContext context: Context,
         okHttpClient: OkHttpClient,
+        devicePerformanceProfile: DevicePerformanceProfile,
     ): ImageLoader {
-        val performanceProfile = DevicePerformanceProfile.detect(context)
-        val imageHttpClient = okHttpClient.newBuilder()
-            .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-                    .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
-                    .build()
-                chain.proceed(request)
-            }
-            .build()
-
-        return ImageLoader.Builder(context)
-            .memoryCache {
-                MemoryCache.Builder()
-                    .maxSizePercent(context, performanceProfile.memoryCachePercent)
-                    .build()
-            }
-            .diskCache {
-                DiskCache.Builder()
-                    .directory(context.cacheDir.resolve("image_cache").toOkioPath())
-                    .maxSizeBytes(performanceProfile.diskCacheSizeMb * 1024 * 1024)
-                    .build()
-            }
-            .components {
-                add(
-                    coil3.network.okhttp.OkHttpNetworkFetcherFactory(
-                        callFactory = { imageHttpClient },
-                    ),
-                )
-            }
-            // Coil 3.x: crossfade, allowRgb565, allowHardware are now request-level options
-            // Set as defaults in requests if needed
-            .build()
+        return ImageLoadingOptimizer.buildImageLoader(context, okHttpClient, devicePerformanceProfile)
     }
 
     @Provides
@@ -158,6 +127,14 @@ object NetworkModule {
     @Singleton
     fun provideDeviceCapabilities(): DeviceCapabilities {
         return DeviceCapabilities()
+    }
+
+    @Provides
+    @Singleton
+    fun provideDevicePerformanceProfile(
+        @ApplicationContext context: Context,
+    ): DevicePerformanceProfile {
+        return DevicePerformanceProfile.detect(context)
     }
 
     @Provides
