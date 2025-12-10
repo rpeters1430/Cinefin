@@ -257,7 +257,7 @@ private fun TVSeasonContent(
                 )
             }
 
-            items(state.seasons) { season ->
+            items(state.seasons, key = { it.id ?: it.name.hashCode() }) { season ->
                 ExpressiveSeasonCard(
                     season = season,
                     getImageUrl = getImageUrl,
@@ -306,7 +306,7 @@ private fun TVSeasonContent(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             contentPadding = PaddingValues(horizontal = 4.dp),
                         ) {
-                            items(cast.take(10)) { person ->
+                            items(cast.take(10), key = { it.id ?: it.name.hashCode() }) { person ->
                                 PersonCard(
                                     person = person,
                                     getImageUrl = { id, tag ->
@@ -341,7 +341,7 @@ private fun TVSeasonContent(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             contentPadding = PaddingValues(horizontal = 4.dp),
                         ) {
-                            items(crew.take(8)) { person ->
+                            items(crew.take(8), key = { it.id ?: it.name.hashCode() }) { person ->
                                 PersonCard(
                                     person = person,
                                     getImageUrl = { id, tag ->

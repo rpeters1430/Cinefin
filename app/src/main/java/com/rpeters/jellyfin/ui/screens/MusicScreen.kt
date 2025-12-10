@@ -510,7 +510,7 @@ private fun MusicContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = modifier.fillMaxSize(),
             ) {
-                items(musicItems) { musicItem ->
+                items(musicItems, key = { it.id ?: it.name.hashCode() }) { musicItem ->
                     val coroutineScope = rememberCoroutineScope()
                     ExpressiveMusicCard(
                         item = musicItem,
@@ -540,7 +540,7 @@ private fun MusicContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = modifier.fillMaxSize(),
             ) {
-                items(musicItems) { musicItem ->
+                items(musicItems, key = { it.id ?: it.name.hashCode() }) { musicItem ->
                     val coroutineScope = rememberCoroutineScope()
                     ExpressiveMusicCard(
                         item = musicItem,
