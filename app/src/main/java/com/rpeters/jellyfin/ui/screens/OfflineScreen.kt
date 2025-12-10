@@ -294,7 +294,7 @@ private fun OfflineContentSection(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(offlineContent) { item ->
+                    items(offlineContent, key = { it.id ?: it.name.hashCode() }) { item ->
                         OfflineContentItem(
                             item = item,
                             onPlay = { onPlayContent(item) },
