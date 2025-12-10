@@ -32,7 +32,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.utils.isWatched
-import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 /**
