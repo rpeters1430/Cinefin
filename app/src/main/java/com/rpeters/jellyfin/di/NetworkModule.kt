@@ -88,31 +88,32 @@ object NetworkModule {
         @ApplicationContext context: Context,
         okHttpClient: OkHttpClient,
     ): ImageLoader {
+        val performanceProfile = DevicePerformanceProfile.detect(context)
+        val imageHttpClient = okHttpClient.newBuilder()
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
+                    .build()
+                chain.proceed(request)
+            }
+            .build()
+
         return ImageLoader.Builder(context)
             .memoryCache {
                 MemoryCache.Builder()
-                    .maxSizePercent(context, 0.20)
+                    .maxSizePercent(context, performanceProfile.memoryCachePercent)
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
                     .directory(context.cacheDir.resolve("image_cache").toOkioPath())
-                    .maxSizeBytes(120L * 1024 * 1024)
+                    .maxSizeBytes(performanceProfile.diskCacheSizeMb * 1024 * 1024)
                     .build()
             }
             .components {
                 add(
                     coil3.network.okhttp.OkHttpNetworkFetcherFactory(
-                        callFactory = {
-                            okHttpClient.newBuilder()
-                                .addInterceptor { chain ->
-                                    val request = chain.request().newBuilder()
-                                        .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
-                                        .build()
-                                    chain.proceed(request)
-                                }
-                                .build()
-                        },
+                        callFactory = { imageHttpClient },
                     ),
                 )
             }

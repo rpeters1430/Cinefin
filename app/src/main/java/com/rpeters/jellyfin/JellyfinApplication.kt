@@ -59,10 +59,30 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
         SecureLogger.i(TAG, "Application terminated")
     }
 
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+            SecureLogger.w(TAG, "Trim memory level $level - clearing image cache")
+            clearImageCaches(clearDiskCache = false)
+        }
+    }
+
     override fun onLowMemory() {
         super.onLowMemory()
-        SecureLogger.w(TAG, "Low memory warning - cleaning up caches")
-        // Could trigger cache cleanup here if needed
+        SecureLogger.w(TAG, "Low memory warning - aggressively cleaning up caches")
+        clearImageCaches(clearDiskCache = true)
+    }
+
+    private fun clearImageCaches(clearDiskCache: Boolean) {
+        try {
+            val loader = SingletonImageLoader.get(this)
+            loader.memoryCache?.clear()
+            if (clearDiskCache) {
+                loader.diskCache?.clear()
+            }
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "Failed to clear image caches", e)
+        }
     }
 
     private fun initializePerformanceOptimizations() {

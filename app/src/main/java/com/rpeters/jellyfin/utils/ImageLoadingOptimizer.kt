@@ -9,6 +9,7 @@ import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.util.DebugLogger
+import com.rpeters.jellyfin.utils.DevicePerformanceProfile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,32 +27,33 @@ object ImageLoadingOptimizer {
     fun initializeCoil(context: Context, okHttpClient: OkHttpClient) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                val performanceProfile = DevicePerformanceProfile.detect(context)
+                val imageHttpClient = okHttpClient.newBuilder()
+                    .addInterceptor { chain ->
+                        val request = chain.request().newBuilder()
+                            .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
+                            .build()
+                        chain.proceed(request)
+                    }
+                    .build()
+
                 val imageLoader = ImageLoader.Builder(context)
                     .memoryCache {
                         MemoryCache.Builder()
-                            .maxSizePercent(context, 0.20) // Increase to 20% for better performance
+                            .maxSizePercent(context, performanceProfile.memoryCachePercent)
                             .build()
                     }
                     .diskCache {
                         DiskCache.Builder()
                             .directory(context.cacheDir.resolve("image_cache").toOkioPath())
-                            .maxSizeBytes(120 * 1024 * 1024) // Fixed 120MB cache
+                            .maxSizeBytes(performanceProfile.diskCacheSizeMb * 1024 * 1024)
                             .cleanupCoroutineContext(Dispatchers.IO)
                             .build()
                     }
                     .components {
                         add(
                             OkHttpNetworkFetcherFactory(
-                                callFactory = {
-                                    okHttpClient.newBuilder()
-                                        .addInterceptor { chain ->
-                                            val request = chain.request().newBuilder()
-                                                .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
-                                                .build()
-                                            chain.proceed(request)
-                                        }
-                                        .build()
-                                },
+                                callFactory = { imageHttpClient },
                             ),
                         )
                     }
