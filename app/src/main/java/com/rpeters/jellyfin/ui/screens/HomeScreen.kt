@@ -860,7 +860,7 @@ private fun PosterRowSection(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(items) { item ->
+            items(items, key = { it.id ?: it.name.hashCode() }) { item ->
                 PosterMediaCard(
                     item = item,
                     getImageUrl = getImageUrl,
@@ -901,7 +901,7 @@ private fun SquareRowSection(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(items) { item ->
+            items(items, key = { it.id ?: it.name.hashCode() }) { item ->
                 MediaCard(
                     item = item,
                     getImageUrl = getImageUrl,
@@ -940,7 +940,7 @@ private fun MediaRowSection(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(items) { item ->
+            items(items, key = { it.id ?: it.name.hashCode() }) { item ->
                 MediaCard(
                     item = item,
                     getImageUrl = getImageUrl,

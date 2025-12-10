@@ -344,7 +344,7 @@ fun TVShowsScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                 ) {
-                    items(TVShowFilter.getBasicFilters()) { filter ->
+                    items(TVShowFilter.getBasicFilters(), key = { it.name }) { filter ->
                         FilterChip(
                             onClick = { selectedFilter = filter },
                             label = {
@@ -379,7 +379,7 @@ fun TVShowsScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                 ) {
-                    items(TVShowFilter.getSmartFilters()) { filter ->
+                    items(TVShowFilter.getSmartFilters(), key = { it.name }) { filter ->
                         FilterChip(
                             onClick = { selectedFilter = filter },
                             label = {

@@ -148,7 +148,7 @@ fun LibraryScreen(
                                 .fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            items(libraries) { library ->
+                            items(libraries, key = { it.id ?: it.name.hashCode() }) { library ->
                                 LibraryCard(
                                     library = library,
                                     getImageUrl = getImageUrl,

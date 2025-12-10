@@ -288,7 +288,7 @@ private fun EpisodeList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(episodes) { episode ->
+        items(episodes, key = { it.id ?: it.name.hashCode() }) { episode ->
             ExpressiveEpisodeRow(
                 episode = episode,
                 getImageUrl = getImageUrl,

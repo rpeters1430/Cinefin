@@ -229,7 +229,7 @@ fun HomeVideosGrid(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier,
     ) {
-        items(homeVideosItems) { homeVideoItem ->
+        items(homeVideosItems, key = { it.id ?: it.name.hashCode() }) { homeVideoItem ->
             ExpressiveMediaCard(
                 title = homeVideoItem.name ?: "",
                 subtitle = homeVideoItem.type?.toString() ?: "",

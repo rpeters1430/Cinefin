@@ -307,7 +307,7 @@ fun MovieDetailScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             contentPadding = PaddingValues(horizontal = 4.dp),
                         ) {
-                            items(relatedItems.take(10)) { relatedMovie ->
+                            items(relatedItems.take(10), key = { it.id ?: it.name.hashCode() }) { relatedMovie ->
                                 val scale by animateFloatAsState(
                                     targetValue = 1.0f,
                                     animationSpec = MotionTokens.expressiveEnter,
@@ -605,7 +605,7 @@ private fun ExpressiveMovieInfoCard(
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        items(genres.take(3)) { genre ->
+                        items(genres.take(3), key = { it }) { genre ->
                             Surface(
                                 shape = RoundedCornerShape(20.dp),
                                 color = JellyfinTeal80.copy(alpha = 0.15f),

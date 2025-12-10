@@ -84,7 +84,7 @@ fun AlbumDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxSize(),
             ) {
-                items(state.tracks) { track ->
+                items(state.tracks, key = { it.id ?: it.name.hashCode() }) { track ->
                     ExpressiveMediaCard(
                         title = track.name ?: "",
                         subtitle = track.albumArtist ?: track.artists?.firstOrNull() ?: "",
