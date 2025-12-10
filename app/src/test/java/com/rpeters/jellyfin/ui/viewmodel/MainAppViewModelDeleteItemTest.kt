@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
+import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
@@ -8,7 +9,6 @@ import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
-import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.ui.player.CastManager
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
