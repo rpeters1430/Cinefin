@@ -18,9 +18,11 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ViewList
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ViewCarousel
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -31,6 +33,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -38,9 +42,11 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.carousel.rememberCarouselState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -54,7 +60,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
 import com.rpeters.jellyfin.ui.components.shimmer
+import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.launch
@@ -247,82 +257,56 @@ fun LibraryTypeScreen(
         }
     }
 
+    // Show media actions sheet when item is long-pressed
     if (showManageSheet && selectedItem != null) {
         val item = selectedItem!!
-        val unknownName = stringResource(id = R.string.unknown)
-        val itemName = item.name ?: unknownName
-        val deleteSuccessMessage = stringResource(
-            id = R.string.library_actions_delete_success,
-            itemName,
-        )
-        val deleteFailureTemplate = stringResource(
-            id = R.string.library_actions_delete_failure,
-            itemName,
-            "%s",
-        )
+        val itemName = item.name ?: stringResource(id = R.string.unknown)
+        val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
+        val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
         val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
-        val dismissSheet = {
-            showManageSheet = false
-            selectedItem = null
-        }
-        ModalBottomSheet(
-            onDismissRequest = dismissSheet,
+
+        MediaItemActionsSheet(
+            item = item,
             sheetState = sheetState,
-        ) {
-            Column(
-                modifier = Modifier.padding(LibraryScreenDefaults.ContentPadding),
-                verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.FilterChipSpacing),
-            ) {
-                Text(
-                    text = stringResource(
-                        id = R.string.library_actions_sheet_title,
-                        itemName,
-                    ),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = stringResource(id = R.string.library_actions_sheet_subtitle),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                HorizontalDivider()
-
-                Button(
-                    onClick = {
-                        dismissSheet()
-                        viewModel.deleteItem(item) { success, message ->
-                            coroutineScope.launch {
-                                val text = if (success) {
-                                    deleteSuccessMessage
-                                } else {
-                                    String.format(deleteFailureTemplate, message ?: "")
-                                }
-                                snackbarHostState.showSnackbar(text)
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                    ),
-                ) {
-                    Text(text = stringResource(id = R.string.library_actions_delete))
+            onDismiss = {
+                showManageSheet = false
+                selectedItem = null
+            },
+            onPlay = {
+                // TODO: Implement play functionality
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Play functionality coming soon")
                 }
-
-                OutlinedButton(
-                    onClick = {
-                        dismissSheet()
-                        viewModel.refreshLibraryItems()
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(message = refreshRequestedMessage)
+            },
+            onDelete = { _, _ ->
+                viewModel.deleteItem(item) { success, message ->
+                    coroutineScope.launch {
+                        val text = if (success) {
+                            deleteSuccessMessage
+                        } else {
+                            String.format(deleteFailureTemplate, message ?: "")
                         }
-                    },
-                ) {
-                    Text(text = stringResource(id = R.string.library_actions_refresh_metadata))
+                        snackbarHostState.showSnackbar(text)
+                    }
                 }
-            }
-        }
+            },
+            onRefreshMetadata = { _, _ ->
+                viewModel.refreshItemMetadata(item) { success, message ->
+                    coroutineScope.launch {
+                        val text = if (success) {
+                            refreshRequestedMessage
+                        } else {
+                            "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                        }
+                        snackbarHostState.showSnackbar(text)
+                    }
+                }
+            },
+            onToggleWatched = {
+                viewModel.toggleWatchedStatus(item)
+            },
+            managementEnabled = managementEnabled,
+        )
     }
 }
 

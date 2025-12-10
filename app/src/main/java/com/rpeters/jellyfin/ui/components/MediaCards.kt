@@ -1,8 +1,10 @@
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,11 +51,13 @@ import com.rpeters.jellyfin.ui.theme.getContentTypeColor
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MediaCard(
     item: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     onClick: (BaseItemDto) -> Unit = {},
+    onLongPress: ((BaseItemDto) -> Unit)? = null,
     modifier: Modifier = Modifier,
     enhancedPlaybackUtils: com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils? = null,
 ) {
@@ -65,7 +69,10 @@ fun MediaCard(
             .width(280.dp)
             .aspectRatio(16f / 9f)
             .mediaCardSemantics(item) { onClick(item) }
-            .clickable { onClick(item) }
+            .combinedClickable(
+                onClick = { onClick(item) },
+                onLongClick = { onLongPress?.invoke(item) },
+            )
             .focusable(),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -282,11 +289,13 @@ fun MediaCard(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PosterMediaCard(
     item: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     onClick: (BaseItemDto) -> Unit = {},
+    onLongPress: ((BaseItemDto) -> Unit)? = null,
     modifier: Modifier = Modifier,
     enhancedPlaybackUtils: com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils? = null,
     showTitle: Boolean = true,
@@ -299,7 +308,10 @@ fun PosterMediaCard(
         modifier = modifier
             .width(150.dp)
             .mediaCardSemantics(item) { onClick(item) }
-            .clickable { onClick(item) }
+            .combinedClickable(
+                onClick = { onClick(item) },
+                onLongClick = { onLongPress?.invoke(item) },
+            )
             .focusable(),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -495,12 +507,14 @@ fun PosterMediaCard(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RecentlyAddedCard(
     item: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
     onClick: (BaseItemDto) -> Unit = {},
+    onLongPress: ((BaseItemDto) -> Unit)? = null,
     modifier: Modifier = Modifier,
     enhancedPlaybackUtils: com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils? = null,
 ) {
@@ -510,7 +524,10 @@ fun RecentlyAddedCard(
         modifier = modifier
             .width(140.dp)
             .mediaCardSemantics(item) { onClick(item) }
-            .clickable { onClick(item) }
+            .combinedClickable(
+                onClick = { onClick(item) },
+                onLongClick = { onLongPress?.invoke(item) },
+            )
             .focusable(),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),

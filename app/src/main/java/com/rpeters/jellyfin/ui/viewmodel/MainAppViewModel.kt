@@ -14,6 +14,7 @@ import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.ui.player.CastManager
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.utils.SecureLogger
+import com.rpeters.jellyfin.utils.isWatched
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -336,7 +337,10 @@ class MainAppViewModel @Inject constructor(
     fun markAsWatched(item: BaseItemDto) {
         viewModelScope.launch {
             when (val result = userRepository.markAsWatched(item.id.toString())) {
-                is ApiResult.Success -> loadInitialData()
+                is ApiResult.Success -> {
+                    // Update item userData in state immediately for responsive UI
+                    updateItemWatchedStatus(item.id, isWatched = true)
+                }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to mark as watched: ${result.message}",
@@ -353,7 +357,10 @@ class MainAppViewModel @Inject constructor(
     fun markAsUnwatched(item: BaseItemDto) {
         viewModelScope.launch {
             when (val result = userRepository.markAsUnwatched(item.id.toString())) {
-                is ApiResult.Success -> loadInitialData()
+                is ApiResult.Success -> {
+                    // Update item userData in state immediately for responsive UI
+                    updateItemWatchedStatus(item.id, isWatched = false)
+                }
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to mark as unwatched: ${result.message}",
@@ -364,6 +371,50 @@ class MainAppViewModel @Inject constructor(
                     // Handle loading state
                 }
             }
+        }
+    }
+
+    private fun updateItemWatchedStatus(itemId: UUID?, isWatched: Boolean) {
+        if (itemId == null) return
+
+        val currentState = _appState.value
+
+        // Helper function to update item in a list
+        fun updateItemInList(items: List<BaseItemDto>): List<BaseItemDto> {
+            return items.map { item ->
+                if (item.id == itemId) {
+                    item.copy(
+                        userData = item.userData?.copy(
+                            played = isWatched,
+                            playedPercentage = if (isWatched) 100.0 else 0.0,
+                        ),
+                    )
+                } else {
+                    item
+                }
+            }
+        }
+
+        // Update all state lists
+        _appState.value = currentState.copy(
+            allItems = updateItemInList(currentState.allItems),
+            allMovies = updateItemInList(currentState.allMovies),
+            allTVShows = updateItemInList(currentState.allTVShows),
+            recentlyAdded = updateItemInList(currentState.recentlyAdded),
+            recentlyAddedByTypes = currentState.recentlyAddedByTypes.mapValues { (_, items) ->
+                updateItemInList(items)
+            },
+            itemsByLibrary = currentState.itemsByLibrary.mapValues { (_, items) ->
+                updateItemInList(items)
+            },
+        )
+    }
+
+    fun toggleWatchedStatus(item: BaseItemDto) {
+        if (item.isWatched()) {
+            markAsUnwatched(item)
+        } else {
+            markAsWatched(item)
         }
     }
 
@@ -397,6 +448,33 @@ class MainAppViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     _appState.value = _appState.value.copy(
                         errorMessage = "Failed to delete item: ${result.message}",
+                    )
+                    onResult(false, result.message)
+                }
+
+                is ApiResult.Loading -> {
+                    // Handle loading state
+                }
+            }
+        }
+    }
+
+    fun refreshItemMetadata(item: BaseItemDto, onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
+        val itemId = item.id
+        if (itemId == null) {
+            onResult(false, "Missing item id")
+            return
+        }
+
+        viewModelScope.launch {
+            when (val result = userRepository.refreshItemMetadata(itemId.toString())) {
+                is ApiResult.Success -> {
+                    onResult(true, null)
+                }
+
+                is ApiResult.Error -> {
+                    _appState.value = _appState.value.copy(
+                        errorMessage = "Failed to refresh metadata: ${result.message}",
                     )
                     onResult(false, result.message)
                 }

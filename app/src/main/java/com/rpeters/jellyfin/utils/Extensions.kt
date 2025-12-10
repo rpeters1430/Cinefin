@@ -120,6 +120,11 @@ fun BaseItemDto.getUnwatchedEpisodeCount(): Int {
             userData?.unplayedItemCount ?: run {
                 val totalCount = childCount ?: 0
                 val playedCount = userData?.playedPercentage?.let { percentage ->
+                    // Log to verify playedPercentage range from Jellyfin API
+                    SecureLogger.d(
+                        "Extensions",
+                        "Series '${name}': playedPercentage=$percentage, totalCount=$totalCount",
+                    )
                     // Assumes playedPercentage represents the fraction of episodes completed across the series
                     when {
                         percentage >= Constants.Playback.WATCHED_THRESHOLD_PERCENT -> totalCount

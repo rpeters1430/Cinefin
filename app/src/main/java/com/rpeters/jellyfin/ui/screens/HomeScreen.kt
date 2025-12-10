@@ -1,5 +1,7 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,23 +51,33 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveHeroCarousel
 import com.rpeters.jellyfin.ui.components.MediaCard
+import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.screens.home.LibraryGridSection
+import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
+import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SurfaceCoordinatorViewModel
 import com.rpeters.jellyfin.utils.PerformanceTracker
 import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import java.util.Locale
@@ -91,8 +103,32 @@ fun HomeScreen(
     onBackClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     showBackButton: Boolean = false,
+    viewModel: MainAppViewModel = hiltViewModel(),
+    libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
 ) {
+    val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var selectedItem by remember { mutableStateOf<BaseItemDto?>(null) }
+    var showManageSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    val managementEnabled = libraryActionPrefs.enableManagementActions
+    val managementDisabledMessage = stringResource(id = R.string.library_actions_management_disabled)
+
+    val handleItemLongPress: (BaseItemDto) -> Unit = { item ->
+        if (managementEnabled) {
+            selectedItem = item
+            showManageSheet = true
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(message = managementDisabledMessage)
+            }
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             HomeTopBar(
                 currentServer = currentServer,
@@ -123,10 +159,63 @@ fun HomeScreen(
                 getBackdropUrl = getBackdropUrl,
                 getSeriesImageUrl = getSeriesImageUrl,
                 onItemClick = onItemClick,
+                onItemLongPress = handleItemLongPress,
                 onLibraryClick = onLibraryClick,
                 modifier = Modifier.fillMaxSize(),
             )
         }
+    }
+
+    // Show media actions sheet when item is long-pressed
+    if (showManageSheet && selectedItem != null) {
+        val item = selectedItem!!
+        val itemName = item.name ?: stringResource(id = R.string.unknown)
+        val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
+        val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
+        val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
+
+        MediaItemActionsSheet(
+            item = item,
+            sheetState = sheetState,
+            onDismiss = {
+                showManageSheet = false
+                selectedItem = null
+            },
+            onPlay = {
+                // TODO: Implement play functionality
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Play functionality coming soon")
+                }
+            },
+            onDelete = { _, _ ->
+                viewModel.deleteItem(item) { success, message ->
+                    coroutineScope.launch {
+                        val text = if (success) {
+                            deleteSuccessMessage
+                        } else {
+                            String.format(deleteFailureTemplate, message ?: "")
+                        }
+                        snackbarHostState.showSnackbar(text)
+                    }
+                }
+            },
+            onRefreshMetadata = { _, _ ->
+                viewModel.refreshItemMetadata(item) { success, message ->
+                    coroutineScope.launch {
+                        val text = if (success) {
+                            refreshRequestedMessage
+                        } else {
+                            "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                        }
+                        snackbarHostState.showSnackbar(text)
+                    }
+                }
+            },
+            onToggleWatched = {
+                viewModel.toggleWatchedStatus(item)
+            },
+            managementEnabled = managementEnabled,
+        )
     }
 }
 
@@ -231,6 +320,7 @@ fun HomeContent(
     getBackdropUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit = {},
+    onItemLongPress: (BaseItemDto) -> Unit = {},
     onLibraryClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -306,6 +396,7 @@ fun HomeContent(
                         items = continueWatchingItems,
                         getImageUrl = getImageUrl,
                         onItemClick = onItemClick,
+                        onItemLongPress = onItemLongPress,
                     )
                 }
             }
@@ -369,6 +460,7 @@ fun HomeContent(
                         items = recentMovies.take(15),
                         getImageUrl = getImageUrl,
                         onItemClick = onItemClick,
+                        onItemLongPress = onItemLongPress,
                     )
                 }
             }
@@ -380,6 +472,7 @@ fun HomeContent(
                         items = recentTVShows.take(15),
                         getImageUrl = getImageUrl,
                         onItemClick = onItemClick,
+                        onItemLongPress = onItemLongPress,
                     )
                 }
             }
@@ -391,6 +484,7 @@ fun HomeContent(
                         items = recentEpisodes.take(15),
                         getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
                         onItemClick = onItemClick,
+                        onItemLongPress = onItemLongPress,
                     )
                 }
             }
@@ -402,6 +496,7 @@ fun HomeContent(
                         items = recentMusic.take(15),
                         getImageUrl = getImageUrl,
                         onItemClick = onItemClick,
+                        onItemLongPress = onItemLongPress,
                     )
                 }
             }
@@ -415,6 +510,7 @@ fun HomeContent(
                         items = recentVideos,
                         getImageUrl = { item -> getBackdropUrl(item) ?: getImageUrl(item) },
                         onItemClick = onItemClick,
+                        onItemLongPress = onItemLongPress,
                     )
                 }
             }
@@ -614,6 +710,7 @@ private fun ContinueWatchingSection(
     items: List<BaseItemDto>,
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
+    onItemLongPress: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -649,27 +746,34 @@ private fun ContinueWatchingSection(
                     item = item,
                     getImageUrl = getImageUrl,
                     onItemClick = onItemClick,
+                    onItemLongPress = onItemLongPress,
                 )
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ContinueWatchingCard(
     item: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
+    onItemLongPress: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val watchedPercentage = item.userData?.playedPercentage ?: 0.0
 
     ElevatedCard(
-        onClick = { onItemClick(item) },
         modifier = modifier.width(160.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
     ) {
-        Column {
+        Column(
+            modifier = Modifier.combinedClickable(
+                onClick = { onItemClick(item) },
+                onLongClick = { onItemLongPress(item) },
+            ),
+        ) {
             Box {
                 OptimizedImage(
                     imageUrl = getImageUrl(item),
@@ -735,6 +839,7 @@ private fun PosterRowSection(
     items: List<BaseItemDto>,
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
+    onItemLongPress: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -760,6 +865,7 @@ private fun PosterRowSection(
                     item = item,
                     getImageUrl = getImageUrl,
                     onClick = onItemClick,
+                    onLongPress = onItemLongPress,
                     showTitle = true,
                     showMetadata = true,
                 )
@@ -774,6 +880,7 @@ private fun SquareRowSection(
     items: List<BaseItemDto>,
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
+    onItemLongPress: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -799,6 +906,7 @@ private fun SquareRowSection(
                     item = item,
                     getImageUrl = getImageUrl,
                     onClick = onItemClick,
+                    onLongPress = onItemLongPress,
                 )
             }
         }
@@ -811,6 +919,7 @@ private fun MediaRowSection(
     items: List<BaseItemDto>,
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
+    onItemLongPress: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -836,6 +945,7 @@ private fun MediaRowSection(
                     item = item,
                     getImageUrl = getImageUrl,
                     onClick = onItemClick,
+                    onLongPress = onItemLongPress,
                 )
             }
         }

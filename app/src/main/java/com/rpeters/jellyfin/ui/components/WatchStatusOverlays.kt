@@ -23,6 +23,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.core.constants.Constants
@@ -60,8 +64,17 @@ fun UnwatchedEpisodeCountBadge(
         }
 
         displayText?.let { text ->
+            val accessibilityLabel = if (unwatchedCount > 0) {
+                "$unwatchedCount unwatched episode${if (unwatchedCount != 1) "s" else ""}"
+            } else {
+                "$totalEpisodes total episode${if (totalEpisodes != 1) "s" else ""}"
+            }
+
             Badge(
-                modifier = modifier,
+                modifier = modifier.semantics {
+                    contentDescription = accessibilityLabel
+                    role = Role.Image
+                },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
@@ -83,31 +96,38 @@ fun WatchedIndicatorBadge(
         // Series completely watched indicator
         item.type == BaseItemKind.SERIES && item.isCompletelyWatched() -> {
             Badge(
-                modifier = modifier,
+                modifier = modifier.semantics {
+                    contentDescription = "Series completely watched"
+                    role = Role.Image
+                },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Series completely watched",
+                    contentDescription = null,
                     modifier = Modifier.size(16.dp),
                 )
             }
         }
         // Movie/Episode watched indicator
         (item.type == BaseItemKind.MOVIE || item.type == BaseItemKind.EPISODE) && item.isWatched() -> {
+            val description = when (item.type) {
+                BaseItemKind.MOVIE -> "Movie watched"
+                BaseItemKind.EPISODE -> "Episode watched"
+                else -> "Watched"
+            }
             Badge(
-                modifier = modifier,
+                modifier = modifier.semantics {
+                    contentDescription = description
+                    role = Role.Image
+                },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = when (item.type) {
-                        BaseItemKind.MOVIE -> "Movie watched"
-                        BaseItemKind.EPISODE -> "Episode watched"
-                        else -> "Watched"
-                    },
+                    contentDescription = null,
                     modifier = Modifier.size(16.dp),
                 )
             }
@@ -115,13 +135,16 @@ fun WatchedIndicatorBadge(
         // Resume indicator for partially watched content
         item.canResume() -> {
             Badge(
-                modifier = modifier,
+                modifier = modifier.semantics {
+                    contentDescription = "Resume watching"
+                    role = Role.Image
+                },
                 containerColor = MaterialTheme.colorScheme.secondary,
                 contentColor = MaterialTheme.colorScheme.onSecondary,
             ) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Resume watching",
+                    contentDescription = null,
                     modifier = Modifier.size(16.dp),
                 )
             }
@@ -138,8 +161,14 @@ fun WatchProgressBar(
 
     // Only show progress bar for partially watched content (not fully watched)
     if (watchedPercentage > 0.0 && watchedPercentage < Constants.Playback.WATCHED_THRESHOLD_PERCENT && !item.isWatched()) {
+        val accessibilityLabel = "${watchedPercentage.toInt()}% watched"
+
         Box(
             modifier = modifier
+                .semantics {
+                    contentDescription = accessibilityLabel
+                    role = Role.Image
+                }
                 .background(
                     Color.Black.copy(alpha = 0.7f),
                     RoundedCornerShape(2.dp),

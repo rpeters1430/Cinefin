@@ -21,7 +21,9 @@
       "Bash(git push:*)",
       "Bash(java -version:*)",
       "WebFetch(domain:gist.githubusercontent.com)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(gh pr list:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": [],

@@ -310,4 +310,12 @@
     <string name="library_actions_delete_success">Deleted %1$s</string>
     <string name="library_actions_delete_failure">Could not delete %1$s. %2$s</string>
     <string name="library_actions_refresh_requested">Requested metadata refresh.</string>
+    <string name="library_actions_delete_confirm_title">Confirm Deletion</string>
+    <string name="library_actions_delete_confirm_message">Are you sure you want to permanently delete "%1$s" from the server? This action cannot be undone.</string>
+    <string name="media_actions_sheet_title">%1$s</string>
+    <string name="media_actions_sheet_subtitle">Choose an action for this item</string>
+    <string name="media_actions_management_section">Management Actions</string>
+    <string name="mark_as_watched">Mark as watched</string>
+    <string name="mark_as_unwatched">Mark as unwatched</string>
+    <string name="play">Play</string>
 </resources>

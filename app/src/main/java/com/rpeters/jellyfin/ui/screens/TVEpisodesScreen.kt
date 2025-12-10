@@ -9,7 +9,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,14 +41,21 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,16 +65,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
+import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
 import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.components.WatchedIndicatorBadge
 import com.rpeters.jellyfin.ui.theme.MotionTokens
+import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
+import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
+import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @Composable
@@ -75,9 +89,31 @@ fun TVEpisodesScreen(
     getImageUrl: (BaseItemDto) -> String?,
     onEpisodeClick: (BaseItemDto) -> Unit = {},
     viewModel: SeasonEpisodesViewModel = hiltViewModel(),
+    mainAppViewModel: MainAppViewModel = hiltViewModel(),
+    libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
+    val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var selectedItem by remember { mutableStateOf<BaseItemDto?>(null) }
+    var showManageSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    val managementEnabled = libraryActionPrefs.enableManagementActions
+    val managementDisabledMessage = stringResource(id = R.string.library_actions_management_disabled)
+
+    val handleItemLongPress: (BaseItemDto) -> Unit = { item ->
+        if (managementEnabled) {
+            selectedItem = item
+            showManageSheet = true
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(message = managementDisabledMessage)
+            }
+        }
+    }
 
     LaunchedEffect(seasonId) {
         viewModel.loadEpisodes(seasonId)
@@ -90,6 +126,7 @@ fun TVEpisodesScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -178,11 +215,64 @@ fun TVEpisodesScreen(
                         episodes = state.episodes,
                         getImageUrl = getImageUrl,
                         onEpisodeClick = onEpisodeClick,
+                        onEpisodeLongPress = handleItemLongPress,
                         modifier = Modifier.padding(innerPadding),
                     )
                 }
             }
         }
+    }
+
+    // Show media actions sheet when item is long-pressed
+    if (showManageSheet && selectedItem != null) {
+        val item = selectedItem!!
+        val itemName = item.name ?: stringResource(id = R.string.unknown)
+        val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
+        val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
+        val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
+
+        MediaItemActionsSheet(
+            item = item,
+            sheetState = sheetState,
+            onDismiss = {
+                showManageSheet = false
+                selectedItem = null
+            },
+            onPlay = {
+                // TODO: Implement play functionality
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Play functionality coming soon")
+                }
+            },
+            onDelete = { _, _ ->
+                mainAppViewModel.deleteItem(item) { success, message ->
+                    coroutineScope.launch {
+                        val text = if (success) {
+                            deleteSuccessMessage
+                        } else {
+                            String.format(deleteFailureTemplate, message ?: "")
+                        }
+                        snackbarHostState.showSnackbar(text)
+                    }
+                }
+            },
+            onRefreshMetadata = { _, _ ->
+                mainAppViewModel.refreshItemMetadata(item) { success, message ->
+                    coroutineScope.launch {
+                        val text = if (success) {
+                            refreshRequestedMessage
+                        } else {
+                            "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                        }
+                        snackbarHostState.showSnackbar(text)
+                    }
+                }
+            },
+            onToggleWatched = {
+                mainAppViewModel.toggleWatchedStatus(item)
+            },
+            managementEnabled = managementEnabled,
+        )
     }
 }
 
@@ -191,6 +281,7 @@ private fun EpisodeList(
     episodes: List<BaseItemDto>,
     getImageUrl: (BaseItemDto) -> String?,
     onEpisodeClick: (BaseItemDto) -> Unit,
+    onEpisodeLongPress: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -203,16 +294,19 @@ private fun EpisodeList(
                 episode = episode,
                 getImageUrl = getImageUrl,
                 onClick = onEpisodeClick,
+                onLongClick = onEpisodeLongPress,
             )
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ExpressiveEpisodeRow(
     episode: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     onClick: (BaseItemDto) -> Unit,
+    onLongClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val scale by animateFloatAsState(
@@ -228,7 +322,10 @@ private fun ExpressiveEpisodeRow(
                 scaleX = scale
                 scaleY = scale
             }
-            .clickable { onClick(episode) },
+            .combinedClickable(
+                onClick = { onClick(episode) },
+                onLongClick = { onLongClick(episode) },
+            ),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.elevatedCardColors(

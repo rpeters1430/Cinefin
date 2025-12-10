@@ -42,16 +42,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,22 +66,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFloatingToolbar
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
+import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
 import com.rpeters.jellyfin.ui.components.MediaType
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
+import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import com.rpeters.jellyfin.utils.getRatingAsDouble
 import com.rpeters.jellyfin.utils.hasHighRating
+import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 enum class TVShowFilter(val displayNameResId: Int) {
@@ -130,14 +138,35 @@ fun TVShowsScreen(
     onTVShowClick: (String) -> Unit = {},
     onBackClick: () -> Unit = {},
     viewModel: MainAppViewModel = hiltViewModel(),
+    libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
     isLoading: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val appState by viewModel.appState.collectAsState()
+    val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
     var selectedFilter by remember { mutableStateOf(TVShowFilter.ALL) }
     var sortOrder by remember { mutableStateOf(TVShowSortOrder.getDefault()) }
     var viewMode by remember { mutableStateOf(TVShowViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var selectedItem by remember { mutableStateOf<BaseItemDto?>(null) }
+    var showManageSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    val managementEnabled = libraryActionPrefs.enableManagementActions
+    val managementDisabledMessage = stringResource(id = R.string.library_actions_management_disabled)
+
+    val handleItemLongPress: (BaseItemDto) -> Unit = { item ->
+        if (managementEnabled) {
+            selectedItem = item
+            showManageSheet = true
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(message = managementDisabledMessage)
+            }
+        }
+    }
 
     // TV show data is loaded via NavGraph effect
 
@@ -202,6 +231,7 @@ fun TVShowsScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -415,6 +445,7 @@ fun TVShowsScreen(
                                 viewMode = viewMode,
                                 getImageUrl = { item -> viewModel.getImageUrl(item) },
                                 onTVShowClick = onTVShowClick,
+                                onTVShowLongPress = handleItemLongPress,
                                 isLoadingMore = appState.isLoadingTVShows,
                                 hasMoreItems = appState.hasMoreTVShows,
                                 onLoadMore = { viewModel.loadMoreTVShows() },
@@ -441,6 +472,58 @@ fun TVShowsScreen(
             }
         }
     }
+
+    // Show media actions sheet when item is long-pressed
+    if (showManageSheet && selectedItem != null) {
+        val item = selectedItem!!
+        val itemName = item.name ?: stringResource(id = R.string.unknown)
+        val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
+        val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
+        val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
+
+        MediaItemActionsSheet(
+            item = item,
+            sheetState = sheetState,
+            onDismiss = {
+                showManageSheet = false
+                selectedItem = null
+            },
+            onPlay = {
+                // TODO: Implement play functionality
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Play functionality coming soon")
+                }
+            },
+            onDelete = { _, _ ->
+                viewModel.deleteItem(item) { success, message ->
+                    coroutineScope.launch {
+                        val text = if (success) {
+                            deleteSuccessMessage
+                        } else {
+                            String.format(deleteFailureTemplate, message ?: "")
+                        }
+                        snackbarHostState.showSnackbar(text)
+                    }
+                }
+            },
+            onRefreshMetadata = { _, _ ->
+                viewModel.refreshItemMetadata(item) { success, message ->
+                    coroutineScope.launch {
+                        val text = if (success) {
+                            refreshRequestedMessage
+                        } else {
+                            "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                        }
+                        snackbarHostState.showSnackbar(text)
+                    }
+                }
+            },
+            onToggleWatched = {
+                viewModel.toggleWatchedStatus(item)
+            },
+            managementEnabled = managementEnabled,
+        )
+    }
 }
 
 @Composable
@@ -449,6 +532,7 @@ private fun TVShowsContent(
     viewMode: TVShowViewMode,
     getImageUrl: (BaseItemDto) -> String?,
     onTVShowClick: (String) -> Unit,
+    onTVShowLongPress: (BaseItemDto) -> Unit = {},
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -489,6 +573,7 @@ private fun TVShowsContent(
                                     onTVShowClick(seriesId.toString())
                                 }
                             },
+                            onLongPress = onTVShowLongPress,
                             showTitle = true,
                             showMetadata = true,
                             modifier = Modifier.graphicsLayer {

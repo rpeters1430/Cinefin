@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.data.repository
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.BaseJellyfinRepository
+import com.rpeters.jellyfin.data.repository.common.ErrorType
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.playStateApi
@@ -180,6 +181,12 @@ class JellyfinUserRepository @Inject constructor(
             client.libraryApi.deleteItem(itemId = itemUuid)
             true
         }
+
+    suspend fun refreshItemMetadata(itemId: String): ApiResult<Boolean> =
+        ApiResult.Error(
+            "Metadata refresh not yet implemented - requires Jellyfin SDK update",
+            errorType = ErrorType.BAD_REQUEST,
+        )
 
     private suspend fun hasAdminDeletePermission(
         server: com.rpeters.jellyfin.data.JellyfinServer,
