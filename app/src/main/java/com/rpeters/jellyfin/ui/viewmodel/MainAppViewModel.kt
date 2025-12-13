@@ -63,7 +63,7 @@ data class MainAppState(
 
     // Pagination (legacy)
     val isLoadingMore: Boolean = false,
-    val hasMoreItems: Boolean = true,
+    val hasMoreItems: Boolean = false,
     val currentPage: Int = 0,
     val loadedLibraryTypes: Set<String> = emptySet(),
 
@@ -621,6 +621,8 @@ class MainAppViewModel @Inject constructor(
                     _appState.value = _appState.value.copy(
                         itemsByLibrary = updated,
                         isLoading = false,
+                        isLoadingMore = false,
+                        hasMoreItems = false,
                         isLoadingMovies = if (libraryType == LibraryType.MOVIES) {
                             false
                         } else {
