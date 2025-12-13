@@ -20,6 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -174,13 +175,14 @@ fun StuffScreen(
             }
 
             else -> {
+                val paginationState = appState.libraryPaginationState[libraryId]
                 StuffGrid(
                     stuffItems = stuffItems,
                     getImageUrl = { item -> viewModel.getImageUrl(item) },
                     onItemClick = onItemClick,
-                    isLoadingMore = appState.isLoadingMore,
-                    hasMoreItems = appState.hasMoreItems,
-                    onLoadMore = { viewModel.loadMoreItems() },
+                    isLoadingMore = paginationState?.isLoadingMore ?: false,
+                    hasMoreItems = paginationState?.hasMore ?: false,
+                    onLoadMore = { viewModel.loadMoreLibraryItems(libraryId) },
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -211,7 +213,23 @@ fun StuffGrid(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
+
+    // Load more items when approaching the end
+    LaunchedEffect(gridState, stuffItems.size, hasMoreItems, isLoadingMore) {
+        snapshotFlow { gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .collect { lastVisibleIndex ->
+                if (lastVisibleIndex != null && !isLoadingMore && hasMoreItems) {
+                    val threshold = stuffItems.size - 10 // Load more when 10 items from the end
+                    if (lastVisibleIndex >= threshold) {
+                        onLoadMore()
+                    }
+                }
+            }
+    }
+
     LazyVerticalGrid(
+        state = gridState,
         columns = GridCells.Adaptive(minSize = 160.dp),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -246,7 +264,7 @@ fun StuffGrid(
             )
         }
 
-        if (isLoadingMore) {
+        if (isLoadingMore || hasMoreItems) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Box(
                     modifier = Modifier
@@ -254,7 +272,16 @@ fun StuffGrid(
                         .padding(16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    ExpressiveCircularLoading()
+                    if (isLoadingMore) {
+                        ExpressiveCircularLoading()
+                    } else if (hasMoreItems) {
+                        // Show a small indicator that more items can be loaded
+                        Text(
+                            text = "Scroll for more...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }

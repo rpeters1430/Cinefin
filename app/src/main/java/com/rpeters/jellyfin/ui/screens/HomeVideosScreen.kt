@@ -27,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -222,7 +223,23 @@ fun HomeVideosGrid(
     onItemClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
+
+    // Load more items when approaching the end
+    LaunchedEffect(gridState, homeVideosItems.size, hasMoreItems, isLoadingMore) {
+        snapshotFlow { gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .collect { lastVisibleIndex ->
+                if (lastVisibleIndex != null && !isLoadingMore && hasMoreItems) {
+                    val threshold = homeVideosItems.size - 10 // Load more when 10 items from the end
+                    if (lastVisibleIndex >= threshold) {
+                        onLoadMore()
+                    }
+                }
+            }
+    }
+
     LazyVerticalGrid(
+        state = gridState,
         columns = GridCells.Adaptive(minSize = 160.dp),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -242,7 +259,7 @@ fun HomeVideosGrid(
             )
         }
 
-        if (isLoadingMore) {
+        if (isLoadingMore || hasMoreItems) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Box(
                     modifier = Modifier
@@ -250,7 +267,15 @@ fun HomeVideosGrid(
                         .padding(16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    ExpressiveCircularLoading()
+                    if (isLoadingMore) {
+                        ExpressiveCircularLoading()
+                    } else if (hasMoreItems) {
+                        Text(
+                            text = "Scroll for more...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }

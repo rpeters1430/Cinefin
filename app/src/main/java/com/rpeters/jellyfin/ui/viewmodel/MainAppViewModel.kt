@@ -16,6 +16,7 @@ import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.isWatched
 import dagger.hilt.android.lifecycle.HiltViewModel
+import androidx.annotation.VisibleForTesting
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -67,7 +68,19 @@ data class MainAppState(
     val currentPage: Int = 0,
     val loadedLibraryTypes: Set<String> = emptySet(),
 
+    // Per-library pagination tracking
+    val libraryPaginationState: Map<String, LibraryPaginationState> = emptyMap(),
+
     val errorMessage: String? = null,
+)
+
+/**
+ * Tracks pagination state for each library
+ */
+data class LibraryPaginationState(
+    val loadedCount: Int = 0,
+    val hasMore: Boolean = false,
+    val isLoadingMore: Boolean = false,
 )
 
 /**
@@ -99,6 +112,16 @@ class MainAppViewModel @Inject constructor(
     // Delegate to repositories for compatibility
     val currentServer = repository.currentServer
     val isConnected = repository.isConnected
+
+    @VisibleForTesting
+    internal fun setAppStateForTest(state: MainAppState) {
+        _appState.value = state
+    }
+
+    @VisibleForTesting
+    internal fun updateAppStateForTest(block: (MainAppState) -> MainAppState) {
+        _appState.value = block(_appState.value)
+    }
 
     // Simple authentication check - no duplicate methods
     private suspend fun ensureValidToken(): Boolean {
@@ -616,13 +639,27 @@ class MainAppViewModel @Inject constructor(
                             "    Sample item: ${item.name} (${item.type})",
                         )
                     }
+
+                    // Detect if there are more items to load
+                    // If we got exactly 100 items (the API default limit), there might be more
+                    val hasMore = items.size >= 100
+
                     val updated = _appState.value.itemsByLibrary.toMutableMap()
                     updated[libraryId] = items
+
+                    val updatedPagination = _appState.value.libraryPaginationState.toMutableMap()
+                    updatedPagination[libraryId] = LibraryPaginationState(
+                        loadedCount = items.size,
+                        hasMore = hasMore,
+                        isLoadingMore = false
+                    )
+
                     _appState.value = _appState.value.copy(
                         itemsByLibrary = updated,
+                        libraryPaginationState = updatedPagination,
                         isLoading = false,
                         isLoadingMore = false,
-                        hasMoreItems = false,
+                        hasMoreItems = hasMore,
                         isLoadingMovies = if (libraryType == LibraryType.MOVIES) {
                             false
                         } else {
@@ -950,6 +987,76 @@ class MainAppViewModel @Inject constructor(
 
     fun loadMoreItems() = loadInitialData()
     fun refreshLibraryItems() = loadInitialData(true)
+
+    /**
+     * Load more items for a specific library (pagination)
+     */
+    fun loadMoreLibraryItems(libraryId: String) {
+        viewModelScope.launch {
+            val paginationState = _appState.value.libraryPaginationState[libraryId]
+            if (paginationState?.isLoadingMore == true || paginationState?.hasMore == false) {
+                SecureLogger.v("MainAppViewModel", "Skipping loadMore: isLoadingMore=${paginationState?.isLoadingMore}, hasMore=${paginationState?.hasMore}")
+                return@launch
+            }
+
+            if (!ensureValidToken()) return@launch
+
+            val currentItems = _appState.value.itemsByLibrary[libraryId] ?: emptyList()
+            val startIndex = currentItems.size
+
+            SecureLogger.v("MainAppViewModel", "Loading more items for library $libraryId, startIndex=$startIndex")
+
+            // Mark as loading more
+            val updatedPagination = _appState.value.libraryPaginationState.toMutableMap()
+            updatedPagination[libraryId] = paginationState?.copy(isLoadingMore = true) ?: LibraryPaginationState(isLoadingMore = true)
+            _appState.value = _appState.value.copy(
+                libraryPaginationState = updatedPagination,
+                isLoadingMore = true
+            )
+
+            // Load next batch
+            when (val result = mediaRepository.getLibraryItems(
+                parentId = libraryId,
+                startIndex = startIndex,
+                limit = 100
+            )) {
+                is ApiResult.Success -> {
+                    val newItems = result.data
+                    val hasMore = newItems.size >= 100
+
+                    SecureLogger.v("MainAppViewModel", "Loaded ${newItems.size} more items, hasMore=$hasMore")
+
+                    val updated = _appState.value.itemsByLibrary.toMutableMap()
+                    updated[libraryId] = currentItems + newItems
+
+                    val finalPagination = _appState.value.libraryPaginationState.toMutableMap()
+                    finalPagination[libraryId] = LibraryPaginationState(
+                        loadedCount = currentItems.size + newItems.size,
+                        hasMore = hasMore,
+                        isLoadingMore = false
+                    )
+
+                    _appState.value = _appState.value.copy(
+                        itemsByLibrary = updated,
+                        libraryPaginationState = finalPagination,
+                        isLoadingMore = false,
+                        hasMoreItems = hasMore
+                    )
+                }
+                is ApiResult.Error -> {
+                    SecureLogger.e("MainAppViewModel", "Failed to load more items: ${result.message}")
+                    val finalPagination = _appState.value.libraryPaginationState.toMutableMap()
+                    finalPagination[libraryId] = paginationState?.copy(isLoadingMore = false) ?: LibraryPaginationState(isLoadingMore = false)
+                    _appState.value = _appState.value.copy(
+                        libraryPaginationState = finalPagination,
+                        isLoadingMore = false,
+                        errorMessage = "Failed to load more items: ${result.message}"
+                    )
+                }
+                is ApiResult.Loading -> {}
+            }
+        }
+    }
 
     // Navigation compatibility methods
     fun loadTVShowDetails(seriesId: String) {
