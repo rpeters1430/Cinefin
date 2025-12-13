@@ -246,29 +246,15 @@ fun StuffGrid(
             )
         }
 
-        if (hasMoreItems || isLoadingMore) {
+        if (isLoadingMore) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                LaunchedEffect(hasMoreItems, isLoadingMore) {
-                    if (hasMoreItems && !isLoadingMore) {
-                        onLoadMore()
-                    }
-                }
-
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    if (isLoadingMore) {
-                        ExpressiveCircularLoading()
-                    } else if (!hasMoreItems) {
-                        Text(
-                            text = "No more items to load",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    ExpressiveCircularLoading()
                 }
             }
         }
