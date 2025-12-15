@@ -2,7 +2,6 @@
 
 package com.rpeters.jellyfin.ui.navigation
 
-import android.util.Log
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
