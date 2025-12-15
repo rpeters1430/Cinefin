@@ -38,6 +38,7 @@ data class CastState(
     val isConnected: Boolean = false,
     val deviceName: String? = null,
     val isCasting: Boolean = false,
+    val isRemotePlaying: Boolean = false,
     val castPlayer: CastPlayer? = null,
 )
 
@@ -66,6 +67,7 @@ class CastManager @Inject constructor(
                 isConnected = true,
                 deviceName = session.castDevice?.friendlyName,
                 isCasting = true,
+                isRemotePlaying = isRemotePlaying(),
             )
         }
 
@@ -77,6 +79,7 @@ class CastManager @Inject constructor(
                 isConnected = false,
                 deviceName = null,
                 isCasting = false,
+                isRemotePlaying = false,
             )
         }
 
@@ -88,6 +91,7 @@ class CastManager @Inject constructor(
                 isConnected = true,
                 deviceName = session.castDevice?.friendlyName,
                 isCasting = true,
+                isRemotePlaying = isRemotePlaying(),
             )
         }
 
@@ -95,7 +99,10 @@ class CastManager @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("CastManager", "Cast session suspended")
             }
-            updateCastState(isCasting = false)
+            updateCastState(
+                isCasting = false,
+                isRemotePlaying = false,
+            )
         }
 
         override fun onSessionStarting(session: CastSession) {
@@ -130,14 +137,20 @@ class CastManager @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("CastManager", "Cast session available")
             }
-            updateCastState(isAvailable = true)
+            updateCastState(
+                isAvailable = true,
+                isRemotePlaying = isRemotePlaying(),
+            )
         }
 
         override fun onCastSessionUnavailable() {
             if (BuildConfig.DEBUG) {
                 Log.d("CastManager", "Cast session unavailable")
             }
-            updateCastState(isAvailable = false)
+            updateCastState(
+                isAvailable = false,
+                isRemotePlaying = false,
+            )
         }
     }
 
@@ -162,6 +175,7 @@ class CastManager @Inject constructor(
 
                 updateCastState(
                     isAvailable = castContext?.sessionManager?.currentCastSession != null,
+                    isRemotePlaying = isRemotePlaying(),
                     castPlayer = castPlayer,
                 )
 
@@ -172,6 +186,21 @@ class CastManager @Inject constructor(
                 Log.e("CastManager", "Failed to initialize Cast", e)
             }
         }
+    }
+
+    /**
+     * Determine if the current Cast session is actively playing media.
+     */
+    private fun isRemotePlaying(): Boolean {
+        val playerState = castContext
+            ?.sessionManager
+            ?.currentCastSession
+            ?.remoteMediaClient
+            ?.mediaStatus
+            ?.playerState
+
+        return playerState == com.google.android.gms.cast.MediaStatus.PLAYER_STATE_PLAYING ||
+            playerState == com.google.android.gms.cast.MediaStatus.PLAYER_STATE_BUFFERING
     }
 
     /**
@@ -284,6 +313,8 @@ class CastManager @Inject constructor(
                 if (BuildConfig.DEBUG) {
                     Log.d("CastManager", "Started casting: ${item.name} ($contentType) with ${tracks.size} subtitle tracks")
                 }
+
+                updateCastState(isCasting = true, isRemotePlaying = true)
             } else {
                 Log.w("CastManager", "No active Cast session")
             }
@@ -370,6 +401,8 @@ class CastManager @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("CastManager", "loadPreview: Sent preview for ${item.name}")
             }
+
+            updateCastState(isCasting = true, isRemotePlaying = false)
         } catch (e: Exception) {
             Log.e("CastManager", "loadPreview: Failed to send preview", e)
         }
@@ -381,8 +414,27 @@ class CastManager @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d("CastManager", "Stopped casting")
             }
+            updateCastState(isRemotePlaying = false, isCasting = false)
         } catch (e: Exception) {
             Log.e("CastManager", "Failed to stop casting", e)
+        }
+    }
+
+    fun pauseCasting() {
+        try {
+            castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.pause()
+            updateCastState(isRemotePlaying = false)
+        } catch (e: Exception) {
+            Log.e("CastManager", "Failed to pause casting", e)
+        }
+    }
+
+    fun resumeCasting() {
+        try {
+            castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.play()
+            updateCastState(isRemotePlaying = true)
+        } catch (e: Exception) {
+            Log.e("CastManager", "Failed to resume casting", e)
         }
     }
 
@@ -415,6 +467,7 @@ class CastManager @Inject constructor(
         isConnected: Boolean = _castState.value.isConnected,
         deviceName: String? = _castState.value.deviceName,
         isCasting: Boolean = _castState.value.isCasting,
+        isRemotePlaying: Boolean = _castState.value.isRemotePlaying,
         castPlayer: CastPlayer? = _castState.value.castPlayer,
     ) {
         _castState.value = CastState(
@@ -422,6 +475,7 @@ class CastManager @Inject constructor(
             isConnected = isConnected,
             deviceName = deviceName,
             isCasting = isCasting,
+            isRemotePlaying = isRemotePlaying,
             castPlayer = castPlayer,
         )
     }

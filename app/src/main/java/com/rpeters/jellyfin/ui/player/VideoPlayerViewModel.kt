@@ -73,6 +73,10 @@ data class VideoPlayerState(
     val isCasting: Boolean = false,
     val isCastConnected: Boolean = false,
     val castDeviceName: String? = null,
+    val isCastPlaying: Boolean = false,
+    val castPosterUrl: String? = null,
+    val castBackdropUrl: String? = null,
+    val castOverview: String? = null,
     val availableAudioTracks: List<TrackInfo> = emptyList(),
     val selectedAudioTrack: TrackInfo? = null,
     val availableSubtitleTracks: List<TrackInfo> = emptyList(),
@@ -306,6 +310,11 @@ class VideoPlayerViewModel @Inject constructor(
 
                 // Attempt to load chapter markers for intro/outro skip
                 currentItemMetadata = loadSkipMarkers(itemId)
+                _playerState.value = _playerState.value.copy(
+                    castPosterUrl = repository.getImageUrl(itemId),
+                    castBackdropUrl = currentItemMetadata?.let { repository.getBackdropUrl(it) },
+                    castOverview = currentItemMetadata?.overview,
+                )
                 if (lastCastState?.isConnected == true && !hasSentCastLoad) {
                     if (startCastingIfReady()) {
                         hasSentCastLoad = true
@@ -497,6 +506,7 @@ class VideoPlayerViewModel @Inject constructor(
             isCasting = castState.isCasting,
             isCastConnected = castState.isConnected,
             castDeviceName = castState.deviceName,
+            isCastPlaying = castState.isRemotePlaying,
             showCastDialog = if (hideDialog) false else currentState.showCastDialog,
         )
 
@@ -547,6 +557,11 @@ class VideoPlayerViewModel @Inject constructor(
         }
 
         castManager.startCasting(mediaItem, metadata, subtitles)
+        _playerState.value = _playerState.value.copy(
+            isCasting = true,
+            isCastPlaying = true,
+            isCastConnected = true,
+        )
         return true
     }
 
@@ -580,6 +595,24 @@ class VideoPlayerViewModel @Inject constructor(
     fun pausePlayback() {
         exoPlayer?.pause()
         Log.d("VideoPlayer", "Pause requested")
+    }
+
+    fun pauseCastPlayback() {
+        castManager.pauseCasting()
+        _playerState.value = _playerState.value.copy(isCastPlaying = false)
+    }
+
+    fun resumeCastPlayback() {
+        castManager.resumeCasting()
+        _playerState.value = _playerState.value.copy(isCastPlaying = true)
+    }
+
+    fun stopCastPlayback() {
+        castManager.stopCasting()
+        _playerState.value = _playerState.value.copy(
+            isCastPlaying = false,
+            isCasting = false,
+        )
     }
 
     fun releasePlayer() {
