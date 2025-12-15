@@ -45,8 +45,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -180,47 +180,47 @@ fun HomeScreen(
             val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
 
             MediaItemActionsSheet(
-            item = item,
-            sheetState = sheetState,
-            onDismiss = {
-                showManageSheet = false
-                selectedItem = null
-            },
-            onPlay = {
-                // TODO: Implement play functionality
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Play functionality coming soon")
-                }
-            },
-            onDelete = { _, _ ->
-                viewModel.deleteItem(item) { success, message ->
+                item = item,
+                sheetState = sheetState,
+                onDismiss = {
+                    showManageSheet = false
+                    selectedItem = null
+                },
+                onPlay = {
+                    // TODO: Implement play functionality
                     coroutineScope.launch {
-                        val text = if (success) {
-                            deleteSuccessMessage
-                        } else {
-                            String.format(deleteFailureTemplate, message ?: "")
-                        }
-                        snackbarHostState.showSnackbar(text)
+                        snackbarHostState.showSnackbar("Play functionality coming soon")
                     }
-                }
-            },
-            onRefreshMetadata = { _, _ ->
-                viewModel.refreshItemMetadata(item) { success, message ->
-                    coroutineScope.launch {
-                        val text = if (success) {
-                            refreshRequestedMessage
-                        } else {
-                            "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                },
+                onDelete = { _, _ ->
+                    viewModel.deleteItem(item) { success, message ->
+                        coroutineScope.launch {
+                            val text = if (success) {
+                                deleteSuccessMessage
+                            } else {
+                                String.format(deleteFailureTemplate, message ?: "")
+                            }
+                            snackbarHostState.showSnackbar(text)
                         }
-                        snackbarHostState.showSnackbar(text)
                     }
-                }
-            },
-            onToggleWatched = {
-                viewModel.toggleWatchedStatus(item)
-            },
-            managementEnabled = managementEnabled,
-        )
+                },
+                onRefreshMetadata = { _, _ ->
+                    viewModel.refreshItemMetadata(item) { success, message ->
+                        coroutineScope.launch {
+                            val text = if (success) {
+                                refreshRequestedMessage
+                            } else {
+                                "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                            }
+                            snackbarHostState.showSnackbar(text)
+                        }
+                    }
+                },
+                onToggleWatched = {
+                    viewModel.toggleWatchedStatus(item)
+                },
+                managementEnabled = managementEnabled,
+            )
         }
     }
 }
