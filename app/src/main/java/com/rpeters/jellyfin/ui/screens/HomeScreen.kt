@@ -42,7 +42,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -345,60 +347,48 @@ fun HomeContent(
             }
         }
     }
-    // Precompute derived data to minimize recompositions during scroll
-    val continueWatchingItems by remember(
+    // Consolidate all derived state computations into a single derivedStateOf for better performance
+    val contentLists by remember(
         appState.allItems,
+        appState.recentlyAddedByTypes,
         layoutConfig.continueWatchingLimit,
-    ) {
-        derivedStateOf {
-            getContinueWatchingItems(appState, layoutConfig.continueWatchingLimit)
-        }
-    }
-    val surfaceCoordinatorViewModel: SurfaceCoordinatorViewModel = hiltViewModel()
-    val recentMovies by remember(appState.recentlyAddedByTypes, layoutConfig.rowItemLimit) {
-        derivedStateOf {
-            appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]
-                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
-        }
-    }
-    val recentTVShows by remember(appState.recentlyAddedByTypes, layoutConfig.rowItemLimit) {
-        derivedStateOf {
-            appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]
-                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
-        }
-    }
-    val featuredItems by remember(
-        recentMovies,
-        recentTVShows,
+        layoutConfig.rowItemLimit,
         layoutConfig.featuredItemsLimit,
     ) {
-        derivedStateOf { (recentMovies + recentTVShows).take(layoutConfig.featuredItemsLimit) }
-    }
-    val recentEpisodes by remember(appState.recentlyAddedByTypes, layoutConfig.rowItemLimit) {
         derivedStateOf {
-            appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]
+            val continueWatching = getContinueWatchingItems(appState, layoutConfig.continueWatchingLimit)
+            val movies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]
                 ?.take(layoutConfig.rowItemLimit) ?: emptyList()
-        }
-    }
-    val recentMusic by remember(appState.recentlyAddedByTypes, layoutConfig.rowItemLimit) {
-        derivedStateOf {
-            appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]
+            val tvShows = appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]
                 ?.take(layoutConfig.rowItemLimit) ?: emptyList()
-        }
-    }
-    val recentVideos by remember(appState.recentlyAddedByTypes, layoutConfig.rowItemLimit) {
-        derivedStateOf {
-            appState.recentlyAddedByTypes[BaseItemKind.VIDEO.name]
+            val episodes = appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]
                 ?.take(layoutConfig.rowItemLimit) ?: emptyList()
+            val music = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]
+                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
+            val videos = appState.recentlyAddedByTypes[BaseItemKind.VIDEO.name]
+                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
+            val featured = (movies + tvShows).take(layoutConfig.featuredItemsLimit)
+
+            HomeContentLists(
+                continueWatching = continueWatching,
+                recentMovies = movies,
+                recentTVShows = tvShows,
+                featuredItems = featured,
+                recentEpisodes = episodes,
+                recentMusic = music,
+                recentVideos = videos,
+            )
         }
     }
 
-    LaunchedEffect(surfaceCoordinatorViewModel) {
+    val surfaceCoordinatorViewModel: SurfaceCoordinatorViewModel = hiltViewModel()
+
+    LaunchedEffect(surfaceCoordinatorViewModel, contentLists.continueWatching) {
         snapshotFlow {
-            continueWatchingItems.mapNotNull { item ->
+            contentLists.continueWatching.mapNotNull { item ->
                 val id = item.id?.toString() ?: return@mapNotNull null
                 Triple(id, item.name, item.seriesName)
-            } to continueWatchingItems
+            } to contentLists.continueWatching
         }
             .distinctUntilChangedBy { it.first }
             .collectLatest { (_, items) ->
@@ -420,10 +410,10 @@ fun HomeContent(
             item(key = "home_header", contentType = "header") { HomeHeader(currentServer) }
 
             // Continue Watching Section
-            if (continueWatchingItems.isNotEmpty()) {
+            if (contentLists.continueWatching.isNotEmpty()) {
                 item(key = "continue_watching", contentType = "continueWatching") {
                     ContinueWatchingSection(
-                        items = continueWatchingItems,
+                        items = contentLists.continueWatching,
                         getImageUrl = getImageUrl,
                         onItemClick = onItemClick,
                         onItemLongPress = onItemLongPress,
@@ -432,10 +422,10 @@ fun HomeContent(
                 }
             }
 
-            if (featuredItems.isNotEmpty()) {
+            if (contentLists.featuredItems.isNotEmpty()) {
                 item(key = "featured", contentType = "carousel") {
-                    val featured = remember(featuredItems) {
-                        featuredItems.map {
+                    val featured = remember(contentLists.featuredItems) {
+                        contentLists.featuredItems.map {
                             it.toCarouselItem(
                                 titleOverride = it.name ?: "Unknown",
                                 subtitleOverride = itemSubtitle(it),
@@ -447,11 +437,11 @@ fun HomeContent(
                     ExpressiveHeroCarousel(
                         items = featured,
                         onItemClick = { selected ->
-                            featuredItems.firstOrNull { it.id?.toString() == selected.id }
+                            contentLists.featuredItems.firstOrNull { it.id?.toString() == selected.id }
                                 ?.let(onItemClick)
                         },
                         onPlayClick = { selected ->
-                            featuredItems.firstOrNull { it.id?.toString() == selected.id }
+                            contentLists.featuredItems.firstOrNull { it.id?.toString() == selected.id }
                                 ?.let(onItemClick)
                         },
                         heroHeight = layoutConfig.heroHeight,
@@ -463,20 +453,18 @@ fun HomeContent(
 
             if (appState.libraries.isNotEmpty()) {
                 item(key = "libraries", contentType = "libraries") {
-                    val orderedLibraries by remember(appState.libraries) {
-                        mutableStateOf(
-                            appState.libraries.sortedBy { library ->
-                                when (
-                                    library.collectionType?.toString()
-                                        ?.lowercase(Locale.getDefault())
-                                ) {
-                                    "movies" -> 0
-                                    "tvshows" -> 1
-                                    "music" -> 2
-                                    else -> 3
-                                }
-                            },
-                        )
+                    val orderedLibraries = remember(appState.libraries) {
+                        appState.libraries.sortedBy { library ->
+                            when (
+                                library.collectionType?.toString()
+                                    ?.lowercase(Locale.getDefault())
+                            ) {
+                                "movies" -> 0
+                                "tvshows" -> 1
+                                "music" -> 2
+                                else -> 3
+                            }
+                        }
                     }
                     LibraryGridSection(
                         libraries = orderedLibraries,
@@ -487,11 +475,11 @@ fun HomeContent(
                 }
             }
 
-            if (recentMovies.isNotEmpty()) {
+            if (contentLists.recentMovies.isNotEmpty()) {
                 item(key = "recent_movies", contentType = "poster_row") {
                     PosterRowSection(
                         title = "Recently Added Movies",
-                        items = recentMovies.take(layoutConfig.rowItemLimit),
+                        items = contentLists.recentMovies,
                         getImageUrl = getImageUrl,
                         onItemClick = onItemClick,
                         onItemLongPress = onItemLongPress,
@@ -500,11 +488,11 @@ fun HomeContent(
                 }
             }
 
-            if (recentTVShows.isNotEmpty()) {
+            if (contentLists.recentTVShows.isNotEmpty()) {
                 item(key = "recent_tvshows", contentType = "poster_row") {
                     PosterRowSection(
                         title = "Recently Added TV Shows",
-                        items = recentTVShows.take(layoutConfig.rowItemLimit),
+                        items = contentLists.recentTVShows,
                         getImageUrl = getImageUrl,
                         onItemClick = onItemClick,
                         onItemLongPress = onItemLongPress,
@@ -513,11 +501,11 @@ fun HomeContent(
                 }
             }
 
-            if (recentEpisodes.isNotEmpty()) {
+            if (contentLists.recentEpisodes.isNotEmpty()) {
                 item(key = "recent_episodes", contentType = "poster_row") {
                     PosterRowSection(
                         title = "Recently Added TV Episodes",
-                        items = recentEpisodes.take(layoutConfig.rowItemLimit),
+                        items = contentLists.recentEpisodes,
                         getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
                         onItemClick = onItemClick,
                         onItemLongPress = onItemLongPress,
@@ -526,11 +514,11 @@ fun HomeContent(
                 }
             }
 
-            if (recentMusic.isNotEmpty()) {
+            if (contentLists.recentMusic.isNotEmpty()) {
                 item(key = "recent_music", contentType = "music_row") {
                     SquareRowSection(
                         title = "Recently Added Music",
-                        items = recentMusic.take(layoutConfig.rowItemLimit),
+                        items = contentLists.recentMusic,
                         getImageUrl = getImageUrl,
                         onItemClick = onItemClick,
                         onItemLongPress = onItemLongPress,
@@ -539,11 +527,11 @@ fun HomeContent(
                 }
             }
 
-            if (recentVideos.isNotEmpty()) {
+            if (contentLists.recentVideos.isNotEmpty()) {
                 item(key = "recent_home_videos", contentType = "media_row") {
                     MediaRowSection(
                         title = "Recently Added Home Videos",
-                        items = recentVideos,
+                        items = contentLists.recentVideos,
                         getImageUrl = { item -> getBackdropUrl(item) ?: getImageUrl(item) },
                         onItemClick = onItemClick,
                         onItemLongPress = onItemLongPress,
@@ -555,6 +543,7 @@ fun HomeContent(
     }
 }
 
+@Immutable
 private data class HomeLayoutConfig(
     val sectionSpacing: Dp,
     val heroHeight: Dp,
@@ -566,6 +555,21 @@ private data class HomeLayoutConfig(
     val continueWatchingCardWidth: Dp,
     val posterCardWidth: Dp,
     val mediaCardWidth: Dp,
+)
+
+/**
+ * Holds precomputed home screen content lists to minimize recompositions.
+ * Using a single data class instead of multiple derivedStateOf calls improves performance.
+ */
+@Stable
+private data class HomeContentLists(
+    val continueWatching: List<BaseItemDto>,
+    val recentMovies: List<BaseItemDto>,
+    val recentTVShows: List<BaseItemDto>,
+    val featuredItems: List<BaseItemDto>,
+    val recentEpisodes: List<BaseItemDto>,
+    val recentMusic: List<BaseItemDto>,
+    val recentVideos: List<BaseItemDto>,
 )
 
 @Composable

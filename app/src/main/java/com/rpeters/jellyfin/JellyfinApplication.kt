@@ -62,6 +62,7 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
+        @Suppress("DEPRECATION")
         if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
             SecureLogger.w(TAG, "Trim memory level $level - clearing image cache")
             clearImageCaches(clearDiskCache = false)

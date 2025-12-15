@@ -179,9 +179,7 @@ class ModernSurfaceCoordinator @Inject constructor(
         } else {
             null
         }
-        val playbackProgress = userData?.takeIf {
-            it.playedPercentage != null || it.playbackPositionTicks != null
-        }?.let { data ->
+        val playbackProgress = userData?.let { data ->
             SurfacePlaybackProgress(
                 percentage = data.playedPercentage,
                 positionMs = data.playbackPositionTicks?.div(TICKS_TO_MILLIS_DIVISOR),

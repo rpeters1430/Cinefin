@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.rpeters.jellyfin.ui.navigation
 
 import androidx.compose.runtime.LaunchedEffect

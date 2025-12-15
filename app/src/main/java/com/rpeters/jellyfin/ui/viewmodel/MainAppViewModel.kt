@@ -442,27 +442,21 @@ class MainAppViewModel @Inject constructor(
     }
 
     fun deleteItem(item: BaseItemDto, onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
-        val itemId = item.id
-        if (itemId == null) {
-            onResult(false, "Missing item id")
-            return
-        }
-
         viewModelScope.launch {
-            when (val result = userRepository.deleteItemAsAdmin(itemId.toString())) {
+            when (val result = userRepository.deleteItemAsAdmin(item.id.toString())) {
                 is ApiResult.Success -> {
                     val updatedLibraryItems = _appState.value.itemsByLibrary.mapValues { (_, items) ->
-                        items.filterNot { it.id == itemId }
+                        items.filterNot { it.id == item.id }
                     }
 
                     // Remove from all state lists
                     _appState.value = _appState.value.copy(
-                        recentlyAdded = _appState.value.recentlyAdded.filterNot { it.id == itemId },
-                        favorites = _appState.value.favorites.filterNot { it.id == itemId },
-                        searchResults = _appState.value.searchResults.filterNot { it.id == itemId },
-                        allMovies = _appState.value.allMovies.filterNot { it.id == itemId },
-                        allTVShows = _appState.value.allTVShows.filterNot { it.id == itemId },
-                        allItems = _appState.value.allItems.filterNot { it.id == itemId },
+                        recentlyAdded = _appState.value.recentlyAdded.filterNot { it.id == item.id },
+                        favorites = _appState.value.favorites.filterNot { it.id == item.id },
+                        searchResults = _appState.value.searchResults.filterNot { it.id == item.id },
+                        allMovies = _appState.value.allMovies.filterNot { it.id == item.id },
+                        allTVShows = _appState.value.allTVShows.filterNot { it.id == item.id },
+                        allItems = _appState.value.allItems.filterNot { it.id == item.id },
                         itemsByLibrary = updatedLibraryItems,
                     )
                     onResult(true, null)
@@ -483,14 +477,8 @@ class MainAppViewModel @Inject constructor(
     }
 
     fun refreshItemMetadata(item: BaseItemDto, onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
-        val itemId = item.id
-        if (itemId == null) {
-            onResult(false, "Missing item id")
-            return
-        }
-
         viewModelScope.launch {
-            when (val result = userRepository.refreshItemMetadata(itemId.toString())) {
+            when (val result = userRepository.refreshItemMetadata(item.id.toString())) {
                 is ApiResult.Success -> {
                     onResult(true, null)
                 }

@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.rpeters.jellyfin.ui.navigation
 
 import android.util.Log

@@ -183,6 +183,7 @@ fun PerformanceTracker(
             val renderTime = currentTime - lastCollectionTime
             lastCollectionTime = currentTime
 
+            @Suppress("DEPRECATION")
             val metrics = PerformanceMonitor.collectPerformanceMetrics(renderTime)
             onMetricsCollected(metrics)
 
@@ -195,6 +196,7 @@ fun PerformanceTracker(
 
             // Auto-GC if memory usage is very high
             if (metrics.memory.usagePercentage > 90f) {
+                @Suppress("DEPRECATION")
                 PerformanceMonitor.forceGarbageCollection("High memory pressure")
             }
         }
@@ -212,6 +214,7 @@ fun <T> performanceOptimized(
 ): T {
     return if (enabled) {
         remember(key) {
+            @Suppress("DEPRECATION")
             PerformanceMonitor.measureExecutionTime("Composition") {
                 computation
             }

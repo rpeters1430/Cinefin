@@ -275,7 +275,7 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 
 ### Build Configuration
 - **Kotlin**: 2.2.21 with Compose compiler plugin
-- **Gradle**: 8.13.1 (AGP) with Kotlin DSL
+- **Gradle**: 8.13.2 (AGP) with Kotlin DSL
 - **KSP**: 2.3.3 for annotation processing (used by Hilt)
 - **Java**: Target/Source compatibility Version 17 with core library desugaring (2.1.5)
 - **Android SDK**: Compile 36, Target 35, Min 26 (Android 8.0+) for broader device compatibility
@@ -303,7 +303,7 @@ Follow Conventional Commits specification:
 
 ### Branch Naming
 - `feature/description` - for new features
-- `bugfix/description` - for bug fixes  
+- `bugfix/description` - for bug fixes
 - `hotfix/description` - for urgent fixes
 - `docs/description` - for documentation updates
 
