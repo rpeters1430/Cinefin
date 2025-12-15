@@ -42,6 +42,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.utils.SecureLogger
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -54,7 +55,7 @@ fun HomeVideosScreen(
     viewModel: MainAppViewModel = hiltViewModel(),
 ) {
     if (BuildConfig.DEBUG) {
-        android.util.Log.d("HomeVideosScreen", "HomeVideosScreen started")
+        SecureLogger.d("HomeVideosScreen", "HomeVideosScreen started")
     }
     val appState by viewModel.appState.collectAsState()
 
@@ -73,7 +74,10 @@ fun HomeVideosScreen(
                     val currentItems = appState.itemsByLibrary[libraryId.toString()] ?: emptyList()
                     if (currentItems.isEmpty()) {
                         if (BuildConfig.DEBUG) {
-                            android.util.Log.d("HomeVideosScreen", "Loading home videos for library: $libraryId")
+                            SecureLogger.d(
+                                "HomeVideosScreen",
+                                "Loading home videos for library: $libraryId",
+                            )
                         }
                         viewModel.loadHomeVideos(libraryId.toString())
                     }
@@ -90,10 +94,16 @@ fun HomeVideosScreen(
             library.id?.let { libraryId ->
                 val items = appState.itemsByLibrary[libraryId.toString()] ?: emptyList()
                 if (BuildConfig.DEBUG) {
-                    android.util.Log.d("HomeVideosScreen", "Found ${items.size} items in library: $libraryId")
+                    SecureLogger.d(
+                        "HomeVideosScreen",
+                        "Found ${items.size} items in library: $libraryId",
+                    )
                     if (items.isNotEmpty()) {
                         val typeBreakdown = items.groupBy { it.type?.name }.mapValues { it.value.size }
-                        android.util.Log.d("HomeVideosScreen", "Item types in library $libraryId: $typeBreakdown")
+                        SecureLogger.d(
+                            "HomeVideosScreen",
+                            "Item types in library $libraryId: $typeBreakdown",
+                        )
                     }
                 }
                 allItems.addAll(items)
@@ -114,10 +124,29 @@ fun HomeVideosScreen(
         }.sortedBy { it.sortName ?: it.name }
 
         if (BuildConfig.DEBUG) {
-            android.util.Log.d("HomeVideosScreen", "Total filtered home video items: ${filteredItems.size}")
+            SecureLogger.d(
+                "HomeVideosScreen",
+                "Total filtered home video items: ${filteredItems.size}",
+            )
         }
 
         filteredItems
+    }
+
+    val homeVideosPaginationStates = remember(appState.libraryPaginationState, homeVideosLibraries) {
+        homeVideosLibraries.mapNotNull { library ->
+            library.id?.toString()?.let { libraryId ->
+                libraryId to appState.libraryPaginationState[libraryId]
+            }
+        }.toMap()
+    }
+
+    val hasMoreHomeVideos = remember(homeVideosPaginationStates) {
+        homeVideosPaginationStates.values.any { it?.hasMore == true }
+    }
+
+    val isLoadingMoreHomeVideos = remember(homeVideosPaginationStates) {
+        homeVideosPaginationStates.values.any { it?.isLoadingMore == true }
     }
     Scaffold(
         topBar = {
@@ -186,9 +215,9 @@ fun HomeVideosScreen(
                     HomeVideosGrid(
                         homeVideosItems = homeVideosItems,
                         getImageUrl = { item -> viewModel.getImageUrl(item) },
-                        isLoadingMore = appState.isLoadingMore,
-                        hasMoreItems = appState.hasMoreItems,
-                        onLoadMore = { viewModel.loadMoreItems() },
+                        isLoadingMore = isLoadingMoreHomeVideos,
+                        hasMoreItems = hasMoreHomeVideos,
+                        onLoadMore = { viewModel.loadMoreHomeVideos(homeVideosLibraries) },
                         onItemClick = onItemClick,
                         modifier = Modifier
                             .fillMaxSize()
