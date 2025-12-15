@@ -40,6 +40,7 @@ fun LibraryItemCard(
     item: BaseItemDto,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit = {},
     onTVShowClick: ((String) -> Unit)? = null,
     onItemLongPress: ((BaseItemDto) -> Unit)? = null,
     isCompact: Boolean,
@@ -50,9 +51,14 @@ fun LibraryItemCard(
         .combinedClickable(
             onClick = {
                 if (libraryType == LibraryType.TV_SHOWS && item.type == BaseItemKind.SERIES) {
-                    item.id?.let { seriesId ->
-                        onTVShowClick?.invoke(seriesId.toString())
+                    val seriesId = item.id?.toString()
+                    if (seriesId != null) {
+                        onTVShowClick?.invoke(seriesId) ?: onItemClick(item)
+                    } else {
+                        onItemClick(item)
                     }
+                } else {
+                    onItemClick(item)
                 }
             },
             onLongClick = { onItemLongPress?.invoke(item) },

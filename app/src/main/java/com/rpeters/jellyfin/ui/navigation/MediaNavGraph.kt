@@ -4,9 +4,6 @@ package com.rpeters.jellyfin.ui.navigation
 
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -16,15 +13,14 @@ import androidx.navigation.navArgument
 import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
 import com.rpeters.jellyfin.ui.screens.LibraryType
-import com.rpeters.jellyfin.ui.screens.MoviesScreen
 import com.rpeters.jellyfin.ui.screens.MusicScreen
-import com.rpeters.jellyfin.ui.screens.StuffScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodesScreen
 import com.rpeters.jellyfin.ui.screens.TVSeasonScreen
-import com.rpeters.jellyfin.ui.screens.TVShowsScreen
+import com.rpeters.jellyfin.ui.screens.LibraryTypeScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
+import org.jellyfin.sdk.model.api.BaseItemKind
 
 /**
  * Media browsing navigation (movies, TV, music, books, home videos).
@@ -40,66 +36,20 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             minActiveState = androidx.lifecycle.Lifecycle.State.STARTED,
         )
 
-        var selectedFilter by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieFilter.ALL) }
-        var selectedSort by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieSortOrder.NAME) }
-        var viewMode by remember { mutableStateOf(com.rpeters.jellyfin.data.models.MovieViewMode.GRID) }
-        val moviesData = viewModel.getLibraryTypeData(LibraryType.MOVIES)
-        val isMoviesLoading = appState.isLoadingMovies || appState.isLoading ||
-            (appState.libraries.isEmpty() && moviesData.isEmpty())
-
-        LaunchedEffect(appState.libraries, appState.isLoading, appState.isLoadingMovies, moviesData.isEmpty(), appState.errorMessage) {
-            SecureLogger.v("NavGraph-Movies", "?? Movies screen state update")
-            SecureLogger.v("NavGraph-Movies", "  Libraries count: ${appState.libraries.size}")
-            SecureLogger.v("NavGraph-Movies", "  Is loading: ${appState.isLoading}")
-            SecureLogger.v(
-                "NavGraph-Movies",
-                "  Current movies data: ${moviesData.size} items",
-            )
-
-            if (appState.errorMessage != null) {
-                SecureLogger.v("NavGraph-Movies", "  ?? Error present, skipping auto-load: ${appState.errorMessage}")
-                return@LaunchedEffect
-            }
-
+        LaunchedEffect(appState.libraries, appState.isLoading) {
             if (appState.libraries.isEmpty() && !appState.isLoading) {
-                SecureLogger.v("NavGraph-Movies", "  ?? Loading initial data...")
                 viewModel.loadInitialData()
-            } else if (
-                appState.libraries.isNotEmpty() &&
-                moviesData.isEmpty() &&
-                !appState.isLoading &&
-                !appState.isLoadingMovies
-            ) {
-                SecureLogger.v(
-                    "NavGraph-Movies",
-                    "?? Libraries ready (${appState.libraries.size}) - Loading MOVIES data...",
-                )
-                val availableLibraries =
-                    appState.libraries.map { "${it.name}(${it.collectionType})" }
-                SecureLogger.v("NavGraph-Movies", "  Available libraries: $availableLibraries")
-                viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
             }
         }
 
-        MoviesScreen(
-            movies = moviesData,
-            isLoading = isMoviesLoading,
-            isLoadingMore = appState.isLoadingMore,
-            hasMoreItems = appState.hasMoreMovies,
-            selectedFilter = selectedFilter,
-            onFilterChange = { selectedFilter = it },
-            selectedSort = selectedSort,
-            onSortChange = { selectedSort = it },
-            viewMode = viewMode,
-            onViewModeChange = { viewMode = it },
-            onMovieClick = { movie ->
-                movie.id?.let { movieId ->
+        LibraryTypeScreen(
+            libraryType = LibraryType.MOVIES,
+            onItemClick = { item ->
+                item.id?.let { movieId ->
                     navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
                 }
             },
-            onRefresh = { viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true) },
-            onLoadMore = { viewModel.loadMoreMovies() },
-            getImageUrl = { item -> viewModel.getImageUrl(item) },
+            viewModel = viewModel,
         )
     }
 
@@ -109,45 +59,20 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             lifecycle = LocalLifecycleOwner.current.lifecycle,
             minActiveState = androidx.lifecycle.Lifecycle.State.STARTED,
         )
-        val tvShowsData = viewModel.getLibraryTypeData(LibraryType.TV_SHOWS)
-        val isTvShowsLoading = appState.isLoadingTVShows || appState.isLoading ||
-            (appState.libraries.isEmpty() && tvShowsData.isEmpty())
 
-        LaunchedEffect(appState.libraries, appState.isLoading, appState.isLoadingTVShows, tvShowsData.isEmpty(), appState.errorMessage) {
-            SecureLogger.v("NavGraph-TVShows", "?? TV shows screen state update")
-            SecureLogger.v("NavGraph-TVShows", "  Libraries count: ${appState.libraries.size}")
-            SecureLogger.v("NavGraph-TVShows", "  Is loading: ${appState.isLoading}")
-            SecureLogger.v(
-                "NavGraph-TVShows",
-                "  Current TV shows data: ${tvShowsData.size} items",
-            )
-
-            if (appState.errorMessage != null) {
-                SecureLogger.v("NavGraph-TVShows", "  ?? Error present, skipping auto-load: ${appState.errorMessage}")
-                return@LaunchedEffect
-            }
-
+        LaunchedEffect(appState.libraries, appState.isLoading) {
             if (appState.libraries.isEmpty() && !appState.isLoading) {
-                SecureLogger.v("NavGraph-TVShows", "  ?? Loading initial data...")
                 viewModel.loadInitialData()
-            } else if (
-                appState.libraries.isNotEmpty() &&
-                tvShowsData.isEmpty() &&
-                !appState.isLoading &&
-                !appState.isLoadingTVShows
-            ) {
-                SecureLogger.v(
-                    "NavGraph-TVShows",
-                    "?? Libraries ready (${appState.libraries.size}) - Loading TV SHOWS data...",
-                )
-                val availableLibraries =
-                    appState.libraries.map { "${it.name}(${it.collectionType})" }
-                SecureLogger.v("NavGraph-TVShows", "  Available libraries: $availableLibraries")
-                viewModel.loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = false)
             }
         }
 
-        TVShowsScreen(
+        LibraryTypeScreen(
+            libraryType = LibraryType.TV_SHOWS,
+            onItemClick = { item ->
+                item.id?.let { itemId ->
+                    navController.navigate(Screen.ItemDetail.createRoute(itemId.toString()))
+                }
+            },
             onTVShowClick = { seriesId ->
                 try {
                     SecureLogger.v("NavGraph-TVShows", "?? Navigating to TV Seasons: $seriesId")
@@ -156,9 +81,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                     SecureLogger.e("NavGraph-TVShows", "Failed to navigate to TV Seasons: $seriesId", e)
                 }
             },
-            onBackClick = { navController.popBackStack() },
             viewModel = viewModel,
-            isLoading = isTvShowsLoading,
         )
     }
 
@@ -329,7 +252,6 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
         ),
     ) { backStackEntry ->
         val libraryId = backStackEntry.arguments?.getString(Screen.LIBRARY_ID_ARG)
-        val collectionType = backStackEntry.arguments?.getString(Screen.COLLECTION_TYPE_ARG)
         if (libraryId.isNullOrBlank()) {
             SecureLogger.e("NavGraph", "Stuff navigation cancelled: libraryId is null or blank")
             return@composable
@@ -341,19 +263,18 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             minActiveState = androidx.lifecycle.Lifecycle.State.STARTED,
         )
 
-        StuffScreen(
-            libraryId = libraryId,
-            collectionType = collectionType,
-            viewModel = viewModel,
-            onItemClick = { id ->
-                val item = appState.itemsByLibrary.values.flatten()
-                    .find { it.id?.toString() == id }
-                if (item?.type == org.jellyfin.sdk.model.api.BaseItemKind.VIDEO) {
-                    navController.navigate(Screen.HomeVideoDetail.createRoute(id))
-                } else {
-                    navController.navigate(Screen.ItemDetail.createRoute(id))
+        LibraryTypeScreen(
+            libraryType = LibraryType.STUFF,
+            onItemClick = { item ->
+                item.id?.toString()?.let { id ->
+                    when (item.type) {
+                        BaseItemKind.VIDEO -> navController.navigate(Screen.HomeVideoDetail.createRoute(id))
+                        BaseItemKind.SERIES -> navController.navigate(Screen.TVSeasons.createRoute(id))
+                        else -> navController.navigate(Screen.ItemDetail.createRoute(id))
+                    }
                 }
             },
+            viewModel = viewModel,
         )
     }
 }
