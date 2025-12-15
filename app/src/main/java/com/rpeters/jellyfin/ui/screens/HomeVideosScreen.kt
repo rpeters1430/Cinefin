@@ -119,6 +119,22 @@ fun HomeVideosScreen(
 
         filteredItems
     }
+
+    val homeVideosPaginationStates = remember(appState.libraryPaginationState, homeVideosLibraries) {
+        homeVideosLibraries.mapNotNull { library ->
+            library.id?.toString()?.let { libraryId ->
+                libraryId to appState.libraryPaginationState[libraryId]
+            }
+        }.toMap()
+    }
+
+    val hasMoreHomeVideos = remember(homeVideosPaginationStates) {
+        homeVideosPaginationStates.values.any { it?.hasMore == true }
+    }
+
+    val isLoadingMoreHomeVideos = remember(homeVideosPaginationStates) {
+        homeVideosPaginationStates.values.any { it?.isLoadingMore == true }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -186,9 +202,9 @@ fun HomeVideosScreen(
                     HomeVideosGrid(
                         homeVideosItems = homeVideosItems,
                         getImageUrl = { item -> viewModel.getImageUrl(item) },
-                        isLoadingMore = appState.isLoadingMore,
-                        hasMoreItems = appState.hasMoreItems,
-                        onLoadMore = { viewModel.loadMoreItems() },
+                        isLoadingMore = isLoadingMoreHomeVideos,
+                        hasMoreItems = hasMoreHomeVideos,
+                        onLoadMore = { viewModel.loadMoreHomeVideos(homeVideosLibraries) },
                         onItemClick = onItemClick,
                         modifier = Modifier
                             .fillMaxSize()
