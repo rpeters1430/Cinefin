@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Sd
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -73,6 +74,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -80,6 +82,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import coil.compose.AsyncImage
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import kotlinx.coroutines.delay
 
@@ -93,6 +96,9 @@ fun VideoPlayerScreen(
     onPlaybackSpeedChange: (Float) -> Unit,
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onCastClick: () -> Unit,
+    onCastPause: () -> Unit,
+    onCastResume: () -> Unit,
+    onCastStop: () -> Unit,
     onSubtitlesClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     onOrientationToggle: () -> Unit,
@@ -428,36 +434,20 @@ fun VideoPlayerScreen(
             )
         }
 
-        // Casting indicator
-        if (playerState.isCasting) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(16.dp),
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                    ),
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CastConnected,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                        )
-                        Text(
-                            text = "Casting to ${playerState.castDeviceName}",
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
-            }
+        AnimatedVisibility(
+            visible = playerState.isCastConnected,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(16.dp),
+        ) {
+            CastNowPlayingOverlay(
+                playerState = playerState,
+                onPauseCast = onCastPause,
+                onResumeCast = onCastResume,
+                onStopCast = onCastStop,
+            )
         }
 
         // Audio Track Selection Dialog
@@ -593,6 +583,114 @@ fun VideoPlayerScreen(
                     }
                 },
             )
+        }
+    }
+}
+
+@Composable
+private fun CastNowPlayingOverlay(
+    playerState: VideoPlayerState,
+    onPauseCast: () -> Unit,
+    onResumeCast: () -> Unit,
+    onStopCast: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val artwork = playerState.castBackdropUrl ?: playerState.castPosterUrl
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
+        ),
+    ) {
+        Box {
+            if (!artwork.isNullOrBlank()) {
+                AsyncImage(
+                    model = artwork,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
+                    contentScale = ContentScale.Crop,
+                    alpha = 0.45f,
+                )
+
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+                                    Color.Black.copy(alpha = 0.2f),
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+                                ),
+                            ),
+                        ),
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CastConnected,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = playerState.itemName.ifBlank { "Casting" },
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        playerState.castDeviceName?.let { deviceName ->
+                            Text(
+                                text = "Playing on $deviceName",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ExpressiveIconButton(
+                            icon = if (playerState.isCastPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = if (playerState.isCastPlaying) "Pause cast playback" else "Resume cast playback",
+                            onClick = if (playerState.isCastPlaying) onPauseCast else onResumeCast,
+                            isActive = playerState.isCastPlaying,
+                        )
+                        ExpressiveIconButton(
+                            icon = Icons.Default.Stop,
+                            contentDescription = "Stop casting",
+                            onClick = onStopCast,
+                            modifier = Modifier.padding(end = 4.dp),
+                        )
+                    }
+                }
+
+                val overview = playerState.castOverview
+                if (!overview.isNullOrBlank()) {
+                    Text(
+                        text = overview,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
     }
 }

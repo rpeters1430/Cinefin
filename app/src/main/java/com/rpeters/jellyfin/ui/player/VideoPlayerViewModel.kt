@@ -1,7 +1,6 @@
 package com.rpeters.jellyfin.ui.player
 
 import android.content.Context
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -11,6 +10,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -73,6 +73,10 @@ data class VideoPlayerState(
     val isCasting: Boolean = false,
     val isCastConnected: Boolean = false,
     val castDeviceName: String? = null,
+    val isCastPlaying: Boolean = false,
+    val castPosterUrl: String? = null,
+    val castBackdropUrl: String? = null,
+    val castOverview: String? = null,
     val availableAudioTracks: List<TrackInfo> = emptyList(),
     val selectedAudioTrack: TrackInfo? = null,
     val availableSubtitleTracks: List<TrackInfo> = emptyList(),
@@ -109,7 +113,7 @@ class VideoPlayerViewModel @Inject constructor(
         releasePlayer()
         // Release CastManager listeners to prevent memory leaks
         castManager.release()
-        Log.d("VideoPlayer", "ViewModel cleared - resources released")
+        SecureLogger.d("VideoPlayer", "ViewModel cleared - resources released")
     }
 
     private val _playerState = MutableStateFlow(VideoPlayerState())
@@ -140,7 +144,7 @@ class VideoPlayerViewModel @Inject constructor(
                 Player.STATE_ENDED -> "ENDED"
                 else -> "UNKNOWN($playbackState)"
             }
-            Log.d("VideoPlayer", "State: $stateString, isPlaying: ${exoPlayer?.isPlaying}")
+            SecureLogger.d("VideoPlayer", "State: $stateString, isPlaying: ${exoPlayer?.isPlaying}")
 
             _playerState.value = _playerState.value.copy(
                 isLoading = playbackState == Player.STATE_BUFFERING,
@@ -157,14 +161,14 @@ class VideoPlayerViewModel @Inject constructor(
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
-            Log.d("VideoPlayer", "Playing changed: $isPlaying")
+            SecureLogger.d("VideoPlayer", "Playing changed: $isPlaying")
             _playerState.value = _playerState.value.copy(isPlaying = isPlaying)
 
             if (isPlaying) startPositionUpdates() else stopPositionUpdates()
         }
 
         override fun onPlayerError(error: PlaybackException) {
-            Log.e("VideoPlayer", "Error: ${error.message}", error)
+            SecureLogger.e("VideoPlayer", "Error: ${error.message}", error)
             _playerState.value = _playerState.value.copy(
                 error = "Playback error: ${error.message}",
                 isLoading = false,
@@ -252,11 +256,11 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     suspend fun initializePlayer(itemId: String, itemName: String, startPosition: Long) {
-        Log.d("VideoPlayer", "Initializing player for: $itemName")
+        SecureLogger.d("VideoPlayer", "Initializing player for: $itemName")
 
         // If player already exists for the same item, just seek to position instead of recreating
         if (exoPlayer != null && currentItemId == itemId) {
-            Log.d("VideoPlayer", "Player already exists for this item, seeking to position")
+            SecureLogger.d("VideoPlayer", "Player already exists for this item, seeking to position")
             if (startPosition > 0) {
                 withContext(Dispatchers.Main) {
                     exoPlayer?.seekTo(startPosition)
@@ -268,7 +272,7 @@ class VideoPlayerViewModel @Inject constructor(
 
         // Release existing player if switching to a different item
         if (exoPlayer != null && currentItemId != itemId) {
-            Log.d("VideoPlayer", "Releasing existing player before initializing new item")
+            SecureLogger.d("VideoPlayer", "Releasing existing player before initializing new item")
             releasePlayer()
         }
 
@@ -307,6 +311,11 @@ class VideoPlayerViewModel @Inject constructor(
                 // Attempt to load chapter markers for intro/outro skip
                 currentItemMetadata = loadSkipMarkers(itemId)
                 if (lastCastState?.isConnected == true && !hasSentCastLoad) {
+                    _playerState.value = _playerState.value.copy(
+                        castPosterUrl = repository.getImageUrl(itemId),
+                        castBackdropUrl = currentItemMetadata?.let { repository.getBackdropUrl(it) },
+                        castOverview = currentItemMetadata?.overview,
+                    )
                     if (startCastingIfReady()) {
                         hasSentCastLoad = true
                     }
@@ -326,17 +335,17 @@ class VideoPlayerViewModel @Inject constructor(
                     // Direct play - use original file with static=true
                     mediaSource.supportsDirectPlay == true -> {
                         val container = mediaSource.container
-                        Log.d("VideoPlayer", "Using direct play with container: $container")
+                        SecureLogger.d("VideoPlayer", "Using direct play with container: $container")
                         "${repository.getCurrentServer()?.url}/Videos/$itemId/stream.$container?static=true&mediaSourceId=${mediaSource.id}"
                     }
                     // Direct stream - server remuxes without transcoding
                     mediaSource.supportsDirectStream == true -> {
-                        Log.d("VideoPlayer", "Using direct stream")
+                        SecureLogger.d("VideoPlayer", "Using direct stream")
                         repository.getDirectStreamUrl(itemId)
                     }
                     // Fallback to transcoded stream
                     else -> {
-                        Log.d("VideoPlayer", "Falling back to transcoded stream")
+                        SecureLogger.d("VideoPlayer", "Falling back to transcoded stream")
                         repository.getStreamUrl(itemId)
                     }
                 }
@@ -345,12 +354,12 @@ class VideoPlayerViewModel @Inject constructor(
                     throw Exception("No stream URL available")
                 }
 
-                Log.d("VideoPlayer", "Stream URL: $streamUrl")
-                Log.d(
+                SecureLogger.d("VideoPlayer", "Stream URL: $streamUrl")
+                SecureLogger.d(
                     "VideoPlayer",
                     "Media source supports direct play: ${mediaSource.supportsDirectPlay}",
                 )
-                Log.d(
+                SecureLogger.d(
                     "VideoPlayer",
                     "Media source supports direct stream: ${mediaSource.supportsDirectStream}",
                 )
@@ -401,15 +410,20 @@ class VideoPlayerViewModel @Inject constructor(
                     }
 
                     if (lastCastState?.isConnected == true && !hasSentCastLoad) {
+                        _playerState.value = _playerState.value.copy(
+                            castPosterUrl = repository.getImageUrl(itemId),
+                            castBackdropUrl = currentItemMetadata?.let { repository.getBackdropUrl(it) },
+                            castOverview = currentItemMetadata?.overview,
+                        )
                         if (startCastingIfReady()) {
                             hasSentCastLoad = true
                         }
                     }
 
-                    Log.d("VideoPlayer", "Player prepared successfully")
+                    SecureLogger.d("VideoPlayer", "Player prepared successfully")
                 }
             } catch (e: Exception) {
-                Log.e("VideoPlayer", "Init failed: ${e.message}", e)
+                SecureLogger.e("VideoPlayer", "Init failed: ${e.message}", e)
                 _playerState.value = _playerState.value.copy(
                     error = "Failed to initialize: ${e.message}",
                     isLoading = false,
@@ -497,10 +511,16 @@ class VideoPlayerViewModel @Inject constructor(
             isCasting = castState.isCasting,
             isCastConnected = castState.isConnected,
             castDeviceName = castState.deviceName,
+            isCastPlaying = castState.isRemotePlaying,
             showCastDialog = if (hideDialog) false else currentState.showCastDialog,
         )
 
         if (castState.isConnected && previous?.isConnected != true && !hasSentCastLoad) {
+            _playerState.value = _playerState.value.copy(
+                castPosterUrl = currentItemId?.let { repository.getImageUrl(it) },
+                castBackdropUrl = currentItemMetadata?.let { repository.getBackdropUrl(it) },
+                castOverview = currentItemMetadata?.overview,
+            )
             if (startCastingIfReady()) {
                 hasSentCastLoad = true
             }
@@ -553,37 +573,51 @@ class VideoPlayerViewModel @Inject constructor(
     fun togglePlayPause() {
         val player = exoPlayer ?: return
 
-        Log.d(
+        SecureLogger.d(
             "VideoPlayer",
             "Toggle play/pause. Current state: playing=${player.isPlaying}, playWhenReady=${player.playWhenReady}",
         )
 
         if (player.isPlaying) {
             player.pause()
-            Log.d("VideoPlayer", "Paused")
+            SecureLogger.d("VideoPlayer", "Paused")
         } else {
             player.play()
-            Log.d("VideoPlayer", "Play requested")
+            SecureLogger.d("VideoPlayer", "Play requested")
         }
     }
 
     fun seekTo(positionMs: Long) {
         exoPlayer?.seekTo(positionMs)
-        Log.d("VideoPlayer", "Seeked to: $positionMs")
+        SecureLogger.d("VideoPlayer", "Seeked to: $positionMs")
     }
 
     fun startPlayback() {
         exoPlayer?.play()
-        Log.d("VideoPlayer", "Start playback requested")
+        SecureLogger.d("VideoPlayer", "Start playback requested")
     }
 
     fun pausePlayback() {
         exoPlayer?.pause()
-        Log.d("VideoPlayer", "Pause requested")
+        SecureLogger.d("VideoPlayer", "Pause requested")
+    }
+
+    fun pauseCastPlayback() {
+        castManager.pauseCasting()
+    }
+
+    fun resumeCastPlayback() {
+        castManager.resumeCasting()
+    }
+
+    fun stopCastPlayback() {
+        castManager.stopCasting()
+        hasSentCastLoad = false
+        wasPlayingBeforeCast = false
     }
 
     fun releasePlayer() {
-        Log.d("VideoPlayer", "Releasing player")
+        SecureLogger.d("VideoPlayer", "Releasing player")
         stopPositionUpdates()
 
         // Stop tracking in a coroutine since it's a suspend function
@@ -591,7 +625,7 @@ class VideoPlayerViewModel @Inject constructor(
             try {
                 playbackProgressManager.stopTracking()
             } catch (e: Exception) {
-                Log.e("VideoPlayer", "Error stopping playback tracking: ${e.message}")
+                SecureLogger.e("VideoPlayer", "Error stopping playback tracking: ${e.message}")
             }
         }
 

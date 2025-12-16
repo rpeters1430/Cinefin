@@ -1,7 +1,6 @@
 package com.rpeters.jellyfin.ui.player
 
 import android.content.Context
-import android.util.Log
 import androidx.core.net.toUri
 import androidx.media3.cast.CastPlayer
 import androidx.media3.cast.SessionAvailabilityListener
@@ -12,15 +11,18 @@ import androidx.media3.common.util.UnstableApi
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadRequestData
+import com.google.android.gms.cast.MediaStatus
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.common.images.WebImage
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
+import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,6 +40,7 @@ data class CastState(
     val isConnected: Boolean = false,
     val deviceName: String? = null,
     val isCasting: Boolean = false,
+    val isRemotePlaying: Boolean = false,
     val castPlayer: CastPlayer? = null,
 )
 
@@ -60,84 +63,96 @@ class CastManager @Inject constructor(
     private val sessionManagerListener = object : SessionManagerListener<CastSession> {
         override fun onSessionStarted(session: CastSession, sessionId: String) {
             if (BuildConfig.DEBUG) {
-                Log.d("CastManager", "Cast session started: $sessionId")
+                SecureLogger.d("CastManager", "Cast session started: $sessionId")
             }
             updateCastState(
                 isConnected = true,
                 deviceName = session.castDevice?.friendlyName,
                 isCasting = true,
+                isRemotePlaying = isRemotePlaying(),
             )
         }
 
         override fun onSessionEnded(session: CastSession, error: Int) {
             if (BuildConfig.DEBUG) {
-                Log.d("CastManager", "Cast session ended")
+                SecureLogger.d("CastManager", "Cast session ended")
             }
             updateCastState(
                 isConnected = false,
                 deviceName = null,
                 isCasting = false,
+                isRemotePlaying = false,
             )
         }
 
         override fun onSessionResumed(session: CastSession, wasSuspended: Boolean) {
             if (BuildConfig.DEBUG) {
-                Log.d("CastManager", "Cast session resumed")
+                SecureLogger.d("CastManager", "Cast session resumed")
             }
             updateCastState(
                 isConnected = true,
                 deviceName = session.castDevice?.friendlyName,
                 isCasting = true,
+                isRemotePlaying = isRemotePlaying(),
             )
         }
 
         override fun onSessionSuspended(session: CastSession, reason: Int) {
             if (BuildConfig.DEBUG) {
-                Log.d("CastManager", "Cast session suspended")
+                SecureLogger.d("CastManager", "Cast session suspended")
             }
-            updateCastState(isCasting = false)
+            updateCastState(
+                isCasting = false,
+                isRemotePlaying = false,
+            )
         }
 
         override fun onSessionStarting(session: CastSession) {
             if (BuildConfig.DEBUG) {
-                Log.d("CastManager", "Cast session starting")
+                SecureLogger.d("CastManager", "Cast session starting")
             }
         }
 
         override fun onSessionStartFailed(session: CastSession, error: Int) {
-            Log.e("CastManager", "Cast session start failed: $error")
+            SecureLogger.e("CastManager", "Cast session start failed: $error")
         }
 
         override fun onSessionEnding(session: CastSession) {
             if (BuildConfig.DEBUG) {
-                Log.d("CastManager", "Cast session ending")
+                SecureLogger.d("CastManager", "Cast session ending")
             }
         }
 
         override fun onSessionResuming(session: CastSession, sessionId: String) {
             if (BuildConfig.DEBUG) {
-                Log.d("CastManager", "Cast session resuming: $sessionId")
+                SecureLogger.d("CastManager", "Cast session resuming: $sessionId")
             }
         }
 
         override fun onSessionResumeFailed(session: CastSession, error: Int) {
-            Log.e("CastManager", "Cast session resume failed: $error")
+            SecureLogger.e("CastManager", "Cast session resume failed: $error")
         }
     }
 
     private val sessionAvailabilityListener = object : SessionAvailabilityListener {
         override fun onCastSessionAvailable() {
             if (BuildConfig.DEBUG) {
-                Log.d("CastManager", "Cast session available")
+                SecureLogger.d("CastManager", "Cast session available")
             }
-            updateCastState(isAvailable = true)
+            updateCastState(
+                isAvailable = true,
+                isRemotePlaying = isRemotePlaying(),
+            )
         }
 
         override fun onCastSessionUnavailable() {
             if (BuildConfig.DEBUG) {
-                Log.d("CastManager", "Cast session unavailable")
+                SecureLogger.d("CastManager", "Cast session unavailable")
             }
-            updateCastState(isAvailable = false)
+            updateCastState(
+                isAvailable = false,
+                isRemotePlaying = false,
+            )
         }
     }
 
@@ -148,7 +163,7 @@ class CastManager @Inject constructor(
 
         // Cast framework requires main thread access for CastContext.getSharedInstance()
         // Store the job to prevent scope leak
-        initializationJob = CoroutineScope(Dispatchers.Main).launch {
+        initializationJob = CoroutineScope(SupervisorJob() + Dispatchers.Main).launch {
             try {
                 castContext = CastContext.getSharedInstance(context).apply {
                     sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
@@ -162,15 +177,33 @@ class CastManager @Inject constructor(
 
                 updateCastState(
                     isAvailable = castContext?.sessionManager?.currentCastSession != null,
+                    isRemotePlaying = isRemotePlaying(),
                     castPlayer = castPlayer,
                 )
 
                 if (BuildConfig.DEBUG) {
-                    Log.d("CastManager", "Cast manager initialized successfully")
+                    SecureLogger.d("CastManager", "Cast manager initialized successfully")
                 }
             } catch (e: Exception) {
-                Log.e("CastManager", "Failed to initialize Cast", e)
+                SecureLogger.e("CastManager", "Failed to initialize Cast", e)
             }
+        }
+    }
+
+    /**
+     * Determine if the current Cast session is actively playing media.
+     */
+    private fun isRemotePlaying(): Boolean {
+        val playerState = castContext
+            ?.sessionManager
+            ?.currentCastSession
+            ?.remoteMediaClient
+            ?.mediaStatus
+            ?.playerState
+
+        return when (playerState) {
+            MediaStatus.PLAYER_STATE_PLAYING -> true
+            else -> false
         }
     }
 
@@ -282,13 +315,18 @@ class CastManager @Inject constructor(
                 castSession.remoteMediaClient?.load(request)
 
                 if (BuildConfig.DEBUG) {
-                    Log.d("CastManager", "Started casting: ${item.name} ($contentType) with ${tracks.size} subtitle tracks")
+                    SecureLogger.d(
+                        "CastManager",
+                        "Started casting: ${item.name} ($contentType) with ${tracks.size} subtitle tracks",
+                    )
                 }
+
+                updateCastState(isCasting = true, isRemotePlaying = true)
             } else {
-                Log.w("CastManager", "No active Cast session")
+                SecureLogger.w("CastManager", "No active Cast session")
             }
         } catch (e: Exception) {
-            Log.e("CastManager", "Failed to start casting", e)
+            SecureLogger.e("CastManager", "Failed to start casting", e)
         }
     }
 
@@ -301,7 +339,7 @@ class CastManager @Inject constructor(
             val castSession = castContext?.sessionManager?.currentCastSession
             if (castSession?.isConnected != true) {
                 if (BuildConfig.DEBUG) {
-                    Log.d("CastManager", "loadPreview: No active Cast session")
+                    SecureLogger.d("CastManager", "loadPreview: No active Cast session")
                 }
                 return
             }
@@ -311,7 +349,7 @@ class CastManager @Inject constructor(
             val largestImageUrl = backdropImage ?: primaryImage
             if (largestImageUrl.isNullOrBlank()) {
                 if (BuildConfig.DEBUG) {
-                    Log.d("CastManager", "loadPreview: No image available for preview")
+                    SecureLogger.d("CastManager", "loadPreview: No image available for preview")
                 }
                 return
             }
@@ -368,10 +406,12 @@ class CastManager @Inject constructor(
             castSession.remoteMediaClient?.load(request)
 
             if (BuildConfig.DEBUG) {
-                Log.d("CastManager", "loadPreview: Sent preview for ${item.name}")
+                SecureLogger.d("CastManager", "loadPreview: Sent preview for ${item.name}")
             }
+
+            updateCastState(isCasting = true, isRemotePlaying = false)
         } catch (e: Exception) {
-            Log.e("CastManager", "loadPreview: Failed to send preview", e)
+            SecureLogger.e("CastManager", "loadPreview: Failed to send preview", e)
         }
     }
 
@@ -379,10 +419,29 @@ class CastManager @Inject constructor(
         try {
             castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.stop()
             if (BuildConfig.DEBUG) {
-                Log.d("CastManager", "Stopped casting")
+                SecureLogger.d("CastManager", "Stopped casting")
             }
+            updateCastState(isRemotePlaying = false, isCasting = false)
         } catch (e: Exception) {
-            Log.e("CastManager", "Failed to stop casting", e)
+            SecureLogger.e("CastManager", "Failed to stop casting", e)
+        }
+    }
+
+    fun pauseCasting() {
+        try {
+            castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.pause()
+            updateCastState(isRemotePlaying = false)
+        } catch (e: Exception) {
+            SecureLogger.e("CastManager", "Failed to pause casting", e)
+        }
+    }
+
+    fun resumeCasting() {
+        try {
+            castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.play()
+            updateCastState(isRemotePlaying = true)
+        } catch (e: Exception) {
+            SecureLogger.e("CastManager", "Failed to resume casting", e)
         }
     }
 
@@ -403,10 +462,10 @@ class CastManager @Inject constructor(
             castPlayer = null
 
             if (BuildConfig.DEBUG) {
-                Log.d("CastManager", "Cast manager released")
+                SecureLogger.d("CastManager", "Cast manager released")
             }
         } catch (e: Exception) {
-            Log.e("CastManager", "Error releasing Cast manager", e)
+            SecureLogger.e("CastManager", "Error releasing Cast manager", e)
         }
     }
 
@@ -415,6 +474,7 @@ class CastManager @Inject constructor(
         isConnected: Boolean = _castState.value.isConnected,
         deviceName: String? = _castState.value.deviceName,
         isCasting: Boolean = _castState.value.isCasting,
+        isRemotePlaying: Boolean = _castState.value.isRemotePlaying,
         castPlayer: CastPlayer? = _castState.value.castPlayer,
     ) {
         _castState.value = CastState(
@@ -422,6 +482,7 @@ class CastManager @Inject constructor(
             isConnected = isConnected,
             deviceName = deviceName,
             isCasting = isCasting,
+            isRemotePlaying = isRemotePlaying,
             castPlayer = castPlayer,
         )
     }
@@ -451,7 +512,7 @@ class CastManager @Inject constructor(
         runCatching {
             addImage(WebImage(url.toUri()))
         }.onFailure { throwable ->
-            Log.w(
+            SecureLogger.w(
                 "CastManager",
                 "Failed to attach ${imageType.name.lowercase(Locale.ROOT)} image to cast metadata",
                 throwable,
@@ -462,7 +523,7 @@ class CastManager @Inject constructor(
     private fun buildImageUrl(item: BaseItemDto, imageType: ImageType): String? {
         val itemId = item.id?.toString()
         if (itemId.isNullOrBlank()) {
-            Log.w(
+            SecureLogger.w(
                 "CastManager",
                 "buildImageUrl: Item missing ID; cannot load ${imageType.name.lowercase(Locale.ROOT)} image",
             )
@@ -483,7 +544,7 @@ class CastManager @Inject constructor(
         }
 
         if (url.isNullOrBlank()) {
-            Log.w(
+            SecureLogger.w(
                 "CastManager",
                 "buildImageUrl: Unable to resolve ${imageType.name.lowercase(Locale.ROOT)} image for item $itemId",
             )
