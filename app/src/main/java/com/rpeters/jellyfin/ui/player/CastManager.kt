@@ -17,6 +17,7 @@ import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.common.images.WebImage
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.data.preferences.CastPreferencesRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,6 +27,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ImageType
@@ -49,6 +51,7 @@ data class CastState(
 class CastManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val streamRepository: JellyfinStreamRepository,
+    private val castPreferencesRepository: CastPreferencesRepository,
 ) {
 
     private val _castState = MutableStateFlow(CastState())
@@ -56,6 +59,9 @@ class CastManager @Inject constructor(
 
     private var castContext: CastContext? = null
     private var castPlayer: CastPlayer? = null
+
+    // Single coroutine scope for this singleton, tied to the manager's lifecycle
+    private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     // Store initialization job to prevent scope leak
     private var initializationJob: kotlinx.coroutines.Job? = null
@@ -65,12 +71,18 @@ class CastManager @Inject constructor(
             if (BuildConfig.DEBUG) {
                 SecureLogger.d("CastManager", "Cast session started: $sessionId")
             }
+            val deviceName = session.castDevice?.friendlyName
             updateCastState(
                 isConnected = true,
-                deviceName = session.castDevice?.friendlyName,
+                deviceName = deviceName,
                 isCasting = true,
                 isRemotePlaying = isRemotePlaying(),
             )
+
+            // Persist cast session for auto-reconnect
+            managerScope.launch {
+                castPreferencesRepository.saveLastCastSession(deviceName, sessionId)
+            }
         }
 
         override fun onSessionEnded(session: CastSession, error: Int) {
@@ -83,18 +95,29 @@ class CastManager @Inject constructor(
                 isCasting = false,
                 isRemotePlaying = false,
             )
+
+            // Clear persisted cast session on explicit disconnect
+            managerScope.launch {
+                castPreferencesRepository.clearLastCastSession()
+            }
         }
 
         override fun onSessionResumed(session: CastSession, wasSuspended: Boolean) {
             if (BuildConfig.DEBUG) {
                 SecureLogger.d("CastManager", "Cast session resumed")
             }
+            val deviceName = session.castDevice?.friendlyName
             updateCastState(
                 isConnected = true,
-                deviceName = session.castDevice?.friendlyName,
+                deviceName = deviceName,
                 isCasting = true,
                 isRemotePlaying = isRemotePlaying(),
             )
+
+            // Update persisted cast session
+            managerScope.launch {
+                castPreferencesRepository.saveLastCastSession(deviceName, null)
+            }
         }
 
         override fun onSessionSuspended(session: CastSession, reason: Int) {
@@ -162,8 +185,8 @@ class CastManager @Inject constructor(
         initializationJob?.cancel()
 
         // Cast framework requires main thread access for CastContext.getSharedInstance()
-        // Store the job to prevent scope leak
-        initializationJob = CoroutineScope(SupervisorJob() + Dispatchers.Main).launch {
+        // Use the managed scope to prevent scope leak
+        initializationJob = managerScope.launch {
             try {
                 castContext = CastContext.getSharedInstance(context).apply {
                     sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
@@ -231,6 +254,59 @@ class CastManager @Inject constructor(
             true
         } else {
             false
+        }
+    }
+
+    /**
+     * Attempt to auto-reconnect to the last used Cast device.
+     * This should be called during app initialization if auto-reconnect is enabled.
+     * Only attempts reconnection if the last session is recent (within 24 hours).
+     */
+    suspend fun attemptAutoReconnect() {
+        try {
+            val preferences = castPreferencesRepository.castPreferencesFlow
+                .firstOrNull() ?: return
+
+            if (!preferences.autoReconnect || !preferences.rememberLastDevice) {
+                if (BuildConfig.DEBUG) {
+                    SecureLogger.d("CastManager", "Auto-reconnect disabled")
+                }
+                return
+            }
+
+            val deviceName = preferences.lastDeviceName
+            val timestamp = preferences.lastCastTimestamp
+
+            if (deviceName == null || timestamp == null) {
+                if (BuildConfig.DEBUG) {
+                    SecureLogger.d("CastManager", "No previous cast session to reconnect")
+                }
+                return
+            }
+
+            // Check if the session is recent enough to attempt reconnection
+            val sessionAge = System.currentTimeMillis() - timestamp
+            if (sessionAge > CastPreferencesRepository.MAX_SESSION_AGE_MS) {
+                if (BuildConfig.DEBUG) {
+                    SecureLogger.d("CastManager", "Previous cast session too old, skipping auto-reconnect")
+                }
+                castPreferencesRepository.clearLastCastSession()
+                return
+            }
+
+            // Attempt to reconnect
+            if (BuildConfig.DEBUG) {
+                SecureLogger.d("CastManager", "Attempting auto-reconnect to: $deviceName")
+            }
+
+            val connected = connectToDevice(deviceName)
+            if (!connected) {
+                if (BuildConfig.DEBUG) {
+                    SecureLogger.d("CastManager", "Failed to find device for auto-reconnect: $deviceName")
+                }
+            }
+        } catch (e: Exception) {
+            SecureLogger.e("CastManager", "Error during auto-reconnect", e)
         }
     }
 
@@ -455,6 +531,9 @@ class CastManager @Inject constructor(
             // Cancel initialization job to prevent scope leak
             initializationJob?.cancel()
             initializationJob = null
+
+            // Cancel the manager scope to clean up all coroutines
+            managerScope.coroutineContext[kotlinx.coroutines.Job]?.cancel()
 
             castContext?.sessionManager?.removeSessionManagerListener(sessionManagerListener, CastSession::class.java)
             castPlayer?.setSessionAvailabilityListener(null)
