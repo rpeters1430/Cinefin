@@ -233,7 +233,11 @@ The app uses an advanced playback decision engine that automatically determines 
 
 ## Dependencies Management
 
-Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.toml`. Key dependencies include:
+**SINGLE SOURCE OF TRUTH**: All dependency versions are managed in `gradle/libs.versions.toml` (version catalog).
+
+**For upgrade planning and tracking**: See `UPGRADE_PLAN.md` for comprehensive upgrade status, issues, and where to look for updates.
+
+Key dependencies include:
 
 ### Core Android
 - Jetpack Compose BOM (2025.12.00)

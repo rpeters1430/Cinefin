@@ -30,8 +30,10 @@ biometric = "1.4.0-alpha04"
 hilt = "2.57.2"
 hiltNavigation = "1.3.0"
 slf4jAndroid = "1.7.36"
+slf4jNop = "2.0.17"
 leakcanary = "2.14"
 mockk = "1.14.7"
+turbine = "1.2.1"
 kotlinxCoroutinesTest = "1.10.2"
 androidxArchCoreTest = "2.2.0"
 androidxTvMaterial = "1.1.0-alpha01"
@@ -108,13 +110,17 @@ androidx-biometric = { group = "androidx.biometric", name = "biometric", version
 # Dependency Injection
 dagger-hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 dagger-hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
+dagger-hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigation" }
 slf4j-android = { module = "org.slf4j:slf4j-android", version.ref = "slf4jAndroid" }
+slf4j-nop = { module = "org.slf4j:slf4j-nop", version.ref = "slf4jNop" }
 
 # Debug Tools  
 leakcanary-android = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }
 
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 androidx-arch-core-testing = { group = "androidx.arch.core", name = "core-testing", version.ref = "androidxArchCoreTest" }
 # Android TV Compose

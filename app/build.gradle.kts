@@ -110,7 +110,7 @@ dependencies {
     // SLF4J Android Implementation for Jellyfin SDK logging
     implementation(libs.slf4j.android)
     // Silence SLF4J warnings
-    implementation("org.slf4j:slf4j-nop:2.0.17")
+    implementation(libs.slf4j.nop)
 
     // Networking
     implementation(libs.retrofit)
@@ -158,14 +158,14 @@ dependencies {
     testImplementation(libs.robolectric)
 
     // Hilt testing
-    testImplementation("com.google.dagger:hilt-android-testing:${libs.versions.hilt.get()}")
-    kspTest("com.google.dagger:hilt-compiler:${libs.versions.hilt.get()}")
+    testImplementation(libs.dagger.hilt.android.testing)
+    kspTest(libs.dagger.hilt.compiler)
 
     // Turbine for testing StateFlow
-    testImplementation("app.cash.turbine:turbine:1.2.1")
+    testImplementation(libs.turbine)
 
     // MockWebServer for network testing
-    testImplementation("com.squareup.okhttp3:mockwebserver:${libs.versions.okhttp.get()}")
+    testImplementation(libs.mockwebserver)
 
     // Instrumentation Testing
     androidTestImplementation(libs.androidx.junit)
@@ -176,8 +176,8 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
 
     // Hilt instrumentation testing
-    androidTestImplementation("com.google.dagger:hilt-android-testing:${libs.versions.hilt.get()}")
-    kspAndroidTest("com.google.dagger:hilt-compiler:${libs.versions.hilt.get()}")
+    androidTestImplementation(libs.dagger.hilt.android.testing)
+    kspAndroidTest(libs.dagger.hilt.compiler)
 
     // Debug Tools
     debugImplementation(libs.androidx.ui.tooling)
