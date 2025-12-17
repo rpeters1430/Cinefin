@@ -11,10 +11,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ViewList
@@ -80,6 +84,8 @@ fun LibraryTypeScreen(
     var viewMode by remember { mutableStateOf(ViewMode.GRID) }
     var selectedFilter by remember { mutableStateOf(FilterType.getDefault()) }
     var hasRequestedData by remember(libraryType) { mutableStateOf(false) }
+    val gridState = rememberLazyGridState()
+    val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var selectedItem by remember { mutableStateOf<BaseItemDto?>(null) }
@@ -108,6 +114,11 @@ fun LibraryTypeScreen(
 
     val displayItems = remember(libraryItems, selectedFilter) {
         applyFilter(libraryItems, selectedFilter)
+    }
+
+    LaunchedEffect(selectedFilter, libraryType) {
+        gridState.scrollToItem(0)
+        listState.scrollToItem(0)
     }
 
     // ✅ FIX: Load data on-demand when screen is first composed
@@ -198,6 +209,7 @@ fun LibraryTypeScreen(
                             onItemClick = onItemClick,
                             onTVShowClick = onTVShowClick,
                             onItemLongPress = handleItemLongPress,
+                            gridState = gridState,
                             isLoadingMore = appState.isLoadingMore,
                             hasMoreItems = appState.hasMoreItems,
                             onLoadMore = { viewModel.loadMoreItems() },
@@ -209,6 +221,7 @@ fun LibraryTypeScreen(
                             onItemClick = onItemClick,
                             onTVShowClick = onTVShowClick,
                             onItemLongPress = handleItemLongPress,
+                            listState = listState,
                             isLoadingMore = appState.isLoadingMore,
                             hasMoreItems = appState.hasMoreItems,
                             onLoadMore = { viewModel.loadMoreItems() },
@@ -337,6 +350,7 @@ private fun GridContent(
     onItemClick: (BaseItemDto) -> Unit,
     onTVShowClick: ((String) -> Unit)?,
     onItemLongPress: (BaseItemDto) -> Unit,
+    gridState: LazyGridState,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -347,6 +361,7 @@ private fun GridContent(
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ContentPadding),
         horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
         modifier = Modifier.fillMaxSize(),
+        state = gridState,
     ) {
         items(
             items = items,
@@ -378,6 +393,7 @@ private fun ListContent(
     onItemClick: (BaseItemDto) -> Unit,
     onTVShowClick: ((String) -> Unit)?,
     onItemLongPress: (BaseItemDto) -> Unit,
+    listState: LazyListState,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -386,6 +402,7 @@ private fun ListContent(
         contentPadding = PaddingValues(LibraryScreenDefaults.ContentPadding),
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
         modifier = Modifier.fillMaxSize(),
+        state = listState,
     ) {
         items(
             items = items,
