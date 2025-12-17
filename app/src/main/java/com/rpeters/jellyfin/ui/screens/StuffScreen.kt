@@ -236,7 +236,10 @@ fun StuffGrid(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier,
     ) {
-        items(stuffItems) { stuffItem ->
+        items(
+            items = stuffItems,
+            key = { stuffItem -> stuffItem.id ?: stuffItem.name ?: stuffItem.sortName ?: stuffItem.hashCode() },
+        ) { stuffItem ->
             ExpressiveMediaCard(
                 title = stuffItem.name ?: "",
                 subtitle = stuffItem.type?.toString() ?: "",
