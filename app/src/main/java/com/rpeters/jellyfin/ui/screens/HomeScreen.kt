@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -938,35 +939,20 @@ private fun PosterRowSection(
     cardWidth: Dp = 150.dp,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
+    HomeRowSection(
+        title = title,
+        modifier = modifier,
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-
-        val listState = rememberLazyListState()
-
-        LazyRow(
-            state = listState,
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(items, key = { it.id ?: it.name.hashCode() }) { item ->
-                PosterMediaCard(
-                    item = item,
-                    getImageUrl = getImageUrl,
-                    onClick = onItemClick,
-                    onLongPress = onItemLongPress,
-                    cardWidth = cardWidth,
-                    showTitle = true,
-                    showMetadata = true,
-                )
-            }
+        items(items, key = { it.id ?: it.name.hashCode() }) { item ->
+            PosterMediaCard(
+                item = item,
+                getImageUrl = getImageUrl,
+                onClick = onItemClick,
+                onLongPress = onItemLongPress,
+                cardWidth = cardWidth,
+                showTitle = true,
+                showMetadata = true,
+            )
         }
     }
 }
@@ -981,33 +967,18 @@ private fun SquareRowSection(
     cardWidth: Dp = 280.dp,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
+    HomeRowSection(
+        title = title,
+        modifier = modifier,
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-
-        val listState = rememberLazyListState()
-
-        LazyRow(
-            state = listState,
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(items, key = { it.id ?: it.name.hashCode() }) { item ->
-                MediaCard(
-                    item = item,
-                    getImageUrl = getImageUrl,
-                    onClick = onItemClick,
-                    onLongPress = onItemLongPress,
-                    cardWidth = cardWidth,
-                )
-            }
+        items(items, key = { it.id ?: it.name.hashCode() }) { item ->
+            MediaCard(
+                item = item,
+                getImageUrl = getImageUrl,
+                onClick = onItemClick,
+                onLongPress = onItemLongPress,
+                cardWidth = cardWidth,
+            )
         }
     }
 }
@@ -1022,33 +993,53 @@ private fun MediaRowSection(
     cardWidth: Dp = 280.dp,
     modifier: Modifier = Modifier,
 ) {
+    HomeRowSection(
+        title = title,
+        modifier = modifier,
+    ) {
+        items(items, key = { it.id ?: it.name.hashCode() }) { item ->
+            MediaCard(
+                item = item,
+                getImageUrl = getImageUrl,
+                onClick = onItemClick,
+                onLongPress = onItemLongPress,
+                cardWidth = cardWidth,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeRowSection(
+    title: String,
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(12.dp),
+    content: LazyListScope.() -> Unit,
+) {
     Column(
         modifier = modifier.fillMaxWidth(),
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
+        HomeSectionTitle(title = title)
 
         val listState = rememberLazyListState()
 
         LazyRow(
             state = listState,
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(items, key = { it.id ?: it.name.hashCode() }) { item ->
-                MediaCard(
-                    item = item,
-                    getImageUrl = getImageUrl,
-                    onClick = onItemClick,
-                    onLongPress = onItemLongPress,
-                    cardWidth = cardWidth,
-                )
-            }
-        }
+            contentPadding = contentPadding,
+            horizontalArrangement = horizontalArrangement,
+            content = content,
+        )
     }
+}
+
+@Composable
+private fun HomeSectionTitle(title: String, modifier: Modifier = Modifier) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.headlineSmall,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+    )
 }
