@@ -47,11 +47,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ConnectionPhase
 import com.rpeters.jellyfin.ui.components.ConnectionState
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
-import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 @OptInAppExperimentalApis
 @Composable

@@ -18,9 +18,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import org.jellyfin.sdk.model.api.BaseItemDto
-import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 /** Footer composable used for pagination within grids and lists. */
 @Composable

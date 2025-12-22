@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.adaptive.rememberWindowLayoutInfo
 import com.rpeters.jellyfin.ui.components.tv.TvEmptyState
@@ -35,7 +36,6 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemKind
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
-import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 private const val RECENT_MOVIES_ID = "recent_movies"
 private const val RECENT_TV_SHOWS_ID = "recent_tv_shows"

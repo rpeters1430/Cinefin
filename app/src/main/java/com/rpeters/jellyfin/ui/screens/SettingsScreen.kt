@@ -32,9 +32,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
-import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 private data class SettingRecommendation(
     @StringRes val titleRes: Int,

@@ -44,6 +44,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.preferences.AccentColor
 import com.rpeters.jellyfin.data.preferences.ContrastLevel
 import com.rpeters.jellyfin.data.preferences.ThemeMode
@@ -54,7 +55,6 @@ import com.rpeters.jellyfin.ui.theme.getContrastLevelName
 import com.rpeters.jellyfin.ui.theme.getThemeModeDescription
 import com.rpeters.jellyfin.ui.theme.getThemeModeName
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
-import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 /**
  * Settings screen for theme customization.

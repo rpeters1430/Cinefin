@@ -25,6 +25,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.screens.AlbumDetailScreen
 import com.rpeters.jellyfin.ui.screens.ArtistDetailScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideoDetailScreen
@@ -37,7 +38,6 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MovieDetailViewModel
 import com.rpeters.jellyfin.ui.viewmodel.TVEpisodeDetailViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
-import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 /**
  * Detail and playback-adjacent destinations.
