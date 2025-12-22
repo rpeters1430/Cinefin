@@ -315,7 +315,7 @@ fun MovieDetailScreen(
                                 )
 
                                 ExpressiveMediaCard(
-                                    title = relatedMovie.name ?: "Unknown",
+                                    title = relatedMovie.name ?: stringResource(id = R.string.unknown),
                                     subtitle = relatedMovie.productionYear?.toString() ?: "",
                                     imageUrl = getImageUrl(relatedMovie) ?: "",
                                     rating = relatedMovie.communityRating?.toFloat(),
@@ -630,7 +630,7 @@ private fun ExpressiveMovieInfoCard(
                 movie.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
                     val videoStream = streams.firstOrNull { it.type == MediaStreamType.VIDEO }
                     val audioStream = streams.firstOrNull { it.type == MediaStreamType.AUDIO }
-                    val resolution = getMovieResolution(videoStream)
+                    val resolution = getMovieResolution(videoStream, stringResource(id = R.string.unknown))
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         videoStream?.let { stream ->
@@ -725,9 +725,12 @@ private fun ExpressiveInfoRow(
 }
 
 // Helper function for movie resolution detection
-private fun getMovieResolution(videoStream: org.jellyfin.sdk.model.api.MediaStream?): String {
+private fun getMovieResolution(
+    videoStream: org.jellyfin.sdk.model.api.MediaStream?,
+    unknownLabel: String,
+): String {
     return when (videoStream?.height) {
-        null -> "Unknown"
+        null -> unknownLabel
         in 1..719 -> "SD"
         720 -> "720p"
         in 721..1079 -> "HD"

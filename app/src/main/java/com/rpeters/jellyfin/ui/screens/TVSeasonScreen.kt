@@ -834,7 +834,7 @@ private fun PersonCard(
             }
 
             Text(
-                text = person.name ?: "Unknown",
+                text = person.name ?: stringResource(id = R.string.unknown),
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Medium,
                 maxLines = 2,

@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.storage.MediaStoreSaver
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -45,15 +46,16 @@ object MediaDownloadManager {
                 return null
             }
 
+            val unknownLabel = context.getString(R.string.unknown)
             val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
             // Create download request
             val request = DownloadManager.Request(streamUrl.toUri()).apply {
-                setTitle("${item.name ?: "Unknown"}")
+                setTitle("${item.name ?: unknownLabel}")
                 setDescription("Downloading from Jellyfin")
 
                 // Set destination in Downloads directory with organized folder structure
-                val fileName = generateFileName(item)
+                val fileName = generateFileName(item, unknownLabel)
                 val subPath = generateSubPath(item)
                 val mimeType = getMimeType(item) ?: DEFAULT_MIME_TYPE
                 queryDownloadEntry(context, fileName, subPath)?.uri?.let { existingUri ->
@@ -102,7 +104,7 @@ object MediaDownloadManager {
                 Log.w(TAG, "Missing storage permission for ${item.name}")
                 return false
             }
-            val fileName = generateFileName(item)
+            val fileName = generateFileName(item, context.getString(R.string.unknown))
             val subPath = generateSubPath(item)
 
             queryDownloadEntry(context, fileName, subPath) != null
@@ -125,7 +127,7 @@ object MediaDownloadManager {
                 Log.w(TAG, "Missing storage permission for ${item.name}")
                 return null
             }
-            val fileName = generateFileName(item)
+            val fileName = generateFileName(item, context.getString(R.string.unknown))
             val subPath = generateSubPath(item)
 
             queryDownloadEntry(context, fileName, subPath)?.uri?.toString()
@@ -148,7 +150,7 @@ object MediaDownloadManager {
                 Log.w(TAG, "Missing storage permission for ${item.name}")
                 return false
             }
-            val fileName = generateFileName(item)
+            val fileName = generateFileName(item, context.getString(R.string.unknown))
             val subPath = generateSubPath(item)
 
             val entry = queryDownloadEntry(context, fileName, subPath)
@@ -300,8 +302,8 @@ object MediaDownloadManager {
         }
     }
 
-    private fun generateFileName(item: BaseItemDto): String {
-        val baseName = (item.name ?: "Unknown").replace(Regex("[^a-zA-Z0-9._-]"), "_")
+    private fun generateFileName(item: BaseItemDto, unknownLabel: String): String {
+        val baseName = (item.name ?: unknownLabel).replace(Regex("[^a-zA-Z0-9._-]"), "_")
         val extension = getFileExtension(item)
         return "$baseName.$extension"
     }
