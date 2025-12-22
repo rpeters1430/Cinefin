@@ -299,14 +299,12 @@ private fun ExpressiveCarouselIndicators(
     pagerState: PagerState,
     modifier: Modifier = Modifier,
 ) {
-    val currentPage = pagerState.currentPage
-
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         repeat(pagerState.pageCount) { index ->
-            val isActive = index == currentPage
+            val isActive = index == pagerState.currentPage
             Surface(
                 modifier = Modifier.size(
                     width = if (isActive) 24.dp else 8.dp,
