@@ -81,7 +81,7 @@ object ImageLoadingOptimizer {
             .components {
                 add(
                     OkHttpNetworkFetcherFactory(
-                        callFactory = { imageHttpClient },
+                        callFactory = imageHttpClient,
                     ),
                 )
             }
