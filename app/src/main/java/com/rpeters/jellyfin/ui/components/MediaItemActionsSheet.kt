@@ -12,7 +12,6 @@ import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,8 +28,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.utils.isWatched
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -51,7 +51,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
  * @param showToggleWatched Whether to show the Mark Watched/Unwatched action
  * @param managementEnabled Whether library management actions are enabled
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptInAppExperimentalApis
 @Composable
 fun MediaItemActionsSheet(
     item: BaseItemDto,
@@ -78,8 +78,8 @@ fun MediaItemActionsSheet(
         modifier = modifier,
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(Dimens.Spacing16),
+            verticalArrangement = Arrangement.spacedBy(Dimens.Spacing12),
         ) {
             // Header
             Text(
@@ -104,12 +104,12 @@ fun MediaItemActionsSheet(
                         onDismiss()
                         onPlay()
                     },
-                    modifier = Modifier.padding(vertical = 4.dp),
+                    modifier = Modifier.padding(vertical = Dimens.Spacing4),
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
                         contentDescription = null,
-                        modifier = Modifier.padding(end = 8.dp),
+                        modifier = Modifier.padding(end = Dimens.Spacing8),
                     )
                     Text(text = stringResource(id = R.string.play))
                 }
@@ -123,12 +123,12 @@ fun MediaItemActionsSheet(
                         onDismiss()
                         onToggleWatched()
                     },
-                    modifier = Modifier.padding(vertical = 4.dp),
+                    modifier = Modifier.padding(vertical = Dimens.Spacing4),
                 ) {
                     Icon(
                         imageVector = if (isWatched) Icons.Outlined.Circle else Icons.Outlined.CheckCircle,
                         contentDescription = null,
-                        modifier = Modifier.padding(end = 8.dp),
+                        modifier = Modifier.padding(end = Dimens.Spacing8),
                     )
                     Text(
                         text = stringResource(
@@ -155,12 +155,12 @@ fun MediaItemActionsSheet(
                             onDismiss()
                             onRefreshMetadata(false, "Not yet implemented")
                         },
-                        modifier = Modifier.padding(vertical = 4.dp),
+                        modifier = Modifier.padding(vertical = Dimens.Spacing4),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = null,
-                            modifier = Modifier.padding(end = 8.dp),
+                            modifier = Modifier.padding(end = Dimens.Spacing8),
                         )
                         Text(text = stringResource(id = R.string.library_actions_refresh_metadata))
                     }
@@ -176,12 +176,12 @@ fun MediaItemActionsSheet(
                             containerColor = MaterialTheme.colorScheme.error,
                             contentColor = MaterialTheme.colorScheme.onError,
                         ),
-                        modifier = Modifier.padding(vertical = 4.dp),
+                        modifier = Modifier.padding(vertical = Dimens.Spacing4),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = null,
-                            modifier = Modifier.padding(end = 8.dp),
+                            modifier = Modifier.padding(end = Dimens.Spacing8),
                         )
                         Text(text = stringResource(id = R.string.library_actions_delete))
                     }

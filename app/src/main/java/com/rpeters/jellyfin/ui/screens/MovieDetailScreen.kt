@@ -546,7 +546,7 @@ private fun ExpressiveMovieInfoCard(
             ) {
                 // Title with dynamic emphasis
                 Text(
-                    text = movie.name ?: "Unknown Title",
+                    text = movie.name ?: stringResource(R.string.unknown),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,

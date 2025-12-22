@@ -1,3 +1,5 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.player.tv
 
 import androidx.compose.foundation.background
@@ -46,6 +48,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
@@ -54,16 +57,16 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
-import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
+import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.tv.requestInitialFocus
 
 /**
  * TV-optimized queue display overlay
  * Shows the playback queue with D-pad navigation
  */
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TvAudioQueueDisplay(
     queue: List<MediaItem>,
@@ -244,7 +247,6 @@ fun TvAudioQueueDisplay(
 /**
  * Individual queue track item with focus support
  */
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun QueueTrackItem(
     mediaItem: MediaItem,
@@ -302,7 +304,7 @@ private fun QueueTrackItem(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = mediaItem.mediaMetadata.title?.toString() ?: "Unknown Track",
+                    text = mediaItem.mediaMetadata.title?.toString() ?: stringResource(R.string.unknown),
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontSize = 20.sp,
                         fontWeight = if (isCurrentTrack) FontWeight.Bold else FontWeight.Normal,

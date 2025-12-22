@@ -305,7 +305,7 @@ fun LibraryTypeScreen(
                             val text = if (success) {
                                 refreshRequestedMessage
                             } else {
-                                "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                                "Failed to refresh metadata: ${message ?: stringResource(R.string.unknown_error)}"
                             }
                             snackbarHostState.showSnackbar(text)
                         }

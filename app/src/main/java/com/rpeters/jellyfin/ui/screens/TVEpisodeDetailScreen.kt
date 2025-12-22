@@ -347,7 +347,7 @@ private fun ExpressiveEpisodeHero(
                 }
 
                 Text(
-                    text = episode.name ?: "Unknown Episode",
+                    text = episode.name ?: stringResource(R.string.unknown),
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -1027,7 +1027,7 @@ private fun ExpressiveSeriesInfo(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        text = series.name ?: "Unknown Series",
+                        text = series.name ?: stringResource(R.string.unknown),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,

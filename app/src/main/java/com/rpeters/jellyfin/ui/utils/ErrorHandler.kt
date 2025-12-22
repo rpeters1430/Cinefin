@@ -2,7 +2,9 @@ package com.rpeters.jellyfin.ui.utils
 
 import android.content.Context
 import android.util.Log
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.repository.common.ErrorType
+import com.rpeters.jellyfin.utils.AppResources
 import retrofit2.HttpException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -96,7 +98,10 @@ object ErrorHandler {
             )
 
             else -> ProcessedError(
-                userMessage = "An unexpected error occurred: ${e.message ?: "Unknown error"}",
+                userMessage = "An unexpected error occurred: ${
+                    e.message ?: context?.getString(R.string.unknown_error)
+                        ?: AppResources.getString(R.string.unknown_error)
+                }",
                 errorType = ErrorType.UNKNOWN,
                 isRetryable = true,
                 suggestedAction = "Try again or restart the app",

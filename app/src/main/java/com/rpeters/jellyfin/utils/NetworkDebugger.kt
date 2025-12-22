@@ -89,7 +89,7 @@ object NetworkDebugger {
     /**
      * Test raw socket connection to a server.
      */
-    suspend fun testSocketConnection(host: String, port: Int): ConnectionTestResult {
+    suspend fun testSocketConnection(context: Context, host: String, port: Int): ConnectionTestResult {
         return withContext(Dispatchers.IO) {
             val startTime = System.currentTimeMillis()
 
@@ -127,7 +127,7 @@ object NetworkDebugger {
                 ConnectionTestResult(
                     success = false,
                     responseTime = endTime - startTime,
-                    error = e.message ?: "Unknown error",
+                    error = e.message ?: context.getString(R.string.unknown_error),
                     details = "Socket connection failed: ${e.javaClass.simpleName}",
                 )
             }
@@ -195,7 +195,7 @@ object NetworkDebugger {
             return
         }
 
-        val result = testSocketConnection(hostPort.first, hostPort.second)
+        val result = testSocketConnection(context, hostPort.first, hostPort.second)
         Log.d(TAG, "Connection test result: $result")
 
         if (!result.success) {

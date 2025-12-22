@@ -8,6 +8,7 @@ import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.ui.surface.ModernSurfaceCoordinator
 import com.rpeters.jellyfin.utils.NetworkOptimizer
+import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +41,7 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
 
         // Initialize Logger with application context for file logging
         Logger.appContext = this
+        AppResources.initialize(this)
 
         // Configure logging verbosity - disable verbose logging in production to reduce log spam
         // Set to true to enable detailed debug logging (codec detection, playback decisions, etc.)

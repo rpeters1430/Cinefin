@@ -1,6 +1,8 @@
 package com.rpeters.jellyfin.data.repository.common
 
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -161,12 +163,12 @@ class LibraryHealthChecker @Inject constructor() {
             LibraryHealthStatus.UNHEALTHY -> listOf(
                 "Library experiencing intermittent issues",
                 "Some content may not load properly",
-                "Issue: ${issue ?: "Unknown error"}",
+                "Issue: ${issue ?: AppResources.getString(R.string.unknown_error)}",
             )
             LibraryHealthStatus.WARNING -> listOf(
                 "Library had recent loading issues",
                 "Monitoring for additional problems",
-                "Most recent issue: ${issue ?: "Unknown error"}",
+                "Most recent issue: ${issue ?: AppResources.getString(R.string.unknown_error)}",
             )
             else -> emptyList()
         }

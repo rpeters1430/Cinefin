@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.offline.DownloadProgress
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
@@ -24,7 +25,7 @@ import com.rpeters.jellyfin.ui.theme.Dimens
 import kotlin.math.roundToInt
 
 @androidx.media3.common.util.UnstableApi
-@OptIn(ExperimentalMaterial3Api::class)
+@OptInAppExperimentalApis
 @Composable
 fun DownloadsScreen(
     onNavigateBack: () -> Unit,

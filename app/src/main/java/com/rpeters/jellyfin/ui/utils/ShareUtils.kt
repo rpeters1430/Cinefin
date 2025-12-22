@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.R
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 object ShareUtils {
@@ -13,7 +14,7 @@ object ShareUtils {
      */
     fun shareMedia(context: Context, item: BaseItemDto) {
         try {
-            val shareText = buildShareText(item)
+            val shareText = buildShareText(context, item)
 
             val shareIntent = Intent().apply {
                 action = Intent.ACTION_SEND
@@ -34,8 +35,8 @@ object ShareUtils {
         }
     }
 
-    private fun buildShareText(item: BaseItemDto): String {
-        val title = item.name ?: "Unknown Title"
+    private fun buildShareText(context: Context, item: BaseItemDto): String {
+        val title = item.name ?: context.getString(R.string.unknown)
         val year = item.productionYear?.let { " ($it)" } ?: ""
         val overview = item.overview?.let { "\n\n$it" } ?: ""
         val genres = item.genres?.takeIf { it.isNotEmpty() }?.let {

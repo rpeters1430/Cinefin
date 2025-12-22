@@ -45,9 +45,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.tv.TvScreenFocusScope
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
@@ -58,7 +58,7 @@ import kotlinx.coroutines.isActive
  * TV-optimized audio/music player screen with 10-foot UI design
  * Features large album art, readable text, and D-pad navigation
  */
-@OptIn(ExperimentalTvMaterial3Api::class)
+@OptInAppExperimentalApis
 @Composable
 fun TvAudioPlayerScreen(
     onBack: () -> Unit,

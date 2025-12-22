@@ -27,11 +27,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
+import com.rpeters.jellyfin.ui.theme.Dimens
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -58,7 +61,7 @@ fun PerformanceOptimizedCarousel(
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = Dimens.Spacing16, vertical = Dimens.Spacing8),
         )
 
         val listState = rememberLazyListState()
@@ -66,8 +69,8 @@ fun PerformanceOptimizedCarousel(
         LazyRow(
             state = listState,
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing12),
+            contentPadding = PaddingValues(horizontal = Dimens.Spacing16),
         ) {
             itemsIndexed(
                 items = limitedItems,
@@ -129,7 +132,7 @@ private fun OptimizedCarouselCard(
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(8.dp),
+            .padding(Dimens.Spacing8),
                 shape = RoundedCornerShape(6.dp),
                 color = getContentTypeColor(item.type).copy(alpha = 0.9f),
             ) {
@@ -146,7 +149,7 @@ private fun OptimizedCarouselCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(8.dp),
+                        .padding(Dimens.Spacing8),
                     shape = RoundedCornerShape(6.dp),
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
                 ) {
@@ -168,11 +171,11 @@ private fun OptimizedCarouselCard(
                 shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
             ) {
                 Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(Dimens.Spacing12),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.Spacing4),
                 ) {
                     Text(
-                        text = item.name ?: "Unknown Title",
+                        text = item.name ?: stringResource(R.string.unknown),
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White,
                         maxLines = 2,

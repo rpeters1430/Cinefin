@@ -36,12 +36,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.ShimmerBox
 import com.rpeters.jellyfin.ui.accessibility.mediaCardSemantics
 import com.rpeters.jellyfin.ui.image.ImageQuality
@@ -223,7 +225,7 @@ fun MediaCard(
                     verticalArrangement = Arrangement.Bottom,
                 ) {
                     MaterialText(
-                        text = item.name ?: "Unknown Title",
+                        text = item.name ?: stringResource(R.string.unknown),
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White,
                         maxLines = 2,
@@ -457,7 +459,7 @@ fun PosterMediaCard(
                 Column(modifier = Modifier.padding(12.dp)) {
                     if (showTitle) {
                         MaterialText(
-                            text = item.name ?: "Unknown Title",
+                            text = item.name ?: stringResource(R.string.unknown),
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
@@ -679,7 +681,7 @@ fun RecentlyAddedCard(
 
             Column(modifier = Modifier.padding(12.dp)) {
                 MaterialText(
-                    text = item.name ?: "Unknown Title",
+                    text = item.name ?: stringResource(R.string.unknown),
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,

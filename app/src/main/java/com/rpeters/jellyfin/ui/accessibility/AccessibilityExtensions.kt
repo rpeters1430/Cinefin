@@ -8,6 +8,8 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.utils.AppResources
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -35,7 +37,7 @@ fun BaseItemDto.getAccessibilityDescription(): String {
         else -> "Media item"
     }
 
-    val name = this.name ?: "Unknown title"
+    val name = this.name ?: AppResources.getString(R.string.unknown)
     val description = StringBuilder("$itemType: $name")
 
     // Add production year if available

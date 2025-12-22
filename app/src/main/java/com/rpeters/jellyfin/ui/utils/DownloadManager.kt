@@ -56,7 +56,7 @@ object MediaDownloadManager {
 
                 // Set destination in Downloads directory with organized folder structure
                 val fileName = generateFileName(item, unknownLabel)
-                val subPath = generateSubPath(item)
+                val subPath = generateSubPath(item, context.getString(R.string.unknown))
                 val mimeType = getMimeType(item) ?: DEFAULT_MIME_TYPE
                 queryDownloadEntry(context, fileName, subPath)?.uri?.let { existingUri ->
                     context.contentResolver.delete(existingUri, null, null)
@@ -105,7 +105,7 @@ object MediaDownloadManager {
                 return false
             }
             val fileName = generateFileName(item, context.getString(R.string.unknown))
-            val subPath = generateSubPath(item)
+            val subPath = generateSubPath(item, context.getString(R.string.unknown))
 
             queryDownloadEntry(context, fileName, subPath) != null
         } catch (e: Exception) {
@@ -308,11 +308,11 @@ object MediaDownloadManager {
         return "$baseName.$extension"
     }
 
-    private fun generateSubPath(item: BaseItemDto): String {
+    private fun generateSubPath(item: BaseItemDto, unknownLabel: String): String {
         return when (item.type) {
             BaseItemKind.MOVIE -> "Movies"
-            BaseItemKind.EPISODE -> "TV Shows/${item.seriesName ?: "Unknown Series"}"
-            BaseItemKind.AUDIO -> "Music/${item.albumArtist ?: "Unknown Artist"}"
+            BaseItemKind.EPISODE -> "TV Shows/${item.seriesName ?: unknownLabel}"
+            BaseItemKind.AUDIO -> "Music/${item.albumArtist ?: unknownLabel}"
             BaseItemKind.MUSIC_VIDEO -> "Music Videos"
             else -> "Other"
         }.replace(Regex("[^a-zA-Z0-9._/ -]"), "_")

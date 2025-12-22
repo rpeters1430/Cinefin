@@ -17,12 +17,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.viewmodel.LibraryBrowserViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -37,7 +40,7 @@ fun PaginatedMediaGrid(
     onItemClick: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
     columns: GridCells = GridCells.Adaptive(minSize = 150.dp),
-    contentPadding: PaddingValues = PaddingValues(16.dp),
+    contentPadding: PaddingValues = PaddingValues(Dimens.Spacing16),
 ) {
     val pagingFlow = viewModel.getLibraryItemsPagingFlow()
 
@@ -75,7 +78,7 @@ private fun PaginatedMediaGridContent(
     onItemClick: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
     columns: GridCells = GridCells.Adaptive(minSize = 150.dp),
-    contentPadding: PaddingValues = PaddingValues(16.dp),
+    contentPadding: PaddingValues = PaddingValues(Dimens.Spacing16),
 ) {
     LazyVerticalGrid(
         columns = columns,
@@ -218,7 +221,7 @@ private fun ErrorItem(
                 color = MaterialTheme.colorScheme.error,
             )
             Text(
-                text = error.message ?: "Unknown error",
+                text = error.message ?: stringResource(R.string.unknown_error),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 4.dp),
                 textAlign = TextAlign.Center,
@@ -251,7 +254,7 @@ private fun InitialErrorState(
             color = MaterialTheme.colorScheme.error,
         )
         Text(
-            text = error.message ?: "Unknown error occurred",
+            text = error.message ?: stringResource(R.string.unknown_error),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = 8.dp),
             textAlign = TextAlign.Center,

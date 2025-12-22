@@ -424,7 +424,7 @@ private fun SeriesDetailsHeader(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = series.name ?: "Unknown Series",
+                                text = series.name ?: stringResource(R.string.unknown),
                                 style = MaterialTheme.typography.headlineMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 textAlign = TextAlign.Center,
@@ -464,7 +464,7 @@ private fun SeriesDetailsHeader(
                 verticalArrangement = Arrangement.Bottom,
             ) {
                 Text(
-                    text = series.name ?: "Unknown Series",
+                    text = series.name ?: stringResource(R.string.unknown),
                     style = MaterialTheme.typography.headlineMedium,
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
@@ -681,7 +681,7 @@ private fun ExpressiveSeasonCard(
             ) {
                 Text(
                     text = buildString {
-                        val seasonName = season.name ?: "Unknown Season"
+                        val seasonName = season.name ?: stringResource(R.string.unknown)
                         append(seasonName)
 
                         // Add episode count in parentheses for more compact display

@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
-import coil3.annotation.ExperimentalCoilApi
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
@@ -20,7 +20,7 @@ import java.io.File
 /**
  * Optimizes image loading with Coil to prevent memory leaks and improve performance
  */
-@OptIn(ExperimentalCoilApi::class)
+@OptInAppExperimentalApis
 object ImageLoadingOptimizer {
     private const val TAG = "ImageLoadingOptimizer"
     private const val BYTES_PER_MEGABYTE = 1024L * 1024L

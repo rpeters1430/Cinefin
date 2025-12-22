@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.utils
 
 import com.rpeters.jellyfin.core.constants.Constants
+import com.rpeters.jellyfin.R
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 /**
@@ -60,7 +61,7 @@ fun BaseItemDto.isPhoto(): Boolean = type == org.jellyfin.sdk.model.api.BaseItem
 /**
  * ✅ PHASE 3: Enhanced display utilities
  */
-fun BaseItemDto.getDisplayTitle(): String = name ?: "Unknown Title"
+fun BaseItemDto.getDisplayTitle(): String = name ?: AppResources.getString(R.string.unknown)
 
 fun BaseItemDto.getYear(): Int? = (productionYear as? Number)?.toInt()
 

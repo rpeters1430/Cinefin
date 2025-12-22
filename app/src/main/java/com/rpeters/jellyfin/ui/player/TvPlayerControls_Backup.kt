@@ -25,7 +25,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
@@ -41,6 +40,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import kotlinx.coroutines.delay
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
@@ -56,7 +56,7 @@ import androidx.tv.material3.Text as TvText
  * - TV Picture-in-Picture support
  */
 @UnstableApi
-@OptIn(ExperimentalComposeUiApi::class)
+@OptInAppExperimentalApis
 @Composable
 fun TvVideoPlayerScreen(
     playerState: VideoPlayerState,

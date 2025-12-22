@@ -5,6 +5,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
@@ -95,7 +96,7 @@ data class LibraryPaginationState(
  * - Reduced massive size to prevent merge artifacts
  * - Simplified by delegating to specialized repositories
  */
-@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+@OptInAppExperimentalApis
 @HiltViewModel
 class MainAppViewModel @Inject constructor(
     @ApplicationContext private val context: Context,

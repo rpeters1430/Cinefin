@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data.repository.common
 
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.JellyfinServer
@@ -8,6 +9,7 @@ import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.ui.utils.RetryManager
+import com.rpeters.jellyfin.utils.AppResources
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
@@ -172,7 +174,7 @@ open class BaseJellyfinRepository @Inject constructor(
                 e,
             )
             val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: "Unknown error", e, error)
+            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
         }
 
     /**
@@ -220,7 +222,7 @@ open class BaseJellyfinRepository @Inject constructor(
                 e,
             )
             val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: "Unknown error", e, error)
+            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
         }
     }
 
@@ -246,7 +248,7 @@ open class BaseJellyfinRepository @Inject constructor(
                     e,
                 )
                 val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: "Unknown error", e, error)
+                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
             }
         }
     }
@@ -274,7 +276,7 @@ open class BaseJellyfinRepository @Inject constructor(
                     e,
                 )
                 val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: "Unknown error", e, error)
+                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
             }
         }
     }

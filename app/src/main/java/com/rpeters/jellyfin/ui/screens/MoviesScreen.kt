@@ -538,7 +538,7 @@ private fun MoviesList(
             )
 
             ExpressiveCompactCard(
-                title = movie.name ?: "Unknown Movie",
+                title = movie.name ?: stringResource(R.string.unknown),
                 subtitle = buildString {
                     movie.productionYear?.let { year ->
                         append(year)

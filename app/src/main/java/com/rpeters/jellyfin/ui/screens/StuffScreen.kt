@@ -147,7 +147,7 @@ fun StuffScreen(
                             .padding(16.dp),
                     ) {
                         Text(
-                            text = appState.errorMessage ?: "Unknown error",
+                            text = appState.errorMessage ?: stringResource(R.string.unknown_error),
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(16.dp),

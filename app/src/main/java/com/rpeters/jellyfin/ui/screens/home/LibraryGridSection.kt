@@ -26,13 +26,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
 import com.rpeters.jellyfin.ui.components.ShimmerBox
+import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.theme.getContentTypeColor
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -49,17 +52,17 @@ fun LibraryGridSection(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = Dimens.Spacing16, vertical = Dimens.Spacing8),
         )
 
         // Note: This sits inside a parent LazyColumn; avoid nested vertical scrollables.
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(horizontal = Dimens.Spacing16),
+            verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
         ) {
             libraries.forEach { library ->
                 ExpressiveCompactCard(
-                    title = library.name ?: "Unknown Library",
+                    title = library.name ?: stringResource(R.string.unknown),
                     subtitle = library.type?.toString()?.replace("_", " ")?.lowercase()
                         ?.replaceFirstChar { it.uppercase() } ?: "",
                     imageUrl = getImageUrl(library) ?: "",
@@ -123,7 +126,7 @@ private fun LibraryCard(
             }
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
-                    text = library.name ?: "Unknown Library",
+                    text = library.name ?: stringResource(R.string.unknown),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,

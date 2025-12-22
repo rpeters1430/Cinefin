@@ -19,6 +19,8 @@ import com.google.android.gms.common.images.WebImage
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.preferences.CastPreferencesRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
+import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -353,7 +355,10 @@ class CastManager @Inject constructor(
 
                 // Build Cast media metadata
                 val metadata = CastMediaMetadata(CastMediaMetadata.MEDIA_TYPE_MOVIE).apply {
-                    putString(CastMediaMetadata.KEY_TITLE, item.name ?: "Unknown Title")
+                    putString(
+                        CastMediaMetadata.KEY_TITLE,
+                        item.name ?: AppResources.getString(R.string.unknown),
+                    )
                     putString(CastMediaMetadata.KEY_SUBTITLE, item.overview ?: "")
                     attachCastArtwork(item)
                 }

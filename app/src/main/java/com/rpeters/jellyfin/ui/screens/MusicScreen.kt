@@ -435,7 +435,7 @@ fun MusicScreen(
                                 .padding(16.dp),
                         ) {
                             Text(
-                                text = appState.errorMessage ?: "Unknown error",
+                                text = appState.errorMessage ?: stringResource(R.string.unknown_error),
                                 color = MaterialTheme.colorScheme.onErrorContainer,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(16.dp),
@@ -575,7 +575,7 @@ private fun ExpressiveMusicCard(
     modifier: Modifier = Modifier,
 ) {
     val imageUrl = getImageUrl(item) ?: ""
-    val title = item.name ?: "Unknown Title"
+    val title = item.name ?: stringResource(R.string.unknown)
 
     // Determine subtitle based on item type
     val subtitle = when (item.type) {

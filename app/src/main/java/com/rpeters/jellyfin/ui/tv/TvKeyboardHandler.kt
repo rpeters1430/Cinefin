@@ -1,7 +1,8 @@
+@file:OptInAppExperimentalApis
+
 package com.rpeters.jellyfin.ui.tv
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.input.key.Key
@@ -11,6 +12,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.navigation.NavController
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 /**
  * TV remote control shortcuts and keyboard navigation handler
@@ -20,7 +22,6 @@ object TvKeyboardHandler {
     /**
      * Handle global TV remote shortcuts
      */
-    @OptIn(ExperimentalComposeUiApi::class)
     fun handleGlobalTvKeys(
         keyEvent: KeyEvent,
         navController: NavController? = null,
@@ -139,7 +140,6 @@ object TvKeyboardHandler {
     /**
      * Handle contextual navigation within content screens
      */
-    @OptIn(ExperimentalComposeUiApi::class)
     fun handleContentNavigationKeys(
         keyEvent: KeyEvent,
         focusManager: FocusManager,

@@ -4,10 +4,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.repository.JellyfinSearchRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,7 +39,7 @@ data class SearchState(
     val hasSearched: Boolean = false,
 )
 
-@OptIn(FlowPreview::class)
+@OptInAppExperimentalApis
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val searchRepository: JellyfinSearchRepository,

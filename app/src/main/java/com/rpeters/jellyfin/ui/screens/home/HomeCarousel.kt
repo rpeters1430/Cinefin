@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,6 +35,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.accessibility.getAccessibilityDescription
 import com.rpeters.jellyfin.ui.components.ExpressiveCardType
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
@@ -66,8 +68,8 @@ fun HomeCarousel(
                 .fillMaxWidth()
                 .height(260.dp),
             maxItemWidth = 320.dp,
-            itemSpacing = 16.dp,
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            itemSpacing = Dimens.Spacing16,
+            contentPadding = PaddingValues(horizontal = Dimens.Spacing16),
         ) { index ->
             val movie = movies[index]
             CarouselMovieCard(
@@ -134,7 +136,7 @@ private fun CarouselMovieCard(
                     .padding(Dimens.Spacing16),
             ) {
                 MaterialText(
-                    text = movie.name ?: "Unknown Movie",
+                    text = movie.name ?: stringResource(R.string.unknown),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
@@ -197,7 +199,7 @@ fun EnhancedContentCarousel(
                     },
             ) {
                 ExpressiveMediaCard(
-                    title = item.name ?: "Unknown Title",
+                    title = item.name ?: stringResource(R.string.unknown),
                     subtitle = when (item.type?.toString()) {
                         "Episode" -> item.seriesName ?: ""
                         "Series" -> item.productionYear?.toString() ?: ""
@@ -266,7 +268,7 @@ private fun CarouselContentCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(12.dp),
+                        .padding(Dimens.Spacing12),
                     shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.95f),
                     shadowElevation = 4.dp,
@@ -275,20 +277,20 @@ private fun CarouselContentCard(
                         text = "★ ${String.format(java.util.Locale.ROOT, "%.1f", rating)}",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = Dimens.Spacing8, vertical = Dimens.Spacing4),
                     )
                 }
             }
 
             // Content overlay with title and additional info
             Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(Dimens.Spacing4),
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(16.dp),
+                    .padding(Dimens.Spacing16),
             ) {
                 MaterialText(
-                    text = item.name ?: "Unknown Title",
+                    text = item.name ?: stringResource(R.string.unknown),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,

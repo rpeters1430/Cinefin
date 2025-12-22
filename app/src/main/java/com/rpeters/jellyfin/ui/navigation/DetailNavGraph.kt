@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -26,6 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.screens.AlbumDetailScreen
 import com.rpeters.jellyfin.ui.screens.ArtistDetailScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideoDetailScreen
@@ -174,7 +176,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = error ?: "Unknown error",
+                    text = error ?: stringResource(R.string.unknown_error),
                     color = MaterialTheme.colorScheme.error,
                 )
             }
@@ -428,7 +430,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = appState.errorMessage ?: "Unknown error",
+                            text = appState.errorMessage ?: stringResource(R.string.unknown_error),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                         )

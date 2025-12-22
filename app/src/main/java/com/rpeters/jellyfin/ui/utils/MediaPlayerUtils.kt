@@ -10,6 +10,7 @@ import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.player.VideoPlayerActivity
 import com.rpeters.jellyfin.ui.player.audio.AudioService
 import com.rpeters.jellyfin.ui.player.audio.AudioServiceConnection
@@ -46,7 +47,7 @@ object MediaPlayerUtils {
             val intent = VideoPlayerActivity.createIntent(
                 context = context,
                 itemId = itemId,
-                itemName = item.name ?: "Unknown Title",
+                itemName = item.name ?: context.getString(R.string.unknown),
                 startPosition = resumePosition,
             )
 
@@ -116,7 +117,7 @@ object MediaPlayerUtils {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
 
                 // Add extra information for media players
-                putExtra("title", item.name ?: "Unknown Title")
+                putExtra("title", item.name ?: context.getString(R.string.unknown))
                 putExtra("artist", item.albumArtist ?: item.artists?.joinToString(", ") ?: "")
                 putExtra("duration", item.runTimeTicks?.div(10_000) ?: 0L) // Convert to milliseconds
             }
@@ -163,7 +164,7 @@ object MediaPlayerUtils {
             val intent = VideoPlayerActivity.createIntent(
                 context = context,
                 itemId = item.id?.toString() ?: "",
-                itemName = item.name ?: "Unknown Title",
+                itemName = item.name ?: context.getString(R.string.unknown),
                 startPosition = startPosition,
             )
 

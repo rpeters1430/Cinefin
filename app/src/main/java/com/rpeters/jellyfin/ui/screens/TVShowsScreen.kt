@@ -422,7 +422,7 @@ fun TVShowsScreen(
 
                     TVShowContentState.ERROR -> {
                         ExpressiveErrorState(
-                            message = appState.errorMessage ?: "Unknown error",
+                            message = appState.errorMessage ?: stringResource(R.string.unknown_error),
                             onRetry = { viewModel.refreshTVShows() },
                             modifier = Modifier.fillMaxSize(),
                         )
@@ -512,7 +512,7 @@ fun TVShowsScreen(
                             val text = if (success) {
                                 refreshRequestedMessage
                             } else {
-                                "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                                "Failed to refresh metadata: ${message ?: stringResource(R.string.unknown_error)}"
                             }
                             snackbarHostState.showSnackbar(text)
                         }

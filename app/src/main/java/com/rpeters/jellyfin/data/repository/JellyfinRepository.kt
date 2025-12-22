@@ -10,7 +10,9 @@ import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.model.JellyfinDeviceProfile
 import com.rpeters.jellyfin.data.model.QuickConnectResult
 import com.rpeters.jellyfin.data.model.QuickConnectState
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
@@ -133,7 +135,7 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Success(result)
         } catch (e: Exception) {
             val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: "Unknown error", e, error)
+            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
         }
 
     // ✅ PHASE 4: Simplified error handling using centralized utilities
@@ -331,7 +333,7 @@ class JellyfinRepository @Inject constructor(
 
             // Log details of each item
             items.forEachIndexed { index, item ->
-                val dateFormatted = item.dateCreated?.toString() ?: "Unknown date"
+                val dateFormatted = item.dateCreated?.toString() ?: AppResources.getString(R.string.unknown)
                 if (BuildConfig.DEBUG) {
                     Log.d("JellyfinRepository", "getRecentlyAdded[$index]: ${item.type} - '${item.name}' (Created: $dateFormatted)")
                 }
@@ -418,7 +420,7 @@ class JellyfinRepository @Inject constructor(
             }
         }
 
-        throw lastException ?: Exception("Unknown error occurred")
+        throw lastException ?: Exception(AppResources.getString(R.string.unknown_error))
     }
 
     /**
@@ -550,7 +552,7 @@ class JellyfinRepository @Inject constructor(
 
             // Log details of each item
             items.forEachIndexed { index, item ->
-                val dateFormatted = item.dateCreated?.toString() ?: "Unknown date"
+                val dateFormatted = item.dateCreated?.toString() ?: AppResources.getString(R.string.unknown)
                 if (BuildConfig.DEBUG) {
                     Log.d("JellyfinRepository", "getRecentlyAddedByType[$itemType][$index]: '${item.name}' (Created: $dateFormatted)")
                 }

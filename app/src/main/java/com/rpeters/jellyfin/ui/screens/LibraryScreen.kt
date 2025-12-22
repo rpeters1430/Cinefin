@@ -221,7 +221,7 @@ fun LibraryCard(
             )
 
             Text(
-                text = library.name ?: "Unknown Library",
+                text = library.name ?: stringResource(R.string.unknown),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Medium,
             )
