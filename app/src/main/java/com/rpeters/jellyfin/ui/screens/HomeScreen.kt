@@ -78,7 +78,7 @@ import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SurfaceCoordinatorViewModel
-import com.rpeters.jellyfin.utils.PerformanceTracker
+import com.rpeters.jellyfin.core.util.PerformanceTracker
 import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChangedBy

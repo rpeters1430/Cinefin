@@ -3,7 +3,7 @@ package com.rpeters.jellyfin.di
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.LibraryHealthChecker
 import com.rpeters.jellyfin.data.repository.common.LibraryLoadingManager
-import com.rpeters.jellyfin.ui.utils.PerformanceMonitor
+import com.rpeters.jellyfin.core.util.PerformanceMonitor
 import com.rpeters.jellyfin.ui.viewmodel.common.SharedAppStateManager
 import dagger.Module
 import dagger.Provides
