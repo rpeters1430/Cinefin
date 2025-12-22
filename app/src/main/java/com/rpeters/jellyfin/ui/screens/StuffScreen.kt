@@ -34,6 +34,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.utils.SecureLogger
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import java.util.Locale
@@ -48,15 +49,15 @@ fun StuffScreen(
     onItemClick: (String) -> Unit = {},
 ) {
     if (BuildConfig.DEBUG) {
-        android.util.Log.d("StuffScreen", "StuffScreen started: libraryId=$libraryId, collectionType=$collectionType")
+        SecureLogger.d("StuffScreen", "StuffScreen started: libraryId=$libraryId, collectionType=$collectionType")
     }
     val appState by viewModel.appState.collectAsState()
 
     if (BuildConfig.DEBUG) {
-        android.util.Log.d("StuffScreen", "App state libraries count: ${appState.libraries.size}")
-        android.util.Log.d("StuffScreen", "App state itemsByLibrary size: ${appState.itemsByLibrary.size}")
+        SecureLogger.d("StuffScreen", "App state libraries count: ${appState.libraries.size}")
+        SecureLogger.d("StuffScreen", "App state itemsByLibrary size: ${appState.itemsByLibrary.size}")
         appState.itemsByLibrary.forEach { (id, items) ->
-            android.util.Log.d("StuffScreen", "itemsByLibrary[$id]: ${items.size} items")
+            SecureLogger.d("StuffScreen", "itemsByLibrary[$id]: ${items.size} items")
         }
     }
 
@@ -69,7 +70,7 @@ fun StuffScreen(
 
     LaunchedEffect(libraryId) {
         if (BuildConfig.DEBUG) {
-            android.util.Log.d("StuffScreen", "LaunchedEffect triggered for libraryId=$libraryId")
+            SecureLogger.d("StuffScreen", "LaunchedEffect triggered for libraryId=$libraryId")
         }
         viewModel.loadHomeVideos(libraryId)
     }
@@ -86,10 +87,10 @@ fun StuffScreen(
     val stuffItems = remember(appState.itemsByLibrary, libraryId, type) {
         val items = appState.itemsByLibrary[libraryId] ?: emptyList()
         if (BuildConfig.DEBUG) {
-            android.util.Log.d("StuffScreen", "libraryId=$libraryId, type=$type, items.size=${items.size}")
+            SecureLogger.d("StuffScreen", "libraryId=$libraryId, type=$type, items.size=${items.size}")
             if (items.isNotEmpty()) {
                 val typeBreakdown = items.groupBy { it.type?.name }.mapValues { it.value.size }
-                android.util.Log.d("StuffScreen", "Item types: $typeBreakdown")
+                SecureLogger.d("StuffScreen", "Item types: $typeBreakdown")
             }
         }
 
@@ -104,7 +105,7 @@ fun StuffScreen(
                 // For "stuff" or "mixed" libraries, show all items
                 // This is more permissive than the previous filtering
                 if (BuildConfig.DEBUG) {
-                    android.util.Log.d("StuffScreen", "Using permissive filter for type=$type")
+                    SecureLogger.d("StuffScreen", "Using permissive filter for type=$type")
                 }
                 items
             }
@@ -112,7 +113,7 @@ fun StuffScreen(
 
         val sorted = filtered.sortedBy { it.sortName ?: it.name }
         if (BuildConfig.DEBUG) {
-            android.util.Log.d("StuffScreen", "Filtered items count: ${filtered.size}, Sorted items count: ${sorted.size}")
+            SecureLogger.d("StuffScreen", "Filtered items count: ${filtered.size}, Sorted items count: ${sorted.size}")
         }
         sorted
     }
@@ -179,6 +180,7 @@ fun StuffScreen(
                 StuffGrid(
                     stuffItems = stuffItems,
                     getImageUrl = { item -> viewModel.getImageUrl(item) },
+                    itemKey = { item -> viewModel.libraryItemKey(item) },
                     onItemClick = onItemClick,
                     isLoadingMore = paginationState?.isLoadingMore ?: false,
                     hasMoreItems = paginationState?.hasMore ?: false,
@@ -207,6 +209,7 @@ fun StuffScreen(
 fun StuffGrid(
     stuffItems: List<BaseItemDto>,
     getImageUrl: (BaseItemDto) -> String?,
+    itemKey: (BaseItemDto) -> String,
     onItemClick: (String) -> Unit,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
@@ -238,7 +241,7 @@ fun StuffGrid(
     ) {
         items(
             items = stuffItems,
-            key = { stuffItem -> stuffItem.id ?: stuffItem.name ?: stuffItem.sortName ?: stuffItem.hashCode() },
+            key = itemKey,
         ) { stuffItem ->
             ExpressiveMediaCard(
                 title = stuffItem.name ?: "",
@@ -297,6 +300,7 @@ fun StuffGridPreview() {
     StuffGrid(
         stuffItems = emptyList(),
         getImageUrl = { null },
+        itemKey = { item -> item.id?.toString() ?: "preview-${item.hashCode()}" },
         onItemClick = {},
         isLoadingMore = false,
         hasMoreItems = false,

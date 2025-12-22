@@ -104,6 +104,16 @@ class MainAppViewModel @Inject constructor(
     private val credentialManager: SecureCredentialManager,
     @UnstableApi private val castManager: CastManager,
 ) : ViewModel() {
+    internal fun libraryItemKey(item: BaseItemDto): String =
+        item.id?.toString()
+            ?: "${item.name ?: "unknown"}-${item.sortName ?: "unknown"}-${item.type ?: "unknown"}"
+
+    internal fun mergeLibraryItems(currentItems: List<BaseItemDto>, newItems: List<BaseItemDto>): List<BaseItemDto> {
+        val merged = LinkedHashMap<String, BaseItemDto>(currentItems.size + newItems.size)
+        currentItems.forEach { item -> merged[libraryItemKey(item)] = item }
+        newItems.forEach { item -> merged[libraryItemKey(item)] = item }
+        return merged.values.toList()
+    }
 
     // Simplified state management
     private val _appState = MutableStateFlow(MainAppState())
@@ -633,7 +643,7 @@ class MainAppViewModel @Inject constructor(
                     val hasMore = items.size >= 100
 
                     val updated = _appState.value.itemsByLibrary.toMutableMap()
-                    updated[libraryId] = items
+                    updated[libraryId] = mergeLibraryItems(emptyList(), items)
 
                     val updatedPagination = _appState.value.libraryPaginationState.toMutableMap()
                     updatedPagination[libraryId] = LibraryPaginationState(
@@ -1017,7 +1027,7 @@ class MainAppViewModel @Inject constructor(
                     SecureLogger.v("MainAppViewModel", "Loaded ${newItems.size} more items, hasMore=$hasMore")
 
                     val updated = _appState.value.itemsByLibrary.toMutableMap()
-                    updated[libraryId] = currentItems + newItems
+                    updated[libraryId] = mergeLibraryItems(currentItems, newItems)
 
                     val finalPagination = _appState.value.libraryPaginationState.toMutableMap()
                     finalPagination[libraryId] = LibraryPaginationState(
