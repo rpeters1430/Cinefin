@@ -155,7 +155,7 @@ fun ProfileScreen(
                     currentServer?.let { server ->
                         ProfileInfoRow("Server Name", server.name)
                         ProfileInfoRow("Server URL", server.url)
-                        ProfileInfoRow("User ID", server.userId ?: "Unknown")
+                        ProfileInfoRow("User ID", server.userId ?: stringResource(id = R.string.unknown))
                     }
                 }
             }

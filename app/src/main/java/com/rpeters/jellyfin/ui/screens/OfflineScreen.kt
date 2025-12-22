@@ -11,10 +11,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.rpeters.jellyfin.ui.theme.Dimens
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.utils.*
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -346,7 +347,7 @@ private fun OfflineContentItem(
 
                 Column {
                     Text(
-                        text = item.name ?: "Unknown",
+                        text = item.name ?: stringResource(id = R.string.unknown),
                         style = MaterialTheme.typography.bodyMedium,
                     )
 

@@ -614,7 +614,7 @@ private fun TVShowsContent(
                         )
 
                         ExpressiveCompactCard(
-                            title = tvShow.name ?: "Unknown",
+                            title = tvShow.name ?: stringResource(id = R.string.unknown),
                             subtitle = buildString {
                                 tvShow.productionYear?.let { append("$it • ") }
                                 tvShow.childCount?.let { append("$it episodes") }
@@ -650,7 +650,7 @@ private fun TVShowsContent(
                     tvShows.take(20).map { tvShow ->
                         CarouselItem(
                             id = tvShow.id.toString(),
-                            title = tvShow.name ?: "Unknown",
+                            title = tvShow.name ?: stringResource(id = R.string.unknown),
                             subtitle = tvShow.productionYear?.toString() ?: "",
                             imageUrl = getImageUrl(tvShow) ?: "",
                             type = MediaType.TV_SHOW,

@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
@@ -250,7 +251,7 @@ class OfflineDownloadManager @Inject constructor(
 
         return OfflineDownload(
             jellyfinItemId = item.id.toString(),
-            itemName = item.name ?: "Unknown",
+            itemName = item.name ?: context.getString(R.string.unknown),
             itemType = item.type?.toString() ?: "Video",
             downloadUrl = url,
             localFilePath = localPath,

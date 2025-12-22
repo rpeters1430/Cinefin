@@ -424,7 +424,7 @@ fun HomeContent(
                     val featured = remember(contentLists.featuredItems) {
                         contentLists.featuredItems.map {
                             it.toCarouselItem(
-                                titleOverride = it.name ?: "Unknown",
+                                titleOverride = it.name ?: stringResource(id = R.string.unknown),
                                 subtitleOverride = itemSubtitle(it),
                                 imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it)
                                     ?: getImageUrl(it) ?: "",
@@ -891,7 +891,7 @@ private fun ContinueWatchingCard(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    text = item.name ?: "Unknown",
+                    text = item.name ?: stringResource(id = R.string.unknown),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
