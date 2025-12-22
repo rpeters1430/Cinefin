@@ -92,7 +92,7 @@ fun createOptimizedImageLoader(
         .components {
             add(
                 coil3.network.okhttp.OkHttpNetworkFetcherFactory(
-                    callFactory = { okHttpClient },
+                    callFactory = okHttpClient,
                 ),
             )
         }
