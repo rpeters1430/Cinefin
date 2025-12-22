@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.constants.Constants
+import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.utils.rememberDebouncedState
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -191,7 +192,7 @@ fun SearchScreen(
                 onExpandedChange = { },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(Dimens.Spacing16)
                     .focusRequester(focusRequester),
             ) {
                 // Empty content - search results are shown below
@@ -202,20 +203,20 @@ fun SearchScreen(
                 OutlinedCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = Dimens.Spacing16),
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(Dimens.Spacing16),
                     ) {
                         Text(
                             text = "Content Types",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(bottom = 8.dp),
+                            modifier = Modifier.padding(bottom = Dimens.Spacing8),
                         )
 
                         LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
                             contentPadding = PaddingValues(horizontal = 0.dp),
                         ) {
                             val contentTypes = listOf(
@@ -252,17 +253,17 @@ fun SearchScreen(
             // Search suggestions when no active search
             if (searchQuery.isBlank() && appState.searchResults.isEmpty()) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.padding(Dimens.Spacing16),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.Spacing16),
                 ) {
                     // Recent searches
                     if (recentSearches.isNotEmpty()) {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.History,
@@ -277,7 +278,7 @@ fun SearchScreen(
                             }
 
                             LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
                                 contentPadding = PaddingValues(horizontal = 0.dp),
                             ) {
                                 items(recentSearches) { search ->
@@ -293,7 +294,7 @@ fun SearchScreen(
                     // Smart suggestions
                     if (smartSuggestions.isNotEmpty()) {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
                         ) {
                             Text(
                                 text = "Popular in Your Library",
@@ -302,7 +303,7 @@ fun SearchScreen(
                             )
 
                             LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
                                 contentPadding = PaddingValues(horizontal = 0.dp),
                             ) {
                                 items(smartSuggestions) { suggestion ->

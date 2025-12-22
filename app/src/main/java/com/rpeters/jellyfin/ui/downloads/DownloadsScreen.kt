@@ -20,6 +20,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.data.offline.DownloadProgress
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
+import com.rpeters.jellyfin.ui.theme.Dimens
 import kotlin.math.roundToInt
 
 @androidx.media3.common.util.UnstableApi
@@ -55,7 +56,7 @@ fun DownloadsScreen(
         storageInfo?.let { info ->
             StorageInfoCard(
                 storageInfo = info,
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(Dimens.Spacing16),
             )
         }
 
@@ -66,7 +67,7 @@ fun DownloadsScreen(
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.Spacing16),
                 ) {
                     Icon(
                         Icons.Default.CloudDownload,
@@ -89,8 +90,8 @@ fun DownloadsScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(Dimens.Spacing16),
+                verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
             ) {
                 items(downloads, key = { it.id }) { download ->
                     DownloadItem(
@@ -118,8 +119,8 @@ fun StorageInfoCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(Dimens.Spacing16),
+            verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -176,8 +177,8 @@ fun DownloadItem(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(Dimens.Spacing16),
+            verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -208,7 +209,7 @@ fun DownloadItem(
 
             // Action buttons
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 when (download.status) {
@@ -272,7 +273,7 @@ fun DownloadStatusChip(status: DownloadStatus) {
     ) {
         Text(
             text = text,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = Dimens.Spacing8, vertical = Dimens.Spacing4),
             style = MaterialTheme.typography.labelSmall,
             color = color,
         )
@@ -281,7 +282,7 @@ fun DownloadStatusChip(status: DownloadStatus) {
 
 @Composable
 fun DownloadProgressIndicator(progress: DownloadProgress) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.Spacing4)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
