@@ -35,7 +35,6 @@ import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -65,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
@@ -85,7 +85,7 @@ import kotlin.math.roundToInt
 
 private val GENRE_BADGE_MAX_WIDTH = 100.dp
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptInAppExperimentalApis
 @Composable
 fun MovieDetailScreen(
     movie: BaseItemDto,

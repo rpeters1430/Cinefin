@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -59,6 +58,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.models.MovieFilter
 import com.rpeters.jellyfin.data.models.MovieSortOrder
 import com.rpeters.jellyfin.data.models.MovieViewMode
@@ -73,7 +73,7 @@ import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptInAppExperimentalApis
 @Composable
 fun MoviesScreen(
     movies: List<BaseItemDto>,

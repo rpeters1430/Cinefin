@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -20,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.adaptive.rememberWindowLayoutInfo
 import com.rpeters.jellyfin.ui.components.tv.TvEmptyState
@@ -42,7 +42,7 @@ private const val RECENT_TV_SHOWS_ID = "recent_tv_shows"
 private const val ALL_MOVIES_ID = "all_movies"
 private const val ALL_TV_SHOWS_ID = "all_tv_shows"
 
-@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+@OptInAppExperimentalApis
 @Composable
 fun TvHomeScreen(
     onItemSelect: (String) -> Unit,

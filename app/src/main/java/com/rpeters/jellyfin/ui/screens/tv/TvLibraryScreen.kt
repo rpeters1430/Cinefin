@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
@@ -19,7 +20,7 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
-@OptIn(androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi::class)
+@OptInAppExperimentalApis
 @Composable
 fun TvLibraryScreen(
     libraryId: String?,

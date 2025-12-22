@@ -22,12 +22,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.viewmodel.ArtistAlbumsViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 
-@androidx.compose.material3.ExperimentalMaterial3Api
+@OptInAppExperimentalApis
 @Composable
 fun ArtistDetailScreen(
     artistId: String,

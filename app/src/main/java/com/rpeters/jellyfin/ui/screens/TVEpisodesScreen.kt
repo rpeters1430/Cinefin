@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptInAppExperimentalApis
 
 package com.rpeters.jellyfin.ui.screens
 
@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,7 +34,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -66,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.SubcomposeAsyncImage
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
@@ -231,47 +230,47 @@ fun TVEpisodesScreen(
             val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
 
             MediaItemActionsSheet(
-            item = item,
-            sheetState = sheetState,
-            onDismiss = {
-                showManageSheet = false
-                selectedItem = null
-            },
-            onPlay = {
-                // TODO: Implement play functionality
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Play functionality coming soon")
-                }
-            },
-            onDelete = { _, _ ->
-                mainAppViewModel.deleteItem(item) { success, message ->
+                item = item,
+                sheetState = sheetState,
+                onDismiss = {
+                    showManageSheet = false
+                    selectedItem = null
+                },
+                onPlay = {
+                    // TODO: Implement play functionality
                     coroutineScope.launch {
-                        val text = if (success) {
-                            deleteSuccessMessage
-                        } else {
-                            String.format(deleteFailureTemplate, message ?: "")
-                        }
-                        snackbarHostState.showSnackbar(text)
+                        snackbarHostState.showSnackbar("Play functionality coming soon")
                     }
-                }
-            },
-            onRefreshMetadata = { _, _ ->
-                mainAppViewModel.refreshItemMetadata(item) { success, message ->
-                    coroutineScope.launch {
-                        val text = if (success) {
-                            refreshRequestedMessage
-                        } else {
-                            "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                },
+                onDelete = { _, _ ->
+                    mainAppViewModel.deleteItem(item) { success, message ->
+                        coroutineScope.launch {
+                            val text = if (success) {
+                                deleteSuccessMessage
+                            } else {
+                                String.format(deleteFailureTemplate, message ?: "")
+                            }
+                            snackbarHostState.showSnackbar(text)
                         }
-                        snackbarHostState.showSnackbar(text)
                     }
-                }
-            },
-            onToggleWatched = {
-                mainAppViewModel.toggleWatchedStatus(item)
-            },
-            managementEnabled = managementEnabled,
-        )
+                },
+                onRefreshMetadata = { _, _ ->
+                    mainAppViewModel.refreshItemMetadata(item) { success, message ->
+                        coroutineScope.launch {
+                            val text = if (success) {
+                                refreshRequestedMessage
+                            } else {
+                                "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                            }
+                            snackbarHostState.showSnackbar(text)
+                        }
+                    }
+                },
+                onToggleWatched = {
+                    mainAppViewModel.toggleWatchedStatus(item)
+                },
+                managementEnabled = managementEnabled,
+            )
         }
     }
 }
@@ -300,7 +299,6 @@ private fun EpisodeList(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ExpressiveEpisodeRow(
     episode: BaseItemDto,

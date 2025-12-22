@@ -21,7 +21,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -48,12 +47,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ConnectionPhase
 import com.rpeters.jellyfin.ui.components.ConnectionState
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptInAppExperimentalApis
 @Composable
 fun ServerConnectionScreen(
     onConnect: (String, String, String) -> Unit = { _, _, _ -> },
@@ -360,7 +360,7 @@ fun ServerConnectionScreenErrorPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptInAppExperimentalApis
 @Composable
 fun QuickConnectScreen(
     connectionState: ConnectionState = ConnectionState(),

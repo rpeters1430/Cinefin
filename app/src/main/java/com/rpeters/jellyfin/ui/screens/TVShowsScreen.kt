@@ -35,7 +35,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -67,6 +66,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
@@ -132,7 +132,7 @@ enum class TVShowViewMode {
     CAROUSEL,
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptInAppExperimentalApis
 @Composable
 fun TVShowsScreen(
     onTVShowClick: (String) -> Unit = {},
@@ -482,47 +482,47 @@ fun TVShowsScreen(
             val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
 
             MediaItemActionsSheet(
-            item = item,
-            sheetState = sheetState,
-            onDismiss = {
-                showManageSheet = false
-                selectedItem = null
-            },
-            onPlay = {
-                // TODO: Implement play functionality
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Play functionality coming soon")
-                }
-            },
-            onDelete = { _, _ ->
-                viewModel.deleteItem(item) { success, message ->
+                item = item,
+                sheetState = sheetState,
+                onDismiss = {
+                    showManageSheet = false
+                    selectedItem = null
+                },
+                onPlay = {
+                    // TODO: Implement play functionality
                     coroutineScope.launch {
-                        val text = if (success) {
-                            deleteSuccessMessage
-                        } else {
-                            String.format(deleteFailureTemplate, message ?: "")
-                        }
-                        snackbarHostState.showSnackbar(text)
+                        snackbarHostState.showSnackbar("Play functionality coming soon")
                     }
-                }
-            },
-            onRefreshMetadata = { _, _ ->
-                viewModel.refreshItemMetadata(item) { success, message ->
-                    coroutineScope.launch {
-                        val text = if (success) {
-                            refreshRequestedMessage
-                        } else {
-                            "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                },
+                onDelete = { _, _ ->
+                    viewModel.deleteItem(item) { success, message ->
+                        coroutineScope.launch {
+                            val text = if (success) {
+                                deleteSuccessMessage
+                            } else {
+                                String.format(deleteFailureTemplate, message ?: "")
+                            }
+                            snackbarHostState.showSnackbar(text)
                         }
-                        snackbarHostState.showSnackbar(text)
                     }
-                }
-            },
-            onToggleWatched = {
-                viewModel.toggleWatchedStatus(item)
-            },
-            managementEnabled = managementEnabled,
-        )
+                },
+                onRefreshMetadata = { _, _ ->
+                    viewModel.refreshItemMetadata(item) { success, message ->
+                        coroutineScope.launch {
+                            val text = if (success) {
+                                refreshRequestedMessage
+                            } else {
+                                "Failed to refresh metadata: ${message ?: "Unknown error"}"
+                            }
+                            snackbarHostState.showSnackbar(text)
+                        }
+                    }
+                },
+                onToggleWatched = {
+                    viewModel.toggleWatchedStatus(item)
+                },
+                managementEnabled = managementEnabled,
+            )
         }
     }
 }
