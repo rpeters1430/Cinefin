@@ -25,6 +25,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -32,6 +33,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.tv.TvFocusManager
 import com.rpeters.jellyfin.ui.tv.TvFocusableCarousel
@@ -174,7 +176,7 @@ fun TvContentCard(
 
         // Title below the card
         TvText(
-            text = item.name ?: "Unknown",
+            text = item.name ?: stringResource(id = R.string.unknown),
             style = TvMaterialTheme.typography.titleMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

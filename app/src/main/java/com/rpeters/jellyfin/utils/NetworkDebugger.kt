@@ -7,6 +7,7 @@ import android.net.TrafficStats
 import android.os.Process
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -42,7 +43,7 @@ object NetworkDebugger {
         if (capabilities == null) {
             return NetworkStatus(
                 isConnected = false,
-                connectionType = "Unknown",
+                connectionType = context.getString(R.string.unknown),
                 isMetered = false,
                 hasInternet = false,
                 details = "No network capabilities",

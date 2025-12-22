@@ -24,10 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import coil3.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.ShimmerBox
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -136,7 +138,7 @@ fun LibraryItemCard(
 
                 Column(modifier = Modifier.padding(LibraryScreenDefaults.CompactCardPadding)) {
                     Text(
-                        text = item.name ?: "Unknown",
+                        text = item.name ?: stringResource(id = R.string.unknown),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 2,
@@ -209,7 +211,7 @@ fun LibraryItemCard(
                     verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ListItemFavoriteIconPadding),
                 ) {
                     Text(
-                        text = item.name ?: "Unknown",
+                        text = item.name ?: stringResource(id = R.string.unknown),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,

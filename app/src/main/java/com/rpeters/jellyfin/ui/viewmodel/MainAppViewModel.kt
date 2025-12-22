@@ -1,9 +1,11 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
+import android.content.Context
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
@@ -17,6 +19,7 @@ import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.isWatched
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -95,6 +98,7 @@ data class LibraryPaginationState(
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MainAppViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: JellyfinRepository,
     private val authRepository: JellyfinAuthRepository,
     private val mediaRepository: JellyfinMediaRepository,
@@ -1142,7 +1146,7 @@ class MainAppViewModel @Inject constructor(
             if (libraryId == null) {
                 SecureLogger.w(
                     "MainAppViewModel",
-                    "Skipping home video library with null ID: ${library.name ?: "Unknown"}",
+                    "Skipping home video library with null ID: ${library.name ?: context.getString(R.string.unknown)}",
                 )
                 return@firstOrNull false
             }

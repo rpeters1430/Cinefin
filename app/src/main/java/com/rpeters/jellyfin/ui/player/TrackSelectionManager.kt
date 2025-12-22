@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.player
 
+import android.content.Context
 import android.util.Log
 import androidx.media3.common.C
 import androidx.media3.common.Format
@@ -7,6 +8,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,12 +40,14 @@ data class TrackSelectionState(
 
 @UnstableApi
 class TrackSelectionManager(
+    private val context: Context,
     private val exoPlayer: ExoPlayer,
     private val trackSelector: DefaultTrackSelector,
 ) {
 
     private val _trackSelectionState = MutableStateFlow(TrackSelectionState())
     val trackSelectionState: StateFlow<TrackSelectionState> = _trackSelectionState.asStateFlow()
+    private val unknownLabel = context.getString(R.string.unknown)
 
     fun updateAvailableTracks() {
         val currentTracks = exoPlayer.currentTracks
@@ -211,7 +215,7 @@ class TrackSelectionManager(
     }
 
     private fun buildAudioTrackLabel(format: Format): String {
-        val language = format.language?.let { getLanguageDisplayName(it) } ?: "Unknown"
+        val language = format.language?.let { getLanguageDisplayName(it) } ?: unknownLabel
         val channels = when (format.channelCount) {
             1 -> "Mono"
             2 -> "Stereo"
@@ -237,7 +241,7 @@ class TrackSelectionManager(
     }
 
     private fun buildSubtitleTrackLabel(format: Format): String {
-        val language = format.language?.let { getLanguageDisplayName(it) } ?: "Unknown"
+        val language = format.language?.let { getLanguageDisplayName(it) } ?: unknownLabel
         val forced = if ((format.selectionFlags and C.SELECTION_FLAG_FORCED) != 0) " (Forced)" else ""
         return "$language$forced"
     }

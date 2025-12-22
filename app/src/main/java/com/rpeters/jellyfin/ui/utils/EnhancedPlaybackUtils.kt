@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
 import com.rpeters.jellyfin.data.playback.PlaybackResult
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -139,6 +140,7 @@ class EnhancedPlaybackUtils @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val playbackResult = enhancedPlaybackManager.getOptimalPlaybackUrl(item)
+                val unknownLabel = context.getString(R.string.unknown)
 
                 when (playbackResult) {
                     is PlaybackResult.DirectPlay -> {
@@ -169,7 +171,7 @@ class EnhancedPlaybackUtils @Inject constructor(
                         PlaybackCapabilityAnalysis(
                             canPlay = false,
                             preferredMethod = PlaybackMethod.UNAVAILABLE,
-                            expectedQuality = "Unknown",
+                            expectedQuality = unknownLabel,
                             details = "Error: ${playbackResult.message}",
                             codecs = "N/A",
                             container = "N/A",
@@ -179,10 +181,11 @@ class EnhancedPlaybackUtils @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to analyze playback capabilities", e)
+                val unknownLabel = context.getString(R.string.unknown)
                 PlaybackCapabilityAnalysis(
                     canPlay = false,
                     preferredMethod = PlaybackMethod.UNAVAILABLE,
-                    expectedQuality = "Unknown",
+                    expectedQuality = unknownLabel,
                     details = "Analysis failed: ${e.message}",
                     codecs = "N/A",
                     container = "N/A",

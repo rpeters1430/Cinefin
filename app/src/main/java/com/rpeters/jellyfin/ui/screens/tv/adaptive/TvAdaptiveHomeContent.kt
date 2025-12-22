@@ -23,7 +23,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.components.tv.TvContentCard
 import com.rpeters.jellyfin.ui.components.tv.TvContentCarousel
@@ -300,7 +302,7 @@ private fun RowScope.TabletDetailPane(
         }
 
         TvText(
-            text = item.name ?: "Unknown",
+            text = item.name ?: stringResource(id = R.string.unknown),
             style = TvMaterialTheme.typography.headlineMedium,
             color = TvMaterialTheme.colorScheme.onSurface,
             maxLines = 2,
