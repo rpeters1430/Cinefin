@@ -50,13 +50,13 @@ fun OfflineScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(Dimens.Spacing16),
+        verticalArrangement = Arrangement.spacedBy(Dimens.Spacing16),
     ) {
         // Header with back button
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
         ) {
             IconButton(onClick = onBackClick) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -138,9 +138,9 @@ private fun ConnectivityStatusCard(
         ),
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(Dimens.Spacing16),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing12),
         ) {
             Icon(
                 imageVector = if (isOnline) Icons.Default.Wifi else Icons.Default.WifiOff,
@@ -193,8 +193,8 @@ private fun StorageInfoCard(
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(Dimens.Spacing16),
+            verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -213,7 +213,7 @@ private fun StorageInfoCard(
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(Dimens.Spacing4))
                         Text("Clear All")
                     }
                 }
@@ -250,25 +250,25 @@ private fun OfflineContentSection(
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(Dimens.Spacing16),
         ) {
             Text(
                 text = "Downloaded Content",
                 style = MaterialTheme.typography.titleMedium,
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Dimens.Spacing8))
 
             if (offlineContent.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(32.dp),
+                        .padding(Dimens.Spacing32),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Download,
@@ -294,7 +294,7 @@ private fun OfflineContentSection(
                 }
             } else {
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
                 ) {
                     items(offlineContent, key = { it.id ?: it.name.hashCode() }) { item ->
                         OfflineContentItem(
@@ -324,14 +324,14 @@ private fun OfflineContentItem(
     ) {
         Row(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(Dimens.Spacing12)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing12),
                 modifier = Modifier.weight(1f),
             ) {
                 Icon(
@@ -364,7 +364,7 @@ private fun OfflineContentItem(
             }
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing4),
             ) {
                 IconButton(onClick = onPlay) {
                     Icon(
