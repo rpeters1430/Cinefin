@@ -29,12 +29,15 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.accessibility.getAccessibilityDescription
 import com.rpeters.jellyfin.ui.components.ExpressiveCardType
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
+import com.rpeters.jellyfin.ui.components.MaterialText
 import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
@@ -130,11 +133,15 @@ private fun CarouselMovieCard(
                     .align(Alignment.BottomStart)
                     .padding(Dimens.Spacing16),
             ) {
-                Text(
+                MaterialText(
                     text = movie.name ?: "Unknown Movie",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    autoSize = true,
+                    minFontSize = 16.sp,
+                    maxFontSize = MaterialTheme.typography.titleLarge.fontSize,
                 )
             }
         }
@@ -280,11 +287,15 @@ private fun CarouselContentCard(
                     .align(Alignment.BottomStart)
                     .padding(16.dp),
             ) {
-                Text(
+                MaterialText(
                     text = item.name ?: "Unknown Title",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    autoSize = true,
+                    minFontSize = 16.sp,
+                    maxFontSize = MaterialTheme.typography.titleLarge.fontSize,
                 )
 
                 // Additional info based on content type

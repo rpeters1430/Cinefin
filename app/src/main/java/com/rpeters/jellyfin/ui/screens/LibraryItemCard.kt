@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import coil3.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
@@ -143,6 +144,9 @@ fun LibraryItemCard(
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
+                        autoSize = true,
+                        minFontSize = 12.sp,
+                        maxFontSize = MaterialTheme.typography.titleMedium.fontSize,
                     )
 
                     item.productionYear?.let { year ->
@@ -216,6 +220,9 @@ fun LibraryItemCard(
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
+                        autoSize = true,
+                        minFontSize = 16.sp,
+                        maxFontSize = MaterialTheme.typography.titleLarge.fontSize,
                     )
 
                     item.productionYear?.let { year ->

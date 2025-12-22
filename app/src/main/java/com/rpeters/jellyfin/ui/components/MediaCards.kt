@@ -40,6 +40,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.ShimmerBox
 import com.rpeters.jellyfin.ui.accessibility.mediaCardSemantics
 import com.rpeters.jellyfin.ui.image.ImageQuality
@@ -49,7 +51,6 @@ import com.rpeters.jellyfin.ui.theme.RatingBronze
 import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.theme.RatingSilver
 import com.rpeters.jellyfin.ui.theme.getContentTypeColor
-import com.rpeters.jellyfin.OptInAppExperimentalApis
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -221,12 +222,15 @@ fun MediaCard(
                         .padding(12.dp),
                     verticalArrangement = Arrangement.Bottom,
                 ) {
-                    Text(
+                    MaterialText(
                         text = item.name ?: "Unknown Title",
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
+                        autoSize = true,
+                        minFontSize = 14.sp,
+                        maxFontSize = MaterialTheme.typography.titleMedium.fontSize,
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -452,13 +456,15 @@ fun PosterMediaCard(
             if (showTitle || showMetadata) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     if (showTitle) {
-                        Text(
+                        MaterialText(
                             text = item.name ?: "Unknown Title",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurface,
+                            autoSize = true,
+                            minFontSize = 12.sp,
+                            maxFontSize = MaterialTheme.typography.bodyMedium.fontSize,
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
@@ -672,12 +678,15 @@ fun RecentlyAddedCard(
             }
 
             Column(modifier = Modifier.padding(12.dp)) {
-                Text(
+                MaterialText(
                     text = item.name ?: "Unknown Title",
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface,
+                    autoSize = true,
+                    minFontSize = 12.sp,
+                    maxFontSize = MaterialTheme.typography.bodyMedium.fontSize,
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
