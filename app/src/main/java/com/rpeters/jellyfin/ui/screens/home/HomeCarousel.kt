@@ -38,6 +38,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
+import com.rpeters.jellyfin.ui.theme.Dimens
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @OptInAppExperimentalApis
@@ -53,7 +54,7 @@ fun HomeCarousel(
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = Dimens.Spacing16, vertical = Dimens.Spacing8),
         )
         val carouselState = rememberCarouselState { movies.size }
         HorizontalUncontainedCarousel(
@@ -62,8 +63,8 @@ fun HomeCarousel(
                 .fillMaxWidth()
                 .height(240.dp),
             itemWidth = 280.dp,
-            itemSpacing = 12.dp,
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            itemSpacing = Dimens.Spacing12,
+            contentPadding = PaddingValues(horizontal = Dimens.Spacing16),
         ) { index ->
             val movie = movies[index]
             CarouselMovieCard(
@@ -110,7 +111,7 @@ private fun CarouselMovieCard(
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(12.dp),
+                        .padding(Dimens.Spacing12),
                     shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.95f),
                     shadowElevation = 4.dp,
@@ -119,15 +120,15 @@ private fun CarouselMovieCard(
                         text = "★ ${String.format(java.util.Locale.ROOT, "%.1f", rating)}",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = Dimens.Spacing8, vertical = Dimens.Spacing4),
                     )
                 }
             }
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(16.dp),
+                    .padding(Dimens.Spacing16),
             ) {
                 Text(
                     text = movie.name ?: "Unknown Movie",
@@ -161,7 +162,7 @@ fun EnhancedContentCarousel(
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = Dimens.Spacing16, vertical = Dimens.Spacing8),
         )
         val carouselState = rememberCarouselState(initialItem = 1) { items.size }
         HorizontalMultiBrowseCarousel(
@@ -170,7 +171,7 @@ fun EnhancedContentCarousel(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(360.dp),
-            itemSpacing = 16.dp,
+            itemSpacing = Dimens.Spacing16,
             contentPadding = PaddingValues(horizontal = 64.dp),
         ) { index ->
             val item = items[index]
