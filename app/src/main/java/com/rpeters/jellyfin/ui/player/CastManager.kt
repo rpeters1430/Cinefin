@@ -17,9 +17,9 @@ import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.common.images.WebImage
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.preferences.CastPreferencesRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
-import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext

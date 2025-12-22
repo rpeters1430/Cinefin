@@ -1,7 +1,7 @@
 package com.rpeters.jellyfin.utils
 
-import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.core.constants.Constants
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 /**

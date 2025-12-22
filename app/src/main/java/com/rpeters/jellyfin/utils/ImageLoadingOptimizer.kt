@@ -4,11 +4,11 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
-import com.rpeters.jellyfin.OptInAppExperimentalApis
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.util.DebugLogger
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.utils.DevicePerformanceProfile.Companion.detect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

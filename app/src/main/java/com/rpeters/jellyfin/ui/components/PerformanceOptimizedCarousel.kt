@@ -132,7 +132,7 @@ private fun OptimizedCarouselCard(
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-            .padding(Dimens.Spacing8),
+                    .padding(Dimens.Spacing8),
                 shape = RoundedCornerShape(6.dp),
                 color = getContentTypeColor(item.type).copy(alpha = 0.9f),
             ) {

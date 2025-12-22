@@ -65,7 +65,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
-import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveHeroCarousel
@@ -80,6 +79,7 @@ import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SurfaceCoordinatorViewModel
+import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChangedBy

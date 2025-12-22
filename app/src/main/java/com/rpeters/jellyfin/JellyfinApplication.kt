@@ -7,8 +7,8 @@ import coil3.SingletonImageLoader
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.ui.surface.ModernSurfaceCoordinator
-import com.rpeters.jellyfin.utils.NetworkOptimizer
 import com.rpeters.jellyfin.utils.AppResources
+import com.rpeters.jellyfin.utils.NetworkOptimizer
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
