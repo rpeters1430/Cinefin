@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptInAppExperimentalApis
 
 package com.rpeters.jellyfin.ui.screens
 
@@ -34,7 +34,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -300,7 +299,6 @@ private fun EpisodeList(
     }
 }
 
-@OptInAppExperimentalApis
 @Composable
 private fun ExpressiveEpisodeRow(
     episode: BaseItemDto,
