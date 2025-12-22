@@ -64,7 +64,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.core.util.PerformanceTracker
+import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
+import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveHeroCarousel
@@ -143,7 +144,7 @@ fun HomeScreen(
         modifier = modifier,
     ) { paddingValues ->
         // Performance monitoring
-        PerformanceTracker(
+        PerformanceMetricsTracker(
             enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
             intervalMs = 30000, // 30 seconds
         )
@@ -332,12 +333,13 @@ fun HomeContent(
     // ✅ DEBUG: Log received state for UI troubleshooting
     LaunchedEffect(appState.libraries.size, appState.recentlyAddedByTypes.size) {
         if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
-            android.util.Log.d(
+            SecureLogger.d(
                 "HomeScreen",
-                "Received state - Libraries: ${appState.libraries.size}, RecentlyAddedByTypes: ${appState.recentlyAddedByTypes.mapValues { it.value.size }}",
+                "Received state - Libraries: ${appState.libraries.size}, " +
+                    "RecentlyAddedByTypes: ${appState.recentlyAddedByTypes.mapValues { it.value.size }}",
             )
             appState.libraries.forEachIndexed { index, library ->
-                android.util.Log.d(
+                SecureLogger.d(
                     "HomeScreen",
                     "Library $index: ${library.name} (${library.collectionType})",
                 )

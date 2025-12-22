@@ -2,7 +2,6 @@ package com.rpeters.jellyfin.core.util
 
 import android.os.Build
 import android.os.Debug
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -16,9 +15,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlin.coroutines.coroutineContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.system.measureTimeMillis
 
 /**
  * Phase 4: Performance Monitoring System
@@ -35,6 +35,7 @@ class PerformanceMonitor @Inject constructor() {
         private const val MAX_PERFORMANCE_SAMPLES = 100
         private const val MAX_OPERATION_SAMPLES = 50 // Limit operation timing samples
         private const val MONITORING_ENABLED_ONLY_IN_DEBUG = true // Only run in debug builds
+        private const val BYTES_IN_MEGABYTE = 1024 * 1024
 
         /**
          * Memory information data class
@@ -65,10 +66,10 @@ class PerformanceMonitor @Inject constructor() {
             val freeMemory = runtime.freeMemory()
             val usedMemory = totalMemory - freeMemory
 
-            val usedMemoryMB = usedMemory / (1024 * 1024)
-            val totalMemoryMB = totalMemory / (1024 * 1024)
-            val freeMemoryMB = freeMemory / (1024 * 1024)
-            val maxMemoryMB = maxMemory / (1024 * 1024)
+            val usedMemoryMB = usedMemory / BYTES_IN_MEGABYTE
+            val totalMemoryMB = totalMemory / BYTES_IN_MEGABYTE
+            val freeMemoryMB = freeMemory / BYTES_IN_MEGABYTE
+            val maxMemoryMB = maxMemory / BYTES_IN_MEGABYTE
             val usagePercentage = (usedMemory.toFloat() / maxMemory.toFloat()) * 100f
 
             return MemoryInfo(
@@ -137,11 +138,10 @@ class PerformanceMonitor @Inject constructor() {
          * Measure execution time of a block of code.
          */
         @JvmStatic
-        fun <T> measureExecutionTime(tag: String, block: () -> T): T {
-            var result: T
-            val executionTime = measureTimeMillis {
-                result = block()
-            }
+        inline fun <T> measureExecutionTime(tag: String, block: () -> T): T {
+            val start = System.nanoTime()
+            val result = block()
+            val executionTime = (System.nanoTime() - start) / 1_000_000
             if (BuildConfig.DEBUG) {
                 SecureLogger.v(TAG, "$tag executed in ${executionTime}ms")
             }
@@ -154,9 +154,9 @@ class PerformanceMonitor @Inject constructor() {
         @JvmStatic
         fun getNativeHeapInfo(): String? {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val nativeHeapSize = Debug.getNativeHeapSize() / (1024 * 1024)
-                val nativeHeapAllocated = Debug.getNativeHeapAllocatedSize() / (1024 * 1024)
-                val nativeHeapFree = Debug.getNativeHeapFreeSize() / (1024 * 1024)
+                val nativeHeapSize = Debug.getNativeHeapSize() / BYTES_IN_MEGABYTE
+                val nativeHeapAllocated = Debug.getNativeHeapAllocatedSize() / BYTES_IN_MEGABYTE
+                val nativeHeapFree = Debug.getNativeHeapFreeSize() / BYTES_IN_MEGABYTE
                 "Native Heap - Size: ${nativeHeapSize}MB, Allocated: ${nativeHeapAllocated}MB, Free: ${nativeHeapFree}MB"
             } else {
                 null
@@ -196,6 +196,7 @@ class PerformanceMonitor @Inject constructor() {
     // Performance history
     private val performanceSamples = mutableListOf<PerformanceSample>()
     private val operationTimes = mutableMapOf<String, MutableList<Long>>()
+    private val operationTimesLock = Any()
 
     init {
         determineDeviceTier()
@@ -236,7 +237,7 @@ class PerformanceMonitor @Inject constructor() {
         recordOperationTime(operationName, executionTime)
 
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Operation '$operationName' took ${executionTime}ms")
+            SecureLogger.d(TAG, "Operation '$operationName' took ${executionTime}ms")
         }
 
         return result
@@ -246,19 +247,21 @@ class PerformanceMonitor @Inject constructor() {
      * Record operation execution time
      */
     fun recordOperationTime(operationName: String, timeMs: Long) {
-        val times = operationTimes.getOrPut(operationName) { mutableListOf() }
-        times.add(timeMs)
+        synchronized(operationTimesLock) {
+            val times = operationTimes.getOrPut(operationName) { mutableListOf() }
+            times.add(timeMs)
 
-        // Keep only recent samples to prevent memory leaks
-        if (times.size > MAX_OPERATION_SAMPLES) {
-            times.removeAt(0)
-        }
+            // Keep only recent samples to prevent memory leaks
+            if (times.size > MAX_OPERATION_SAMPLES) {
+                times.removeAt(0)
+            }
 
-        // Clean up operation times map if it gets too large
-        if (operationTimes.size > 20) {
-            // Remove least recently used operations
-            val sortedByUsage = operationTimes.toList().sortedBy { it.second.size }
-            operationTimes.remove(sortedByUsage.first().first)
+            // Clean up operation times map if it gets too large
+            if (operationTimes.size > 20) {
+                // Remove least recently used operations
+                val sortedByUsage = operationTimes.entries.sortedBy { it.value.size }
+                sortedByUsage.firstOrNull()?.key?.let { operationTimes.remove(it) }
+            }
         }
     }
 
@@ -266,7 +269,9 @@ class PerformanceMonitor @Inject constructor() {
      * Get average operation time
      */
     fun getAverageOperationTime(operationName: String): Long {
-        val times = operationTimes[operationName] ?: return 0L
+        val times = synchronized(operationTimesLock) {
+            operationTimes[operationName]?.toList()
+        } ?: return 0L
         return if (times.isNotEmpty()) times.average().toLong() else 0L
     }
 
@@ -275,7 +280,7 @@ class PerformanceMonitor @Inject constructor() {
      */
     suspend fun startMonitoring() {
         if (!MONITORING_ENABLED_ONLY_IN_DEBUG || BuildConfig.DEBUG) {
-            while (true) {
+            while (coroutineContext.isActive) {
                 updatePerformanceMetrics()
                 delay(SAMPLE_INTERVAL_MS)
             }
@@ -306,7 +311,10 @@ class PerformanceMonitor @Inject constructor() {
         addPerformanceSample(sample)
 
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Performance update - Memory: ${usedMemory / 1024 / 1024}MB, Score: ${_performanceScore.value}")
+            SecureLogger.d(
+                TAG,
+                "Performance update - Memory: ${usedMemory / BYTES_IN_MEGABYTE}MB, Score: ${_performanceScore.value}",
+            )
         }
     }
 
@@ -353,7 +361,7 @@ class PerformanceMonitor @Inject constructor() {
      */
     private fun determineDeviceTier() {
         val runtime = Runtime.getRuntime()
-        val maxMemory = runtime.maxMemory() / 1024 / 1024 // MB
+        val maxMemory = runtime.maxMemory() / BYTES_IN_MEGABYTE // MB
 
         val tier = when {
             maxMemory > 6144 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N -> DeviceTier.HIGH_END
@@ -364,7 +372,7 @@ class PerformanceMonitor @Inject constructor() {
         _deviceTier.value = tier
 
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Device tier determined: $tier (${maxMemory}MB RAM)")
+            SecureLogger.d(TAG, "Device tier determined: $tier (${maxMemory}MB RAM)")
         }
     }
 
@@ -445,7 +453,7 @@ class PerformanceMonitor @Inject constructor() {
         return mapOf(
             "currentScore" to _performanceScore.value,
             "deviceTier" to _deviceTier.value.name,
-            "memoryUsageMB" to _memoryUsage.value / 1024 / 1024,
+            "memoryUsageMB" to _memoryUsage.value / BYTES_IN_MEGABYTE,
             "frameRate" to _frameRate.value,
             "networkLatency" to _networkLatency.value,
             "totalSamples" to performanceSamples.size,
@@ -486,7 +494,7 @@ fun PerformanceTracker(
  * Composable for monitoring performance during composition.
  */
 @Composable
-fun PerformanceTracker(
+fun PerformanceMetricsTracker(
     enabled: Boolean = true,
     intervalMs: Long = 10000, // 10 seconds
     onMetricsCollected: (PerformanceMonitor.PerformanceMetrics) -> Unit = {},
@@ -509,7 +517,7 @@ fun PerformanceTracker(
             // Log metrics only if verbose logging is enabled
             if (BuildConfig.DEBUG) {
                 SecureLogger.v(
-                    "PerformanceTracker",
+                    "PerformanceMetricsTracker",
                     "Memory: ${metrics.memory.usedMemoryMB}MB (${String.format("%.1f", metrics.memory.usagePercentage)}%), " +
                         "Render: ${metrics.renderTimeMs}ms",
                 )
@@ -534,9 +542,7 @@ fun <T> performanceOptimized(
 ): T {
     return if (enabled) {
         remember(key) {
-            PerformanceMonitor.measureExecutionTime("Composition") {
-                computation
-            }
+            computation
         }.invoke()
     } else {
         computation()
@@ -547,10 +553,9 @@ fun <T> performanceOptimized(
  * Extension function for measuring block execution time.
  */
 suspend inline fun <T> measureSuspendTime(tag: String, crossinline block: suspend () -> T): T {
-    var result: T
-    val executionTime = measureTimeMillis {
-        result = block()
-    }
+    val start = System.nanoTime()
+    val result = block()
+    val executionTime = (System.nanoTime() - start) / 1_000_000
     if (BuildConfig.DEBUG) {
         SecureLogger.v("PerformanceMonitor", "$tag executed in ${executionTime}ms")
     }
