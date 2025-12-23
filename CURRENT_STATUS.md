@@ -129,7 +129,7 @@ app/src/main/java/com/rpeters/jellyfin/
 - **MainAppViewModel.kt** - Main app state management
 
 ### Testing
-- 📊 **42 test files** in codebase
+- 📊 **41 test files** in codebase
 - Unit tests for ViewModels and Repository
 - Test frameworks: JUnit4, MockK, Turbine, AndroidX Test
 - Test coverage tracking with JaCoCo
