@@ -298,7 +298,10 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             appState.allItems.find { it.id == seasonId }
         }
 
-        LaunchedEffect(episode) {
+        LaunchedEffect(episodeId, episode) {
+            if (episode == null) {
+                mainViewModel.loadEpisodeDetails(episodeId)
+            }
             episode?.let { viewModel.loadEpisodeAnalysis(it) }
         }
 
