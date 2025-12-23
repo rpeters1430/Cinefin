@@ -82,45 +82,13 @@ However, `PullToRefreshBox` is imported from `androidx.compose.material3.pulltor
 
 ---
 
-### 3. Kotlin Compiler Flag Warning
-
-**Status**: Build warning
-**Severity**: Low
-**Impact**: Cosmetic build warning, no functional impact
-
-**Description**:
-Build shows warning:
-```
-w: Flag is not supported by this version of the compiler: -Xannotation-default-target=param-property
-```
-
-**Cause**:
-This compiler flag was added in Kotlin 2.2.x, but project uses Kotlin 2.1.0 for Hilt compatibility.
-
-**Current Behavior**:
-- Warning appears during build
-- No impact on functionality
-- Build succeeds
-
-**Workaround**:
-Remove the flag from `app/build.gradle.kts` or wait for Kotlin/Hilt version compatibility.
-
-**Next Steps**:
-- [ ] Remove unsupported flag from build config
-- [ ] OR upgrade to Kotlin 2.2+ when Hilt supports it
-
-**Related Files**:
-- `app/build.gradle.kts` (line 54-60)
-
----
-
 ## 🔧 Medium Priority Issues
 
-### 4. Incomplete Feature Implementations
+### 3. Incomplete Feature Implementations
 
 Several features have UI components but incomplete functionality:
 
-#### 4.1 Music Playback Controls
+#### 3.1 Music Playback Controls
 
 **Status**: Partially implemented
 **Severity**: Medium
@@ -141,7 +109,7 @@ Several features have UI components but incomplete functionality:
 
 ---
 
-#### 4.2 Offline Downloads
+#### 3.2 Offline Downloads
 
 **Status**: Partially implemented
 **Severity**: Medium
@@ -163,7 +131,7 @@ Several features have UI components but incomplete functionality:
 
 ---
 
-#### 4.3 Android TV Support
+#### 3.3 Android TV Support
 
 **Status**: Partially implemented
 **Severity**: Medium
@@ -184,7 +152,7 @@ Several features have UI components but incomplete functionality:
 
 ---
 
-### 5. Experimental Coroutines API Usage
+### 4. Experimental Coroutines API Usage
 
 **Status**: Build warnings
 **Severity**: Low
