@@ -1966,22 +1966,21 @@ Align KSP version with Kotlin (use `2.2.21-1.0.29` or similar)
 
 ---
 
-### 📦 33. SLF4J Dual Configuration
+### 📦 33. SLF4J Binding Configuration
 
 **Severity:** LOW
 **Impact:** Conflicting logging configurations
-**File:** `app/build.gradle.kts:106-108`
+**File:** `app/build.gradle.kts:106-107`
 
 **Issue:**
 ```kotlin
 implementation(libs.slf4j.android)
-implementation("org.slf4j:slf4j-nop:2.0.17")
 ```
 
-Both `slf4j-android` and `slf4j-nop` are included, which may conflict.
+SLF4J is configured with a single Android binding to avoid provider conflicts.
 
 **Recommendation:**
-Choose one SLF4J backend (prefer `slf4j-nop` for production to silence SDK logs)
+Keep a single SLF4J backend (`slf4j-android`) to avoid runtime binding warnings.
 
 **Estimated Fix Time:** 10 minutes
 
@@ -3118,7 +3117,7 @@ Dependencies are managed using Gradle version catalogs in `gradle/libs.versions.
 - Jellyfin SDK (1.8.4) for API communication
 - Retrofit (3.0.0) with Kotlinx Serialization (1.9.0)
 - OkHttp (5.3.2) with logging interceptor
-- SLF4J Android (1.7.36) for SDK logging (plus slf4j-nop 2.0.17 to silence warnings)
+- SLF4J Android (1.7.36) for SDK logging
 
 ### Architecture
 - Hilt (2.57.2) for dependency injection
@@ -5328,8 +5327,8 @@ StrictMode policy violation: android.os.strictmode.UntaggedSocketViolation: Unta
 ### 5. **SLF4J Logging Warnings - ALREADY RESOLVED**
 **Problem**: SLF4J provider warnings
 **Status**: ✅ Already fixed in previous updates
-- `slf4j-nop` dependency added to silence warnings
-- Proper logging configuration in place
+- `slf4j-android` provides the SLF4J binding for the SDK
+- Single provider configuration avoids binding conflicts
 
 ## 🔧 **Technical Implementation Details**
 
