@@ -58,6 +58,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.models.MovieFilter
 import com.rpeters.jellyfin.data.models.MovieSortOrder

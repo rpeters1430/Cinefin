@@ -273,6 +273,7 @@ fun LibraryTypeScreen(
             val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
             val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
             val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
+            val unknownErrorMessage = stringResource(id = R.string.unknown_error)
 
             MediaItemActionsSheet(
                 item = item,
@@ -305,7 +306,7 @@ fun LibraryTypeScreen(
                             val text = if (success) {
                                 refreshRequestedMessage
                             } else {
-                                "Failed to refresh metadata: ${message ?: stringResource(R.string.unknown_error)}"
+                                "Failed to refresh metadata: ${message ?: unknownErrorMessage}"
                             }
                             snackbarHostState.showSnackbar(text)
                         }

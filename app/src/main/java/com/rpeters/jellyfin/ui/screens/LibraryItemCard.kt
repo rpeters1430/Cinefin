@@ -32,6 +32,7 @@ import coil3.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.ShimmerBox
+import com.rpeters.jellyfin.ui.components.MaterialText
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -138,10 +139,9 @@ fun LibraryItemCard(
                 }
 
                 Column(modifier = Modifier.padding(LibraryScreenDefaults.CompactCardPadding)) {
-                    Text(
+                    MaterialText(
                         text = item.name ?: stringResource(id = R.string.unknown),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         autoSize = true,
@@ -214,10 +214,9 @@ fun LibraryItemCard(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ListItemFavoriteIconPadding),
                 ) {
-                    Text(
+                    MaterialText(
                         text = item.name ?: stringResource(id = R.string.unknown),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         autoSize = true,

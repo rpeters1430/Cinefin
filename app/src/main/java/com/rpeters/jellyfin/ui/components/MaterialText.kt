@@ -45,8 +45,8 @@ fun MaterialText(
         val density = LocalDensity.current
         val textMeasurer = rememberTextMeasurer()
         val resolvedMaxFontSize = when {
-            !maxFontSize.isUnspecified -> maxFontSize
-            !style.fontSize.isUnspecified -> style.fontSize
+            maxFontSize != TextUnit.Unspecified -> maxFontSize
+            style.fontSize != TextUnit.Unspecified -> style.fontSize
             else -> 18.sp
         }
         val targetFontSize = remember(

@@ -480,6 +480,7 @@ fun TVShowsScreen(
             val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
             val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
             val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
+            val unknownErrorMessage = stringResource(id = R.string.unknown_error)
 
             MediaItemActionsSheet(
                 item = item,
@@ -512,7 +513,7 @@ fun TVShowsScreen(
                             val text = if (success) {
                                 refreshRequestedMessage
                             } else {
-                                "Failed to refresh metadata: ${message ?: stringResource(R.string.unknown_error)}"
+                                "Failed to refresh metadata: ${message ?: unknownErrorMessage}"
                             }
                             snackbarHostState.showSnackbar(text)
                         }
@@ -646,11 +647,12 @@ private fun TVShowsContent(
             }
 
             TVShowViewMode.CAROUSEL -> {
-                val carouselItems = remember(tvShows) {
+                val unknownText = stringResource(id = R.string.unknown)
+                val carouselItems = remember(tvShows, unknownText) {
                     tvShows.take(20).map { tvShow ->
                         CarouselItem(
                             id = tvShow.id.toString(),
-                            title = tvShow.name ?: stringResource(id = R.string.unknown),
+                            title = tvShow.name ?: unknownText,
                             subtitle = tvShow.productionYear?.toString() ?: "",
                             imageUrl = getImageUrl(tvShow) ?: "",
                             type = MediaType.TV_SHOW,
