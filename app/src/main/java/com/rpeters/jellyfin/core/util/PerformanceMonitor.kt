@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.utils.SecureLogger
+import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -136,9 +137,10 @@ class PerformanceMonitor @Inject constructor() {
 
         /**
          * Measure execution time of a block of code.
+         * Note: Non-inline to avoid public-API inline function restrictions
          */
         @JvmStatic
-        inline fun <T> measureExecutionTime(tag: String, block: () -> T): T {
+        fun <T> measureExecutionTime(tag: String, block: () -> T): T {
             val start = System.nanoTime()
             val result = block()
             val executionTime = (System.nanoTime() - start) / 1_000_000
@@ -497,7 +499,7 @@ fun PerformanceTracker(
 fun PerformanceMetricsTracker(
     enabled: Boolean = true,
     intervalMs: Long = 10000, // 10 seconds
-    onMetricsCollected: (PerformanceMonitor.PerformanceMetrics) -> Unit = {},
+    onMetricsCollected: (PerformanceMonitor.Companion.PerformanceMetrics) -> Unit = {},
 ) {
     var lastCollectionTime by remember { mutableLongStateOf(0L) }
 

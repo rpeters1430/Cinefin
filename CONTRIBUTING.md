@@ -68,7 +68,7 @@ Feature requests are welcome! Please provide:
 
 ### **Prerequisites**
 - Android Studio Iguana or later
-- JDK 17
+- JDK 21
 - Android SDK 31+
 - Git
 

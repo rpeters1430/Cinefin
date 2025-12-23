@@ -128,7 +128,7 @@ object MediaDownloadManager {
                 return null
             }
             val fileName = generateFileName(item, context.getString(R.string.unknown))
-            val subPath = generateSubPath(item)
+            val subPath = generateSubPath(item, context.getString(R.string.unknown))
 
             queryDownloadEntry(context, fileName, subPath)?.uri?.toString()
         } catch (e: Exception) {
@@ -151,7 +151,7 @@ object MediaDownloadManager {
                 return false
             }
             val fileName = generateFileName(item, context.getString(R.string.unknown))
-            val subPath = generateSubPath(item)
+            val subPath = generateSubPath(item, context.getString(R.string.unknown))
 
             val entry = queryDownloadEntry(context, fileName, subPath)
             if (entry?.uri != null) {

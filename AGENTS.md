@@ -46,5 +46,5 @@
 
 - Do not commit secrets/keystores; prefer Android Keystore/Encrypted storage.
 - Network config: `app/src/main/res/xml/network_security_config.xml`.
-- Minimum SDK 26; Java 17 with desugaring enabled.
+- Minimum SDK 26; Java 21 with desugaring enabled.
 - Keep versions aligned in `gradle/libs.versions.toml`.

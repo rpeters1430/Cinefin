@@ -176,6 +176,7 @@ fun HomeScreen(
             val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
             val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
             val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
+            val unknownErrorMessage = stringResource(id = R.string.unknown_error)
 
             MediaItemActionsSheet(
                 item = item,
@@ -208,7 +209,7 @@ fun HomeScreen(
                             val text = if (success) {
                                 refreshRequestedMessage
                             } else {
-                                "Failed to refresh metadata: ${message ?: stringResource(R.string.unknown_error)}"
+                                "Failed to refresh metadata: ${message ?: unknownErrorMessage}"
                             }
                             snackbarHostState.showSnackbar(text)
                         }
@@ -423,10 +424,11 @@ fun HomeContent(
 
             if (contentLists.featuredItems.isNotEmpty()) {
                 item(key = "featured", contentType = "carousel") {
-                    val featured = remember(contentLists.featuredItems) {
+                    val unknownText = stringResource(id = R.string.unknown)
+                    val featured = remember(contentLists.featuredItems, unknownText) {
                         contentLists.featuredItems.map {
                             it.toCarouselItem(
-                                titleOverride = it.name ?: stringResource(id = R.string.unknown),
+                                titleOverride = it.name ?: unknownText,
                                 subtitleOverride = itemSubtitle(it),
                                 imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it)
                                     ?: getImageUrl(it) ?: "",

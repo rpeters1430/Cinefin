@@ -58,13 +58,13 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 - **Android 8.0** (API level 26) or higher
 - **Active Jellyfin server** (version 10.8.0 or later recommended)
 - **Internet connection** for streaming
-- **Java 17** with core library desugaring enabled
+- **Java 21** with core library desugaring enabled
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Android Studio Iguana or later
-- JDK 17
+- JDK 21
 - **Compile SDK:** 36
 - **Target SDK:** 36
 
@@ -198,31 +198,31 @@ Automated workflows for:
 - **Navigation:** Adaptive navigation suite
 - **Loading:** Progress indicators and skeleton screens
 
-## 🚧 Roadmap
+## 📚 Documentation
 
-**📋 [View Complete Development Roadmap](ROADMAP.md)**
-
-Our comprehensive development roadmap includes 7 major phases with detailed implementation plans:
+**Quick Links**:
+- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Verified project status and features
+- **[IMPROVEMENTS.md](IMPROVEMENTS.md)** - Development roadmap and planned features
+- **[KNOWN_ISSUES.md](KNOWN_ISSUES.md)** - Active bugs and workarounds
 
 ### **Current Status** ✅
 - [x] Core functionality (authentication, library browsing, Material 3 UI)
-- [x] Enhanced playback system with intelligent Direct Play detection  
+- [x] Enhanced playback system with intelligent Direct Play detection
 - [x] Video playback with ExoPlayer and advanced capabilities
 - [x] Recently added carousel and favorites management
 
-### **Next Priority: TV & Large Screen Optimization** 🔴 *HIGH PRIORITY*
-- [ ] **Phase 1.1**: Android TV Architecture Implementation
-- [ ] **Phase 1.2**: TV Playback Experience Enhancement
+### **Next Priority: Core Experience Polish** 🔴 *HIGH PRIORITY*
+- [ ] **Video Playback**: PiP verification, subtitle/audio improvements
+- [ ] **Material 3**: Design compliance audit
+- [ ] **Performance**: Image loading, scroll optimization
+- [ ] **Search**: Complete advanced filters
 
-### **Upcoming Phases** 📋
-- **Phase 2**: Complete Media Experience (Advanced Audio, Offline Content)
-- **Phase 3**: Discovery & Intelligence Features (AI Search, Personalization)  
-- **Phase 4**: Mobile Experience Polish (Foldables, Performance)
-- **Phase 5**: Connectivity & Sync Features (Multi-device, Cloud)
-- **Phase 6**: Gaming & Interactive Features *(Future/Optional)*
-- **Phase 7**: Developer Experience & Architecture *(Future/Optional)*
+### **Upcoming Priorities** 📋
+- **Platform Expansion**: Full Android TV support, tablet optimization
+- **Advanced Media**: Music playback, offline downloads, live TV
+- **Power User Features**: Chromecast, sync play, widgets
 
-**[📖 See detailed implementation plans, timelines, and checklists in ROADMAP.md](ROADMAP.md)**
+**[📖 See detailed roadmap in IMPROVEMENTS.md](IMPROVEMENTS.md)**
 
 ## 🤝 Contributing
 
