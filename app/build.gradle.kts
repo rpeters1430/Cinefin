@@ -115,8 +115,6 @@ dependencies {
 
     // SLF4J Android Implementation for Jellyfin SDK logging
     implementation(libs.slf4j.android)
-    // Silence SLF4J warnings
-    implementation("org.slf4j:slf4j-nop:2.0.17")
 
     // Networking
     implementation(libs.retrofit)
