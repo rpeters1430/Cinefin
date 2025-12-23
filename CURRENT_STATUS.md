@@ -245,7 +245,7 @@ coil = "3.3.0"
 
 ### Code Quality
 - **Total Files**: 100+ Kotlin files
-- **Test Files**: 42 test files
+- **Test Files**: 41 test files
 - **Architecture**: Clean MVVM with repository pattern
 - **DI Coverage**: Comprehensive Hilt usage
 
