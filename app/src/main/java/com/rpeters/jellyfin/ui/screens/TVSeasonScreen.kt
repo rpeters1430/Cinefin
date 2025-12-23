@@ -71,10 +71,8 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
-import com.rpeters.jellyfin.ui.components.ExpressiveFloatingToolbar
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
-import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
@@ -191,31 +189,13 @@ fun TVSeasonScreen(
                     )
                 }
                 SeasonScreenState.CONTENT -> {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        TVSeasonContent(
-                            state = state,
-                            getImageUrl = getImageUrl,
-                            getBackdropUrl = getBackdropUrl,
-                            onSeasonClick = onSeasonClick,
-                            modifier = Modifier.padding(innerPadding),
-                        )
-
-                        // Add ExpressiveFloatingToolbar for TV seasons
-                        if (state.seasons.isNotEmpty()) {
-                            ExpressiveFloatingToolbar(
-                                isVisible = state.seasons.isNotEmpty(),
-                                onPlayClick = { /* TODO: Implement play functionality */ },
-                                onQueueClick = { /* TODO: Implement queue functionality */ },
-                                onDownloadClick = { /* TODO: Implement download functionality */ },
-                                onCastClick = { /* TODO: Implement cast functionality */ },
-                                onFavoriteClick = { /* TODO: Implement favorite functionality */ },
-                                onShareClick = { /* TODO: Implement share functionality */ },
-                                onMoreClick = { /* TODO: Implement more options functionality */ },
-                                primaryAction = ToolbarAction.PLAY,
-                                modifier = Modifier.align(Alignment.BottomCenter),
-                            )
-                        }
-                    }
+                    TVSeasonContent(
+                        state = state,
+                        getImageUrl = getImageUrl,
+                        getBackdropUrl = getBackdropUrl,
+                        onSeasonClick = onSeasonClick,
+                        modifier = Modifier.padding(innerPadding),
+                    )
                 }
             }
         }

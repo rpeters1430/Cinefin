@@ -53,6 +53,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -63,6 +64,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
+import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import kotlinx.coroutines.launch
@@ -126,6 +128,7 @@ fun MusicScreen(
     var sortOrder by remember { mutableStateOf(MusicSortOrder.TITLE_ASC) }
     var viewMode by remember { mutableStateOf(MusicViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     // Get music items via unified loader and enrich with recent audio
     // Don't use remember() here - we want fresh data on every recomposition
@@ -480,6 +483,8 @@ fun MusicScreen(
                         viewMode = viewMode,
                         getImageUrl = { item -> viewModel.getImageUrl(item) },
                         onItemClick = onItemClick,
+                        onFavoriteClick = { item -> viewModel.toggleFavorite(item) },
+                        onMoreClick = { item -> ShareUtils.shareMedia(context, item) },
                         isLoadingMore = appState.isLoadingMore,
                         hasMoreItems = appState.hasMoreItems,
                         onLoadMore = { viewModel.loadMoreItems() },
@@ -496,6 +501,8 @@ private fun MusicContent(
     viewMode: MusicViewMode,
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
+    onFavoriteClick: (BaseItemDto) -> Unit,
+    onMoreClick: (BaseItemDto) -> Unit,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -518,6 +525,8 @@ private fun MusicContent(
                         onClick = { onItemClick(musicItem) },
                         playbackUtils = null, // Will be enhanced in future version
                         coroutineScope = coroutineScope,
+                        onFavoriteClick = { onFavoriteClick(musicItem) },
+                        onMoreClick = { onMoreClick(musicItem) },
                     )
                 }
 
@@ -548,6 +557,8 @@ private fun MusicContent(
                         onClick = { onItemClick(musicItem) },
                         playbackUtils = null, // Will be enhanced in future version
                         coroutineScope = coroutineScope,
+                        onFavoriteClick = { onFavoriteClick(musicItem) },
+                        onMoreClick = { onMoreClick(musicItem) },
                     )
                 }
 
@@ -572,6 +583,8 @@ private fun ExpressiveMusicCard(
     onClick: () -> Unit = {},
     playbackUtils: EnhancedPlaybackUtils? = null,
     coroutineScope: kotlinx.coroutines.CoroutineScope? = null,
+    onFavoriteClick: () -> Unit = {},
+    onMoreClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val imageUrl = getImageUrl(item) ?: ""
@@ -644,17 +657,8 @@ private fun ExpressiveMusicCard(
                 }
             }
         },
-        onFavoriteClick = {
-            // TODO: Implement favorite toggle
-            // This would typically call a ViewModel method to update favorite status
-        },
-        onMoreClick = {
-            // TODO: Show context menu with options like:
-            // - Add to queue
-            // - Download
-            // - Share
-            // - View details
-        },
+        onFavoriteClick = onFavoriteClick,
+        onMoreClick = onMoreClick,
         modifier = modifier,
     )
 }

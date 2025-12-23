@@ -56,6 +56,10 @@ fun ExpressiveFloatingToolbar(
     onMoreClick: () -> Unit,
     modifier: Modifier = Modifier,
     primaryAction: ToolbarAction = ToolbarAction.PLAY,
+    showQueueAction: Boolean = true,
+    showCastAction: Boolean = true,
+    showShareAction: Boolean = true,
+    showMoreAction: Boolean = true,
 ) {
     AnimatedVisibility(
         visible = isVisible,
@@ -137,29 +141,37 @@ fun ExpressiveFloatingToolbar(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    ExpressiveToolbarButton(
-                        icon = Icons.Default.Queue,
-                        contentDescription = "Add to Queue",
-                        onClick = onQueueClick,
-                    )
+                    if (showQueueAction) {
+                        ExpressiveToolbarButton(
+                            icon = Icons.Default.Queue,
+                            contentDescription = "Add to Queue",
+                            onClick = onQueueClick,
+                        )
+                    }
 
-                    ExpressiveToolbarButton(
-                        icon = Icons.Default.Cast,
-                        contentDescription = "Cast",
-                        onClick = onCastClick,
-                    )
+                    if (showCastAction) {
+                        ExpressiveToolbarButton(
+                            icon = Icons.Default.Cast,
+                            contentDescription = "Cast",
+                            onClick = onCastClick,
+                        )
+                    }
 
-                    ExpressiveToolbarButton(
-                        icon = Icons.Default.Share,
-                        contentDescription = "Share",
-                        onClick = onShareClick,
-                    )
+                    if (showShareAction) {
+                        ExpressiveToolbarButton(
+                            icon = Icons.Default.Share,
+                            contentDescription = "Share",
+                            onClick = onShareClick,
+                        )
+                    }
 
-                    ExpressiveToolbarButton(
-                        icon = Icons.Default.MoreVert,
-                        contentDescription = "More options",
-                        onClick = onMoreClick,
-                    )
+                    if (showMoreAction) {
+                        ExpressiveToolbarButton(
+                            icon = Icons.Default.MoreVert,
+                            contentDescription = "More options",
+                            onClick = onMoreClick,
+                        )
+                    }
                 }
             }
         }

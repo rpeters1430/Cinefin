@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,11 +23,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
+import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
+import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.viewmodel.AlbumDetailViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -40,6 +44,7 @@ fun AlbumDetailScreen(
     viewModel: AlbumDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(albumId) {
         viewModel.load(albumId)
@@ -92,18 +97,26 @@ fun AlbumDetailScreen(
                         rating = null,
                         isFavorite = track.userData?.isFavorite == true,
                         onCardClick = {
-                            // Play this specific track
-                            // TODO: Implement track playback
+                            val streamUrl = mainViewModel.getStreamUrl(track)
+                            if (streamUrl != null) {
+                                MediaPlayerUtils.playMedia(context, streamUrl, track)
+                            } else {
+                                Toast.makeText(context, "Unable to start playback", Toast.LENGTH_SHORT).show()
+                            }
                         },
                         onPlayClick = {
-                            // Play this specific track
-                            // TODO: Implement track playback
+                            val streamUrl = mainViewModel.getStreamUrl(track)
+                            if (streamUrl != null) {
+                                MediaPlayerUtils.playMedia(context, streamUrl, track)
+                            } else {
+                                Toast.makeText(context, "Unable to start playback", Toast.LENGTH_SHORT).show()
+                            }
                         },
                         onFavoriteClick = {
-                            // TODO: Toggle favorite status for this track
+                            mainViewModel.toggleFavorite(track)
                         },
                         onMoreClick = {
-                            // TODO: Show context menu for track (add to queue, download, etc)
+                            ShareUtils.shareMedia(context, track)
                         },
                     )
                 }

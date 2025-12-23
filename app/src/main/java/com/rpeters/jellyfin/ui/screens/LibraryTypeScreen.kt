@@ -52,6 +52,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -60,6 +61,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
 import com.rpeters.jellyfin.ui.components.shimmer
+import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.getItemKey
@@ -88,6 +90,7 @@ fun LibraryTypeScreen(
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
     var selectedItem by remember { mutableStateOf<BaseItemDto?>(null) }
     var showManageSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -102,6 +105,17 @@ fun LibraryTypeScreen(
         } else {
             coroutineScope.launch {
                 snackbarHostState.showSnackbar(message = managementDisabledMessage)
+            }
+        }
+    }
+
+    val handlePlay: (BaseItemDto) -> Unit = { item ->
+        val streamUrl = viewModel.getStreamUrl(item)
+        if (streamUrl != null) {
+            MediaPlayerUtils.playMedia(context, streamUrl, item)
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Unable to start playback")
             }
         }
     }
@@ -283,10 +297,7 @@ fun LibraryTypeScreen(
                     selectedItem = null
                 },
                 onPlay = {
-                    // TODO: Implement play functionality
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Play functionality coming soon")
-                    }
+                    handlePlay(item)
                 },
                 onDelete = { _, _ ->
                     viewModel.deleteItem(item) { success, message ->

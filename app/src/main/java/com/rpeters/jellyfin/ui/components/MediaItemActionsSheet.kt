@@ -153,7 +153,7 @@ fun MediaItemActionsSheet(
                     OutlinedButton(
                         onClick = {
                             onDismiss()
-                            onRefreshMetadata(false, "Not yet implemented")
+                            onRefreshMetadata(true, null)
                         },
                         modifier = Modifier.padding(vertical = Dimens.Spacing4),
                     ) {

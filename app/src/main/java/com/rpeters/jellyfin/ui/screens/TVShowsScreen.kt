@@ -60,6 +60,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,16 +71,15 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
-import com.rpeters.jellyfin.ui.components.ExpressiveFloatingToolbar
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
 import com.rpeters.jellyfin.ui.components.MediaType
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
-import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
+import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.getItemKey
@@ -150,6 +150,7 @@ fun TVShowsScreen(
     var showSortMenu by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
     var selectedItem by remember { mutableStateOf<BaseItemDto?>(null) }
     var showManageSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -164,6 +165,17 @@ fun TVShowsScreen(
         } else {
             coroutineScope.launch {
                 snackbarHostState.showSnackbar(message = managementDisabledMessage)
+            }
+        }
+    }
+
+    val handlePlay: (BaseItemDto) -> Unit = { item ->
+        val streamUrl = viewModel.getStreamUrl(item)
+        if (streamUrl != null) {
+            MediaPlayerUtils.playMedia(context, streamUrl, item)
+        } else {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Unable to start playback")
             }
         }
     }
@@ -439,34 +451,16 @@ fun TVShowsScreen(
                     }
 
                     TVShowContentState.CONTENT -> {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            TVShowsContent(
-                                tvShows = filteredAndSortedTVShows,
-                                viewMode = viewMode,
-                                getImageUrl = { item -> viewModel.getImageUrl(item) },
-                                onTVShowClick = onTVShowClick,
-                                onTVShowLongPress = handleItemLongPress,
-                                isLoadingMore = appState.isLoadingTVShows,
-                                hasMoreItems = appState.hasMoreTVShows,
-                                onLoadMore = { viewModel.loadMoreTVShows() },
-                            )
-
-                            // Add ExpressiveFloatingToolbar for TV shows
-                            if (filteredAndSortedTVShows.isNotEmpty()) {
-                                ExpressiveFloatingToolbar(
-                                    isVisible = filteredAndSortedTVShows.isNotEmpty(),
-                                    onPlayClick = { /* TODO: Implement play functionality */ },
-                                    onQueueClick = { /* TODO: Implement queue functionality */ },
-                                    onDownloadClick = { /* TODO: Implement download functionality */ },
-                                    onCastClick = { /* TODO: Implement cast functionality */ },
-                                    onFavoriteClick = { /* TODO: Implement favorite functionality */ },
-                                    onShareClick = { /* TODO: Implement share functionality */ },
-                                    onMoreClick = { /* TODO: Implement more options functionality */ },
-                                    primaryAction = ToolbarAction.PLAY,
-                                    modifier = Modifier.align(Alignment.BottomCenter),
-                                )
-                            }
-                        }
+                        TVShowsContent(
+                            tvShows = filteredAndSortedTVShows,
+                            viewMode = viewMode,
+                            getImageUrl = { item -> viewModel.getImageUrl(item) },
+                            onTVShowClick = onTVShowClick,
+                            onTVShowLongPress = handleItemLongPress,
+                            isLoadingMore = appState.isLoadingTVShows,
+                            hasMoreItems = appState.hasMoreTVShows,
+                            onLoadMore = { viewModel.loadMoreTVShows() },
+                        )
                     }
                 }
             }
@@ -490,10 +484,7 @@ fun TVShowsScreen(
                     selectedItem = null
                 },
                 onPlay = {
-                    // TODO: Implement play functionality
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Play functionality coming soon")
-                    }
+                    handlePlay(item)
                 },
                 onDelete = { _, _ ->
                     viewModel.deleteItem(item) { success, message ->

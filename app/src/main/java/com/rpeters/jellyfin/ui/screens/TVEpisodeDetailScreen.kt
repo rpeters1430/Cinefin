@@ -69,6 +69,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -83,6 +84,8 @@ import com.rpeters.jellyfin.ui.theme.Quality4K
 import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
+import com.rpeters.jellyfin.ui.utils.ShareUtils
+import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.time.format.DateTimeFormatter
@@ -106,6 +109,8 @@ fun TVEpisodeDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     var isLoading by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val mainAppViewModel: MainAppViewModel = hiltViewModel()
 
     Scaffold(
         topBar = {
@@ -217,13 +222,15 @@ fun TVEpisodeDetailScreen(
                     ExpressiveFloatingToolbar(
                         isVisible = true,
                         onPlayClick = { onPlayClick(episode) },
-                        onQueueClick = { /* TODO: Implement queue functionality */ },
+                        onQueueClick = {},
                         onDownloadClick = { onDownloadClick(episode) },
-                        onCastClick = { /* TODO: Implement cast functionality */ },
+                        onCastClick = { mainAppViewModel.sendCastPreview(episode) },
                         onFavoriteClick = { onFavoriteClick(episode) },
-                        onShareClick = { /* TODO: Implement share functionality */ },
-                        onMoreClick = { /* TODO: Implement more options functionality */ },
+                        onShareClick = { ShareUtils.shareMedia(context, episode) },
+                        onMoreClick = {},
                         primaryAction = ToolbarAction.PLAY,
+                        showQueueAction = false,
+                        showMoreAction = false,
                         modifier = Modifier.align(Alignment.BottomCenter),
                     )
                 }
