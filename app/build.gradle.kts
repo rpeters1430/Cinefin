@@ -55,8 +55,8 @@ android {
                 listOf(
                     "-Xannotation-default-target=param-property",
                     "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-                    "-opt-in=androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi"
-                )
+                    "-opt-in=androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi",
+                ),
             )
         }
     }
