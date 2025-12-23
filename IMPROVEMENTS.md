@@ -350,7 +350,7 @@ This document outlines the planned improvements and feature roadmap for the Jell
 ## 🔧 Technical Debt & Maintenance
 
 ### Code Quality
-- [ ] **Reduce MainActivity.kt size** (currently 41KB)
+- [ ] **Reduce MainActivity.kt size** (currently ~3.0KB / 3,092 bytes)
   - Extract navigation logic
   - Extract state management
   - Break into smaller components

@@ -1,7 +1,7 @@
 # Jellyfin Android Client - Current Status
 
 **Last Updated**: 2025-12-22
-**Kotlin**: 2.1.0 | **JDK**: 21 | **Compose BOM**: 2025.12.01 | **Build Status**: ✅ Passing
+**Kotlin**: 2.3.0 | **JDK**: 21 | **Compose BOM**: 2025.12.01 | **Build Status**: ✅ Passing
 
 ---
 
@@ -101,7 +101,7 @@ A modern Android client for Jellyfin media servers built with Jetpack Compose an
 ```
 app/src/main/java/com/rpeters/jellyfin/
 ├── JellyfinApplication.kt       # Application class with Hilt
-├── MainActivity.kt              # Main activity (41KB)
+├── MainActivity.kt              # Main activity (~3.0KB / 3,092 bytes)
 ├── core/                        # Core constants and utilities
 ├── data/                        # Data layer
 │   ├── models/                  # Data models
@@ -122,14 +122,14 @@ app/src/main/java/com/rpeters/jellyfin/
 ```
 
 ### Key Files
-- **HomeScreen.kt** (41KB) - Main home screen with carousel and library grid
+- **HomeScreen.kt** (~39.5KB / 40,407 bytes) - Main home screen with carousel and library grid
 - **JellyfinRepository.kt** - Primary data repository
 - **VideoPlayerScreen.kt** - Video playback screen
 - **ServerConnectionViewModel.kt** - Authentication and connection management
 - **MainAppViewModel.kt** - Main app state management
 
 ### Testing
-- 📊 **36 test files** in codebase
+- 📊 **41 test files** in codebase
 - Unit tests for ViewModels and Repository
 - Test frameworks: JUnit4, MockK, Turbine, AndroidX Test
 - Test coverage tracking with JaCoCo
@@ -140,8 +140,8 @@ app/src/main/java/com/rpeters/jellyfin/
 
 ### Versions
 ```toml
-kotlin = "2.1.0"
-ksp = "2.1.0-1.0.29"
+kotlin = "2.3.0"
+ksp = "2.3.4"
 agp = "8.13.2"
 hilt = "2.57.2"
 composeBom = "2025.12.01"
@@ -224,7 +224,7 @@ coil = "3.3.0"
   - Comment in config: `# androidx-material3-pulltorefresh = { ... }`
 
 ### Compiler Warnings
-- ⚠️ Flag not supported: `-Xannotation-default-target=param-property` (Kotlin 2.1.0 doesn't support this flag added in 2.2+)
+- ⚠️ Flag not supported: `-Xannotation-default-target=param-property` (update note if warnings persist with Kotlin 2.3.0)
 - ⚠️ Some experimental Coroutines APIs used (needs opt-in annotations)
 
 ### Platform Support
@@ -245,7 +245,7 @@ coil = "3.3.0"
 
 ### Code Quality
 - **Total Files**: 100+ Kotlin files
-- **Test Files**: 36 test files
+- **Test Files**: 41 test files
 - **Architecture**: Clean MVVM with repository pattern
 - **DI Coverage**: Comprehensive Hilt usage
 
