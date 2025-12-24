@@ -26,6 +26,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -88,7 +89,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         // Assert
-        verify { sessionManager.addSessionManagerListener(any(), CastSession::class.java) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(any(), any()) }
         assertFalse(castManager.castState.value.isAvailable)
         assertFalse(castManager.castState.value.isConnected)
     }
@@ -103,7 +104,7 @@ class CastManagerTest {
         castManager.release()
 
         // Assert
-        verify { sessionManager.removeSessionManagerListener(any(), CastSession::class.java) }
+        verify { sessionManager.removeSessionManagerListener<CastSession>(any(), any()) }
         assertNull(castManager.getCastPlayer())
     }
 
@@ -121,7 +122,7 @@ class CastManagerTest {
 
         // Assert - Only one listener should be registered (old ones are removed/replaced)
         // The cancellation prevents duplicate listeners
-        verify(atLeast = 1) { sessionManager.addSessionManagerListener(any(), CastSession::class.java) }
+        verify(atLeast = 1) { sessionManager.addSessionManagerListener<CastSession>(any(), any()) }
     }
 
     @Test
@@ -136,7 +137,7 @@ class CastManagerTest {
 
         // Get the session listener that was registered
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener(capture(listenerSlot), CastSession::class.java) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
 
         // Act
         listenerSlot.captured.onSessionStarted(castSession, "session123")
@@ -154,7 +155,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener(capture(listenerSlot), CastSession::class.java) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
 
         // Start a session first
         every { castSession.castDevice?.friendlyName } returns "TV"
@@ -182,7 +183,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener(capture(listenerSlot), CastSession::class.java) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
 
         // Act
         listenerSlot.captured.onSessionResumed(castSession, false)
@@ -200,7 +201,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener(capture(listenerSlot), CastSession::class.java) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
 
         // Start session first
         every { castSession.castDevice?.friendlyName } returns "TV"
@@ -229,7 +230,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener(capture(listenerSlot), CastSession::class.java) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
 
         // Act
         listenerSlot.captured.onSessionStarted(castSession, "session123")
@@ -310,9 +311,9 @@ class CastManagerTest {
         every { sessionManager.currentCastSession } returns castSession
         every { castSession.isConnected } returns true
         every { castSession.remoteMediaClient } returns remoteMediaClient
-        every { remoteMediaClient.load(any()) } returns mockk(relaxed = true)
-        every { streamRepository.getBackdropUrl(item) } returns "https://server.com/backdrop.jpg"
-        every { streamRepository.getImageUrl(any(), any(), any()) } returns "https://server.com/poster.jpg"
+        every { remoteMediaClient.load(any<com.google.android.gms.cast.MediaInfo>()) } returns mockk(relaxed = true)
+        every { streamRepository.getBackdropUrl(any<BaseItemDto>()) } returns "https://server.com/backdrop.jpg"
+        every { streamRepository.getImageUrl(any<String>(), any(), any()) } returns "https://server.com/poster.jpg"
 
         castManager.initialize()
         advanceUntilIdle()
@@ -321,7 +322,7 @@ class CastManagerTest {
         castManager.startCasting(mediaItem, item)
 
         // Assert
-        verify { remoteMediaClient.load(any()) }
+        verify { remoteMediaClient.load(any<com.google.android.gms.cast.MediaInfo>()) }
         assertTrue(castManager.castState.value.isCasting)
         assertTrue(castManager.castState.value.isRemotePlaying)
     }
@@ -336,7 +337,7 @@ class CastManagerTest {
         every { sessionManager.currentCastSession } returns castSession
         every { castSession.isConnected } returns true
         every { castSession.remoteMediaClient } returns remoteMediaClient
-        every { remoteMediaClient.load(any()) } returns mockk(relaxed = true)
+        every { remoteMediaClient.load(any<com.google.android.gms.cast.MediaInfo>()) } returns mockk(relaxed = true)
 
         castManager.initialize()
         advanceUntilIdle()
@@ -345,7 +346,7 @@ class CastManagerTest {
         castManager.loadPreview(item, imageUrl, backdropUrl)
 
         // Assert
-        verify { remoteMediaClient.load(any()) }
+        verify { remoteMediaClient.load(any<com.google.android.gms.cast.MediaInfo>()) }
         assertTrue(castManager.castState.value.isCasting)
         assertFalse(castManager.castState.value.isRemotePlaying)
     }
@@ -363,7 +364,7 @@ class CastManagerTest {
         castManager.loadPreview(item, "https://server.com/image.jpg", null)
 
         // Assert
-        verify(exactly = 0) { remoteMediaClient.load(any()) }
+        verify(exactly = 0) { remoteMediaClient.load(any<com.google.android.gms.cast.MediaInfo>()) }
     }
 
     @Test
@@ -404,7 +405,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener(capture(listenerSlot), CastSession::class.java) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
 
         // Act
         listenerSlot.captured.onSessionStarted(castSession, sessionId)
@@ -421,7 +422,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener(capture(listenerSlot), CastSession::class.java) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
 
         // Act
         listenerSlot.captured.onSessionEnded(castSession, 0)
@@ -442,7 +443,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener(capture(listenerSlot), CastSession::class.java) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
 
         // Act
         listenerSlot.captured.onSessionResumed(castSession, false)
@@ -466,6 +467,7 @@ class CastManagerTest {
         return BaseItemDto(
             id = id,
             name = name,
+            type = BaseItemKind.MOVIE,
             overview = overview,
             productionYear = productionYear,
             imageTags = imageTags,

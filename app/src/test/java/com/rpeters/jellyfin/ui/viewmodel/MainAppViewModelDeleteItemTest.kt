@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
+import android.content.Context
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
@@ -63,6 +64,9 @@ class MainAppViewModelDeleteItemTest {
     @MockK
     private lateinit var castManager: CastManager
 
+    @MockK
+    private lateinit var context: Context
+
     private lateinit var viewModel: MainAppViewModel
     private val dispatcher = UnconfinedTestDispatcher()
 
@@ -83,6 +87,7 @@ class MainAppViewModelDeleteItemTest {
         coEvery { repository.isConnected } returns MutableStateFlow(false)
 
         viewModel = MainAppViewModel(
+            context = context,
             repository = repository,
             authRepository = authRepository,
             mediaRepository = mediaRepository,

@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
+import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
@@ -60,6 +61,9 @@ class MainAppViewModelHomeVideosTest {
     @MockK
     private lateinit var castManager: com.rpeters.jellyfin.ui.player.CastManager
 
+    @MockK
+    private lateinit var context: Context
+
     private lateinit var viewModel: MainAppViewModel
     private val dispatcher = StandardTestDispatcher()
 
@@ -74,14 +78,15 @@ class MainAppViewModelHomeVideosTest {
         every { repository.isConnected } returns MutableStateFlow(true)
 
         viewModel = MainAppViewModel(
-            repository,
-            authRepository,
-            mediaRepository,
-            userRepository,
-            streamRepository,
-            searchRepository,
-            credentialManager,
-            castManager,
+            context = context,
+            repository = repository,
+            authRepository = authRepository,
+            mediaRepository = mediaRepository,
+            userRepository = userRepository,
+            streamRepository = streamRepository,
+            searchRepository = searchRepository,
+            credentialManager = credentialManager,
+            castManager = castManager,
         )
     }
 
