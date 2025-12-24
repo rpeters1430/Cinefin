@@ -14,7 +14,7 @@ android {
     defaultConfig {
         testInstrumentationRunnerArguments += mapOf(
             "clearPackageData" to "true",
-            "useTestStorageService" to "true"
+            "useTestStorageService" to "true",
         )
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26 // Android 8.0+ (was 31) - Broader device compatibility
