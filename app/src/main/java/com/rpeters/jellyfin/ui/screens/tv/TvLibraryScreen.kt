@@ -35,6 +35,13 @@ fun TvLibraryScreen(
     val appState by viewModel.appState.collectAsState()
     val library = appState.libraries.firstOrNull { it.id?.toString() == libraryId }
 
+    // Ensure libraries are loaded first
+    androidx.compose.runtime.LaunchedEffect(appState.libraries, appState.isLoading) {
+        if (appState.libraries.isEmpty() && !appState.isLoading) {
+            viewModel.loadInitialData()
+        }
+    }
+
     // Choose items based on library type - use itemsByLibrary for library-specific data
     val items = when (library?.collectionType) {
         org.jellyfin.sdk.model.api.CollectionType.MOVIES ->

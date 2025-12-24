@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.android) // Required when using android.newDsl=false
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.dagger.hilt.android)
@@ -12,6 +12,10 @@ android {
     compileSdk = libs.versions.sdk.get().toInt()
 
     defaultConfig {
+        testInstrumentationRunnerArguments += mapOf(
+            "clearPackageData" to "true",
+            "useTestStorageService" to "true"
+        )
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26 // Android 8.0+ (was 31) - Broader device compatibility
         targetSdk = 35 // Use stable SDK 35 for runtime, keep compileSdk at 36
@@ -21,10 +25,6 @@ android {
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
         // Test configuration
-        testInstrumentationRunnerArguments += mapOf(
-            "clearPackageData" to "true",
-            "useTestStorageService" to "true",
-        )
     }
 
     buildTypes {
@@ -67,6 +67,13 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+    }
+
+    packaging {
+        resources {
+            // Exclude duplicate OSGI manifest files from okhttp and jspecify
+            excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+        }
     }
 }
 

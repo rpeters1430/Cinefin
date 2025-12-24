@@ -61,7 +61,16 @@ object ImageLoadingOptimizer {
                 val request = chain.request().newBuilder()
                     .header("Accept", "image/webp,image/avif,image/*,*/*;q=0.8")
                     .build()
-                chain.proceed(request)
+                val response = chain.proceed(request)
+
+                // Cache 404 responses to prevent repeated failed requests for missing images
+                if (response.code == 404) {
+                    response.newBuilder()
+                        .header("Cache-Control", "max-age=3600") // Cache 404s for 1 hour
+                        .build()
+                } else {
+                    response
+                }
             }
             .build()
 
