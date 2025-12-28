@@ -64,7 +64,13 @@ fun TvLibraryScreen(
     }
 
     // Trigger on-demand loading based on library type
-    androidx.compose.runtime.LaunchedEffect(libraryId, library?.collectionType) {
+    // Only trigger after libraries are loaded to avoid race condition
+    androidx.compose.runtime.LaunchedEffect(libraryId, library?.collectionType, appState.libraries) {
+        // Wait for libraries to be loaded before attempting to load library content
+        if (appState.libraries.isEmpty()) {
+            return@LaunchedEffect
+        }
+
         library?.let { lib ->
             when (lib.collectionType) {
                 org.jellyfin.sdk.model.api.CollectionType.MOVIES -> {

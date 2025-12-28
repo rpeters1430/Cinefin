@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,17 +33,16 @@ import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.HighQuality
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +61,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -80,7 +81,6 @@ import com.rpeters.jellyfin.ui.theme.getContentTypeColor
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
-import java.util.Locale
 import kotlin.math.roundToInt
 
 private val GENRE_BADGE_MAX_WIDTH = 100.dp
@@ -101,180 +101,275 @@ fun MovieDetailScreen(
 ) {
     var isFavorite by remember { mutableStateOf(movie.userData?.isFavorite == true) }
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.padding(end = 16.dp),
-                    ) {
-                        Text(
-                            text = movie.name ?: "Movie Details",
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        )
-                    }
-                },
-                navigationIcon = {
-                    Surface(
-                        onClick = onBackClick,
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surface,
-                        shadowElevation = 4.dp,
-                        modifier = Modifier.padding(start = 8.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(id = R.string.navigate_up),
-                            modifier = Modifier.padding(12.dp),
-                        )
-                    }
-                },
-                actions = {
-                    Surface(
-                        onClick = {
-                            isFavorite = !isFavorite
-                            onFavoriteClick(movie)
-                        },
-                        shape = CircleShape,
-                        color = if (isFavorite) MovieRed.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
-                        shadowElevation = if (isFavorite) 8.dp else 4.dp,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    ) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                            tint = if (isFavorite) MovieRed else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(12.dp),
-                        )
-                    }
-                    Surface(
-                        onClick = { onShareClick(movie) },
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surface,
-                        shadowElevation = 4.dp,
-                        modifier = Modifier.padding(end = 8.dp, start = 4.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = "Share",
-                            modifier = Modifier.padding(12.dp),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                ),
-            )
-        },
-        floatingActionButton = {
-            val playButtonScale by animateFloatAsState(
-                targetValue = 1.0f,
-                animationSpec = MotionTokens.expressiveEnter,
-                label = "play_button_scale",
-            )
-
-            Surface(
-                onClick = { onPlayClick(movie) },
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.primary,
-                shadowElevation = 16.dp,
-                modifier = Modifier.graphicsLayer {
-                    scaleX = playButtonScale
-                    scaleY = playButtonScale
-                },
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    Box(modifier = modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            // Full-bleed Hero Section - Google TV style
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(600.dp),
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Play",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(24.dp),
+                    // Backdrop Image - Full bleed
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(getBackdropUrl(movie))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "${movie.name} backdrop",
+                        loading = {
+                            ShimmerBox(
+                                modifier = Modifier.fillMaxSize(),
+                                cornerRadius = 0,
+                            )
+                        },
+                        error = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.linearGradient(
+                                            colors = listOf(
+                                                JellyfinBlue80.copy(alpha = 0.3f),
+                                                JellyfinTeal80.copy(alpha = 0.2f),
+                                            ),
+                                        ),
+                                    ),
+                            )
+                        },
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
                     )
-                    Text(
-                        text = "Play Movie",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary,
+
+                    // Gradient Scrim - Darker at bottom
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Black.copy(alpha = 0.2f),
+                                        Color.Black.copy(alpha = 0.4f),
+                                        Color.Black.copy(alpha = 0.7f),
+                                        Color.Black.copy(alpha = 0.95f),
+                                    ),
+                                    startY = 0f,
+                                    endY = Float.POSITIVE_INFINITY,
+                                ),
+                            ),
                     )
+
+                    // Content overlaid on bottom portion
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp)
+                            .padding(bottom = 32.dp),
+                        verticalArrangement = Arrangement.Bottom,
+                    ) {
+                        // Title
+                        Text(
+                            text = movie.name ?: stringResource(R.string.unknown),
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Metadata Row (Rating, Year, Runtime)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            // Rating with star icon
+                            movie.communityRating?.let { rating ->
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = null,
+                                        tint = RatingGold,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Text(
+                                        text = "${(rating * 10).roundToInt()}%",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                    )
+                                }
+                            }
+
+                            // Official Rating Badge (if available)
+                            movie.officialRating?.let { rating ->
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color.White.copy(alpha = 0.2f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.4f)),
+                                ) {
+                                    Text(
+                                        text = rating,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    )
+                                }
+                            }
+
+                            // Year
+                            movie.productionYear?.let { year ->
+                                Text(
+                                    text = year.toString(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.White.copy(alpha = 0.9f),
+                                )
+                            }
+
+                            // Runtime
+                            movie.runTimeTicks?.let { ticks ->
+                                val minutes = (ticks / 10_000_000 / 60).toInt()
+                                val hours = minutes / 60
+                                val remainingMinutes = minutes % 60
+                                val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
+
+                                Text(
+                                    text = runtime,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = Color.White.copy(alpha = 0.9f),
+                                )
+                            }
+                        }
+
+                        // Overview
+                        movie.overview?.let { overview ->
+                            if (overview.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = overview,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    maxLines = 3,
+                                    overflow = TextOverflow.Ellipsis,
+                                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
+                                )
+                            }
+                        }
+
+                        // Playback capability badge
+                        playbackAnalysis?.let { analysis ->
+                            Spacer(modifier = Modifier.height(12.dp))
+                            PlaybackStatusBadge(analysis = analysis)
+                        }
+                    }
                 }
             }
-        },
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            // Expressive Movie Hero Section
+
+            // Play Button and Action Row
             item {
-                ExpressiveMovieHero(
-                    movie = movie,
-                    getBackdropUrl = getBackdropUrl,
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 24.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    // Primary Play Button
+                    Surface(
+                        onClick = { onPlayClick(movie) },
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Play",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(28.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Play Movie",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        }
+                    }
+
+                    // Action Buttons Row (Favorite, Watched, etc.)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                    ) {
+                        ActionButton(
+                            icon = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            label = if (isFavorite) "Favorited" else "Favorite",
+                            onClick = {
+                                isFavorite = !isFavorite
+                                onFavoriteClick(movie)
+                            },
+                        )
+                        ActionButton(
+                            icon = Icons.Default.Share,
+                            label = "Share",
+                            onClick = { onShareClick(movie) },
+                        )
+                    }
+                }
             }
 
-            // Expressive Movie Info Card
+            // Movie Info Card
             item {
                 ExpressiveMovieInfoCard(
                     movie = movie,
                     getImageUrl = getImageUrl,
-                    playbackAnalysis = playbackAnalysis,
                 )
             }
 
-            // Expressive Overview Section
-            movie.overview?.let { overview ->
+            // Genres Section
+            movie.genres?.takeIf { it.isNotEmpty() }?.let { genres ->
                 item {
-                    AnimatedContent(
-                        targetState = overview.isNotBlank(),
-                        transitionSpec = {
-                            fadeIn() + slideInVertically { it / 2 } togetherWith fadeOut()
-                        },
-                        label = "overview_animation",
-                    ) { hasOverview ->
-                        if (hasOverview) {
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp),
-                                shape = RoundedCornerShape(24.dp),
-                                color = MaterialTheme.colorScheme.surfaceContainer,
-                                shadowElevation = 8.dp,
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(20.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .padding(top = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(
+                            text = "Genres",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            items(genres, key = { it }) { genre ->
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = JellyfinTeal80.copy(alpha = 0.15f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, JellyfinTeal80.copy(alpha = 0.3f)),
                                 ) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                    ) {
-                                        Text(
-                                            text = "Overview",
-                                            style = MaterialTheme.typography.titleLarge,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                        )
-                                    }
                                     Text(
-                                        text = overview,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3,
-                                        color = MaterialTheme.colorScheme.onSurface,
+                                        text = genre,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = JellyfinTeal80,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                                     )
                                 }
                             }
@@ -283,49 +378,33 @@ fun MovieDetailScreen(
                 }
             }
 
-            // Related Movies Section with Expressive Cards
+            // Related Movies Section
             if (relatedItems.isNotEmpty()) {
                 item {
                     Column(
-                        modifier = Modifier.padding(horizontal = 16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .padding(top = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
-                        ) {
-                            Text(
-                                text = "You might also like",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                            )
-                        }
+                        Text(
+                            text = "More Like This",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
 
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            contentPadding = PaddingValues(horizontal = 4.dp),
                         ) {
                             items(relatedItems.take(10), key = { it.id ?: it.name.hashCode() }) { relatedMovie ->
-                                val scale by animateFloatAsState(
-                                    targetValue = 1.0f,
-                                    animationSpec = MotionTokens.expressiveEnter,
-                                    label = "related_movie_scale",
-                                )
-
                                 ExpressiveMediaCard(
                                     title = relatedMovie.name ?: stringResource(id = R.string.unknown),
                                     subtitle = relatedMovie.productionYear?.toString() ?: "",
                                     imageUrl = getImageUrl(relatedMovie) ?: "",
                                     rating = relatedMovie.communityRating?.toFloat(),
                                     onCardClick = { /* Navigate to related movie */ },
-                                    modifier = Modifier
-                                        .width(160.dp)
-                                        .graphicsLayer {
-                                            scaleX = scale
-                                            scaleY = scale
-                                        },
+                                    modifier = Modifier.width(140.dp),
                                 )
                             }
                         }
@@ -333,140 +412,82 @@ fun MovieDetailScreen(
                 }
             }
 
-            // Bottom spacing for FAB
+            // Bottom spacing
             item {
-                Spacer(modifier = Modifier.height(80.dp))
+                Spacer(modifier = Modifier.height(40.dp))
+            }
+        }
+
+        // Floating Action Buttons - Overlaid on top
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 12.dp)
+                .zIndex(10f),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            // Back Button
+            Surface(
+                onClick = onBackClick,
+                shape = CircleShape,
+                color = Color.Black.copy(alpha = 0.5f),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(id = R.string.navigate_up),
+                    tint = Color.White,
+                    modifier = Modifier.padding(12.dp).size(24.dp),
+                )
+            }
+
+            // More Options Button
+            Surface(
+                onClick = { /* Show more options */ },
+                shape = CircleShape,
+                color = Color.Black.copy(alpha = 0.5f),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "More options",
+                    tint = Color.White,
+                    modifier = Modifier.padding(12.dp).size(24.dp),
+                )
             }
         }
     }
 }
 
-// Expressive Movie Hero Component
 @Composable
-private fun ExpressiveMovieHero(
-    movie: BaseItemDto,
-    getBackdropUrl: (BaseItemDto) -> String?,
+private fun ActionButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val heroScale by animateFloatAsState(
-        targetValue = 1.0f,
-        animationSpec = MotionTokens.expressiveEnter,
-        label = "hero_scale",
-    )
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(320.dp)
-            .graphicsLayer {
-                scaleX = heroScale
-                scaleY = heroScale
-            },
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = modifier,
     ) {
-        // Enhanced backdrop with dynamic colors
-        SubcomposeAsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(getBackdropUrl(movie))
-                .crossfade(true)
-                .build(),
-            contentDescription = "${movie.name} backdrop",
-            loading = {
-                ShimmerBox(
-                    modifier = Modifier.fillMaxSize(),
-                    cornerRadius = 28,
-                )
-            },
-            error = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    JellyfinBlue80.copy(alpha = 0.3f),
-                                    JellyfinTeal80.copy(alpha = 0.2f),
-                                ),
-                            ),
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "No backdrop",
-                            modifier = Modifier
-                                .size(80.dp)
-                                .padding(20.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-            },
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(28.dp)),
-        )
-
-        // Expressive gradient overlay
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f),
-                        ),
-                        radius = 800f,
-                    ),
-                )
-                .clip(RoundedCornerShape(28.dp)),
-        )
-
-        // Rating badge with enhanced design
-        movie.communityRating?.let { rating ->
-            val ratingScale by animateFloatAsState(
-                targetValue = 1.0f,
-                animationSpec = MotionTokens.expressiveEnter,
-                label = "rating_scale",
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
             )
-
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(20.dp)
-                    .graphicsLayer {
-                        scaleX = ratingScale
-                        scaleY = ratingScale
-                    },
-                shape = RoundedCornerShape(20.dp),
-                color = RatingGold.copy(alpha = 0.95f),
-                shadowElevation = 12.dp,
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Text(
-                        text = String.format(java.util.Locale.ROOT, "%.1f", rating),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                    )
-                }
-            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+            )
         }
     }
 }
@@ -476,201 +497,69 @@ private fun ExpressiveMovieHero(
 private fun ExpressiveMovieInfoCard(
     movie: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
-    playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     modifier: Modifier = Modifier,
 ) {
-    val cardScale by animateFloatAsState(
-        targetValue = 1.0f,
-        animationSpec = MotionTokens.expressiveEnter,
-        label = "info_card_scale",
-    )
-
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .graphicsLayer {
-                scaleX = cardScale
-                scaleY = cardScale
-            },
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 16.dp,
+            .padding(horizontal = 20.dp)
+            .padding(top = 16.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Enhanced Movie Poster
-            SubcomposeAsyncImage(
-                model = getImageUrl(movie),
-                contentDescription = "${movie.name} poster",
-                loading = {
-                    ExpressiveLoadingCard(
-                        modifier = Modifier
-                            .width(140.dp)
-                            .aspectRatio(2f / 3f),
-                    )
-                },
-                error = {
-                    Surface(
-                        modifier = Modifier
-                            .width(140.dp)
-                            .aspectRatio(2f / 3f),
-                        shape = RoundedCornerShape(16.dp),
-                        color = getContentTypeColor(movie.type?.toString()).copy(alpha = 0.15f),
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = "No poster",
-                                modifier = Modifier.size(40.dp),
-                                tint = getContentTypeColor(movie.type?.toString()),
-                            )
-                        }
-                    }
-                },
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .width(140.dp)
-                    .aspectRatio(2f / 3f)
-                    .clip(RoundedCornerShape(16.dp)),
+            Text(
+                text = "Details",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
             )
 
-            // Movie Details with Expressive styling
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // Title with dynamic emphasis
-                Text(
-                    text = movie.name ?: stringResource(R.string.unknown),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+            // Media info with resolution and codecs
+            movie.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
+                val videoStream = streams.firstOrNull { it.type == MediaStreamType.VIDEO }
+                val audioStream = streams.firstOrNull { it.type == MediaStreamType.AUDIO }
+                val resolution = getMovieResolution(videoStream, stringResource(id = R.string.unknown))
 
-                // Playback capability badge
-                playbackAnalysis?.let { analysis ->
-                    PlaybackStatusBadge(analysis = analysis)
-                }
-
-                // Production year and runtime with enhanced styling
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    movie.productionYear?.let { year ->
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = JellyfinBlue80.copy(alpha = 0.15f),
-                        ) {
-                            Text(
-                                text = year.toString(),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = JellyfinBlue80,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            )
-                        }
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    videoStream?.let { stream ->
+                        ExpressiveInfoRow(
+                            label = stringResource(id = R.string.video),
+                            value = listOfNotNull(resolution, stream.codec?.uppercase()).joinToString(" • "),
+                            icon = Icons.Default.HighQuality,
+                        )
                     }
 
-                    movie.runTimeTicks?.let { ticks ->
-                        val minutes = (ticks / 10_000_000 / 60).toInt()
-                        val hours = minutes / 60
-                        val remainingMinutes = minutes % 60
-                        val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
-
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = MusicGreen.copy(alpha = 0.15f),
-                        ) {
-                            Text(
-                                text = runtime,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MusicGreen,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            )
-                        }
+                    audioStream?.codec?.let { codec ->
+                        ExpressiveInfoRow(
+                            label = stringResource(id = R.string.audio),
+                            value = codec.uppercase(),
+                            icon = Icons.Default.Audiotrack,
+                        )
                     }
                 }
+            }
 
-                // Genres with colorful design
-                movie.genres?.takeIf { it.isNotEmpty() }?.let { genres ->
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(genres.take(3), key = { it }) { genre ->
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = JellyfinTeal80.copy(alpha = 0.15f),
-                            ) {
-                                Text(
-                                    text = genre,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = JellyfinTeal80,
-                                    fontWeight = FontWeight.SemiBold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                                        .widthIn(max = GENRE_BADGE_MAX_WIDTH),
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Media info with resolution and codecs
-                movie.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
-                    val videoStream = streams.firstOrNull { it.type == MediaStreamType.VIDEO }
-                    val audioStream = streams.firstOrNull { it.type == MediaStreamType.AUDIO }
-                    val resolution = getMovieResolution(videoStream, stringResource(id = R.string.unknown))
-
+            // Play progress
+            movie.userData?.playedPercentage?.let { progress ->
+                if (progress > 0.0) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        videoStream?.let { stream ->
-                            ExpressiveInfoRow(
-                                label = stringResource(id = R.string.video),
-                                value = listOfNotNull(resolution, stream.codec?.uppercase()).joinToString(" \u2022 "),
-                                icon = Icons.Default.HighQuality,
-                            )
-                        }
-
-                        audioStream?.codec?.let { codec ->
-                            ExpressiveInfoRow(
-                                label = stringResource(id = R.string.audio),
-                                value = codec.uppercase(),
-                                icon = Icons.Default.Audiotrack,
-                            )
-                        }
-                    }
-                }
-
-                // Play progress with enhanced styling
-                movie.userData?.playedPercentage?.let { progress ->
-                    if (progress > 0.0) {
-                        Column(modifier = Modifier.padding(top = 12.dp)) {
-                            Text(
-                                text = "${progress.roundToInt()}% watched",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                                fontWeight = FontWeight.Medium,
-                            )
-                            LinearProgressIndicator(
-                                progress = { (progress / 100.0).toFloat() },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp)),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                            )
-                        }
+                        Text(
+                            text = "${progress.roundToInt()}% watched",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        LinearProgressIndicator(
+                            progress = { (progress / 100.0).toFloat() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                        )
                     }
                 }
             }
@@ -687,21 +576,19 @@ private fun ExpressiveInfoRow(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.secondaryContainer,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(40.dp),
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier
-                    .size(16.dp)
-                    .padding(4.dp),
+                modifier = Modifier.padding(10.dp),
             )
         }
 
@@ -710,13 +597,13 @@ private fun ExpressiveInfoRow(
         ) {
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium,
             )
             Text(
                 text = value,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
             )

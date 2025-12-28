@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -58,6 +59,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -79,6 +81,7 @@ import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
+import kotlin.math.roundToInt
 
 @Composable
 fun TVSeasonScreen(
@@ -105,56 +108,7 @@ fun TVSeasonScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = state.seriesDetails?.name ?: stringResource(id = R.string.tv_show),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(id = R.string.navigate_up),
-                        )
-                    }
-                },
-                actions = {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .padding(8.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 2.dp,
-                        )
-                    } else {
-                        IconButton(
-                            onClick = { viewModel.refresh() },
-                            enabled = !state.isLoading,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = stringResource(id = R.string.refresh),
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-            )
-        },
-        modifier = modifier,
-    ) { innerPadding ->
+    Box(modifier = modifier.fillMaxSize()) {
         AnimatedContent(
             targetState = when {
                 state.isLoading && state.seriesDetails == null -> SeasonScreenState.LOADING
@@ -198,7 +152,52 @@ fun TVSeasonScreen(
                         getBackdropUrl = getBackdropUrl,
                         onSeasonClick = onSeasonClick,
                         onSeriesClick = onSeriesClick,
-                        modifier = Modifier.padding(innerPadding),
+                    )
+                }
+            }
+        }
+
+        // Floating Back Button - Overlaid on top
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 12.dp)
+                .zIndex(10f),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            // Back Button
+            Surface(
+                onClick = onBackClick,
+                shape = CircleShape,
+                color = Color.Black.copy(alpha = 0.5f),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(id = R.string.navigate_up),
+                    tint = Color.White,
+                    modifier = Modifier.padding(12.dp).size(24.dp),
+                )
+            }
+
+            // Refresh Button
+            Surface(
+                onClick = { viewModel.refresh() },
+                shape = CircleShape,
+                color = Color.Black.copy(alpha = 0.5f),
+            ) {
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.padding(12.dp).size(24.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = stringResource(id = R.string.refresh),
+                        tint = Color.White,
+                        modifier = Modifier.padding(12.dp).size(24.dp),
                     )
                 }
             }
@@ -217,10 +216,8 @@ private fun TVSeasonContent(
 ) {
     LazyColumn(
         modifier = modifier,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        // Series Details Header
+        // Series Details Header - Full bleed, no padding
         state.seriesDetails?.let { series ->
             item {
                 SeriesDetailsHeader(
@@ -238,6 +235,7 @@ private fun TVSeasonContent(
                     text = "Seasons",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
                 )
             }
 
@@ -246,6 +244,7 @@ private fun TVSeasonContent(
                     season = season,
                     getImageUrl = getImageUrl,
                     onClick = { onSeasonClick(it) },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
         } else {
@@ -253,7 +252,8 @@ private fun TVSeasonContent(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp),
+                        .height(200.dp)
+                        .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -273,19 +273,23 @@ private fun TVSeasonContent(
                 typeName in listOf("Director", "Producer", "Writer", "Executive Producer")
             }
 
-            item {
-                CastAndCrewSection(
-                    cast = cast,
-                    crew = crew,
-                    getImageUrl = { id, tag ->
-                        val personItem = BaseItemDto(
-                            id = id,
-                            type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
-                            imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) },
-                        )
-                        getImageUrl(personItem)
-                    },
-                )
+            // Only show the section if we have cast or crew after filtering
+            if (cast.isNotEmpty() || crew.isNotEmpty()) {
+                item {
+                    CastAndCrewSection(
+                        cast = cast,
+                        crew = crew,
+                        getImageUrl = { id, tag ->
+                            val personItem = BaseItemDto(
+                                id = id,
+                                type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
+                                imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) },
+                            )
+                            getImageUrl(personItem)
+                        },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
+                    )
+                }
             }
         }
 
@@ -297,8 +301,14 @@ private fun TVSeasonContent(
                     isLoading = state.isSimilarSeriesLoading,
                     getImageUrl = getImageUrl,
                     onSeriesClick = onSeriesClick,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
                 )
             }
+        }
+
+        // Bottom spacing
+        item {
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
@@ -310,160 +320,170 @@ private fun SeriesDetailsHeader(
     getBackdropUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
 ) {
-    val headerScale by animateFloatAsState(
-        targetValue = 1.0f,
-        animationSpec = MotionTokens.expressiveEnter,
-        label = "header_scale",
-    )
-
-    ElevatedCard(
+    // Full-bleed hero section - Google TV style
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer {
-                scaleX = headerScale
-                scaleY = headerScale
-            },
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 12.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-        ),
+            .height(500.dp),
     ) {
-        Box {
-            // Background Image with enhanced loading
-            SubcomposeAsyncImage(
-                model = getBackdropUrl(series).takeIf { !it.isNullOrBlank() } ?: getImageUrl(series),
-                contentDescription = series.name,
-                loading = {
-                    ExpressiveLoadingCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(240.dp),
-                        showTitle = false,
-                        showSubtitle = false,
-                        imageHeight = 240.dp,
-                    )
-                },
-                error = {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(240.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Tv,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(64.dp),
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = series.name ?: stringResource(R.string.unknown),
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-                },
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(240.dp)
-                    .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
-            )
-
-            // Enhanced Gradient Overlay for better text readability
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Black.copy(alpha = 0.3f),
-                                Color.Black.copy(alpha = 0.6f),
-                                Color.Black.copy(alpha = 0.9f),
-                            ),
-                            startY = 0f,
-                            endY = Float.POSITIVE_INFINITY,
-                        ),
-                    ),
-            )
-
-            // Content
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.Bottom,
-            ) {
-                Text(
-                    text = series.name ?: stringResource(R.string.unknown),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
+        // Background Image - Full bleed
+        SubcomposeAsyncImage(
+            model = getBackdropUrl(series).takeIf { !it.isNullOrBlank() } ?: getImageUrl(series),
+            contentDescription = series.name,
+            loading = {
+                ExpressiveLoadingCard(
+                    modifier = Modifier.fillMaxSize(),
+                    showTitle = false,
+                    showSubtitle = false,
+                    imageHeight = 500.dp,
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+            },
+            error = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                    MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f),
+                                ),
+                            ),
+                        ),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    series.productionYear?.let { year ->
-                        Text(
-                            text = year.toString(),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White.copy(alpha = 0.9f),
+                    Icon(
+                        imageVector = Icons.Default.Tv,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(80.dp),
+                    )
+                }
+            },
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        // Gradient Scrim - Darker at bottom for text readability
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.2f),
+                            Color.Black.copy(alpha = 0.4f),
+                            Color.Black.copy(alpha = 0.7f),
+                            Color.Black.copy(alpha = 0.95f),
+                        ),
+                        startY = 0f,
+                        endY = Float.POSITIVE_INFINITY,
+                    ),
+                ),
+        )
+
+        // Content overlaid on bottom portion
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.Bottom,
+        ) {
+            // Title
+            Text(
+                text = series.name ?: stringResource(R.string.unknown),
+                style = MaterialTheme.typography.displaySmall,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Metadata Row
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Rating with star icon
+                series.communityRating?.let { rating ->
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFD700), // Gold color
+                            modifier = Modifier.size(20.dp),
                         )
-                    }
-
-                    series.communityRating?.let { rating ->
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = Color.Yellow,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            Text(
-                                text = String.format(java.util.Locale.ROOT, "%.1f", rating),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.9f),
-                            )
-                        }
-                    }
-
-                    series.childCount?.let { count ->
                         Text(
-                            text = "$count episodes",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.9f),
+                            text = "${(rating * 10).roundToInt()}%",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
                         )
                     }
                 }
 
-                series.overview?.let { overview ->
-                    if (overview.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                // Official Rating Badge (if available)
+                series.officialRating?.let { rating ->
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color.White.copy(alpha = 0.2f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.4f)),
+                    ) {
                         Text(
-                            text = overview,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.8f),
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
+                            text = rating,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     }
+                }
+
+                // Year or Year Range
+                series.productionYear?.let { year ->
+                    val endYear = series.endDate?.year
+                    val yearText = if (endYear != null && endYear != year) {
+                        "$year - $endYear"
+                    } else if (series.status == "Continuing") {
+                        "$year - Present"
+                    } else {
+                        year.toString()
+                    }
+                    Text(
+                        text = yearText,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White.copy(alpha = 0.9f),
+                    )
+                }
+
+                // Episode count
+                series.childCount?.let { count ->
+                    Text(
+                        text = "$count episodes",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White.copy(alpha = 0.9f),
+                    )
+                }
+            }
+
+            // Overview
+            series.overview?.let { overview ->
+                if (overview.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = overview,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White.copy(alpha = 0.85f),
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
+                    )
                 }
             }
         }
@@ -793,14 +813,6 @@ private fun CastAndCrewSection(
                     }
                 }
             }
-        }
-
-        if (cast.isEmpty() && crew.isEmpty()) {
-            Text(
-                text = "No cast or crew information available",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }

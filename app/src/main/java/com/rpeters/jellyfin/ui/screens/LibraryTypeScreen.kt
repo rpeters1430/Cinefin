@@ -136,7 +136,11 @@ fun LibraryTypeScreen(
     }
 
     // ✅ FIX: Load data on-demand when screen is first composed
-    LaunchedEffect(libraryType) {
+    // Wait for libraries to be loaded before attempting to load library content
+    LaunchedEffect(libraryType, appState.libraries) {
+        if (appState.libraries.isEmpty()) {
+            return@LaunchedEffect
+        }
         hasRequestedData = true
         viewModel.loadLibraryTypeData(libraryType, forceRefresh = false)
     }
