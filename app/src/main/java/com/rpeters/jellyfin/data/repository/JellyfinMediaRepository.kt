@@ -418,6 +418,28 @@ class JellyfinMediaRepository @Inject constructor(
             response.content.items ?: emptyList()
         }
 
+    suspend fun getSimilarSeries(seriesId: String, limit: Int = 20): ApiResult<List<BaseItemDto>> =
+        withServerClient("getSimilarSeries") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val seriesUuid = parseUuid(seriesId, "series")
+
+            val response = client.itemsApi.getSimilarItems(
+                itemId = seriesUuid,
+                userId = userUuid,
+                includeItemTypes = listOf(BaseItemKind.SERIES),
+                fields = listOf(
+                    org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                    org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                    org.jellyfin.sdk.model.api.ItemFields.GENRES,
+                    org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
+                    org.jellyfin.sdk.model.api.ItemFields.STUDIOS,
+                ),
+                limit = limit,
+            )
+
+            response.content.items ?: emptyList()
+        }
+
     suspend fun getEpisodesForSeason(seasonId: String): ApiResult<List<BaseItemDto>> =
         // ✅ FIX: Use withServerClient helper to ensure fresh server/client on token refresh
         withServerClient("getEpisodesForSeason") { server, client ->

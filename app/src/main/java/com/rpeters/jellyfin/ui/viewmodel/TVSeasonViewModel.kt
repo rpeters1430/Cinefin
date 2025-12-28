@@ -11,11 +11,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 import javax.inject.Inject
 
 data class TVSeasonState(
     val seriesDetails: BaseItemDto? = null,
     val seasons: List<BaseItemDto> = emptyList(),
+    val similarSeries: List<BaseItemDto> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
 )
@@ -33,15 +35,18 @@ class TVSeasonViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null)
 
+            var seriesDetails = _state.value.seriesDetails
+            var seasons = _state.value.seasons
+            var similarSeries = _state.value.similarSeries
+            var errorMessage: String? = null
+
             // Load series details
             when (val seriesResult = repository.getSeriesDetails(seriesId)) {
                 is ApiResult.Success -> {
-                    _state.value = _state.value.copy(seriesDetails = seriesResult.data)
+                    seriesDetails = seriesResult.data
                 }
                 is ApiResult.Error -> {
-                    _state.value = _state.value.copy(
-                        errorMessage = "Failed to load series details: ${seriesResult.message}",
-                    )
+                    errorMessage = "Failed to load series details: ${seriesResult.message}"
                 }
                 is ApiResult.Loading -> {
                     // Already handled
@@ -51,25 +56,42 @@ class TVSeasonViewModel @Inject constructor(
             // Load seasons
             when (val seasonsResult = mediaRepository.getSeasonsForSeries(seriesId)) {
                 is ApiResult.Success -> {
-                    _state.value = _state.value.copy(
-                        seasons = seasonsResult.data,
-                        isLoading = false,
-                    )
+                    seasons = seasonsResult.data
                 }
                 is ApiResult.Error -> {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = if (_state.value.errorMessage == null) {
-                            "Failed to load seasons: ${seasonsResult.message}"
-                        } else {
-                            _state.value.errorMessage
-                        },
-                    )
+                    errorMessage = errorMessage ?: "Failed to load seasons: ${seasonsResult.message}"
                 }
                 is ApiResult.Loading -> {
                     // Already handled
                 }
             }
+
+            // Load similar series
+            when (val similarResult = mediaRepository.getSimilarSeries(seriesId)) {
+                is ApiResult.Success -> {
+                    similarSeries = similarResult.data
+                        .filter { it.type == BaseItemKind.SERIES }
+                        .filterNot { it.id?.toString() == seriesId }
+                }
+
+                is ApiResult.Error -> {
+                    if (errorMessage == null) {
+                        errorMessage = "Failed to load similar series: ${similarResult.message}"
+                    }
+                }
+
+                is ApiResult.Loading -> {
+                    // Already handled
+                }
+            }
+
+            _state.value = _state.value.copy(
+                seriesDetails = seriesDetails,
+                seasons = seasons,
+                similarSeries = similarSeries,
+                isLoading = false,
+                errorMessage = errorMessage,
+            )
         }
     }
 

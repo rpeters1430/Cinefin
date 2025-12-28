@@ -109,6 +109,11 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             onSeasonClick = { seasonId ->
                 navController.navigate(Screen.TVEpisodes.createRoute(seasonId))
             },
+            onSeriesClick = { targetSeriesId ->
+                navController.navigate(Screen.TVSeasons.createRoute(targetSeriesId)) {
+                    launchSingleTop = true
+                }
+            },
         )
     }
 

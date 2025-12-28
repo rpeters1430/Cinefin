@@ -73,10 +73,12 @@ import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
+import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemPerson
 
 @Composable
 fun TVSeasonScreen(
@@ -85,6 +87,7 @@ fun TVSeasonScreen(
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     onSeasonClick: (String) -> Unit,
+    onSeriesClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: TVSeasonViewModel = hiltViewModel()
@@ -194,6 +197,7 @@ fun TVSeasonScreen(
                         getImageUrl = getImageUrl,
                         getBackdropUrl = getBackdropUrl,
                         onSeasonClick = onSeasonClick,
+                        onSeriesClick = onSeriesClick,
                         modifier = Modifier.padding(innerPadding),
                     )
                 }
@@ -208,6 +212,7 @@ private fun TVSeasonContent(
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     onSeasonClick: (String) -> Unit,
+    onSeriesClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -262,81 +267,35 @@ private fun TVSeasonContent(
 
         // Cast and Crew Section (if available)
         state.seriesDetails?.people?.takeIf { it.isNotEmpty() }?.let { people ->
-            // Separate cast and crew
             val cast = people.filter { it.type?.name == "Actor" }
             val crew = people.filter {
                 val typeName = it.type?.name
                 typeName in listOf("Director", "Producer", "Writer", "Executive Producer")
             }
 
-            // Cast section
-            if (cast.isNotEmpty()) {
-                item {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text(
-                            text = "Cast",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
+            item {
+                CastAndCrewSection(
+                    cast = cast,
+                    crew = crew,
+                    getImageUrl = { id, tag ->
+                        val personItem = BaseItemDto(
+                            id = id,
+                            type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
+                            imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) },
                         )
-
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(horizontal = 4.dp),
-                        ) {
-                            items(cast.take(10), key = { it.id ?: it.name.hashCode() }) { person ->
-                                PersonCard(
-                                    person = person,
-                                    getImageUrl = { id, tag ->
-                                        // Create a temporary BaseItemDto for the person to use with existing getImageUrl
-                                        val personItem = BaseItemDto(
-                                            id = id,
-                                            type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
-                                            imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) },
-                                        )
-                                        getImageUrl(personItem)
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
+                        getImageUrl(personItem)
+                    },
+                )
             }
+        }
 
-            // Crew section (Directors, Producers, etc.)
-            if (crew.isNotEmpty()) {
-                item {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text(
-                            text = "Crew",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(horizontal = 4.dp),
-                        ) {
-                            items(crew.take(8), key = { it.id ?: it.name.hashCode() }) { person ->
-                                PersonCard(
-                                    person = person,
-                                    getImageUrl = { id, tag ->
-                                        // Create a temporary BaseItemDto for the person to use with existing getImageUrl
-                                        val personItem = BaseItemDto(
-                                            id = id,
-                                            type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
-                                            imageTags = tag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) },
-                                        )
-                                        getImageUrl(personItem)
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
+        if (state.similarSeries.isNotEmpty()) {
+            item {
+                MoreLikeThisSection(
+                    items = state.similarSeries,
+                    getImageUrl = getImageUrl,
+                    onSeriesClick = onSeriesClick,
+                )
             }
         }
     }
@@ -768,8 +727,119 @@ fun ErrorContent(
 }
 
 @Composable
+private fun CastAndCrewSection(
+    cast: List<BaseItemPerson>,
+    crew: List<BaseItemPerson>,
+    getImageUrl: (java.util.UUID, String?) -> String?,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "Cast & Crew",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+        )
+
+        if (cast.isNotEmpty()) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = "Cast",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp),
+                ) {
+                    items(cast.take(12), key = { it.id ?: it.name.hashCode() }) { person ->
+                        PersonCard(
+                            person = person,
+                            getImageUrl = getImageUrl,
+                        )
+                    }
+                }
+            }
+        }
+
+        if (crew.isNotEmpty()) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = "Crew",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp),
+                ) {
+                    items(crew.take(12), key = { it.id ?: it.name.hashCode() }) { person ->
+                        PersonCard(
+                            person = person,
+                            getImageUrl = getImageUrl,
+                        )
+                    }
+                }
+            }
+        }
+
+        if (cast.isEmpty() && crew.isEmpty()) {
+            Text(
+                text = "No cast or crew information available",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MoreLikeThisSection(
+    items: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onSeriesClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "More Like This",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+        )
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp),
+        ) {
+            items(items, key = { it.id ?: it.name.hashCode() }) { show ->
+                PosterMediaCard(
+                    item = show,
+                    getImageUrl = getImageUrl,
+                    onClick = { show.id?.let { onSeriesClick(it.toString()) } },
+                    showMetadata = false,
+                    cardWidth = 140.dp,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun PersonCard(
-    person: org.jellyfin.sdk.model.api.BaseItemPerson,
+    person: BaseItemPerson,
     getImageUrl: (java.util.UUID, String?) -> String?,
     modifier: Modifier = Modifier,
 ) {
