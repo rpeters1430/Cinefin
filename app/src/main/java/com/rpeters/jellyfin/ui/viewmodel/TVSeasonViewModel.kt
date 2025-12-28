@@ -19,6 +19,7 @@ data class TVSeasonState(
     val seasons: List<BaseItemDto> = emptyList(),
     val similarSeries: List<BaseItemDto> = emptyList(),
     val isLoading: Boolean = false,
+    val isSimilarSeriesLoading: Boolean = false,
     val errorMessage: String? = null,
 )
 
@@ -67,6 +68,7 @@ class TVSeasonViewModel @Inject constructor(
             }
 
             // Load similar series
+            _state.value = _state.value.copy(isSimilarSeriesLoading = true)
             when (val similarResult = mediaRepository.getSimilarSeries(seriesId)) {
                 is ApiResult.Success -> {
                     similarSeries = similarResult.data
@@ -75,15 +77,15 @@ class TVSeasonViewModel @Inject constructor(
                 }
 
                 is ApiResult.Error -> {
-                    if (errorMessage == null) {
-                        errorMessage = "Failed to load similar series: ${similarResult.message}"
-                    }
+                    // Don't show error for similar series failure - it's a non-critical feature
+                    // Just leave the list empty
                 }
 
                 is ApiResult.Loading -> {
                     // Already handled
                 }
             }
+            _state.value = _state.value.copy(isSimilarSeriesLoading = false)
 
             _state.value = _state.value.copy(
                 seriesDetails = seriesDetails,

@@ -807,15 +807,12 @@ private fun VideoControlsOverlay(
                 }
 
                 // Progress bar with buffering indicator and expressive styling
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    // Buffer progress (background)
-                    LinearProgressIndicator(
-                        progress = { buffered },
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Color.White.copy(alpha = 0.3f),
-                        trackColor = Color.White.copy(alpha = 0.1f),
-                    )
-
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(32.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
                     // Main progress slider with expressive styling
                     Slider(
                         value = progress,
@@ -827,7 +824,7 @@ private fun VideoControlsOverlay(
                         colors = SliderDefaults.colors(
                             thumbColor = MaterialTheme.colorScheme.primary,
                             activeTrackColor = MaterialTheme.colorScheme.primary,
-                            inactiveTrackColor = Color.Transparent,
+                            inactiveTrackColor = Color.White.copy(alpha = 0.1f),
                         ),
                     )
                 }

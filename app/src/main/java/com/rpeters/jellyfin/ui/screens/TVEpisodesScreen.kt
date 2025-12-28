@@ -346,7 +346,11 @@ private fun ExpressiveEpisodeRow(
             modifier = Modifier.padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Box {
+            Box(
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(80.dp),
+            ) {
                 SubcomposeAsyncImage(
                     model = getImageUrl(episode),
                     contentDescription = episode.name,

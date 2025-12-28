@@ -10,6 +10,7 @@ import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.repository.common.LibraryHealthChecker
 import com.rpeters.jellyfin.utils.SecureLogger
 import org.jellyfin.sdk.api.client.extensions.itemsApi
+import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemSortBy
@@ -423,21 +424,26 @@ class JellyfinMediaRepository @Inject constructor(
             val userUuid = parseUuid(server.userId ?: "", "user")
             val seriesUuid = parseUuid(seriesId, "series")
 
-            val response = client.itemsApi.getSimilarItems(
-                itemId = seriesUuid,
-                userId = userUuid,
-                includeItemTypes = listOf(BaseItemKind.SERIES),
-                fields = listOf(
-                    org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
-                    org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
-                    org.jellyfin.sdk.model.api.ItemFields.GENRES,
-                    org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
-                    org.jellyfin.sdk.model.api.ItemFields.STUDIOS,
-                ),
-                limit = limit,
-            )
-
-            response.content.items ?: emptyList()
+            try {
+                val response = client.libraryApi.getSimilarItems(
+                    itemId = seriesUuid,
+                    userId = userUuid,
+                    limit = limit,
+                    fields = listOf(
+                        org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                        org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
+                        org.jellyfin.sdk.model.api.ItemFields.GENRES,
+                    ),
+                )
+                response.content.items ?: emptyList()
+            } catch (e: Exception) {
+                SecureLogger.w(
+                    "JellyfinMediaRepository",
+                    "Failed to load similar series: ${e.message}",
+                )
+                // Return empty list on error - this is a non-critical feature
+                emptyList()
+            }
         }
 
     suspend fun getEpisodesForSeason(seasonId: String): ApiResult<List<BaseItemDto>> =
