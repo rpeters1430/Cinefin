@@ -45,7 +45,7 @@ turbine = "1.2.1"
 window = "1.6.0-alpha01"
 androidxTestCore = "1.7.0"
 robolectric = "4.16"
-kotlinxMetadataJvm = "0.9.0"
+kotlinxMetadataJvm = "2.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -129,7 +129,7 @@ robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "
 androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime", version.ref = "paging" }
 androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
 
-kotlinx-metadata-jvm = { group = "org.jetbrains.kotlinx", name = "kotlinx-metadata-jvm", version.ref = "kotlinxMetadataJvm" }
+kotlinx-metadata-jvm = { group = "org.jetbrains.kotlin", name = "kotlin-metadata-jvm", version.ref = "kotlinxMetadataJvm" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 [plugins]

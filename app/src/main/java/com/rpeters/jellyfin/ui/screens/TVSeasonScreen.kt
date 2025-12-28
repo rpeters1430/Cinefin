@@ -241,7 +241,7 @@ private fun TVSeasonContent(
                 )
             }
 
-            items(state.seasons, key = { it.id ?: it.name.hashCode() }) { season ->
+            items(state.seasons, key = { it.id?.hashCode() ?: it.name.hashCode() }) { season ->
                 ExpressiveSeasonCard(
                     season = season,
                     getImageUrl = getImageUrl,
@@ -289,10 +289,12 @@ private fun TVSeasonContent(
             }
         }
 
-        if (state.similarSeries.isNotEmpty()) {
+        // Show "More Like This" section if loading or has data
+        if (state.isSimilarSeriesLoading || state.similarSeries.isNotEmpty()) {
             item {
                 MoreLikeThisSection(
                     items = state.similarSeries,
+                    isLoading = state.isSimilarSeriesLoading,
                     getImageUrl = getImageUrl,
                     onSeriesClick = onSeriesClick,
                 )
@@ -758,7 +760,7 @@ private fun CastAndCrewSection(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp),
                 ) {
-                    items(cast.take(12), key = { it.id ?: it.name.hashCode() }) { person ->
+                    items(cast.take(12), key = { it.id?.hashCode() ?: it.name.hashCode() }) { person ->
                         PersonCard(
                             person = person,
                             getImageUrl = getImageUrl,
@@ -783,7 +785,7 @@ private fun CastAndCrewSection(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp),
                 ) {
-                    items(crew.take(12), key = { it.id ?: it.name.hashCode() }) { person ->
+                    items(crew.take(12), key = { it.id?.hashCode() ?: it.name.hashCode() }) { person ->
                         PersonCard(
                             person = person,
                             getImageUrl = getImageUrl,
@@ -806,6 +808,7 @@ private fun CastAndCrewSection(
 @Composable
 private fun MoreLikeThisSection(
     items: List<BaseItemDto>,
+    isLoading: Boolean,
     getImageUrl: (BaseItemDto) -> String?,
     onSeriesClick: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -820,18 +823,35 @@ private fun MoreLikeThisSection(
             fontWeight = FontWeight.Bold,
         )
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp),
-        ) {
-            items(items, key = { it.id ?: it.name.hashCode() }) { show ->
-                PosterMediaCard(
-                    item = show,
-                    getImageUrl = getImageUrl,
-                    onClick = { show.id?.let { onSeriesClick(it.toString()) } },
-                    showMetadata = false,
-                    cardWidth = 140.dp,
-                )
+        if (isLoading) {
+            // Show loading skeleton cards
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp),
+            ) {
+                items(5) { index ->
+                    ExpressiveLoadingCard(
+                        modifier = Modifier.width(140.dp),
+                        imageHeight = 210.dp,
+                        showTitle = true,
+                        showSubtitle = false,
+                    )
+                }
+            }
+        } else {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp),
+            ) {
+                items(items, key = { it.id?.hashCode() ?: it.name.hashCode() }) { show ->
+                    PosterMediaCard(
+                        item = show,
+                        getImageUrl = getImageUrl,
+                        onClick = { show.id?.let { onSeriesClick(it.toString()) } },
+                        showMetadata = false,
+                        cardWidth = 140.dp,
+                    )
+                }
             }
         }
     }
@@ -890,11 +910,16 @@ private fun PersonCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
 
-            // Show role for actors or type for crew
+            // Show role for actors or type for crew - more compact display
             val displayText = when {
-                !person.role.isNullOrBlank() -> person.role
+                !person.role.isNullOrBlank() -> {
+                    // Truncate long character names with ellipsis for better fit
+                    val role = person.role!!
+                    if (role.length > 20) "${role.take(17)}..." else role
+                }
                 person.type?.name?.isNotBlank() == true -> person.type.name
                 else -> null
             }
@@ -904,9 +929,10 @@ private fun PersonCard(
                     text = text,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
