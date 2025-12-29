@@ -72,6 +72,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -765,13 +766,11 @@ private fun VideoControlsOverlay(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            // Casting button - top right with expressive styling
-            ExpressiveIconButton(
-                icon = if (playerState.isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
-                contentDescription = if (playerState.isCasting) "Disconnect Cast" else "Cast to Device",
-                onClick = onCastClick,
-                isActive = playerState.isCasting,
+            // Casting button - top right with Google Cast MediaRouteButton
+            // This provides the standard Cast icon and device picker dialog
+            MediaRouteButton(
                 modifier = Modifier.padding(start = 8.dp),
+                tint = MaterialTheme.colorScheme.onSurface.toArgb(),
             )
         }
 
