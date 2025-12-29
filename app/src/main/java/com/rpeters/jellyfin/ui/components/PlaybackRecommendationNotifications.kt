@@ -15,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.utils.PlaybackRecommendation
@@ -37,7 +36,10 @@ fun PlaybackRecommendationNotification(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
     ) {
-        itemsIndexed(recommendations) { index, recommendation ->
+        itemsIndexed(
+            items = recommendations,
+            key = { index, recommendation -> "${recommendation.type}-${recommendation.message}-$index" },
+        ) { index, recommendation ->
             PlaybackRecommendationCard(
                 recommendation = recommendation,
                 onDismiss = { onDismiss(recommendation) },
@@ -76,8 +78,8 @@ fun PlaybackRecommendationCard(
     ) {
         val (backgroundColor, textColor, icon) = when (recommendation.type) {
             RecommendationType.OPTIMAL -> Triple(
-                Color(0xFF4CAF50),
-                Color.White,
+                MaterialTheme.colorScheme.tertiaryContainer,
+                MaterialTheme.colorScheme.onTertiaryContainer,
                 Icons.Filled.CheckCircle,
             )
             RecommendationType.INFO -> Triple(
@@ -86,8 +88,8 @@ fun PlaybackRecommendationCard(
                 Icons.Filled.Info,
             )
             RecommendationType.WARNING -> Triple(
-                Color(0xFFFF9800),
-                Color.White,
+                MaterialTheme.colorScheme.secondaryContainer,
+                MaterialTheme.colorScheme.onSecondaryContainer,
                 Icons.Filled.Warning,
             )
             RecommendationType.ERROR -> Triple(
@@ -246,10 +248,22 @@ fun InContextPlaybackRecommendation(
     modifier: Modifier = Modifier,
 ) {
     val (borderColor, backgroundColor) = when (recommendation.type) {
-        RecommendationType.OPTIMAL -> Pair(Color(0xFF4CAF50), Color(0xFF4CAF50).copy(alpha = 0.1f))
-        RecommendationType.INFO -> Pair(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
-        RecommendationType.WARNING -> Pair(Color(0xFFFF9800), Color(0xFFFF9800).copy(alpha = 0.1f))
-        RecommendationType.ERROR -> Pair(MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f))
+        RecommendationType.OPTIMAL -> Pair(
+            MaterialTheme.colorScheme.tertiary,
+            MaterialTheme.colorScheme.tertiaryContainer,
+        )
+        RecommendationType.INFO -> Pair(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.primaryContainer,
+        )
+        RecommendationType.WARNING -> Pair(
+            MaterialTheme.colorScheme.secondary,
+            MaterialTheme.colorScheme.secondaryContainer,
+        )
+        RecommendationType.ERROR -> Pair(
+            MaterialTheme.colorScheme.error,
+            MaterialTheme.colorScheme.errorContainer,
+        )
     }
 
     Card(

@@ -199,7 +199,7 @@ fun TvVideoPlayerScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .tvKeyboardHandler(
                 focusManager = focusManager,
                 onBack = {
@@ -268,8 +268,8 @@ fun TvVideoPlayerScreen(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.75f),
-                                Color.Black.copy(alpha = 0.35f),
+                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.75f),
+                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.35f),
                                 Color.Transparent,
                             ),
                         ),
@@ -292,7 +292,7 @@ fun TvVideoPlayerScreen(
                         Text(
                             text = formatPlaybackPosition(state.currentPosition, state.duration),
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color.White.copy(alpha = 0.85f),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                         )
                     }
 
@@ -474,7 +474,7 @@ private fun TrackSelectionDialog(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.65f)),
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.65f)),
         contentAlignment = Alignment.Center,
     ) {
         TvSurface(
@@ -518,7 +518,10 @@ private fun TrackSelectionDialog(
                             }
                         }
                     }
-                    items(options) { track ->
+                    items(
+                        items = options,
+                        key = { track -> "${track.groupIndex}-${track.trackIndex}-${track.displayName}" },
+                    ) { track ->
                         val isSelected = selectedId == track.displayName
                         TvCard(
                             onClick = { onSelect(track) },

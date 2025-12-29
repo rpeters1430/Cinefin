@@ -40,7 +40,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -94,7 +93,7 @@ fun TvAudioQueueDisplay(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.85f))
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.85f))
             .onKeyEvent { keyEvent ->
                 if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.Back) {
                     onDismiss()
@@ -220,7 +219,10 @@ fun TvAudioQueueDisplay(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(vertical = 8.dp),
                     ) {
-                        itemsIndexed(queue) { index, mediaItem ->
+                        itemsIndexed(
+                            items = queue,
+                            key = { index, mediaItem -> mediaItem.mediaId.ifEmpty { index.toString() } },
+                        ) { index, mediaItem ->
                             QueueTrackItem(
                                 mediaItem = mediaItem,
                                 isCurrentTrack = index == currentIndex,
