@@ -228,7 +228,10 @@ fun SearchScreen(
                                 BaseItemKind.VIDEO to "Videos",
                             )
 
-                            items(contentTypes) { (kind, label) ->
+                            items(
+                                items = contentTypes,
+                                key = { (kind, _) -> kind },
+                            ) { (kind, label) ->
                                 FilterChip(
                                     selected = selectedContentTypes.contains(kind),
                                     onClick = {
@@ -281,7 +284,10 @@ fun SearchScreen(
                                 horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
                                 contentPadding = PaddingValues(horizontal = 0.dp),
                             ) {
-                                items(recentSearches) { search ->
+                                items(
+                                    items = recentSearches,
+                                    key = { it },
+                                ) { search ->
                                     SuggestionChip(
                                         onClick = { searchQuery = search },
                                         label = { Text(search) },
@@ -306,7 +312,11 @@ fun SearchScreen(
                                 horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
                                 contentPadding = PaddingValues(horizontal = 0.dp),
                             ) {
-                                items(smartSuggestions) { suggestion ->
+                                items(
+                                    count = smartSuggestions.size,
+                                    key = { index -> "suggestion_$index" },
+                                ) { index ->
+                                    val suggestion = smartSuggestions[index]
                                     SuggestionChip(
                                         onClick = { searchQuery = suggestion },
                                         label = { Text(suggestion) },

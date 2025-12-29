@@ -345,7 +345,10 @@ private fun LibraryTypeLoadingPlaceholder(libraryType: LibraryType) {
         horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
         modifier = Modifier.fillMaxSize(),
     ) {
-        items(LibraryScreenDefaults.LibraryTypePlaceholderCount) {
+        items(
+            count = LibraryScreenDefaults.LibraryTypePlaceholderCount,
+            key = { it },
+        ) {
             Card(
                 modifier = Modifier
                     .height(LibraryScreenDefaults.LibraryTypePlaceholderHeight)
@@ -457,7 +460,10 @@ private fun CarouselContent(
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.SectionSpacing),
         modifier = Modifier.fillMaxSize(),
     ) {
-        items(categories.size) { index ->
+        items(
+            count = categories.size,
+            key = { index -> "${categories[index].title}_$index" },
+        ) { index ->
             val category = categories[index]
             val carouselState = rememberCarouselState { category.items.size }
             CarouselSection(

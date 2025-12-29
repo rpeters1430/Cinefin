@@ -166,12 +166,12 @@ fun TVSeasonScreen(
             Surface(
                 onClick = onBackClick,
                 shape = CircleShape,
-                color = Color.Black.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(id = R.string.navigate_up),
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(12.dp).size(24.dp),
                 )
             }
@@ -180,19 +180,19 @@ fun TVSeasonScreen(
             Surface(
                 onClick = { viewModel.refresh() },
                 shape = CircleShape,
-                color = Color.Black.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
             ) {
                 if (state.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.padding(12.dp).size(24.dp),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         strokeWidth = 2.dp,
                     )
                 } else {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = stringResource(id = R.string.refresh),
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(12.dp).size(24.dp),
                     )
                 }
@@ -367,10 +367,10 @@ private fun SeriesDetailsHeader(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.Black.copy(alpha = 0.2f),
-                            Color.Black.copy(alpha = 0.4f),
-                            Color.Black.copy(alpha = 0.7f),
-                            Color.Black.copy(alpha = 0.95f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.95f),
                         ),
                         startY = 0f,
                         endY = Float.POSITIVE_INFINITY,
@@ -390,7 +390,7 @@ private fun SeriesDetailsHeader(
             Text(
                 text = series.name ?: stringResource(R.string.unknown),
                 style = MaterialTheme.typography.displaySmall,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -412,14 +412,14 @@ private fun SeriesDetailsHeader(
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
-                            tint = Color(0xFFFFD700), // Gold color
+                            tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(20.dp),
                         )
                         Text(
                             text = "${(rating * 10).roundToInt()}%",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }
@@ -428,14 +428,14 @@ private fun SeriesDetailsHeader(
                 series.officialRating?.let { rating ->
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = Color.White.copy(alpha = 0.2f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.4f)),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                     ) {
                         Text(
                             text = rating,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     }
@@ -454,7 +454,7 @@ private fun SeriesDetailsHeader(
                     Text(
                         text = yearText,
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White.copy(alpha = 0.9f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                     )
                 }
 
@@ -463,7 +463,7 @@ private fun SeriesDetailsHeader(
                     Text(
                         text = "$count episodes",
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White.copy(alpha = 0.9f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                     )
                 }
             }
@@ -475,7 +475,7 @@ private fun SeriesDetailsHeader(
                     Text(
                         text = overview,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.85f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
                         lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
@@ -581,12 +581,12 @@ private fun ExpressiveSeasonCard(
                     if (season.userData?.isFavorite == true) {
                         Surface(
                             shape = CircleShape,
-                            color = Color.Black.copy(alpha = 0.6f),
+                            color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = "Favorite",
-                                tint = Color.Yellow,
+                                tint = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier
                                     .size(20.dp)
                                     .padding(4.dp),
@@ -681,7 +681,7 @@ private fun ExpressiveSeasonCard(
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
-                            tint = Color(0xFFFFD700),
+                            tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(16.dp),
                         )
                         Text(
@@ -925,7 +925,7 @@ private fun PersonCard(
             val displayText = when {
                 !person.role.isNullOrBlank() -> {
                     // Truncate long character names with ellipsis for better fit
-                    val role = person.role!!
+                    val role = person.role
                     if (role.length > 20) "${role.take(17)}..." else role
                 }
                 person.type?.name?.isNotBlank() == true -> person.type.name

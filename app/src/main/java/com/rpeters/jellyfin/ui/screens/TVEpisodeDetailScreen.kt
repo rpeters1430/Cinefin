@@ -348,7 +348,7 @@ private fun ExpressiveEpisodeHero(
                     Text(
                         text = seriesName,
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White.copy(alpha = 0.8f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                         fontWeight = FontWeight.Medium,
                     )
                 }
@@ -357,7 +357,7 @@ private fun ExpressiveEpisodeHero(
                     text = episode.name ?: stringResource(R.string.unknown),
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -386,7 +386,7 @@ private fun ExpressiveEpisodeHero(
                         Text(
                             text = "S$seasonNum",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White.copy(alpha = 0.9f),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                             fontWeight = FontWeight.Medium,
                         )
                     }
@@ -415,13 +415,13 @@ private fun ExpressiveEpisodeHero(
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = null,
-                                tint = Color(0xFFFFD700),
+                                tint = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(18.dp),
                             )
                             Text(
                                 text = String.format(java.util.Locale.ROOT, "%.1f", rating),
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = Color.White.copy(alpha = 0.9f),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                                 fontWeight = FontWeight.Medium,
                             )
                         }
@@ -435,7 +435,7 @@ private fun ExpressiveEpisodeHero(
                             Text(
                                 text = "${String.format(java.util.Locale.ROOT, "%.0f", progress)}% watched",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.8f),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                                 fontWeight = FontWeight.Medium,
                             )
                             LinearProgressIndicator(
@@ -445,7 +445,7 @@ private fun ExpressiveEpisodeHero(
                                     .height(6.dp)
                                     .clip(RoundedCornerShape(3.dp)),
                                 color = MaterialTheme.colorScheme.primary,
-                                trackColor = Color.White.copy(alpha = 0.3f),
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             )
                         }
                     }
@@ -1067,7 +1067,7 @@ private fun ExpressiveSeriesInfo(
                                 Icon(
                                     imageVector = Icons.Default.Star,
                                     contentDescription = null,
-                                    tint = Color(0xFFFFD700),
+                                    tint = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier.size(16.dp),
                                 )
                                 Text(

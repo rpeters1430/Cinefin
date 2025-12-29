@@ -96,35 +96,41 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         }
         val mainViewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
         val detailViewModel = androidx.hilt.navigation.compose.hiltViewModel<ItemDetailViewModel>()
-        LaunchedEffect(videoId) { detailViewModel.load(videoId) }
+        LaunchedEffect(videoId) {
+            try {
+                detailViewModel.load(videoId)
+            } catch (e: Exception) {
+                SecureLogger.e("NavGraph", "Error loading video details: ${e.message}", e)
+            }
+        }
         val item by detailViewModel.item
         val playbackAnalysis by detailViewModel.playbackAnalysis
         val error by detailViewModel.error
-        if (item != null) {
+        item?.let { videoItem ->
             HomeVideoDetailScreen(
-                item = item!!,
+                item = videoItem,
                 getImageUrl = { mainViewModel.getImageUrl(it) },
                 getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
                 onBackClick = { navController.popBackStack() },
-                onPlayClick = { videoItem ->
-                    val streamUrl = mainViewModel.getStreamUrl(videoItem)
+                onPlayClick = { video ->
+                    val streamUrl = mainViewModel.getStreamUrl(video)
                     if (streamUrl != null) {
                         MediaPlayerUtils.playMedia(
                             context = navController.context,
                             streamUrl = streamUrl,
-                            item = videoItem,
+                            item = video,
                         )
                     }
                 },
-                onFavoriteClick = { videoItem -> mainViewModel.toggleFavorite(videoItem) },
-                onShareClick = { videoItem ->
-                    ShareUtils.shareMedia(context = navController.context, item = videoItem)
+                onFavoriteClick = { video -> mainViewModel.toggleFavorite(video) },
+                onShareClick = { video ->
+                    ShareUtils.shareMedia(context = navController.context, item = video)
                 },
                 playbackAnalysis = playbackAnalysis,
             )
-        } else if (error != null) {
+        } ?: if (error != null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(error ?: "Video not found")
+                Text(error)
             }
         } else {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -143,33 +149,39 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             backStackEntry.arguments?.getString(Screen.ITEM_ID_ARG) ?: return@composable
         val mainViewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
         val detailViewModel = androidx.hilt.navigation.compose.hiltViewModel<ItemDetailViewModel>()
-        LaunchedEffect(itemId) { detailViewModel.load(itemId) }
+        LaunchedEffect(itemId) {
+            try {
+                detailViewModel.load(itemId)
+            } catch (e: Exception) {
+                SecureLogger.e("NavGraph", "Error loading item details: ${e.message}", e)
+            }
+        }
         val item by detailViewModel.item
         val playbackAnalysis by detailViewModel.playbackAnalysis
         val error by detailViewModel.error
-        if (item != null) {
+        item?.let { videoItem ->
             HomeVideoDetailScreen(
-                item = item!!,
+                item = videoItem,
                 getImageUrl = { mainViewModel.getImageUrl(it) },
                 getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
                 onBackClick = { navController.popBackStack() },
-                onPlayClick = { videoItem ->
-                    val streamUrl = mainViewModel.getStreamUrl(videoItem)
+                onPlayClick = { video ->
+                    val streamUrl = mainViewModel.getStreamUrl(video)
                     if (streamUrl != null) {
                         MediaPlayerUtils.playMedia(
                             context = navController.context,
                             streamUrl = streamUrl,
-                            item = videoItem,
+                            item = video,
                         )
                     }
                 },
-                onFavoriteClick = { videoItem -> mainViewModel.toggleFavorite(videoItem) },
-                onShareClick = { videoItem ->
-                    ShareUtils.shareMedia(context = navController.context, item = videoItem)
+                onFavoriteClick = { video -> mainViewModel.toggleFavorite(video) },
+                onShareClick = { video ->
+                    ShareUtils.shareMedia(context = navController.context, item = video)
                 },
                 playbackAnalysis = playbackAnalysis,
             )
-        } else if (error != null) {
+        } ?: if (error != null) {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,

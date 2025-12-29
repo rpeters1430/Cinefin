@@ -68,7 +68,6 @@ import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.MovieRed
-import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -244,7 +243,7 @@ fun MoviesScreen(
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = "Refresh",
-                                tint = MusicGreen,
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                         }
                     }
@@ -322,7 +321,10 @@ private fun MoviesLoadingContent(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        items(20) {
+        items(
+            count = 20,
+            key = { it },
+        ) {
             ExpressiveLoadingCard(
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -358,7 +360,10 @@ private fun MoviesContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
             ) {
-                items(MovieFilter.getBasicFilters()) { filter ->
+                items(
+                    items = MovieFilter.getBasicFilters(),
+                    key = { it },
+                ) { filter ->
                     FilterChip(
                         onClick = { onFilterChange(filter) },
                         label = {
@@ -393,7 +398,10 @@ private fun MoviesContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
             ) {
-                items(MovieFilter.getSmartFilters() + MovieFilter.getGenreFilters()) { filter ->
+                items(
+                    items = MovieFilter.getSmartFilters() + MovieFilter.getGenreFilters(),
+                    key = { it },
+                ) { filter ->
                     FilterChip(
                         onClick = { onFilterChange(filter) },
                         label = {
