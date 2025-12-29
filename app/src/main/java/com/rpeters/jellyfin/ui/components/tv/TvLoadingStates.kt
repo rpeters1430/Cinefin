@@ -1,12 +1,5 @@
 package com.rpeters.jellyfin.ui.components.tv
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,17 +18,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.ui.appShimmer
 import androidx.tv.material3.Button as TvButton
 import androidx.tv.material3.Card as TvCard
 import androidx.tv.material3.CardDefaults as TvCardDefaults
@@ -47,29 +37,9 @@ import androidx.tv.material3.Text as TvText
  * Shimmer effect modifier for skeleton loading animations
  */
 fun Modifier.shimmer(): Modifier = composed {
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val translateAnim by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "shimmer_translate",
-    )
-
-    val shimmerColors = listOf(
-        Color.Transparent,
-        Color.White.copy(alpha = 0.3f),
-        Color.Transparent,
-    )
-
-    background(
-        brush = Brush.linearGradient(
-            colors = shimmerColors,
-            start = Offset(translateAnim - 200f, translateAnim - 200f),
-            end = Offset(translateAnim, translateAnim),
-        ),
+    appShimmer(
+        baseColor = TvMaterialTheme.colorScheme.surfaceVariant,
+        highlightColor = TvMaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
     )
 }
 
@@ -152,7 +122,10 @@ fun TvSkeletonCarousel(
             contentPadding = PaddingValues(horizontal = 56.dp),
             horizontalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            items(itemCount) {
+            items(
+                count = itemCount,
+                key = { it },
+            ) {
                 TvSkeletonCard()
             }
         }

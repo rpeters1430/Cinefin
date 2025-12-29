@@ -1,12 +1,5 @@
 package com.rpeters.jellyfin.ui.components
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,52 +15,23 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.ui.appShimmer
 
 /**
  * ✅ PHASE 3: Advanced Loading States with Shimmer Effect
  * Provides sophisticated loading UI that improves perceived performance
  */
 
-@Composable
-fun Modifier.shimmer(): Modifier = composed {
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val alpha by transition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.9f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1000,
-                easing = FastOutSlowInEasing,
-            ),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "shimmer",
-    )
-
-    val shimmerColorStops = arrayOf(
-        0.0f to Color.Gray.copy(alpha = 0.6f),
-        0.5f to Color.Gray.copy(alpha = alpha),
-        1.0f to Color.Gray.copy(alpha = 0.6f),
-    )
-
-    background(
-        brush = Brush.linearGradient(
-            colorStops = shimmerColorStops,
-            start = Offset(0f, 0f),
-            end = Offset(1000f, 1000f),
-        ),
-    )
-}
+fun Modifier.shimmer(): Modifier = this.appShimmer(
+    baseColor = MaterialTheme.colorScheme.surfaceContainer,
+    highlightColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+)
 
 @Composable
 fun ShimmerBox(
@@ -77,7 +41,10 @@ fun ShimmerBox(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(cornerRadius.dp))
-            .shimmer(),
+            .appShimmer(
+                baseColor = MaterialTheme.colorScheme.surfaceContainer,
+                highlightColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
     )
 }
 
@@ -232,7 +199,10 @@ fun SkeletonGrid(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        items(itemCount) {
+        items(
+            count = itemCount,
+            key = { it },
+        ) {
             content()
         }
     }
