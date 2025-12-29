@@ -513,6 +513,7 @@ class VideoPlayerViewModel @Inject constructor(
             castDeviceName = castState.deviceName,
             isCastPlaying = castState.isRemotePlaying,
             showCastDialog = if (hideDialog) false else currentState.showCastDialog,
+            error = castState.error ?: currentState.error, // Propagate Cast errors to UI
         )
 
         if (castState.isConnected && previous?.isConnected != true && !hasSentCastLoad) {
@@ -748,5 +749,9 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun hideCastDialog() {
         _playerState.value = _playerState.value.copy(showCastDialog = false)
+    }
+
+    fun clearError() {
+        _playerState.value = _playerState.value.copy(error = null)
     }
 }

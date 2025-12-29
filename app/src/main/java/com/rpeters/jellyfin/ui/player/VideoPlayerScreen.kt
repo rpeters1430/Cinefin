@@ -108,6 +108,7 @@ fun VideoPlayerScreen(
     onSubtitleDialogDismiss: () -> Unit,
     onCastDeviceSelect: (String) -> Unit,
     onCastDialogDismiss: () -> Unit,
+    onErrorDismiss: () -> Unit,
     onClose: () -> Unit = {},
     exoPlayer: ExoPlayer?,
     supportsPip: Boolean,
@@ -145,6 +146,7 @@ fun VideoPlayerScreen(
             onSeekTo = onSeek,
             onShowAudio = onAudioTrackSelect,
             onShowSubtitles = onSubtitleTrackSelect,
+            onErrorDismiss = onErrorDismiss,
             modifier = modifier,
         )
         return
@@ -186,6 +188,20 @@ fun VideoPlayerScreen(
     LaunchedEffect(playerState.isLoading, playerState.isPlaying) {
         if (playerState.isLoading || !playerState.isPlaying) {
             controlsVisible = true
+        }
+    }
+
+    // Snackbar for showing errors
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+
+    // Show error in Snackbar when Cast errors occur
+    LaunchedEffect(playerState.error) {
+        playerState.error?.let { errorMessage ->
+            snackbarHostState.showSnackbar(
+                message = errorMessage,
+                duration = androidx.compose.material3.SnackbarDuration.Short,
+            )
+            onErrorDismiss()
         }
     }
 
@@ -693,6 +709,14 @@ private fun CastNowPlayingOverlay(
                 }
             }
         }
+
+        // Snackbar Host for error messages
+        androidx.compose.material3.SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp), // Position above player controls
+        )
     }
 }
 

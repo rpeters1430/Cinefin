@@ -145,6 +145,7 @@ fun TvVideoPlayerRoute(
         onSeekTo = viewModel::seekTo,
         onShowAudio = viewModel::selectAudioTrack,
         onShowSubtitles = viewModel::selectSubtitleTrack,
+        onErrorDismiss = viewModel::clearError,
     )
 }
 
@@ -161,6 +162,7 @@ fun TvVideoPlayerScreen(
     onSeekTo: (Long) -> Unit,
     onShowAudio: (TrackInfo) -> Unit,
     onShowSubtitles: (TrackInfo?) -> Unit,
+    onErrorDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val focusManager = LocalFocusManager.current
@@ -185,6 +187,19 @@ fun TvVideoPlayerScreen(
 
     LaunchedEffect(state.isPlaying) {
         if (!state.isPlaying) controlsVisible = true
+    }
+
+    // Show error in Toast for TV
+    val context = LocalContext.current
+    LaunchedEffect(state.error) {
+        state.error?.let { errorMessage ->
+            android.widget.Toast.makeText(
+                context,
+                errorMessage,
+                android.widget.Toast.LENGTH_LONG,
+            ).show()
+            onErrorDismiss()
+        }
     }
 
     LaunchedEffect(state.currentPosition, state.duration) {
