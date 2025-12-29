@@ -100,29 +100,29 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         val item by detailViewModel.item
         val playbackAnalysis by detailViewModel.playbackAnalysis
         val error by detailViewModel.error
-        if (item != null) {
+        item?.let { videoItem ->
             HomeVideoDetailScreen(
-                item = item!!,
+                item = videoItem,
                 getImageUrl = { mainViewModel.getImageUrl(it) },
                 getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
                 onBackClick = { navController.popBackStack() },
-                onPlayClick = { videoItem ->
-                    val streamUrl = mainViewModel.getStreamUrl(videoItem)
+                onPlayClick = { video ->
+                    val streamUrl = mainViewModel.getStreamUrl(video)
                     if (streamUrl != null) {
                         MediaPlayerUtils.playMedia(
                             context = navController.context,
                             streamUrl = streamUrl,
-                            item = videoItem,
+                            item = video,
                         )
                     }
                 },
-                onFavoriteClick = { videoItem -> mainViewModel.toggleFavorite(videoItem) },
-                onShareClick = { videoItem ->
-                    ShareUtils.shareMedia(context = navController.context, item = videoItem)
+                onFavoriteClick = { video -> mainViewModel.toggleFavorite(video) },
+                onShareClick = { video ->
+                    ShareUtils.shareMedia(context = navController.context, item = video)
                 },
                 playbackAnalysis = playbackAnalysis,
             )
-        } else if (error != null) {
+        } ?: if (error != null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(error ?: "Video not found")
             }
@@ -147,29 +147,29 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         val item by detailViewModel.item
         val playbackAnalysis by detailViewModel.playbackAnalysis
         val error by detailViewModel.error
-        if (item != null) {
+        item?.let { videoItem ->
             HomeVideoDetailScreen(
-                item = item!!,
+                item = videoItem,
                 getImageUrl = { mainViewModel.getImageUrl(it) },
                 getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
                 onBackClick = { navController.popBackStack() },
-                onPlayClick = { videoItem ->
-                    val streamUrl = mainViewModel.getStreamUrl(videoItem)
+                onPlayClick = { video ->
+                    val streamUrl = mainViewModel.getStreamUrl(video)
                     if (streamUrl != null) {
                         MediaPlayerUtils.playMedia(
                             context = navController.context,
                             streamUrl = streamUrl,
-                            item = videoItem,
+                            item = video,
                         )
                     }
                 },
-                onFavoriteClick = { videoItem -> mainViewModel.toggleFavorite(videoItem) },
-                onShareClick = { videoItem ->
-                    ShareUtils.shareMedia(context = navController.context, item = videoItem)
+                onFavoriteClick = { video -> mainViewModel.toggleFavorite(video) },
+                onShareClick = { video ->
+                    ShareUtils.shareMedia(context = navController.context, item = video)
                 },
                 playbackAnalysis = playbackAnalysis,
             )
-        } else if (error != null) {
+        } ?: if (error != null) {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,

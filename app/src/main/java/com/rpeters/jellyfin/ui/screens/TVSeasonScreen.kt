@@ -925,7 +925,7 @@ private fun PersonCard(
             val displayText = when {
                 !person.role.isNullOrBlank() -> {
                     // Truncate long character names with ellipsis for better fit
-                    val role = person.role!!
+                    val role = person.role
                     if (role.length > 20) "${role.take(17)}..." else role
                 }
                 person.type?.name?.isNotBlank() == true -> person.type.name

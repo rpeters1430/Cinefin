@@ -22,6 +22,7 @@ import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.isWatched
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -185,6 +186,7 @@ class MainAppViewModel @Inject constructor(
             }.awaitAll().filterNotNull().toMap()
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun loadInitialData(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             if (!ensureValidToken()) return@launch
