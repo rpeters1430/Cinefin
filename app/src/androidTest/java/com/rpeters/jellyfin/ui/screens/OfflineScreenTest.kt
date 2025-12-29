@@ -19,13 +19,13 @@ import com.rpeters.jellyfin.ui.utils.OfflineStorageInfo
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class OfflineScreenTest {
