@@ -65,6 +65,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -328,6 +329,9 @@ private fun SeriesDetailsHeader(
     primarySeasonId: String?,
     onSeriesClick: (String) -> Unit,
     onSeasonClick: (String) -> Unit,
+    onQuickActionClick: (SeasonQuickAction) -> Unit = { action ->
+        Logger.i(LogCategory.UI, "TVSeasonScreen", "Quick action $action clicked")
+    },
     modifier: Modifier = Modifier,
 ) {
     // Full-bleed hero section - Google TV style
@@ -507,20 +511,20 @@ private fun SeriesDetailsHeader(
                     shape = RoundedCornerShape(28.dp),
                     border = androidx.compose.foundation.BorderStroke(
                         width = 1.2.dp,
-                        color = Color.White.copy(alpha = 0.35f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
                     ),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.White.copy(alpha = 0.08f),
-                        contentColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.35f),
+                        contentColor = MaterialTheme.colorScheme.onSurface,
                     ),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Info,
-                        contentDescription = null,
+                        contentDescription = stringResource(id = R.string.tvseason_info_action_content_description),
                         modifier = Modifier.padding(end = 12.dp),
                     )
                     Text(
-                        text = "Summaries, reviews & more",
+                        text = stringResource(id = R.string.tvseason_info_action),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -530,7 +534,7 @@ private fun SeriesDetailsHeader(
                     onClick = {
                         when {
                             primarySeasonId != null -> onSeasonClick(primarySeasonId)
-                            series.id != null -> onSeriesClick(series.id!!)
+                            else -> series.id?.let(onSeriesClick)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -542,19 +546,19 @@ private fun SeriesDetailsHeader(
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
-                        contentDescription = null,
+                        contentDescription = stringResource(id = R.string.tvseason_watch_now_content_description),
                         modifier = Modifier
                             .size(22.dp)
                             .padding(end = 12.dp),
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Watch now",
+                            text = stringResource(id = R.string.tvseason_watch_now),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = series.studio ?: "Continue from your library",
+                            text = series.studio ?: stringResource(id = R.string.tvseason_watch_now_continue_from_library),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                         )
@@ -565,21 +569,29 @@ private fun SeriesDetailsHeader(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
+                    val watchlistLabel = stringResource(id = R.string.tvseason_action_watchlist)
                     QuickAction(
                         icon = Icons.Default.BookmarkBorder,
-                        label = "Watchlist",
+                        label = watchlistLabel,
+                        onClick = { onQuickActionClick(SeasonQuickAction.WATCHLIST) },
                     )
+                    val watchedLabel = stringResource(id = R.string.tvseason_action_watched)
                     QuickAction(
                         icon = Icons.Default.CheckCircle,
-                        label = "Watched it?",
+                        label = watchedLabel,
+                        onClick = { onQuickActionClick(SeasonQuickAction.WATCHED) },
                     )
+                    val likeLabel = stringResource(id = R.string.tvseason_action_like)
                     QuickAction(
                         icon = Icons.Default.ThumbUp,
-                        label = "Like",
+                        label = likeLabel,
+                        onClick = { onQuickActionClick(SeasonQuickAction.LIKE) },
                     )
+                    val dislikeLabel = stringResource(id = R.string.tvseason_action_dislike)
                     QuickAction(
                         icon = Icons.Default.ThumbDown,
-                        label = "Dislike",
+                        label = dislikeLabel,
+                        onClick = { onQuickActionClick(SeasonQuickAction.DISLIKE) },
                     )
                 }
             }
@@ -587,33 +599,44 @@ private fun SeriesDetailsHeader(
     }
 }
 
+private enum class SeasonQuickAction {
+    WATCHLIST,
+    WATCHED,
+    LIKE,
+    DISLIKE,
+}
+
 @Composable
 private fun QuickAction(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.clickable(
+            role = Role.Button,
+            onClick = onClick,
+        ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Surface(
             shape = CircleShape,
-            color = Color.White.copy(alpha = 0.08f),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.35f),
             tonalElevation = 2.dp,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(12.dp).size(20.dp),
             )
         }
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = Color.White.copy(alpha = 0.9f),
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }

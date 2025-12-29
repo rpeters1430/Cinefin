@@ -166,6 +166,15 @@
     
     <!-- TV Shows Screen -->
     <string name="adjust_tv_shows_filters_hint">Try adjusting your filters or refresh the library</string>
+    <string name="tvseason_info_action">Summaries, reviews &amp; more</string>
+    <string name="tvseason_info_action_content_description">View series information</string>
+    <string name="tvseason_watch_now">Watch now</string>
+    <string name="tvseason_watch_now_content_description">Start watching now</string>
+    <string name="tvseason_watch_now_continue_from_library">Continue from your library</string>
+    <string name="tvseason_action_watchlist">Watchlist</string>
+    <string name="tvseason_action_watched">Watched it?</string>
+    <string name="tvseason_action_like">Like</string>
+    <string name="tvseason_action_dislike">Dislike</string>
     
     <!-- TV Show Filters -->
     <string name="filter_all_shows">All Shows</string>
