@@ -158,7 +158,7 @@ class MainAppViewModelLibraryLoadTest {
 
         // Pre-populate the ViewModel state with libraries using the test helper
         viewModel.setAppStateForTest(
-            MainAppState(libraries = listOf(library))
+            MainAppState(libraries = listOf(library)),
         )
 
         // Mock getLibraryItems to return movies
@@ -226,7 +226,7 @@ class MainAppViewModelLibraryLoadTest {
 
         // Pre-populate state
         viewModel.setAppStateForTest(
-            MainAppState(libraries = listOf(library))
+            MainAppState(libraries = listOf(library)),
         )
 
         // Mock getLibraryItems to return series
@@ -280,7 +280,7 @@ class MainAppViewModelLibraryLoadTest {
         )
 
         viewModel.setAppStateForTest(
-            MainAppState(libraries = listOf(library))
+            MainAppState(libraries = listOf(library)),
         )
 
         val errorMessage = "Network error"
@@ -301,16 +301,20 @@ class MainAppViewModelLibraryLoadTest {
         // Assert
         val state = viewModel.appState.value
         assertNotNull("Error message should be set", state.errorMessage)
-        assertTrue("Error message should contain network error",
-            state.errorMessage?.contains("Network error") == true)
+        assertTrue(
+            "Error message should contain network error",
+            state.errorMessage?.contains("Network error") == true,
+        )
 
         // Verify loading stopped
         assertFalse(state.isLoading)
         assertFalse(state.isLoadingMovies)
 
         // Verify no items were loaded
-        assertTrue("No items should be loaded on error",
-            state.itemsByLibrary[libraryId.toString()]?.isEmpty() != false)
+        assertTrue(
+            "No items should be loaded on error",
+            state.itemsByLibrary[libraryId.toString()]?.isEmpty() != false,
+        )
     }
 
     @Test
@@ -325,7 +329,7 @@ class MainAppViewModelLibraryLoadTest {
         )
 
         viewModel.setAppStateForTest(
-            MainAppState(libraries = listOf(library))
+            MainAppState(libraries = listOf(library)),
         )
 
         // Return exactly 100 items to simulate hasMore = true
@@ -356,8 +360,10 @@ class MainAppViewModelLibraryLoadTest {
         val paginationState = state.libraryPaginationState[libraryId.toString()]
         assertNotNull("Pagination state should exist", paginationState)
         assertEquals(100, paginationState!!.loadedCount)
-        assertTrue("hasMore should be true when exactly 100 items returned",
-            paginationState.hasMore)
+        assertTrue(
+            "hasMore should be true when exactly 100 items returned",
+            paginationState.hasMore,
+        )
         assertFalse("isLoadingMore should be false", paginationState.isLoadingMore)
     }
 
@@ -373,7 +379,7 @@ class MainAppViewModelLibraryLoadTest {
         )
 
         viewModel.setAppStateForTest(
-            MainAppState(libraries = listOf(musicLibrary))
+            MainAppState(libraries = listOf(musicLibrary)),
         )
 
         // Act - Try to load movies (which don't exist)
@@ -400,7 +406,7 @@ class MainAppViewModelLibraryLoadTest {
     fun `loadLibraryTypeData_clearError_removesErrorMessage`() = runTest {
         // Arrange
         viewModel.setAppStateForTest(
-            MainAppState(errorMessage = "Previous error")
+            MainAppState(errorMessage = "Previous error"),
         )
 
         // Act

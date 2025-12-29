@@ -68,7 +68,7 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
-            isReturnDefaultValues = true  // Enable default values for Android framework classes like Log
+            isReturnDefaultValues = true // Enable default values for Android framework classes like Log
         }
     }
 
