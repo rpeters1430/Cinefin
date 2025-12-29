@@ -366,7 +366,10 @@ fun MusicScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             ) {
-                items(MusicFilter.getAllFilters()) { filter ->
+                items(
+                    items = MusicFilter.getAllFilters(),
+                    key = { it },
+                ) { filter ->
                     FilterChip(
                         onClick = { selectedFilter = filter },
                         label = { Text(stringResource(id = filter.displayNameResId)) },

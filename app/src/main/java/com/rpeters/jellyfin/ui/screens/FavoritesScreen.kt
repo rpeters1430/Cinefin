@@ -147,7 +147,10 @@ fun FavoritesScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    items(favorites.chunked(2)) { rowItems ->
+                    items(
+                        items = favorites.chunked(2),
+                        key = { rowItems -> rowItems.firstOrNull()?.getItemKey() ?: "" },
+                    ) { rowItems ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),

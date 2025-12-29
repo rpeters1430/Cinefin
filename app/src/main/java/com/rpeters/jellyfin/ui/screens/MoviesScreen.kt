@@ -322,7 +322,10 @@ private fun MoviesLoadingContent(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        items(20) {
+        items(
+            count = 20,
+            key = { it },
+        ) {
             ExpressiveLoadingCard(
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -358,7 +361,10 @@ private fun MoviesContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
             ) {
-                items(MovieFilter.getBasicFilters()) { filter ->
+                items(
+                    items = MovieFilter.getBasicFilters(),
+                    key = { it },
+                ) { filter ->
                     FilterChip(
                         onClick = { onFilterChange(filter) },
                         label = {
@@ -393,7 +399,10 @@ private fun MoviesContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
             ) {
-                items(MovieFilter.getSmartFilters() + MovieFilter.getGenreFilters()) { filter ->
+                items(
+                    items = MovieFilter.getSmartFilters() + MovieFilter.getGenreFilters(),
+                    key = { it },
+                ) { filter ->
                     FilterChip(
                         onClick = { onFilterChange(filter) },
                         label = {

@@ -153,7 +153,10 @@ fun SettingsScreen(
                 )
             }
 
-            items(settingRecommendations) { recommendation ->
+            items(
+                items = settingRecommendations,
+                key = { it.titleRes },
+            ) { recommendation ->
                 SettingsRecommendationCard(recommendation = recommendation)
             }
 
