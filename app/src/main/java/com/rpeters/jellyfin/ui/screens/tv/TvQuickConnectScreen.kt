@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -47,6 +48,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
+
+object TvQuickConnectTestTags {
+    const val SERVER_INPUT = "tv_qc_server_input"
+    const val GET_CODE_BUTTON = "tv_qc_get_code"
+    const val CANCEL_BUTTON = "tv_qc_cancel"
+    const val CODE_CARD = "tv_qc_code_card"
+    const val CODE_TEXT = "tv_qc_code_text"
+    const val STATUS_CARD = "tv_qc_status"
+}
 
 /**
  * TV-optimized Quick Connect screen with large readable code display and D-pad navigation.
@@ -148,7 +158,8 @@ fun TvQuickConnectScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp)
-                    .focusRequester(serverUrlFocusRequester),
+                    .focusRequester(serverUrlFocusRequester)
+                    .testTag(TvQuickConnectTestTags.SERVER_INPUT),
                 enabled = !isConnecting && !isPolling,
             )
 
@@ -161,7 +172,9 @@ fun TvQuickConnectScreen(
                     colors = androidx.tv.material3.CardDefaults.colors(
                         containerColor = TvMaterialTheme.colorScheme.primaryContainer,
                     ),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(TvQuickConnectTestTags.CODE_CARD),
                 ) {
                     Column(
                         modifier = Modifier
@@ -186,6 +199,7 @@ fun TvQuickConnectScreen(
                             color = TvMaterialTheme.colorScheme.onPrimaryContainer,
                             textAlign = TextAlign.Center,
                             letterSpacing = 8.sp,
+                            modifier = Modifier.testTag(TvQuickConnectTestTags.CODE_TEXT),
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -213,7 +227,9 @@ fun TvQuickConnectScreen(
                             TvMaterialTheme.colorScheme.tertiaryContainer
                         },
                     ),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(TvQuickConnectTestTags.STATUS_CARD),
                 ) {
                     Row(
                         modifier = Modifier
@@ -293,7 +309,8 @@ fun TvQuickConnectScreen(
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp)
-                        .focusRequester(getCodeButtonFocusRequester),
+                        .focusRequester(getCodeButtonFocusRequester)
+                        .testTag(TvQuickConnectTestTags.GET_CODE_BUTTON),
                 ) {
                     if (isConnecting) {
                         Row(
@@ -342,7 +359,8 @@ fun TvQuickConnectScreen(
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp)
-                        .focusRequester(cancelButtonFocusRequester),
+                        .focusRequester(cancelButtonFocusRequester)
+                        .testTag(TvQuickConnectTestTags.CANCEL_BUTTON),
                 ) {
                     Text(
                         if (isPolling) "Cancel" else "Back",
