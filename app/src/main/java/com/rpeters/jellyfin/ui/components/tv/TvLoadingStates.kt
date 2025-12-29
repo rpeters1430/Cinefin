@@ -20,18 +20,18 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.ui.appShimmer
 import androidx.tv.material3.Button as TvButton
 import androidx.tv.material3.Card as TvCard
 import androidx.tv.material3.CardDefaults as TvCardDefaults
 import androidx.tv.material3.Icon as TvIcon
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
-import com.rpeters.jellyfin.ui.appShimmer
-import androidx.compose.ui.composed
 
 /**
  * Shimmer effect modifier for skeleton loading animations
