@@ -313,9 +313,10 @@ fun SearchScreen(
                                 contentPadding = PaddingValues(horizontal = 0.dp),
                             ) {
                                 items(
-                                    items = smartSuggestions,
-                                    key = { it },
-                                ) { suggestion ->
+                                    count = smartSuggestions.size,
+                                    key = { index -> "suggestion_$index" },
+                                ) { index ->
+                                    val suggestion = smartSuggestions[index]
                                     SuggestionChip(
                                         onClick = { searchQuery = suggestion },
                                         label = { Text(suggestion) },
