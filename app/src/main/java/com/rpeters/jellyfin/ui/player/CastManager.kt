@@ -32,10 +32,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.concurrent.Executors
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.ImageType
 import java.util.Locale
+import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.google.android.gms.cast.MediaMetadata as CastMediaMetadata
@@ -215,7 +215,7 @@ class CastManager @Inject constructor(
                 // Use modern CastContext API with executor to avoid deprecation warning
                 castContext = CastContext.getSharedInstance(
                     context.applicationContext,
-                    Executors.newSingleThreadExecutor()
+                    Executors.newSingleThreadExecutor(),
                 ).apply {
                     sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
                 }
@@ -612,7 +612,6 @@ class CastManager @Inject constructor(
             SecureLogger.e("CastManager", "Error releasing Cast manager", e)
         }
     }
-
 
     private fun CastMediaMetadata.attachCastArtwork(item: BaseItemDto) {
         val backdropUrl = buildImageUrl(item, ImageType.BACKDROP)

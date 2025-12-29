@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.player
 
-import android.content.Context
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
