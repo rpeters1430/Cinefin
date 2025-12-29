@@ -9,9 +9,9 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
-import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.junit.After
 import org.junit.Assert.assertEquals
