@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -112,9 +113,20 @@ class MainAppViewModel @Inject constructor(
     @UnstableApi private val castManager: CastManager,
     private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
+    companion object {
+        // Pagination constants
+        private const val DEFAULT_PAGE_SIZE = 50
+        private const val API_DEFAULT_LIMIT = 100
+    }
+
     internal fun libraryItemKey(item: BaseItemDto): String =
         item.id?.toString()
-            ?: "${item.name ?: "unknown"}-${item.sortName ?: "unknown"}-${item.type ?: "unknown"}"
+            ?: run {
+                // For items without IDs, generate a deterministic UUID from metadata
+                // This prevents exposing sensitive library content information
+                val fallbackString = "${item.name ?: "unknown"}-${item.sortName ?: "unknown"}-${item.type ?: "unknown"}"
+                UUID.nameUUIDFromBytes(fallbackString.toByteArray()).toString()
+            }
 
     internal fun mergeLibraryItems(currentItems: List<BaseItemDto>, newItems: List<BaseItemDto>): List<BaseItemDto> {
         val merged = LinkedHashMap<String, BaseItemDto>(currentItems.size + newItems.size)
@@ -437,19 +449,21 @@ class MainAppViewModel @Inject constructor(
             }
         }
 
-        // Update all state lists
-        _appState.value = currentState.copy(
-            allItems = updateItemInList(currentState.allItems),
-            allMovies = updateItemInList(currentState.allMovies),
-            allTVShows = updateItemInList(currentState.allTVShows),
-            recentlyAdded = updateItemInList(currentState.recentlyAdded),
-            recentlyAddedByTypes = currentState.recentlyAddedByTypes.mapValues { (_, items) ->
-                updateItemInList(items)
-            },
-            itemsByLibrary = currentState.itemsByLibrary.mapValues { (_, items) ->
-                updateItemInList(items)
-            },
-        )
+        // Update all state lists using StateFlow.update for better performance
+        _appState.update { state ->
+            state.copy(
+                allItems = updateItemInList(state.allItems),
+                allMovies = updateItemInList(state.allMovies),
+                allTVShows = updateItemInList(state.allTVShows),
+                recentlyAdded = updateItemInList(state.recentlyAdded),
+                recentlyAddedByTypes = state.recentlyAddedByTypes.mapValues { (_, items) ->
+                    updateItemInList(items)
+                },
+                itemsByLibrary = state.itemsByLibrary.mapValues { (_, items) ->
+                    updateItemInList(items)
+                },
+            )
+        }
     }
 
     fun toggleWatchedStatus(item: BaseItemDto) {
@@ -648,8 +662,8 @@ class MainAppViewModel @Inject constructor(
                     }
 
                     // Detect if there are more items to load
-                    // If we got exactly 100 items (the API default limit), there might be more
-                    val hasMore = items.size >= 100
+                    // If we got exactly API_DEFAULT_LIMIT items, there might be more
+                    val hasMore = items.size >= API_DEFAULT_LIMIT
 
                     val updated = _appState.value.itemsByLibrary.toMutableMap()
                     updated[libraryId] = mergeLibraryItems(emptyList(), items)
@@ -863,16 +877,15 @@ class MainAppViewModel @Inject constructor(
                 return@launch
             }
 
-            val pageSize = 50
             val page = if (reset) 0 else currentState.moviesPage + 1
-            val startIndex = page * pageSize
+            val startIndex = page * DEFAULT_PAGE_SIZE
 
             when (
                 val result = mediaRepository.getLibraryItems(
                     parentId = movieLibrary.id?.toString(),
                     itemTypes = "Movie",
                     startIndex = startIndex,
-                    limit = pageSize,
+                    limit = DEFAULT_PAGE_SIZE,
                     collectionType = "movies",
                 )
             ) {
@@ -882,7 +895,7 @@ class MainAppViewModel @Inject constructor(
                     _appState.value = _appState.value.copy(
                         allMovies = allMovies,
                         moviesPage = page,
-                        hasMoreMovies = newMovies.size == pageSize,
+                        hasMoreMovies = newMovies.size == DEFAULT_PAGE_SIZE,
                         isLoadingMovies = false,
                     )
                 }
@@ -931,16 +944,15 @@ class MainAppViewModel @Inject constructor(
                 return@launch
             }
 
-            val pageSize = 50
             val page = if (reset) 0 else currentState.tvShowsPage + 1
-            val startIndex = page * pageSize
+            val startIndex = page * DEFAULT_PAGE_SIZE
 
             when (
                 val result = mediaRepository.getLibraryItems(
                     parentId = tvLibrary.id?.toString(),
                     itemTypes = "Series",
                     startIndex = startIndex,
-                    limit = pageSize,
+                    limit = DEFAULT_PAGE_SIZE,
                     collectionType = "tvshows",
                 )
             ) {
@@ -950,7 +962,7 @@ class MainAppViewModel @Inject constructor(
                     _appState.value = _appState.value.copy(
                         allTVShows = allTVShows,
                         tvShowsPage = page,
-                        hasMoreTVShows = newTVShows.size == pageSize,
+                        hasMoreTVShows = newTVShows.size == DEFAULT_PAGE_SIZE,
                         isLoadingTVShows = false,
                     )
                 }
@@ -1069,12 +1081,12 @@ class MainAppViewModel @Inject constructor(
                 val result = mediaRepository.getLibraryItems(
                     parentId = libraryId,
                     startIndex = startIndex,
-                    limit = 100,
+                    limit = API_DEFAULT_LIMIT,
                 )
             ) {
                 is ApiResult.Success -> {
                     val newItems = result.data
-                    val hasMore = newItems.size >= 100
+                    val hasMore = newItems.size >= API_DEFAULT_LIMIT
 
                     SecureLogger.v("MainAppViewModel", "Loaded ${newItems.size} more items, hasMore=$hasMore")
 

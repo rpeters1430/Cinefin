@@ -96,7 +96,13 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         }
         val mainViewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
         val detailViewModel = androidx.hilt.navigation.compose.hiltViewModel<ItemDetailViewModel>()
-        LaunchedEffect(videoId) { detailViewModel.load(videoId) }
+        LaunchedEffect(videoId) {
+            try {
+                detailViewModel.load(videoId)
+            } catch (e: Exception) {
+                SecureLogger.e("NavGraph", "Error loading video details: ${e.message}", e)
+            }
+        }
         val item by detailViewModel.item
         val playbackAnalysis by detailViewModel.playbackAnalysis
         val error by detailViewModel.error
@@ -143,7 +149,13 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             backStackEntry.arguments?.getString(Screen.ITEM_ID_ARG) ?: return@composable
         val mainViewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
         val detailViewModel = androidx.hilt.navigation.compose.hiltViewModel<ItemDetailViewModel>()
-        LaunchedEffect(itemId) { detailViewModel.load(itemId) }
+        LaunchedEffect(itemId) {
+            try {
+                detailViewModel.load(itemId)
+            } catch (e: Exception) {
+                SecureLogger.e("NavGraph", "Error loading item details: ${e.message}", e)
+            }
+        }
         val item by detailViewModel.item
         val playbackAnalysis by detailViewModel.playbackAnalysis
         val error by detailViewModel.error
