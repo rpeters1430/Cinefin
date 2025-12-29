@@ -50,19 +50,19 @@ jobs:
           chmod +x scripts/gen-local-properties.sh || true
           ./scripts/gen-local-properties.sh
     
-    - name: Build with Gradle
-      run: ./gradlew assembleDebug --stacktrace
-      
-    - name: Run checks
-      run: ./gradlew lintDebug testDebugUnitTest
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug --stacktrace
+        
+      - name: Run checks
+        run: ./gradlew lintDebug testDebugUnitTest
 
-    - name: Generate coverage
-      run: ./gradlew jacocoTestReport
+      - name: Generate coverage
+        run: ./gradlew jacocoTestReport
 
-    - name: Upload reports
-      uses: actions/upload-artifact@v4
-      with:
-        name: reports
-        path: |
-          app/build/reports
-          app/build/jacoco
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            app/build/reports
+            app/build/jacoco

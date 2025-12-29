@@ -54,7 +54,10 @@ fun LibraryFilterRow(
             vertical = LibraryScreenDefaults.FilterChipSpacing,
         ),
     ) {
-        items(FilterType.getAllFilters()) { filter ->
+        items(
+            items = FilterType.getAllFilters(),
+            key = { filter -> filter.name },
+        ) { filter ->
             FilterChip(
                 onClick = { onFilterSelected(filter) },
                 label = { Text(filter.displayName) },

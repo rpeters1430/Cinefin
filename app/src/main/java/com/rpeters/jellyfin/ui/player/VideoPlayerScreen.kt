@@ -86,6 +86,7 @@ import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 @UnstableApi
 @Composable
@@ -152,6 +153,8 @@ fun VideoPlayerScreen(
         return
     }
 
+    val playerColors = rememberVideoPlayerColors()
+
     // Mobile/Tablet player UI below
     var controlsVisible by remember { mutableStateOf(true) }
     var showQualityMenu by remember { mutableStateOf(false) }
@@ -208,7 +211,7 @@ fun VideoPlayerScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(playerColors.background)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = { offset ->
@@ -302,9 +305,14 @@ fun VideoPlayerScreen(
 
         // Periodically sample current position from the player for UI elements like skip buttons
         var currentPosMs by remember { mutableLongStateOf(0L) }
-        LaunchedEffect(exoPlayer) {
-            while (true) {
-                currentPosMs = exoPlayer?.currentPosition ?: 0L
+        LaunchedEffect(exoPlayer, playerState.isPlaying, playerState.isLoading) {
+            val player = exoPlayer ?: run {
+                currentPosMs = 0L
+                return@LaunchedEffect
+            }
+            currentPosMs = player.currentPosition
+            while (isActive && (playerState.isPlaying || playerState.isLoading)) {
+                currentPosMs = player.currentPosition
                 delay(500)
             }
         }
@@ -342,7 +350,7 @@ fun VideoPlayerScreen(
         ) {
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
+                    containerColor = playerColors.overlayScrim,
                 ),
                 shape = CircleShape,
                 modifier = Modifier.size(100.dp),
@@ -355,12 +363,12 @@ fun VideoPlayerScreen(
                     Icon(
                         imageVector = seekFeedbackIcon,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = playerColors.overlayContent,
                         modifier = Modifier.size(36.dp),
                     )
                     Text(
                         text = seekFeedbackText,
-                        color = Color.White,
+                        color = playerColors.overlayContent,
                         style = MaterialTheme.typography.labelLarge,
                         modifier = Modifier.padding(top = 4.dp),
                     )
@@ -386,10 +394,10 @@ fun VideoPlayerScreen(
                     .align(Alignment.TopEnd)
                     .padding(16.dp),
             ) {
-                Surface(color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f), shape = CircleShape) {
+                Surface(color = playerColors.overlayScrim, shape = CircleShape) {
                     Text(
                         text = "Skip Intro",
-                        color = Color.White,
+                        color = playerColors.overlayContent,
                         modifier = Modifier
                             .clickable {
                                 val target = playerState.introEndMs ?: (currentPosMs + 10_000)
@@ -406,10 +414,10 @@ fun VideoPlayerScreen(
                     .align(Alignment.TopEnd)
                     .padding(top = 64.dp, end = 16.dp),
             ) {
-                Surface(color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f), shape = CircleShape) {
+                Surface(color = playerColors.overlayScrim, shape = CircleShape) {
                     Text(
                         text = "Skip Credits",
-                        color = Color.White,
+                        color = playerColors.overlayContent,
                         modifier = Modifier
                             .clickable {
                                 val target =
@@ -448,6 +456,7 @@ fun VideoPlayerScreen(
                 showSpeedMenu = showSpeedMenu,
                 onShowSpeedMenu = { showSpeedMenu = it },
                 supportsPip = supportsPip,
+                playerColors = playerColors,
             )
         }
 
@@ -637,11 +646,7 @@ private fun CastNowPlayingOverlay(
                         .matchParentSize()
                         .background(
                             Brush.verticalGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
-                                    Color.Black.copy(alpha = 0.2f),
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
-                                ),
+                                playerColors.gradientStops,
                             ),
                         ),
                 )
@@ -687,12 +692,14 @@ private fun CastNowPlayingOverlay(
                             contentDescription = if (playerState.isCastPlaying) "Pause cast playback" else "Resume cast playback",
                             onClick = if (playerState.isCastPlaying) onPauseCast else onResumeCast,
                             isActive = playerState.isCastPlaying,
+                            colors = playerColors,
                         )
                         ExpressiveIconButton(
                             icon = Icons.Default.Stop,
                             contentDescription = "Stop casting",
                             onClick = onStopCast,
                             modifier = Modifier.padding(end = 4.dp),
+                            colors = playerColors,
                         )
                     }
                 }
@@ -742,6 +749,7 @@ private fun VideoControlsOverlay(
     showSpeedMenu: Boolean,
     onShowSpeedMenu: (Boolean) -> Unit,
     supportsPip: Boolean,
+    playerColors: VideoPlayerColors,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -750,7 +758,7 @@ private fun VideoControlsOverlay(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
+                        playerColors.overlayScrim,
                         Color.Transparent,
                         Color.Transparent,
                         MaterialTheme.colorScheme.scrim.copy(alpha = 0.8f),
@@ -775,12 +783,13 @@ private fun VideoControlsOverlay(
                 contentDescription = "Close player",
                 onClick = onClose,
                 modifier = Modifier.padding(end = 8.dp),
+                colors = playerColors,
             )
 
             // Item name with expressive styling
             Text(
                 text = playerState.itemName,
-                color = Color.White,
+                color = playerColors.overlayContent,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier
@@ -794,7 +803,7 @@ private fun VideoControlsOverlay(
             // This provides the standard Cast icon and device picker dialog
             MediaRouteButton(
                 modifier = Modifier.padding(start = 8.dp),
-                tint = MaterialTheme.colorScheme.onSurface.toArgb(),
+                colors = playerColors,
             )
         }
 
@@ -818,12 +827,12 @@ private fun VideoControlsOverlay(
                 ) {
                     Text(
                         text = formatTime(playerState.currentPosition),
-                        color = Color.White,
+                        color = playerColors.overlayContent,
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Text(
                         text = formatTime(playerState.duration),
-                        color = Color.White,
+                        color = playerColors.overlayContent,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -846,7 +855,7 @@ private fun VideoControlsOverlay(
                         colors = SliderDefaults.colors(
                             thumbColor = MaterialTheme.colorScheme.primary,
                             activeTrackColor = MaterialTheme.colorScheme.primary,
-                            inactiveTrackColor = Color.White.copy(alpha = 0.1f),
+                            inactiveTrackColor = playerColors.inactiveTrack,
                         ),
                     )
                 }
@@ -876,6 +885,7 @@ private fun VideoControlsOverlay(
                     contentDescription = "Stop and close player",
                     onClick = onClose,
                     modifier = Modifier.padding(start = 8.dp),
+                    colors = playerColors,
                 )
 
                 // Spacer to push buttons to the right
@@ -889,17 +899,18 @@ private fun VideoControlsOverlay(
                             contentDescription = "Subtitles",
                             onClick = onSubtitlesClick,
                             modifier = Modifier.padding(horizontal = 4.dp),
+                            colors = playerColors,
                         )
                         val subLabel = playerState.selectedSubtitleTrack?.format?.language?.take(2)
                             ?.uppercase()
                             ?: "Off"
                         Surface(
-                            color = Color.White.copy(alpha = 0.12f),
+                            color = playerColors.chipBackground,
                             shape = CircleShape,
                         ) {
                             Text(
                                 text = subLabel,
-                                color = Color.White,
+                                color = playerColors.chipContent,
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             )
@@ -921,6 +932,7 @@ private fun VideoControlsOverlay(
                             contentDescription = "Audio Tracks",
                             onClick = onAudioTracksClick,
                             modifier = Modifier.padding(horizontal = 4.dp),
+                            colors = playerColors,
                         )
                         val a = playerState.selectedAudioTrack?.format
                         val lang = a?.language?.take(2)?.uppercase() ?: "--"
@@ -931,12 +943,12 @@ private fun VideoControlsOverlay(
                         }
                         val audioLabel = if (ch.isNotEmpty()) "$lang $ch" else lang
                         Surface(
-                            color = Color.White.copy(alpha = 0.12f),
+                            color = playerColors.chipBackground,
                             shape = CircleShape,
                         ) {
                             Text(
                                 text = audioLabel,
-                                color = Color.White,
+                                color = playerColors.chipContent,
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             )
@@ -951,6 +963,7 @@ private fun VideoControlsOverlay(
                         contentDescription = "Quality: ${playerState.selectedQuality?.label ?: "Auto"}",
                         onClick = { onShowQualityMenu(true) },
                         modifier = Modifier.padding(horizontal = 4.dp),
+                        colors = playerColors,
                     )
 
                     // Enhanced quality selection dropdown with all options
@@ -1031,7 +1044,7 @@ private fun VideoControlsOverlay(
                             .padding(horizontal = 4.dp)
                             .clip(CircleShape)
                             .clickable { onShowSpeedMenu(true) },
-                        color = Color.White.copy(alpha = 0.1f),
+                        color = playerColors.chipBackground,
                         shape = CircleShape,
                     ) {
                         Row(
@@ -1041,12 +1054,12 @@ private fun VideoControlsOverlay(
                             Icon(
                                 imageVector = Icons.Default.Speed,
                                 contentDescription = "Playback speed",
-                                tint = Color.White,
+                                tint = playerColors.chipContent,
                             )
                             Spacer(modifier = Modifier.size(6.dp))
                             Text(
                                 text = String.format("%.2fx", playerState.playbackSpeed),
-                                color = Color.White,
+                                color = playerColors.chipContent,
                                 style = MaterialTheme.typography.labelLarge,
                             )
                         }
@@ -1086,18 +1099,17 @@ private fun VideoControlsOverlay(
                 }
 
                 // Fullscreen button (right) - triggers PiP if not fullscreen with expressive styling
-                if (supportsPip) 1f else 0.4f
                 Surface(
                     modifier = Modifier
                         .padding(start = 4.dp)
                         .clip(CircleShape),
-                    color = Color.White.copy(alpha = if (supportsPip) 0.1f else 0.05f),
+                    color = if (supportsPip) playerColors.controlContainer else playerColors.disabledControlContainer,
                     shape = CircleShape,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Fullscreen,
                         contentDescription = "Fullscreen / Picture in Picture",
-                        tint = if (supportsPip) Color.White else Color.LightGray,
+                        tint = if (supportsPip) playerColors.overlayContent else playerColors.disabledIcon,
                         modifier = Modifier
                             .padding(12.dp)
                             .size(24.dp)
@@ -1109,6 +1121,42 @@ private fun VideoControlsOverlay(
     }
 }
 
+private data class VideoPlayerColors(
+    val background: Color,
+    val overlayContent: Color,
+    val overlayScrim: Color,
+    val gradientStops: List<Color>,
+    val chipBackground: Color,
+    val chipContent: Color,
+    val inactiveTrack: Color,
+    val controlContainer: Color,
+    val disabledControlContainer: Color,
+    val disabledIcon: Color,
+)
+
+@Composable
+private fun rememberVideoPlayerColors(): VideoPlayerColors {
+    val scheme = MaterialTheme.colorScheme
+    return remember(scheme) {
+        VideoPlayerColors(
+            background = Color.Black,
+            overlayContent = scheme.onSurface,
+            overlayScrim = scheme.scrim.copy(alpha = 0.65f),
+            gradientStops = listOf(
+                scheme.surfaceContainer.copy(alpha = 0.9f),
+                scheme.scrim.copy(alpha = 0.35f),
+                scheme.surfaceContainer.copy(alpha = 0.9f),
+            ),
+            chipBackground = scheme.surfaceContainerHigh.copy(alpha = 0.35f),
+            chipContent = scheme.onSurface,
+            inactiveTrack = scheme.onSurface.copy(alpha = 0.25f),
+            controlContainer = scheme.surfaceContainerHigh.copy(alpha = 0.35f),
+            disabledControlContainer = scheme.surfaceContainer.copy(alpha = 0.2f),
+            disabledIcon = scheme.onSurfaceVariant,
+        )
+    }
+}
+
 // Expressive Icon Button component
 @Composable
 private fun ExpressiveIconButton(
@@ -1117,6 +1165,7 @@ private fun ExpressiveIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isActive: Boolean = false,
+    colors: VideoPlayerColors,
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isActive) 1.1f else 1f,
@@ -1136,14 +1185,14 @@ private fun ExpressiveIconButton(
         color = if (isActive) {
             MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
         } else {
-            Color.White.copy(alpha = 0.1f)
+            colors.controlContainer
         },
         shape = CircleShape,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = if (isActive) MaterialTheme.colorScheme.primary else Color.White,
+            tint = if (isActive) MaterialTheme.colorScheme.primary else colors.overlayContent,
             modifier = Modifier.padding(12.dp),
         )
     }
@@ -1213,6 +1262,7 @@ private fun CastButton(
     isCasting: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    colors: VideoPlayerColors,
 ) {
     ExpressiveIconButton(
         icon = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
@@ -1220,6 +1270,7 @@ private fun CastButton(
         onClick = onClick,
         isActive = isCasting,
         modifier = modifier,
+        colors = colors,
     )
 }
 
@@ -1228,7 +1279,7 @@ private fun ControlButton(
     onClick: () -> Unit,
     imageVector: ImageVector,
     contentDescription: String?,
-    tint: Color = Color.White,
+    tint: Color = MaterialTheme.colorScheme.onSurface,
     modifier: Modifier = Modifier,
 ) {
     IconButton(

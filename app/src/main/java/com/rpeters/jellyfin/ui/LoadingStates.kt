@@ -9,8 +9,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -27,9 +29,23 @@ import androidx.compose.ui.unit.dp
 fun ShimmerBox(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(8.dp),
-    baseColor: Color = Color(0xFFE0E0E0),
-    highlightColor: Color = Color(0xFFF5F5F5),
+    baseColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    highlightColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
 ) {
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .appShimmer(baseColor, highlightColor),
+    )
+}
+
+fun Modifier.appShimmer(
+    baseColor: Color,
+    highlightColor: Color,
+): Modifier {
+    val shimmerColors = remember(baseColor, highlightColor) {
+        listOf(baseColor, highlightColor, baseColor)
+    }
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnim by transition.animateFloat(
         initialValue = 0f,
@@ -40,14 +56,11 @@ fun ShimmerBox(
         ),
         label = "shimmer_anim",
     )
-    val brush = Brush.linearGradient(
-        colors = listOf(baseColor, highlightColor, baseColor),
-        start = Offset(translateAnim - 1000f, 0f),
-        end = Offset(translateAnim, 1000f),
-    )
-    Box(
-        modifier = modifier
-            .clip(shape)
-            .background(brush),
+    return background(
+        Brush.linearGradient(
+            colors = shimmerColors,
+            start = Offset(translateAnim - 1000f, 0f),
+            end = Offset(translateAnim, 1000f),
+        ),
     )
 }
