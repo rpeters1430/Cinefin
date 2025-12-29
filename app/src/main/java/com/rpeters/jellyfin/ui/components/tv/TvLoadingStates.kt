@@ -152,7 +152,10 @@ fun TvSkeletonCarousel(
             contentPadding = PaddingValues(horizontal = 56.dp),
             horizontalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            items(itemCount) {
+            items(
+                count = itemCount,
+                key = { it },
+            ) {
                 TvSkeletonCard()
             }
         }

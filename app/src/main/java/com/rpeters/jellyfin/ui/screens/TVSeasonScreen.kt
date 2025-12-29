@@ -837,7 +837,10 @@ private fun MoreLikeThisSection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp),
             ) {
-                items(5) { index ->
+                items(
+                    count = 5,
+                    key = { it },
+                ) {
                     ExpressiveLoadingCard(
                         modifier = Modifier.width(140.dp),
                         imageHeight = 210.dp,

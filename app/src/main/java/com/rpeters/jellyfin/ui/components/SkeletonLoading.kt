@@ -232,7 +232,10 @@ fun SkeletonGrid(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        items(itemCount) {
+        items(
+            count = itemCount,
+            key = { it },
+        ) {
             content()
         }
     }
