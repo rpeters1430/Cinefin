@@ -462,7 +462,7 @@ private fun CarouselContent(
     ) {
         items(
             count = categories.size,
-            key = { index -> categories[index].title },
+            key = { index -> "${categories[index].title}_$index" },
         ) { index ->
             val category = categories[index]
             val carouselState = rememberCarouselState { category.items.size }

@@ -400,7 +400,7 @@ private fun ExpressiveEpisodeHero(
                             Text(
                                 text = resolution,
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onPrimary,
+                                color = Color.White,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                                 fontWeight = FontWeight.Bold,
                             )

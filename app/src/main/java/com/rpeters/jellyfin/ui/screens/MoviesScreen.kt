@@ -68,7 +68,6 @@ import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.MovieRed
-import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -244,7 +243,7 @@ fun MoviesScreen(
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = "Refresh",
-                                tint = MusicGreen,
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                         }
                     }

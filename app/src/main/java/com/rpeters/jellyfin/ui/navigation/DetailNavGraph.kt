@@ -130,7 +130,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             )
         } ?: if (error != null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(error ?: "Video not found")
+                Text(error)
             }
         } else {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
