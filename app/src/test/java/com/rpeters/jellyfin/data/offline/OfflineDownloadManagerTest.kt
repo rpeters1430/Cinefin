@@ -29,6 +29,7 @@ import org.junit.Test
 import java.io.File
 import java.io.IOException
 import java.util.UUID
+import kotlin.io.path.createTempDirectory
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OfflineDownloadManagerTest {
@@ -46,7 +47,7 @@ class OfflineDownloadManagerTest {
         okHttpClient = mockk(relaxed = true)
 
         // Create a temporary directory for test downloads
-        tempDir = createTempDir("jellyfin_test")
+        tempDir = createTempDirectory("jellyfin_test").toFile()
         every { context.getExternalFilesDir(null) } returns tempDir
         every { context.filesDir } returns tempDir
 

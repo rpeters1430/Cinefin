@@ -8,6 +8,7 @@ import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.common.DispatcherProvider
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
@@ -28,6 +29,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -108,6 +110,7 @@ class MainAppViewModel @Inject constructor(
     private val searchRepository: JellyfinSearchRepository,
     private val credentialManager: SecureCredentialManager,
     @UnstableApi private val castManager: CastManager,
+    private val dispatchers: DispatcherProvider,
 ) : ViewModel() {
     internal fun libraryItemKey(item: BaseItemDto): String =
         item.id?.toString()
@@ -140,7 +143,7 @@ class MainAppViewModel @Inject constructor(
 
     // Simple authentication check - no duplicate methods
     private suspend fun ensureValidToken(): Boolean {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatchers.io) {
             try {
                 if (!authRepository.isTokenExpired()) return@withContext true
                 return@withContext authRepository.reAuthenticate()
@@ -214,7 +217,7 @@ class MainAppViewModel @Inject constructor(
 
             try {
                 // Execute heavy work on IO dispatcher to prevent main thread blocking
-                withContext(Dispatchers.IO) {
+                withContext(dispatchers.io) {
                     val librariesDeferred =
                         async { mediaRepository.getUserLibraries(forceRefresh = forceRefresh) }
                     val recentDeferred =
@@ -716,11 +719,25 @@ class MainAppViewModel @Inject constructor(
             }
             loadLibraryTypeData(library, libraryType, forceRefresh)
         } else {
-            if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
-                android.util.Log.w(
-                    "MainAppViewModel",
-                    "loadLibraryTypeData: no matching library found for ${libraryType.name}; librariesLoaded=${_appState.value.libraries.size}; available libraries: ${_appState.value.libraries.map { "${it.name}(${it.collectionType})" }}",
-                )
+            viewModelScope.launch {
+                val libraries = ensureLibrariesLoaded(forceRefresh)
+                val resolvedLibrary = libraries?.let { findLibraryForType(libraryType) }
+                if (resolvedLibrary != null) {
+                    if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                        SecureLogger.v(
+                            "MainAppViewModel",
+                            "loadLibraryTypeData: resolved ${libraryType.name} after loading libraries",
+                        )
+                    }
+                    loadLibraryTypeData(resolvedLibrary, libraryType, forceRefresh)
+                } else if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                    android.util.Log.w(
+                        "MainAppViewModel",
+                        "loadLibraryTypeData: no matching library found for ${libraryType.name}; " +
+                            "librariesLoaded=${_appState.value.libraries.size}; " +
+                            "available libraries: ${_appState.value.libraries.map { "${it.name}(${it.collectionType})" }}",
+                    )
+                }
             }
         }
     }
@@ -781,6 +798,35 @@ class MainAppViewModel @Inject constructor(
 
     private fun BaseItemDto.normalizedCollectionType(): String? =
         collectionType?.toString()?.lowercase()?.replace(" ", "")
+
+    private suspend fun ensureLibrariesLoaded(forceRefresh: Boolean): List<BaseItemDto>? {
+        val currentLibraries = _appState.value.libraries
+        if (currentLibraries.isNotEmpty() && !forceRefresh) {
+            return currentLibraries
+        }
+
+        if (_appState.value.isLoading) {
+            appState.first { !it.isLoading }
+            val afterWait = _appState.value.libraries
+            if (afterWait.isNotEmpty() && !forceRefresh) {
+                return afterWait
+            }
+        }
+
+        return when (val result = mediaRepository.getUserLibraries(forceRefresh = forceRefresh)) {
+            is ApiResult.Success -> {
+                _appState.value = _appState.value.copy(libraries = result.data)
+                result.data
+            }
+            is ApiResult.Error -> {
+                _appState.value = _appState.value.copy(
+                    errorMessage = "Failed to load libraries: ${result.message}",
+                )
+                null
+            }
+            is ApiResult.Loading -> null
+        }
+    }
 
     fun clearError() {
         _appState.value = _appState.value.copy(errorMessage = null)
@@ -966,7 +1012,7 @@ class MainAppViewModel @Inject constructor(
     @UnstableApi
     fun sendCastPreview(item: BaseItemDto) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(dispatchers.io) {
                 castManager.initialize()
             }
             val image = getImageUrl(item)

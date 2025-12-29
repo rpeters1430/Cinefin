@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import android.content.Context
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.common.TestDispatcherProvider
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
@@ -79,6 +80,7 @@ class MainAppViewModelLibraryItemTest {
             searchRepository = searchRepository,
             credentialManager = credentialManager,
             castManager = castManager,
+            dispatchers = TestDispatcherProvider(dispatcher),
         )
     }
 

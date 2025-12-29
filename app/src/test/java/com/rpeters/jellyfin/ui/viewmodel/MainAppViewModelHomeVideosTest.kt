@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.common.TestDispatcherProvider
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
@@ -87,6 +88,7 @@ class MainAppViewModelHomeVideosTest {
             searchRepository = searchRepository,
             credentialManager = credentialManager,
             castManager = castManager,
+            dispatchers = TestDispatcherProvider(dispatcher),
         )
     }
 
