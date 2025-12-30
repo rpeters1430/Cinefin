@@ -250,10 +250,10 @@ fun MediaCard(
                         }
 
                         item.communityRating?.let { rating ->
-                                val animatedRating by animateFloatAsState(
-                                    targetValue = rating,
-                                    label = "rating_anim",
-                                )
+                            val animatedRating by animateFloatAsState(
+                                targetValue = rating,
+                                label = "rating_anim",
+                            )
                             val ratingColor = when {
                                 rating >= 7.5f -> RatingGold
                                 rating >= 5.0f -> RatingSilver
