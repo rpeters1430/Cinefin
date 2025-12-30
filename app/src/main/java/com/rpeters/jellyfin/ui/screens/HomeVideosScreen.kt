@@ -21,6 +21,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -165,8 +166,15 @@ fun HomeVideosScreen(
         },
         modifier = modifier,
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            when {
+        PullToRefreshBox(
+            isRefreshing = appState.isLoading,
+            onRefresh = { viewModel.loadInitialData() },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                when {
                 appState.isLoading -> {
                     ExpressiveFullScreenLoading(
                         message = "Loading home videos...",
@@ -219,9 +227,7 @@ fun HomeVideosScreen(
                         hasMoreItems = hasMoreHomeVideos,
                         onLoadMore = { viewModel.loadMoreHomeVideos(homeVideosLibraries) },
                         onItemClick = onItemClick,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues),
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
@@ -239,6 +245,7 @@ fun HomeVideosScreen(
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
+    }
     }
 }
 

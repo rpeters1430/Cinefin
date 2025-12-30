@@ -43,6 +43,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -270,12 +271,17 @@ fun MusicScreen(
         },
         modifier = modifier,
     ) { paddingValues ->
-        Column(
+        PullToRefreshBox(
+            isRefreshing = appState.isLoading,
+            onRefresh = { viewModel.refreshLibraryItems() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
-            if (playbackState.isConnected && (playbackState.currentMediaItem != null || playbackQueue.isNotEmpty())) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                if (playbackState.isConnected && (playbackState.currentMediaItem != null || playbackQueue.isNotEmpty())) {
                 Card(
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -495,6 +501,7 @@ fun MusicScreen(
                 }
             }
         }
+    }
     }
 }
 
