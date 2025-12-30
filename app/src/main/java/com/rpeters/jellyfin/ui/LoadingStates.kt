@@ -39,6 +39,7 @@ fun ShimmerBox(
     )
 }
 
+@Composable
 fun Modifier.appShimmer(
     baseColor: Color,
     highlightColor: Color,

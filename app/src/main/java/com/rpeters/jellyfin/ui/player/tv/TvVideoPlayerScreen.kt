@@ -690,5 +690,6 @@ private fun TvVideoPlayerScreenPreview() {
         onSeekTo = {},
         onShowAudio = {},
         onShowSubtitles = {},
+        onErrorDismiss = {},
     )
 }

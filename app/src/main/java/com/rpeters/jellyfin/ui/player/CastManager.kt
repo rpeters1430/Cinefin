@@ -213,30 +213,30 @@ class CastManager @Inject constructor(
         initializationJob = managerScope.launch {
             try {
                 // Use modern CastContext API with executor to avoid deprecation warning
-                castContext = CastContext.getSharedInstance(
+                val contextTask = CastContext.getSharedInstance(
                     context.applicationContext,
                     Executors.newSingleThreadExecutor(),
-                ).apply {
-                    sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
-                }
+                )
+                contextTask.addOnSuccessListener { ctx ->
+                    castContext = ctx
+                    ctx.sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
 
-                castContext?.let { ctx ->
                     castPlayer = CastPlayer(ctx).apply {
                         setSessionAvailabilityListener(sessionAvailabilityListener)
                     }
-                }
 
-                _castState.update { state ->
-                    state.copy(
-                        isAvailable = castContext?.sessionManager?.currentCastSession != null,
-                        isRemotePlaying = isRemotePlaying(),
-                        castPlayer = castPlayer,
-                        error = null,
-                    )
-                }
+                    _castState.update { state ->
+                        state.copy(
+                            isAvailable = ctx.sessionManager.currentCastSession != null,
+                            isRemotePlaying = isRemotePlaying(),
+                            castPlayer = castPlayer,
+                            error = null,
+                        )
+                    }
 
-                if (BuildConfig.DEBUG) {
-                    SecureLogger.d("CastManager", "Cast manager initialized successfully")
+                    if (BuildConfig.DEBUG) {
+                        SecureLogger.d("CastManager", "Cast manager initialized successfully")
+                    }
                 }
             } catch (e: Exception) {
                 SecureLogger.e("CastManager", "Failed to initialize Cast", e)

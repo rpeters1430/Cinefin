@@ -72,6 +72,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -640,6 +641,7 @@ private fun CastNowPlayingOverlay(
                     alpha = 0.45f,
                 )
 
+                val playerColors = rememberVideoPlayerColors()
                 Box(
                     modifier = Modifier
                         .matchParentSize()
@@ -686,6 +688,7 @@ private fun CastNowPlayingOverlay(
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val playerColors = rememberVideoPlayerColors()
                         ExpressiveIconButton(
                             icon = if (playerState.isCastPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                             contentDescription = if (playerState.isCastPlaying) "Pause cast playback" else "Resume cast playback",
@@ -715,14 +718,6 @@ private fun CastNowPlayingOverlay(
                 }
             }
         }
-
-        // Snackbar Host for error messages
-        androidx.compose.material3.SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp), // Position above player controls
-        )
     }
 }
 
@@ -802,7 +797,7 @@ private fun VideoControlsOverlay(
             // This provides the standard Cast icon and device picker dialog
             MediaRouteButton(
                 modifier = Modifier.padding(start = 8.dp),
-                colors = playerColors,
+                tint = playerColors.overlayContent.toArgb(),
             )
         }
 

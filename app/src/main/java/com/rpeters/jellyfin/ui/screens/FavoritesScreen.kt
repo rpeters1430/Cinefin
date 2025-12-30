@@ -149,7 +149,7 @@ fun FavoritesScreen(
                 ) {
                     items(
                         items = favorites.chunked(2),
-                        key = { rowItems -> rowItems.firstOrNull()?.getItemKey() ?: "" },
+                        key = { rowItems -> rowItems.firstOrNull()?.id?.toString() ?: rowItems.firstOrNull()?.name ?: "" },
                     ) { rowItems ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),

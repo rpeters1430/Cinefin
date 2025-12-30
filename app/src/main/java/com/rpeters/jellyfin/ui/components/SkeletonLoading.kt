@@ -28,6 +28,7 @@ import com.rpeters.jellyfin.ui.appShimmer
  * Provides sophisticated loading UI that improves perceived performance
  */
 
+@Composable
 fun Modifier.shimmer(): Modifier = this.appShimmer(
     baseColor = MaterialTheme.colorScheme.surfaceContainer,
     highlightColor = MaterialTheme.colorScheme.surfaceContainerHigh,

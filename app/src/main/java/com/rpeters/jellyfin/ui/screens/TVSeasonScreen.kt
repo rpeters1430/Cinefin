@@ -322,7 +322,7 @@ private fun SeriesDetailsHeader(
             .fillMaxWidth()
             .height(500.dp),
     ) {
-        // Background Image - Full bleed
+        // Background Image - Full bleed to top edge
         SubcomposeAsyncImage(
             model = getBackdropUrl(series).takeIf { !it.isNullOrBlank() } ?: getImageUrl(series),
             contentDescription = series.name,
@@ -360,17 +360,19 @@ private fun SeriesDetailsHeader(
             modifier = Modifier.fillMaxSize(),
         )
 
-        // Gradient Scrim - Darker at bottom for text readability
+        // Gradient Scrim - Darker at bottom for text readability, fades to transparent at top
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
+                            Color.Transparent,
                             MaterialTheme.colorScheme.scrim.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.4f),
-                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
-                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.95f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.75f),
+                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.9f),
+                            MaterialTheme.colorScheme.background, // Fade to background color at bottom
                         ),
                         startY = 0f,
                         endY = Float.POSITIVE_INFINITY,
@@ -378,13 +380,14 @@ private fun SeriesDetailsHeader(
                 ),
         )
 
-        // Content overlaid on bottom portion
+        // Content at bottom
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding() // Add status bar padding to content, not image
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.Bottom,
+            verticalArrangement = Arrangement.Bottom, // Align to bottom
         ) {
             // Title
             Text(
@@ -928,10 +931,10 @@ private fun PersonCard(
             val displayText = when {
                 !person.role.isNullOrBlank() -> {
                     // Truncate long character names with ellipsis for better fit
-                    val role = person.role
+                    val role = person.role ?: ""
                     if (role.length > 20) "${role.take(17)}..." else role
                 }
-                person.type?.name?.isNotBlank() == true -> person.type.name
+                person.type?.name?.isNotBlank() == true -> person.type?.name
                 else -> null
             }
 

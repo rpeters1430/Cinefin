@@ -308,14 +308,20 @@ fun PosterMediaCard(
     enhancedPlaybackUtils: com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils? = null,
     showTitle: Boolean = true,
     showMetadata: Boolean = true,
-    cardWidth: Dp = 150.dp,
+    cardWidth: Dp? = null, // Made optional - null means fill available width
 ) {
     val contentTypeColor = getContentTypeColor(item.type?.toString())
     val coroutineScope = rememberCoroutineScope()
 
     Card(
         modifier = modifier
-            .width(cardWidth)
+            .then(
+                if (cardWidth != null) {
+                    Modifier.width(cardWidth)
+                } else {
+                    Modifier.fillMaxWidth() // Fill grid cell or available width
+                }
+            )
             .mediaCardSemantics(item) { onClick(item) }
             .combinedClickable(
                 onClick = { onClick(item) },
@@ -339,7 +345,7 @@ fun PosterMediaCard(
                         .aspectRatio(2f / 3f), // Standard poster aspect ratio
                     size = ImageSize.POSTER,
                     quality = ImageQuality.HIGH,
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Fit, // Fit without cropping to prevent squishing
                     cornerRadius = 12.dp,
                     loading = {
                         ShimmerBox(

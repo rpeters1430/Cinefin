@@ -37,16 +37,9 @@ fun MediaRouteButton(
                 // Initialize the Cast button with the CastContext
                 CastButtonFactory.setUpMediaRouteButton(ctx, this)
 
-                // Apply custom tint color to match Material 3 theme
-                setColorFilter(tint)
-
                 // Set content description for accessibility
                 contentDescription = "Cast to device"
             }
-        },
-        update = { button ->
-            // Update tint when theme changes
-            button.setColorFilter(tint)
         },
         modifier = modifier.size(48.dp), // Standard touch target size
     )
