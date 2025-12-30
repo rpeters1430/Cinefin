@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.player
 
+import android.view.ContextThemeWrapper
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -12,6 +13,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.mediarouter.app.MediaRouteButton
 import com.google.android.gms.cast.framework.CastButtonFactory
 import com.google.android.gms.cast.framework.CastContext
+import com.rpeters.jellyfin.R
 
 /**
  * Composable wrapper for Google Cast MediaRouteButton.
@@ -31,11 +33,18 @@ fun MediaRouteButton(
 ) {
     val context = LocalContext.current
 
+    // Create a themed context with opaque background for MediaRouter
+    // This prevents crashes when MediaRouter tries to calculate contrast ratios
+    // with translucent/transparent backgrounds
+    val themedContext = remember(context) {
+        ContextThemeWrapper(context, R.style.Theme_MediaRouter_Opaque)
+    }
+
     AndroidView(
-        factory = { ctx ->
-            MediaRouteButton(ctx).apply {
+        factory = { _ ->
+            MediaRouteButton(themedContext).apply {
                 // Initialize the Cast button with the CastContext
-                CastButtonFactory.setUpMediaRouteButton(ctx, this)
+                CastButtonFactory.setUpMediaRouteButton(themedContext, this)
 
                 // Set content description for accessibility
                 contentDescription = "Cast to device"
