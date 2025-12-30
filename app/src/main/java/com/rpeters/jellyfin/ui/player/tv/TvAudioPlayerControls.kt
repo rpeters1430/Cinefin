@@ -43,7 +43,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -118,7 +117,7 @@ fun TvAudioPlayerControls(
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
                     ),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = formatTime(duration),
@@ -126,7 +125,7 @@ fun TvAudioPlayerControls(
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
                     ),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
 
@@ -140,7 +139,7 @@ fun TvAudioPlayerControls(
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
                 color = MaterialTheme.colorScheme.primary,
-                trackColor = Color.White.copy(alpha = 0.3f),
+                trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
             )
         }
 
@@ -290,15 +289,15 @@ private fun TvAudioControlButton(
         isPrimary -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
         isActive && isFocused -> MaterialTheme.colorScheme.secondary
         isActive -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
-        isFocused -> Color.White.copy(alpha = 0.9f)
-        else -> Color.White.copy(alpha = 0.3f)
+        isFocused -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+        else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     }
 
     val iconColor = when {
-        isPrimary -> Color.White
-        isActive -> Color.White
-        isFocused -> Color.Black
-        else -> Color.White
+        isPrimary -> MaterialTheme.colorScheme.onPrimary
+        isActive -> MaterialTheme.colorScheme.onSecondary
+        isFocused -> MaterialTheme.colorScheme.onSurface
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Box(
@@ -311,7 +310,7 @@ private fun TvAudioControlButton(
                 if (isFocused) {
                     Modifier.border(
                         width = 3.dp,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         shape = CircleShape,
                     )
                 } else {

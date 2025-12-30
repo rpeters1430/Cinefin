@@ -42,7 +42,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -134,10 +133,10 @@ fun MovieDetailScreen(
                             .background(
                                 Brush.verticalGradient(
                                     colors = listOf(
-                                        Color.Black.copy(alpha = 0.2f),
-                                        Color.Black.copy(alpha = 0.4f),
-                                        Color.Black.copy(alpha = 0.7f),
-                                        Color.Black.copy(alpha = 0.95f),
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.2f),
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                                     ),
                                     startY = 0f,
                                     endY = Float.POSITIVE_INFINITY,
@@ -158,7 +157,7 @@ fun MovieDetailScreen(
                             text = movie.name ?: stringResource(R.string.unknown),
                             style = MaterialTheme.typography.displaySmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -186,7 +185,7 @@ fun MovieDetailScreen(
                                         text = "${(rating * 10).roundToInt()}%",
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                     )
                                 }
                             }
@@ -195,14 +194,17 @@ fun MovieDetailScreen(
                             movie.officialRating?.let { rating ->
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
-                                    color = Color.White.copy(alpha = 0.2f),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.4f)),
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.2f),
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                    ),
                                 ) {
                                     Text(
                                         text = rating,
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     )
                                 }
@@ -213,7 +215,7 @@ fun MovieDetailScreen(
                                 Text(
                                     text = year.toString(),
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = Color.White.copy(alpha = 0.9f),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                                 )
                             }
 
@@ -227,7 +229,7 @@ fun MovieDetailScreen(
                                 Text(
                                     text = runtime,
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = Color.White.copy(alpha = 0.9f),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                                 )
                             }
                         }
@@ -239,7 +241,7 @@ fun MovieDetailScreen(
                                 Text(
                                     text = overview,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = Color.White.copy(alpha = 0.85f),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                                     maxLines = 3,
                                     overflow = TextOverflow.Ellipsis,
                                     lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
@@ -381,12 +383,12 @@ fun MovieDetailScreen(
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
-                            items(relatedItems.take(10), key = { it.id ?: it.name.hashCode() }) { relatedMovie ->
+                            items(relatedItems.take(10), key = { it.id.toString() }) { relatedMovie ->
                                 ExpressiveMediaCard(
                                     title = relatedMovie.name ?: stringResource(id = R.string.unknown),
                                     subtitle = relatedMovie.productionYear?.toString() ?: "",
                                     imageUrl = getImageUrl(relatedMovie) ?: "",
-                                    rating = relatedMovie.communityRating?.toFloat(),
+                                    rating = relatedMovie.communityRating,
                                     onCardClick = { /* Navigate to related movie */ },
                                     modifier = Modifier.width(140.dp),
                                 )
@@ -415,12 +417,12 @@ fun MovieDetailScreen(
             Surface(
                 onClick = onBackClick,
                 shape = CircleShape,
-                color = Color.Black.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(id = R.string.navigate_up),
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(12.dp).size(24.dp),
                 )
             }
@@ -429,12 +431,12 @@ fun MovieDetailScreen(
             Surface(
                 onClick = { /* Show more options */ },
                 shape = CircleShape,
-                color = Color.Black.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
             ) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = "More options",
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(12.dp).size(24.dp),
                 )
             }

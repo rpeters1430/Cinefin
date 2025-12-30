@@ -38,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -118,8 +117,8 @@ fun TvAudioPlayerScreen(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.7f),
-                                Color.Black.copy(alpha = 0.9f),
+                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
+                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.9f),
                             ),
                         ),
                     ),
@@ -140,7 +139,7 @@ fun TvAudioPlayerScreen(
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Light,
                     ),
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 24.dp),
                 )
 
@@ -174,7 +173,7 @@ fun TvAudioPlayerScreen(
                                 fontSize = 48.sp,
                                 fontWeight = FontWeight.Bold,
                             ),
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -187,7 +186,7 @@ fun TvAudioPlayerScreen(
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Normal,
                             ),
-                            color = Color.White.copy(alpha = 0.9f),
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -200,7 +199,7 @@ fun TvAudioPlayerScreen(
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Light,
                             ),
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -214,7 +213,7 @@ fun TvAudioPlayerScreen(
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontSize = 18.sp,
                                 ),
-                                color = Color.White.copy(alpha = 0.6f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -328,7 +327,7 @@ private fun AlbumArtDisplay(
                     imageVector = androidx.compose.material.icons.Icons.Default.MusicNote,
                     contentDescription = "No artwork",
                     modifier = Modifier.size(120.dp),
-                    tint = Color.White.copy(alpha = 0.3f),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                 )
             }
         }

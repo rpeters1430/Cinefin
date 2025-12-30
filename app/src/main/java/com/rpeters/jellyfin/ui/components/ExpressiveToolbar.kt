@@ -328,8 +328,8 @@ fun ExpressiveVideoToolbar(
                     // Skip Previous
                     SmallFloatingActionButton(
                         onClick = onSkipPreviousClick,
-                        containerColor = Color.White.copy(alpha = 0.2f),
-                        contentColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+                        contentColor = MaterialTheme.colorScheme.onSurface,
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow, // Replace with skip previous
@@ -358,8 +358,8 @@ fun ExpressiveVideoToolbar(
                     // Skip Next
                     SmallFloatingActionButton(
                         onClick = onSkipNextClick,
-                        containerColor = Color.White.copy(alpha = 0.2f),
-                        contentColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+                        contentColor = MaterialTheme.colorScheme.onSurface,
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow, // Replace with skip next

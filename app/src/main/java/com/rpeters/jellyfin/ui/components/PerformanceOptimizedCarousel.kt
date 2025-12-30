@@ -74,7 +74,7 @@ fun PerformanceOptimizedCarousel(
         ) {
             itemsIndexed(
                 items = limitedItems,
-                key = { _, item -> item.id ?: "" },
+                key = { _, item -> item.id.toString() },
             ) { index, item ->
                 OptimizedCarouselCard(
                     item = item,
@@ -139,7 +139,7 @@ private fun OptimizedCarouselCard(
                 Text(
                     text = getContentTypeLabel(item.type),
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.White,
+                    color = getContentTypeContentColor(item.type),
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                 )
             }
@@ -156,7 +156,7 @@ private fun OptimizedCarouselCard(
                     Text(
                         text = "★ ${String.format(java.util.Locale.ROOT, "%.1f", rating)}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     )
                 }
@@ -167,7 +167,7 @@ private fun OptimizedCarouselCard(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth(),
-                color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                 shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
             ) {
                 Column(
@@ -177,7 +177,7 @@ private fun OptimizedCarouselCard(
                     Text(
                         text = item.name ?: stringResource(R.string.unknown),
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -189,7 +189,7 @@ private fun OptimizedCarouselCard(
                                 Text(
                                     text = seriesName,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.8f),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -200,7 +200,7 @@ private fun OptimizedCarouselCard(
                                 Text(
                                     text = year.toString(),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.8f),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -209,7 +209,7 @@ private fun OptimizedCarouselCard(
                                 Text(
                                     text = artist,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.8f),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -255,6 +255,18 @@ private fun getContentTypeColor(type: BaseItemKind?): Color {
         BaseItemKind.BOOK -> MaterialTheme.colorScheme.outline
         BaseItemKind.AUDIO_BOOK -> MaterialTheme.colorScheme.outline
         else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+}
+
+@Composable
+private fun getContentTypeContentColor(type: BaseItemKind?): Color {
+    return when (type) {
+        BaseItemKind.MOVIE -> MaterialTheme.colorScheme.onPrimary
+        BaseItemKind.SERIES -> MaterialTheme.colorScheme.onSecondary
+        BaseItemKind.EPISODE -> MaterialTheme.colorScheme.onTertiary
+        BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM -> MaterialTheme.colorScheme.onError
+        BaseItemKind.BOOK, BaseItemKind.AUDIO_BOOK -> MaterialTheme.colorScheme.onSurface
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 }
 

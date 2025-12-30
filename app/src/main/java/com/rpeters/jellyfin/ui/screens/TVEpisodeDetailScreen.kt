@@ -400,7 +400,7 @@ private fun ExpressiveEpisodeHero(
                             Text(
                                 text = resolution,
                                 style = MaterialTheme.typography.labelMedium,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                                 fontWeight = FontWeight.Bold,
                             )
@@ -563,14 +563,12 @@ private fun ExpressiveEpisodeInfoCard(
                             icon = if (userData.played == true) Icons.Default.CheckCircle else Icons.Default.VisibilityOff,
                         )
 
-                        userData.playCount?.let { count ->
-                            if (count > 0) {
-                                ExpressiveInfoRow(
-                                    label = "Play Count",
-                                    value = count.toString(),
-                                    icon = Icons.Default.Refresh,
-                                )
-                            }
+                        if (userData.playCount > 0) {
+                            ExpressiveInfoRow(
+                                label = "Play Count",
+                                value = userData.playCount.toString(),
+                                icon = Icons.Default.Refresh,
+                            )
                         }
 
                         userData.lastPlayedDate?.let { date ->

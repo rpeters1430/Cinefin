@@ -78,6 +78,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
@@ -85,6 +86,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
 import com.rpeters.jellyfin.ui.theme.MotionTokens
+import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
+import com.rpeters.jellyfin.data.preferences.ThemePreferences
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
@@ -154,6 +157,7 @@ fun VideoPlayerScreen(
     }
 
     val playerColors = rememberVideoPlayerColors()
+    val isCastAvailable = rememberIsCastAvailable()
 
     // Mobile/Tablet player UI below
     var controlsVisible by remember { mutableStateOf(true) }
@@ -457,6 +461,7 @@ fun VideoPlayerScreen(
                 onShowSpeedMenu = { showSpeedMenu = it },
                 supportsPip = supportsPip,
                 playerColors = playerColors,
+                showCastButton = isCastAvailable,
             )
         }
 
@@ -744,6 +749,7 @@ private fun VideoControlsOverlay(
     onShowSpeedMenu: (Boolean) -> Unit,
     supportsPip: Boolean,
     playerColors: VideoPlayerColors,
+    showCastButton: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -753,9 +759,9 @@ private fun VideoControlsOverlay(
                 Brush.verticalGradient(
                     colors = listOf(
                         playerColors.overlayScrim,
+                        playerColors.overlayScrim.copy(alpha = 0.4f),
                         Color.Transparent,
-                        Color.Transparent,
-                        MaterialTheme.colorScheme.scrim.copy(alpha = 0.8f),
+                        playerColors.overlayScrim,
                     ),
                     startY = 0f,
                     endY = Float.POSITIVE_INFINITY,
@@ -795,10 +801,14 @@ private fun VideoControlsOverlay(
 
             // Casting button - top right with Google Cast MediaRouteButton
             // This provides the standard Cast icon and device picker dialog
-            MediaRouteButton(
-                modifier = Modifier.padding(start = 8.dp),
-                tint = playerColors.overlayContent.toArgb(),
-            )
+            if (showCastButton) {
+                MediaRouteButton(
+                    modifier = Modifier.padding(start = 8.dp),
+                    tint = playerColors.overlayContent.toArgb(),
+                )
+            } else {
+                Spacer(modifier = Modifier.size(48.dp))
+            }
         }
 
         // Main playback controls at the bottom with expressive styling
@@ -1133,20 +1143,20 @@ private fun rememberVideoPlayerColors(): VideoPlayerColors {
     val scheme = MaterialTheme.colorScheme
     return remember(scheme) {
         VideoPlayerColors(
-            background = Color.Black,
+            background = scheme.surface,
             overlayContent = scheme.onSurface,
-            overlayScrim = scheme.scrim.copy(alpha = 0.65f),
+            overlayScrim = scheme.scrim.copy(alpha = 0.75f),
             gradientStops = listOf(
-                scheme.surfaceContainer.copy(alpha = 0.9f),
+                scheme.surfaceContainerHighest.copy(alpha = 0.96f),
                 scheme.scrim.copy(alpha = 0.35f),
-                scheme.surfaceContainer.copy(alpha = 0.9f),
+                scheme.surfaceContainerHighest.copy(alpha = 0.96f),
             ),
-            chipBackground = scheme.surfaceContainerHigh.copy(alpha = 0.35f),
+            chipBackground = scheme.surfaceContainerHighest.copy(alpha = 0.85f),
             chipContent = scheme.onSurface,
-            inactiveTrack = scheme.onSurface.copy(alpha = 0.25f),
-            controlContainer = scheme.surfaceContainerHigh.copy(alpha = 0.35f),
-            disabledControlContainer = scheme.surfaceContainer.copy(alpha = 0.2f),
-            disabledIcon = scheme.onSurfaceVariant,
+            inactiveTrack = scheme.onSurfaceVariant.copy(alpha = 0.3f),
+            controlContainer = scheme.surfaceContainerHighest.copy(alpha = 0.75f),
+            disabledControlContainer = scheme.surfaceContainer.copy(alpha = 0.4f),
+            disabledIcon = scheme.onSurfaceVariant.copy(alpha = 0.6f),
         )
     }
 }
@@ -1177,7 +1187,7 @@ private fun ExpressiveIconButton(
                 onClick = onClick,
             ),
         color = if (isActive) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+            MaterialTheme.colorScheme.primaryContainer
         } else {
             colors.controlContainer
         },
@@ -1186,8 +1196,89 @@ private fun ExpressiveIconButton(
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = if (isActive) MaterialTheme.colorScheme.primary else colors.overlayContent,
+            tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else colors.overlayContent,
             modifier = Modifier.padding(12.dp),
+        )
+    }
+}
+
+@Preview(name = "Video Player Controls", showBackground = true, backgroundColor = 0xFF111111)
+@Composable
+private fun VideoPlayerControlsPreview() {
+    JellyfinAndroidTheme(themePreferences = ThemePreferences.DEFAULT) {
+        val playerColors = rememberVideoPlayerColors()
+        val format = androidx.media3.common.Format.Builder()
+            .setLanguage("en")
+            .setChannelCount(6)
+            .build()
+        val audioTrack = TrackInfo(0, 0, format, true, "English 5.1")
+        val subtitleTrack = TrackInfo(0, 0, format, true, "English")
+        val previewState = VideoPlayerState(
+            isPlaying = true,
+            currentPosition = 2 * 60 * 1000L,
+            duration = 90 * 60 * 1000L,
+            bufferedPosition = 8 * 60 * 1000L,
+            itemName = "Interstellar (2014)",
+            availableQualities = listOf(
+                VideoQuality("auto", "Auto", 0, 0, 0),
+                VideoQuality("1080p", "1080p", 8000, 1920, 1080),
+            ),
+            selectedQuality = VideoQuality("1080p", "1080p", 8000, 1920, 1080),
+            availableAudioTracks = listOf(audioTrack),
+            selectedAudioTrack = audioTrack,
+            availableSubtitleTracks = listOf(subtitleTrack),
+            selectedSubtitleTrack = subtitleTrack,
+            playbackSpeed = 1.25f,
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface),
+        ) {
+            VideoControlsOverlay(
+                playerState = previewState,
+                onPlayPause = {},
+                onSeek = {},
+                onQualityChange = {},
+                onPlaybackSpeedChange = {},
+                onAspectRatioChange = {},
+                onCastClick = {},
+                onAudioTracksClick = {},
+                onSubtitlesClick = {},
+                onPictureInPictureClick = {},
+                onOrientationToggle = {},
+                onClose = {},
+                showQualityMenu = false,
+                onShowQualityMenu = {},
+                showAspectRatioMenu = false,
+                onShowAspectRatioMenu = {},
+                showSpeedMenu = false,
+                onShowSpeedMenu = {},
+                supportsPip = true,
+                playerColors = playerColors,
+                showCastButton = false,
+            )
+        }
+    }
+}
+
+@Preview(name = "Cast Overlay", showBackground = true, backgroundColor = 0xFF111111)
+@Composable
+private fun CastOverlayPreview() {
+    JellyfinAndroidTheme(themePreferences = ThemePreferences.DEFAULT) {
+        CastNowPlayingOverlay(
+            playerState = VideoPlayerState(
+                itemName = "The Bear",
+                castDeviceName = "Living Room TV",
+                castOverview = "Carmen brings fine dining back home while the kitchen finds its rhythm.",
+            ),
+            onPauseCast = {},
+            onResumeCast = {},
+            onStopCast = {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
         )
     }
 }

@@ -67,7 +67,7 @@ fun MediaCard(
     cardWidth: Dp = 280.dp,
     cardAspectRatio: Float = 16f / 9f,
 ) {
-    val contentTypeColor = getContentTypeColor(item.type?.toString())
+    val contentTypeColor = getContentTypeColor(item.type.toString())
     val coroutineScope = rememberCoroutineScope()
 
     Card(
@@ -210,7 +210,7 @@ fun MediaCard(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                             ),
                             startY = 0f,
                             endY = Float.POSITIVE_INFINITY,
@@ -227,7 +227,7 @@ fun MediaCard(
                     MaterialText(
                         text = item.name ?: stringResource(R.string.unknown),
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         autoSize = true,
@@ -245,15 +245,15 @@ fun MediaCard(
                             Text(
                                 text = year.toString(),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.9f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
 
                         item.communityRating?.let { rating ->
-                            val animatedRating by animateFloatAsState(
-                                targetValue = rating.toFloat(),
-                                label = "rating_anim",
-                            )
+                                val animatedRating by animateFloatAsState(
+                                    targetValue = rating,
+                                    label = "rating_anim",
+                                )
                             val ratingColor = when {
                                 rating >= 7.5f -> RatingGold
                                 rating >= 5.0f -> RatingSilver
@@ -310,7 +310,7 @@ fun PosterMediaCard(
     showMetadata: Boolean = true,
     cardWidth: Dp? = null, // Made optional - null means fill available width
 ) {
-    val contentTypeColor = getContentTypeColor(item.type?.toString())
+    val contentTypeColor = getContentTypeColor(item.type.toString())
     val coroutineScope = rememberCoroutineScope()
 
     Card(
@@ -493,7 +493,7 @@ fun PosterMediaCard(
 
                             item.communityRating?.let { rating ->
                                 val animatedRating by animateFloatAsState(
-                                    targetValue = rating.toFloat(),
+                                    targetValue = rating,
                                     label = "rating_anim",
                                 )
                                 val ratingColor = when {
@@ -534,7 +534,7 @@ fun RecentlyAddedCard(
     modifier: Modifier = Modifier,
     enhancedPlaybackUtils: com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils? = null,
 ) {
-    val contentTypeColor = getContentTypeColor(item.type?.toString())
+    val contentTypeColor = getContentTypeColor(item.type.toString())
 
     Card(
         modifier = modifier
@@ -713,7 +713,7 @@ fun RecentlyAddedCard(
 
                     item.communityRating?.let { rating ->
                         val animatedRating by animateFloatAsState(
-                            targetValue = rating.toFloat(),
+                            targetValue = rating,
                             label = "rating_anim",
                         )
                         val ratingColor = when {

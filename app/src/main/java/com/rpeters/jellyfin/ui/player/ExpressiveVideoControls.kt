@@ -168,14 +168,14 @@ private fun ExpressiveTopControls(
                     Column {
                         Text(
                             text = playerState.itemName,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
                         if (playerState.selectedQuality != null) {
                             Text(
                                 text = playerState.selectedQuality.label,
-                                color = Color.White.copy(alpha = 0.7f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
@@ -270,8 +270,8 @@ private fun ExpressiveBottomControls(
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                color = Color.White.copy(alpha = 0.3f),
-                                trackColor = Color.White.copy(alpha = 0.1f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
                             )
 
                             // Main progress slider
@@ -342,7 +342,7 @@ private fun ExpressiveBottomControls(
                     ) {
                         Text(
                             text = formatTime(playerState.currentPosition),
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = FontWeight.Medium,
                             ),
@@ -350,7 +350,7 @@ private fun ExpressiveBottomControls(
 
                         Text(
                             text = formatTime(playerState.duration),
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
@@ -397,16 +397,16 @@ private fun ExpressiveIconButton(
                 onClick = onClick,
             ),
         color = if (isActive) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
         } else {
-            Color.White.copy(alpha = 0.1f)
+            MaterialTheme.colorScheme.surface.copy(alpha = 0.2f)
         },
         shape = CircleShape,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = if (isActive) MaterialTheme.colorScheme.primary else Color.White,
+            tint = if (isActive) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(12.dp),
         )
     }

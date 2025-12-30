@@ -58,6 +58,8 @@ fun ExpressiveCircularLoading(
     showPulse: Boolean = true,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "circular_loading")
+    val primary = MaterialTheme.colorScheme.primary
+    val primaryAccent = primary.copy(alpha = 0.7f)
 
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -102,8 +104,8 @@ fun ExpressiveCircularLoading(
                         Color.Transparent,
                         Color.Transparent,
                         Color.Transparent,
-                        Color.Blue, // Replace with theme color
-                        Color.Blue.copy(alpha = 0.7f),
+                        primary,
+                        primaryAccent,
                     ),
                 ),
                 radius = radius,
@@ -134,6 +136,7 @@ fun ExpressiveLinearLoading(
     showWave: Boolean = true,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "linear_loading")
+    val waveColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
 
     val waveOffset by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -178,7 +181,7 @@ fun ExpressiveLinearLoading(
                     for (x in 0..width.toInt() step 2) {
                         val y = amplitude * sin((x / waveLength + waveOffset * 2) * Math.PI).toFloat()
                         drawCircle(
-                            color = Color.White.copy(alpha = 0.3f),
+                            color = waveColor,
                             radius = 1.dp.toPx(),
                             center = Offset(x.toFloat(), height / 2 + y),
                         )

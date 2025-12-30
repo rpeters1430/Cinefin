@@ -36,7 +36,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
@@ -326,9 +325,9 @@ private fun AccentColorOption(
 ) {
     val previewColor = getAccentColorForPreview(color)
     val contentColor = if (previewColor.luminance() > 0.5f) {
-        Color.Black
+        MaterialTheme.colorScheme.onSurface
     } else {
-        Color.White
+        MaterialTheme.colorScheme.inverseOnSurface
     }
     Card(
         onClick = onSelect,

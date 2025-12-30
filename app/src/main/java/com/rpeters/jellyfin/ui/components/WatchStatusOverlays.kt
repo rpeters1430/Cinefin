@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -170,7 +169,7 @@ fun WatchProgressBar(
                     role = Role.Image
                 }
                 .background(
-                    Color.Black.copy(alpha = 0.7f),
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
                     RoundedCornerShape(2.dp),
                 )
                 .padding(1.dp),
@@ -216,7 +215,7 @@ fun InteractiveWatchStatusButton(
                         if (isWatched) {
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.95f)
                         } else {
-                            Color.Black.copy(alpha = 0.6f)
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                         },
                     )
                 } else {
@@ -232,7 +231,7 @@ fun InteractiveWatchStatusButton(
             tint = if (isWatched) {
                 MaterialTheme.colorScheme.onPrimary
             } else {
-                Color.White.copy(alpha = 0.8f)
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
             },
             modifier = Modifier.size(20.dp),
         )

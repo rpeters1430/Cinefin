@@ -179,7 +179,7 @@ private fun TvTopBar(
         TvText(
             text = itemName,
             style = TvMaterialTheme.typography.headlineMedium,
-            color = Color.White,
+            color = TvMaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             fontWeight = FontWeight.SemiBold,
@@ -198,7 +198,7 @@ private fun TvCenterControls(
     if (isLoading) {
         androidx.compose.material3.CircularProgressIndicator(
             modifier = modifier.size(64.dp),
-            color = Color.White,
+            color = TvMaterialTheme.colorScheme.onSurface,
             strokeWidth = 6.dp,
         )
     }
@@ -361,13 +361,13 @@ private fun TvProgressSection(
             TvText(
                 text = formatTime(playerState.currentPosition),
                 style = TvMaterialTheme.typography.titleLarge,
-                color = Color.White,
+                color = TvMaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Medium,
             )
             TvText(
                 text = formatTime(playerState.duration),
                 style = TvMaterialTheme.typography.titleLarge,
-                color = Color.White,
+                color = TvMaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Medium,
             )
         }
@@ -378,7 +378,7 @@ private fun TvProgressSection(
                 .fillMaxWidth()
                 .height(12.dp)
                 .clip(RoundedCornerShape(6.dp))
-                .background(Color.White.copy(alpha = 0.2f)),
+                .background(TvMaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
         ) {
             if (playerState.duration > 0) {
                 val progress = playerState.currentPosition.toFloat() / playerState.duration.toFloat()
@@ -390,7 +390,7 @@ private fun TvProgressSection(
                         .fillMaxWidth(buffered.coerceIn(0f, 1f))
                         .height(12.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(Color.White.copy(alpha = 0.4f)),
+                        .background(TvMaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)),
                 )
 
                 // Current progress
@@ -430,13 +430,13 @@ private fun TvControlButton(
                 isFocused = focusState.isFocused
             },
         colors = CardDefaults.colors(
-            containerColor = Color.White.copy(alpha = 0.15f),
-            focusedContainerColor = TvMaterialTheme.colorScheme.primary,
+            containerColor = TvMaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            focusedContainerColor = TvMaterialTheme.colorScheme.primaryContainer,
         ),
         shape = CardDefaults.shape(shape = CircleShape),
         border = CardDefaults.border(
             focusedBorder = androidx.tv.material3.Border(
-                border = androidx.compose.foundation.BorderStroke(3.dp, Color.White),
+                border = androidx.compose.foundation.BorderStroke(3.dp, TvMaterialTheme.colorScheme.onSurface),
                 shape = CircleShape,
             ),
         ),
@@ -448,7 +448,7 @@ private fun TvControlButton(
             Icon(
                 imageVector = icon,
                 contentDescription = contentDescription,
-                tint = Color.White,
+                tint = TvMaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(40.dp),
             )
         }
@@ -484,7 +484,7 @@ private fun TvPlayPauseButton(
         shape = CardDefaults.shape(shape = CircleShape),
         border = CardDefaults.border(
             focusedBorder = androidx.tv.material3.Border(
-                border = androidx.compose.foundation.BorderStroke(4.dp, Color.White),
+                border = androidx.compose.foundation.BorderStroke(4.dp, TvMaterialTheme.colorScheme.onPrimary),
                 shape = CircleShape,
             ),
         ),
@@ -496,7 +496,7 @@ private fun TvPlayPauseButton(
             Icon(
                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                 contentDescription = if (isPlaying) "Pause" else "Play",
-                tint = Color.White,
+                tint = TvMaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(48.dp),
             )
         }
