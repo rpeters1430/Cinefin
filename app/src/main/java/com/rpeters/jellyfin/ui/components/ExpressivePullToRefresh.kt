@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
@@ -25,9 +26,9 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 /**
- * Material 3 Expressive Pull-to-Refresh container with customizable indicator
+ * Material 3 Expressive Pull-to-Refresh container with customizable wavy indicator
  *
- * Wraps content in a PullToRefreshBox with an expressive loading indicator that follows
+ * Wraps content in a PullToRefreshBox with an expressive wavy loading indicator that follows
  * Material 3 Expressive design guidelines including smooth motion and dynamic color support.
  *
  * @param isRefreshing Whether content is currently refreshing
@@ -37,6 +38,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
  * @param enabled Whether pull-to-refresh is enabled
  * @param indicatorColor Color of the refresh indicator (defaults to primary)
  * @param indicatorSize Size of the refresh indicator
+ * @param useWavyIndicator Whether to use the wavy expressive indicator (defaults to true)
  * @param content Scrollable content to wrap
  */
 @OptInAppExperimentalApis
@@ -49,6 +51,7 @@ fun ExpressivePullToRefreshBox(
     enabled: Boolean = true,
     indicatorColor: Color = MaterialTheme.colorScheme.primary,
     indicatorSize: Dp = 48.dp,
+    useWavyIndicator: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     PullToRefreshBox(
@@ -58,13 +61,23 @@ fun ExpressivePullToRefreshBox(
         state = state,
         enabled = enabled,
         indicator = {
-            ExpressivePullToRefreshIndicator(
-                state = state,
-                isRefreshing = isRefreshing,
-                color = indicatorColor,
-                size = indicatorSize,
-                modifier = Modifier.align(Alignment.TopCenter),
-            )
+            if (useWavyIndicator) {
+                ExpressiveWavyPullToRefreshIndicator(
+                    state = state,
+                    isRefreshing = isRefreshing,
+                    color = indicatorColor,
+                    size = indicatorSize,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
+            } else {
+                ExpressivePullToRefreshIndicator(
+                    state = state,
+                    isRefreshing = isRefreshing,
+                    color = indicatorColor,
+                    size = indicatorSize,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
+            }
         },
         content = content,
     )
@@ -156,6 +169,57 @@ fun ExpressivePullToRefresh(
 }
 
 /**
+ * Expressive wavy pull-to-refresh indicator
+ *
+ * Uses Material 3 wavy circular progress indicator for more engaging refresh animation
+ *
+ * @param state Pull-to-refresh state
+ * @param isRefreshing Whether currently refreshing
+ * @param color Color of the indicator
+ * @param size Size of the indicator
+ * @param modifier Modifier for the indicator
+ */
+@OptInAppExperimentalApis
+@Composable
+fun ExpressiveWavyPullToRefreshIndicator(
+    state: PullToRefreshState,
+    isRefreshing: Boolean,
+    color: Color,
+    size: Dp,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isRefreshing) {
+            // Indeterminate wavy loading when refreshing
+            CircularWavyProgressIndicator(
+                modifier = Modifier.size(size),
+                color = color,
+                trackColor = color.copy(alpha = 0.2f),
+                strokeWidth = 4.dp,
+                amplitude = 0.12f,
+                wavelength = 32.dp,
+                waveSpeed = 16.dp,
+            )
+        } else if (state.distanceFraction > 0f) {
+            // Determinate wavy progress while pulling
+            CircularWavyProgressIndicator(
+                progress = { state.distanceFraction.coerceIn(0f, 1f) },
+                modifier = Modifier.size(size),
+                color = color,
+                trackColor = color.copy(alpha = 0.2f),
+                strokeWidth = 4.dp,
+                amplitude = { 0.12f },
+                wavelength = 32.dp,
+                waveSpeed = 16.dp,
+            )
+        }
+    }
+}
+
+/**
  * Compact pull-to-refresh for smaller content areas
  *
  * Uses smaller indicator size for compact layouts
@@ -181,6 +245,7 @@ fun ExpressiveCompactPullToRefresh(
         modifier = modifier,
         enabled = enabled,
         indicatorSize = 36.dp,
+        useWavyIndicator = true,
         content = content,
     )
 }

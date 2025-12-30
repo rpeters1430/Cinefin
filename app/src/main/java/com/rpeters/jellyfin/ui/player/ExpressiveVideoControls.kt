@@ -37,7 +37,7 @@ import androidx.compose.material.icons.filled.Sd
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -260,8 +260,8 @@ private fun ExpressiveBottomControls(
                         BoxWithConstraints(
                             modifier = Modifier.weight(1f),
                         ) {
-                            // Buffer progress (background)
-                            LinearProgressIndicator(
+                            // Buffer progress (background) - Expressive wavy indicator
+                            LinearWavyProgressIndicator(
                                 progress = {
                                     if (playerState.duration > 0) {
                                         playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()
@@ -272,6 +272,10 @@ private fun ExpressiveBottomControls(
                                 modifier = Modifier.fillMaxWidth(),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                                 trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
+                                strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
+                                amplitude = { 0.12f },
+                                wavelength = 56.dp,
+                                waveSpeed = 28.dp,
                             )
 
                             // Main progress slider

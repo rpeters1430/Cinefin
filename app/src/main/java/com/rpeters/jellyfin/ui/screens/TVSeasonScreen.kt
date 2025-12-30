@@ -36,10 +36,9 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Badge
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -69,6 +68,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
+import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
@@ -183,10 +183,15 @@ fun TVSeasonScreen(
                 color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
             ) {
                 if (state.isLoading) {
-                    CircularProgressIndicator(
+                    // Expressive wavy loading indicator
+                    CircularWavyProgressIndicator(
                         modifier = Modifier.padding(12.dp).size(24.dp),
                         color = MaterialTheme.colorScheme.onSurface,
+                        trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
                         strokeWidth = 2.dp,
+                        amplitude = 0.1f,
+                        wavelength = 20.dp,
+                        waveSpeed = 10.dp,
                     )
                 } else {
                     Icon(
@@ -739,9 +744,15 @@ fun ErrorContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        androidx.compose.material3.Button(
+        ExpressiveFilledButton(
             onClick = onRetry,
         ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
             Text("Retry")
         }
     }
@@ -1004,7 +1015,7 @@ private fun ExpressiveErrorState(
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                 )
-                Button(
+                ExpressiveFilledButton(
                     onClick = onRetry,
                     modifier = Modifier.padding(top = 8.dp),
                 ) {
