@@ -186,7 +186,7 @@ fun MediaImage(
 
     OptimizedImage(
         imageUrl = getImageUrl(item),
-        contentDescription = "${item.name} ${item.type?.name?.lowercase()} image",
+        contentDescription = "${item.name} ${item.type.name.lowercase()} image",
         modifier = modifier,
         size = imageSize,
         quality = quality,

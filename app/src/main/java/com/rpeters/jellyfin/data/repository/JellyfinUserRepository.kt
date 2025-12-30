@@ -158,7 +158,7 @@ class JellyfinUserRepository @Inject constructor(
                 sortBy = listOf(org.jellyfin.sdk.model.api.ItemSortBy.SORT_NAME),
                 filters = listOf(org.jellyfin.sdk.model.api.ItemFilter.IS_FAVORITE),
             )
-            response.content.items ?: emptyList()
+            response.content.items
         }
 
     suspend fun deleteItem(itemId: String): ApiResult<Boolean> =
@@ -196,7 +196,7 @@ class JellyfinUserRepository @Inject constructor(
             val result = withServerClient("hasAdminDeletePermission") { server, client ->
                 val userUuid = parseUuid(server.userId ?: "", "user")
                 val user = client.userApi.getCurrentUser().content
-                user?.policy?.isAdministrator == true || user?.policy?.enableContentDeletion == true
+                user.policy?.isAdministrator == true || user.policy?.enableContentDeletion == true
             }
             when (result) {
                 is ApiResult.Success -> result.data

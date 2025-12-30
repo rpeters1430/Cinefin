@@ -57,7 +57,7 @@ fun LibraryHealthIndicator(
                     LibraryHealthStatus.BLOCKED -> Pair(Color.Red, Icons.Default.Error)
                     LibraryHealthStatus.UNHEALTHY -> Pair(Color(0xFFFF9800), Icons.Default.Warning) // Orange
                     LibraryHealthStatus.WARNING -> Pair(Color(0xFFFFEB3B), Icons.Default.Warning) // Yellow
-                    else -> Pair(MaterialTheme.colorScheme.primary, Icons.Default.CheckCircle)
+                    LibraryHealthStatus.HEALTHY, LibraryHealthStatus.UNKNOWN -> Pair(MaterialTheme.colorScheme.primary, Icons.Default.CheckCircle)
                 }
                 val color = statusInfo.first
                 val icon = statusInfo.second

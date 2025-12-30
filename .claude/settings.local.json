@@ -27,7 +27,14 @@
       "Bash(./gradlew.bat compileDebugKotlin:*)",
       "Bash(git fetch:*)",
       "Bash(git checkout:*)",
-      "Bash(./gradlew.bat:*)"
+      "Bash(./gradlew.bat:*)",
+      "Bash(tee:*)",
+      "Bash(for file in /home/rpeters1428/JellyfinAndroid/app/src/main/java/com/rpeters/jellyfin/ui/screens/*.kt)",
+      "Bash(do sed -i 's/\\\\.id?\\\\.toString\\(\\)/.id.toString\\(\\)/g' \"$file\")",
+      "Bash(done)",
+      "Bash(do sed -i 's/\\\\.type?\\\\.name/.type.name/g' \"$file\")",
+      "Bash(do sed -i 's/as? Double/as Double?/g' \"$file\")",
+      "Bash(for:*)"
     ],
     "deny": [],
     "ask": [],

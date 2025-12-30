@@ -54,7 +54,7 @@ class JellyfinSearchRepository @Inject constructor(
                     ),
                     limit = limit,
                 )
-                response.content.items ?: emptyList()
+                response.content.items
             }
         }
     }

@@ -50,7 +50,7 @@ class JellyfinMediaRepository @Inject constructor(
                 userId = userUuid,
                 includeItemTypes = listOf(BaseItemKind.COLLECTION_FOLDER),
             )
-            response.content.items ?: emptyList()
+            response.content.items
         }
     }
 
@@ -155,7 +155,7 @@ class JellyfinMediaRepository @Inject constructor(
                     startIndex = validatedParams.startIndex,
                     limit = validatedParams.limit,
                 )
-                val items = response.content.items ?: emptyList()
+                val items = response.content.items
 
                 // Report success to health checker
                 validatedParams.parentId?.let { libraryId ->
@@ -200,9 +200,9 @@ class JellyfinMediaRepository @Inject constructor(
                             )
                             SecureLogger.v(
                                 "JellyfinMediaRepository",
-                                "Fallback strategy 1 succeeded: ${response.content.items?.size ?: 0} items",
+                                "Fallback strategy 1 succeeded: ${response.content.items.size} items",
                             )
-                            return@withServerClient response.content.items ?: emptyList()
+                            return@withServerClient response.content.items
                         } catch (fallbackException: Exception) {
                             SecureLogger.w(
                                 "JellyfinMediaRepository",
@@ -228,9 +228,9 @@ class JellyfinMediaRepository @Inject constructor(
                         )
                         SecureLogger.v(
                             "JellyfinMediaRepository",
-                            "Fallback strategy 2 succeeded: ${response.content.items?.size ?: 0} items",
+                            "Fallback strategy 2 succeeded: ${response.content.items.size} items",
                         )
-                        return@withServerClient response.content.items ?: emptyList()
+                        return@withServerClient response.content.items
                     } catch (fallbackException2: Exception) {
                         SecureLogger.w(
                             "JellyfinMediaRepository",
@@ -256,9 +256,9 @@ class JellyfinMediaRepository @Inject constructor(
                             )
                             SecureLogger.v(
                                 "JellyfinMediaRepository",
-                                "Fallback strategy 3 succeeded: ${response.content.items?.size ?: 0} items",
+                                "Fallback strategy 3 succeeded: ${response.content.items.size} items",
                             )
-                            return@withServerClient response.content.items ?: emptyList()
+                            return@withServerClient response.content.items
                         } catch (fallbackException3: Exception) {
                             SecureLogger.w(
                                 "JellyfinMediaRepository",
@@ -315,7 +315,7 @@ class JellyfinMediaRepository @Inject constructor(
                 sortOrder = listOf(SortOrder.DESCENDING),
                 limit = limit,
             )
-            response.content.items ?: emptyList()
+            response.content.items
         }
     }
 
@@ -331,7 +331,7 @@ class JellyfinMediaRepository @Inject constructor(
                 sortOrder = listOf(SortOrder.DESCENDING),
                 limit = limit,
             )
-            response.content.items ?: emptyList()
+            response.content.items
         }
     }
 
@@ -371,7 +371,7 @@ class JellyfinMediaRepository @Inject constructor(
                     org.jellyfin.sdk.model.api.ItemFields.DATE_CREATED,
                 ),
             )
-            response.content.items ?: emptyList()
+            response.content.items
         }
 
     suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto> =
@@ -395,7 +395,7 @@ class JellyfinMediaRepository @Inject constructor(
                     org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
                 ),
             )
-            response.content.items ?: emptyList()
+            response.content.items
         }
 
     suspend fun getSeasonsForSeries(seriesId: String): ApiResult<List<BaseItemDto>> =
@@ -416,7 +416,7 @@ class JellyfinMediaRepository @Inject constructor(
                     org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
                 ),
             )
-            response.content.items ?: emptyList()
+            response.content.items
         }
 
     suspend fun getSimilarSeries(seriesId: String, limit: Int = 20): ApiResult<List<BaseItemDto>> =
@@ -435,7 +435,7 @@ class JellyfinMediaRepository @Inject constructor(
                         org.jellyfin.sdk.model.api.ItemFields.GENRES,
                     ),
                 )
-                response.content.items ?: emptyList()
+                response.content.items
             } catch (e: Exception) {
                 SecureLogger.w(
                     "JellyfinMediaRepository",
@@ -464,7 +464,7 @@ class JellyfinMediaRepository @Inject constructor(
                     org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
                 ),
             )
-            response.content.items ?: emptyList()
+            response.content.items
         }
 
     private suspend fun getItemDetailsById(
@@ -493,7 +493,7 @@ class JellyfinMediaRepository @Inject constructor(
             ),
         )
 
-        return response.content.items?.firstOrNull()
+        return response.content.items.firstOrNull()
             ?: throw IllegalStateException("$itemTypeName not found")
     }
 

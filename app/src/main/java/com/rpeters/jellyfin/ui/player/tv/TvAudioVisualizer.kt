@@ -225,9 +225,9 @@ private fun DrawScope.drawWaveform(
                 )
 
             if (i == 0) {
-                moveTo(x, y.toFloat())
+                moveTo(x, y)
             } else {
-                lineTo(x, y.toFloat())
+                lineTo(x, y)
             }
         }
     }

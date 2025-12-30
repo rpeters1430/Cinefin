@@ -209,7 +209,7 @@ class JellyfinRepository @Inject constructor(
                 userId = userUuid,
                 includeItemTypes = listOf(org.jellyfin.sdk.model.api.BaseItemKind.COLLECTION_FOLDER),
             )
-            response.content.items ?: emptyList()
+            response.content.items
         }
     }
 
@@ -265,7 +265,7 @@ class JellyfinRepository @Inject constructor(
                 startIndex = startIndex,
                 limit = limit,
             )
-            ApiResult.Success(response.content.items ?: emptyList())
+            ApiResult.Success(response.content.items)
         } catch (e: org.jellyfin.sdk.api.client.exception.InvalidStatusException) {
             val errorMsg = try { e.message } catch (_: Throwable) { "Bad Request" }
             Log.e("JellyfinRepository", "getLibraryItems 400/404: ${e.status} ${errorMsg ?: e.message}")
@@ -325,7 +325,7 @@ class JellyfinRepository @Inject constructor(
                     sortOrder = listOf(SortOrder.DESCENDING),
                     limit = limit,
                 )
-                response.content.items ?: emptyList()
+                response.content.items
             }
 
             logDebug("getRecentlyAdded: Retrieved ${items.size} items")
@@ -543,7 +543,7 @@ class JellyfinRepository @Inject constructor(
                 sortOrder = listOf(SortOrder.DESCENDING),
                 limit = limit,
             )
-            val items = response.content.items ?: emptyList()
+            val items = response.content.items
 
             if (BuildConfig.DEBUG) {
                 Log.d("JellyfinRepository", "getRecentlyAddedByType: Retrieved ${items.size} items of type $itemType")
@@ -590,7 +590,7 @@ class JellyfinRepository @Inject constructor(
                 sortOrder = listOf(SortOrder.DESCENDING),
                 limit = limit,
             )
-            ApiResult.Success(response.content.items ?: emptyList())
+            ApiResult.Success(response.content.items)
         } catch (e: Exception) {
             handleException(e, "Failed to load recently added items from library")
         }
@@ -677,7 +677,7 @@ class JellyfinRepository @Inject constructor(
                 sortBy = listOf(ItemSortBy.SORT_NAME),
                 filters = listOf(ItemFilter.IS_FAVORITE),
             )
-            ApiResult.Success(response.content.items ?: emptyList())
+            ApiResult.Success(response.content.items)
         } catch (e: Exception) {
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Failed to load favorites: ${e.message}", e, errorType)
@@ -710,9 +710,9 @@ class JellyfinRepository @Inject constructor(
                 fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW),
             )
             if (BuildConfig.DEBUG) {
-                Log.d("JellyfinRepository", "getSeasonsForSeries: Successfully fetched ${response.content.items?.size ?: 0} seasons for seriesId=$seriesId")
+                Log.d("JellyfinRepository", "getSeasonsForSeries: Successfully fetched ${response.content.items.size} seasons for seriesId=$seriesId")
             }
-            ApiResult.Success(response.content.items ?: emptyList())
+            ApiResult.Success(response.content.items)
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "getSeasonsForSeries: Failed to fetch seasons for seriesId=$seriesId", e)
             val errorType = RepositoryUtils.getErrorType(e)
@@ -746,9 +746,9 @@ class JellyfinRepository @Inject constructor(
                 fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW),
             )
             if (BuildConfig.DEBUG) {
-                Log.d("JellyfinRepository", "getEpisodesForSeason: Successfully fetched ${response.content.items?.size ?: 0} episodes for seasonId=$seasonId")
+                Log.d("JellyfinRepository", "getEpisodesForSeason: Successfully fetched ${response.content.items.size} episodes for seasonId=$seasonId")
             }
-            ApiResult.Success(response.content.items ?: emptyList())
+            ApiResult.Success(response.content.items)
         } catch (e: Exception) {
             Log.e("JellyfinRepository", "getEpisodesForSeason: Failed to fetch episodes for seasonId=$seasonId", e)
             val errorType = RepositoryUtils.getErrorType(e)
@@ -790,7 +790,7 @@ class JellyfinRepository @Inject constructor(
                     ItemFields.CHAPTERS,
                 ),
             )
-            val item = response.content.items?.firstOrNull()
+            val item = response.content.items.firstOrNull()
             if (item != null) {
                 ApiResult.Success(item)
             } else {
@@ -861,7 +861,7 @@ class JellyfinRepository @Inject constructor(
                 ),
                 limit = limit,
             )
-            ApiResult.Success(response.content.items ?: emptyList())
+            ApiResult.Success(response.content.items)
         } catch (e: Exception) {
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Search failed: ${e.message}", e, errorType)
@@ -892,7 +892,7 @@ class JellyfinRepository @Inject constructor(
 
         if (isExpired) {
             // Log only non-sensitive information for debugging
-            Log.w("JellyfinRepository", "Token expired. Server ID: ${server.id?.take(8)}")
+            Log.w("JellyfinRepository", "Token expired. Server ID: ${server.id.take(8)}")
         }
 
         return isExpired

@@ -10,4 +10,13 @@
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:windowTranslucentNavigation">true</item>
     </style>
+
+    <!-- Material 3 aligned theme for MediaRouter (legacy View-based component) -->
+    <style name="Theme.JellyfinAndroid.MediaRouteButton" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">#1C1B1F</item><!-- Material 3 surface color -->
+        <item name="android:colorPrimaryDark">#1C1B1F</item>
+        <item name="android:colorAccent">#E8DEF8</item><!-- Material 3 primary container -->
+        <item name="android:colorBackground">#1C1B1F</item>
+        <item name="android:textColorPrimary">#E6E1E5</item><!-- Material 3 on-surface -->
+    </style>
 </resources>

@@ -48,8 +48,7 @@ class EnhancedPlaybackManager @Inject constructor(
     suspend fun getOptimalPlaybackUrl(item: BaseItemDto): PlaybackResult {
         return withContext(Dispatchers.IO) {
             try {
-                val itemId = item.id?.toString()
-                    ?: return@withContext PlaybackResult.Error("Item ID is null")
+                val itemId = item.id.toString()
 
                 if (BuildConfig.DEBUG) {
                     SecureLogger.v(TAG, "Getting optimal playback URL for: ${item.name} (${item.type})")
