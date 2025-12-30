@@ -21,6 +21,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -165,79 +166,85 @@ fun HomeVideosScreen(
         },
         modifier = modifier,
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            when {
-                appState.isLoading -> {
-                    ExpressiveFullScreenLoading(
-                        message = "Loading home videos...",
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
+        PullToRefreshBox(
+            isRefreshing = appState.isLoading,
+            onRefresh = { viewModel.loadInitialData() },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                when {
+                    appState.isLoading -> {
+                        ExpressiveFullScreenLoading(
+                            message = "Loading home videos...",
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
 
-                appState.errorMessage != null -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
+                    appState.errorMessage != null -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                            ) {
+                                Text(
+                                    text = appState.errorMessage ?: stringResource(R.string.unknown_error),
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(16.dp),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        }
+                    }
+
+                    homeVideosItems.isEmpty() -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = appState.errorMessage ?: stringResource(R.string.unknown_error),
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(16.dp),
-                                textAlign = TextAlign.Center,
+                                text = "No home videos found",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
-                }
 
-                homeVideosItems.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "No home videos found",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    else -> {
+                        HomeVideosGrid(
+                            homeVideosItems = homeVideosItems,
+                            getImageUrl = { item -> viewModel.getImageUrl(item) },
+                            isLoadingMore = isLoadingMoreHomeVideos,
+                            hasMoreItems = hasMoreHomeVideos,
+                            onLoadMore = { viewModel.loadMoreHomeVideos(homeVideosLibraries) },
+                            onItemClick = onItemClick,
+                            modifier = Modifier.fillMaxSize(),
                         )
                     }
                 }
 
-                else -> {
-                    HomeVideosGrid(
-                        homeVideosItems = homeVideosItems,
-                        getImageUrl = { item -> viewModel.getImageUrl(item) },
-                        isLoadingMore = isLoadingMoreHomeVideos,
-                        hasMoreItems = hasMoreHomeVideos,
-                        onLoadMore = { viewModel.loadMoreHomeVideos(homeVideosLibraries) },
-                        onItemClick = onItemClick,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues),
-                    )
-                }
+                ExpressiveFloatingToolbar(
+                    isVisible = homeVideosItems.isNotEmpty(),
+                    onPlayClick = {},
+                    onQueueClick = {},
+                    onDownloadClick = {},
+                    onCastClick = {},
+                    onFavoriteClick = {},
+                    onShareClick = {},
+                    onMoreClick = { viewModel.loadInitialData() },
+                    primaryAction = ToolbarAction.PLAY,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
             }
-
-            ExpressiveFloatingToolbar(
-                isVisible = homeVideosItems.isNotEmpty(),
-                onPlayClick = {},
-                onQueueClick = {},
-                onDownloadClick = {},
-                onCastClick = {},
-                onFavoriteClick = {},
-                onShareClick = {},
-                onMoreClick = { viewModel.loadInitialData() },
-                primaryAction = ToolbarAction.PLAY,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
         }
     }
 }

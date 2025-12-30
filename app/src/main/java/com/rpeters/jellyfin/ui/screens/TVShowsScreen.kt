@@ -48,6 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -347,13 +348,18 @@ fun TVShowsScreen(
         },
         modifier = modifier,
     ) { paddingValues ->
-        Column(
+        PullToRefreshBox(
+            isRefreshing = isLoadingState,
+            onRefresh = { viewModel.refreshTVShows() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
-            // Filter chips with enhanced styling and organization
-            Column {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                // Filter chips with enhanced styling and organization
+                Column {
                 // Basic Filters
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
