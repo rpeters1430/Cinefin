@@ -54,8 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
-import com.rpeters.jellyfin.ui.tv.requestInitialFocus
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.ui.tv.requestInitialFocus
 
 /**
  * TV-optimized audio player controls with D-pad navigation
