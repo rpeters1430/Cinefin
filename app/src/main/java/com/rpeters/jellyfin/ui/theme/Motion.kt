@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.theme
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.tween
+import androidx.compose.material3.MotionScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 
@@ -18,6 +19,11 @@ object MotionTokens {
     val StandardEasing: Easing = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
     val AccelerateEasing: Easing = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
     val DecelerateEasing: Easing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
+
+    // Material 3 MotionScheme API (1.5.0-alpha+)
+    // Provides comprehensive motion specifications for expressive animations
+    val expressiveMotionScheme: MotionScheme = MotionScheme.expressive()
+    val standardMotionScheme: MotionScheme = MotionScheme.standard()
 
     // New Expressive motion curves for media interactions
     val MediaPlayEasing: Easing = CubicBezierEasing(0.0f, 0.0f, 0.2f, 1.0f)
