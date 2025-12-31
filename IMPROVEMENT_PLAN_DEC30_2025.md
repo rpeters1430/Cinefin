@@ -1,8 +1,27 @@
 # Jellyfin Android - Comprehensive Improvement Plan
 
-**Date**: December 30, 2025  
-**Analysis Type**: Full Code Audit + Runtime Logs + Material 3 Expressive Opportunities  
+**Date**: December 30, 2025
+**Analysis Type**: Full Code Audit + Runtime Logs + Material 3 Expressive Opportunities
 **Priority**: Issues are ordered by severity (🔴 Critical → 🟠 High → 🟡 Medium → 🟢 Low)
+
+---
+
+## Table of Contents
+- [Executive Summary](#executive-summary)
+- [🔴 Critical: Fatal Crash in MediaRouteButton](#-critical-fatal-crash-in-mediaroutebutton)
+- [🟠 High Priority: Performance Issues](#-high-priority-performance-issues)
+- [🟠 High Priority: Theme & Color Issues](#-high-priority-theme--color-issues)
+- [🟡 Medium Priority: Material 3 Expressive Modernization](#-medium-priority-material-3-expressive-modernization)
+- [🟡 Medium Priority: Code Quality Improvements](#-medium-priority-code-quality-improvements)
+- [🟢 Low Priority: Enhancement Opportunities](#-low-priority-enhancement-opportunities)
+- [Risk Assessment](#risk-assessment)
+- [Success Metrics](#success-metrics)
+- [API Availability Check](#api-availability-check)
+- [Implementation Roadmap](#implementation-roadmap)
+- [Testing Checklist](#testing-checklist)
+- [Code Review Guidelines](#code-review-guidelines-for-implementations)
+- [Known Limitations & Trade-offs](#known-limitations--trade-offs)
+- [Resources](#resources)
 
 ---
 
@@ -39,7 +58,13 @@ The `MediaRouteButton` View is being created with a context that has a transluce
 ### Location
 `app/src/main/java/com/rpeters/jellyfin/ui/player/MediaRouteButton.kt:36-42`
 
-### Fix
+### Recommended Fix
+
+**RECOMMENDED APPROACH**: Use the ContextThemeWrapper solution below. It:
+- Follows Android best practices for theming
+- Is more maintainable long-term
+- Avoids forcing transparency on the background
+- Works consistently across all Android versions
 
 ```kotlin
 @Composable
@@ -48,7 +73,7 @@ fun MediaRouteButton(
     tint: Int = MaterialTheme.colorScheme.onSurface.toArgb(),
 ) {
     val context = LocalContext.current
-    
+
     // Create a themed context with opaque background for MediaRouter
     val themedContext = remember(context) {
         ContextThemeWrapper(context, R.style.Theme_MediaRouter_Opaque)
@@ -74,7 +99,9 @@ Also add to `res/values/themes.xml`:
 </style>
 ```
 
-**Alternative Quick Fix** (if you don't want to create a new theme):
+### Alternative Quick Fix (Hotfix Only)
+
+**Use only if you need an immediate hotfix before properly implementing the theme:**
 ```kotlin
 AndroidView(
     factory = { ctx ->
@@ -99,7 +126,17 @@ AndroidView(
 
 ### 1. Missing LazyList Keys (24+ instances)
 
-**Impact**: Poor scroll performance, incorrect item reuse, animations breaking
+**Impact**:
+- 🐌 **Performance**: Poor scroll performance, incorrect item reuse
+- 🎨 **UX**: Animations breaking, items flashing during recomposition
+- 📊 **Expected Improvement**: 30-50% reduction in recompositions during scroll
+- 🎯 **User Impact**: Smoother scrolling, especially on lists with 50+ items
+
+**Why This Matters**:
+Without keys, Compose can't track items across recompositions, causing:
+- Entire rows to recompose unnecessarily when only one item changes
+- Animated transitions to break or skip
+- State to be lost during scroll (e.g., loading states)
 
 **Locations Requiring Keys**:
 
@@ -404,6 +441,86 @@ PredictiveBackHandler { progress ->
 
 ---
 
+## Risk Assessment
+
+### Critical Crash Fix (MediaRouteButton)
+- **Risk Level**: Medium - Requires theme changes
+- **Testing Scope**: All devices, especially Samsung and Pixel
+- **Rollback Plan**: Quick fix alternative available
+- **Regression Risk**: Low - isolated change to single component
+- **Impact if Delayed**: High - blocks Chromecast functionality
+
+### LazyList Keys Addition
+- **Risk Level**: Low - Non-breaking additive changes
+- **Testing Scope**: All screens with lists
+- **Rollback Plan**: Simple revert of individual files
+- **Regression Risk**: Very Low - only improves performance
+- **Impact if Delayed**: Medium - degraded user experience
+
+### Material 3 Expressive Migration
+- **Risk Level**: Medium-High - API changes across app
+- **Testing Scope**: Full UI regression testing required
+- **Rollback Plan**: Requires careful branch management
+- **Regression Risk**: Medium - extensive UI changes
+- **Impact if Delayed**: Low - purely cosmetic enhancement
+
+### Large File Refactoring
+- **Risk Level**: Medium - Large code movement
+- **Testing Scope**: Affected screens (Home, TV Season, etc.)
+- **Rollback Plan**: Git revert
+- **Regression Risk**: Low if done carefully with no behavioral changes
+- **Impact if Delayed**: Low - technical debt only
+
+---
+
+## Success Metrics
+
+### Performance Targets
+| Metric | Baseline | Target | Measurement Tool |
+|--------|----------|--------|------------------|
+| Scroll jank (HomeScreen) | TBD | <5% frames dropped | Composition Tracing |
+| List recomposition rate | TBD | 50% reduction | Layout Inspector |
+| Time to first render | TBD | <500ms | Android Profiler |
+| Memory usage (peak) | TBD | No regression | Memory Profiler |
+| App startup time | TBD | No regression | App Startup Profiler |
+
+### Quality Targets
+- ✅ Zero crashes related to MediaRouteButton
+- ✅ 100% of LazyLists have keys
+- ✅ 90%+ of LazyLists have contentType where applicable
+- ✅ 90%+ code using M3 Expressive APIs where applicable
+- ✅ HomeScreen.kt reduced below 800 lines
+- ✅ All experimental API usages properly annotated
+
+### User Experience Targets
+- 60fps scroll on all major screens (Home, Library, Search)
+- <100ms response time for navigation actions
+- Smooth animations during all transitions
+- Zero visual glitches during fast scroll
+
+---
+
+## API Availability Check
+
+All recommended features are verified against current dependencies:
+
+| Feature | Required Version | Current Version | Available? |
+|---------|------------------|-----------------|------------|
+| MaterialExpressiveTheme | M3 1.5.0-alpha09 | 1.5.0-alpha11 | ✅ Yes |
+| MotionScheme.expressive() | M3 1.5.0-alpha09 | 1.5.0-alpha11 | ✅ Yes |
+| HorizontalFloatingToolbar | M3 1.5.0-alpha11 | 1.5.0-alpha11 | ✅ Yes |
+| ToggleableDropdownMenuItem | M3 1.5.0-alpha09 | 1.5.0-alpha11 | ✅ Yes |
+| SelectableDropdownMenuItem | M3 1.5.0-alpha09 | 1.5.0-alpha11 | ✅ Yes |
+| MenuGroup | M3 1.5.0-alpha09 | 1.5.0-alpha11 | ✅ Yes |
+| SharedTransitionLayout | Compose 1.7.0 | BOM 2025.12.01 | ✅ Yes |
+| PredictiveBackHandler | Compose 1.7.0 | BOM 2025.12.01 | ✅ Yes |
+| AutoSizeText | Foundation 1.8.0 | BOM 2025.12.01 | ⚠️ Verify |
+| FlexibleBottomAppBar | M3 1.5.0-alpha11 | 1.5.0-alpha11 | ⚠️ Verify |
+
+**Note**: Features marked ⚠️ should be verified in actual code before implementation.
+
+---
+
 ## Implementation Roadmap
 
 ### Sprint 1: Critical & High Priority (Week 1)
@@ -432,6 +549,33 @@ PredictiveBackHandler { progress ->
 | Add HorizontalFloatingToolbar | Player | 4-6 hours | 🟢 Low |
 | Evaluate FlexibleBottomAppBar | Navigation | 4-6 hours | 🟢 Low |
 
+### Task Dependencies
+
+**Dependency Graph**:
+```
+Critical Path (Blocks Production):
+├─ Fix MediaRouteButton Crash (Sprint 1) → Release Hotfix
+│
+Performance Track (Parallel):
+├─ Add LazyList Keys - Batch 1 (Sprint 1)
+├─ Performance Testing (Sprint 2)
+└─ Add LazyList Keys - Batch 2 (Sprint 2)
+    └─ Refactor HomeScreen (Sprint 2)
+│
+Theme Track (Parallel):
+├─ Review Translucent Colors (Sprint 1)
+├─ Adopt MaterialExpressiveTheme (Sprint 3)
+└─ Implement MotionScheme (Sprint 3)
+    ├─ Add HorizontalFloatingToolbar (Sprint 3)
+    └─ Evaluate FlexibleBottomAppBar (Sprint 3)
+```
+
+**Key Points**:
+- **Critical Path**: MediaRouteButton fix blocks production release
+- **Parallel Tracks**: Performance and Theme work can proceed simultaneously
+- **Dependencies**: HomeScreen refactoring should wait until LazyList keys are added
+- **Theme Migration**: Must complete color review before adopting MaterialExpressiveTheme
+
 ---
 
 ## Testing Checklist
@@ -454,6 +598,153 @@ PredictiveBackHandler { progress ->
 - [ ] Test contrast levels (Standard, Medium, High)
 - [ ] Verify dynamic colors on Android 12+
 
+### Regression Testing Matrix
+
+| Screen | Test Type | Priority | Devices | Notes |
+|--------|-----------|----------|---------|-------|
+| HomeScreen | Performance | 🔴 Critical | Low-end, Mid, Flagship | Profile scroll with Composition Tracing |
+| VideoPlayer | Functional | 🔴 Critical | All + Chromecast | Test Chromecast connection flow |
+| SearchScreen | Performance | 🟠 High | Mid, Flagship | Fast typing, rapid result changes |
+| TVSeasonScreen | Performance | 🟠 High | Low-end, Mid | Large episode lists |
+| LibraryTypeScreen | Performance | 🟡 Medium | Mid | Multiple filter combinations |
+| All Screens | Visual | 🟡 Medium | Pixel, Samsung | Screenshot testing recommended |
+| All Screens | Navigation | 🟡 Medium | Any device | Back stack, deep links |
+
+### Performance Testing
+
+**Before making changes, establish baselines**:
+- [ ] Record baseline metrics with Composition Tracing
+- [ ] Profile HomeScreen scroll performance (frames dropped, recomposition count)
+- [ ] Measure memory usage during navigation between screens
+- [ ] Test on low-end device (< 4GB RAM)
+- [ ] Capture baseline app startup time
+
+**After changes, verify improvements**:
+- [ ] Compare Composition Tracing results (expect 30-50% reduction in recompositions)
+- [ ] Verify 60fps scroll on all major screens
+- [ ] Confirm memory usage has not regressed
+- [ ] Test smooth animations during all transitions
+- [ ] Verify no visual glitches during fast scroll
+
+**Recommended Test Devices**:
+- **Low-end**: Android API 26-28, 2-3GB RAM
+- **Mid-range**: Android API 31-33, 4-6GB RAM
+- **Flagship**: Android API 34+, 8GB+ RAM, Dynamic Color support
+
+---
+
+## Code Review Guidelines for Implementations
+
+### For LazyList Changes
+- [ ] All items have stable keys using stable identifiers (prefer `id` over `hashCode()`)
+- [ ] Keys use the item lambda parameter, not captured variables: `key = { item -> item.id }`
+- [ ] ContentType added where items have different layouts
+- [ ] No lambda allocations in key/contentType parameters
+- [ ] Tested scroll performance before/after with Layout Inspector
+- [ ] For items without IDs, document why `hashCode()` is acceptable
+
+**Good Example**:
+```kotlin
+items(
+    items = mediaItems,
+    key = { item -> item.id },  // Stable, unique identifier
+    contentType = { "media-card" }
+) { item ->
+    MediaCard(item = item)
+}
+```
+
+**Bad Example**:
+```kotlin
+items(mediaItems) { item ->  // ❌ No key
+    MediaCard(item = item)
+}
+```
+
+### For Theme Changes
+- [ ] All color values are opaque where required (no translucent backgrounds in sensitive contexts)
+- [ ] Dynamic color support maintained for Android 12+
+- [ ] Dark mode tested and looks correct
+- [ ] Contrast ratios meet WCAG AA standards (4.5:1 for normal text, 3:1 for large text)
+- [ ] No hardcoded colors - use MaterialTheme.colorScheme
+- [ ] Theme changes work with all accent color options
+
+### For Material 3 Expressive Adoption
+- [ ] Experimental APIs properly annotated with `@OptIn(ExperimentalMaterial3ExpressiveApi::class)`
+- [ ] Motion specifications use MaterialTheme.motionScheme where applicable
+- [ ] New components tested on Android API 26 (minSdk)
+- [ ] Fallback behavior defined for older Android versions if needed
+- [ ] Animation durations follow Material 3 Expressive guidelines (typically 400-500ms)
+
+### For Large File Refactoring
+- [ ] No behavioral changes (UI looks and functions identically)
+- [ ] All state hoisting preserved - no logic changes
+- [ ] ViewModels not affected by component extraction
+- [ ] Navigation unchanged
+- [ ] Screenshot tests pass (if available)
+- [ ] Extracted components have clear, descriptive names
+- [ ] File organization follows existing package structure
+- [ ] No broken imports or circular dependencies
+
+### General Code Quality
+- [ ] No new compiler warnings introduced
+- [ ] Ktlint formatting passes
+- [ ] No new nullability issues (`!!` operator usage justified)
+- [ ] Coroutine scopes used appropriately (ViewModelScope for ViewModels)
+- [ ] No leaked resources (e.g., unclosed streams, unregistered listeners)
+
+---
+
+## Known Limitations & Trade-offs
+
+### MediaRouteButton Fix
+**Limitation**: Requires theme resource file, increases APK size by ~1-2KB
+**Alternative Considered**: Subclass MediaRouteButton (rejected - more complex, harder to maintain)
+**Trade-off Rationale**: Small APK increase is acceptable for crash fix and proper theming
+
+### LazyList Keys with hashCode()
+**Limitation**: Using `hashCode()` for items without IDs is less stable than unique IDs
+**When Acceptable**:
+- Static lists that don't change (filters, settings options)
+- Lists where items are value objects with well-defined equality
+**Not Acceptable**:
+- Dynamic media lists from API (use item.id)
+- Lists where items can be added/removed/reordered
+**Mitigation**: Document why hashCode() is safe in each case
+
+### Large File Refactoring
+**Trade-off**: Better maintainability vs more files to navigate
+**Benefit**:
+- Easier to find specific components
+- Reduced merge conflicts
+- Better code organization
+- Faster IDE performance with smaller files
+**Cost**:
+- More files in project
+- Need to import extracted components
+**Mitigation**:
+- Clear naming conventions (e.g., `HomeHeader.kt`, `HomeFeaturedCarousel.kt`)
+- Logical package structure (`ui/screens/home/components/`)
+- Keep related components together
+
+### Material 3 Expressive Migration
+**Limitation**: Alpha APIs may change in future releases
+**Risk**: API breaking changes before stable release
+**Mitigation**:
+- Test thoroughly with current alpha version
+- Monitor Compose release notes
+- Be prepared to update when APIs stabilize
+**Trade-off Rationale**: Benefits of modern UI outweigh risk of minor API adjustments
+
+### contentType Performance Optimization
+**Limitation**: contentType only helps when you have different item types
+**When Useful**:
+- Mixed content (headers, items, footers)
+- Different card layouts (grid vs list)
+**Not Useful**:
+- Homogeneous lists (all same type)
+**Best Practice**: Add contentType only when there are 2+ distinct layouts
+
 ---
 
 ## Resources
@@ -472,6 +763,30 @@ PredictiveBackHandler { progress ->
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: December 30, 2025  
-**Next Review**: January 6, 2026
+## Document Change Log
+
+### Version 2.0 (December 30, 2025)
+- ✅ Added comprehensive table of contents
+- ✅ Added Risk Assessment section with detailed risk levels for each major task
+- ✅ Added Success Metrics with performance targets and quality goals
+- ✅ Added API Availability Check to verify all features are available
+- ✅ Enhanced MediaRouteButton fix with clear recommendation
+- ✅ Enhanced LazyList section with quantifiable impact metrics
+- ✅ Added Task Dependencies visualization in Implementation Roadmap
+- ✅ Expanded Testing Checklist with Regression Testing Matrix
+- ✅ Added Performance Testing guidelines with baseline capture
+- ✅ Added comprehensive Code Review Guidelines
+- ✅ Added Known Limitations & Trade-offs section
+- ✅ Improved structure and navigation throughout document
+
+### Version 1.0 (December 30, 2025)
+- Initial comprehensive improvement plan
+- Identified critical crash, performance issues, and M3 opportunities
+- Created initial implementation roadmap
+
+---
+
+**Document Version**: 2.0
+**Last Updated**: December 30, 2025
+**Next Review**: January 13, 2026
+**Status**: Ready for implementation
