@@ -19,4 +19,17 @@
         <item name="android:colorBackground">#1C1B1F</item>
         <item name="android:textColorPrimary">#E6E1E5</item><!-- Material 3 on-surface -->
     </style>
+
+    <!--
+        Opaque theme for MediaRouteButton to prevent crashes when calculating contrast ratios.
+        The AndroidX MediaRouter library requires an opaque background color to calculate
+        proper contrast ratios. Using translucent/transparent backgrounds causes crashes.
+    -->
+    <style name="Theme_MediaRouter_Opaque" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:colorBackground">#1C1B1F</item><!-- Material 3 surface (opaque) -->
+        <item name="colorSurface">#1C1B1F</item><!-- Material 3 surface -->
+        <item name="colorOnSurface">#E6E1E5</item><!-- Material 3 on-surface -->
+        <item name="colorPrimary">#D0BCFF</item><!-- Material 3 primary -->
+        <item name="android:windowBackground">#1C1B1F</item>
+    </style>
 </resources>

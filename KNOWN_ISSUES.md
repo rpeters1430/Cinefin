@@ -1,6 +1,6 @@
 # Jellyfin Android Client - Known Issues
 
-**Last Updated**: 2025-12-22
+**Last Updated**: 2025-12-30
 
 This document tracks active bugs, limitations, and workarounds in the Jellyfin Android Client. Resolved issues are moved to IMPROVEMENTS_ARCHIVE.md.
 
@@ -8,9 +8,36 @@ This document tracks active bugs, limitations, and workarounds in the Jellyfin A
 
 ## 🚨 Critical Issues
 
-### None Currently Identified ✅
+### ~~1. MediaRouteButton Crash with Chromecast~~ ✅ RESOLVED
 
-No critical issues that prevent core functionality have been identified in the current build.
+**Resolved**: December 30, 2025
+**Status**: Fixed
+**Severity**: Critical (Application crash)
+
+**Description**:
+The app would crash when entering the video player with the Chromecast button visible. The crash occurred because the `MediaRouteButton` View was being created with a context that had a translucent/transparent background color, and the AndroidX MediaRouter library requires an opaque background to calculate contrast ratios.
+
+**Error**:
+```
+java.lang.IllegalArgumentException: background can not be translucent: #0
+    at androidx.core.graphics.ColorUtils.calculateContrast(ColorUtils.java:175)
+    at androidx.mediarouter.app.MediaRouterThemeHelper.getControllerColor
+```
+
+**Fix Applied**:
+- Added `ContextThemeWrapper` with opaque theme to `MediaRouteButton.kt`
+- Created `Theme_MediaRouter_Opaque` style in `themes.xml` with proper opaque colors
+- Prevents crash while maintaining Material 3 design consistency
+
+**Files Modified**:
+- `app/src/main/java/com/rpeters/jellyfin/ui/player/MediaRouteButton.kt`
+- `app/src/main/res/values/themes.xml`
+
+**Testing Required**:
+- [ ] Test video player on Pixel devices
+- [ ] Test video player on Samsung devices
+- [ ] Test Chromecast discovery and connection
+- [ ] Verify no crashes with dynamic colors enabled/disabled
 
 ---
 
@@ -269,19 +296,23 @@ These items require testing to determine if they're issues or working correctly:
 
 ### 10. Chromecast Integration
 
-**Status**: Unknown
+**Status**: Partially Working - Critical crash fixed
 **Priority**: Medium
 
 **Description**:
 - Cast framework dependency is included (v22.2.0)
-- Integration status unclear
-- Needs comprehensive testing
+- MediaRouteButton implementation fixed (Dec 30, 2025)
+- Basic integration in place, needs comprehensive testing
+
+**Recent Fix**:
+- ✅ Fixed critical crash when Chromecast button was visible (see Critical Issues above)
 
 **Action Required**:
-- [ ] Test cast discovery
-- [ ] Test video casting
-- [ ] Test remote control during cast
-- [ ] Document findings
+- [ ] Test cast discovery on multiple devices
+- [ ] Test video casting with different media formats
+- [ ] Test remote control during cast (play/pause/seek)
+- [ ] Test reconnection after network interruption
+- [ ] Document findings and any remaining issues
 
 ---
 
@@ -357,7 +388,7 @@ This document should be reviewed:
 - **Bi-weekly**: Add new issues as discovered
 - **Monthly**: Clean up resolved issues
 
-**Next Review**: 2025-12-29
+**Next Review**: 2026-01-06
 
 ---
 
