@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.foundation.layout.Box
@@ -10,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
@@ -51,7 +52,6 @@ fun ExpressiveWavyLinearProgress(
         modifier = modifier,
         color = color,
         trackColor = trackColor,
-        strokeCap = StrokeCap.Round,
         amplitude = amplitude,
         wavelength = wavelength,
         waveSpeed = waveSpeed,
@@ -84,7 +84,6 @@ fun ExpressiveWavyLinearLoading(
         modifier = modifier,
         color = color,
         trackColor = trackColor,
-        strokeCap = StrokeCap.Round,
         amplitude = amplitude,
         wavelength = wavelength,
         waveSpeed = waveSpeed,
@@ -100,7 +99,6 @@ fun ExpressiveWavyLinearLoading(
  * @param modifier Modifier for the indicator
  * @param color Color of the progress wave (defaults to primary)
  * @param trackColor Color of the track behind the wave (defaults to surfaceVariant)
- * @param strokeWidth Width of the circular stroke
  * @param amplitude Function that calculates wave amplitude based on progress
  * @param wavelength Distance between wave peaks along the circle
  * @param waveSpeed Speed of the wave animation
@@ -112,7 +110,6 @@ fun ExpressiveWavyCircularProgress(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
     trackColor: Color = MaterialTheme.colorScheme.surfaceVariant,
-    strokeWidth: Dp = 4.dp,
     amplitude: (Float) -> Float = { 0.1f },
     wavelength: Dp = 32.dp,
     waveSpeed: Dp = 16.dp,
@@ -122,7 +119,6 @@ fun ExpressiveWavyCircularProgress(
         modifier = modifier,
         color = color,
         trackColor = trackColor,
-        strokeWidth = strokeWidth,
         amplitude = amplitude,
         wavelength = wavelength,
         waveSpeed = waveSpeed,
@@ -137,7 +133,6 @@ fun ExpressiveWavyCircularProgress(
  * @param modifier Modifier for the indicator
  * @param color Color of the progress wave (defaults to primary)
  * @param trackColor Color of the track behind the wave (defaults to surfaceVariant)
- * @param strokeWidth Width of the circular stroke
  * @param amplitude Wave amplitude value
  * @param wavelength Distance between wave peaks along the circle
  * @param waveSpeed Speed of the wave animation
@@ -148,7 +143,6 @@ fun ExpressiveWavyCircularLoading(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
     trackColor: Color = MaterialTheme.colorScheme.surfaceVariant,
-    strokeWidth: Dp = 4.dp,
     amplitude: Float = 0.1f,
     wavelength: Dp = 32.dp,
     waveSpeed: Dp = 16.dp,
@@ -157,7 +151,6 @@ fun ExpressiveWavyCircularLoading(
         modifier = modifier,
         color = color,
         trackColor = trackColor,
-        strokeWidth = strokeWidth,
         amplitude = amplitude,
         wavelength = wavelength,
         waveSpeed = waveSpeed,
@@ -228,7 +221,6 @@ fun CompactWavyLoading(
             modifier = Modifier.size(size),
             color = color,
             trackColor = color.copy(alpha = 0.2f),
-            strokeWidth = 2.dp,
             amplitude = 0.08f,
             wavelength = 24.dp,
             waveSpeed = 12.dp,
@@ -263,7 +255,6 @@ fun FullScreenWavyLoading(
                     modifier = Modifier.size(64.dp),
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    strokeWidth = 6.dp,
                     amplitude = 0.15f,
                 )
                 androidx.compose.material3.Text(
@@ -277,7 +268,6 @@ fun FullScreenWavyLoading(
                 modifier = Modifier.size(64.dp),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                strokeWidth = 6.dp,
                 amplitude = 0.15f,
             )
         }

@@ -1,4 +1,5 @@
 @file:OptInAppExperimentalApis
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 
 package com.rpeters.jellyfin.ui.screens
 
@@ -188,7 +189,6 @@ fun TVSeasonScreen(
                         modifier = Modifier.padding(12.dp).size(24.dp),
                         color = MaterialTheme.colorScheme.onSurface,
                         trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                        strokeWidth = 2.dp,
                         amplitude = 0.1f,
                         wavelength = 20.dp,
                         waveSpeed = 10.dp,
@@ -325,7 +325,7 @@ private fun SeriesDetailsHeader(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(500.dp),
+            .height(560.dp),
     ) {
         // Background Image - Full bleed to top edge
         SubcomposeAsyncImage(
@@ -336,7 +336,7 @@ private fun SeriesDetailsHeader(
                     modifier = Modifier.fillMaxSize(),
                     showTitle = false,
                     showSubtitle = false,
-                    imageHeight = 500.dp,
+                    imageHeight = 560.dp,
                 )
             },
             error = {
@@ -362,10 +362,11 @@ private fun SeriesDetailsHeader(
                 }
             },
             contentScale = ContentScale.Crop,
+            alignment = Alignment.Center,
             modifier = Modifier.fillMaxSize(),
         )
 
-        // Gradient Scrim - Darker at bottom for text readability, fades to transparent at top
+        // Google TV style gradient - transparent to black
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -373,14 +374,13 @@ private fun SeriesDetailsHeader(
                     Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
-                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.75f),
-                            MaterialTheme.colorScheme.scrim.copy(alpha = 0.9f),
-                            MaterialTheme.colorScheme.background, // Fade to background color at bottom
+                            Color.Black.copy(alpha = 0.05f),
+                            Color.Black.copy(alpha = 0.15f),
+                            Color.Black.copy(alpha = 0.4f),
+                            Color.Black.copy(alpha = 0.7f),
+                            Color.Black.copy(alpha = 0.9f),
+                            Color.Black,
                         ),
-                        startY = 0f,
-                        endY = Float.POSITIVE_INFINITY,
                     ),
                 ),
         )
@@ -397,8 +397,8 @@ private fun SeriesDetailsHeader(
             // Title
             Text(
                 text = series.name ?: stringResource(R.string.unknown),
-                style = MaterialTheme.typography.displaySmall,
-                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.displayLarge,
+                color = Color.White,
                 fontWeight = FontWeight.Bold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -427,7 +427,7 @@ private fun SeriesDetailsHeader(
                             text = "${(rating * 10).roundToInt()}%",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = Color.White,
                         )
                     }
                 }
@@ -436,14 +436,14 @@ private fun SeriesDetailsHeader(
                 series.officialRating?.let { rating ->
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                        color = Color.White.copy(alpha = 0.2f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
                     ) {
                         Text(
                             text = rating,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = Color.White,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     }
@@ -462,7 +462,7 @@ private fun SeriesDetailsHeader(
                     Text(
                         text = yearText,
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                        color = Color.White.copy(alpha = 0.9f),
                     )
                 }
 
@@ -471,7 +471,7 @@ private fun SeriesDetailsHeader(
                     Text(
                         text = "$count episodes",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                        color = Color.White.copy(alpha = 0.9f),
                     )
                 }
             }
@@ -483,8 +483,8 @@ private fun SeriesDetailsHeader(
                     Text(
                         text = overview,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                        maxLines = 3,
+                        color = Color.White.copy(alpha = 0.85f),
+                        maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
                         lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
                     )

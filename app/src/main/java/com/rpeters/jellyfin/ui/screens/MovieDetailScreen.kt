@@ -21,11 +21,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
@@ -74,15 +78,19 @@ fun MovieDetailScreen(
     movie: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
+    getPersonImageUrl: (org.jellyfin.sdk.model.api.BaseItemPerson) -> String? = { null },
     onBackClick: () -> Unit,
     onPlayClick: (BaseItemDto) -> Unit = {},
     onFavoriteClick: (BaseItemDto) -> Unit = {},
     onShareClick: (BaseItemDto) -> Unit = {},
+    onDeleteClick: (BaseItemDto) -> Unit = {},
+    onMarkWatchedClick: (BaseItemDto) -> Unit = {},
     relatedItems: List<BaseItemDto> = emptyList(),
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     modifier: Modifier = Modifier,
 ) {
     var isFavorite by remember { mutableStateOf(movie.userData?.isFavorite == true) }
+    var isWatched by remember { mutableStateOf(movie.userData?.played == true) }
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
@@ -93,9 +101,9 @@ fun MovieDetailScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(600.dp),
+                        .height(560.dp),
                 ) {
-                    // Backdrop Image - Full bleed
+                    // Backdrop Image - Full bleed with proper aspect ratio
                     SubcomposeAsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(getBackdropUrl(movie))
@@ -123,20 +131,24 @@ fun MovieDetailScreen(
                             )
                         },
                         contentScale = ContentScale.Crop,
+                        alignment = Alignment.Center,
                         modifier = Modifier.fillMaxSize(),
                     )
 
-                    // Gradient Scrim - Darker at bottom
+                    // Gradient Scrim - Google TV style (subtle top, dark bottom)
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
                                 Brush.verticalGradient(
                                     colors = listOf(
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.2f),
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                                        androidx.compose.ui.graphics.Color.Transparent,
+                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.05f),
+                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.15f),
+                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.4f),
+                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
+                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.9f),
+                                        androidx.compose.ui.graphics.Color.Black,
                                     ),
                                     startY = 0f,
                                     endY = Float.POSITIVE_INFINITY,
@@ -152,12 +164,12 @@ fun MovieDetailScreen(
                             .padding(bottom = 32.dp),
                         verticalArrangement = Arrangement.Bottom,
                     ) {
-                        // Title
+                        // Title - Google TV style (larger, white)
                         Text(
                             text = movie.name ?: stringResource(R.string.unknown),
-                            style = MaterialTheme.typography.displaySmall,
+                            style = MaterialTheme.typography.displayLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = androidx.compose.ui.graphics.Color.White,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -185,7 +197,7 @@ fun MovieDetailScreen(
                                         text = "${(rating * 10).roundToInt()}%",
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface,
+                                        color = androidx.compose.ui.graphics.Color.White,
                                     )
                                 }
                             }
@@ -194,17 +206,17 @@ fun MovieDetailScreen(
                             movie.officialRating?.let { rating ->
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
-                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.2f),
+                                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f),
                                     border = androidx.compose.foundation.BorderStroke(
                                         1.dp,
-                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                                        androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f),
                                     ),
                                 ) {
                                     Text(
                                         text = rating,
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface,
+                                        color = androidx.compose.ui.graphics.Color.White,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     )
                                 }
@@ -215,7 +227,7 @@ fun MovieDetailScreen(
                                 Text(
                                     text = year.toString(),
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
                                 )
                             }
 
@@ -229,7 +241,7 @@ fun MovieDetailScreen(
                                 Text(
                                     text = runtime,
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
                                 )
                             }
                         }
@@ -241,8 +253,8 @@ fun MovieDetailScreen(
                                 Text(
                                     text = overview,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                                    maxLines = 3,
+                                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
+                                    maxLines = 4,
                                     overflow = TextOverflow.Ellipsis,
                                     lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
                                 )
@@ -296,10 +308,10 @@ fun MovieDetailScreen(
                         }
                     }
 
-                    // Action Buttons Row (Favorite, Watched, etc.)
+                    // Action Buttons Row (Favorite, Watched, Delete, Share)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         ActionButton(
                             icon = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -308,11 +320,35 @@ fun MovieDetailScreen(
                                 isFavorite = !isFavorite
                                 onFavoriteClick(movie)
                             },
+                            modifier = Modifier.weight(1f),
                         )
+                        ActionButton(
+                            icon = if (isWatched) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                            label = if (isWatched) "Watched" else "Mark Watched",
+                            onClick = {
+                                isWatched = !isWatched
+                                onMarkWatchedClick(movie)
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+
+                    // Secondary Action Buttons Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
                         ActionButton(
                             icon = Icons.Default.Share,
                             label = "Share",
                             onClick = { onShareClick(movie) },
+                            modifier = Modifier.weight(1f),
+                        )
+                        ActionButton(
+                            icon = Icons.Default.Delete,
+                            label = "Delete",
+                            onClick = { onDeleteClick(movie) },
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
@@ -324,6 +360,38 @@ fun MovieDetailScreen(
                     movie = movie,
                     getImageUrl = getImageUrl,
                 )
+            }
+
+            // Cast Section
+            movie.people?.filter { person ->
+                person.type.toString() == "Actor"
+            }?.takeIf { it.isNotEmpty() }?.let { cast ->
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .padding(top = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        Text(
+                            text = "Cast",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            items(cast.take(15), key = { it.id.toString() }) { person ->
+                                CastMemberCard(
+                                    person = person,
+                                    imageUrl = getPersonImageUrl(person),
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             // Genres Section
@@ -503,6 +571,34 @@ private fun ExpressiveMovieInfoCard(
                 fontWeight = FontWeight.Bold,
             )
 
+            // Tagline
+            movie.taglines?.firstOrNull()?.let { tagline ->
+                if (tagline.isNotBlank()) {
+                    Text(
+                        text = "\"$tagline\"",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            // Director
+            movie.people?.firstOrNull { it.type.toString() == "Director" }?.let { director ->
+                DetailRow(label = "Director", value = director.name ?: "Unknown")
+            }
+
+            // Studio
+            movie.studios?.firstOrNull()?.name?.let { studio ->
+                DetailRow(label = "Studio", value = studio)
+            }
+
+            // Release Date
+            movie.premiereDate?.let { date ->
+                val formattedDate = date.toString().substringBefore('T')
+                DetailRow(label = "Release Date", value = formattedDate)
+            }
+
             // Media info with resolution and codecs
             movie.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
                 val videoStream = streams.firstOrNull { it.type == MediaStreamType.VIDEO }
@@ -528,6 +624,17 @@ private fun ExpressiveMovieInfoCard(
                 }
             }
 
+            // File Size
+            movie.mediaSources?.firstOrNull()?.size?.let { sizeBytes ->
+                val sizeGB = sizeBytes / 1_073_741_824.0
+                DetailRow(label = "File Size", value = String.format("%.2f GB", sizeGB))
+            }
+
+            // Container Format
+            movie.mediaSources?.firstOrNull()?.container?.let { container ->
+                DetailRow(label = "Container", value = container.uppercase())
+            }
+
             // Play progress
             movie.userData?.playedPercentage?.let { progress ->
                 if (progress > 0.0) {
@@ -550,6 +657,31 @@ private fun ExpressiveMovieInfoCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DetailRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 
@@ -592,6 +724,99 @@ private fun ExpressiveInfoRow(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CastMemberCard(
+    person: org.jellyfin.sdk.model.api.BaseItemPerson,
+    imageUrl: String?,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.width(100.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        // Profile Image
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.size(100.dp),
+        ) {
+            if (imageUrl != null) {
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = person.name,
+                    loading = {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                modifier = Modifier.size(48.dp),
+                            )
+                        }
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                modifier = Modifier.size(48.dp),
+                            )
+                        }
+                    },
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                        modifier = Modifier.size(48.dp),
+                    )
+                }
+            }
+        }
+
+        // Actor Name
+        Text(
+            text = person.name ?: "Unknown",
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+
+        // Role/Character
+        person.role?.let { role ->
+            Text(
+                text = role,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
         }
     }

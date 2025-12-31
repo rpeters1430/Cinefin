@@ -6,8 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Building
 ```bash
-# Build debug APK (use ./gradlew.bat on Windows)
-./gradlew assembleDebug
+# Build debug APK
+./gradlew assembleDebug          # Linux/macOS
+./gradlew.bat assembleDebug      # Windows
 
 # Install on connected device/emulator
 ./gradlew installDebug
@@ -15,6 +16,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Build release APK
 ./gradlew assembleRelease
 ```
+
+**Windows Note**: Replace `./gradlew` with `./gradlew.bat` or `gradlew.bat` in all commands.
 
 ### Testing
 ```bash
@@ -46,11 +49,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./setup.sh
 
 # Generate local.properties from environment variables
-scripts/gen-local-properties.sh   # bash
-scripts/gen-local-properties.ps1  # PowerShell
+scripts/gen-local-properties.sh   # bash (Linux/macOS)
+scripts/gen-local-properties.ps1  # PowerShell (Windows)
 ```
 
+**Note**: The setup scripts configure `ANDROID_SDK_ROOT` (or `ANDROID_HOME`) and generate `local.properties` with the SDK path. Required for CI/CD environments without Android Studio.
+
 ## Project Architecture
+
+### Project Identity
+- **Application ID**: `com.rpeters.jellyfin`
+- **Namespace**: `com.rpeters.jellyfin`
+- **Version**: Defined in `app/build.gradle.kts` (versionCode & versionName)
 
 ### High-Level Architecture
 This is a modern Android client for Jellyfin media servers built with:
@@ -133,11 +143,18 @@ Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<Jellyf
 - **Instrumentation tests location**: `app/src/androidTest/java`
 - Test naming convention: `functionName_scenario_expectedResult`
 
+#### Important Testing Patterns
+- **Dispatcher Testing**: Use `StandardTestDispatcher` with `advanceUntilIdle()` for ViewModel tests
+- **Mocking Flows**: Use `coEvery` for Flow properties (e.g., `repository.currentServer`)
+- **Default Parameters**: Use `any()` matchers when mocking repository methods with default parameters
+- See TESTING_GUIDE.md for detailed dispatcher and StateFlow testing patterns
+
 ### Key Constants & Configuration
 - Centralized constants in `core/constants/Constants.kt`
 - SDK versions: compileSdk 36, targetSdk 35, minSdk 26
 - Java version: 21 with core library desugaring enabled
 - Dependency versions: Centralized in `gradle/libs.versions.toml`
+- **Release builds**: ProGuard/R8 enabled with shrinking and minification (`proguard-rules.pro`)
 
 ### State Management Pattern
 ViewModels expose UI state via StateFlow:
@@ -203,6 +220,8 @@ Example: `feat: add movie detail screen`, `fix: prevent crash on empty library`
 
 ## Common File Locations
 
+**Package Structure**: All code under `com.rpeters.jellyfin` in `app/src/main/java/com/rpeters/jellyfin/`
+
 - **Application class**: `JellyfinApplication.kt` (Hilt entry point, initializes app-wide services)
 - **Main activity**: `MainActivity.kt` (device type detection, setContent)
 - **Root Compose phone app**: `ui/JellyfinApp.kt`
@@ -214,6 +233,8 @@ Example: `feat: add movie detail screen`, `fix: prevent crash on empty library`
 - **Reusable components**: `ui/components/`
 - **Navigation**: `ui/navigation/`
 - **Theme**: `ui/theme/`
+- **Network layer**: `network/` directory
+- **Utilities**: `utils/` directory
 
 ## Known Limitations
 

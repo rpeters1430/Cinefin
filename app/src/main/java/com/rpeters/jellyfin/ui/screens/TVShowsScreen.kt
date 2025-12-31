@@ -527,6 +527,7 @@ fun TVShowsScreen(
         }
     }
 }
+}
 
 @Composable
 private fun TVShowsContent(

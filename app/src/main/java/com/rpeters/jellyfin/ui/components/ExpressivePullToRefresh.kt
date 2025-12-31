@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.animation.core.Animatable
@@ -59,7 +61,6 @@ fun ExpressivePullToRefreshBox(
         onRefresh = onRefresh,
         modifier = modifier,
         state = state,
-        enabled = enabled,
         indicator = {
             if (useWavyIndicator) {
                 ExpressiveWavyPullToRefreshIndicator(
@@ -79,8 +80,9 @@ fun ExpressivePullToRefreshBox(
                 )
             }
         },
-        content = content,
-    )
+    ) {
+        content()
+    }
 }
 
 /**
@@ -163,9 +165,9 @@ fun ExpressivePullToRefresh(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
         modifier = modifier,
-        enabled = enabled,
-        content = content,
-    )
+    ) {
+        content()
+    }
 }
 
 /**
@@ -198,7 +200,6 @@ fun ExpressiveWavyPullToRefreshIndicator(
                 modifier = Modifier.size(size),
                 color = color,
                 trackColor = color.copy(alpha = 0.2f),
-                strokeWidth = 4.dp,
                 amplitude = 0.12f,
                 wavelength = 32.dp,
                 waveSpeed = 16.dp,
@@ -210,7 +211,6 @@ fun ExpressiveWavyPullToRefreshIndicator(
                 modifier = Modifier.size(size),
                 color = color,
                 trackColor = color.copy(alpha = 0.2f),
-                strokeWidth = 4.dp,
                 amplitude = { 0.12f },
                 wavelength = 32.dp,
                 waveSpeed = 16.dp,

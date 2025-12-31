@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.rpeters.jellyfin.ui.player
 
 import androidx.compose.animation.AnimatedContent
@@ -272,7 +274,6 @@ private fun ExpressiveBottomControls(
                                 modifier = Modifier.fillMaxWidth(),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                                 trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
-                                strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
                                 amplitude = { 0.12f },
                                 wavelength = 56.dp,
                                 waveSpeed = 28.dp,

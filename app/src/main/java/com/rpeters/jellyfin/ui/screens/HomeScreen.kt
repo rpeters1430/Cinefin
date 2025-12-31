@@ -418,8 +418,6 @@ fun HomeContent(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(layoutConfig.sectionSpacing),
         ) {
-            item(key = "home_header", contentType = "header") { HomeHeader(currentServer) }
-
             // Continue Watching Section
             if (contentLists.continueWatching.isNotEmpty()) {
                 item(key = "continue_watching", contentType = "continueWatching") {
@@ -595,7 +593,7 @@ private fun rememberHomeLayoutConfig(): HomeLayoutConfig {
         if (isCompactWidth) {
             HomeLayoutConfig(
                 sectionSpacing = 16.dp,
-                heroHeight = 240.dp,
+                heroHeight = 380.dp,
                 heroHorizontalPadding = 12.dp,
                 heroPageSpacing = 6.dp,
                 featuredItemsLimit = 6,
@@ -608,7 +606,7 @@ private fun rememberHomeLayoutConfig(): HomeLayoutConfig {
         } else {
             HomeLayoutConfig(
                 sectionSpacing = 24.dp,
-                heroHeight = 280.dp,
+                heroHeight = 440.dp,
                 heroHorizontalPadding = 16.dp,
                 heroPageSpacing = 8.dp,
                 featuredItemsLimit = 10,

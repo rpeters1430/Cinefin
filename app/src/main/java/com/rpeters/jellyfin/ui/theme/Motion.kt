@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.rpeters.jellyfin.ui.theme
 
 import androidx.compose.animation.core.CubicBezierEasing
