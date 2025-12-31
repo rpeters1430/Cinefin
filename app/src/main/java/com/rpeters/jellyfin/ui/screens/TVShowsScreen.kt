@@ -360,173 +360,173 @@ fun TVShowsScreen(
             ) {
                 // Filter chips with enhanced styling and organization
                 Column {
-                // Basic Filters
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                ) {
-                    items(TVShowFilter.getBasicFilters(), key = { it.name }) { filter ->
-                        FilterChip(
-                            onClick = { selectedFilter = filter },
-                            label = {
-                                Text(
-                                    text = stringResource(id = filter.displayNameResId),
-                                    fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
-                                )
-                            },
-                            selected = selectedFilter == filter,
-                            leadingIcon = if (filter == TVShowFilter.FAVORITES) {
-                                {
-                                    Icon(
-                                        imageVector = Icons.Default.Star,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp),
+                    // Basic Filters
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                    ) {
+                        items(TVShowFilter.getBasicFilters(), key = { it.name }) { filter ->
+                            FilterChip(
+                                onClick = { selectedFilter = filter },
+                                label = {
+                                    Text(
+                                        text = stringResource(id = filter.displayNameResId),
+                                        fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
                                     )
+                                },
+                                selected = selectedFilter == filter,
+                                leadingIcon = if (filter == TVShowFilter.FAVORITES) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.Star,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                    }
+                                } else {
+                                    null
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                ),
+                            )
+                        }
+                    }
+
+                    // Smart Filters
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                    ) {
+                        items(TVShowFilter.getSmartFilters(), key = { it.name }) { filter ->
+                            FilterChip(
+                                onClick = { selectedFilter = filter },
+                                label = {
+                                    Text(
+                                        text = stringResource(id = filter.displayNameResId),
+                                        fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
+                                    )
+                                },
+                                selected = selectedFilter == filter,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                ),
+                            )
+                        }
+                    }
+                }
+
+                // Content with Expressive animations
+                AnimatedContent(
+                    targetState = when {
+                        isLoadingState -> TVShowContentState.LOADING
+                        appState.errorMessage != null -> TVShowContentState.ERROR
+                        filteredAndSortedTVShows.isEmpty() -> TVShowContentState.EMPTY
+                        else -> TVShowContentState.CONTENT
+                    },
+                    transitionSpec = {
+                        fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it / 4 } togetherWith
+                            fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
+                    },
+                    label = "tv_shows_content",
+                ) { contentState ->
+                    when (contentState) {
+                        TVShowContentState.LOADING -> {
+                            ExpressiveFullScreenLoading(
+                                message = "Loading TV Shows...",
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+
+                        TVShowContentState.ERROR -> {
+                            ExpressiveErrorState(
+                                message = appState.errorMessage ?: stringResource(R.string.unknown_error),
+                                onRetry = { viewModel.refreshTVShows() },
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+
+                        TVShowContentState.EMPTY -> {
+                            ExpressiveEmptyState(
+                                icon = Icons.Default.Tv,
+                                title = stringResource(id = R.string.no_tv_shows_found),
+                                subtitle = stringResource(id = R.string.adjust_tv_shows_filters_hint),
+                                iconTint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+
+                        TVShowContentState.CONTENT -> {
+                            TVShowsContent(
+                                tvShows = filteredAndSortedTVShows,
+                                viewMode = viewMode,
+                                getImageUrl = { item -> viewModel.getImageUrl(item) },
+                                onTVShowClick = onTVShowClick,
+                                onTVShowLongPress = handleItemLongPress,
+                                isLoadingMore = appState.isLoadingTVShows,
+                                hasMoreItems = appState.hasMoreTVShows,
+                                onLoadMore = { viewModel.loadMoreTVShows() },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Show media actions sheet when item is long-pressed
+        selectedItem?.let { item ->
+            if (showManageSheet) {
+                val itemName = item.name ?: stringResource(id = R.string.unknown)
+                val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
+                val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
+                val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
+                val unknownErrorMessage = stringResource(id = R.string.unknown_error)
+
+                MediaItemActionsSheet(
+                    item = item,
+                    sheetState = sheetState,
+                    onDismiss = {
+                        showManageSheet = false
+                        selectedItem = null
+                    },
+                    onPlay = {
+                        handlePlay(item)
+                    },
+                    onDelete = { _, _ ->
+                        viewModel.deleteItem(item) { success, message ->
+                            coroutineScope.launch {
+                                val text = if (success) {
+                                    deleteSuccessMessage
+                                } else {
+                                    String.format(deleteFailureTemplate, message ?: "")
                                 }
-                            } else {
-                                null
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            ),
-                        )
-                    }
-                }
-
-                // Smart Filters
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-                ) {
-                    items(TVShowFilter.getSmartFilters(), key = { it.name }) { filter ->
-                        FilterChip(
-                            onClick = { selectedFilter = filter },
-                            label = {
-                                Text(
-                                    text = stringResource(id = filter.displayNameResId),
-                                    fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
-                                )
-                            },
-                            selected = selectedFilter == filter,
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            ),
-                        )
-                    }
-                }
-            }
-
-            // Content with Expressive animations
-            AnimatedContent(
-                targetState = when {
-                    isLoadingState -> TVShowContentState.LOADING
-                    appState.errorMessage != null -> TVShowContentState.ERROR
-                    filteredAndSortedTVShows.isEmpty() -> TVShowContentState.EMPTY
-                    else -> TVShowContentState.CONTENT
-                },
-                transitionSpec = {
-                    fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it / 4 } togetherWith
-                        fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
-                },
-                label = "tv_shows_content",
-            ) { contentState ->
-                when (contentState) {
-                    TVShowContentState.LOADING -> {
-                        ExpressiveFullScreenLoading(
-                            message = "Loading TV Shows...",
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-
-                    TVShowContentState.ERROR -> {
-                        ExpressiveErrorState(
-                            message = appState.errorMessage ?: stringResource(R.string.unknown_error),
-                            onRetry = { viewModel.refreshTVShows() },
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-
-                    TVShowContentState.EMPTY -> {
-                        ExpressiveEmptyState(
-                            icon = Icons.Default.Tv,
-                            title = stringResource(id = R.string.no_tv_shows_found),
-                            subtitle = stringResource(id = R.string.adjust_tv_shows_filters_hint),
-                            iconTint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-
-                    TVShowContentState.CONTENT -> {
-                        TVShowsContent(
-                            tvShows = filteredAndSortedTVShows,
-                            viewMode = viewMode,
-                            getImageUrl = { item -> viewModel.getImageUrl(item) },
-                            onTVShowClick = onTVShowClick,
-                            onTVShowLongPress = handleItemLongPress,
-                            isLoadingMore = appState.isLoadingTVShows,
-                            hasMoreItems = appState.hasMoreTVShows,
-                            onLoadMore = { viewModel.loadMoreTVShows() },
-                        )
-                    }
-                }
+                                snackbarHostState.showSnackbar(text)
+                            }
+                        }
+                    },
+                    onRefreshMetadata = { _, _ ->
+                        viewModel.refreshItemMetadata(item) { success, message ->
+                            coroutineScope.launch {
+                                val text = if (success) {
+                                    refreshRequestedMessage
+                                } else {
+                                    "Failed to refresh metadata: ${message ?: unknownErrorMessage}"
+                                }
+                                snackbarHostState.showSnackbar(text)
+                            }
+                        }
+                    },
+                    onToggleWatched = {
+                        viewModel.toggleWatchedStatus(item)
+                    },
+                    managementEnabled = managementEnabled,
+                )
             }
         }
     }
-
-    // Show media actions sheet when item is long-pressed
-    selectedItem?.let { item ->
-        if (showManageSheet) {
-            val itemName = item.name ?: stringResource(id = R.string.unknown)
-            val deleteSuccessMessage = stringResource(id = R.string.library_actions_delete_success, itemName)
-            val deleteFailureTemplate = stringResource(id = R.string.library_actions_delete_failure, itemName, "%s")
-            val refreshRequestedMessage = stringResource(id = R.string.library_actions_refresh_requested)
-            val unknownErrorMessage = stringResource(id = R.string.unknown_error)
-
-            MediaItemActionsSheet(
-                item = item,
-                sheetState = sheetState,
-                onDismiss = {
-                    showManageSheet = false
-                    selectedItem = null
-                },
-                onPlay = {
-                    handlePlay(item)
-                },
-                onDelete = { _, _ ->
-                    viewModel.deleteItem(item) { success, message ->
-                        coroutineScope.launch {
-                            val text = if (success) {
-                                deleteSuccessMessage
-                            } else {
-                                String.format(deleteFailureTemplate, message ?: "")
-                            }
-                            snackbarHostState.showSnackbar(text)
-                        }
-                    }
-                },
-                onRefreshMetadata = { _, _ ->
-                    viewModel.refreshItemMetadata(item) { success, message ->
-                        coroutineScope.launch {
-                            val text = if (success) {
-                                refreshRequestedMessage
-                            } else {
-                                "Failed to refresh metadata: ${message ?: unknownErrorMessage}"
-                            }
-                            snackbarHostState.showSnackbar(text)
-                        }
-                    }
-                },
-                onToggleWatched = {
-                    viewModel.toggleWatchedStatus(item)
-                },
-                managementEnabled = managementEnabled,
-            )
-        }
-    }
-}
 }
 
 @Composable
