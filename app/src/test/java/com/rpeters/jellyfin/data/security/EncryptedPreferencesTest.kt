@@ -1,16 +1,7 @@
 package com.rpeters.jellyfin.data.security
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.stringPreferencesKey
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -101,7 +92,7 @@ class EncryptedPreferencesTest {
         assertNotEquals(
             "Each encryption should use a different IV, producing different ciphertext",
             encrypted1,
-            encrypted2
+            encrypted2,
         )
 
         // Both should decrypt to the same value
@@ -123,7 +114,7 @@ class EncryptedPreferencesTest {
 
         assertNull(
             "Decryption should fail for tampered ciphertext (GCM authentication tag mismatch)",
-            decrypted
+            decrypted,
         )
     }
 
@@ -141,7 +132,7 @@ class EncryptedPreferencesTest {
 
         assertNull(
             "Decryption should fail for truncated ciphertext",
-            decrypted
+            decrypted,
         )
     }
 
@@ -170,7 +161,7 @@ class EncryptedPreferencesTest {
         assertEquals(
             "All concurrent encryptions should succeed",
             encryptionCount,
-            encryptedValues.size
+            encryptedValues.size,
         )
 
         // Verify all ciphertexts are unique (different IVs)
@@ -178,7 +169,7 @@ class EncryptedPreferencesTest {
         assertEquals(
             "Each concurrent encryption should produce unique ciphertext (unique IV)",
             encryptionCount,
-            uniqueValues.size
+            uniqueValues.size,
         )
 
         // Verify all decrypt to the same plaintext
@@ -237,7 +228,7 @@ class EncryptedPreferencesTest {
         // Valid base64 but too short to contain IV + ciphertext + GCM tag (needs at least 12 + 16 = 28 bytes)
         val tooShort = android.util.Base64.encodeToString(
             ByteArray(20), // Only 20 bytes
-            android.util.Base64.NO_WRAP
+            android.util.Base64.NO_WRAP,
         )
 
         val decrypted = encryptedPreferences.decryptValue(tooShort)

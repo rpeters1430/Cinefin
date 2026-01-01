@@ -5,7 +5,6 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.fail
@@ -42,7 +41,7 @@ class PinningTrustManagerTest {
         pinningTrustManager = PinningTrustManager(
             systemTrustManager = mockSystemTrustManager,
             certPinningManager = mockCertPinningManager,
-            onFirstConnection = null // Auto-trust TOFU
+            onFirstConnection = null, // Auto-trust TOFU
         )
     }
 
@@ -254,7 +253,7 @@ class PinningTrustManagerTest {
                 callbackInvoked = true
                 callbackHostname = hostname
                 true // Accept certificate
-            }
+            },
         )
 
         val hostname = "callback-test.example.com"
@@ -289,7 +288,7 @@ class PinningTrustManagerTest {
             certPinningManager = mockCertPinningManager,
             onFirstConnection = { _, _ ->
                 false // Reject certificate
-            }
+            },
         )
 
         val hostname = "rejected.example.com"
@@ -321,7 +320,7 @@ class PinningTrustManagerTest {
         assertArrayEquals(
             "Should return system trust manager's accepted issuers",
             expectedIssuers,
-            actualIssuers
+            actualIssuers,
         )
     }
 

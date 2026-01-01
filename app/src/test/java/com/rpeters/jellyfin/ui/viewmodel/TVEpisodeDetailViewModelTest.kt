@@ -90,7 +90,7 @@ class TVEpisodeDetailViewModelTest {
 
     private fun createEpisode(): BaseItemDto = BaseItemDto(
         id = UUID.randomUUID(),
-        type = org.jellyfin.sdk.model.api.BaseItemKind.EPISODE
+        type = org.jellyfin.sdk.model.api.BaseItemKind.EPISODE,
     )
 
     private fun createPlaybackAnalysis(): PlaybackCapabilityAnalysis =

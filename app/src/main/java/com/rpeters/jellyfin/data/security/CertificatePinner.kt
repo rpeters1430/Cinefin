@@ -105,7 +105,7 @@ class CertificatePinningManager @Inject constructor(
         // Return as Base64
         return android.util.Base64.encodeToString(
             hash,
-            android.util.Base64.NO_WRAP
+            android.util.Base64.NO_WRAP,
         )
     }
 
