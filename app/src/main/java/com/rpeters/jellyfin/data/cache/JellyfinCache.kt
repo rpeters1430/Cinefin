@@ -375,12 +375,14 @@ class JellyfinCache @Inject constructor(
             val totalSizeBytes = getCacheSizeBytes()
             val totalSizeMB = totalSizeBytes / (1024.0 * 1024.0)
 
-            _cacheStats.update { CacheStats(
-                totalEntries = diskEntries,
-                memoryEntries = memoryEntries,
-                totalSizeBytes = totalSizeBytes,
-                totalSizeMB = totalSizeMB,
-            ) }
+            _cacheStats.update {
+                CacheStats(
+                    totalEntries = diskEntries,
+                    memoryEntries = memoryEntries,
+                    totalSizeBytes = totalSizeBytes,
+                    totalSizeMB = totalSizeMB,
+                )
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error updating cache stats", e)
         }

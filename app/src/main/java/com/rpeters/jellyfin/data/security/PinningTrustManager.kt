@@ -44,7 +44,7 @@ class PinningTrustManager(
     override fun checkClientTrusted(
         chain: Array<out X509Certificate>?,
         authType: String?,
-        socket: Socket?
+        socket: Socket?,
     ) {
         systemTrustManager.checkClientTrusted(chain, authType)
     }
@@ -52,7 +52,7 @@ class PinningTrustManager(
     override fun checkClientTrusted(
         chain: Array<out X509Certificate>?,
         authType: String?,
-        engine: SSLEngine?
+        engine: SSLEngine?,
     ) {
         systemTrustManager.checkClientTrusted(chain, authType)
     }
@@ -68,7 +68,7 @@ class PinningTrustManager(
     override fun checkServerTrusted(
         chain: Array<out X509Certificate>?,
         authType: String?,
-        socket: Socket?
+        socket: Socket?,
     ) {
         val hostname = socket?.inetAddress?.hostName
         performServerTrustedCheck(chain, authType, hostname)
@@ -77,7 +77,7 @@ class PinningTrustManager(
     override fun checkServerTrusted(
         chain: Array<out X509Certificate>?,
         authType: String?,
-        engine: SSLEngine?
+        engine: SSLEngine?,
     ) {
         val hostname = engine?.peerHost
         performServerTrustedCheck(chain, authType, hostname)
@@ -86,7 +86,7 @@ class PinningTrustManager(
     private fun performServerTrustedCheck(
         chain: Array<out X509Certificate>?,
         authType: String?,
-        hostname: String?
+        hostname: String?,
     ) {
         // Input validation
         if (chain == null || chain.isEmpty()) {
@@ -113,7 +113,7 @@ class PinningTrustManager(
                 "checkServerTrusted",
                 Array<X509Certificate>::class.java,
                 String::class.java,
-                String::class.java
+                String::class.java,
             )
             method.invoke(systemTrustManager, chain, authType, hostname)
         } catch (e: NoSuchMethodException) {

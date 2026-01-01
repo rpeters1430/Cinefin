@@ -98,7 +98,7 @@ class CertificatePinningManagerTest {
         coVerify(exactly = 1) {
             mockEncryptedPreferences.putEncryptedString(
                 "cert_pin_$hostname",
-                pin
+                pin,
             )
         }
     }
