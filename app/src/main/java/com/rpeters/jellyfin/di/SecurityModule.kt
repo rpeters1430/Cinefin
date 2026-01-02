@@ -54,7 +54,7 @@ object SecurityModule {
     @Singleton
     fun provideSystemTrustManager(): X509TrustManager {
         val trustManagerFactory = TrustManagerFactory.getInstance(
-            TrustManagerFactory.getDefaultAlgorithm()
+            TrustManagerFactory.getDefaultAlgorithm(),
         )
         trustManagerFactory.init(null as KeyStore?)
 
@@ -81,7 +81,7 @@ object SecurityModule {
         return PinningTrustManager(
             systemTrustManager = systemTrustManager,
             certPinningManager = certPinningManager,
-            onFirstConnection = null // Auto-trust (TOFU)
+            onFirstConnection = null, // Auto-trust (TOFU)
         )
     }
 
