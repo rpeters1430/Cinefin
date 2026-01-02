@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.JellyfinServer
+import com.rpeters.jellyfin.ui.components.MiniPlayer
 
 @OptInAppExperimentalApis
 @Composable
@@ -44,6 +45,7 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     onSettingsClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
+    onNowPlayingClick: () -> Unit = {},
     showBackButton: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
@@ -70,6 +72,9 @@ fun ProfileScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             )
+        },
+        bottomBar = {
+            MiniPlayer(onExpandClick = onNowPlayingClick)
         },
         modifier = modifier,
     ) { paddingValues ->

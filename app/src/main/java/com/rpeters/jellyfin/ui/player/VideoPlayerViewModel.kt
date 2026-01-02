@@ -64,6 +64,8 @@ data class VideoPlayerState(
     val aspectRatio: Float = 16f / 9f,
     val selectedAspectRatio: AspectRatioMode = AspectRatioMode.FIT,
     val availableAspectRatios: List<AspectRatioMode> = AspectRatioMode.entries.toList(),
+    val videoWidth: Int = 0,
+    val videoHeight: Int = 0,
     val isControlsVisible: Boolean = true,
     val showSubtitleDialog: Boolean = false,
     val showCastDialog: Boolean = false,
@@ -247,6 +249,17 @@ class VideoPlayerViewModel @Inject constructor(
                 builder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, true)
                 player.trackSelectionParameters = builder.build()
             }
+        }
+
+        override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
+            SecureLogger.d(
+                "VideoPlayer",
+                "Video size changed: ${videoSize.width}x${videoSize.height}"
+            )
+            _playerState.value = _playerState.value.copy(
+                videoWidth = videoSize.width,
+                videoHeight = videoSize.height
+            )
         }
     }
 

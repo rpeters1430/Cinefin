@@ -25,6 +25,7 @@ sealed class Screen(val route: String) {
         fun createRoute(seasonId: String) = "tv_episodes/$seasonId"
     }
     object Music : Screen("music")
+    object NowPlaying : Screen("now_playing")
     object HomeVideos : Screen("home_videos")
     object Books : Screen("books")
     object Stuff : Screen("stuff/{libraryId}/{collectionType}") {

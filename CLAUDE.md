@@ -64,13 +64,14 @@ scripts/gen-local-properties.ps1  # PowerShell (Windows)
 
 ### High-Level Architecture
 This is a modern Android client for Jellyfin media servers built with:
-- **UI**: Jetpack Compose with Material 3 design system
+- **UI**: Jetpack Compose (BOM 2025.12.01) with Material 3 design system
 - **Architecture**: MVVM pattern with Repository pattern for data access
-- **DI**: Hilt for dependency injection throughout the app
-- **Async**: Kotlin Coroutines with StateFlow for reactive UI updates
+- **DI**: Hilt 2.57.2 for dependency injection throughout the app
+- **Async**: Kotlin Coroutines 1.10.2 with StateFlow for reactive UI updates
 - **Media Playback**: ExoPlayer (Media3 1.9.0) with Jellyfin FFmpeg decoder
 - **Networking**: Retrofit 3.0.0 + OkHttp 5.3.2 + Jellyfin SDK 1.8.5
 - **Image Loading**: Coil 3.3.0 with custom performance optimizations
+- **Security**: Android Keystore encryption, dynamic certificate pinning with TOFU model
 
 ### Multi-Platform Support
 The app detects device type and displays different UIs:
@@ -82,6 +83,7 @@ The app detects device type and displays different UIs:
 - **JellyfinAuthRepository** (data/repository/JellyfinAuthRepository.kt) handles all authentication
 - **JellyfinSessionManager** (data/session/JellyfinSessionManager.kt) manages SDK client lifecycle
 - **SecureCredentialManager** (data/SecureCredentialManager.kt) uses Android Keystore for secure token storage
+- **Certificate Pinning**: Dynamic TOFU (Trust-on-First-Use) model for enhanced security
 - Authentication state flows through ViewModels to UI via StateFlow
 
 ### Repository Layer Pattern
@@ -152,10 +154,12 @@ Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<Jellyf
 
 ### Key Constants & Configuration
 - Centralized constants in `core/constants/Constants.kt`
-- SDK versions: compileSdk 36, targetSdk 35, minSdk 26
+- SDK versions: compileSdk 36, targetSdk 35, minSdk 26 (Android 8.0+)
 - Java version: 21 with core library desugaring enabled
+- Kotlin version: 2.3.0 with KSP 2.3.4
 - Dependency versions: Centralized in `gradle/libs.versions.toml`
 - **Release builds**: ProGuard/R8 enabled with shrinking and minification (`proguard-rules.pro`)
+- **Network security**: Custom configuration in `app/src/main/res/xml/network_security_config.xml`
 
 ### State Management Pattern
 ViewModels expose UI state via StateFlow:
@@ -180,8 +184,9 @@ val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
 ### Current Implementation
 - Using Material 3 alpha versions (1.5.0-alpha11)
-- **Custom carousel implementation** instead of official Material 3 Carousel (dependency disabled)
-- **Adaptive layouts** using Material 3 adaptive components for different screen sizes
+- **Material 3 Expressive Components** (1.5.0-alpha02) for enhanced UI elements
+- **Custom carousel implementation** instead of official Material 3 Carousel (dependency disabled in libs.versions.toml)
+- **Adaptive layouts** using Material 3 adaptive components (1.3.0-alpha05) for different screen sizes
 - Theme defined in `ui/theme/` with Jellyfin brand colors:
   - Primary: Jellyfin Purple (#6200EE)
   - Secondary: Jellyfin Blue (#2962FF)
@@ -251,7 +256,29 @@ Refer to CURRENT_STATUS.md for detailed feature status and IMPROVEMENTS.md for r
 - **NetworkOptimizer** (utils/NetworkOptimizer.kt) configures StrictMode and network settings
 - **MainThreadMonitor** (utils/MainThreadMonitor.kt) tracks main thread impact in debug builds
 - **ModernSurfaceCoordinator** (ui/surface/ModernSurfaceCoordinator.kt) manages surfaces for video playback
-- Memory optimization: LeakCanary in debug builds, cache cleanup on low memory
+- **DevicePerformanceProfile** (ui/image/OptimizedImageLoader.kt) auto-detects device tier for optimal settings
+- Memory optimization: LeakCanary 2.14 in debug builds, cache cleanup on low memory
+- Image cache tuning based on device capabilities (LOW/MEDIUM/HIGH/FLAGSHIP tiers)
+
+## Debugging & Troubleshooting
+
+### Common Build Issues
+- **"SDK location not found"**: Run `scripts/gen-local-properties.sh` (or `.ps1` on Windows) to generate `local.properties`
+- **Gradle sync failures**: Ensure JDK 21 is configured, check `JAVA_HOME` environment variable
+- **Windows builds**: Always use `./gradlew.bat` or `gradlew.bat` instead of `./gradlew`
+- **Missing SDK**: Run `./setup.sh` (Linux/macOS) to install Android SDK and accept licenses
+
+### Logging & Debugging
+- Enable verbose logging: `SecureLogger.enableVerboseLogging = true` (default is false to reduce spam)
+- Logcat filtering: Use tag `Jellyfin` or specific component tags
+- Debug builds include LeakCanary for memory leak detection
+- Network traffic: Check `NetworkOptimizer` for StrictMode configuration
+
+### Testing Issues
+- **Flow mocking failures**: Use `coEvery` instead of `every` for Flow properties
+- **Coroutine tests timing out**: Use `StandardTestDispatcher` with `advanceUntilIdle()`
+- **Mock not matching**: Add `any()` matchers for default parameters in repository methods
+- See TESTING_GUIDE.md for comprehensive testing patterns
 
 ## Code Quality Expectations
 

@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.MediaCard
+import com.rpeters.jellyfin.ui.components.MiniPlayer
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @OptInAppExperimentalApis
@@ -46,6 +47,7 @@ fun FavoritesScreen(
     onRefresh: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
     onBackClick: () -> Unit,
+    onNowPlayingClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -74,6 +76,9 @@ fun FavoritesScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
             )
+        },
+        bottomBar = {
+            MiniPlayer(onExpandClick = onNowPlayingClick)
         },
         modifier = modifier,
     ) { paddingValues ->

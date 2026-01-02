@@ -1,10 +1,17 @@
 package com.rpeters.jellyfin.ui.player
 
+import android.app.PendingIntent
 import android.app.PictureInPictureParams
+import android.app.RemoteAction
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.graphics.Rect
+import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
 import android.util.Rational
@@ -12,6 +19,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -22,7 +30,9 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
+import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -31,11 +41,58 @@ import kotlinx.coroutines.launch
 class VideoPlayerActivity : ComponentActivity() {
 
     private val playerViewModel: VideoPlayerViewModel by viewModels()
+    private var isInPipMode = false
+    private var currentItemName: String = ""
+    private var pipSourceRect: Rect? = null
+
+    // Receiver for PiP control actions
+    private val playerCommandReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.getStringExtra(PipActionReceiver.EXTRA_COMMAND)) {
+                PipActionReceiver.COMMAND_PLAY_PAUSE -> playerViewModel.togglePlayPause()
+                PipActionReceiver.COMMAND_SKIP_FORWARD -> {
+                    val playerState = playerViewModel.playerState.value
+                    val newPosition = (playerState.currentPosition + 30_000)
+                        .coerceAtMost(playerState.duration)
+                    playerViewModel.seekTo(newPosition)
+                }
+                PipActionReceiver.COMMAND_SKIP_BACKWARD -> {
+                    val playerState = playerViewModel.playerState.value
+                    val newPosition = (playerState.currentPosition - 30_000)
+                        .coerceAtLeast(0L)
+                    playerViewModel.seekTo(newPosition)
+                }
+            }
+        }
+    }
 
     companion object {
         private const val EXTRA_ITEM_ID = "extra_item_id"
         private const val EXTRA_ITEM_NAME = "extra_item_name"
         private const val EXTRA_START_POSITION = "extra_start_position"
+
+        @JvmStatic
+        @VisibleForTesting
+        internal fun shouldPausePlayback(
+            isInPictureInPictureMode: Boolean,
+            isFinishing: Boolean,
+            isChangingConfigurations: Boolean,
+        ): Boolean {
+            return !isInPictureInPictureMode && (isFinishing || !isChangingConfigurations)
+        }
+
+        @JvmStatic
+        @VisibleForTesting
+        internal fun shouldAutoEnterPip(
+            sdkInt: Int,
+            isPipSupported: Boolean,
+            isPlaying: Boolean,
+        ): Boolean {
+            return sdkInt >= Build.VERSION_CODES.O &&
+                sdkInt < Build.VERSION_CODES.S &&
+                isPipSupported &&
+                isPlaying
+        }
 
         fun createIntent(
             context: Context,
@@ -72,6 +129,24 @@ class VideoPlayerActivity : ComponentActivity() {
             val itemName = intent.getStringExtra(EXTRA_ITEM_NAME) ?: ""
             val startPosition = intent.getLongExtra(EXTRA_START_POSITION, 0L)
 
+            // Store item name for PiP title
+            currentItemName = itemName
+
+            // Register receiver for PiP control commands
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(
+                    playerCommandReceiver,
+                    IntentFilter(PipActionReceiver.ACTION_PLAYER_COMMAND),
+                    Context.RECEIVER_NOT_EXPORTED
+                )
+            } else {
+                @Suppress("UnspecifiedRegisterReceiverFlag")
+                registerReceiver(
+                    playerCommandReceiver,
+                    IntentFilter(PipActionReceiver.ACTION_PLAYER_COMMAND)
+                )
+            }
+
             // Initialize player with error handling
             lifecycleScope.launch {
                 try {
@@ -79,6 +154,14 @@ class VideoPlayerActivity : ComponentActivity() {
                 } catch (e: Exception) {
                     android.util.Log.e("VideoPlayerActivity", "Failed to initialize player", e)
                     finish()
+                }
+            }
+
+            lifecycleScope.launch {
+                playerViewModel.playerState.collect {
+                    if (isInPipMode) {
+                        updatePipParams()
+                    }
                 }
             }
 
@@ -111,6 +194,7 @@ class VideoPlayerActivity : ComponentActivity() {
                             onCastDialogDismiss = playerViewModel::hideCastDialog,
                             onErrorDismiss = playerViewModel::clearError,
                             onClose = { finish() },
+                            onPlayerViewBoundsChanged = { pipSourceRect = it },
                             exoPlayer = playerViewModel.exoPlayer,
                             supportsPip = isPipSupported(),
                         )
@@ -136,14 +220,22 @@ class VideoPlayerActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isInPictureInPictureMode) {
+            return
+        }
         // Only pause if we're actually leaving the activity (not just transitioning)
-        if (isFinishing || !isChangingConfigurations) {
+        if (shouldPausePlayback(isInPictureInPictureMode, isFinishing, isChangingConfigurations)) {
             playerViewModel.pausePlayback()
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        try {
+            unregisterReceiver(playerCommandReceiver)
+        } catch (e: Exception) {
+            SecureLogger.w("VideoPlayerActivity", "Error unregistering receiver: ${e.message}")
+        }
         playerViewModel.releasePlayer()
     }
 
@@ -160,20 +252,119 @@ class VideoPlayerActivity : ComponentActivity() {
                 PackageManager.FEATURE_PICTURE_IN_PICTURE,
             )
         ) {
-            val aspectRatio = Rational(16, 9)
-            val params = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PictureInPictureParams.Builder()
-                    .setAspectRatio(aspectRatio)
-                    .setAutoEnterEnabled(true) // Auto-enter PiP when user presses home
-                    .setSeamlessResizeEnabled(true) // Smooth transitions for Android 12+
-                    .build()
+            val playerState = playerViewModel.playerState.value
+
+            // Calculate aspect ratio from video dimensions, fallback to 16:9
+            val aspectRatio = if (playerState.videoWidth > 0 && playerState.videoHeight > 0) {
+                Rational(playerState.videoWidth, playerState.videoHeight)
             } else {
-                PictureInPictureParams.Builder()
-                    .setAspectRatio(aspectRatio)
-                    .build()
+                Rational(16, 9)
             }
-            enterPictureInPictureMode(params)
+
+            val params = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val builder = PictureInPictureParams.Builder()
+                    .setAspectRatio(aspectRatio)
+
+                // Add custom actions for Android 8.0+
+                val actions = buildPipActions(playerState.isPlaying)
+                builder.setActions(actions)
+                pipSourceRect?.let { builder.setSourceRectHint(it) }
+
+                // Add title for Android 12+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    builder
+                        .setTitle(currentItemName)
+                        .setSubtitle(formatDuration(playerState.currentPosition) + " / " + formatDuration(playerState.duration))
+                        .setAutoEnterEnabled(true) // Auto-enter when user presses home
+                        .setSeamlessResizeEnabled(true) // Smooth resize transitions
+                }
+
+                builder.build()
+            } else {
+                return // PiP not supported
+            }
+
+            try {
+                enterPictureInPictureMode(params)
+                SecureLogger.d("VideoPlayerActivity", "Entered PiP mode successfully")
+            } catch (e: Exception) {
+                SecureLogger.e("VideoPlayerActivity", "Failed to enter PiP mode", e)
+            }
         }
+    }
+
+    /**
+     * Build custom remote actions for PiP window controls
+     */
+    private fun buildPipActions(isPlaying: Boolean): List<RemoteAction> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return emptyList()
+
+        val actions = mutableListOf<RemoteAction>()
+
+        // Skip Backward action
+        val skipBackwardIntent = PendingIntent.getBroadcast(
+            this,
+            PipActionReceiver.REQUEST_SKIP_BACKWARD,
+            Intent(PipActionReceiver.ACTION_SKIP_BACKWARD).setPackage(packageName),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        actions.add(
+            RemoteAction(
+                Icon.createWithResource(this, R.drawable.ic_replay_30),
+                "Skip Backward",
+                "Skip backward 30 seconds",
+                skipBackwardIntent
+            )
+        )
+
+        // Play/Pause action
+        val playPauseIcon = if (isPlaying) {
+            Icon.createWithResource(this, R.drawable.ic_pause)
+        } else {
+            Icon.createWithResource(this, R.drawable.ic_play_arrow)
+        }
+        val playPauseIntent = PendingIntent.getBroadcast(
+            this,
+            PipActionReceiver.REQUEST_PLAY_PAUSE,
+            Intent(PipActionReceiver.ACTION_PLAY_PAUSE).setPackage(packageName),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        actions.add(
+            RemoteAction(
+                playPauseIcon,
+                if (isPlaying) "Pause" else "Play",
+                if (isPlaying) "Pause playback" else "Resume playback",
+                playPauseIntent
+            )
+        )
+
+        // Skip Forward action
+        val skipForwardIntent = PendingIntent.getBroadcast(
+            this,
+            PipActionReceiver.REQUEST_SKIP_FORWARD,
+            Intent(PipActionReceiver.ACTION_SKIP_FORWARD).setPackage(packageName),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        actions.add(
+            RemoteAction(
+                Icon.createWithResource(this, R.drawable.ic_forward_30),
+                "Skip Forward",
+                "Skip forward 30 seconds",
+                skipForwardIntent
+            )
+        )
+
+        return actions
+    }
+
+    /**
+     * Format duration in milliseconds to MM:SS format
+     */
+    private fun formatDuration(millis: Long): String {
+        val seconds = (millis / 1000).toInt()
+        val minutes = seconds / 60
+        val remainingSeconds = seconds % 60
+        return String.format("%d:%02d", minutes, remainingSeconds)
     }
 
     private fun toggleOrientation() {
@@ -181,6 +372,70 @@ class VideoPlayerActivity : ComponentActivity() {
             ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             ActivityInfo.SCREEN_ORIENTATION_PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
             else -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        }
+    }
+
+    /**
+     * Automatically enter PiP mode when user presses home button or switches apps
+     */
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (shouldAutoEnterPip(
+                sdkInt = Build.VERSION.SDK_INT,
+                isPipSupported = isPipSupported(),
+                isPlaying = playerViewModel.playerState.value.isPlaying,
+            )
+        ) {
+            enterPictureInPictureModeCustom()
+        }
+    }
+
+    /**
+     * Track PiP mode changes and update UI accordingly
+     */
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+
+        isInPipMode = isInPictureInPictureMode
+
+        if (isInPictureInPictureMode) {
+            // Entered PiP mode - hide UI controls (handled by Compose UI state)
+            SecureLogger.d("VideoPlayerActivity", "Entered PiP mode")
+            updatePipParams()
+        } else {
+            // Exited PiP mode - restore full screen
+            SecureLogger.d("VideoPlayerActivity", "Exited PiP mode")
+            setupFullScreenMode()
+        }
+    }
+
+    /**
+     * Update PiP params dynamically (for play/pause button updates)
+     */
+    fun updatePipParams() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && isInPipMode) {
+            try {
+                val playerState = playerViewModel.playerState.value
+                val actions = buildPipActions(playerState.isPlaying)
+
+                val params = PictureInPictureParams.Builder()
+                    .setActions(actions)
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    params.setSubtitle(
+                        formatDuration(playerState.currentPosition) + " / " +
+                        formatDuration(playerState.duration)
+                    )
+                }
+                pipSourceRect?.let { params.setSourceRectHint(it) }
+
+                setPictureInPictureParams(params.build())
+            } catch (e: Exception) {
+                SecureLogger.w("VideoPlayerActivity", "Failed to update PiP params: ${e.message}")
+            }
         }
     }
 }

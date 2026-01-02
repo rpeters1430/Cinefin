@@ -71,6 +71,7 @@ import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveHeroCarousel
 import com.rpeters.jellyfin.ui.components.MediaCard
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
+import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.image.ImageSize
@@ -106,6 +107,7 @@ fun HomeScreen(
     onLibraryClick: (BaseItemDto) -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
+    onNowPlayingClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     showBackButton: Boolean = false,
     viewModel: MainAppViewModel = hiltViewModel(),
@@ -154,6 +156,9 @@ fun HomeScreen(
                 onRefresh = onRefresh,
                 onSettingsClick = onSettingsClick,
             )
+        },
+        bottomBar = {
+            MiniPlayer(onExpandClick = onNowPlayingClick)
         },
         modifier = modifier,
     ) { paddingValues ->
@@ -361,6 +366,7 @@ fun HomeContent(
     // Consolidate all derived state computations into a single derivedStateOf for better performance
     val contentLists by remember(
         appState.allItems,
+        appState.continueWatching,
         appState.recentlyAddedByTypes,
         layoutConfig.continueWatchingLimit,
         layoutConfig.rowItemLimit,
@@ -418,19 +424,6 @@ fun HomeContent(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(layoutConfig.sectionSpacing),
         ) {
-            // Continue Watching Section
-            if (contentLists.continueWatching.isNotEmpty()) {
-                item(key = "continue_watching", contentType = "continueWatching") {
-                    ContinueWatchingSection(
-                        items = contentLists.continueWatching,
-                        getImageUrl = getImageUrl,
-                        onItemClick = onItemClick,
-                        onItemLongPress = onItemLongPress,
-                        cardWidth = layoutConfig.continueWatchingCardWidth,
-                    )
-                }
-            }
-
             if (contentLists.featuredItems.isNotEmpty()) {
                 item(key = "featured", contentType = "carousel") {
                     val unknownText = stringResource(id = R.string.unknown)
@@ -457,6 +450,19 @@ fun HomeContent(
                         heroHeight = layoutConfig.heroHeight,
                         horizontalPadding = layoutConfig.heroHorizontalPadding,
                         pageSpacing = layoutConfig.heroPageSpacing,
+                    )
+                }
+            }
+
+            // Continue Watching Section
+            if (contentLists.continueWatching.isNotEmpty()) {
+                item(key = "continue_watching", contentType = "continueWatching") {
+                    ContinueWatchingSection(
+                        items = contentLists.continueWatching,
+                        getImageUrl = getImageUrl,
+                        onItemClick = onItemClick,
+                        onItemLongPress = onItemLongPress,
+                        cardWidth = layoutConfig.continueWatchingCardWidth,
                     )
                 }
             }
@@ -800,10 +806,18 @@ fun SearchResultsContent(
 
 // Helper function to get continue watching items
 private fun getContinueWatchingItems(appState: MainAppState, maxItems: Int = 8): List<BaseItemDto> {
-    return appState.allItems.filter { item ->
+    val sourceItems = if (appState.continueWatching.isNotEmpty()) {
+        appState.continueWatching
+    } else {
+        appState.allItems
+    }
+
+    return sourceItems.filter { item ->
         val percentage = item.userData?.playedPercentage ?: 0.0
         percentage > 0.0 && percentage < 100.0 &&
-            (item.type == BaseItemKind.MOVIE || item.type == BaseItemKind.EPISODE)
+            (item.type == BaseItemKind.MOVIE ||
+                item.type == BaseItemKind.EPISODE ||
+                item.type == BaseItemKind.VIDEO)
     }.sortedByDescending { it.userData?.lastPlayedDate }.take(maxItems)
 }
 

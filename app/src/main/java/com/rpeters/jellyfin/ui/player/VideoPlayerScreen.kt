@@ -76,6 +76,9 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -90,6 +93,7 @@ import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlin.math.roundToInt
 
 @UnstableApi
 @Composable
@@ -114,6 +118,7 @@ fun VideoPlayerScreen(
     onCastDialogDismiss: () -> Unit,
     onErrorDismiss: () -> Unit,
     onClose: () -> Unit = {},
+    onPlayerViewBoundsChanged: (android.graphics.Rect) -> Unit = {},
     exoPlayer: ExoPlayer?,
     supportsPip: Boolean,
     modifier: Modifier = Modifier,
@@ -172,6 +177,7 @@ fun VideoPlayerScreen(
     var seekFeedbackText by remember { mutableStateOf("") }
     var seekFeedbackIcon by remember { mutableStateOf(Icons.Default.FastForward) }
     var lastTapTime by remember { mutableLongStateOf(0L) }
+    var lastPlayerViewBounds by remember { mutableStateOf<android.graphics.Rect?>(null) }
 
     remember(exoPlayer) { exoPlayer }
 
@@ -294,7 +300,21 @@ fun VideoPlayerScreen(
                 }
                 playerView.resizeMode = playerState.selectedAspectRatio.resizeMode
             },
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .onGloballyPositioned { coordinates ->
+                    val bounds = coordinates.boundsInWindow()
+                    val rect = android.graphics.Rect(
+                        bounds.left.roundToInt(),
+                        bounds.top.roundToInt(),
+                        bounds.right.roundToInt(),
+                        bounds.bottom.roundToInt(),
+                    )
+                    if (rect.width() > 0 && rect.height() > 0 && rect != lastPlayerViewBounds) {
+                        lastPlayerViewBounds = rect
+                        onPlayerViewBoundsChanged(rect)
+                    }
+                },
         )
 
         // Ensure the PlayerView detaches cleanly to avoid setOutputSurface errors
@@ -629,7 +649,9 @@ private fun CastNowPlayingOverlay(
     val artwork = playerState.castBackdropUrl ?: playerState.castPosterUrl
 
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag(VideoPlayerTestTags.CastOverlay),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
         ),
@@ -902,7 +924,9 @@ private fun VideoControlsOverlay(
                             icon = Icons.Default.ClosedCaption,
                             contentDescription = "Subtitles",
                             onClick = onSubtitlesClick,
-                            modifier = Modifier.padding(horizontal = 4.dp),
+                            modifier = Modifier
+                                .padding(horizontal = 4.dp)
+                                .testTag(VideoPlayerTestTags.SubtitlesButton),
                             colors = playerColors,
                         )
                         val subLabel = playerState.selectedSubtitleTrack?.format?.language?.take(2)
@@ -935,7 +959,9 @@ private fun VideoControlsOverlay(
                             icon = Icons.Default.Audiotrack,
                             contentDescription = "Audio Tracks",
                             onClick = onAudioTracksClick,
-                            modifier = Modifier.padding(horizontal = 4.dp),
+                            modifier = Modifier
+                                .padding(horizontal = 4.dp)
+                                .testTag(VideoPlayerTestTags.AudioTracksButton),
                             colors = playerColors,
                         )
                         val a = playerState.selectedAudioTrack?.format
@@ -1106,7 +1132,8 @@ private fun VideoControlsOverlay(
                 Surface(
                     modifier = Modifier
                         .padding(start = 4.dp)
-                        .clip(CircleShape),
+                        .clip(CircleShape)
+                        .testTag(VideoPlayerTestTags.PipButton),
                     color = if (supportsPip) playerColors.controlContainer else playerColors.disabledControlContainer,
                     shape = CircleShape,
                 ) {

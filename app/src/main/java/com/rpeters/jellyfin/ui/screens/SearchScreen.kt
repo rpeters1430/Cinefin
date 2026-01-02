@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.constants.Constants
+import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.utils.rememberDebouncedState
@@ -59,6 +60,7 @@ fun SearchScreen(
     onClearSearch: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
     onBackClick: () -> Unit = {},
+    onNowPlayingClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -148,6 +150,9 @@ fun SearchScreen(
                     navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             )
+        },
+        bottomBar = {
+            MiniPlayer(onExpandClick = onNowPlayingClick)
         },
         modifier = modifier,
     ) { paddingValues ->

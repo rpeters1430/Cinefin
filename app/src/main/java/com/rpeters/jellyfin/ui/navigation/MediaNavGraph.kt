@@ -15,6 +15,7 @@ import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.screens.LibraryTypeScreen
 import com.rpeters.jellyfin.ui.screens.MusicScreen
+import com.rpeters.jellyfin.ui.screens.NowPlayingScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodesScreen
 import com.rpeters.jellyfin.ui.screens.TVSeasonScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -203,6 +204,15 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                         }
                     }
                 }
+            },
+        )
+    }
+
+    composable(Screen.NowPlaying.route) {
+        NowPlayingScreen(
+            onNavigateBack = { navController.popBackStack() },
+            onOpenQueue = {
+                // TODO: Navigate to queue screen when implemented
             },
         )
     }

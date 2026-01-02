@@ -13,6 +13,7 @@ import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import javax.inject.Inject
@@ -329,6 +330,26 @@ class JellyfinMediaRepository @Inject constructor(
                 includeItemTypes = listOf(itemType),
                 sortBy = listOf(ItemSortBy.DATE_CREATED),
                 sortOrder = listOf(SortOrder.DESCENDING),
+                limit = limit,
+            )
+            response.content.items
+        }
+    }
+
+    suspend fun getContinueWatching(limit: Int = 20, forceRefresh: Boolean = false): ApiResult<List<BaseItemDto>> {
+        return withServerClient("getContinueWatching") { server, client ->
+            val userUuid = parseUuid(server.userId ?: "", "user")
+            val response = client.itemsApi.getItems(
+                userId = userUuid,
+                recursive = true,
+                includeItemTypes = listOf(
+                    BaseItemKind.MOVIE,
+                    BaseItemKind.EPISODE,
+                    BaseItemKind.VIDEO,
+                ),
+                sortBy = listOf(ItemSortBy.DATE_PLAYED),
+                sortOrder = listOf(SortOrder.DESCENDING),
+                filters = listOf(ItemFilter.IS_RESUMABLE),
                 limit = limit,
             )
             response.content.items

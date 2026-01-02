@@ -99,6 +99,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                 }
             },
             onSettingsClick = { navController.navigate(Screen.Profile.route) },
+            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
         )
     }
 
@@ -140,6 +141,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                 }
             },
             onSettingsClick = { navController.navigate(Screen.Profile.route) },
+            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
         )
     }
 }

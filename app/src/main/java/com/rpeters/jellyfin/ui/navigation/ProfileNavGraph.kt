@@ -36,6 +36,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             onClearSearch = { viewModel.clearSearch() },
             getImageUrl = { item -> viewModel.getImageUrl(item) },
             onBackClick = { navController.popBackStack() },
+            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
         )
     }
 
@@ -58,6 +59,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             onRefresh = { viewModel.loadFavorites() },
             getImageUrl = { item -> viewModel.getImageUrl(item) },
             onBackClick = { navController.popBackStack() },
+            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
         )
     }
 
@@ -80,6 +82,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             },
             onSettingsClick = { navController.navigate(Screen.Settings.route) },
             onBackClick = { navController.popBackStack() },
+            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
         )
     }
 

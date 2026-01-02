@@ -51,6 +51,7 @@ data class MainAppState(
     val allTVShows: List<BaseItemDto> = emptyList(),
     val allItems: List<BaseItemDto> = emptyList(),
     val itemsByLibrary: Map<String, List<BaseItemDto>> = emptyMap(),
+    val continueWatching: List<BaseItemDto> = emptyList(),
 
     // Loading states
     val isLoading: Boolean = false,
@@ -237,12 +238,15 @@ class MainAppViewModel @Inject constructor(
                         async { mediaRepository.getRecentlyAdded(forceRefresh = forceRefresh) }
                     val recentByTypesDeferred =
                         async { loadRecentlyAddedByTypes(forceRefresh = forceRefresh) }
+                    val continueWatchingDeferred =
+                        async { mediaRepository.getContinueWatching(forceRefresh = forceRefresh) }
 
-                    awaitAll(librariesDeferred, recentDeferred, recentByTypesDeferred)
+                    awaitAll(librariesDeferred, recentDeferred, recentByTypesDeferred, continueWatchingDeferred)
 
                     val librariesResult = librariesDeferred.getCompleted()
                     val recentResult = recentDeferred.getCompleted()
                     val recentlyAddedByTypes = recentByTypesDeferred.getCompleted()
+                    val continueWatchingResult = continueWatchingDeferred.getCompleted()
 
                     SecureLogger.v("MainAppViewModel-Initial", "📦 API calls completed:")
                     SecureLogger.v(
@@ -271,10 +275,17 @@ class MainAppViewModel @Inject constructor(
                                 )
                             }
 
+                            val continueWatching = if (continueWatchingResult is ApiResult.Success) {
+                                continueWatchingResult.data
+                            } else {
+                                emptyList()
+                            }
+
                             _appState.value = _appState.value.copy(
                                 libraries = libraries,
                                 recentlyAdded = recentlyAdded,
                                 recentlyAddedByTypes = recentlyAddedByTypes,
+                                continueWatching = continueWatching,
                                 isLoading = false,
                             )
 
