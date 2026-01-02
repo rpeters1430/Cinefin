@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -322,172 +323,176 @@ private fun SeriesDetailsHeader(
     modifier: Modifier = Modifier,
 ) {
     // Full-bleed hero section - Google TV style
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(560.dp),
-    ) {
-        // Background Image - Full bleed to top edge
-        SubcomposeAsyncImage(
-            model = getBackdropUrl(series).takeIf { !it.isNullOrBlank() } ?: getImageUrl(series),
-            contentDescription = series.name,
-            loading = {
-                ExpressiveLoadingCard(
-                    modifier = Modifier.fillMaxSize(),
-                    showTitle = false,
-                    showSubtitle = false,
-                    imageHeight = 560.dp,
-                )
-            },
-            error = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                                    MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f),
+    BoxWithConstraints {
+        val heroHeight = maxOf(maxWidth * 0.75f, 320.dp)
+
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(heroHeight),
+        ) {
+            // Background Image - Full bleed to top edge
+            SubcomposeAsyncImage(
+                model = getBackdropUrl(series).takeIf { !it.isNullOrBlank() } ?: getImageUrl(series),
+                contentDescription = series.name,
+                loading = {
+                    ExpressiveLoadingCard(
+                        modifier = Modifier.fillMaxSize(),
+                        showTitle = false,
+                        showSubtitle = false,
+                        imageHeight = heroHeight,
+                    )
+                },
+                error = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f),
+                                    ),
                                 ),
                             ),
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Tv,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(80.dp),
-                    )
-                }
-            },
-            contentScale = ContentScale.Crop,
-            alignment = Alignment.Center,
-            modifier = Modifier.fillMaxSize(),
-        )
-
-        // Google TV style gradient - transparent to black
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.05f),
-                            Color.Black.copy(alpha = 0.15f),
-                            Color.Black.copy(alpha = 0.4f),
-                            Color.Black.copy(alpha = 0.7f),
-                            Color.Black.copy(alpha = 0.9f),
-                            Color.Black,
-                        ),
-                    ),
-                ),
-        )
-
-        // Content at bottom
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding() // Add status bar padding to content, not image
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.Bottom, // Align to bottom
-        ) {
-            // Title
-            Text(
-                text = series.name ?: stringResource(R.string.unknown),
-                style = MaterialTheme.typography.displayLarge,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Metadata Row
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Rating with star icon
-                series.communityRating?.let { rating ->
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                        contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Star,
+                            imageVector = Icons.Default.Tv,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(80.dp),
                         )
+                    }
+                },
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            // Google TV style gradient - transparent to black
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.05f),
+                                Color.Black.copy(alpha = 0.15f),
+                                Color.Black.copy(alpha = 0.4f),
+                                Color.Black.copy(alpha = 0.7f),
+                                Color.Black.copy(alpha = 0.9f),
+                                Color.Black,
+                            ),
+                        ),
+                    ),
+            )
+
+            // Content at bottom
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding() // Add status bar padding to content, not image
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.Bottom, // Align to bottom
+            ) {
+                // Title
+                Text(
+                    text = series.name ?: stringResource(R.string.unknown),
+                    style = MaterialTheme.typography.displayLarge,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Metadata Row
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Rating with star icon
+                    series.communityRating?.let { rating ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Text(
+                                text = "${(rating * 10).roundToInt()}%",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                            )
+                        }
+                    }
+
+                    // Official Rating Badge (if available)
+                    series.officialRating?.let { rating ->
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color.White.copy(alpha = 0.2f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+                        ) {
+                            Text(
+                                text = rating,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
+                        }
+                    }
+
+                    // Year or Year Range
+                    series.productionYear?.let { year ->
+                        val endYear = series.endDate?.year
+                        val yearText = if (endYear != null && endYear != year) {
+                            "$year - $endYear"
+                        } else if (series.status == "Continuing") {
+                            "$year - Present"
+                        } else {
+                            year.toString()
+                        }
                         Text(
-                            text = "${(rating * 10).roundToInt()}%",
+                            text = yearText,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = Color.White.copy(alpha = 0.9f),
                         )
                     }
-                }
 
-                // Official Rating Badge (if available)
-                series.officialRating?.let { rating ->
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = Color.White.copy(alpha = 0.2f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
-                    ) {
+                    // Episode count
+                    series.childCount?.let { count ->
                         Text(
-                            text = rating,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            text = "$count episodes",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.9f),
                         )
                     }
                 }
 
-                // Year or Year Range
-                series.productionYear?.let { year ->
-                    val endYear = series.endDate?.year
-                    val yearText = if (endYear != null && endYear != year) {
-                        "$year - $endYear"
-                    } else if (series.status == "Continuing") {
-                        "$year - Present"
-                    } else {
-                        year.toString()
+                // Overview
+                series.overview?.let { overview ->
+                    if (overview.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = overview,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White.copy(alpha = 0.85f),
+                            maxLines = 4,
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
+                        )
                     }
-                    Text(
-                        text = yearText,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White.copy(alpha = 0.9f),
-                    )
-                }
-
-                // Episode count
-                series.childCount?.let { count ->
-                    Text(
-                        text = "$count episodes",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White.copy(alpha = 0.9f),
-                    )
-                }
-            }
-
-            // Overview
-            series.overview?.let { overview ->
-                if (overview.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = overview,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.85f),
-                        maxLines = 4,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
-                    )
                 }
             }
         }

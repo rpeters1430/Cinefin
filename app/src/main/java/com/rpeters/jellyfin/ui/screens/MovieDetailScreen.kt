@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -98,173 +99,177 @@ fun MovieDetailScreen(
         ) {
             // Full-bleed Hero Section - Google TV style
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(560.dp),
-                ) {
-                    // Backdrop Image - Full bleed with proper aspect ratio
-                    SubcomposeAsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(getBackdropUrl(movie))
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "${movie.name} backdrop",
-                        loading = {
-                            ShimmerBox(
-                                modifier = Modifier.fillMaxSize(),
-                                cornerRadius = 0,
-                            )
-                        },
-                        error = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(
-                                                JellyfinBlue80.copy(alpha = 0.3f),
-                                                JellyfinTeal80.copy(alpha = 0.2f),
-                                            ),
-                                        ),
-                                    ),
-                            )
-                        },
-                        contentScale = ContentScale.Crop,
-                        alignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                BoxWithConstraints {
+                    val heroHeight = maxOf(maxWidth * 0.75f, 320.dp)
 
-                    // Gradient Scrim - Google TV style (subtle top, dark bottom)
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        androidx.compose.ui.graphics.Color.Transparent,
-                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.05f),
-                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.15f),
-                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.4f),
-                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
-                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.9f),
-                                        androidx.compose.ui.graphics.Color.Black,
-                                    ),
-                                    startY = 0f,
-                                    endY = Float.POSITIVE_INFINITY,
-                                ),
-                            ),
-                    )
-
-                    // Content overlaid on bottom portion
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 20.dp)
-                            .padding(bottom = 32.dp),
-                        verticalArrangement = Arrangement.Bottom,
+                            .fillMaxWidth()
+                            .height(heroHeight),
                     ) {
-                        // Title - Google TV style (larger, white)
-                        Text(
-                            text = movie.name ?: stringResource(R.string.unknown),
-                            style = MaterialTheme.typography.displayLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = androidx.compose.ui.graphics.Color.White,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
+                        // Backdrop Image - Full bleed with proper aspect ratio
+                        SubcomposeAsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(getBackdropUrl(movie))
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "${movie.name} backdrop",
+                            loading = {
+                                ShimmerBox(
+                                    modifier = Modifier.fillMaxSize(),
+                                    cornerRadius = 0,
+                                )
+                            },
+                            error = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.linearGradient(
+                                                colors = listOf(
+                                                    JellyfinBlue80.copy(alpha = 0.3f),
+                                                    JellyfinTeal80.copy(alpha = 0.2f),
+                                                ),
+                                            ),
+                                        ),
+                                )
+                            },
+                            contentScale = ContentScale.Crop,
+                            alignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize(),
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Metadata Row (Rating, Year, Runtime)
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            // Rating with star icon
-                            movie.communityRating?.let { rating ->
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Star,
-                                        contentDescription = null,
-                                        tint = RatingGold,
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                    Text(
-                                        text = "${(rating * 10).roundToInt()}%",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = androidx.compose.ui.graphics.Color.White,
-                                    )
-                                }
-                            }
-
-                            // Official Rating Badge (if available)
-                            movie.officialRating?.let { rating ->
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f),
-                                    border = androidx.compose.foundation.BorderStroke(
-                                        1.dp,
-                                        androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f),
+                        // Gradient Scrim - Google TV style (subtle top, dark bottom)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            androidx.compose.ui.graphics.Color.Transparent,
+                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.05f),
+                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.15f),
+                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.4f),
+                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.7f),
+                                            androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.9f),
+                                            androidx.compose.ui.graphics.Color.Black,
+                                        ),
+                                        startY = 0f,
+                                        endY = Float.POSITIVE_INFINITY,
                                     ),
-                                ) {
+                                ),
+                        )
+
+                        // Content overlaid on bottom portion
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 20.dp)
+                                .padding(bottom = 32.dp),
+                            verticalArrangement = Arrangement.Bottom,
+                        ) {
+                            // Title - Google TV style (larger, white)
+                            Text(
+                                text = movie.name ?: stringResource(R.string.unknown),
+                                style = MaterialTheme.typography.displayLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = androidx.compose.ui.graphics.Color.White,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Metadata Row (Rating, Year, Runtime)
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                // Rating with star icon
+                                movie.communityRating?.let { rating ->
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Star,
+                                            contentDescription = null,
+                                            tint = RatingGold,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                        Text(
+                                            text = "${(rating * 10).roundToInt()}%",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = androidx.compose.ui.graphics.Color.White,
+                                        )
+                                    }
+                                }
+
+                                // Official Rating Badge (if available)
+                                movie.officialRating?.let { rating ->
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f),
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            1.dp,
+                                            androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f),
+                                        ),
+                                    ) {
+                                        Text(
+                                            text = rating,
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = androidx.compose.ui.graphics.Color.White,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        )
+                                    }
+                                }
+
+                                // Year
+                                movie.productionYear?.let { year ->
                                     Text(
-                                        text = rating,
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = androidx.compose.ui.graphics.Color.White,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        text = year.toString(),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
+                                    )
+                                }
+
+                                // Runtime
+                                movie.runTimeTicks?.let { ticks ->
+                                    val minutes = (ticks / 10_000_000 / 60).toInt()
+                                    val hours = minutes / 60
+                                    val remainingMinutes = minutes % 60
+                                    val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
+
+                                    Text(
+                                        text = runtime,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
                                     )
                                 }
                             }
 
-                            // Year
-                            movie.productionYear?.let { year ->
-                                Text(
-                                    text = year.toString(),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
-                                )
+                            // Overview
+                            movie.overview?.let { overview ->
+                                if (overview.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Text(
+                                        text = overview,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
+                                        maxLines = 4,
+                                        overflow = TextOverflow.Ellipsis,
+                                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
+                                    )
+                                }
                             }
 
-                            // Runtime
-                            movie.runTimeTicks?.let { ticks ->
-                                val minutes = (ticks / 10_000_000 / 60).toInt()
-                                val hours = minutes / 60
-                                val remainingMinutes = minutes % 60
-                                val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
-
-                                Text(
-                                    text = runtime,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
-                                )
-                            }
-                        }
-
-                        // Overview
-                        movie.overview?.let { overview ->
-                            if (overview.isNotBlank()) {
+                            // Playback capability badge
+                            playbackAnalysis?.let { analysis ->
                                 Spacer(modifier = Modifier.height(12.dp))
-                                Text(
-                                    text = overview,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
-                                    maxLines = 4,
-                                    overflow = TextOverflow.Ellipsis,
-                                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2,
-                                )
+                                PlaybackStatusBadge(analysis = analysis)
                             }
-                        }
-
-                        // Playback capability badge
-                        playbackAnalysis?.let { analysis ->
-                            Spacer(modifier = Modifier.height(12.dp))
-                            PlaybackStatusBadge(analysis = analysis)
                         }
                     }
                 }
