@@ -137,13 +137,13 @@ class VideoPlayerActivity : ComponentActivity() {
                 registerReceiver(
                     playerCommandReceiver,
                     IntentFilter(PipActionReceiver.ACTION_PLAYER_COMMAND),
-                    Context.RECEIVER_NOT_EXPORTED
+                    Context.RECEIVER_NOT_EXPORTED,
                 )
             } else {
                 @Suppress("UnspecifiedRegisterReceiverFlag")
                 registerReceiver(
                     playerCommandReceiver,
-                    IntentFilter(PipActionReceiver.ACTION_PLAYER_COMMAND)
+                    IntentFilter(PipActionReceiver.ACTION_PLAYER_COMMAND),
                 )
             }
 
@@ -306,15 +306,15 @@ class VideoPlayerActivity : ComponentActivity() {
             this,
             PipActionReceiver.REQUEST_SKIP_BACKWARD,
             Intent(PipActionReceiver.ACTION_SKIP_BACKWARD).setPackage(packageName),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         actions.add(
             RemoteAction(
                 Icon.createWithResource(this, R.drawable.ic_replay_30),
                 "Skip Backward",
                 "Skip backward 30 seconds",
-                skipBackwardIntent
-            )
+                skipBackwardIntent,
+            ),
         )
 
         // Play/Pause action
@@ -327,15 +327,15 @@ class VideoPlayerActivity : ComponentActivity() {
             this,
             PipActionReceiver.REQUEST_PLAY_PAUSE,
             Intent(PipActionReceiver.ACTION_PLAY_PAUSE).setPackage(packageName),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         actions.add(
             RemoteAction(
                 playPauseIcon,
                 if (isPlaying) "Pause" else "Play",
                 if (isPlaying) "Pause playback" else "Resume playback",
-                playPauseIntent
-            )
+                playPauseIntent,
+            ),
         )
 
         // Skip Forward action
@@ -343,15 +343,15 @@ class VideoPlayerActivity : ComponentActivity() {
             this,
             PipActionReceiver.REQUEST_SKIP_FORWARD,
             Intent(PipActionReceiver.ACTION_SKIP_FORWARD).setPackage(packageName),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         actions.add(
             RemoteAction(
                 Icon.createWithResource(this, R.drawable.ic_forward_30),
                 "Skip Forward",
                 "Skip forward 30 seconds",
-                skipForwardIntent
-            )
+                skipForwardIntent,
+            ),
         )
 
         return actions
@@ -395,7 +395,7 @@ class VideoPlayerActivity : ComponentActivity() {
      */
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,
-        newConfig: Configuration
+        newConfig: Configuration,
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
 
@@ -427,7 +427,7 @@ class VideoPlayerActivity : ComponentActivity() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     params.setSubtitle(
                         formatDuration(playerState.currentPosition) + " / " +
-                        formatDuration(playerState.duration)
+                            formatDuration(playerState.duration),
                     )
                 }
                 pipSourceRect?.let { params.setSourceRectHint(it) }

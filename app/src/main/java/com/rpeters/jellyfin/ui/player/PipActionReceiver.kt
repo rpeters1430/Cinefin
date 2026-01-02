@@ -3,7 +3,6 @@ package com.rpeters.jellyfin.ui.player
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import com.rpeters.jellyfin.utils.SecureLogger
 
 /**

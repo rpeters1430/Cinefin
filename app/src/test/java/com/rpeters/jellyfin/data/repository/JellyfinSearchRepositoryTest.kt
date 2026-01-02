@@ -1,11 +1,8 @@
 package com.rpeters.jellyfin.data.repository
 
-import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.repository.common.ApiResult
-import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
-import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.model.api.BaseItemDto

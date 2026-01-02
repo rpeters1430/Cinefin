@@ -815,9 +815,11 @@ private fun getContinueWatchingItems(appState: MainAppState, maxItems: Int = 8):
     return sourceItems.filter { item ->
         val percentage = item.userData?.playedPercentage ?: 0.0
         percentage > 0.0 && percentage < 100.0 &&
-            (item.type == BaseItemKind.MOVIE ||
-                item.type == BaseItemKind.EPISODE ||
-                item.type == BaseItemKind.VIDEO)
+            (
+                item.type == BaseItemKind.MOVIE ||
+                    item.type == BaseItemKind.EPISODE ||
+                    item.type == BaseItemKind.VIDEO
+                )
     }.sortedByDescending { it.userData?.lastPlayedDate }.take(maxItems)
 }
 

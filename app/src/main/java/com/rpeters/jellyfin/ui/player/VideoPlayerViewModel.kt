@@ -254,11 +254,11 @@ class VideoPlayerViewModel @Inject constructor(
         override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
             SecureLogger.d(
                 "VideoPlayer",
-                "Video size changed: ${videoSize.width}x${videoSize.height}"
+                "Video size changed: ${videoSize.width}x${videoSize.height}",
             )
             _playerState.value = _playerState.value.copy(
                 videoWidth = videoSize.width,
-                videoHeight = videoSize.height
+                videoHeight = videoSize.height,
             )
         }
     }
