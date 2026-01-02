@@ -185,10 +185,12 @@ class ServerConnectionViewModel @Inject constructor(
                             // is specifically an authentication error (401/403/Unauthorized)
                             // Network errors or temporary failures should never clear saved credentials
                             if (!isAutoLogin &&
-                                (authResult.message?.contains("401") == true ||
-                                 authResult.message?.contains("403") == true ||
-                                 authResult.message?.contains("Unauthorized") == true ||
-                                 authResult.message?.contains("Invalid username or password") == true)
+                                (
+                                    authResult.message?.contains("401") == true ||
+                                        authResult.message?.contains("403") == true ||
+                                        authResult.message?.contains("Unauthorized") == true ||
+                                        authResult.message?.contains("Invalid username or password") == true
+                                    )
                             ) {
                                 // Only clear for actual auth failures on manual login, not auto-login
                                 clearSavedCredentials()
