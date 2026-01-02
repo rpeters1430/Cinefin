@@ -14,7 +14,9 @@ esac
 
 # Small helper to surface missing tools with a CachyOS/Arch-friendly hint.
 INSTALL_HINT="sudo apt-get install openjdk-${JDK_MAJOR}-jdk wget unzip zip git"
-if command -v pacman >/dev/null 2>&1; then
+if command -v dnf >/dev/null 2>&1; then
+  INSTALL_HINT="sudo dnf install -y java-${JDK_MAJOR}-openjdk java-${JDK_MAJOR}-openjdk-devel wget unzip zip git"
+elif command -v pacman >/dev/null 2>&1; then
   INSTALL_HINT="sudo pacman -S --needed jdk${JDK_MAJOR}-openjdk wget unzip zip git base-devel"
 elif [ "$HOST_OS" = "windows" ]; then
   INSTALL_HINT="Install Java ${JDK_MAJOR} and tooling via winget or choco (e.g., winget install --id Microsoft.OpenJDK.${JDK_MAJOR} -e; winget install Git.Git 7zip.7zip). Ensure curl or wget and unzip are available."

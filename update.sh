@@ -18,6 +18,8 @@ install_linux() {
   if command -v apt-get >/dev/null 2>&1; then
     sudo apt-get update
     sudo apt-get install -y "openjdk-${JDK_MAJOR}-jdk" wget unzip zip git
+  elif command -v dnf >/dev/null 2>&1; then
+    sudo dnf install -y "java-${JDK_MAJOR}-openjdk" "java-${JDK_MAJOR}-openjdk-devel" wget unzip zip git
   elif command -v pacman >/dev/null 2>&1; then
     sudo pacman -Syu --needed "jdk${JDK_MAJOR}-openjdk" wget unzip zip git base-devel
   else
