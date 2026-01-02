@@ -62,7 +62,7 @@ class ServerConnectionViewModel @Inject constructor(
             val preferences = context.dataStore.data.first()
             val savedServerUrl = preferences[PreferencesKeys.SERVER_URL] ?: ""
             val savedUsername = preferences[PreferencesKeys.USERNAME] ?: ""
-            val rememberLogin = preferences[PreferencesKeys.REMEMBER_LOGIN] ?: false
+            var rememberLogin = preferences[PreferencesKeys.REMEMBER_LOGIN] ?: false
             val isBiometricAuthEnabled = preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] ?: false
 
             // ✅ FIX: Handle suspend function calls properly
@@ -70,6 +70,14 @@ class ServerConnectionViewModel @Inject constructor(
                 secureCredentialManager.getPassword(savedServerUrl, savedUsername) != null
             } else {
                 false
+            }
+
+            // If credentials exist but the toggle was never persisted, opt the user back in
+            if (hasSavedPassword && !rememberLogin) {
+                context.dataStore.edit { prefs ->
+                    prefs[PreferencesKeys.REMEMBER_LOGIN] = true
+                }
+                rememberLogin = true
             }
 
             _connectionState.value = _connectionState.value.copy(
