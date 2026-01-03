@@ -62,8 +62,14 @@ class ServerConnectionViewModel @Inject constructor(
             val preferences = context.dataStore.data.first()
             val savedServerUrl = preferences[PreferencesKeys.SERVER_URL] ?: ""
             val savedUsername = preferences[PreferencesKeys.USERNAME] ?: ""
-            var rememberLogin = preferences[PreferencesKeys.REMEMBER_LOGIN] ?: false
+            val rememberPreference = preferences[PreferencesKeys.REMEMBER_LOGIN]
+            var rememberLogin = rememberPreference ?: true
             val isBiometricAuthEnabled = preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] ?: false
+
+            // Persist default remember login preference for first-time users
+            if (rememberPreference == null) {
+                updateRememberLoginPreference(true)
+            }
 
             // ✅ FIX: Handle suspend function calls properly
             val hasSavedPassword = if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
@@ -74,9 +80,7 @@ class ServerConnectionViewModel @Inject constructor(
 
             // If credentials exist but the toggle was never persisted, opt the user back in
             if (hasSavedPassword && !rememberLogin) {
-                context.dataStore.edit { prefs ->
-                    prefs[PreferencesKeys.REMEMBER_LOGIN] = true
-                }
+                updateRememberLoginPreference(true)
                 rememberLogin = true
             }
 
@@ -166,6 +170,11 @@ class ServerConnectionViewModel @Inject constructor(
                     }
                     when (authResult) {
                         is ApiResult.Success -> {
+                            // Always remember login after the first successful authentication
+                            if (!_connectionState.value.rememberLogin) {
+                                updateRememberLoginPreference(true)
+                            }
+
                             // Save credentials only when the user opted in
                             if (_connectionState.value.rememberLogin) {
                                 saveCredentials(normalizedServerUrl, username, password)
@@ -228,6 +237,13 @@ class ServerConnectionViewModel @Inject constructor(
         _connectionState.value = _connectionState.value.copy(errorMessage = message)
     }
 
+    private suspend fun updateRememberLoginPreference(remember: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.REMEMBER_LOGIN] = remember
+        }
+        _connectionState.value = _connectionState.value.copy(rememberLogin = remember)
+    }
+
     private suspend fun saveCredentials(serverUrl: String, username: String, password: String) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SERVER_URL] = serverUrl
@@ -259,13 +275,10 @@ class ServerConnectionViewModel @Inject constructor(
 
     fun setRememberLogin(remember: Boolean) {
         viewModelScope.launch {
-            context.dataStore.edit { preferences ->
-                preferences[PreferencesKeys.REMEMBER_LOGIN] = remember
-            }
+            updateRememberLoginPreference(remember)
             if (!remember) {
                 clearSavedCredentials()
             }
-            _connectionState.value = _connectionState.value.copy(rememberLogin = remember)
         }
     }
 

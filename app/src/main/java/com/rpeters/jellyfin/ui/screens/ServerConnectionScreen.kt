@@ -66,7 +66,7 @@ fun ServerConnectionScreen(
     connectionState: ConnectionState = ConnectionState(), // Use enhanced connection state
     savedServerUrl: String = "",
     savedUsername: String = "",
-    rememberLogin: Boolean = false,
+    rememberLogin: Boolean = true,
     hasSavedPassword: Boolean = false,
     isBiometricAuthAvailable: Boolean = false,
     onRememberLoginChange: (Boolean) -> Unit = {},
