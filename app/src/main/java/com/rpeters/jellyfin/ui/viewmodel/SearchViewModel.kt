@@ -8,6 +8,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.repository.JellyfinSearchRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -64,6 +65,7 @@ class SearchViewModel @Inject constructor(
     /**
      * Set up automatic search with debouncing to avoid excessive API calls.
      */
+    @OptIn(FlowPreview::class)
     private fun setupAutoSearch() {
         _searchState
             .distinctUntilChanged { old, new -> old.searchQuery == new.searchQuery }
