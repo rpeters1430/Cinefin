@@ -208,7 +208,7 @@ data class ConnectionState(
     val serverName: String? = null,
     val savedServerUrl: String = "",
     val savedUsername: String = "",
-    val rememberLogin: Boolean = false,
+    val rememberLogin: Boolean = true,
     val isQuickConnectActive: Boolean = false,
     val quickConnectServerUrl: String = "",
     val quickConnectCode: String = "",
