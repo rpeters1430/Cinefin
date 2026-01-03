@@ -125,7 +125,11 @@ fun ExpressiveMediaCarousel(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // Add key to prevent incorrect recomposition and state reuse
-            items(items, key = { it.id }) { item ->
+            items(
+                items = items,
+                key = { it.id },
+                contentType = { "expressive_carousel_item" },
+            ) { item ->
                 ExpressiveMediaCard(
                     item = item,
                     onClick = { onItemClick(item) },

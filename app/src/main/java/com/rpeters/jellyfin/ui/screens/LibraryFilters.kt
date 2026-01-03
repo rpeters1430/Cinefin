@@ -57,6 +57,7 @@ fun LibraryFilterRow(
         items(
             items = FilterType.getAllFilters(),
             key = { filter -> filter.name },
+            contentType = { "library_filter_chip" },
         ) { filter ->
             FilterChip(
                 onClick = { onFilterSelected(filter) },

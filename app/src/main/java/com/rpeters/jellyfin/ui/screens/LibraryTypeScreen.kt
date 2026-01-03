@@ -348,6 +348,7 @@ private fun LibraryTypeLoadingPlaceholder(libraryType: LibraryType) {
         items(
             count = LibraryScreenDefaults.LibraryTypePlaceholderCount,
             key = { it },
+            contentType = { "library_type_placeholder" },
         ) {
             Card(
                 modifier = Modifier
@@ -385,6 +386,7 @@ private fun GridContent(
         items(
             items = items,
             key = { item -> item.getItemKey() },
+            contentType = { "library_grid_item" },
         ) { item ->
             LibraryItemCard(
                 item = item,
@@ -426,6 +428,7 @@ private fun ListContent(
         items(
             items = items,
             key = { item -> item.getItemKey() },
+            contentType = { "library_list_item" },
         ) { item ->
             LibraryItemCard(
                 item = item,
@@ -463,6 +466,7 @@ private fun CarouselContent(
         items(
             count = categories.size,
             key = { index -> "${categories[index].title}_$index" },
+            contentType = { "library_carousel_section" },
         ) { index ->
             val category = categories[index]
             val carouselState = rememberCarouselState { category.items.size }

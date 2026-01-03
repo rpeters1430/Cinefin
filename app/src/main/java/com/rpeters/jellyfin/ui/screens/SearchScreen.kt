@@ -236,6 +236,7 @@ fun SearchScreen(
                             items(
                                 items = contentTypes,
                                 key = { (kind, _) -> kind },
+                                contentType = { "search_content_type_filter" },
                             ) { (kind, label) ->
                                 FilterChip(
                                     selected = selectedContentTypes.contains(kind),
@@ -292,6 +293,7 @@ fun SearchScreen(
                                 items(
                                     items = recentSearches,
                                     key = { it },
+                                    contentType = { "recent_search" },
                                 ) { search ->
                                     SuggestionChip(
                                         onClick = { searchQuery = search },
@@ -320,6 +322,7 @@ fun SearchScreen(
                                 items(
                                     count = smartSuggestions.size,
                                     key = { index -> "suggestion_$index" },
+                                    contentType = { "smart_suggestion" },
                                 ) { index ->
                                     val suggestion = smartSuggestions[index]
                                     SuggestionChip(

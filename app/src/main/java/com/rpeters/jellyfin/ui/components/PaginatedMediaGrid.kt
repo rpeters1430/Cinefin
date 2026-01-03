@@ -90,6 +90,7 @@ private fun PaginatedMediaGridContent(
         items(
             count = lazyPagingItems.itemCount,
             key = lazyPagingItems.itemKey { it.id.toString() },
+            contentType = lazyPagingItems.itemContentType { "media_card" },
         ) { index ->
             val item = lazyPagingItems[index]
             if (item != null) {

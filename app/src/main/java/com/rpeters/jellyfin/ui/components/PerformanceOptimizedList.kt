@@ -78,6 +78,7 @@ fun PerformanceOptimizedLazyColumn(
         itemsIndexed(
             items = optimizedItems,
             key = { _, item -> item.id?.toString() ?: "" },
+            contentType = { _, _ -> "performance_list_item" },
         ) { index, item ->
             val isVisible = index in visibleRange
             content(item, index, isVisible)
@@ -135,6 +136,7 @@ fun PerformanceOptimizedLazyRow(
         itemsIndexed(
             items = optimizedItems,
             key = { _, item -> item.id?.toString() ?: "" },
+            contentType = { _, _ -> "performance_row_item" },
         ) { index, item ->
             val isVisible = index in visibleRange
             content(item, index, isVisible)
@@ -175,6 +177,7 @@ fun PerformanceOptimizedLazyGrid(
         itemsIndexed(
             items = optimizedItems,
             key = { _, item -> item.id?.toString() ?: "" },
+            contentType = { _, _ -> "performance_grid_item" },
         ) { index, item ->
             content(item, index)
         }

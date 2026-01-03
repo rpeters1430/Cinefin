@@ -77,6 +77,7 @@ import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
+import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
 import kotlin.math.roundToInt
@@ -241,7 +242,11 @@ private fun TVSeasonContent(
                 )
             }
 
-            items(state.seasons, key = { it.id?.hashCode() ?: it.name.hashCode() }) { season ->
+            items(
+                items = state.seasons,
+                key = { it.getItemKey().ifEmpty { it.name ?: it.toString() } },
+                contentType = { "season_item" },
+            ) { season ->
                 ExpressiveSeasonCard(
                     season = season,
                     getImageUrl = getImageUrl,
@@ -795,7 +800,11 @@ private fun CastAndCrewSection(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp),
                 ) {
-                    items(cast.take(12), key = { it.id?.hashCode() ?: it.name.hashCode() }) { person ->
+                    items(
+                        items = cast.take(12),
+                        key = { it.id?.toString() ?: it.name ?: it.toString() },
+                        contentType = { "cast_member" },
+                    ) { person ->
                         PersonCard(
                             person = person,
                             getImageUrl = getImageUrl,
@@ -820,7 +829,11 @@ private fun CastAndCrewSection(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp),
                 ) {
-                    items(crew.take(12), key = { it.id?.hashCode() ?: it.name.hashCode() }) { person ->
+                    items(
+                        items = crew.take(12),
+                        key = { it.id?.toString() ?: it.name ?: it.toString() },
+                        contentType = { "crew_member" },
+                    ) { person ->
                         PersonCard(
                             person = person,
                             getImageUrl = getImageUrl,
@@ -859,6 +872,7 @@ private fun MoreLikeThisSection(
                 items(
                     count = 5,
                     key = { it },
+                    contentType = { "more_like_this_loading" },
                 ) {
                     ExpressiveLoadingCard(
                         modifier = Modifier.width(140.dp),
@@ -873,7 +887,11 @@ private fun MoreLikeThisSection(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp),
             ) {
-                items(items, key = { it.id?.hashCode() ?: it.name.hashCode() }) { show ->
+                items(
+                    items = items,
+                    key = { it.getItemKey().ifEmpty { it.name ?: it.toString() } },
+                    contentType = { "more_like_this_item" },
+                ) { show ->
                     PosterMediaCard(
                         item = show,
                         getImageUrl = getImageUrl,

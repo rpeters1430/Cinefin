@@ -46,6 +46,7 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.components.shimmer
 import com.rpeters.jellyfin.utils.SecureLogger
+import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @OptInAppExperimentalApis
@@ -159,7 +160,11 @@ fun LibraryScreen(
                                 .fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            items(libraries, key = { it.id ?: it.name.hashCode() }) { library ->
+                            items(
+                                items = libraries,
+                                key = { it.getItemKey() },
+                                contentType = { "library_list_card" },
+                            ) { library ->
                                 LibraryCard(
                                     library = library,
                                     getImageUrl = getImageUrl,

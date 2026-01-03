@@ -36,6 +36,7 @@ import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.viewmodel.AlbumDetailViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -107,7 +108,10 @@ fun AlbumDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxSize(),
             ) {
-                items(state.tracks, key = { it.id ?: it.name.hashCode() }) { track ->
+                items(
+                    items = state.tracks,
+                    key = { track -> track.getItemKey().ifEmpty { track.name ?: track.toString() } },
+                ) { track ->
                     ExpressiveMediaCard(
                         title = track.name ?: "",
                         subtitle = track.albumArtist ?: track.artists?.firstOrNull() ?: "",

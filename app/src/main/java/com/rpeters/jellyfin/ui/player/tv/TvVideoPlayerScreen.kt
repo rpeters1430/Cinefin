@@ -536,6 +536,7 @@ private fun TrackSelectionDialog(
                     items(
                         items = options,
                         key = { track -> "${track.groupIndex}-${track.trackIndex}-${track.displayName}" },
+                        contentType = { "audio_track_option" },
                     ) { track ->
                         val isSelected = selectedId == track.displayName
                         TvCard(

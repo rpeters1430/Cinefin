@@ -772,6 +772,7 @@ fun SearchResultsContent(
             items(
                 items = items.chunked(2),
                 key = { rowItems -> rowItems.firstOrNull()?.getItemKey() ?: "" },
+                contentType = { "search_result_row" },
             ) { rowItems ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -860,6 +861,7 @@ private fun ContinueWatchingSection(
             items(
                 items = items,
                 key = { it.getItemKey() },
+                contentType = { "continue_watching_item" },
             ) { item ->
                 ContinueWatchingCard(
                     item = item,
@@ -968,7 +970,11 @@ private fun PosterRowSection(
         title = title,
         modifier = modifier,
     ) {
-        items(items, key = { it.id ?: it.name.hashCode() }) { item ->
+        items(
+            items = items,
+            key = { it.getItemKey() },
+            contentType = { "poster_media_card" },
+        ) { item ->
             PosterMediaCard(
                 item = item,
                 getImageUrl = getImageUrl,
@@ -996,7 +1002,11 @@ private fun SquareRowSection(
         title = title,
         modifier = modifier,
     ) {
-        items(items, key = { it.id ?: it.name.hashCode() }) { item ->
+        items(
+            items = items,
+            key = { it.getItemKey() },
+            contentType = { "square_media_card" },
+        ) { item ->
             MediaCard(
                 item = item,
                 getImageUrl = getImageUrl,
@@ -1022,7 +1032,11 @@ private fun MediaRowSection(
         title = title,
         modifier = modifier,
     ) {
-        items(items, key = { it.id ?: it.name.hashCode() }) { item ->
+        items(
+            items = items,
+            key = { it.getItemKey() },
+            contentType = { "media_card" },
+        ) { item ->
             MediaCard(
                 item = item,
                 getImageUrl = getImageUrl,

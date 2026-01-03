@@ -203,6 +203,7 @@ fun SkeletonGrid(
         items(
             count = itemCount,
             key = { it },
+            contentType = { "skeleton_grid_item" },
         ) {
             content()
         }

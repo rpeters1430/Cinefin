@@ -39,6 +39,7 @@ fun PlaybackRecommendationNotification(
         itemsIndexed(
             items = recommendations,
             key = { index, recommendation -> "${recommendation.type}-${recommendation.message}-$index" },
+            contentType = { _, recommendation -> recommendation.type },
         ) { index, recommendation ->
             PlaybackRecommendationCard(
                 recommendation = recommendation,

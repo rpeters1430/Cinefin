@@ -94,7 +94,11 @@ fun DownloadsScreen(
                 contentPadding = PaddingValues(Dimens.Spacing16),
                 verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
             ) {
-                items(downloads, key = { it.id }) { download ->
+                items(
+                    downloads,
+                    key = { it.id },
+                    contentType = { "download_item" },
+                ) { download ->
                     DownloadItem(
                         download = download,
                         progress = downloadProgress[download.id],

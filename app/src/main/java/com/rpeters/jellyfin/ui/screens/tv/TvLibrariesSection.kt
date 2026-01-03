@@ -47,7 +47,11 @@ fun TvLibrariesSection(
             .focusRequester(focusRequester)
             .focusable(),
     ) {
-        items(libraries, key = { it.id?.toString() ?: "" }) { library ->
+        items(
+            libraries,
+            key = { it.id?.toString() ?: "" },
+            contentType = { "tv_library_card" },
+        ) { library ->
             TvLibraryCard(
                 library = library,
                 onLibrarySelect = { id -> onLibrarySelect(id) },

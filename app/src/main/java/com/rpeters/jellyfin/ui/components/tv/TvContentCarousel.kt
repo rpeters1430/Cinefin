@@ -99,7 +99,11 @@ fun TvContentCarousel(
                 horizontalArrangement = Arrangement.spacedBy(layoutConfig.spacing),
                 modifier = focusModifier,
             ) {
-                itemsIndexed(items, key = { index, item -> item.id?.toString() ?: index.toString() }) { index, item ->
+                itemsIndexed(
+                    items = items,
+                    key = { index, item -> item.id?.toString() ?: index.toString() },
+                    contentType = { _, _ -> "tv_content_carousel_item" },
+                ) { index, item ->
                     TvContentCard(
                         item = item,
                         onItemFocus = {

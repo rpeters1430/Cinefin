@@ -222,6 +222,7 @@ fun TvAudioQueueDisplay(
                         itemsIndexed(
                             items = queue,
                             key = { index, mediaItem -> mediaItem.mediaId.ifEmpty { index.toString() } },
+                            contentType = { _, _ -> "audio_queue_item" },
                         ) { index, mediaItem ->
                             QueueTrackItem(
                                 mediaItem = mediaItem,

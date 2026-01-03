@@ -68,6 +68,7 @@ import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -375,6 +376,7 @@ fun MusicScreen(
                     items(
                         items = MusicFilter.getAllFilters(),
                         key = { it },
+                        contentType = { "music_filter" },
                     ) { filter ->
                         FilterChip(
                             onClick = { selectedFilter = filter },
@@ -527,7 +529,11 @@ private fun MusicContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = modifier.fillMaxSize(),
             ) {
-                items(musicItems, key = { it.id ?: it.name.hashCode() }) { musicItem ->
+                items(
+                    items = musicItems,
+                    key = { it.getItemKey() },
+                    contentType = { "music_grid_item" },
+                ) { musicItem ->
                     val coroutineScope = rememberCoroutineScope()
                     ExpressiveMusicCard(
                         item = musicItem,
@@ -559,7 +565,11 @@ private fun MusicContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = modifier.fillMaxSize(),
             ) {
-                items(musicItems, key = { it.id ?: it.name.hashCode() }) { musicItem ->
+                items(
+                    items = musicItems,
+                    key = { it.getItemKey() },
+                    contentType = { "music_list_item" },
+                ) { musicItem ->
                     val coroutineScope = rememberCoroutineScope()
                     ExpressiveMusicCard(
                         item = musicItem,

@@ -324,6 +324,7 @@ private fun MoviesLoadingContent(
         items(
             count = 20,
             key = { it },
+            contentType = { "movies_loading_item" },
         ) {
             ExpressiveLoadingCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -363,6 +364,7 @@ private fun MoviesContent(
                 items(
                     items = MovieFilter.getBasicFilters(),
                     key = { it },
+                    contentType = { "movie_basic_filter" },
                 ) { filter ->
                     FilterChip(
                         onClick = { onFilterChange(filter) },
@@ -401,6 +403,7 @@ private fun MoviesContent(
                 items(
                     items = MovieFilter.getSmartFilters() + MovieFilter.getGenreFilters(),
                     key = { it },
+                    contentType = { "movie_smart_filter" },
                 ) { filter ->
                     FilterChip(
                         onClick = { onFilterChange(filter) },
@@ -470,7 +473,11 @@ private fun MoviesGrid(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        items(movies, key = { it.getItemKey() }) { movie ->
+        items(
+            items = movies,
+            key = { it.getItemKey() },
+            contentType = { "movies_grid_item" },
+        ) { movie ->
             val scale by animateFloatAsState(
                 targetValue = 1.0f,
                 animationSpec = MotionTokens.expressiveEnter,
@@ -519,7 +526,11 @@ private fun MoviesList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(movies, key = { it.getItemKey() }) { movie ->
+        items(
+            items = movies,
+            key = { it.getItemKey() },
+            contentType = { "movies_list_item" },
+        ) { movie ->
             val scale by animateFloatAsState(
                 targetValue = 1.0f,
                 animationSpec = MotionTokens.expressiveEnter,

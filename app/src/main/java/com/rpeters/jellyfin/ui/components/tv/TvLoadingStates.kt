@@ -126,6 +126,7 @@ fun TvSkeletonCarousel(
             items(
                 count = itemCount,
                 key = { it },
+                contentType = { "tv_skeleton_card" },
             ) {
                 TvSkeletonCard()
             }

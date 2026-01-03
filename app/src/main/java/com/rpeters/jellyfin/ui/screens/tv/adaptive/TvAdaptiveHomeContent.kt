@@ -256,7 +256,11 @@ private fun TabletMediaSection(
                     verticalArrangement = Arrangement.spacedBy(layoutConfig.spacing),
                     horizontalArrangement = Arrangement.spacedBy(layoutConfig.spacing),
                 ) {
-                    itemsIndexed(items, key = { index, item -> item.id?.toString() ?: index.toString() }) { index, item ->
+                    itemsIndexed(
+                        items = items,
+                        key = { index, item -> item.id?.toString() ?: index.toString() },
+                        contentType = { _, _ -> "tv_adaptive_grid_item" },
+                    ) { index, item ->
                         TvContentCard(
                             item = item,
                             onItemFocus = { focusedIndex = index },

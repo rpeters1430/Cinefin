@@ -251,6 +251,7 @@ fun StuffGrid(
         items(
             items = stuffItems,
             key = itemKey,
+            contentType = { "stuff_item" },
         ) { stuffItem ->
             ExpressiveMediaCard(
                 title = stuffItem.name ?: "",

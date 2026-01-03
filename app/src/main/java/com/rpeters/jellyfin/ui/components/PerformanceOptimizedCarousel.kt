@@ -75,6 +75,7 @@ fun PerformanceOptimizedCarousel(
             itemsIndexed(
                 items = limitedItems,
                 key = { _, item -> item.id.toString() },
+                contentType = { _, _ -> "carousel_item" },
             ) { index, item ->
                 OptimizedCarouselCard(
                     item = item,

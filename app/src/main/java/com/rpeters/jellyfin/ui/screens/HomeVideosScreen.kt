@@ -44,6 +44,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
+import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -282,7 +283,11 @@ fun HomeVideosGrid(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier,
     ) {
-        items(homeVideosItems, key = { it.id ?: it.name.hashCode() }) { homeVideoItem ->
+        items(
+            items = homeVideosItems,
+            key = { it.getItemKey() },
+            contentType = { "home_video_item" },
+        ) { homeVideoItem ->
             ExpressiveMediaCard(
                 title = homeVideoItem.name ?: "",
                 subtitle = homeVideoItem.type?.toString() ?: "",

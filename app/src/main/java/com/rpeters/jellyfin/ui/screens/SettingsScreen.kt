@@ -156,6 +156,7 @@ fun SettingsScreen(
             items(
                 items = settingRecommendations,
                 key = { it.titleRes },
+                contentType = { "settings_recommendation" },
             ) { recommendation ->
                 SettingsRecommendationCard(recommendation = recommendation)
             }

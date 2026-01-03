@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.components.RecentlyAddedCard
 import com.rpeters.jellyfin.ui.tv.TvFocusableCarousel
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
+import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @Composable
@@ -63,7 +64,11 @@ fun RecentlyAddedSection(
                     .fillMaxWidth()
                     .then(focusModifier),
             ) {
-                items(items, key = { it.id ?: it.name ?: "" }) { item ->
+                items(
+                    items = items,
+                    key = { it.getItemKey().ifEmpty { it.name ?: it.toString() } },
+                    contentType = { "recently_added_item" },
+                ) { item ->
                     RecentlyAddedCard(
                         item = item,
                         getImageUrl = getImageUrl,
