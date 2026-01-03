@@ -972,7 +972,7 @@ private fun PosterRowSection(
     ) {
         items(
             items = items,
-            key = { it.id ?: it.name.hashCode() },
+            key = { it.getItemKey() },
             contentType = { "poster_media_card" },
         ) { item ->
             PosterMediaCard(
@@ -1004,7 +1004,7 @@ private fun SquareRowSection(
     ) {
         items(
             items = items,
-            key = { it.id ?: it.name.hashCode() },
+            key = { it.getItemKey() },
             contentType = { "square_media_card" },
         ) { item ->
             MediaCard(
@@ -1034,7 +1034,7 @@ private fun MediaRowSection(
     ) {
         items(
             items = items,
-            key = { it.id ?: it.name.hashCode() },
+            key = { it.getItemKey() },
             contentType = { "media_card" },
         ) { item ->
             MediaCard(

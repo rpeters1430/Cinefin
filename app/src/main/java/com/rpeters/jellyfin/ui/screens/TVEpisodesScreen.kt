@@ -79,6 +79,7 @@ import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
+import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -300,7 +301,10 @@ private fun EpisodeList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(episodes, key = { it.id ?: it.name.hashCode() }) { episode ->
+        items(
+            items = episodes,
+            key = { episode -> episode.getItemKey().ifEmpty { episode.name ?: episode.toString() } },
+        ) { episode ->
             ExpressiveEpisodeRow(
                 episode = episode,
                 getImageUrl = getImageUrl,

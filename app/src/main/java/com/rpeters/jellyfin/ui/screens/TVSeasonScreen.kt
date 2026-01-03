@@ -77,6 +77,7 @@ import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
+import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
 import kotlin.math.roundToInt
@@ -243,7 +244,7 @@ private fun TVSeasonContent(
 
             items(
                 items = state.seasons,
-                key = { it.id?.hashCode() ?: it.name.hashCode() },
+                key = { it.getItemKey().ifEmpty { it.name ?: it.toString() } },
                 contentType = { "season_item" },
             ) { season ->
                 ExpressiveSeasonCard(
@@ -801,7 +802,7 @@ private fun CastAndCrewSection(
                 ) {
                     items(
                         items = cast.take(12),
-                        key = { it.id?.hashCode() ?: it.name.hashCode() },
+                        key = { it.id?.toString() ?: it.name ?: it.toString() },
                         contentType = { "cast_member" },
                     ) { person ->
                         PersonCard(
@@ -830,7 +831,7 @@ private fun CastAndCrewSection(
                 ) {
                     items(
                         items = crew.take(12),
-                        key = { it.id?.hashCode() ?: it.name.hashCode() },
+                        key = { it.id?.toString() ?: it.name ?: it.toString() },
                         contentType = { "crew_member" },
                     ) { person ->
                         PersonCard(
@@ -888,7 +889,7 @@ private fun MoreLikeThisSection(
             ) {
                 items(
                     items = items,
-                    key = { it.id?.hashCode() ?: it.name.hashCode() },
+                    key = { it.getItemKey().ifEmpty { it.name ?: it.toString() } },
                     contentType = { "more_like_this_item" },
                 ) { show ->
                     PosterMediaCard(

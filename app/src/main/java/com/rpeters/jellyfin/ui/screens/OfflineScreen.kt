@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.utils.*
+import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -297,7 +298,10 @@ private fun OfflineContentSection(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
                 ) {
-                    items(offlineContent, key = { it.id ?: it.name.hashCode() }) { item ->
+                    items(
+                        items = offlineContent,
+                        key = { item -> item.getItemKey().ifEmpty { item.name ?: item.toString() } },
+                    ) { item ->
                         OfflineContentItem(
                             item = item,
                             onPlay = { onPlayContent(item) },
