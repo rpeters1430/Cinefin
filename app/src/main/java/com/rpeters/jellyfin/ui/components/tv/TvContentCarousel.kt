@@ -164,14 +164,12 @@ fun TvContentCard(
                 }
 
                 JellyfinAsyncImage(
-                    data = ImageRequest.Builder(LocalContext.current)
-                        .data(imageUrl)
-                        .crossfade(true)
-                        .build(),
+                    model = imageUrl,
                     contentDescription = item.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                     requestSize = rememberCoilSize(posterWidth, posterHeight),
+                    builder = { crossfade(true) },
                 )
             }
         }

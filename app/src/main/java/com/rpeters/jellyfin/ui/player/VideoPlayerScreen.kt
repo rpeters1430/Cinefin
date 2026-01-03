@@ -660,7 +660,7 @@ private fun CastNowPlayingOverlay(
         Box {
             if (!artwork.isNullOrBlank()) {
                 JellyfinAsyncImage(
-                    data = artwork,
+                    model = artwork,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()

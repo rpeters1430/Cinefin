@@ -106,7 +106,7 @@ fun TvItemDetailScreen(
                 colors = TvCardDefaults.colors(containerColor = TvMaterialTheme.colorScheme.surfaceVariant),
             ) {
                 JellyfinAsyncImage(
-                    data = item?.let { viewModel.getImageUrl(it) },
+                    model = item?.let { viewModel.getImageUrl(it) },
                     contentDescription = item?.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
@@ -269,7 +269,7 @@ fun TvItemDetailScreen(
             if (backdrop != null) {
                 TvCard(onClick = {}, modifier = Modifier.fillMaxWidth().height(220.dp)) {
                     JellyfinAsyncImage(
-                        data = backdrop,
+                        model = backdrop,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),

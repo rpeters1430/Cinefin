@@ -101,7 +101,7 @@ fun TvAudioPlayerScreen(
                 val artworkUri = mediaItem.mediaMetadata.artworkUri?.toString()
                 if (artworkUri != null) {
                     JellyfinAsyncImage(
-                        data = artworkUri,
+                        model = artworkUri,
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxSize()
@@ -303,7 +303,7 @@ private fun AlbumArtDisplay(
     ) {
         if (artworkUri != null) {
             JellyfinAsyncImage(
-                data = artworkUri,
+                model = artworkUri,
                 contentDescription = "Album art",
                 modifier = Modifier
                     .size(480.dp)

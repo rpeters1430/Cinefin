@@ -210,7 +210,7 @@ private fun AlbumArtSection(
         ) {
             if (currentMediaItem != null) {
                 JellyfinAsyncImage(
-                    data = currentMediaItem.mediaMetadata.artworkUri,
+                    model = currentMediaItem.mediaMetadata.artworkUri,
                     contentDescription = "Album Art",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),

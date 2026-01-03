@@ -908,7 +908,7 @@ private fun PersonCard(
             // Actor photo or initials
             if (person.primaryImageTag != null) {
                 JellyfinAsyncImage(
-                    data = getImageUrl(person.id, person.primaryImageTag),
+                    model = getImageUrl(person.id, person.primaryImageTag),
                     contentDescription = person.name,
                     modifier = Modifier
                         .size(60.dp)

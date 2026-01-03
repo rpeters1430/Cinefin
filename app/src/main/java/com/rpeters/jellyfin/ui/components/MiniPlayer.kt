@@ -224,7 +224,7 @@ private fun AlbumArtThumbnail(
     ) {
         if (mediaItem?.mediaMetadata?.artworkUri != null) {
             JellyfinAsyncImage(
-                data = mediaItem.mediaMetadata.artworkUri,
+                model = mediaItem.mediaMetadata.artworkUri,
                 contentDescription = "Album Art",
                 contentScale = ContentScale.Crop,
                 requestSize = rememberCoilSize(48.dp),

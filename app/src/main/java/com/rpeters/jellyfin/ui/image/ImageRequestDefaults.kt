@@ -18,6 +18,10 @@ import com.rpeters.jellyfin.R
 
 /**
  * Shared Coil request helpers to enforce caching, placeholders, and sizing hints.
+ *
+ * Use these helpers with [JellyfinAsyncImage] instead of building [ImageRequest] instances
+ * manually. Additional per-request options should be provided via the [builder] lambda to
+ * keep configuration centralized.
  */
 fun ImageRequest.Builder.applyDefaultImageOptions(size: Size? = null): ImageRequest.Builder {
     size?.let { size(it) }
@@ -31,14 +35,14 @@ fun ImageRequest.Builder.applyDefaultImageOptions(size: Size? = null): ImageRequ
 
 @Composable
 fun rememberDefaultImageRequest(
-    data: Any?,
+    model: Any?,
     size: Size?,
     builder: ImageRequest.Builder.() -> Unit = {},
 ): ImageRequest {
     val context = LocalContext.current
-    return remember(data, size) {
+    return remember(model, size, builder) {
         ImageRequest.Builder(context)
-            .data(data)
+            .data(model)
             .applyDefaultImageOptions(size)
             .apply(builder)
             .build()
@@ -66,8 +70,21 @@ fun rememberScreenWidthHeight(height: Dp): Size {
 }
 
 @Composable
+/**
+ * Jellyfin wrapper around Coil's [AsyncImage] that applies shared request defaults.
+ *
+ * @param model The image model (e.g., URL or resource) to load.
+ * @param contentDescription Semantic description for accessibility.
+ * @param modifier Optional modifier for sizing/positioning.
+ * @param contentScale Scaling strategy for the image content.
+ * @param alpha Alpha to apply to the rendered image.
+ * @param requestSize Optional explicit [Size] hint; use [rememberCoilSize] to memoize.
+ * @param builder Optional request customizations (e.g., `crossfade(true)`). Avoid passing
+ * pre-built [ImageRequest] instances; prefer configuring the builder here so defaults remain
+ * centralized.
+ */
 fun JellyfinAsyncImage(
-    data: Any?,
+    model: Any?,
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
@@ -76,7 +93,7 @@ fun JellyfinAsyncImage(
     builder: ImageRequest.Builder.() -> Unit = {},
 ) {
     val context = LocalContext.current
-    val imageRequest = rememberDefaultImageRequest(data, requestSize, builder)
+    val imageRequest = rememberDefaultImageRequest(model, requestSize, builder)
     AsyncImage(
         model = imageRequest,
         contentDescription = contentDescription,
