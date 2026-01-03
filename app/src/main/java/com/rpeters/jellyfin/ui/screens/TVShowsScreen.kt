@@ -565,12 +565,12 @@ private fun TVShowsContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = modifier.fillMaxSize(),
-                    ) {
-                        items(
-                            items = tvShows,
-                            key = { tvShow -> tvShow.getItemKey() },
-                            contentType = { "tv_grid_item" },
-                        ) { tvShow ->
+                ) {
+                    items(
+                        items = tvShows,
+                        key = { tvShow -> tvShow.getItemKey() },
+                        contentType = { "tv_grid_item" },
+                    ) { tvShow ->
                         val scale by animateFloatAsState(
                             targetValue = 1.0f,
                             animationSpec = MotionTokens.expressiveEnter,
@@ -613,12 +613,12 @@ private fun TVShowsContent(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = modifier.fillMaxSize(),
-                    ) {
-                        items(
-                            items = tvShows,
-                            key = { tvShow -> tvShow.getItemKey() },
-                            contentType = { "tv_list_item" },
-                        ) { tvShow ->
+                ) {
+                    items(
+                        items = tvShows,
+                        key = { tvShow -> tvShow.getItemKey() },
+                        contentType = { "tv_list_item" },
+                    ) { tvShow ->
                         val scale by animateFloatAsState(
                             targetValue = 1.0f,
                             animationSpec = MotionTokens.expressiveEnter,
