@@ -12,6 +12,7 @@ import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.REMEMBER_LOGIN
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.SERVER_URL
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.USERNAME
 import com.rpeters.jellyfin.ui.viewmodel.dataStore
+import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -31,6 +32,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import androidx.datastore.preferences.core.edit
+import kotlinx.coroutines.flow.first
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ServerConnectionViewModelTest {
@@ -96,6 +98,53 @@ class ServerConnectionViewModelTest {
 
             viewModel.viewModelScope.cancel()
         }
+
+    @Test
+    fun init_persistsRememberLoginDefaultForFirstTimeUser() = runTest(mainDispatcherRule.dispatcher) {
+        context.dataStore.edit { preferences ->
+            preferences.clear()
+        }
+        every { repository.isConnected } returns MutableStateFlow(false)
+
+        val viewModel = ServerConnectionViewModel(repository, secureCredentialManager, context)
+
+        advanceUntilIdle()
+
+        val preferences = context.dataStore.data.first()
+        assertThat(preferences[REMEMBER_LOGIN]).isTrue()
+        assertThat(viewModel.connectionState.value.rememberLogin).isTrue()
+
+        viewModel.viewModelScope.cancel()
+    }
+
+    @Test
+    fun connectToServer_respectsUserChoiceWhenRememberLoginDisabled() = runTest(mainDispatcherRule.dispatcher) {
+        context.dataStore.edit { preferences ->
+            preferences.clear()
+            preferences[REMEMBER_LOGIN] = false
+        }
+        every { repository.isConnected } returns MutableStateFlow(false)
+        coEvery { repository.testServerConnection("https://example.com") } returns ApiResult.Success(
+            mockk<PublicSystemInfo>(relaxed = true),
+        )
+        coEvery {
+            repository.authenticateUser("https://example.com", "user", "password")
+        } returns ApiResult.Success(mockk<AuthenticationResult>(relaxed = true))
+        coEvery { secureCredentialManager.savePassword(any(), any(), any()) } returns Unit
+
+        val viewModel = ServerConnectionViewModel(repository, secureCredentialManager, context)
+
+        advanceUntilIdle()
+
+        viewModel.connectToServer("https://example.com", "user", "password")
+
+        advanceUntilIdle()
+
+        val preferences = context.dataStore.data.first()
+        assertThat(preferences[REMEMBER_LOGIN]).isFalse()
+        coVerify(exactly = 0) { secureCredentialManager.savePassword(any(), any(), any()) }
+        viewModel.viewModelScope.cancel()
+    }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
