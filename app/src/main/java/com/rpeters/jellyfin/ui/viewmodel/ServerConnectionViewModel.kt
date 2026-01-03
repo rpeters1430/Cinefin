@@ -79,7 +79,7 @@ class ServerConnectionViewModel @Inject constructor(
             }
 
             // If credentials exist but the toggle was never persisted, opt the user back in
-            if (hasSavedPassword && !rememberLogin) {
+            if (hasSavedPassword && rememberPreference == null) {
                 updateRememberLoginPreference(true)
                 rememberLogin = true
             }
@@ -170,11 +170,6 @@ class ServerConnectionViewModel @Inject constructor(
                     }
                     when (authResult) {
                         is ApiResult.Success -> {
-                            // Always remember login after the first successful authentication
-                            if (!_connectionState.value.rememberLogin) {
-                                updateRememberLoginPreference(true)
-                            }
-
                             // Save credentials only when the user opted in
                             if (_connectionState.value.rememberLogin) {
                                 saveCredentials(normalizedServerUrl, username, password)
