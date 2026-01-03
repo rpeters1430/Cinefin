@@ -439,6 +439,7 @@ class MainAppViewModel @Inject constructor(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun updateItemWatchedStatus(itemId: UUID?, isWatched: Boolean) {
         if (itemId == null) return
 
@@ -825,6 +826,7 @@ class MainAppViewModel @Inject constructor(
     private fun BaseItemDto.normalizedCollectionType(): String? =
         collectionType?.toString()?.lowercase()?.replace(" ", "")
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun ensureLibrariesLoaded(forceRefresh: Boolean): List<BaseItemDto>? {
         val currentLibraries = _appState.value.libraries
         if (currentLibraries.isNotEmpty() && !forceRefresh) {
