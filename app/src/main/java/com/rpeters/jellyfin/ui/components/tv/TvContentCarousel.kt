@@ -32,10 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
-import com.rpeters.jellyfin.ui.image.rememberCoilSize
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig
+import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
+import com.rpeters.jellyfin.ui.image.rememberCoilSize
 import com.rpeters.jellyfin.ui.tv.TvFocusManager
 import com.rpeters.jellyfin.ui.tv.TvFocusableCarousel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
