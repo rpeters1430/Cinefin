@@ -25,7 +25,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil3.compose.AsyncImage
+import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
+import com.rpeters.jellyfin.ui.image.rememberCoilSize
+import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
 import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.UserPreferencesViewModel
@@ -103,11 +105,12 @@ fun TvItemDetailScreen(
                 modifier = Modifier.size(300.dp, 450.dp),
                 colors = TvCardDefaults.colors(containerColor = TvMaterialTheme.colorScheme.surfaceVariant),
             ) {
-                AsyncImage(
-                    model = item?.let { viewModel.getImageUrl(it) },
+                JellyfinAsyncImage(
+                    data = item?.let { viewModel.getImageUrl(it) },
                     contentDescription = item?.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
+                    requestSize = rememberCoilSize(300.dp, 450.dp),
                 )
             }
 
@@ -265,11 +268,12 @@ fun TvItemDetailScreen(
             val backdrop = viewModel.getBackdropUrl(it)
             if (backdrop != null) {
                 TvCard(onClick = {}, modifier = Modifier.fillMaxWidth().height(220.dp)) {
-                    AsyncImage(
-                        model = backdrop,
+                    JellyfinAsyncImage(
+                        data = backdrop,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
+                        requestSize = rememberScreenWidthHeight(220.dp),
                     )
                 }
             }

@@ -64,7 +64,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil3.compose.AsyncImage
 import coil3.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
@@ -74,6 +73,8 @@ import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
+import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
+import com.rpeters.jellyfin.ui.image.rememberCoilSize
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
@@ -906,13 +907,14 @@ private fun PersonCard(
         ) {
             // Actor photo or initials
             if (person.primaryImageTag != null) {
-                AsyncImage(
-                    model = getImageUrl(person.id, person.primaryImageTag),
+                JellyfinAsyncImage(
+                    data = getImageUrl(person.id, person.primaryImageTag),
                     contentDescription = person.name,
                     modifier = Modifier
                         .size(60.dp)
                         .clip(CircleShape),
                     contentScale = ContentScale.Crop,
+                    requestSize = rememberCoilSize(60.dp),
                 )
             } else {
                 Box(

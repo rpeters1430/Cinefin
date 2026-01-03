@@ -55,8 +55,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.Player
-import coil3.compose.AsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
+import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -208,11 +209,12 @@ private fun AlbumArtSection(
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
             if (currentMediaItem != null) {
-                AsyncImage(
-                    model = currentMediaItem.mediaMetadata.artworkUri,
+                JellyfinAsyncImage(
+                    data = currentMediaItem.mediaMetadata.artworkUri,
                     contentDescription = "Album Art",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
+                    requestSize = rememberScreenWidthHeight(320.dp),
                 )
             } else {
                 // Placeholder

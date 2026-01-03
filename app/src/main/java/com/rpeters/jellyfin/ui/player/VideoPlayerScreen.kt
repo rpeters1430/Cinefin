@@ -87,8 +87,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import coil3.compose.AsyncImage
 import com.rpeters.jellyfin.data.preferences.ThemePreferences
+import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
+import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import kotlinx.coroutines.delay
@@ -658,14 +659,15 @@ private fun CastNowPlayingOverlay(
     ) {
         Box {
             if (!artwork.isNullOrBlank()) {
-                AsyncImage(
-                    model = artwork,
+                JellyfinAsyncImage(
+                    data = artwork,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(180.dp),
                     contentScale = ContentScale.Crop,
                     alpha = 0.45f,
+                    requestSize = rememberScreenWidthHeight(180.dp),
                 )
 
                 val playerColors = rememberVideoPlayerColors()

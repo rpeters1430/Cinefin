@@ -42,8 +42,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.MediaItem
-import coil3.compose.AsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
+import com.rpeters.jellyfin.ui.image.rememberCoilSize
 import com.rpeters.jellyfin.ui.player.audio.AudioPlaybackState
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
 import kotlinx.coroutines.delay
@@ -222,10 +223,11 @@ private fun AlbumArtThumbnail(
         contentAlignment = Alignment.Center,
     ) {
         if (mediaItem?.mediaMetadata?.artworkUri != null) {
-            AsyncImage(
-                model = mediaItem.mediaMetadata.artworkUri,
+            JellyfinAsyncImage(
+                data = mediaItem.mediaMetadata.artworkUri,
                 contentDescription = "Album Art",
                 contentScale = ContentScale.Crop,
+                requestSize = rememberCoilSize(48.dp),
                 modifier = Modifier.size(48.dp),
             )
         } else {

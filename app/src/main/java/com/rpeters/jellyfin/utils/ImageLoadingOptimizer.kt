@@ -98,6 +98,9 @@ object ImageLoadingOptimizer {
                     ),
                 )
             }
+            .placeholder(com.rpeters.jellyfin.R.drawable.ic_image_placeholder)
+            .error(com.rpeters.jellyfin.R.drawable.ic_image_error)
+            .fallback(com.rpeters.jellyfin.R.drawable.ic_image_placeholder)
             // Coil 3.x: crossfade, respectCacheHeaders, allowRgb565, allowHardware
             // are now request-level options, not builder options
             .apply {

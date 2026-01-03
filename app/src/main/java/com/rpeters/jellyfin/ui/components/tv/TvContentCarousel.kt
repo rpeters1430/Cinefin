@@ -30,9 +30,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
+import com.rpeters.jellyfin.ui.image.rememberCoilSize
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.tv.TvFocusManager
@@ -162,14 +163,15 @@ fun TvContentCard(
                     getImageUrl(item)
                 }
 
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
+                JellyfinAsyncImage(
+                    data = ImageRequest.Builder(LocalContext.current)
                         .data(imageUrl)
                         .crossfade(true)
                         .build(),
                     contentDescription = item.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
+                    requestSize = rememberCoilSize(posterWidth, posterHeight),
                 )
             }
         }

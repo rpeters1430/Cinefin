@@ -45,8 +45,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.tv.material3.Text
-import coil3.compose.AsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
+import com.rpeters.jellyfin.ui.image.rememberCoilSize
+import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
 import com.rpeters.jellyfin.ui.tv.TvScreenFocusScope
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
@@ -98,14 +100,15 @@ fun TvAudioPlayerScreen(
             playbackState.currentMediaItem?.let { mediaItem ->
                 val artworkUri = mediaItem.mediaMetadata.artworkUri?.toString()
                 if (artworkUri != null) {
-                    AsyncImage(
-                        model = artworkUri,
+                    JellyfinAsyncImage(
+                        data = artworkUri,
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxSize()
                             .blur(80.dp),
                         contentScale = ContentScale.Crop,
                         alpha = 0.3f,
+                        requestSize = rememberScreenWidthHeight(720.dp),
                     )
                 }
             }
@@ -299,8 +302,8 @@ private fun AlbumArtDisplay(
         contentAlignment = Alignment.Center,
     ) {
         if (artworkUri != null) {
-            AsyncImage(
-                model = artworkUri,
+            JellyfinAsyncImage(
+                data = artworkUri,
                 contentDescription = "Album art",
                 modifier = Modifier
                     .size(480.dp)
@@ -313,6 +316,7 @@ private fun AlbumArtDisplay(
                         },
                     ),
                 contentScale = ContentScale.Crop,
+                requestSize = rememberCoilSize(480.dp),
             )
         } else {
             // Placeholder when no artwork
