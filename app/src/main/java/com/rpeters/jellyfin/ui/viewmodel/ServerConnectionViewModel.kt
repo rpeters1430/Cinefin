@@ -94,15 +94,34 @@ class ServerConnectionViewModel @Inject constructor(
             )
 
             // Auto-login if we have saved credentials and remember login is enabled
-            if (rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
+            if (rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank() && hasSavedPassword) {
+                android.util.Log.d("ServerConnectionVM", "Auto-login conditions met. Biometric enabled: $isBiometricAuthEnabled, Biometric available: ${secureCredentialManager.isBiometricAuthAvailable()}")
+
                 // We don't auto-login if biometric auth is enabled, user needs to trigger it manually
-                if (!isBiometricAuthEnabled) {
+                // However, if biometric is enabled but not available on this device, disable it and auto-login
+                if (isBiometricAuthEnabled && !secureCredentialManager.isBiometricAuthAvailable()) {
+                    android.util.Log.d("ServerConnectionVM", "Biometric auth was enabled but is no longer available - disabling it")
+                    // Biometric auth was enabled but is no longer available - disable it
+                    context.dataStore.edit { preferences ->
+                        preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] = false
+                    }
+                    // Continue with auto-login below
+                }
+
+                if (!isBiometricAuthEnabled || !secureCredentialManager.isBiometricAuthAvailable()) {
                     val savedPassword = secureCredentialManager.getPassword(savedServerUrl, savedUsername)
                     if (savedPassword != null) {
+                        android.util.Log.d("ServerConnectionVM", "Attempting auto-login for user: $savedUsername")
                         // Auto-login with saved credentials
                         connectToServer(savedServerUrl, savedUsername, savedPassword, isAutoLogin = true)
+                    } else {
+                        android.util.Log.w("ServerConnectionVM", "Auto-login skipped: saved password is null despite hasSavedPassword=$hasSavedPassword")
                     }
+                } else {
+                    android.util.Log.d("ServerConnectionVM", "Auto-login skipped: biometric auth is enabled and available")
                 }
+            } else {
+                android.util.Log.d("ServerConnectionVM", "Auto-login skipped - rememberLogin:$rememberLogin, hasUrl:${savedServerUrl.isNotBlank()}, hasUsername:${savedUsername.isNotBlank()}, hasPassword:$hasSavedPassword")
             }
         }
 

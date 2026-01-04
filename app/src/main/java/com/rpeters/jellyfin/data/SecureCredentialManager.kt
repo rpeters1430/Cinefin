@@ -97,6 +97,10 @@ class SecureCredentialManager @Inject constructor(
             )
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                // CRITICAL: Allow caller-provided IV for decryption on Android API 36+
+                // Without this, decryption with stored IV fails with:
+                // "InvalidAlgorithmParameterException: Caller-provided IV not permitted"
+                .setRandomizedEncryptionRequired(false)
                 // SECURITY NOTE: User authentication not required for credential access
                 //
                 // Security Trade-offs:
@@ -192,6 +196,9 @@ class SecureCredentialManager @Inject constructor(
         val keys = generateKeys(serverUrl, username)
         val encryptedPassword = encrypt(password)
 
+        android.util.Log.d(TAG, "savePassword: Saving password for user='$username', serverUrl='$serverUrl'")
+        android.util.Log.d(TAG, "savePassword: Generated key='${keys.newKey}'")
+
         context.secureCredentialsDataStore.edit { prefs ->
             prefs[stringPreferencesKey(keys.newKey)] = encryptedPassword
             prefs[longPreferencesKey("${keys.newKey}_timestamp")] = System.currentTimeMillis()
@@ -200,6 +207,7 @@ class SecureCredentialManager @Inject constructor(
             prefs.remove(stringPreferencesKey(keys.legacyNormalizedKey))
             prefs.remove(longPreferencesKey("${keys.legacyNormalizedKey}_timestamp"))
         }
+        android.util.Log.d(TAG, "savePassword: Password saved successfully")
     }
 
     /**
@@ -215,8 +223,11 @@ class SecureCredentialManager @Inject constructor(
         username: String,
         activity: FragmentActivity? = null,
     ): String? {
+        android.util.Log.d(TAG, "getPassword: Retrieving password for user='$username', serverUrl='$serverUrl'")
+
         // If activity is provided and biometric auth is available, request auth
         if (activity != null && biometricAuthManager.isBiometricAuthAvailable()) {
+            android.util.Log.d(TAG, "getPassword: Requesting biometric authentication")
             val authSuccess = biometricAuthManager.requestBiometricAuth(
                 activity = activity,
                 title = "Access Credentials",
@@ -226,30 +237,41 @@ class SecureCredentialManager @Inject constructor(
 
             // If biometric auth failed, return null
             if (!authSuccess) {
+                android.util.Log.w(TAG, "getPassword: Biometric authentication failed")
                 return null
             }
         }
 
         val keys = generateKeys(serverUrl, username)
+        android.util.Log.d(TAG, "getPassword: Generated key='${keys.newKey}'")
+
         val preferences = context.secureCredentialsDataStore.data.first()
         var encryptedPassword = preferences[stringPreferencesKey(keys.newKey)]
 
         if (encryptedPassword == null) {
+            android.util.Log.d(TAG, "getPassword: Password not found with new key, checking legacy keys")
             val legacySearchOrder = listOf(keys.legacyNormalizedKey, keys.legacyRawKey)
             var matchedKey: String? = null
             for (legacyKey in legacySearchOrder) {
+                android.util.Log.d(TAG, "getPassword: Checking legacy key='$legacyKey'")
                 encryptedPassword = preferences[stringPreferencesKey(legacyKey)]
                 if (encryptedPassword != null) {
                     matchedKey = legacyKey
+                    android.util.Log.d(TAG, "getPassword: Found password with legacy key='$legacyKey'")
                     break
                 }
             }
             if (encryptedPassword != null && matchedKey != null) {
+                android.util.Log.d(TAG, "getPassword: Migrating legacy credential")
                 migrateLegacyCredential(matchedKey, keys.newKey, encryptedPassword)
             }
+        } else {
+            android.util.Log.d(TAG, "getPassword: Found password with new key")
         }
 
-        return encryptedPassword?.let { decrypt(it) }
+        val result = encryptedPassword?.let { decrypt(it) }
+        android.util.Log.d(TAG, "getPassword: Returning password ${if (result != null) "SUCCESS" else "NULL"}")
+        return result
     }
 
     /**

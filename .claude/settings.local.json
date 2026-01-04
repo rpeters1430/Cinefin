@@ -36,7 +36,9 @@
       "Bash(do sed -i 's/as? Double/as Double?/g' \"$file\")",
       "Bash(for:*)",
       "Bash(git merge:*)",
-      "WebFetch(domain:photos.google.com)"
+      "WebFetch(domain:photos.google.com)",
+      "Bash(xargs:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": [],

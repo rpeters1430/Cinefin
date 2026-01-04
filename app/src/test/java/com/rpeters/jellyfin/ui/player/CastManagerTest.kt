@@ -9,6 +9,7 @@ import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManager
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
 import com.rpeters.jellyfin.data.preferences.CastPreferencesRepository
+import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import io.mockk.clearMocks
 import io.mockk.coVerify
@@ -43,6 +44,7 @@ class CastManagerTest {
     private val context: Context = mockk(relaxed = true)
     private val streamRepository: JellyfinStreamRepository = mockk(relaxed = true)
     private val castPreferencesRepository: CastPreferencesRepository = mockk(relaxed = true)
+    private val authRepository: JellyfinAuthRepository = mockk(relaxed = true)
     private val castContext: CastContext = mockk(relaxed = true)
     private val sessionManager: SessionManager = mockk(relaxed = true)
     private val castSession: CastSession = mockk(relaxed = true)
@@ -61,7 +63,7 @@ class CastManagerTest {
         every { castContext.sessionManager } returns sessionManager
         every { sessionManager.currentCastSession } returns null
 
-        castManager = CastManager(context, streamRepository, castPreferencesRepository)
+        castManager = CastManager(context, streamRepository, castPreferencesRepository, authRepository)
     }
 
     @After
@@ -70,6 +72,7 @@ class CastManagerTest {
             context,
             streamRepository,
             castPreferencesRepository,
+            authRepository,
             castContext,
             sessionManager,
             castSession,
@@ -308,6 +311,10 @@ class CastManagerTest {
             .setUri("https://server.com/video.mp4")
             .build()
 
+        val mockServer = mockk<com.rpeters.jellyfin.data.JellyfinServer>(relaxed = true)
+        every { mockServer.accessToken } returns "test-token-123"
+        every { authRepository.getCurrentServer() } returns mockServer
+
         every { sessionManager.currentCastSession } returns castSession
         every { castSession.isConnected } returns true
         every { castSession.remoteMediaClient } returns remoteMediaClient
@@ -333,6 +340,10 @@ class CastManagerTest {
         val item = createTestItem(name = "Preview Item")
         val imageUrl = "https://server.com/poster.jpg"
         val backdropUrl = "https://server.com/backdrop.jpg"
+
+        val mockServer = mockk<com.rpeters.jellyfin.data.JellyfinServer>(relaxed = true)
+        every { mockServer.accessToken } returns "test-token-123"
+        every { authRepository.getCurrentServer() } returns mockServer
 
         every { sessionManager.currentCastSession } returns castSession
         every { castSession.isConnected } returns true

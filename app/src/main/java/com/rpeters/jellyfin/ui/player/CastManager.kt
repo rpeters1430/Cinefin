@@ -19,6 +19,7 @@ import com.google.android.gms.common.images.WebImage
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.preferences.CastPreferencesRepository
+import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -57,6 +58,7 @@ class CastManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val streamRepository: JellyfinStreamRepository,
     private val castPreferencesRepository: CastPreferencesRepository,
+    private val authRepository: JellyfinAuthRepository,
 ) {
 
     private val _castState = MutableStateFlow(CastState())
@@ -357,14 +359,33 @@ class CastManager @Inject constructor(
     }
 
     /**
+     * Append access token to URL for Cast receiver authentication.
+     * Chromecast receivers cannot use custom headers, so we need to include
+     * the auth token as a query parameter.
+     */
+    private fun addAuthTokenToUrl(url: String): String {
+        val accessToken = authRepository.getCurrentServer()?.accessToken
+        if (accessToken.isNullOrBlank()) {
+            SecureLogger.w("CastManager", "addAuthTokenToUrl: No access token available")
+            return url
+        }
+
+        val separator = if (url.contains("?")) "&" else "?"
+        return "$url${separator}api_key=$accessToken"
+    }
+
+    /**
      * Convert SubtitleSpec to Cast MediaTrack
      */
     private fun SubtitleSpec.toCastTrack(id: Long): com.google.android.gms.cast.MediaTrack {
+        // Add authentication to subtitle URL for Cast receiver
+        val authenticatedUrl = addAuthTokenToUrl(this.url)
+
         val builder = com.google.android.gms.cast.MediaTrack.Builder(
             id,
             com.google.android.gms.cast.MediaTrack.TYPE_TEXT,
         )
-            .setContentId(this.url)
+            .setContentId(authenticatedUrl)
             .setLanguage(this.language)
             .setName(this.label ?: this.language?.uppercase() ?: "Subtitles")
 
@@ -385,7 +406,9 @@ class CastManager @Inject constructor(
         try {
             val castSession = castContext?.sessionManager?.currentCastSession
             if (castSession?.isConnected == true) {
-                val mediaUrl = mediaItem.localConfiguration?.uri.toString()
+                val originalUrl = mediaItem.localConfiguration?.uri.toString()
+                // Add authentication token to URL for Cast receiver
+                val mediaUrl = addAuthTokenToUrl(originalUrl)
                 val contentType = inferContentType(mediaUrl)
 
                 // Build Cast media metadata
@@ -468,8 +491,9 @@ class CastManager @Inject constructor(
                 return
             }
 
-            val primaryImage = imageUrl
-            val backdropImage = backdropUrl
+            // Add authentication to image URLs for Cast receiver
+            val primaryImage = imageUrl?.let { addAuthTokenToUrl(it) }
+            val backdropImage = backdropUrl?.let { addAuthTokenToUrl(it) }
             val largestImageUrl = backdropImage ?: primaryImage
             if (largestImageUrl.isNullOrBlank()) {
                 if (BuildConfig.DEBUG) {
@@ -638,8 +662,11 @@ class CastManager @Inject constructor(
             return
         }
 
+        // Add authentication to image URL for Cast receiver
+        val authenticatedUrl = addAuthTokenToUrl(url)
+
         runCatching {
-            addImage(WebImage(url.toUri()))
+            addImage(WebImage(authenticatedUrl.toUri()))
         }.onFailure { throwable ->
             SecureLogger.w(
                 "CastManager",
