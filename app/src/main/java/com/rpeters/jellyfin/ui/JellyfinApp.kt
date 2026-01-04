@@ -57,8 +57,10 @@ fun JellyfinApp(
         // Otherwise, start at ServerConnection (login screen)
         val startDestination = if (
             connectionState.isConnected ||
-            (connectionState.hasSavedPassword && connectionState.rememberLogin &&
-                connectionState.savedServerUrl.isNotBlank() && connectionState.savedUsername.isNotBlank())
+            (
+                connectionState.hasSavedPassword && connectionState.rememberLogin &&
+                    connectionState.savedServerUrl.isNotBlank() && connectionState.savedUsername.isNotBlank()
+                )
         ) {
             Screen.Home.route
         } else {

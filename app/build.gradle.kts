@@ -45,7 +45,7 @@ android {
     applicationVariants.all {
         outputs.all {
             val outputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            outputImpl.outputFileName = "JellyfinAndroid-${versionName}-${name}.apk"
+            outputImpl.outputFileName = "JellyfinAndroid-$versionName-$name.apk"
         }
     }
     compileOptions {
@@ -253,6 +253,3 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 
 // Ensure jacoco agent is applied for coverage
 apply(plugin = "jacoco")
-
-
-
