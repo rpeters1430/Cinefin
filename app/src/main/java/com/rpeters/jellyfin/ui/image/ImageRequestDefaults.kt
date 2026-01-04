@@ -14,7 +14,6 @@ import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.size.Size
-import com.rpeters.jellyfin.R
 
 /**
  * Shared Coil request helpers to enforce caching, placeholders, and sizing hints.
