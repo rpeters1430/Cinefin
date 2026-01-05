@@ -69,15 +69,17 @@ fun MediaRouteButton(
 
     AndroidView(
         factory = { _ ->
-            // CRITICAL FIX: Create MediaRouteButton with the FragmentActivity directly
-            // DO NOT wrap in ContextThemeWrapper as it breaks the FragmentActivity lookup
-            // The MediaRouteButton internally calls getActivity() which needs to find
-            // a FragmentActivity to show the cast dialog
-            MediaRouteButton(fragmentActivity).apply {
-                // Initialize the Cast button with the FragmentActivity context
-                // IMPORTANT: Use fragmentActivity, NOT applicationContext, to ensure
-                // the Cast framework has access to activity-scoped authentication state
-                CastButtonFactory.setUpMediaRouteButton(fragmentActivity, this)
+            // CRITICAL FIX: Wrap the FragmentActivity in a ContextThemeWrapper with opaque theme
+            // This ensures the MediaRouteButton has a proper background color for contrast calculation
+            // The contrast calculation fails if background is transparent (#0), causing a crash:
+            // java.lang.IllegalArgumentException: background can not be translucent: #0
+            // Use Theme_MediaRouter_Opaque which is specifically designed to prevent this crash
+            val themedContext = ContextThemeWrapper(fragmentActivity, R.style.Theme_MediaRouter_Opaque)
+
+            MediaRouteButton(themedContext).apply {
+                // Initialize the Cast button with the themed context
+                // IMPORTANT: The button still has access to the FragmentActivity through the wrapper
+                CastButtonFactory.setUpMediaRouteButton(themedContext, this)
 
                 // Set content description for accessibility
                 contentDescription = "Cast to device"
