@@ -38,7 +38,9 @@
       "Bash(git merge:*)",
       "WebFetch(domain:photos.google.com)",
       "Bash(xargs:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(kill:*)",
+      "Bash(emulator:*)"
     ],
     "deny": [],
     "ask": [],
