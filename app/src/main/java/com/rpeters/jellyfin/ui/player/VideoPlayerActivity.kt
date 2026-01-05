@@ -16,7 +16,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Rational
 import android.view.WindowManager
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.VisibleForTesting
@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
 
 @androidx.media3.common.util.UnstableApi
 @AndroidEntryPoint
-class VideoPlayerActivity : ComponentActivity() {
+class VideoPlayerActivity : FragmentActivity() {
 
     private val playerViewModel: VideoPlayerViewModel by viewModels()
     private var isInPipMode = false

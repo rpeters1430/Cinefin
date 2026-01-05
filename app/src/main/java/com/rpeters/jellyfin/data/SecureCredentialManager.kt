@@ -8,10 +8,11 @@ import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.fragment.app.FragmentActivity
 import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.utils.normalizeServerUrl
@@ -29,9 +30,6 @@ import javax.crypto.spec.GCMParameterSpec
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// Modern secure DataStore extension
-private val Context.secureCredentialsDataStore: DataStore<Preferences> by preferencesDataStore(name = "secure_credentials")
-
 @Singleton
 class SecureCredentialManager @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -40,7 +38,17 @@ class SecureCredentialManager @Inject constructor(
         private const val TAG = "SecureCredentialManager"
         private const val KEY_VERSION = "v1"
         private const val KEY_ROTATION_INTERVAL_MS = 30L * 24 * 60 * 60 * 1000 // 30 days
+        private const val DATASTORE_NAME = "secure_credentials"
     }
+
+    // ✅ FIX: Create DataStore directly as a property instead of using Context extension
+    // This avoids potential issues with Context extension properties in Singleton classes
+    private val secureCredentialsDataStore: DataStore<Preferences> =
+        PreferenceDataStoreFactory.create(
+            produceFile = {
+                context.preferencesDataStoreFile(DATASTORE_NAME)
+            }
+        )
 
     // ✅ ENHANCEMENT: Use modern Android Keystore with DataStore for secure storage
     private val keyStore: KeyStore by lazy {
@@ -65,6 +73,14 @@ class SecureCredentialManager @Inject constructor(
      * Generates a unique key alias that includes a version and timestamp to support key rotation
      */
     private fun getKeyAlias(timestamp: Long = System.currentTimeMillis()): String {
+        return "${Constants.Security.KEY_ALIAS}_${KEY_VERSION}_${timestamp / KEY_ROTATION_INTERVAL_MS}"
+    }
+
+    /**
+     * Gets the buggy key alias format that was used before the typo fix
+     * This is needed to decrypt passwords saved with the old buggy format
+     */
+    private fun getBuggyKeyAlias(timestamp: Long = System.currentTimeMillis()): String {
         return "${Constants.Security.KEY_ALIAS}_$KEY_VERSION}_${timestamp / KEY_ROTATION_INTERVAL_MS}"
     }
 
@@ -74,9 +90,13 @@ class SecureCredentialManager @Inject constructor(
      */
     private suspend fun getOrCreateSecretKey(forceNew: Boolean = false): SecretKey = withContext(Dispatchers.IO) {
         val currentAlias = getKeyAlias()
+        val buggyAlias = getBuggyKeyAlias()
+
+        // Check if key exists (try both current and buggy formats for backward compatibility)
+        val keyExists = keyStore.containsAlias(currentAlias) || keyStore.containsAlias(buggyAlias)
 
         // Check if we should rotate the key (force new key or key doesn't exist)
-        if (forceNew || !keyStore.containsAlias(currentAlias)) {
+        if (forceNew || !keyExists) {
             // Remove old keys (keep only the most recent ones)
             val aliases = keyStore.aliases()
             while (aliases.hasMoreElements()) {
@@ -133,7 +153,13 @@ class SecureCredentialManager @Inject constructor(
             return@withContext keyGenerator.generateKey()
         }
 
-        return@withContext keyStore.getKey(currentAlias, null) as SecretKey
+        // Try to get the key using the current alias first, then fall back to buggy alias
+        // This provides backward compatibility for passwords encrypted with the old buggy key format
+        return@withContext when {
+            keyStore.containsAlias(currentAlias) -> keyStore.getKey(currentAlias, null) as SecretKey
+            keyStore.containsAlias(buggyAlias) -> keyStore.getKey(buggyAlias, null) as SecretKey
+            else -> throw IllegalStateException("No encryption key found")
+        }
     }
 
     /**
@@ -198,16 +224,42 @@ class SecureCredentialManager @Inject constructor(
 
         android.util.Log.d(TAG, "savePassword: Saving password for user='$username', serverUrl='$serverUrl'")
         android.util.Log.d(TAG, "savePassword: Generated key='${keys.newKey}'")
+        android.util.Log.d(TAG, "savePassword: Encrypted password length: ${encryptedPassword.length}")
 
-        context.secureCredentialsDataStore.edit { prefs ->
-            prefs[stringPreferencesKey(keys.newKey)] = encryptedPassword
-            prefs[longPreferencesKey("${keys.newKey}_timestamp")] = System.currentTimeMillis()
-            prefs.remove(stringPreferencesKey(keys.legacyRawKey))
-            prefs.remove(longPreferencesKey("${keys.legacyRawKey}_timestamp"))
-            prefs.remove(stringPreferencesKey(keys.legacyNormalizedKey))
-            prefs.remove(longPreferencesKey("${keys.legacyNormalizedKey}_timestamp"))
+        try {
+            // Check DataStore state before edit
+            val beforeEdit = secureCredentialsDataStore.data.first()
+            android.util.Log.d(TAG, "savePassword: DataStore before edit contains ${beforeEdit.asMap().size} entries")
+
+            secureCredentialsDataStore.edit { prefs ->
+                android.util.Log.d(TAG, "savePassword: Inside edit block, setting key='${keys.newKey}'")
+                prefs[stringPreferencesKey(keys.newKey)] = encryptedPassword
+                prefs[longPreferencesKey("${keys.newKey}_timestamp")] = System.currentTimeMillis()
+                prefs.remove(stringPreferencesKey(keys.legacyRawKey))
+                prefs.remove(longPreferencesKey("${keys.legacyRawKey}_timestamp"))
+                prefs.remove(stringPreferencesKey(keys.legacyNormalizedKey))
+                prefs.remove(longPreferencesKey("${keys.legacyNormalizedKey}_timestamp"))
+                android.util.Log.d(TAG, "savePassword: Edit block completed, prefs now contains ${prefs.asMap().size} entries")
+            }
+
+            android.util.Log.d(TAG, "savePassword: Edit operation returned successfully")
+
+            // Verify the password was saved by immediately reading it back
+            val verification = secureCredentialsDataStore.data.first()
+            android.util.Log.d(TAG, "savePassword: Verification read returned ${verification.asMap().size} entries")
+
+            val savedPassword = verification[stringPreferencesKey(keys.newKey)]
+            if (savedPassword != null) {
+                android.util.Log.d(TAG, "savePassword: ✅ Password saved successfully and verified in DataStore")
+                android.util.Log.d(TAG, "savePassword: DataStore now contains ${verification.asMap().size} entries")
+            } else {
+                android.util.Log.e(TAG, "savePassword: ❌ ERROR - Password was not found in DataStore after saving!")
+                android.util.Log.e(TAG, "savePassword: DataStore keys present: ${verification.asMap().keys.joinToString { it.name }}")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "savePassword: EXCEPTION during save operation", e)
+            throw e
         }
-        android.util.Log.d(TAG, "savePassword: Password saved successfully")
     }
 
     /**
@@ -245,11 +297,16 @@ class SecureCredentialManager @Inject constructor(
         val keys = generateKeys(serverUrl, username)
         android.util.Log.d(TAG, "getPassword: Generated key='${keys.newKey}'")
 
-        val preferences = context.secureCredentialsDataStore.data.first()
+        val preferences = secureCredentialsDataStore.data.first()
+        android.util.Log.d(TAG, "getPassword: DataStore contains ${preferences.asMap().size} entries")
+        // Log all DataStore keys for debugging (excluding actual password values)
+        preferences.asMap().keys.forEach { key ->
+            android.util.Log.d(TAG, "getPassword: DataStore key found: ${key.name}")
+        }
         var encryptedPassword = preferences[stringPreferencesKey(keys.newKey)]
 
         if (encryptedPassword == null) {
-            android.util.Log.d(TAG, "getPassword: Password not found with new key, checking legacy keys")
+            android.util.Log.d(TAG, "getPassword: Password not found with new key='${keys.newKey}', checking legacy keys")
             val legacySearchOrder = listOf(keys.legacyNormalizedKey, keys.legacyRawKey)
             var matchedKey: String? = null
             for (legacyKey in legacySearchOrder) {
@@ -261,8 +318,24 @@ class SecureCredentialManager @Inject constructor(
                     break
                 }
             }
+
+            // FIX: If still not found, try with the raw (non-normalized) server URL
+            // This handles the case where credentials were saved before URL normalization was fixed
+            if (encryptedPassword == null) {
+                android.util.Log.d(TAG, "getPassword: Checking with raw server URL (pre-normalization fix)")
+                val rawKey = generateKey(serverUrl, username)
+                if (rawKey != keys.newKey) { // Don't check the same key twice
+                    android.util.Log.d(TAG, "getPassword: Trying raw URL key='$rawKey'")
+                    encryptedPassword = preferences[stringPreferencesKey(rawKey)]
+                    if (encryptedPassword != null) {
+                        matchedKey = rawKey
+                        android.util.Log.d(TAG, "getPassword: Found password with raw URL key='$rawKey'")
+                    }
+                }
+            }
+
             if (encryptedPassword != null && matchedKey != null) {
-                android.util.Log.d(TAG, "getPassword: Migrating legacy credential")
+                android.util.Log.d(TAG, "getPassword: Migrating legacy credential from key='$matchedKey' to key='${keys.newKey}'")
                 migrateLegacyCredential(matchedKey, keys.newKey, encryptedPassword)
             }
         } else {
@@ -283,7 +356,7 @@ class SecureCredentialManager @Inject constructor(
 
     suspend fun clearPassword(serverUrl: String, username: String) {
         val keys = generateKeys(serverUrl, username)
-        context.secureCredentialsDataStore.edit { prefs ->
+        secureCredentialsDataStore.edit { prefs ->
             prefs.remove(stringPreferencesKey(keys.newKey))
             prefs.remove(longPreferencesKey("${keys.newKey}_timestamp"))
             prefs.remove(stringPreferencesKey(keys.legacyRawKey))
@@ -294,7 +367,7 @@ class SecureCredentialManager @Inject constructor(
     }
 
     suspend fun clearAllPasswords() {
-        context.secureCredentialsDataStore.edit { preferences ->
+        secureCredentialsDataStore.edit { preferences ->
             preferences.clear()
         }
     }
@@ -326,7 +399,7 @@ class SecureCredentialManager @Inject constructor(
         newKey: String,
         encryptedPassword: String,
     ) {
-        context.secureCredentialsDataStore.edit { prefs ->
+        secureCredentialsDataStore.edit { prefs ->
             prefs[stringPreferencesKey(newKey)] = encryptedPassword
             prefs[longPreferencesKey("${newKey}_timestamp")] =
                 prefs[longPreferencesKey("${oldKey}_timestamp")] ?: System.currentTimeMillis()
