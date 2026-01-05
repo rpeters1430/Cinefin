@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.player
 
-import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.view.ContextThemeWrapper
