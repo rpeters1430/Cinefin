@@ -1,5 +1,8 @@
 package com.rpeters.jellyfin.ui.player
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.view.ContextThemeWrapper
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
@@ -10,10 +13,28 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.fragment.app.FragmentActivity
 import androidx.mediarouter.app.MediaRouteButton
 import com.google.android.gms.cast.framework.CastButtonFactory
 import com.google.android.gms.cast.framework.CastContext
 import com.rpeters.jellyfin.R
+
+/**
+ * Helper function to find the FragmentActivity from a Context.
+ * MediaRouteButton requires a FragmentActivity to show the Cast dialog.
+ * This function handles all types of context wrappers including ContextThemeWrapper.
+ */
+private fun Context.findFragmentActivity(): FragmentActivity? {
+    var context: Context? = this
+    while (context != null) {
+        when (context) {
+            is FragmentActivity -> return context
+            is ContextWrapper -> context = context.baseContext
+            else -> return null
+        }
+    }
+    return null
+}
 
 /**
  * Composable wrapper for Google Cast MediaRouteButton.
@@ -33,18 +54,30 @@ fun MediaRouteButton(
 ) {
     val context = LocalContext.current
 
-    // Create a themed context with opaque background for MediaRouter
-    // This prevents crashes when MediaRouter tries to calculate contrast ratios
-    // with translucent/transparent backgrounds
-    val themedContext = remember(context) {
-        ContextThemeWrapper(context, R.style.Theme_MediaRouter_Opaque)
+    // Find the FragmentActivity from the context chain
+    // MediaRouteButton requires a FragmentActivity to show the Cast device picker dialog
+    val fragmentActivity = remember(context) {
+        context.findFragmentActivity()
+    }
+
+    // If no FragmentActivity is found, don't show the button
+    // This prevents the crash: "The activity must be a subclass of FragmentActivity"
+    if (fragmentActivity == null) {
+        android.util.Log.w("MediaRouteButton", "No FragmentActivity found in context chain - Cast button will not be shown")
+        return
     }
 
     AndroidView(
         factory = { _ ->
-            MediaRouteButton(themedContext).apply {
-                // Initialize the Cast button with the CastContext
-                CastButtonFactory.setUpMediaRouteButton(themedContext, this)
+            // CRITICAL FIX: Create MediaRouteButton with the FragmentActivity directly
+            // DO NOT wrap in ContextThemeWrapper as it breaks the FragmentActivity lookup
+            // The MediaRouteButton internally calls getActivity() which needs to find
+            // a FragmentActivity to show the cast dialog
+            MediaRouteButton(fragmentActivity).apply {
+                // Initialize the Cast button with the FragmentActivity context
+                // IMPORTANT: Use fragmentActivity, NOT applicationContext, to ensure
+                // the Cast framework has access to activity-scoped authentication state
+                CastButtonFactory.setUpMediaRouteButton(fragmentActivity, this)
 
                 // Set content description for accessibility
                 contentDescription = "Cast to device"

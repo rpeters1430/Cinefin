@@ -259,13 +259,18 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     private suspend fun saveCredentials(serverUrl: String, username: String, password: String) {
+        // CRITICAL: Normalize the URL using the same function that SecureCredentialManager uses
+        // to ensure consistent key generation for password encryption/decryption
+        val normalizedUrl = com.rpeters.jellyfin.utils.normalizeServerUrl(serverUrl)
+
         context.dataStore.edit { preferences ->
-            preferences[PreferencesKeys.SERVER_URL] = serverUrl
+            preferences[PreferencesKeys.SERVER_URL] = normalizedUrl
             preferences[PreferencesKeys.USERNAME] = username
         }
-        secureCredentialManager.savePassword(serverUrl, username, password)
+        secureCredentialManager.savePassword(normalizedUrl, username, password)
+        android.util.Log.d("ServerConnectionVM", "Saved credentials with normalized URL: $normalizedUrl (original: $serverUrl)")
         _connectionState.value = _connectionState.value.copy(
-            savedServerUrl = serverUrl,
+            savedServerUrl = normalizedUrl,
             savedUsername = username,
             hasSavedPassword = true,
         )
