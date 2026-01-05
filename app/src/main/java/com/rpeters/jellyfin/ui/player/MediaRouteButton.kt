@@ -1,9 +1,7 @@
 package com.rpeters.jellyfin.ui.player
 
-import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.view.ContextThemeWrapper
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -17,7 +15,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.mediarouter.app.MediaRouteButton
 import com.google.android.gms.cast.framework.CastButtonFactory
 import com.google.android.gms.cast.framework.CastContext
-import com.rpeters.jellyfin.R
 
 /**
  * Helper function to find the FragmentActivity from a Context.

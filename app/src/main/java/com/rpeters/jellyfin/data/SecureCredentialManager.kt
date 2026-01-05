@@ -7,8 +7,8 @@ import android.util.Base64
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -47,7 +47,7 @@ class SecureCredentialManager @Inject constructor(
         PreferenceDataStoreFactory.create(
             produceFile = {
                 context.preferencesDataStoreFile(DATASTORE_NAME)
-            }
+            },
         )
 
     // ✅ ENHANCEMENT: Use modern Android Keystore with DataStore for secure storage
