@@ -2,8 +2,6 @@ package com.rpeters.jellyfin.data.security
 
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
-import com.rpeters.jellyfin.data.security.PinnedCertificateRecord
-import com.rpeters.jellyfin.data.security.PinningValidationException
 import kotlinx.coroutines.runBlocking
 import java.net.Socket
 import java.security.cert.CertificateException

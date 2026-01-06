@@ -5,11 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.security.CertificatePinningManager
 import com.rpeters.jellyfin.data.security.PinnedCertificateRecord
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class PinningSettingsViewModel @Inject constructor(
