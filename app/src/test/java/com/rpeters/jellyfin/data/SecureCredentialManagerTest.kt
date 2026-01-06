@@ -1,9 +1,14 @@
 package com.rpeters.jellyfin.data
 
 import android.content.Context
+import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.normalizeServerUrl
 import com.rpeters.jellyfin.utils.normalizeServerUrlLegacy
+import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -50,5 +55,22 @@ class SecureCredentialManagerTest {
     fun `normalizeServerUrlLegacy retains port`() {
         val normalized = normalizeServerUrlLegacy(" HTTPS://Example.com:8096/ ")
         assertEquals("https://example.com:8096", normalized)
+    }
+
+    @Test
+    fun `debug logs are suppressed when not in debug mode`() {
+        mockkObject(SecureLogger)
+        try {
+            val originalFlag = manager.debugLoggingEnabled
+            justRun { SecureLogger.d(any(), any(), any()) }
+            manager.debugLoggingEnabled = false
+
+            manager.logDebug { "should not log" }
+
+            verify(exactly = 0) { SecureLogger.d(any(), any(), any()) }
+        } finally {
+            manager.debugLoggingEnabled = originalFlag
+            unmockkObject(SecureLogger)
+        }
     }
 }
