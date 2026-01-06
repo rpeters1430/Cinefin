@@ -197,7 +197,7 @@ class ServerConnectionViewModel @Inject constructor(
                             } else {
                                 clearSavedCredentials()
                             }
-                            
+
                             // Now it's safe to set connected state which may trigger navigation
                             _connectionState.value = _connectionState.value.copy(
                                 isConnecting = false,
