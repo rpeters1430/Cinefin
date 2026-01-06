@@ -3,14 +3,25 @@ package com.rpeters.jellyfin.data
 import android.content.Context
 import com.rpeters.jellyfin.utils.normalizeServerUrl
 import com.rpeters.jellyfin.utils.normalizeServerUrlLegacy
+import com.rpeters.jellyfin.data.preferences.CredentialSecurityPreferences
+import com.rpeters.jellyfin.data.preferences.CredentialSecurityPreferencesRepository
 import io.mockk.mockk
+import io.mockk.coEvery
+import io.mockk.every
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SecureCredentialManagerTest {
     private val context: Context = mockk(relaxed = true)
-    private val manager = SecureCredentialManager(context)
+    private val repository = mockk<CredentialSecurityPreferencesRepository>()
+    private val manager = SecureCredentialManager(context, repository)
+
+    init {
+        every { repository.preferences } returns flowOf(CredentialSecurityPreferences.DEFAULT)
+        coEvery { repository.currentPreferences() } returns CredentialSecurityPreferences.DEFAULT
+    }
 
     @Test
     fun `generateKey produces consistent key for normalized URLs`() {

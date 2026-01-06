@@ -15,6 +15,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.fragment.app.FragmentActivity
 import com.rpeters.jellyfin.core.constants.Constants
+import com.rpeters.jellyfin.data.preferences.CredentialSecurityPreferencesRepository
 import com.rpeters.jellyfin.utils.normalizeServerUrl
 import com.rpeters.jellyfin.utils.normalizeServerUrlLegacy
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -36,12 +37,14 @@ import javax.inject.Singleton
 @Singleton
 class SecureCredentialManager @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val credentialSecurityPreferencesRepository: CredentialSecurityPreferencesRepository,
 ) {
     companion object {
         private const val TAG = "SecureCredentialManager"
         private const val KEY_VERSION = "v1"
         private const val KEY_ROTATION_INTERVAL_MS = 30L * 24 * 60 * 60 * 1000 // 30 days
         private const val DATASTORE_NAME = "secure_credentials"
+        private const val USER_AUTH_VALIDITY_WINDOW_SECONDS = 300
     }
 
     // CRITICAL FIX: DataStore needs a CoroutineScope to properly persist data
@@ -65,6 +68,9 @@ class SecureCredentialManager @Inject constructor(
             load(null)
         }
     }
+
+    @Volatile
+    private var cachedUserAuthRequired: Boolean? = null
 
     // Biometric authentication manager
     private val biometricAuthManager by lazy { BiometricAuthManager(context) }
@@ -97,69 +103,25 @@ class SecureCredentialManager @Inject constructor(
      * Gets or creates a secret key with an expiration timestamp for key rotation.
      * Performs keystore operations on background thread.
      */
-    private suspend fun getOrCreateSecretKey(forceNew: Boolean = false): SecretKey = withContext(Dispatchers.IO) {
+    private suspend fun getOrCreateSecretKey(
+        forceNew: Boolean = false,
+        requireUserAuthentication: Boolean = userAuthenticationRequired(),
+    ): SecretKey = withContext(Dispatchers.IO) {
         val currentAlias = getKeyAlias()
         val buggyAlias = getBuggyKeyAlias()
 
-        // Check if key exists (try both current and buggy formats for backward compatibility)
-        val keyExists = keyStore.containsAlias(currentAlias) || keyStore.containsAlias(buggyAlias)
+        val currentKeyExists = keyStore.containsAlias(currentAlias)
+        val buggyKeyExists = keyStore.containsAlias(buggyAlias)
 
-        // Check if we should rotate the key (force new key or key doesn't exist)
-        if (forceNew || !keyExists) {
-            // Remove old keys (keep only the most recent ones)
-            val aliases = keyStore.aliases()
-            while (aliases.hasMoreElements()) {
-                val alias = aliases.nextElement()
-                if (alias.startsWith(Constants.Security.KEY_ALIAS) && alias != currentAlias) {
-                    try {
-                        keyStore.deleteEntry(alias)
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Failed to delete old key: $alias", e)
-                    }
-                }
-            }
+        if (forceNew) {
+            deleteAliasIfExists(currentAlias)
+            removeOldKeys(currentAlias)
+            return@withContext generateKey(currentAlias, requireUserAuthentication)
+        }
 
-            val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
-            val keyGenParameterSpec = KeyGenParameterSpec.Builder(
-                currentAlias,
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
-            )
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                // CRITICAL: Allow caller-provided IV for decryption on Android API 36+
-                // Without this, decryption with stored IV fails with:
-                // "InvalidAlgorithmParameterException: Caller-provided IV not permitted"
-                .setRandomizedEncryptionRequired(false)
-                // SECURITY NOTE: User authentication not required for credential access
-                //
-                // Security Trade-offs:
-                // - false: Credentials can be decrypted without biometric/PIN prompt
-                //   • Pro: Better UX - no authentication prompt on every app launch
-                //   • Con: If device is unlocked, credentials accessible without additional auth
-                //
-                // - true: Requires biometric/PIN for every credential access
-                //   • Pro: Maximum security - credentials need authentication to decrypt
-                //   • Con: User must authenticate every time credentials are needed
-                //   • Requires: .setUserAuthenticationValidityDurationSeconds(300) for timeout
-                //
-                // Current Implementation: Prioritizes user experience over maximum security.
-                // The AndroidKeyStore still provides hardware-backed encryption, and device
-                // lock screen provides the primary security boundary.
-                //
-                // Alternative Implementation (Maximum Security):
-                // To require authentication for credential access:
-                // ```
-                // .setUserAuthenticationRequired(true)
-                // .setUserAuthenticationValidityDurationSeconds(300) // 5-minute validity
-                // ```
-                //
-                // TODO: Consider adding a user setting to enable/disable authentication requirement
-                // TODO: Add support for biometric-only keys (API 30+) using BiometricPrompt
-                .setUserAuthenticationRequired(false)
-                .build()
-
-            keyGenerator.init(keyGenParameterSpec)
-            return@withContext keyGenerator.generateKey()
+        if (!currentKeyExists && !buggyKeyExists) {
+            removeOldKeys(currentAlias)
+            return@withContext generateKey(currentAlias, requireUserAuthentication)
         }
 
         // Try to get the key using the current alias first, then fall back to buggy alias
@@ -169,6 +131,61 @@ class SecureCredentialManager @Inject constructor(
             keyStore.containsAlias(buggyAlias) -> keyStore.getKey(buggyAlias, null) as SecretKey
             else -> throw IllegalStateException("No encryption key found")
         }
+    }
+
+    private fun deleteAliasIfExists(alias: String) {
+        if (keyStore.containsAlias(alias)) {
+            try {
+                keyStore.deleteEntry(alias)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to delete key alias: $alias", e)
+            }
+        }
+    }
+
+    private fun removeOldKeys(excludeAlias: String) {
+        val aliases = keyStore.aliases()
+        while (aliases.hasMoreElements()) {
+            val alias = aliases.nextElement()
+            if (alias.startsWith(Constants.Security.KEY_ALIAS) && alias != excludeAlias) {
+                try {
+                    keyStore.deleteEntry(alias)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to delete old key: $alias", e)
+                }
+            }
+        }
+    }
+
+    private fun generateKey(alias: String, requireUserAuthentication: Boolean): SecretKey {
+        val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+        val keyGenParameterSpec = KeyGenParameterSpec.Builder(
+            alias,
+            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+        )
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            // CRITICAL: Allow caller-provided IV for decryption on Android API 36+
+            // Without this, decryption with stored IV fails with:
+            // "InvalidAlgorithmParameterException: Caller-provided IV not permitted"
+            .setRandomizedEncryptionRequired(false)
+            .setUserAuthenticationRequired(requireUserAuthentication)
+            .apply {
+                if (requireUserAuthentication) {
+                    setUserAuthenticationValidityDurationSeconds(USER_AUTH_VALIDITY_WINDOW_SECONDS)
+                }
+            }
+            .build()
+
+        keyGenerator.init(keyGenParameterSpec)
+        return keyGenerator.generateKey()
+    }
+
+    private suspend fun userAuthenticationRequired(): Boolean {
+        cachedUserAuthRequired?.let { return it }
+        val preference = credentialSecurityPreferencesRepository.currentPreferences().requireStrongAuthForCredentials
+        cachedUserAuthRequired = preference
+        return preference
     }
 
     /**
@@ -223,6 +240,26 @@ class SecureCredentialManager @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Key rotation failed", e)
             throw SecurityException("Failed to rotate encryption key", e)
+        }
+    }
+
+    suspend fun applyCredentialAuthenticationRequirement(requireAuthentication: Boolean) {
+        val currentRequirement = userAuthenticationRequired()
+        if (currentRequirement == requireAuthentication) {
+            cachedUserAuthRequired = currentRequirement
+            credentialSecurityPreferencesRepository.setRequireStrongAuthForCredentials(requireAuthentication)
+            return
+        }
+
+        try {
+            val existingCredentials = exportPlaintextCredentials()
+            getOrCreateSecretKey(forceNew = true, requireUserAuthentication = requireAuthentication)
+            cachedUserAuthRequired = requireAuthentication
+            restoreCredentials(existingCredentials)
+            credentialSecurityPreferencesRepository.setRequireStrongAuthForCredentials(requireAuthentication)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to apply credential authentication requirement", e)
+            throw SecurityException("Failed to update credential encryption policy", e)
         }
     }
 
@@ -423,10 +460,56 @@ class SecureCredentialManager @Inject constructor(
         clearAllPasswords()
     }
 
+    private suspend fun exportPlaintextCredentials(): List<StoredCredential> = withContext(Dispatchers.IO) {
+        val preferences = secureCredentialsDataStore.data.first()
+        val credentials = mutableListOf<StoredCredential>()
+
+        preferences.asMap().forEach { (key, value) ->
+            if (key is Preferences.Key<*> && key.name.startsWith("pwd_") && !key.name.endsWith("_timestamp")) {
+                val encryptedPassword = value as? String ?: return@forEach
+                val decryptedPassword = decrypt(encryptedPassword)
+                val timestamp = preferences[longPreferencesKey("${key.name}_timestamp")]
+                if (decryptedPassword != null) {
+                    credentials.add(
+                        StoredCredential(
+                            preferenceKey = key.name,
+                            plaintext = decryptedPassword,
+                            timestamp = timestamp,
+                        ),
+                    )
+                }
+            }
+        }
+
+        credentials
+    }
+
+    private suspend fun restoreCredentials(credentials: List<StoredCredential>) {
+        if (credentials.isEmpty()) return
+
+        withContext(NonCancellable + Dispatchers.IO) {
+            secureCredentialsDataStore.edit { prefs ->
+                credentials.forEach { credential ->
+                    val encrypted = encrypt(credential.plaintext)
+                    prefs[stringPreferencesKey(credential.preferenceKey)] = encrypted
+                    credential.timestamp?.let { timestamp ->
+                        prefs[longPreferencesKey("${credential.preferenceKey}_timestamp")] = timestamp
+                    }
+                }
+            }
+        }
+    }
+
     private data class CredentialKeys(
         val newKey: String,
         val legacyRawKey: String,
         val legacyNormalizedKey: String,
+    )
+
+    private data class StoredCredential(
+        val preferenceKey: String,
+        val plaintext: String,
+        val timestamp: Long?,
     )
 
     private fun generateKeys(serverUrl: String, username: String): CredentialKeys {
