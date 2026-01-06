@@ -6,12 +6,12 @@ import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.preferences.CredentialSecurityPreferences
 import com.rpeters.jellyfin.data.preferences.CredentialSecurityPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class CredentialSecurityPreferencesViewModel @Inject constructor(
