@@ -212,6 +212,18 @@ class VideoPlayerActivity : FragmentActivity() {
             packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
     }
 
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        val playerState = playerViewModel.playerState.value
+        if (playerState.showCastDialog) {
+            // Close cast dialog instead of navigating back
+            playerViewModel.hideCastDialog()
+            return
+        }
+        @Suppress("DEPRECATION")
+        super.onBackPressed()
+    }
+
     override fun onResume() {
         super.onResume()
         // Don't auto-start playback in onResume - let the user control this

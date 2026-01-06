@@ -18,7 +18,10 @@ import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.utils.normalizeServerUrl
 import com.rpeters.jellyfin.utils.normalizeServerUrlLegacy
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.security.KeyStore
@@ -41,10 +44,16 @@ class SecureCredentialManager @Inject constructor(
         private const val DATASTORE_NAME = "secure_credentials"
     }
 
+    // CRITICAL FIX: DataStore needs a CoroutineScope to properly persist data
+    // Without a scope, edit operations may not commit changes to disk
+    private val dataStoreScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     // ✅ FIX: Create DataStore directly as a property instead of using Context extension
     // This avoids potential issues with Context extension properties in Singleton classes
+    // CRITICAL: Must provide a scope parameter to ensure proper persistence
     private val secureCredentialsDataStore: DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
+            scope = dataStoreScope,
             produceFile = {
                 context.preferencesDataStoreFile(DATASTORE_NAME)
             },
@@ -227,35 +236,69 @@ class SecureCredentialManager @Inject constructor(
         android.util.Log.d(TAG, "savePassword: Encrypted password length: ${encryptedPassword.length}")
 
         try {
-            // Check DataStore state before edit
-            val beforeEdit = secureCredentialsDataStore.data.first()
-            android.util.Log.d(TAG, "savePassword: DataStore before edit contains ${beforeEdit.asMap().size} entries")
+            android.util.Log.d(TAG, "savePassword: 🔵 ENTERING NonCancellable block - password save cannot be cancelled from here")
+            // CRITICAL FIX: Use NonCancellable to ensure password save completes
+            // even if parent scope is cancelled (e.g., due to navigation after login)
+            // This prevents JobCancellationException when DataStore operations are interrupted
+            withContext(NonCancellable + Dispatchers.IO) {
+                // Check DataStore state before edit
+                val beforeEdit = secureCredentialsDataStore.data.first()
+                android.util.Log.d(TAG, "savePassword: DataStore before edit contains ${beforeEdit.asMap().size} entries")
 
-            secureCredentialsDataStore.edit { prefs ->
-                android.util.Log.d(TAG, "savePassword: Inside edit block, setting key='${keys.newKey}'")
-                prefs[stringPreferencesKey(keys.newKey)] = encryptedPassword
-                prefs[longPreferencesKey("${keys.newKey}_timestamp")] = System.currentTimeMillis()
-                prefs.remove(stringPreferencesKey(keys.legacyRawKey))
-                prefs.remove(longPreferencesKey("${keys.legacyRawKey}_timestamp"))
-                prefs.remove(stringPreferencesKey(keys.legacyNormalizedKey))
-                prefs.remove(longPreferencesKey("${keys.legacyNormalizedKey}_timestamp"))
-                android.util.Log.d(TAG, "savePassword: Edit block completed, prefs now contains ${prefs.asMap().size} entries")
+                secureCredentialsDataStore.edit { prefs ->
+                    android.util.Log.d(TAG, "savePassword: Inside edit block, setting key='${keys.newKey}'")
+                    android.util.Log.d(TAG, "savePassword: Before setting - prefs.asMap().size = ${prefs.asMap().size}")
+
+                    val passwordKey = stringPreferencesKey(keys.newKey)
+                    val timestampKey = longPreferencesKey("${keys.newKey}_timestamp")
+
+                    android.util.Log.d(TAG, "savePassword: Setting password with key: $passwordKey")
+                    prefs[passwordKey] = encryptedPassword
+                    android.util.Log.d(TAG, "savePassword: Password set, prefs.asMap().size = ${prefs.asMap().size}")
+                    android.util.Log.d(TAG, "savePassword: Verifying password was set: ${prefs[passwordKey] != null}")
+
+                    android.util.Log.d(TAG, "savePassword: Setting timestamp with key: $timestampKey")
+                    prefs[timestampKey] = System.currentTimeMillis()
+                    android.util.Log.d(TAG, "savePassword: Timestamp set, prefs.asMap().size = ${prefs.asMap().size}")
+
+                    // CRITICAL FIX: Only remove legacy keys if they're different from the new key
+                    // If they're the same, we'd be deleting the password we just saved!
+                    if (keys.legacyRawKey != keys.newKey) {
+                        android.util.Log.d(TAG, "savePassword: Removing legacy raw key: ${keys.legacyRawKey}")
+                        prefs.remove(stringPreferencesKey(keys.legacyRawKey))
+                        prefs.remove(longPreferencesKey("${keys.legacyRawKey}_timestamp"))
+                    } else {
+                        android.util.Log.d(TAG, "savePassword: Skipping removal of legacyRawKey (same as newKey)")
+                    }
+
+                    if (keys.legacyNormalizedKey != keys.newKey) {
+                        android.util.Log.d(TAG, "savePassword: Removing legacy normalized key: ${keys.legacyNormalizedKey}")
+                        prefs.remove(stringPreferencesKey(keys.legacyNormalizedKey))
+                        prefs.remove(longPreferencesKey("${keys.legacyNormalizedKey}_timestamp"))
+                    } else {
+                        android.util.Log.d(TAG, "savePassword: Skipping removal of legacyNormalizedKey (same as newKey)")
+                    }
+
+                    android.util.Log.d(TAG, "savePassword: Edit block completed, prefs now contains ${prefs.asMap().size} entries")
+                    android.util.Log.d(TAG, "savePassword: Keys in prefs: ${prefs.asMap().keys.joinToString { it.name }}")
+                }
+
+                android.util.Log.d(TAG, "savePassword: Edit operation returned successfully")
+
+                // Verify the password was saved by immediately reading it back
+                val verification = secureCredentialsDataStore.data.first()
+                android.util.Log.d(TAG, "savePassword: Verification read returned ${verification.asMap().size} entries")
+
+                val savedPassword = verification[stringPreferencesKey(keys.newKey)]
+                if (savedPassword != null) {
+                    android.util.Log.d(TAG, "savePassword: ✅ Password saved successfully and verified in DataStore")
+                    android.util.Log.d(TAG, "savePassword: DataStore now contains ${verification.asMap().size} entries")
+                } else {
+                    android.util.Log.e(TAG, "savePassword: ❌ ERROR - Password was not found in DataStore after saving!")
+                    android.util.Log.e(TAG, "savePassword: DataStore keys present: ${verification.asMap().keys.joinToString { it.name }}")
+                }
             }
-
-            android.util.Log.d(TAG, "savePassword: Edit operation returned successfully")
-
-            // Verify the password was saved by immediately reading it back
-            val verification = secureCredentialsDataStore.data.first()
-            android.util.Log.d(TAG, "savePassword: Verification read returned ${verification.asMap().size} entries")
-
-            val savedPassword = verification[stringPreferencesKey(keys.newKey)]
-            if (savedPassword != null) {
-                android.util.Log.d(TAG, "savePassword: ✅ Password saved successfully and verified in DataStore")
-                android.util.Log.d(TAG, "savePassword: DataStore now contains ${verification.asMap().size} entries")
-            } else {
-                android.util.Log.e(TAG, "savePassword: ❌ ERROR - Password was not found in DataStore after saving!")
-                android.util.Log.e(TAG, "savePassword: DataStore keys present: ${verification.asMap().keys.joinToString { it.name }}")
-            }
+            android.util.Log.d(TAG, "savePassword: 🟢 EXITED NonCancellable block - password save operation completed")
         } catch (e: Exception) {
             android.util.Log.e(TAG, "savePassword: EXCEPTION during save operation", e)
             throw e
@@ -275,7 +318,7 @@ class SecureCredentialManager @Inject constructor(
         username: String,
         activity: FragmentActivity? = null,
     ): String? {
-        android.util.Log.d(TAG, "getPassword: Retrieving password for user='$username', serverUrl='$serverUrl'")
+        android.util.Log.d(TAG, "🔵 getPassword: CALLED - Retrieving password for user='$username', serverUrl='$serverUrl'")
 
         // If activity is provided and biometric auth is available, request auth
         if (activity != null && biometricAuthManager.isBiometricAuthAvailable()) {
@@ -343,7 +386,11 @@ class SecureCredentialManager @Inject constructor(
         }
 
         val result = encryptedPassword?.let { decrypt(it) }
-        android.util.Log.d(TAG, "getPassword: Returning password ${if (result != null) "SUCCESS" else "NULL"}")
+        if (result != null) {
+            android.util.Log.d(TAG, "🟢 getPassword: SUCCESS - Password retrieved and decrypted (length: ${result.length})")
+        } else {
+            android.util.Log.e(TAG, "🔴 getPassword: FAILED - Password is NULL (encryptedPassword was ${if (encryptedPassword != null) "found but decrypt failed" else "not found in DataStore"})")
+        }
         return result
     }
 
@@ -390,6 +437,11 @@ class SecureCredentialManager @Inject constructor(
         val newKey = generateKey(normalizedUrl, username)
         val legacyNormalizedKey = generateKey(legacyNormalizedUrl, username)
         val legacyRawKey = generateKey(rawTrimmedUrl, username)
+
+        android.util.Log.d(TAG, "generateKeys: newKey='$newKey'")
+        android.util.Log.d(TAG, "generateKeys: legacyRawKey='$legacyRawKey'")
+        android.util.Log.d(TAG, "generateKeys: legacyNormalizedKey='$legacyNormalizedKey'")
+        android.util.Log.d(TAG, "generateKeys: Are any keys identical? newKey==legacyRawKey:${newKey == legacyRawKey}, newKey==legacyNormalizedKey:${newKey == legacyNormalizedKey}")
 
         return CredentialKeys(newKey, legacyRawKey, legacyNormalizedKey)
     }

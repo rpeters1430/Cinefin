@@ -1,0 +1,606 @@
+package com.rpeters.jellyfin.ui.viewmodel
+
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.core.constants.Constants
+import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.ui.components.ConnectionPhase
+import com.rpeters.jellyfin.ui.components.ConnectionState
+import com.rpeters.jellyfin.utils.ServerUrlValidator
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
+
+// Use the enhanced ConnectionState from ConnectionProgress.kt
+// This data class is now defined in the ConnectionProgress.kt file
+
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "login_preferences")
+
+object PreferencesKeys {
+    val SERVER_URL = stringPreferencesKey("server_url")
+    val USERNAME = stringPreferencesKey("username")
+    val REMEMBER_LOGIN = booleanPreferencesKey("remember_login")
+    val BIOMETRIC_AUTH_ENABLED = booleanPreferencesKey("biometric_auth_enabled") // New preference
+}
+
+@HiltViewModel
+class ServerConnectionViewModel @Inject constructor(
+    private val repository: JellyfinRepository,
+    private val secureCredentialManager: SecureCredentialManager,
+    @ApplicationContext private val context: Context,
+) : ViewModel() {
+
+    private val _connectionState = MutableStateFlow(ConnectionState())
+    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+
+    private var quickConnectPollingJob: Job? = null
+
+    init {
+        // Load saved credentials and remember login state
+        viewModelScope.launch {
+            val preferences = context.dataStore.data.first()
+            val savedServerUrl = preferences[PreferencesKeys.SERVER_URL] ?: ""
+            val savedUsername = preferences[PreferencesKeys.USERNAME] ?: ""
+            val rememberPreference = preferences[PreferencesKeys.REMEMBER_LOGIN]
+            var rememberLogin = rememberPreference ?: true
+            val isBiometricAuthEnabled = preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] ?: false
+
+            // Persist default remember login preference for first-time users
+            if (rememberPreference == null) {
+                updateRememberLoginPreference(true)
+            }
+
+            // ✅ FIX: Handle suspend function calls properly
+            val hasSavedPassword = if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
+                secureCredentialManager.getPassword(savedServerUrl, savedUsername) != null
+            } else {
+                false
+            }
+
+            // If credentials exist but the toggle was never persisted, opt the user back in
+            if (hasSavedPassword && rememberPreference == null) {
+                updateRememberLoginPreference(true)
+                rememberLogin = true
+            }
+
+            _connectionState.value = _connectionState.value.copy(
+                savedServerUrl = savedServerUrl,
+                savedUsername = savedUsername,
+                rememberLogin = rememberLogin,
+                hasSavedPassword = hasSavedPassword,
+                isBiometricAuthAvailable = secureCredentialManager.isBiometricAuthAvailable(), // Check biometric availability
+                // We don't set biometric auth enabled here because we want to check it separately
+            )
+
+            // Auto-login if we have saved credentials and remember login is enabled
+            if (rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank() && hasSavedPassword) {
+                android.util.Log.d("ServerConnectionVM", "Auto-login conditions met. Biometric enabled: $isBiometricAuthEnabled, Biometric available: ${secureCredentialManager.isBiometricAuthAvailable()}")
+
+                // We don't auto-login if biometric auth is enabled, user needs to trigger it manually
+                // However, if biometric is enabled but not available on this device, disable it and auto-login
+                if (isBiometricAuthEnabled && !secureCredentialManager.isBiometricAuthAvailable()) {
+                    android.util.Log.d("ServerConnectionVM", "Biometric auth was enabled but is no longer available - disabling it")
+                    // Biometric auth was enabled but is no longer available - disable it
+                    context.dataStore.edit { preferences ->
+                        preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] = false
+                    }
+                    // Continue with auto-login below
+                }
+
+                if (!isBiometricAuthEnabled || !secureCredentialManager.isBiometricAuthAvailable()) {
+                    val savedPassword = secureCredentialManager.getPassword(savedServerUrl, savedUsername)
+                    if (savedPassword != null) {
+                        android.util.Log.d("ServerConnectionVM", "Attempting auto-login for user: $savedUsername")
+                        // Auto-login with saved credentials
+                        connectToServer(savedServerUrl, savedUsername, savedPassword, isAutoLogin = true)
+                    } else {
+                        android.util.Log.w("ServerConnectionVM", "Auto-login skipped: saved password is null despite hasSavedPassword=$hasSavedPassword")
+                    }
+                } else {
+                    android.util.Log.d("ServerConnectionVM", "Auto-login skipped: biometric auth is enabled and available")
+                }
+            } else {
+                android.util.Log.d("ServerConnectionVM", "Auto-login skipped - rememberLogin:$rememberLogin, hasUrl:${savedServerUrl.isNotBlank()}, hasUsername:${savedUsername.isNotBlank()}, hasPassword:$hasSavedPassword")
+            }
+        }
+
+        // Observe repository connection state
+        viewModelScope.launch {
+            repository.isConnected.collect { isConnected ->
+                _connectionState.value = _connectionState.value.copy(
+                    isConnected = isConnected,
+                    isConnecting = false,
+                )
+
+                // ✅ FIX: Don't automatically clear saved credentials when disconnected
+                // This was causing "Remember Login" to fail because credentials were being
+                // cleared whenever the connection was lost. Credentials should only be
+                // cleared when the user explicitly logs out or disables "Remember Login".
+            }
+        }
+    }
+
+    fun connectToServer(serverUrl: String, username: String, password: String, isAutoLogin: Boolean = false) {
+        // Debounce duplicate connection attempts
+        val state = _connectionState.value
+        if (state.isConnecting || state.isConnected) {
+            return
+        }
+        if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
+            _connectionState.value = _connectionState.value.copy(
+                errorMessage = "Please fill in all fields",
+            )
+            return
+        }
+
+        // Validate and normalize the server URL
+        val normalizedServerUrl = ServerUrlValidator.validateAndNormalizeUrl(serverUrl)
+        if (normalizedServerUrl == null) {
+            _connectionState.value = _connectionState.value.copy(
+                errorMessage = "Invalid server URL. Please enter a valid URL like 'http://192.168.1.100:8096' or 'https://jellyfin.myserver.com'",
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _connectionState.value = _connectionState.value.copy(
+                isConnecting = true,
+                errorMessage = null,
+                connectionPhase = ConnectionPhase.Testing,
+                currentUrl = serverUrl,
+            )
+
+            // First test server connection with enhanced feedback (IO dispatcher)
+            val serverResult = withContext(Dispatchers.IO) {
+                repository.testServerConnection(normalizedServerUrl)
+            }
+            when (serverResult) {
+                is ApiResult.Success -> {
+                    val serverInfo = serverResult.data
+                    _connectionState.value = _connectionState.value.copy(
+                        serverName = serverInfo.serverName,
+                        connectionPhase = ConnectionPhase.Authenticating,
+                    )
+
+                    // Now authenticate with enhanced feedback (IO dispatcher)
+                    val authResult = withContext(Dispatchers.IO) {
+                        repository.authenticateUser(normalizedServerUrl, username, password)
+                    }
+                    when (authResult) {
+                        is ApiResult.Success -> {
+                            // CRITICAL: Save credentials BEFORE setting isConnected = true
+                            // This ensures the DataStore operation completes before any navigation
+                            // that might cancel the ViewModel scope
+                            if (_connectionState.value.rememberLogin) {
+                                saveCredentials(normalizedServerUrl, username, password)
+                            } else {
+                                clearSavedCredentials()
+                            }
+                            
+                            // Now it's safe to set connected state which may trigger navigation
+                            _connectionState.value = _connectionState.value.copy(
+                                isConnecting = false,
+                                isConnected = true,
+                                errorMessage = null,
+                                connectionPhase = ConnectionPhase.Connected,
+                            )
+                        }
+                        is ApiResult.Error -> {
+                            // ✅ FIX: Don't clear saved credentials on auth failure during auto-login
+                            // Only clear credentials if this is a manual login attempt and the error
+                            // is specifically an authentication error (401/403/Unauthorized)
+                            // Network errors or temporary failures should never clear saved credentials
+                            if (!isAutoLogin &&
+                                (
+                                    authResult.message?.contains("401") == true ||
+                                        authResult.message?.contains("403") == true ||
+                                        authResult.message?.contains("Unauthorized") == true ||
+                                        authResult.message?.contains("Invalid username or password") == true
+                                    )
+                            ) {
+                                // Only clear for actual auth failures on manual login, not auto-login
+                                clearSavedCredentials()
+                            }
+                            _connectionState.value = _connectionState.value.copy(
+                                isConnecting = false,
+                                errorMessage = authResult.message,
+                                connectionPhase = ConnectionPhase.Error,
+                            )
+                        }
+                        is ApiResult.Loading -> {
+                            // This shouldn't happen for this call
+                        }
+                    }
+                }
+                is ApiResult.Error -> {
+                    _connectionState.value = _connectionState.value.copy(
+                        isConnecting = false,
+                        errorMessage = "Cannot connect to server: ${serverResult.message}",
+                        connectionPhase = ConnectionPhase.Error,
+                    )
+                }
+                is ApiResult.Loading -> {
+                    // This shouldn't happen for this call
+                }
+            }
+        }
+    }
+
+    fun clearError() {
+        _connectionState.value = _connectionState.value.copy(errorMessage = null)
+    }
+
+    fun showError(message: String) {
+        _connectionState.value = _connectionState.value.copy(errorMessage = message)
+    }
+
+    private suspend fun updateRememberLoginPreference(remember: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.REMEMBER_LOGIN] = remember
+        }
+        _connectionState.value = _connectionState.value.copy(rememberLogin = remember)
+    }
+
+    private suspend fun saveCredentials(serverUrl: String, username: String, password: String) {
+        // CRITICAL: Normalize the URL using the same function that SecureCredentialManager uses
+        // to ensure consistent key generation for password encryption/decryption
+        val normalizedUrl = com.rpeters.jellyfin.utils.normalizeServerUrl(serverUrl)
+
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SERVER_URL] = normalizedUrl
+            preferences[PreferencesKeys.USERNAME] = username
+        }
+        secureCredentialManager.savePassword(normalizedUrl, username, password)
+        android.util.Log.d("ServerConnectionVM", "Saved credentials with normalized URL: $normalizedUrl (original: $serverUrl)")
+        _connectionState.value = _connectionState.value.copy(
+            savedServerUrl = normalizedUrl,
+            savedUsername = username,
+            hasSavedPassword = true,
+        )
+    }
+
+    private suspend fun clearSavedCredentials() {
+        val currentState = _connectionState.value
+        context.dataStore.edit { preferences ->
+            preferences.remove(PreferencesKeys.SERVER_URL)
+            preferences.remove(PreferencesKeys.USERNAME)
+        }
+        if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
+            secureCredentialManager.clearPassword(currentState.savedServerUrl, currentState.savedUsername)
+        }
+        _connectionState.value = _connectionState.value.copy(
+            savedServerUrl = "",
+            savedUsername = "",
+            hasSavedPassword = false,
+        )
+    }
+
+    fun setRememberLogin(remember: Boolean) {
+        viewModelScope.launch {
+            updateRememberLoginPreference(remember)
+            if (!remember) {
+                clearSavedCredentials()
+            }
+        }
+    }
+
+    /**
+     * Sets whether biometric authentication is enabled for accessing saved credentials
+     */
+    fun setBiometricAuthEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            context.dataStore.edit { preferences ->
+                preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] = enabled
+            }
+            _connectionState.value = _connectionState.value.copy(
+                isBiometricAuthAvailable = enabled && secureCredentialManager.isBiometricAuthAvailable(),
+            )
+        }
+    }
+
+    /**
+     * Gets a saved password with optional biometric authentication
+     */
+    suspend fun getSavedPassword(activity: FragmentActivity? = null): String? {
+        val currentState = _connectionState.value
+        return if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
+            secureCredentialManager.getPassword(currentState.savedServerUrl, currentState.savedUsername, activity)
+        } else {
+            null
+        }
+    }
+
+    /**
+     * Gets a saved password without biometric authentication (for backward compatibility)
+     */
+    suspend fun getSavedPassword(): String? {
+        return getSavedPassword(null)
+    }
+
+    fun autoLogin() {
+        val currentState = _connectionState.value
+        if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
+            viewModelScope.launch {
+                val savedPassword = getSavedPassword()
+                if (savedPassword != null) {
+                    connectToServer(
+                        currentState.savedServerUrl,
+                        currentState.savedUsername,
+                        savedPassword,
+                        isAutoLogin = true,
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Auto-login with biometric authentication if enabled
+     */
+    fun autoLoginWithBiometric(activity: FragmentActivity) {
+        val currentState = _connectionState.value
+
+        if (!secureCredentialManager.isBiometricAuthAvailable()) {
+            showError(context.getString(R.string.biometric_unavailable_error))
+            return
+        }
+
+        if (currentState.savedServerUrl.isBlank() || currentState.savedUsername.isBlank()) {
+            showError(context.getString(R.string.biometric_no_credentials_error))
+            return
+        }
+
+        if (!currentState.hasSavedPassword) {
+            showError(context.getString(R.string.biometric_no_credentials_error))
+            return
+        }
+
+        viewModelScope.launch {
+            val savedPassword = getSavedPassword(activity)
+            if (savedPassword != null) {
+                connectToServer(
+                    currentState.savedServerUrl,
+                    currentState.savedUsername,
+                    savedPassword,
+                    isAutoLogin = true,
+                )
+            } else {
+                showError(context.getString(R.string.biometric_failed_error))
+            }
+        }
+    }
+
+    fun startQuickConnect() {
+        _connectionState.value = _connectionState.value.copy(
+            isQuickConnectActive = true,
+            errorMessage = null,
+        )
+    }
+
+    fun cancelQuickConnect() {
+        quickConnectPollingJob?.cancel()
+        quickConnectPollingJob = null
+        _connectionState.value = _connectionState.value.copy(
+            isQuickConnectActive = false,
+            quickConnectCode = "",
+            quickConnectServerUrl = "",
+            quickConnectSecret = "",
+            isQuickConnectPolling = false,
+            quickConnectStatus = "",
+        )
+    }
+
+    fun updateQuickConnectServerUrl(serverUrl: String) {
+        _connectionState.value = _connectionState.value.copy(
+            quickConnectServerUrl = serverUrl,
+        )
+    }
+
+    fun initiateQuickConnect() {
+        val serverUrl = _connectionState.value.quickConnectServerUrl
+
+        if (serverUrl.isBlank()) {
+            _connectionState.value = _connectionState.value.copy(
+                errorMessage = "Please enter the server URL",
+            )
+            return
+        }
+
+        // Validate and normalize the server URL
+        val normalizedServerUrl = ServerUrlValidator.validateAndNormalizeUrl(serverUrl)
+        if (normalizedServerUrl == null) {
+            _connectionState.value = _connectionState.value.copy(
+                errorMessage = "Invalid server URL. Please enter a valid URL like 'http://192.168.1.100:8096' or 'https://jellyfin.myserver.com'",
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _connectionState.value = _connectionState.value.copy(
+                isConnecting = true,
+                errorMessage = null,
+                quickConnectStatus = "Connecting to server...",
+            )
+
+            // First test server connection
+            when (val serverResult = repository.testServerConnection(normalizedServerUrl)) {
+                is ApiResult.Success -> {
+                    _connectionState.value = _connectionState.value.copy(
+                        quickConnectStatus = "Initiating Quick Connect...",
+                    )
+
+                    // Now initiate Quick Connect
+                    when (val quickConnectResult = repository.initiateQuickConnect(normalizedServerUrl)) {
+                        is ApiResult.Success -> {
+                            val result = quickConnectResult.data
+                            _connectionState.value = _connectionState.value.copy(
+                                isConnecting = false,
+                                quickConnectCode = result.code ?: "",
+                                quickConnectSecret = result.secret ?: "",
+                                isQuickConnectPolling = true,
+                                quickConnectStatus = "Code generated! Enter this code in your Jellyfin server.",
+                            )
+
+                            // Start polling for approval
+                            quickConnectPollingJob = viewModelScope.launch {
+                                pollQuickConnectState(normalizedServerUrl, result.secret ?: "")
+                            }
+                        }
+                        is ApiResult.Error -> {
+                            _connectionState.value = _connectionState.value.copy(
+                                isConnecting = false,
+                                errorMessage = "Quick Connect initiation failed: ${quickConnectResult.message}",
+                            )
+                        }
+                        is ApiResult.Loading -> {
+                            // This shouldn't happen for this call
+                        }
+                    }
+                }
+                is ApiResult.Error -> {
+                    _connectionState.value = _connectionState.value.copy(
+                        isConnecting = false,
+                        errorMessage = "Cannot connect to server: ${serverResult.message}",
+                    )
+                }
+                is ApiResult.Loading -> {
+                    // This shouldn't happen for this call
+                }
+            }
+        }
+    }
+
+    private suspend fun pollQuickConnectState(serverUrl: String, secret: String) {
+        var attempts = 0
+        val maxAttempts = 150 // 5 minutes with 2-second intervals (300 seconds / 2 = 150 attempts)
+
+        while (attempts < maxAttempts &&
+            _connectionState.value.isQuickConnectPolling &&
+            viewModelScope.isActive
+        ) { // Check if coroutine is still active
+            try {
+                delay(Constants.QUICK_CONNECT_POLL_INTERVAL_MS) // Wait between polls (2 seconds as per spec)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Job was cancelled, clean up and exit
+                quickConnectPollingJob = null
+                return
+            }
+
+            when (val stateResult = repository.getQuickConnectState(serverUrl, secret)) {
+                is ApiResult.Success -> {
+                    val state = stateResult.data
+                    when (state.state) {
+                        "Approved" -> {
+                            // User approved the connection, authenticate
+                            when (val authResult = repository.authenticateWithQuickConnect(serverUrl, secret)) {
+                                is ApiResult.Success -> {
+                                    _connectionState.value = _connectionState.value.copy(
+                                        isConnected = true,
+                                        isQuickConnectActive = false,
+                                        isQuickConnectPolling = false,
+                                        quickConnectStatus = "Connected successfully!",
+                                    )
+                                    return
+                                }
+                                is ApiResult.Error -> {
+                                    _connectionState.value = _connectionState.value.copy(
+                                        isQuickConnectPolling = false,
+                                        errorMessage = "Authentication failed: ${authResult.message}",
+                                    )
+                                    return
+                                }
+                                is ApiResult.Loading -> {
+                                    // This shouldn't happen
+                                }
+                            }
+                        }
+                        "Expired" -> {
+                            _connectionState.value = _connectionState.value.copy(
+                                isQuickConnectPolling = false,
+                                errorMessage = "Quick Connect code has expired",
+                            )
+                            return
+                        }
+                        "Denied" -> {
+                            _connectionState.value = _connectionState.value.copy(
+                                isQuickConnectActive = false,
+                                isQuickConnectPolling = false,
+                                errorMessage = "Quick Connect request was denied",
+                            )
+                            return
+                        }
+                        else -> {
+                            // Still waiting for approval
+                            _connectionState.value = _connectionState.value.copy(
+                                quickConnectStatus = "Waiting for approval... (${attempts + 1}/150)",
+                            )
+                        }
+                    }
+                }
+                is ApiResult.Error -> {
+                    _connectionState.value = _connectionState.value.copy(
+                        isQuickConnectPolling = false,
+                        errorMessage = "Failed to check Quick Connect state: ${stateResult.message}",
+                    )
+                    return
+                }
+                is ApiResult.Loading -> {
+                    // This shouldn't happen for this call
+                }
+            }
+
+            attempts++
+        }
+
+        // Timeout
+        if (attempts >= maxAttempts) {
+            _connectionState.value = _connectionState.value.copy(
+                isQuickConnectPolling = false,
+                errorMessage = "Quick Connect timed out. Please try again.",
+            )
+        }
+
+        // Clean up the job reference when polling completes
+        quickConnectPollingJob = null
+    }
+
+    /**
+     * Explicit logout method that clears saved credentials and disconnects
+     */
+    fun logout() {
+        viewModelScope.launch {
+            // Clear saved credentials when user explicitly logs out
+            clearSavedCredentials()
+
+            // Reset connection state
+            _connectionState.value = ConnectionState()
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // Cancel any ongoing quick connect polling when ViewModel is destroyed
+        quickConnectPollingJob?.cancel()
+    }
+}

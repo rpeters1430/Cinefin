@@ -35,8 +35,21 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             minActiveState = Lifecycle.State.STARTED,
         )
 
-        LaunchedEffect(Unit) {
-            viewModel.loadInitialData()
+        // CRITICAL FIX: Wait for currentServer to be available before loading data
+        // During auto-login, the navigation happens before the session is fully established
+        // This ensures we only load data when we have a valid connection
+        LaunchedEffect(currentServer) {
+            val server = currentServer
+            if (server != null) {
+                if (BuildConfig.DEBUG) {
+                    Log.d("HomeScreen", "Current server available, loading initial data for: ${server.name}")
+                }
+                viewModel.loadInitialData()
+            } else {
+                if (BuildConfig.DEBUG) {
+                    Log.d("HomeScreen", "Waiting for server connection before loading data")
+                }
+            }
         }
 
         HomeScreen(

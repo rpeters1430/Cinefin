@@ -823,12 +823,16 @@ private fun VideoControlsOverlay(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            // Casting button - top right with Google Cast MediaRouteButton
-            // This provides the standard Cast icon and device picker dialog
+            // Casting button - top right
+            // Using custom button instead of MediaRouteButton to prevent unintended navigation
             if (showCastButton) {
-                MediaRouteButton(
+                ExpressiveIconButton(
+                    icon = if (playerState.isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
+                    contentDescription = if (playerState.isCasting) "Disconnect Cast" else "Cast to Device",
+                    onClick = onCastClick,
+                    isActive = playerState.isCasting,
                     modifier = Modifier.padding(start = 8.dp),
-                    tint = playerColors.overlayContent.toArgb(),
+                    colors = playerColors,
                 )
             } else {
                 Spacer(modifier = Modifier.size(48.dp))
@@ -1419,5 +1423,18 @@ private fun formatTime(timeMs: Long): String {
         String.format(java.util.Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
     } else {
         String.format(java.util.Locale.ROOT, "%d:%02d", minutes, seconds)
+    }
+}
+
+@Composable
+private fun rememberIsCastAvailable(): Boolean {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    return remember(context) {
+        try {
+            com.google.android.gms.cast.framework.CastContext.getSharedInstance(context)
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 }

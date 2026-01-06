@@ -109,13 +109,16 @@ class ServerConnectionViewModel @Inject constructor(
                 }
 
                 if (!isBiometricAuthEnabled || !secureCredentialManager.isBiometricAuthAvailable()) {
+                    android.util.Log.d("ServerConnectionVM", "🔵 AUTO-LOGIN: Attempting to retrieve password for serverUrl='$savedServerUrl', username='$savedUsername'")
                     val savedPassword = secureCredentialManager.getPassword(savedServerUrl, savedUsername)
                     if (savedPassword != null) {
+                        android.util.Log.d("ServerConnectionVM", "🟢 AUTO-LOGIN: Password retrieved successfully (length: ${savedPassword.length})")
                         android.util.Log.d("ServerConnectionVM", "Attempting auto-login for user: $savedUsername")
                         // Auto-login with saved credentials
                         connectToServer(savedServerUrl, savedUsername, savedPassword, isAutoLogin = true)
                     } else {
-                        android.util.Log.w("ServerConnectionVM", "Auto-login skipped: saved password is null despite hasSavedPassword=$hasSavedPassword")
+                        android.util.Log.e("ServerConnectionVM", "🔴 AUTO-LOGIN FAILED: saved password is NULL despite hasSavedPassword=$hasSavedPassword")
+                        android.util.Log.e("ServerConnectionVM", "🔴 AUTO-LOGIN FAILED: serverUrl='$savedServerUrl', username='$savedUsername'")
                     }
                 } else {
                     android.util.Log.d("ServerConnectionVM", "Auto-login skipped: biometric auth is enabled and available")
@@ -189,12 +192,17 @@ class ServerConnectionViewModel @Inject constructor(
                     }
                     when (authResult) {
                         is ApiResult.Success -> {
-                            // Save credentials only when the user opted in
+                            // CRITICAL: Save credentials BEFORE setting isConnected = true
+                            // This ensures the DataStore operation completes before any navigation
+                            // that might cancel the ViewModel scope (password save uses NonCancellable
+                            // for extra protection, but proper ordering is still best practice)
                             if (_connectionState.value.rememberLogin) {
                                 saveCredentials(normalizedServerUrl, username, password)
                             } else {
                                 clearSavedCredentials()
                             }
+
+                            // Now it's safe to set connected state which may trigger navigation
                             _connectionState.value = _connectionState.value.copy(
                                 isConnecting = false,
                                 isConnected = true,
@@ -259,21 +267,30 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     private suspend fun saveCredentials(serverUrl: String, username: String, password: String) {
+        android.util.Log.d("ServerConnectionVM", "🔵 saveCredentials: CALLED with serverUrl='$serverUrl', username='$username'")
         // CRITICAL: Normalize the URL using the same function that SecureCredentialManager uses
         // to ensure consistent key generation for password encryption/decryption
         val normalizedUrl = com.rpeters.jellyfin.utils.normalizeServerUrl(serverUrl)
+        android.util.Log.d("ServerConnectionVM", "saveCredentials: Normalized URL: '$normalizedUrl'")
 
+        android.util.Log.d("ServerConnectionVM", "saveCredentials: Saving URL and username to DataStore...")
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SERVER_URL] = normalizedUrl
             preferences[PreferencesKeys.USERNAME] = username
         }
+        android.util.Log.d("ServerConnectionVM", "saveCredentials: URL and username saved to DataStore ✅")
+
+        android.util.Log.d("ServerConnectionVM", "saveCredentials: Calling secureCredentialManager.savePassword()...")
         secureCredentialManager.savePassword(normalizedUrl, username, password)
+        android.util.Log.d("ServerConnectionVM", "saveCredentials: secureCredentialManager.savePassword() COMPLETED ✅")
+
         android.util.Log.d("ServerConnectionVM", "Saved credentials with normalized URL: $normalizedUrl (original: $serverUrl)")
         _connectionState.value = _connectionState.value.copy(
             savedServerUrl = normalizedUrl,
             savedUsername = username,
             hasSavedPassword = true,
         )
+        android.util.Log.d("ServerConnectionVM", "🟢 saveCredentials: FINISHED - hasSavedPassword=true")
     }
 
     private suspend fun clearSavedCredentials() {
