@@ -15,7 +15,13 @@ import org.junit.Test
 
 class SecureCredentialManagerTest {
     private val context: Context = mockk(relaxed = true)
-    private val manager = SecureCredentialManager(context)
+    private val repository = mockk<CredentialSecurityPreferencesRepository>()
+    private val manager = SecureCredentialManager(context, repository)
+
+    init {
+        every { repository.preferences } returns flowOf(CredentialSecurityPreferences.DEFAULT)
+        coEvery { repository.currentPreferences() } returns CredentialSecurityPreferences.DEFAULT
+    }
 
     @Test
     fun `generateKey produces consistent key for normalized URLs`() {

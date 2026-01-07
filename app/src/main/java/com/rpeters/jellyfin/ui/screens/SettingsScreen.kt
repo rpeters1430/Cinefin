@@ -108,8 +108,11 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
+    credentialSecurityPreferencesViewModel: CredentialSecurityPreferencesViewModel = hiltViewModel(),
 ) {
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
+    val credentialSecurityPrefs by credentialSecurityPreferencesViewModel.preferences.collectAsStateWithLifecycle()
+    val isCredentialSecurityUpdating by credentialSecurityPreferencesViewModel.isUpdating.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -144,6 +147,14 @@ fun SettingsScreen(
                 LibraryManagementCard(
                     enabled = libraryActionPrefs.enableManagementActions,
                     onToggle = libraryActionsPreferencesViewModel::setManagementActionsEnabled,
+                )
+            }
+
+            item {
+                CredentialSecurityCard(
+                    enabled = credentialSecurityPrefs.requireStrongAuthForCredentials,
+                    onToggle = credentialSecurityPreferencesViewModel::setStrongAuthRequired,
+                    updating = isCredentialSecurityUpdating,
                 )
             }
 
@@ -196,6 +207,57 @@ private fun LibraryManagementCard(
                 onCheckedChange = onToggle,
                 leadingIcon = Icons.Default.Settings,
             )
+        }
+    }
+}
+
+@Composable
+private fun CredentialSecurityCard(
+    enabled: Boolean,
+    updating: Boolean,
+    onToggle: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(id = R.string.settings_credential_security_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(id = R.string.settings_credential_security_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = stringResource(id = R.string.settings_credential_security_tradeoff),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = stringResource(id = R.string.settings_credential_security_toggle),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Switch(
+                    checked = enabled,
+                    onCheckedChange = onToggle,
+                    enabled = !updating,
+                )
+            }
         }
     }
 }
