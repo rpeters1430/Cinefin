@@ -83,13 +83,22 @@ class BiometricAuthManager(private val context: Context) {
             },
         )
 
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+        val promptInfoBuilder = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
             .setSubtitle(subtitle)
             .setDescription(description)
-            .setAllowedAuthenticators(capability.authenticators)
             .setConfirmationRequired(false) // Don't require explicit confirmation after biometric
-            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            promptInfoBuilder.setAllowedAuthenticators(capability.authenticators)
+        } else if (capability.allowsDeviceCredentialFallback) {
+            @Suppress("DEPRECATION")
+            promptInfoBuilder.setDeviceCredentialAllowed(true)
+        } else {
+            promptInfoBuilder.setAllowedAuthenticators(capability.authenticators)
+        }
+
+        val promptInfo = promptInfoBuilder.build()
 
         biometricPrompt.authenticate(promptInfo)
 
@@ -122,27 +131,38 @@ class BiometricAuthManager(private val context: Context) {
         val strongSupported = strongStatus == BiometricManager.BIOMETRIC_SUCCESS
         val weakSupported = weakStatus == BiometricManager.BIOMETRIC_SUCCESS
 
+        val deviceCredentialAuth = deviceCredentialAuthenticator()
+        val allowsDeviceCredentialFallback = deviceCredentialAuth != 0 ||
+            (Build.VERSION.SDK_INT < Build.VERSION_CODES.R && !requireStrongBiometric)
         val authenticators = when {
             requireStrongBiometric -> {
-                BiometricManager.Authenticators.BIOMETRIC_STRONG or deviceCredentialAuthenticator()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    BiometricManager.Authenticators.BIOMETRIC_STRONG or deviceCredentialAuth
+                } else {
+                    BiometricManager.Authenticators.BIOMETRIC_STRONG
+                }
             }
 
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && strongSupported -> {
-                BiometricManager.Authenticators.BIOMETRIC_STRONG or deviceCredentialAuthenticator()
+                BiometricManager.Authenticators.BIOMETRIC_STRONG or deviceCredentialAuth
             }
 
             else -> {
-                BiometricManager.Authenticators.BIOMETRIC_WEAK or deviceCredentialAuthenticator()
+                BiometricManager.Authenticators.BIOMETRIC_WEAK or deviceCredentialAuth
             }
         }
-        val status = biometricManager.canAuthenticate(authenticators)
+        val status = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R && allowsDeviceCredentialFallback) {
+            biometricManager.canAuthenticate()
+        } else {
+            biometricManager.canAuthenticate(authenticators)
+        }
 
         return BiometricCapability(
             authenticators = authenticators,
             isAvailable = status == BiometricManager.BIOMETRIC_SUCCESS,
             isStrongSupported = strongSupported,
             isWeakOnly = !strongSupported && weakSupported,
-            allowsDeviceCredentialFallback = deviceCredentialAuthenticator() != 0,
+            allowsDeviceCredentialFallback = allowsDeviceCredentialFallback,
             status = status,
         )
     }

@@ -77,9 +77,10 @@
     <string name="biometric_failed_error">Biometric authentication was cancelled or failed. Please try again.</string>
     <string name="biometric_security_title">Biometric security</string>
     <string name="biometric_require_strong">Require strong biometrics</string>
-    <string name="biometric_require_strong_description">Use BIOMETRIC_STRONG with device credential fallback instead of weaker face unlocks.</string>
+    <string name="biometric_require_strong_description">Use BIOMETRIC_STRONG (fingerprint or face with liveness detection) instead of BIOMETRIC_WEAK.</string>
     <string name="biometric_weak_only_notice_body">This device only exposes BIOMETRIC_WEAK. Authentication may accept lower-trust signals; the app will fall back to your screen lock when strong checks are unavailable.</string>
-    <string name="biometric_device_credential_info">Device credential fallback is allowed when strong biometrics aren&#39;t available to keep saved credentials protected.</string>
+    <string name="biometric_device_credential_info">Your device screen lock (PIN, pattern, or password) can be used as a fallback for biometric authentication.</string>
+    <string name="biometric_strong_supported_notice">Your device supports strong biometrics for enhanced security.</string>
     
     <!-- Placeholders -->
     <string name="title_placeholder">Title</string>
@@ -290,7 +291,7 @@
 
     <string name="settings_privacy_title">Privacy &amp; security</string>
     <string name="settings_privacy_description">Protect account access and control what we store locally.</string>
-    <string name="settings_privacy_biometric">Biometric/app lock, logout timer, and strong-biometric enforcement with device credential fallback.</string>
+    <string name="settings_privacy_biometric">Biometric/app lock with configurable security levels and logout timer.</string>
     <string name="settings_privacy_cache">Image/cache size limits with one-tap clear option.</string>
     <string name="settings_privacy_diagnostics">Crash/analytics opt-in with clear data visibility.</string>
     <string name="settings_privacy_sensitive">Hide sensitive content titles in notifications and recents.</string>

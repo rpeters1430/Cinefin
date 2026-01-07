@@ -71,6 +71,7 @@ fun ServerConnectionScreen(
     savedUsername: String = "",
     rememberLogin: Boolean = true,
     hasSavedPassword: Boolean = false,
+    isBiometricAuthEnabled: Boolean = false,
     isBiometricAuthAvailable: Boolean = false,
     requireStrongBiometric: Boolean = false,
     isUsingWeakBiometric: Boolean = false,
@@ -294,7 +295,7 @@ fun ServerConnectionScreen(
                 }
             }
 
-            if (isBiometricAuthAvailable || isUsingWeakBiometric || requireStrongBiometric) {
+            if (isBiometricAuthEnabled && (isBiometricAuthAvailable || requireStrongBiometric || isUsingWeakBiometric)) {
                 BiometricSecurityNotice(
                     requireStrongBiometric = requireStrongBiometric,
                     isUsingWeakBiometric = isUsingWeakBiometric,
@@ -469,7 +470,7 @@ private fun BiometricSecurityNotice(
                     text = if (isUsingWeakBiometric) {
                         stringResource(id = R.string.biometric_weak_only_notice_body)
                     } else {
-                        stringResource(id = R.string.biometric_device_credential_info)
+                        stringResource(id = R.string.biometric_strong_supported_notice)
                     },
                     color = statusContentColor,
                     style = MaterialTheme.typography.bodySmall,

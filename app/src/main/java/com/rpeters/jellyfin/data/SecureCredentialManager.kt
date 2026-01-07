@@ -78,7 +78,7 @@ class SecureCredentialManager @Inject constructor(
         return biometricAuthManager.isBiometricAuthAvailable(requireStrongBiometric)
     }
 
-    fun getBiometricCapability(requireStrongBiometric: Boolean): BiometricCapability {
+    fun getBiometricCapability(requireStrongBiometric: Boolean = false): BiometricCapability {
         return biometricAuthManager.getCapability(requireStrongBiometric)
     }
 

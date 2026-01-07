@@ -62,7 +62,6 @@ class ServerConnectionViewModelTest {
             allowsDeviceCredentialFallback = true,
             status = BiometricManager.BIOMETRIC_SUCCESS,
         )
-        every { secureCredentialManager.isBiometricAuthAvailable() } returns true
         every { secureCredentialManager.isBiometricAuthAvailable(any()) } returns true
         every { secureCredentialManager.getBiometricCapability(any()) } returns strongCapability
 
@@ -117,11 +116,11 @@ class ServerConnectionViewModelTest {
     fun setRequireStrongBiometric_updatesStateAndPreference() = runTest(mainDispatcherRule.dispatcher) {
         val weakOnlyCapability = BiometricCapability(
             authenticators = BiometricManager.Authenticators.BIOMETRIC_WEAK,
-            isAvailable = true,
+            isAvailable = false,
             isStrongSupported = false,
             isWeakOnly = true,
             allowsDeviceCredentialFallback = true,
-            status = BiometricManager.BIOMETRIC_SUCCESS,
+            status = BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED,
         )
         every { secureCredentialManager.getBiometricCapability(true) } returns weakOnlyCapability
 
@@ -137,7 +136,7 @@ class ServerConnectionViewModelTest {
         assertThat(preferences[BIOMETRIC_REQUIRE_STRONG]).isTrue()
         val connectionState = viewModel.connectionState.value
         assertThat(connectionState.requireStrongBiometric).isTrue()
-        assertThat(connectionState.isUsingWeakBiometric).isTrue()
+        assertThat(connectionState.isUsingWeakBiometric).isFalse()
 
         viewModel.viewModelScope.cancel()
     }
@@ -156,11 +155,57 @@ class ServerConnectionViewModelTest {
         val preferences = context.dataStore.data.first()
         assertThat(preferences[REMEMBER_LOGIN]).isTrue()
         assertThat(viewModel.connectionState.value.rememberLogin).isTrue()
-        assertThat(preferences[BIOMETRIC_AUTH_ENABLED]).isTrue()
-        assertThat(viewModel.connectionState.value.isBiometricAuthEnabled).isTrue()
+        assertThat(preferences[BIOMETRIC_AUTH_ENABLED]).isNull()
+        assertThat(viewModel.connectionState.value.isBiometricAuthEnabled).isFalse()
 
         viewModel.viewModelScope.cancel()
     }
+
+    @Test
+    fun autoLoginWithBiometric_respectsStrongBiometricRequirement() =
+        runTest(mainDispatcherRule.dispatcher) {
+            context.dataStore.edit { preferences ->
+                preferences[BIOMETRIC_REQUIRE_STRONG] = true
+                preferences[BIOMETRIC_AUTH_ENABLED] = true
+            }
+            coEvery { secureCredentialManager.getPassword("https://example.com", "user") } returns "storedPassword"
+            coEvery {
+                secureCredentialManager.getPassword(
+                    "https://example.com",
+                    "user",
+                    any<FragmentActivity>(),
+                    true,
+                )
+            } returns "biometricPassword"
+            coEvery { secureCredentialManager.savePassword(any(), any(), any()) } returns Unit
+            coEvery { repository.testServerConnection("https://example.com") } returns ApiResult.Success(
+                mockk<PublicSystemInfo>(relaxed = true),
+            )
+            coEvery {
+                repository.authenticateUser("https://example.com", "user", "biometricPassword")
+            } returns ApiResult.Success(mockk<AuthenticationResult>(relaxed = true))
+
+            val viewModel = ServerConnectionViewModel(repository, secureCredentialManager, context)
+
+            advanceUntilIdle()
+
+            val fragmentActivity = mockk<FragmentActivity>(relaxed = true)
+
+            viewModel.autoLoginWithBiometric(fragmentActivity)
+
+            advanceUntilIdle()
+
+            coVerify {
+                secureCredentialManager.getPassword(
+                    "https://example.com",
+                    "user",
+                    any<FragmentActivity>(),
+                    true,
+                )
+            }
+
+            viewModel.viewModelScope.cancel()
+        }
 
     @Test
     fun connectToServer_respectsUserChoiceWhenRememberLoginDisabled() = runTest(mainDispatcherRule.dispatcher) {

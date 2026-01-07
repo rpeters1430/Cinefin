@@ -66,7 +66,7 @@ class ServerConnectionViewModel @Inject constructor(
             val rememberPreference = preferences[PreferencesKeys.REMEMBER_LOGIN]
             var rememberLogin = rememberPreference ?: true
             val biometricPreference = preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED]
-            val isBiometricAuthEnabled = biometricPreference ?: true
+            val isBiometricAuthEnabled = biometricPreference ?: false
             val requireStrongBiometric = preferences[PreferencesKeys.BIOMETRIC_REQUIRE_STRONG] ?: false
             val biometricCapability = secureCredentialManager.getBiometricCapability(requireStrongBiometric)
 
@@ -74,12 +74,6 @@ class ServerConnectionViewModel @Inject constructor(
             if (rememberPreference == null) {
                 updateRememberLoginPreference(true)
             }
-            if (biometricPreference == null) {
-                context.dataStore.edit { prefs ->
-                    prefs[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] = true
-                }
-            }
-
             // ✅ FIX: Handle suspend function calls properly
             val hasSavedPassword = if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
                 secureCredentialManager.getPassword(savedServerUrl, savedUsername) != null
@@ -353,15 +347,18 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     private fun updateBiometricCapabilityState(
-        enabled: Boolean = _connectionState.value.isBiometricAuthEnabled,
-        requireStrongBiometric: Boolean = _connectionState.value.requireStrongBiometric,
+        enabled: Boolean? = null,
+        requireStrongBiometric: Boolean? = null,
     ) {
-        val capability = secureCredentialManager.getBiometricCapability(requireStrongBiometric)
-        _connectionState.value = _connectionState.value.copy(
-            isBiometricAuthEnabled = enabled,
-            isBiometricAuthAvailable = enabled && capability.isAvailable,
-            isUsingWeakBiometric = enabled && capability.isWeakOnly && capability.isAvailable,
-            requireStrongBiometric = requireStrongBiometric,
+        val currentState = _connectionState.value
+        val resolvedEnabled = enabled ?: currentState.isBiometricAuthEnabled
+        val resolvedRequireStrong = requireStrongBiometric ?: currentState.requireStrongBiometric
+        val capability = secureCredentialManager.getBiometricCapability(resolvedRequireStrong)
+        _connectionState.value = currentState.copy(
+            isBiometricAuthEnabled = resolvedEnabled,
+            isBiometricAuthAvailable = resolvedEnabled && capability.isAvailable,
+            isUsingWeakBiometric = resolvedEnabled && capability.isWeakOnly && capability.isAvailable,
+            requireStrongBiometric = resolvedRequireStrong,
         )
     }
 

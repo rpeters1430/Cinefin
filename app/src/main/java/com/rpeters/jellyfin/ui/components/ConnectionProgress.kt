@@ -216,7 +216,7 @@ data class ConnectionState(
     val isQuickConnectPolling: Boolean = false,
     val quickConnectStatus: String = "",
     val hasSavedPassword: Boolean = false,
-    val isBiometricAuthEnabled: Boolean = true,
+    val isBiometricAuthEnabled: Boolean = false,
     val isBiometricAuthAvailable: Boolean = false,
     val isUsingWeakBiometric: Boolean = false,
     val requireStrongBiometric: Boolean = false,
