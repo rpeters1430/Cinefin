@@ -39,6 +39,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.preferences.AccentColor
 import com.rpeters.jellyfin.data.preferences.ContrastLevel
@@ -68,12 +70,12 @@ fun AppearanceSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Appearance") },
+                title = { Text(stringResource(R.string.settings_appearance_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Navigate back",
+                            contentDescription = stringResource(R.string.navigate_up),
                         )
                     }
                 },
@@ -103,7 +105,6 @@ fun AppearanceSettingsScreen(
                         subtitle = getThemeModeDescription(mode),
                         selected = themePreferences.themeMode == mode,
                         onSelect = { viewModel.setThemeMode(mode) },
-                        leadingIcon = Icons.Default.DarkMode,
                     )
                 }
             }
@@ -162,7 +163,6 @@ fun AppearanceSettingsScreen(
                         subtitle = getContrastLevelDescription(level),
                         selected = themePreferences.contrastLevel == level,
                         onSelect = { viewModel.setContrastLevel(level) },
-                        leadingIcon = Icons.Default.Tonality,
                     )
                 }
             }
@@ -176,7 +176,6 @@ fun AppearanceSettingsScreen(
                     subtitle = "Follow system animation preferences",
                     checked = themePreferences.respectReduceMotion,
                     onCheckedChange = { viewModel.setRespectReduceMotion(it) },
-                    leadingIcon = Icons.Default.Accessibility,
                 )
             }
         }
