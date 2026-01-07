@@ -295,6 +295,10 @@
     <string name="settings_privacy_cache">Image/cache size limits with one-tap clear option.</string>
     <string name="settings_privacy_diagnostics">Crash/analytics opt-in with clear data visibility.</string>
     <string name="settings_privacy_sensitive">Hide sensitive content titles in notifications and recents.</string>
+    <string name="settings_credential_security_title">Protect saved credentials</string>
+    <string name="settings_credential_security_description">Encrypt saved passwords with a device-bound key.</string>
+    <string name="settings_credential_security_tradeoff">Requiring your screen lock or biometrics keeps credentials safer, but you may need to re-authenticate after a short idle period for auto sign-ins.</string>
+    <string name="settings_credential_security_toggle">Require device authentication for saved passwords</string>
 
     <string name="settings_library_management_title">Library management</string>
     <string name="settings_library_management_description">Enable deletion and other power actions from item long-press menus.</string>
@@ -324,4 +328,34 @@
     <string name="mark_as_watched">Mark as watched</string>
     <string name="mark_as_unwatched">Mark as unwatched</string>
     <string name="play">Play</string>
+
+    <string name="settings_pinning_title">Certificate pins</string>
+    <string name="settings_pinning_description">Review and revoke trusted server certificates when they rotate or expire.</string>
+    <string name="settings_pinning_manage">Manage pins</string>
+
+    <string name="pinning_alert_title_mismatch">Certificate pin mismatch</string>
+    <string name="pinning_alert_title_expired">Certificate pin expired</string>
+    <string name="pinning_alert_message_mismatch">The stored pin for %1$s does not match the server certificate. This could indicate a new certificate or a potential MITM attack.</string>
+    <string name="pinning_alert_message_expired">The stored pin for %1$s has expired. Review the certificate details before continuing.</string>
+    <string name="pinning_trust_temporarily">Trust temporarily</string>
+    <string name="pinning_abort">Abort connection</string>
+    <string name="pinning_first_seen">First seen: %1$s</string>
+    <string name="pinning_expires_at">Expires: %1$s</string>
+    <string name="pinning_view_certificate_details">View certificate details</string>
+    <string name="pinning_hide_certificate_details">Hide certificate details</string>
+    <string name="pinning_certificate_number">Certificate %1$d</string>
+    <string name="pinning_cert_subject">Subject: %1$s</string>
+    <string name="pinning_cert_issuer">Issuer: %1$s</string>
+    <string name="pinning_cert_validity">Valid: %1$s – %2$s</string>
+    <string name="pinning_cert_pin">Pin: %1$s</string>
+    <string name="pinning_settings_title">Trusted certificate pins</string>
+    <string name="pinning_settings_error">Unable to load pins: %1$s</string>
+    <string name="pinning_settings_empty">No certificate pins stored yet.</string>
+    <string name="pinning_primary_pin">Primary pin: %1$s</string>
+    <string name="pinning_backup_count">Backup pins: %1$d</string>
+    <string name="pinning_entry_expired">Expired</string>
+    <string name="pinning_revoke">Revoke</string>
+    <string name="pinning_mismatch_error">Certificate pin mismatch for %1$s</string>
+    <string name="pinning_expired_error">Stored certificate pin expired for %1$s</string>
+    <string name="pinning_no_pins_available">No certificate pins are available to trust.</string>
 </resources>

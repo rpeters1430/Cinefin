@@ -15,8 +15,13 @@ import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.data.repository.common.ErrorType
+import com.rpeters.jellyfin.data.security.CertificatePinningManager
+import com.rpeters.jellyfin.data.security.PinningValidationException
 import com.rpeters.jellyfin.ui.components.ConnectionPhase
 import com.rpeters.jellyfin.ui.components.ConnectionState
+import com.rpeters.jellyfin.ui.components.PinningAlertReason
+import com.rpeters.jellyfin.ui.components.PinningAlertState
 import com.rpeters.jellyfin.utils.ServerUrlValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -49,6 +54,7 @@ object PreferencesKeys {
 class ServerConnectionViewModel @Inject constructor(
     private val repository: JellyfinRepository,
     private val secureCredentialManager: SecureCredentialManager,
+    private val certificatePinningManager: CertificatePinningManager,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -56,6 +62,7 @@ class ServerConnectionViewModel @Inject constructor(
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
     private var quickConnectPollingJob: Job? = null
+    private var lastAttempt: ConnectionAttempt? = null
 
     init {
         // Load saved credentials and remember login state
@@ -174,11 +181,18 @@ class ServerConnectionViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            lastAttempt = ConnectionAttempt(
+                serverUrl = normalizedServerUrl,
+                username = username,
+                password = password,
+                isAutoLogin = isAutoLogin,
+            )
             _connectionState.value = _connectionState.value.copy(
                 isConnecting = true,
                 errorMessage = null,
                 connectionPhase = ConnectionPhase.Testing,
                 currentUrl = serverUrl,
+                pinningAlert = null,
             )
 
             // First test server connection with enhanced feedback (IO dispatcher)
@@ -215,9 +229,13 @@ class ServerConnectionViewModel @Inject constructor(
                                 isConnected = true,
                                 errorMessage = null,
                                 connectionPhase = ConnectionPhase.Connected,
+                                pinningAlert = null,
                             )
                         }
                         is ApiResult.Error -> {
+                            if (handlePinningError(authResult)) {
+                                return@launch
+                            }
                             // ✅ FIX: Don't clear saved credentials on auth failure during auto-login
                             // Only clear credentials if this is a manual login attempt and the error
                             // is specifically an authentication error (401/403/Unauthorized)
@@ -245,11 +263,13 @@ class ServerConnectionViewModel @Inject constructor(
                     }
                 }
                 is ApiResult.Error -> {
-                    _connectionState.value = _connectionState.value.copy(
-                        isConnecting = false,
-                        errorMessage = "Cannot connect to server: ${serverResult.message}",
-                        connectionPhase = ConnectionPhase.Error,
-                    )
+                    if (!handlePinningError(serverResult)) {
+                        _connectionState.value = _connectionState.value.copy(
+                            isConnecting = false,
+                            errorMessage = "Cannot connect to server: ${serverResult.message}",
+                            connectionPhase = ConnectionPhase.Error,
+                        )
+                    }
                 }
                 is ApiResult.Loading -> {
                     // This shouldn't happen for this call
@@ -264,6 +284,106 @@ class ServerConnectionViewModel @Inject constructor(
 
     fun showError(message: String) {
         _connectionState.value = _connectionState.value.copy(errorMessage = message)
+    }
+
+    fun dismissPinningAlert() {
+        _connectionState.value = _connectionState.value.copy(
+            pinningAlert = null,
+            isConnecting = false,
+        )
+    }
+
+    fun temporarilyTrustPin() {
+        val pinningAlert = _connectionState.value.pinningAlert ?: return
+        viewModelScope.launch {
+            val pinsToTrust = if (pinningAlert.attemptedPins.isNotEmpty()) {
+                pinningAlert.attemptedPins
+            } else {
+                pinningAlert.certificateDetails.map { it.pin }
+            }
+            if (pinsToTrust.isEmpty()) {
+                _connectionState.value = _connectionState.value.copy(
+                    pinningAlert = null,
+                    isConnecting = false,
+                    errorMessage = context.getString(R.string.pinning_no_pins_available),
+                )
+                return@launch
+            }
+            certificatePinningManager.allowTemporaryTrust(
+                pinningAlert.hostname,
+                pinsToTrust,
+            )
+            _connectionState.value = _connectionState.value.copy(
+                pinningAlert = null,
+                errorMessage = null,
+                isConnecting = false,
+            )
+            lastAttempt?.let { attempt ->
+                connectToServer(
+                    attempt.serverUrl,
+                    attempt.username,
+                    attempt.password,
+                    attempt.isAutoLogin,
+                )
+            }
+        }
+    }
+
+    private fun handlePinningError(error: ApiResult.Error<*>): Boolean {
+        val pinningException = error.cause?.findPinningException()
+        if (error.errorType != ErrorType.PINNING && pinningException == null) {
+            return false
+        }
+
+        val exception = pinningException
+        val pinningAlert = exception?.toAlertState()
+        val message = when (exception) {
+            is PinningValidationException.PinExpired -> context.getString(
+                R.string.pinning_expired_error,
+                exception.hostname,
+            )
+            is PinningValidationException.PinMismatch -> context.getString(
+                R.string.pinning_mismatch_error,
+                exception.hostname,
+            )
+            else -> error.message
+        }
+
+        _connectionState.value = _connectionState.value.copy(
+            isConnecting = false,
+            errorMessage = message,
+            connectionPhase = ConnectionPhase.Error,
+            pinningAlert = pinningAlert,
+        )
+
+        return true
+    }
+
+    private fun Throwable.findPinningException(): PinningValidationException? {
+        var current: Throwable? = this
+        while (current != null) {
+            if (current is PinningValidationException) {
+                return current
+            }
+            current = current.cause
+        }
+        return null
+    }
+
+    private fun PinningValidationException.toAlertState(): PinningAlertState {
+        val reason = when (this) {
+            is PinningValidationException.PinExpired -> PinningAlertReason.EXPIRED
+            else -> PinningAlertReason.MISMATCH
+        }
+
+        return PinningAlertState(
+            hostname = hostname,
+            reason = reason,
+            certificateDetails = certificateDetails,
+            firstSeenEpochMillis = pinRecord?.firstSeenEpochMillis,
+            expiresAtEpochMillis = pinRecord?.expiresAtEpochMillis,
+            attemptedPins = attemptedPins,
+        )
     }
 
     private suspend fun updateRememberLoginPreference(remember: Boolean) {
@@ -656,3 +776,10 @@ class ServerConnectionViewModel @Inject constructor(
         quickConnectPollingJob?.cancel()
     }
 }
+
+private data class ConnectionAttempt(
+    val serverUrl: String,
+    val username: String,
+    val password: String,
+    val isAutoLogin: Boolean,
+)

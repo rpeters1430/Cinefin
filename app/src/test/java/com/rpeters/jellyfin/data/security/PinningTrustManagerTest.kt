@@ -7,6 +7,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
@@ -128,14 +129,14 @@ class PinningTrustManagerTest {
         every { inetAddress.hostName } returns hostname
 
         // Mock certificate pinning manager - first connection (no stored pin)
-        coEvery { mockCertPinningManager.getStoredPin(hostname) } returns null
+        coEvery { mockCertPinningManager.getStoredPinRecord(hostname) } returns null
         coEvery { mockCertPinningManager.computeCertificatePin(any()) } returns "sha256/test_pin"
 
         pinningTrustManager.checkServerTrusted(chain, authType, socket)
 
         // Should have attempted to get stored pin for this hostname
         coVerify(exactly = 1) {
-            mockCertPinningManager.getStoredPin(hostname)
+            mockCertPinningManager.getStoredPinRecord(hostname)
         }
     }
 
@@ -149,14 +150,14 @@ class PinningTrustManagerTest {
         every { engine.peerHost } returns hostname
 
         // Mock certificate pinning manager - first connection
-        coEvery { mockCertPinningManager.getStoredPin(hostname) } returns null
+        coEvery { mockCertPinningManager.getStoredPinRecord(hostname) } returns null
         coEvery { mockCertPinningManager.computeCertificatePin(any()) } returns "sha256/test_pin"
 
         pinningTrustManager.checkServerTrusted(chain, authType, engine)
 
         // Should have attempted to get stored pin for this hostname
         coVerify(exactly = 1) {
-            mockCertPinningManager.getStoredPin(hostname)
+            mockCertPinningManager.getStoredPinRecord(hostname)
         }
     }
 
@@ -176,14 +177,14 @@ class PinningTrustManagerTest {
         every { mockPublicKey.encoded } returns ByteArray(256) { 42 }
 
         // First connection - no stored pin
-        coEvery { mockCertPinningManager.getStoredPin(hostname) } returns null
+        coEvery { mockCertPinningManager.getStoredPinRecord(hostname) } returns null
         coEvery { mockCertPinningManager.computeCertificatePin(mockCert) } returns "sha256/new_pin"
 
         pinningTrustManager.checkServerTrusted(chain, authType, socket)
 
         // Should store the pin for first connection
         coVerify(exactly = 1) {
-            mockCertPinningManager.storePin(hostname, "sha256/new_pin")
+            mockCertPinningManager.storePin(hostname, "sha256/new_pin", emptyList())
         }
     }
 
@@ -205,18 +206,27 @@ class PinningTrustManagerTest {
         val storedPin = "sha256/stored_pin"
 
         // Subsequent connection - pin stored
-        coEvery { mockCertPinningManager.getStoredPin(hostname) } returns storedPin
+        coEvery {
+            mockCertPinningManager.getStoredPinRecord(hostname)
+        } returns PinnedCertificateRecord(
+            hostname = hostname,
+            primaryPin = storedPin,
+            backupPins = emptyList(),
+            firstSeenEpochMillis = 1L,
+            lastValidatedEpochMillis = 1L,
+            expiresAtEpochMillis = Long.MAX_VALUE,
+        )
         coEvery { mockCertPinningManager.computeCertificatePin(mockCert) } returns storedPin
 
         pinningTrustManager.checkServerTrusted(chain, authType, socket)
 
         // Should NOT store pin again (already stored)
         coVerify(exactly = 0) {
-            mockCertPinningManager.storePin(any(), any())
+            mockCertPinningManager.storePin(any(), any(), any())
         }
     }
 
-    @Test(expected = CertificateException::class)
+    @Test
     fun `pin mismatch throws exception - potential MITM attack`() {
         val hostname = "known-server.example.com"
         val mockCert: X509Certificate = mockk()
@@ -234,11 +244,25 @@ class PinningTrustManagerTest {
         val storedPin = "sha256/original_pin"
         val actualPin = "sha256/different_pin"
 
-        coEvery { mockCertPinningManager.getStoredPin(hostname) } returns storedPin
+        coEvery {
+            mockCertPinningManager.getStoredPinRecord(hostname)
+        } returns PinnedCertificateRecord(
+            hostname = hostname,
+            primaryPin = storedPin,
+            backupPins = emptyList(),
+            firstSeenEpochMillis = 1L,
+            lastValidatedEpochMillis = 1L,
+            expiresAtEpochMillis = Long.MAX_VALUE,
+        )
         coEvery { mockCertPinningManager.computeCertificatePin(mockCert) } returns actualPin
 
         // Should throw CertificateException for pin mismatch
-        pinningTrustManager.checkServerTrusted(chain, authType, socket)
+        val error = runCatching {
+            pinningTrustManager.checkServerTrusted(chain, authType, socket)
+        }.exceptionOrNull()
+
+        assertTrue(error is CertificateException)
+        assertTrue(error?.cause is PinningValidationException)
     }
 
     @Test
@@ -269,7 +293,7 @@ class PinningTrustManagerTest {
         every { mockCert.publicKey } returns mockPublicKey
         every { mockPublicKey.encoded } returns ByteArray(256) { 42 }
 
-        coEvery { mockCertPinningManager.getStoredPin(hostname) } returns null
+        coEvery { mockCertPinningManager.getStoredPinRecord(hostname) } returns null
         coEvery { mockCertPinningManager.computeCertificatePin(mockCert) } returns "sha256/pin"
 
         pinningTrustManagerWithCallback.checkServerTrusted(chain, authType, socket)
@@ -304,7 +328,7 @@ class PinningTrustManagerTest {
         every { mockCert.publicKey } returns mockPublicKey
         every { mockPublicKey.encoded } returns ByteArray(256) { 42 }
 
-        coEvery { mockCertPinningManager.getStoredPin(hostname) } returns null
+        coEvery { mockCertPinningManager.getStoredPinRecord(hostname) } returns null
 
         // Should throw CertificateException when callback rejects
         pinningTrustManagerWithCallback.checkServerTrusted(chain, authType, socket)
@@ -345,7 +369,7 @@ class PinningTrustManagerTest {
 
         // Verify pinning manager was never called (system validation failed first)
         coVerify(exactly = 0) {
-            mockCertPinningManager.getStoredPin(any())
+            mockCertPinningManager.getStoredPinRecord(any())
         }
     }
 }

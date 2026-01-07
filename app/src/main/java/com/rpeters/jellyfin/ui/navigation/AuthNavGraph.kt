@@ -66,7 +66,8 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
                     viewModel.showError(context.getString(R.string.biometric_activity_error))
                 }
             },
-            onRequireStrongBiometricChange = { viewModel.setRequireStrongBiometric(it) },
+            onTemporarilyTrustPin = { viewModel.temporarilyTrustPin() },
+            onDismissPinningAlert = { viewModel.dismissPinningAlert() },
         )
     }
 

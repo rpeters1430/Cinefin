@@ -3,74 +3,83 @@ package com.rpeters.jellyfin.data.security
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okhttp3.CertificatePinner
+import org.json.JSONArray
+import org.json.JSONObject
 import java.security.MessageDigest
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
 import javax.inject.Inject
 import javax.inject.Singleton
-import javax.net.ssl.SSLPeerUnverifiedException
 
 /**
  * Manages SSL certificate pinning for Jellyfin servers.
  *
- * This provides protection against Man-in-the-Middle (MITM) attacks by
- * verifying that the server's certificate matches a known pin.
- *
- * SECURITY FEATURES:
- * - Dynamic certificate pinning (user can trust servers on first connect)
- * - SHA-256 hash-based pinning
- * - Trust-on-first-use (TOFU) model
- * - Pin revocation for compromised certificates
- *
- * USAGE:
- * 1. On first connection to a server, user is prompted to trust the certificate
- * 2. Certificate pin is stored securely
- * 3. Future connections validate against the stored pin
- * 4. If pin doesn't match, connection is rejected
+ * Adds rotation metadata, backup pins, expiry enforcement, and temporary overrides.
  */
 @Singleton
 class CertificatePinningManager @Inject constructor(
     private val encryptedPreferences: EncryptedPreferences,
+    private val timeProvider: () -> Long = System::currentTimeMillis,
 ) {
 
     companion object {
         private const val TAG = "CertificatePinningManager"
         private const val PIN_PREFIX = "cert_pin_"
         private const val HASH_ALGORITHM = "SHA-256"
+        private const val PIN_EXPIRY_DAYS_DEFAULT = 90L
+        private const val MILLIS_PER_DAY = 24 * 60 * 60 * 1000L
+        private const val TEMP_TRUST_DURATION_MS = 15 * 60 * 1000L // 15 minutes
     }
 
-    /**
-     * Gets the stored certificate pin for a hostname.
-     *
-     * @param hostname The server hostname
-     * @return The stored pin (SHA-256 hash), or null if not pinned
-     */
-    suspend fun getStoredPin(hostname: String): String? {
-        val key = getPinKey(hostname)
-        // Use firstOrNull() to get a single value instead of collect() which blocks forever
-        return encryptedPreferences.getEncryptedString(key).firstOrNull()
-    }
+    private val defaultExpiryMillis = PIN_EXPIRY_DAYS_DEFAULT * MILLIS_PER_DAY
+    private val overrideMutex = Mutex()
+    private val temporaryOverrides = mutableMapOf<String, TemporaryPinOverride>()
 
     /**
-     * Stores a certificate pin for a hostname.
-     *
-     * @param hostname The server hostname
-     * @param pin The SHA-256 hash of the certificate
+     * Gets the stored certificate pin record for a hostname, migrating legacy pins when found.
      */
-    suspend fun storePin(hostname: String, pin: String) {
+    suspend fun getStoredPinRecord(hostname: String): PinnedCertificateRecord? {
         val key = getPinKey(hostname)
-        encryptedPreferences.putEncryptedString(key, pin)
+        val storedValue = encryptedPreferences.getEncryptedString(key).firstOrNull()
+        if (storedValue.isNullOrEmpty()) return null
 
-        if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Stored certificate pin for $hostname")
+        val record = parsePinRecord(hostname, storedValue) ?: return null
+
+        // Persist migrated records so future reads include metadata
+        if (!storedValue.trimStart().startsWith("{")) {
+            storeRecord(record)
         }
+
+        return record
+    }
+
+    /**
+     * Stores a certificate pin for a hostname with optional backup pins.
+     */
+    suspend fun storePin(
+        hostname: String,
+        pin: String,
+        backupPins: List<String> = emptyList(),
+        firstSeenEpochMillis: Long? = null,
+    ) {
+        val now = timeProvider()
+        val firstSeen = firstSeenEpochMillis ?: now
+        val record = PinnedCertificateRecord(
+            hostname = hostname,
+            primaryPin = pin,
+            backupPins = backupPins.distinct().filterNot { it == pin },
+            firstSeenEpochMillis = firstSeen,
+            lastValidatedEpochMillis = now,
+            expiresAtEpochMillis = now + defaultExpiryMillis,
+        )
+        storeRecord(record)
     }
 
     /**
      * Removes a certificate pin (e.g., if certificate is compromised or changed).
-     *
-     * @param hostname The server hostname
      */
     suspend fun removePin(hostname: String) {
         val key = getPinKey(hostname)
@@ -83,26 +92,16 @@ class CertificatePinningManager @Inject constructor(
 
     /**
      * Computes the SHA-256 hash of a certificate's public key.
-     *
-     * This is used for certificate pinning - we pin the public key hash,
-     * not the entire certificate, as per RFC 7469.
-     *
-     * @param certificate The X.509 certificate
-     * @return Base64-encoded SHA-256 hash of the public key
      */
     fun computeCertificatePin(certificate: Certificate): String {
         require(certificate is X509Certificate) {
             "Certificate must be X509Certificate"
         }
 
-        // Get the SubjectPublicKeyInfo (SPKI) bytes
         val publicKeyBytes = certificate.publicKey.encoded
-
-        // Compute SHA-256 hash
         val digest = MessageDigest.getInstance(HASH_ALGORITHM)
         val hash = digest.digest(publicKeyBytes)
 
-        // Return as Base64
         return android.util.Base64.encodeToString(
             hash,
             android.util.Base64.NO_WRAP,
@@ -110,54 +109,52 @@ class CertificatePinningManager @Inject constructor(
     }
 
     /**
-     * Validates a certificate chain against stored pins.
+     * Validates a certificate chain against stored pins and rotation metadata.
      *
-     * @param hostname The server hostname
-     * @param certificates The certificate chain from the server
-     * @throws SSLPeerUnverifiedException if pins don't match
+     * @throws PinningValidationException if pins don't match or are expired
      */
     suspend fun validatePins(hostname: String, certificates: List<Certificate>) {
-        val storedPin = getStoredPin(hostname)
-
-        // If no pin is stored, this is a new server (TOFU model)
-        if (storedPin == null) {
-            if (BuildConfig.DEBUG) {
-                Log.d(TAG, "No pin stored for $hostname - first connection")
-            }
-            return
+        val record = getStoredPinRecord(hostname) ?: return
+        val x509Chain = certificates.filterIsInstance<X509Certificate>()
+        val chainPins = x509Chain.mapNotNull { cert ->
+            runCatching { computeCertificatePin(cert) }
+                .onFailure { Log.e(TAG, "Failed to compute pin for certificate", it) }
+                .getOrNull()
         }
 
-        // Check if any certificate in the chain matches the stored pin
-        val chainPins = certificates.mapNotNull { cert ->
-            try {
-                computeCertificatePin(cert)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to compute pin for certificate", e)
-                null
-            }
+        val matchedPin = chainPins.firstOrNull { pin ->
+            pin == record.primaryPin || record.backupPins.contains(pin)
         }
 
-        if (!chainPins.contains(storedPin)) {
-            val message = "Certificate pin mismatch for $hostname. " +
-                "Expected: $storedPin, Got: ${chainPins.joinToString()}"
-            Log.e(TAG, message)
-            throw SSLPeerUnverifiedException(message)
+        if (matchedPin == null) {
+            throw PinningValidationException.PinMismatch(
+                hostname = hostname,
+                pinRecord = record,
+                attemptedPins = chainPins,
+                certificateDetails = toCertificateDetails(x509Chain),
+            )
         }
 
-        if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Certificate pin validated for $hostname")
+        val now = timeProvider()
+        if (record.isExpired(now)) {
+            throw PinningValidationException.PinExpired(
+                hostname = hostname,
+                pinRecord = record,
+                attemptedPins = chainPins,
+                certificateDetails = toCertificateDetails(x509Chain),
+            )
+        }
+
+        // Refresh metadata and optionally rotate the primary pin
+        if (matchedPin != record.primaryPin) {
+            promotePin(hostname, matchedPin, chainPins, record)
+        } else {
+            refreshValidation(hostname, record, chainPins)
         }
     }
 
     /**
      * Creates an OkHttp CertificatePinner for a specific hostname.
-     *
-     * Note: This is for static pinning. For dynamic pinning, use the
-     * SSLSocketFactory approach with validatePins().
-     *
-     * @param hostname The server hostname
-     * @param pins List of SHA-256 pins (Base64 encoded)
-     * @return CertificatePinner instance
      */
     fun createPinner(hostname: String, pins: List<String>): CertificatePinner {
         val builder = CertificatePinner.Builder()
@@ -171,9 +168,6 @@ class CertificatePinningManager @Inject constructor(
 
     /**
      * Extracts hostname from a Jellyfin server URL.
-     *
-     * @param serverUrl The full server URL
-     * @return The hostname (e.g., "jellyfin.example.com")
      */
     fun extractHostname(serverUrl: String): String {
         return try {
@@ -185,8 +179,58 @@ class CertificatePinningManager @Inject constructor(
         }
     }
 
-    private fun getPinKey(hostname: String): String {
-        return "$PIN_PREFIX$hostname"
+    /**
+     * Returns all pinned certificates, sorted by hostname.
+     */
+    suspend fun getPinnedCertificates(): List<PinnedCertificateRecord> {
+        val entries = encryptedPreferences.getEntriesWithPrefix(PIN_PREFIX)
+        return entries.mapNotNull { (hostname, raw) ->
+            parsePinRecord(hostname, raw)?.also { record ->
+                if (!raw.trimStart().startsWith("{")) {
+                    storeRecord(record)
+                }
+            }
+        }.sortedBy { it.hostname }
+    }
+
+    /**
+     * Allows a temporary trust decision for the given pins.
+     */
+    suspend fun allowTemporaryTrust(hostname: String, pins: List<String>) {
+        val distinctPins = pins.distinct()
+        if (distinctPins.isEmpty()) {
+            Log.w(TAG, "allowTemporaryTrust called with no pins for hostname: $hostname; ignoring.")
+            return
+        }
+        overrideMutex.withLock {
+            val expiry = timeProvider() + TEMP_TRUST_DURATION_MS
+            temporaryOverrides[hostname] = TemporaryPinOverride(
+                hostname = hostname,
+                acceptedPins = distinctPins,
+                expiresAtEpochMillis = expiry,
+            )
+        }
+    }
+
+    /**
+     * Checks if the chain matches a temporary trust decision, cleaning up expired entries.
+     */
+    suspend fun isTemporarilyTrusted(hostname: String, chainPins: List<String>): Boolean {
+        return overrideMutex.withLock {
+            val now = timeProvider()
+            temporaryOverrides.entries.removeIf { it.value.expiresAtEpochMillis <= now }
+            val override = temporaryOverrides[hostname] ?: return@withLock false
+            override.acceptedPins.any { chainPins.contains(it) }
+        }
+    }
+
+    /**
+     * Clears a temporary trust entry after a successful override.
+     */
+    suspend fun clearTemporaryTrust(hostname: String) {
+        overrideMutex.withLock {
+            temporaryOverrides.remove(hostname)
+        }
     }
 
     /**
@@ -194,9 +238,132 @@ class CertificatePinningManager @Inject constructor(
      * SECURITY WARNING: Only call this during app reset or if user explicitly requests it.
      */
     suspend fun clearAllPins() {
-        // Note: This would require iterating through all keys
-        // For now, individual pins should be removed as needed
-        Log.w(TAG, "clearAllPins() called - implement if needed")
+        val entries = encryptedPreferences.getEntriesWithPrefix(PIN_PREFIX)
+        entries.keys.forEach { hostname ->
+            removePin(hostname)
+        }
+        overrideMutex.withLock {
+            temporaryOverrides.clear()
+        }
+
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "Cleared all certificate pins (${entries.size} hosts)")
+        }
+    }
+
+    internal suspend fun toCertificateDetails(chain: List<X509Certificate>): List<CertificateDetails> {
+        return chain.mapNotNull { cert ->
+            runCatching { computeCertificatePin(cert) }
+                .map { pin -> cert.toCertificateDetails(pin) }
+                .getOrNull()
+        }
+    }
+
+    internal suspend fun promotePin(
+        hostname: String,
+        newPrimary: String,
+        chainPins: List<String>,
+        existingRecord: PinnedCertificateRecord,
+    ) {
+        val now = timeProvider()
+        val backups = mergeBackups(existingRecord, chainPins, newPrimary)
+        val rotated = existingRecord.copy(
+            primaryPin = newPrimary,
+            backupPins = backups,
+            lastValidatedEpochMillis = now,
+            expiresAtEpochMillis = now + defaultExpiryMillis,
+        )
+        storeRecord(rotated)
+    }
+
+    internal suspend fun refreshValidation(
+        hostname: String,
+        record: PinnedCertificateRecord,
+        chainPins: List<String>,
+    ) {
+        val now = timeProvider()
+        val updated = record.copy(
+            backupPins = mergeBackups(record, chainPins, record.primaryPin),
+            lastValidatedEpochMillis = now,
+            expiresAtEpochMillis = now + defaultExpiryMillis,
+        )
+        storeRecord(updated)
+    }
+
+    private fun mergeBackups(
+        record: PinnedCertificateRecord,
+        chainPins: List<String>,
+        primaryPin: String,
+    ): List<String> {
+        return (record.backupPins + chainPins + record.primaryPin)
+            .distinct()
+            .filterNot { it == primaryPin }
+    }
+
+    private suspend fun storeRecord(record: PinnedCertificateRecord) {
+        val serialized = serializeRecord(record)
+        encryptedPreferences.putEncryptedString(getPinKey(record.hostname), serialized)
+
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                TAG,
+                "Stored certificate pin for ${record.hostname} (backups=${record.backupPins.size}, expires=${record.expiresAtEpochMillis})",
+            )
+        }
+    }
+
+    private fun serializeRecord(record: PinnedCertificateRecord): String {
+        val json = JSONObject()
+        json.put("v", 1)
+        json.put("pin", record.primaryPin)
+        json.put("backups", JSONArray(record.backupPins))
+        json.put("firstSeen", record.firstSeenEpochMillis)
+        json.put("lastValidated", record.lastValidatedEpochMillis)
+        json.put("expiresAt", record.expiresAtEpochMillis)
+        return json.toString()
+    }
+
+    private fun parsePinRecord(hostname: String, raw: String): PinnedCertificateRecord? {
+        return try {
+            if (raw.trimStart().startsWith("{")) {
+                val json = JSONObject(raw)
+                val primaryPin = json.optString("pin", null) ?: return null
+                val backupPins = json.optJSONArray("backups")?.let { array ->
+                    (0 until array.length()).mapNotNull { index ->
+                        array.optString(index, null)
+                    }
+                } ?: emptyList()
+                val firstSeen = json.optLong("firstSeen", timeProvider())
+                val lastValidated = json.optLong("lastValidated", firstSeen)
+                val expiresAt = json.optLong("expiresAt", firstSeen + defaultExpiryMillis)
+
+                PinnedCertificateRecord(
+                    hostname = hostname,
+                    primaryPin = primaryPin,
+                    backupPins = backupPins,
+                    firstSeenEpochMillis = firstSeen,
+                    lastValidatedEpochMillis = lastValidated,
+                    expiresAtEpochMillis = expiresAt,
+                )
+            } else {
+                val now = timeProvider()
+                PinnedCertificateRecord(
+                    hostname = hostname,
+                    primaryPin = raw,
+                    backupPins = emptyList(),
+                    firstSeenEpochMillis = now,
+                    lastValidatedEpochMillis = now,
+                    expiresAtEpochMillis = now + defaultExpiryMillis,
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse pin record for $hostname", e)
+            null
+        }
+    }
+
+    private fun getPinKey(hostname: String): String {
+        return "$PIN_PREFIX$hostname"
     }
 }
 

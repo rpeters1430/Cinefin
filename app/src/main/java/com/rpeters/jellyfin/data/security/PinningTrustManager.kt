@@ -142,7 +142,7 @@ class PinningTrustManager(
         // Check certificate pinning (blocking call - OkHttp calls this on background thread)
         runBlocking {
             try {
-                val storedPin = certPinningManager.getStoredPin(hostname)
+                val storedPin = certPinningManager.getStoredPinRecord(hostname)
 
                 if (storedPin == null) {
                     // First connection to this server (TOFU)
@@ -174,13 +174,16 @@ class PinningTrustManager(
 
         // Compute the pin for this certificate
         val pin = certPinningManager.computeCertificatePin(serverCert)
+        val backupPins = chain.drop(1).mapNotNull { cert ->
+            runCatching { certPinningManager.computeCertificatePin(cert) }.getOrNull()
+        }
 
         // Check if there's a callback for user confirmation
         val shouldTrust = onFirstConnection?.invoke(hostname, serverCert) ?: true
 
         if (shouldTrust) {
             // Store the pin for future connections
-            certPinningManager.storePin(hostname, pin)
+            certPinningManager.storePin(hostname, pin, backupPins)
 
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Trusted and stored pin for $hostname")
@@ -197,7 +200,7 @@ class PinningTrustManager(
     private suspend fun validateAgainstStoredPin(
         hostname: String,
         chain: List<X509Certificate>,
-        storedPin: String,
+        storedPin: PinnedCertificateRecord,
     ) {
         // Compute pins for all certificates in chain
         val chainPins = chain.mapNotNull { cert ->
@@ -210,11 +213,47 @@ class PinningTrustManager(
         }
 
         // Check if any certificate in the chain matches the stored pin
-        if (!chainPins.contains(storedPin)) {
-            val message = "Certificate pin mismatch for $hostname (Possible MITM attack detected!)"
-            Log.e(TAG, "$message - Expected: $storedPin, Got: ${chainPins.joinToString()}")
-            throw CertificateException(message)
+        val matchedPin = chainPins.firstOrNull { pin ->
+            pin == storedPin.primaryPin || storedPin.backupPins.contains(pin)
         }
+        val certificateDetails = certPinningManager.toCertificateDetails(chain)
+
+        if (matchedPin == null) {
+            if (certPinningManager.isTemporarilyTrusted(hostname, chainPins)) {
+                certPinningManager.clearTemporaryTrust(hostname)
+                return
+            }
+            val message = "Certificate pin mismatch for $hostname (Possible MITM attack detected!)"
+            Log.e(TAG, "$message - Expected: ${storedPin.primaryPin}, Got: ${chainPins.joinToString()}")
+            throw PinningValidationException.PinMismatch(
+                hostname = hostname,
+                pinRecord = storedPin,
+                attemptedPins = chainPins,
+                certificateDetails = certificateDetails,
+            )
+        }
+
+        if (storedPin.isExpired(System.currentTimeMillis())) {
+            if (certPinningManager.isTemporarilyTrusted(hostname, chainPins)) {
+                certPinningManager.clearTemporaryTrust(hostname)
+                return
+            }
+            val message = "Certificate pin expired for $hostname"
+            Log.e(TAG, "$message - First seen: ${storedPin.firstSeenEpochMillis}")
+            throw PinningValidationException.PinExpired(
+                hostname = hostname,
+                pinRecord = storedPin,
+                attemptedPins = chainPins,
+                certificateDetails = certificateDetails,
+            )
+        }
+
+        if (matchedPin != storedPin.primaryPin) {
+            certPinningManager.promotePin(hostname, matchedPin, chainPins, storedPin)
+        } else {
+            certPinningManager.refreshValidation(hostname, storedPin, chainPins)
+        }
+        certPinningManager.clearTemporaryTrust(hostname)
 
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "Certificate pin validated successfully for $hostname")

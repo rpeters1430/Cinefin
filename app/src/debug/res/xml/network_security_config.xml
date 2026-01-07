@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Debug override allowing cleartext for local development servers -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+            <certificates src="user"/>
+        </trust-anchors>
+    </base-config>
+
+    <!-- Permit HTTP traffic to common local endpoints when testing -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <!-- 10.0.2.2 is the special alias for the host loopback from the Android emulator -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <!-- Add specific local IPs when testing on a physical device -->
+        <!-- e.g., <domain includeSubdomains="false">192.168.1.100</domain> -->
+        <!-- Add your local development domain here -->
+        <!-- <domain includeSubdomains="true">your-local-jellyfin.local</domain> -->
+    </domain-config>
+</network-security-config>

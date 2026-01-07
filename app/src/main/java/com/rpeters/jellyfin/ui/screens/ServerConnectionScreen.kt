@@ -22,7 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.VpnKey
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,6 +36,7 @@ import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -59,7 +60,11 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ConnectionPhase
 import com.rpeters.jellyfin.ui.components.ConnectionState
+import com.rpeters.jellyfin.ui.components.PinningAlertReason
+import com.rpeters.jellyfin.ui.components.PinningAlertState
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
+import java.text.DateFormat
+import java.util.Date
 
 @OptInAppExperimentalApis
 @Composable
@@ -78,7 +83,8 @@ fun ServerConnectionScreen(
     onRememberLoginChange: (Boolean) -> Unit = {},
     onAutoLogin: () -> Unit = {},
     onBiometricLogin: () -> Unit = {},
-    onRequireStrongBiometricChange: (Boolean) -> Unit = {},
+    onTemporarilyTrustPin: () -> Unit = {},
+    onDismissPinningAlert: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var serverUrl by remember { mutableStateOf(savedServerUrl) }
@@ -93,6 +99,14 @@ fun ServerConnectionScreen(
         if (serverUrl.isNotBlank() && username.isNotBlank() && passwordText.isNotBlank()) {
             onConnect(serverUrl, username, passwordText)
         }
+    }
+
+    connectionState.pinningAlert?.let { pinningAlert ->
+        PinningAlertDialog(
+            alertState = pinningAlert,
+            onDismiss = onDismissPinningAlert,
+            onTemporarilyTrust = onTemporarilyTrustPin,
+        )
     }
 
     // Update local state when saved values change
@@ -385,99 +399,122 @@ fun ServerConnectionScreen(
 }
 
 @Composable
-private fun BiometricSecurityNotice(
-    requireStrongBiometric: Boolean,
-    isUsingWeakBiometric: Boolean,
-    onRequireStrongBiometricChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
+private fun PinningAlertDialog(
+    alertState: PinningAlertState,
+    onDismiss: () -> Unit,
+    onTemporarilyTrust: () -> Unit,
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.Security,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = stringResource(id = R.string.biometric_security_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = stringResource(id = R.string.biometric_device_credential_info),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Switch(
-                checked = requireStrongBiometric,
-                onCheckedChange = onRequireStrongBiometricChange,
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = stringResource(id = R.string.biometric_require_strong),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    text = stringResource(id = R.string.biometric_require_strong_description),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        val statusContainerColor = if (isUsingWeakBiometric) {
-            MaterialTheme.colorScheme.errorContainer
+    var showDetails by remember { mutableStateOf(false) }
+    val dateFormatter = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT) }
+    val title = stringResource(
+        id = if (alertState.reason == PinningAlertReason.EXPIRED) {
+            R.string.pinning_alert_title_expired
         } else {
-            MaterialTheme.colorScheme.secondaryContainer
-        }
-        val statusContentColor = if (isUsingWeakBiometric) {
-            MaterialTheme.colorScheme.onErrorContainer
+            R.string.pinning_alert_title_mismatch
+        },
+    )
+    val subtitle = stringResource(
+        id = if (alertState.reason == PinningAlertReason.EXPIRED) {
+            R.string.pinning_alert_message_expired
         } else {
-            MaterialTheme.colorScheme.onSecondaryContainer
-        }
+            R.string.pinning_alert_message_mismatch
+        },
+        alertState.hostname,
+    )
 
-        ElevatedCard(
-            colors = CardDefaults.elevatedCardColors(containerColor = statusContainerColor),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(
-                modifier = Modifier.padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Icon(
-                    imageVector = if (isUsingWeakBiometric) Icons.Default.Warning else Icons.Default.Info,
-                    contentDescription = null,
-                    tint = statusContentColor,
-                )
-                Text(
-                    text = if (isUsingWeakBiometric) {
-                        stringResource(id = R.string.biometric_weak_only_notice_body)
-                    } else {
-                        stringResource(id = R.string.biometric_strong_supported_notice)
-                    },
-                    color = statusContentColor,
-                    style = MaterialTheme.typography.bodySmall,
-                )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onTemporarilyTrust) {
+                Text(text = stringResource(id = R.string.pinning_trust_temporarily))
             }
-        }
-    }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.pinning_abort))
+            }
+        },
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                alertState.firstSeenEpochMillis?.let { firstSeen ->
+                    Text(
+                        text = stringResource(
+                            id = R.string.pinning_first_seen,
+                            dateFormatter.format(Date(firstSeen)),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                alertState.expiresAtEpochMillis?.let { expires ->
+                    Text(
+                        text = stringResource(
+                            id = R.string.pinning_expires_at,
+                            dateFormatter.format(Date(expires)),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                if (alertState.certificateDetails.isNotEmpty()) {
+                    TextButton(onClick = { showDetails = !showDetails }) {
+                        Text(
+                            text = stringResource(
+                                id = if (showDetails) {
+                                    R.string.pinning_hide_certificate_details
+                                } else {
+                                    R.string.pinning_view_certificate_details
+                                },
+                            ),
+                        )
+                    }
+
+                    if (showDetails) {
+                        alertState.certificateDetails.forEachIndexed { index, cert ->
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(id = R.string.pinning_certificate_number, index + 1),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                                Text(
+                                    text = stringResource(id = R.string.pinning_cert_subject, cert.subject),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                Text(
+                                    text = stringResource(id = R.string.pinning_cert_issuer, cert.issuer),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                Text(
+                                    text = stringResource(
+                                        id = R.string.pinning_cert_validity,
+                                        dateFormatter.format(Date(cert.validFromEpochMillis)),
+                                        dateFormatter.format(Date(cert.validToEpochMillis)),
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                Text(
+                                    text = stringResource(id = R.string.pinning_cert_pin, cert.pin),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                            if (index < alertState.certificateDetails.lastIndex) {
+                                HorizontalDivider()
+                            }
+                        }
+                    }
+                }
+            }
+        },
+    )
 }
 
 @Preview(showBackground = true)
