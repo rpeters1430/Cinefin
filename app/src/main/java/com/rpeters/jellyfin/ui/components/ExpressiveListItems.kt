@@ -6,17 +6,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
@@ -182,6 +185,63 @@ fun ExpressiveSwitchListItem(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 enabled = enabled,
+            )
+        },
+        colors = ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+    )
+}
+
+/**
+ * Expressive list item with radio button for single-selection choices
+ */
+@Composable
+fun ExpressiveRadioListItem(
+    title: String,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    leadingIcon: ImageVector? = null,
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+            )
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .selectable(
+                selected = selected,
+                onClick = onSelect,
+                role = Role.RadioButton,
+            ),
+        supportingContent = subtitle?.let {
+            {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        leadingContent = leadingIcon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        },
+        trailingContent = {
+            RadioButton(
+                selected = selected,
+                onClick = null,
             )
         },
         colors = ListItemDefaults.colors(

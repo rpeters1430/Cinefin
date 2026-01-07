@@ -3,7 +3,6 @@ package com.rpeters.jellyfin.ui.screens
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,19 +12,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -34,6 +31,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
+import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 
 private data class SettingRecommendation(
@@ -125,9 +124,10 @@ fun SettingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                     navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             )
         },
@@ -174,10 +174,11 @@ private fun LibraryManagementCard(
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 4.dp,
+        shape = MaterialTheme.shapes.large,
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -185,29 +186,16 @@ private fun LibraryManagementCard(
         ) {
             Text(
                 text = stringResource(id = R.string.settings_library_management_title),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text(
-                text = stringResource(id = R.string.settings_library_management_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            ExpressiveSwitchListItem(
+                title = stringResource(id = R.string.settings_library_management_toggle),
+                subtitle = stringResource(id = R.string.settings_library_management_description),
+                checked = enabled,
+                onCheckedChange = onToggle,
+                leadingIcon = Icons.Default.Settings,
             )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = stringResource(id = R.string.settings_library_management_toggle),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Switch(
-                    checked = enabled,
-                    onCheckedChange = onToggle,
-                )
-            }
         }
     }
 }
@@ -217,43 +205,35 @@ private fun SettingsRecommendationCard(
     recommendation: SettingRecommendation,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 2.dp,
+        shape = MaterialTheme.shapes.large,
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = stringResource(id = recommendation.titleRes),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = stringResource(id = recommendation.descriptionRes),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = stringResource(id = recommendation.titleRes),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(id = recommendation.descriptionRes),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 recommendation.options.forEach { optionRes ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.Top,
-                    ) {
-                        Text(
-                            text = "\u2022",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text = stringResource(id = optionRes),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
+                    ExpressiveMediaListItem(
+                        title = stringResource(id = optionRes),
+                        leadingIcon = Icons.Default.Settings,
+                    )
                 }
             }
         }
