@@ -107,6 +107,7 @@ private val settingRecommendations = listOf(
 fun SettingsScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onManagePinsClick: () -> Unit = {},
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
     credentialSecurityPreferencesViewModel: CredentialSecurityPreferencesViewModel = hiltViewModel(),
 ) {
@@ -257,6 +258,40 @@ private fun CredentialSecurityCard(
                     onCheckedChange = onToggle,
                     enabled = !updating,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PinningManagementCard(
+    onManagePinsClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(id = R.string.settings_pinning_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(id = R.string.settings_pinning_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(
+                onClick = onManagePinsClick,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(text = stringResource(id = R.string.settings_pinning_manage))
             }
         }
     }

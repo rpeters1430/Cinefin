@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.data.utils
 
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.repository.common.ErrorType
+import com.rpeters.jellyfin.data.security.PinningValidationException
 import com.rpeters.jellyfin.utils.SecureLogger
 import io.mockk.every
 import io.mockk.mockk
@@ -69,6 +70,14 @@ class RepositoryUtilsTest {
         val cancelled = RepositoryUtils.getErrorType(CancellationException("cancelled"))
         val http = RepositoryUtils.getErrorType(httpException(500))
         val invalidStatus = RepositoryUtils.getErrorType(invalidStatusException("Invalid HTTP status in response: 401"))
+        val pinning = RepositoryUtils.getErrorType(
+            PinningValidationException.PinMismatch(
+                hostname = "example.com",
+                pinRecord = null,
+                attemptedPins = emptyList(),
+                certificateDetails = emptyList(),
+            ),
+        )
         val unknown = RepositoryUtils.getErrorType(IllegalArgumentException("oops"))
 
         assertEquals(ErrorType.NETWORK, network)
@@ -76,6 +85,7 @@ class RepositoryUtilsTest {
         assertEquals(ErrorType.OPERATION_CANCELLED, cancelled)
         assertEquals(ErrorType.SERVER_ERROR, http)
         assertEquals(ErrorType.UNAUTHORIZED, invalidStatus)
+        assertEquals(ErrorType.PINNING, pinning)
         assertEquals(ErrorType.UNKNOWN, unknown)
     }
 

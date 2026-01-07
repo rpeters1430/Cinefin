@@ -29,5 +29,6 @@ enum class ErrorType {
     OPERATION_CANCELLED,
     TIMEOUT,
     VALIDATION,
+    PINNING,
     UNKNOWN,
 }

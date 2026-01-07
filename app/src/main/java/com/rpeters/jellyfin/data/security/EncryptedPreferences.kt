@@ -12,6 +12,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.rpeters.jellyfin.BuildConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -275,6 +276,25 @@ class EncryptedPreferences @Inject constructor(
                 val encrypted = prefs[stringPreferencesKey(key)]
                 decryptValue(encrypted)
             }
+    }
+
+    /**
+     * Returns decrypted entries that share the provided prefix.
+     */
+    suspend fun getEntriesWithPrefix(prefix: String): Map<String, String> {
+        val preferences = context.secureDataStore.data.first()
+        return preferences.asMap().mapNotNull { (key, value) ->
+            val name = key.name
+            if (!name.startsWith(prefix)) {
+                return@mapNotNull null
+            }
+            val decrypted = decryptValue(value as? String)
+            if (decrypted != null) {
+                name.removePrefix(prefix) to decrypted
+            } else {
+                null
+            }
+        }.toMap()
     }
 
     /**

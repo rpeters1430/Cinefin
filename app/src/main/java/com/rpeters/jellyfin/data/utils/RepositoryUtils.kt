@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.data.utils
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.repository.common.ErrorType
+import com.rpeters.jellyfin.data.security.PinningValidationException
 import com.rpeters.jellyfin.utils.SecureLogger
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import retrofit2.HttpException
@@ -51,6 +52,9 @@ object RepositoryUtils {
             is kotlinx.coroutines.CancellationException,
             -> ErrorType.OPERATION_CANCELLED
 
+            is PinningValidationException,
+            -> ErrorType.PINNING
+
             is java.net.UnknownHostException,
             is java.net.ConnectException,
             is java.net.SocketTimeoutException,
@@ -85,7 +89,11 @@ object RepositoryUtils {
                 }
             }
 
-            else -> ErrorType.UNKNOWN
+            else -> if (e.hasCauseOfType<PinningValidationException>()) {
+                ErrorType.PINNING
+            } else {
+                ErrorType.UNKNOWN
+            }
         }
     }
 
@@ -143,4 +151,13 @@ object RepositoryUtils {
         return (e is HttpException && e.code() == 401) ||
             (e is InvalidStatusException && e.message?.contains("401") == true)
     }
+}
+
+private inline fun <reified T : Throwable> Throwable.hasCauseOfType(): Boolean {
+    var current: Throwable? = this
+    while (current != null) {
+        if (current is T) return true
+        current = current.cause
+    }
+    return false
 }

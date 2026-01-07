@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,6 +34,7 @@ import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,7 +58,11 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ConnectionPhase
 import com.rpeters.jellyfin.ui.components.ConnectionState
+import com.rpeters.jellyfin.ui.components.PinningAlertReason
+import com.rpeters.jellyfin.ui.components.PinningAlertState
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
+import java.text.DateFormat
+import java.util.Date
 
 @OptInAppExperimentalApis
 @Composable
@@ -72,6 +78,8 @@ fun ServerConnectionScreen(
     onRememberLoginChange: (Boolean) -> Unit = {},
     onAutoLogin: () -> Unit = {},
     onBiometricLogin: () -> Unit = {},
+    onTemporarilyTrustPin: () -> Unit = {},
+    onDismissPinningAlert: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var serverUrl by remember { mutableStateOf(savedServerUrl) }
@@ -86,6 +94,14 @@ fun ServerConnectionScreen(
         if (serverUrl.isNotBlank() && username.isNotBlank() && passwordText.isNotBlank()) {
             onConnect(serverUrl, username, passwordText)
         }
+    }
+
+    connectionState.pinningAlert?.let { pinningAlert ->
+        PinningAlertDialog(
+            alertState = pinningAlert,
+            onDismiss = onDismissPinningAlert,
+            onTemporarilyTrust = onTemporarilyTrustPin,
+        )
     }
 
     // Update local state when saved values change
@@ -367,6 +383,125 @@ fun ServerConnectionScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
+
+@Composable
+private fun PinningAlertDialog(
+    alertState: PinningAlertState,
+    onDismiss: () -> Unit,
+    onTemporarilyTrust: () -> Unit,
+) {
+    var showDetails by remember { mutableStateOf(false) }
+    val dateFormatter = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT) }
+    val title = stringResource(
+        id = if (alertState.reason == PinningAlertReason.EXPIRED) {
+            R.string.pinning_alert_title_expired
+        } else {
+            R.string.pinning_alert_title_mismatch
+        },
+    )
+    val subtitle = stringResource(
+        id = if (alertState.reason == PinningAlertReason.EXPIRED) {
+            R.string.pinning_alert_message_expired
+        } else {
+            R.string.pinning_alert_message_mismatch
+        },
+        alertState.hostname,
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onTemporarilyTrust) {
+                Text(text = stringResource(id = R.string.pinning_trust_temporarily))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.pinning_abort))
+            }
+        },
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                alertState.firstSeenEpochMillis?.let { firstSeen ->
+                    Text(
+                        text = stringResource(
+                            id = R.string.pinning_first_seen,
+                            dateFormatter.format(Date(firstSeen)),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                alertState.expiresAtEpochMillis?.let { expires ->
+                    Text(
+                        text = stringResource(
+                            id = R.string.pinning_expires_at,
+                            dateFormatter.format(Date(expires)),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                if (alertState.certificateDetails.isNotEmpty()) {
+                    TextButton(onClick = { showDetails = !showDetails }) {
+                        Text(
+                            text = stringResource(
+                                id = if (showDetails) {
+                                    R.string.pinning_hide_certificate_details
+                                } else {
+                                    R.string.pinning_view_certificate_details
+                                },
+                            ),
+                        )
+                    }
+
+                    if (showDetails) {
+                        alertState.certificateDetails.forEachIndexed { index, cert ->
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(id = R.string.pinning_certificate_number, index + 1),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                                Text(
+                                    text = stringResource(id = R.string.pinning_cert_subject, cert.subject),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                Text(
+                                    text = stringResource(id = R.string.pinning_cert_issuer, cert.issuer),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                Text(
+                                    text = stringResource(
+                                        id = R.string.pinning_cert_validity,
+                                        dateFormatter.format(Date(cert.validFromEpochMillis)),
+                                        dateFormatter.format(Date(cert.validToEpochMillis)),
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                Text(
+                                    text = stringResource(id = R.string.pinning_cert_pin, cert.pin),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                            if (index < alertState.certificateDetails.lastIndex) {
+                                HorizontalDivider()
+                            }
+                        }
+                    }
+                }
+            }
+        },
+    )
 }
 
 @Preview(showBackground = true)

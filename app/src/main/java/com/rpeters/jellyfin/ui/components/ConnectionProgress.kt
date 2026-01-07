@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.data.security.CertificateDetails
 
 /**
  * Enhanced connection progress indicator with detailed status information
@@ -223,6 +224,7 @@ data class ConnectionState(
     val progress: Float = 0f,
     val loadedCount: Int = 0,
     val totalCount: Int = 0,
+    val pinningAlert: PinningAlertState? = null,
 )
 
 /**
@@ -235,3 +237,17 @@ enum class ConnectionPhase {
     Connected,
     Error,
 }
+
+enum class PinningAlertReason {
+    MISMATCH,
+    EXPIRED,
+}
+
+data class PinningAlertState(
+    val hostname: String,
+    val reason: PinningAlertReason,
+    val certificateDetails: List<CertificateDetails> = emptyList(),
+    val firstSeenEpochMillis: Long? = null,
+    val expiresAtEpochMillis: Long? = null,
+    val attemptedPins: List<String> = emptyList(),
+)

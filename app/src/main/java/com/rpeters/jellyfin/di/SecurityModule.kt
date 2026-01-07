@@ -32,6 +32,12 @@ object SecurityModule {
 
     @Provides
     @Singleton
+    fun provideTimeProvider(): () -> Long {
+        return System::currentTimeMillis
+    }
+
+    @Provides
+    @Singleton
     fun provideEncryptedPreferences(
         @ApplicationContext context: Context,
     ): EncryptedPreferences {
@@ -42,8 +48,12 @@ object SecurityModule {
     @Singleton
     fun provideCertificatePinningManager(
         encryptedPreferences: EncryptedPreferences,
+        timeProvider: () -> Long,
     ): CertificatePinningManager {
-        return CertificatePinningManager(encryptedPreferences)
+        return CertificatePinningManager(
+            encryptedPreferences = encryptedPreferences,
+            timeProvider = timeProvider,
+        )
     }
 
     /**

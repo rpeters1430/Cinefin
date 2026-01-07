@@ -9,6 +9,7 @@ import com.google.common.truth.Truth.assertThat
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.data.security.CertificatePinningManager
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.BIOMETRIC_AUTH_ENABLED
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.REMEMBER_LOGIN
 import com.rpeters.jellyfin.ui.viewmodel.PreferencesKeys.SERVER_URL
@@ -41,6 +42,7 @@ class ServerConnectionViewModelTest {
 
     private lateinit var repository: JellyfinRepository
     private lateinit var secureCredentialManager: SecureCredentialManager
+    private lateinit var certificatePinningManager: CertificatePinningManager
     private lateinit var context: Context
 
     @Before
@@ -48,6 +50,7 @@ class ServerConnectionViewModelTest {
         context = ApplicationProvider.getApplicationContext()
         repository = mockk(relaxed = true)
         secureCredentialManager = mockk(relaxed = true)
+        certificatePinningManager = mockk(relaxed = true)
 
         every { repository.isConnected } returns MutableStateFlow(false)
         every { secureCredentialManager.isBiometricAuthAvailable() } returns true
@@ -81,7 +84,12 @@ class ServerConnectionViewModelTest {
                 repository.authenticateUser("https://example.com", "user", "biometricPassword")
             } returns ApiResult.Success(mockk<AuthenticationResult>(relaxed = true))
 
-            val viewModel = ServerConnectionViewModel(repository, secureCredentialManager, context)
+            val viewModel = ServerConnectionViewModel(
+                repository,
+                secureCredentialManager,
+                certificatePinningManager,
+                context,
+            )
 
             advanceUntilIdle()
 
@@ -105,7 +113,12 @@ class ServerConnectionViewModelTest {
         }
         every { repository.isConnected } returns MutableStateFlow(false)
 
-        val viewModel = ServerConnectionViewModel(repository, secureCredentialManager, context)
+        val viewModel = ServerConnectionViewModel(
+            repository,
+            secureCredentialManager,
+            certificatePinningManager,
+            context,
+        )
 
         advanceUntilIdle()
 
@@ -131,7 +144,12 @@ class ServerConnectionViewModelTest {
         } returns ApiResult.Success(mockk<AuthenticationResult>(relaxed = true))
         coEvery { secureCredentialManager.savePassword(any(), any(), any()) } returns Unit
 
-        val viewModel = ServerConnectionViewModel(repository, secureCredentialManager, context)
+        val viewModel = ServerConnectionViewModel(
+            repository,
+            secureCredentialManager,
+            certificatePinningManager,
+            context,
+        )
 
         advanceUntilIdle()
 
