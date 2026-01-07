@@ -14,7 +14,7 @@
         </trust-anchors>
     </base-config>
     
-    <!-- Allow custom trust anchors in debug builds while keeping release HTTPS-only -->
+    <!-- Allow system and user certificate trust anchors in debug builds while keeping release HTTPS-only -->
     <debug-overrides>
         <trust-anchors>
             <!-- Trust system certificate store -->
