@@ -222,6 +222,7 @@ object ErrorHandler {
             ErrorType.OPERATION_CANCELLED -> false // User cancelled
             ErrorType.TIMEOUT -> true // Retry timeout errors
             ErrorType.VALIDATION -> false // Don't retry validation errors
+            ErrorType.PINNING -> false // Don't retry certificate pinning errors - requires user action
         }
     }
 

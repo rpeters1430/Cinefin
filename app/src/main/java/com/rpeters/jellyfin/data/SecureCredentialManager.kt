@@ -4,6 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -15,6 +16,7 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.fragment.app.FragmentActivity
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.core.constants.Constants
+import com.rpeters.jellyfin.data.preferences.CredentialSecurityPreferencesRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.normalizeServerUrl
 import com.rpeters.jellyfin.utils.normalizeServerUrlLegacy
@@ -109,6 +111,10 @@ class SecureCredentialManager @Inject constructor(
         return "${getKeyAlias()}_${System.currentTimeMillis()}"
     }
 
+    private fun getBuggyKeyAlias(timestamp: Long = System.currentTimeMillis()): String {
+        return "${Constants.Security.KEY_ALIAS}_$KEY_VERSION}_${timestamp / KEY_ROTATION_INTERVAL_MS}"
+    }
+
     /**
      * Gets or creates a secret key with an expiration timestamp for key rotation.
      * Performs keystore operations on background thread.
@@ -133,6 +139,26 @@ class SecureCredentialManager @Inject constructor(
                         SecureLogger.w(TAG, "Failed to delete old key: $alias", e)
                     }
                 }
+            }
+
+            return@withContext generateKey(currentAlias, userAuthenticationRequired())
+        }
+
+        // Try to get the key using the current alias first, then fall back to buggy alias
+        // This provides backward compatibility for passwords encrypted with the old buggy key format
+        return@withContext when {
+            keyStore.containsAlias(currentAlias) -> keyStore.getKey(currentAlias, null) as SecretKey
+            keyStore.containsAlias(buggyAlias) -> keyStore.getKey(buggyAlias, null) as SecretKey
+            else -> throw IllegalStateException("No encryption key found")
+        }
+    }
+
+    private fun deleteAliasIfExists(alias: String) {
+        if (keyStore.containsAlias(alias)) {
+            try {
+                keyStore.deleteEntry(alias)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to delete key alias: $alias", e)
             }
         }
     }

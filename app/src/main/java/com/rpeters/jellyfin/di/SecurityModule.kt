@@ -32,12 +32,6 @@ object SecurityModule {
 
     @Provides
     @Singleton
-    fun provideTimeProvider(): () -> Long {
-        return System::currentTimeMillis
-    }
-
-    @Provides
-    @Singleton
     fun provideEncryptedPreferences(
         @ApplicationContext context: Context,
     ): EncryptedPreferences {

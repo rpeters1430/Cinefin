@@ -29,14 +29,10 @@ data class CredentialSecurityPreferences(
 }
 
 @Singleton
-class CredentialSecurityPreferencesRepository(
-    private val dataStore: DataStore<Preferences>,
+class CredentialSecurityPreferencesRepository @Inject constructor(
+    @ApplicationContext context: Context,
 ) {
-
-    @Inject
-    constructor(
-        @ApplicationContext context: Context,
-    ) : this(context.credentialSecurityDataStore)
+    private val dataStore: DataStore<Preferences> = context.credentialSecurityDataStore
 
     val preferences: Flow<CredentialSecurityPreferences> = dataStore.data
         .catch { exception ->
