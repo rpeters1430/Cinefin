@@ -11,7 +11,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -363,115 +362,115 @@ private fun ExpressiveEpisodeHero(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-                seriesInfo?.name?.let { seriesName ->
+            seriesInfo?.name?.let { seriesName ->
+                Text(
+                    text = seriesName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+
+            Text(
+                text = episode.name ?: stringResource(R.string.unknown),
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 4.dp),
+            ) {
+                episode.indexNumber?.let { episodeNum ->
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                    ) {
+                        Text(
+                            text = "EP $episodeNum",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+
+                episode.parentIndexNumber?.let { seasonNum ->
                     Text(
-                        text = seriesName,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        text = "S$seasonNum",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                         fontWeight = FontWeight.Medium,
                     )
                 }
 
-                Text(
-                    text = episode.name ?: stringResource(R.string.unknown),
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 4.dp),
-                ) {
-                    episode.indexNumber?.let { episodeNum ->
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                        ) {
-                            Text(
-                                text = "EP $episodeNum",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        }
-                    }
-
-                    episode.parentIndexNumber?.let { seasonNum ->
+                // Resolution badge
+                getEpisodeResolution(episode)?.let { (resolution, color) ->
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = color.copy(alpha = 0.9f),
+                    ) {
                         Text(
-                            text = "S$seasonNum",
+                            text = resolution,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+
+                episode.communityRating?.let { rating ->
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            text = String.format(java.util.Locale.ROOT, "%.1f", rating),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                             fontWeight = FontWeight.Medium,
                         )
                     }
-
-                    // Resolution badge
-                    getEpisodeResolution(episode)?.let { (resolution, color) ->
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = color.copy(alpha = 0.9f),
-                        ) {
-                            Text(
-                                text = resolution,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                    }
-
-                    episode.communityRating?.let { rating ->
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Text(
-                                text = String.format(java.util.Locale.ROOT, "%.1f", rating),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
-                    }
                 }
+            }
 
-                // Play progress with enhanced styling
-                episode.userData?.playedPercentage?.let { progress ->
-                    if (progress > 0.0) {
-                        Column(modifier = Modifier.padding(top = 12.dp)) {
-                            Text(
-                                text = "${String.format(java.util.Locale.ROOT, "%.0f", progress)}% watched",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                                fontWeight = FontWeight.Medium,
-                            )
-                            LinearProgressIndicator(
-                                progress = { (progress / 100.0).toFloat() },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp)),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            )
-                        }
+            // Play progress with enhanced styling
+            episode.userData?.playedPercentage?.let { progress ->
+                if (progress > 0.0) {
+                    Column(modifier = Modifier.padding(top = 12.dp)) {
+                        Text(
+                            text = "${String.format(java.util.Locale.ROOT, "%.0f", progress)}% watched",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                            fontWeight = FontWeight.Medium,
+                        )
+                        LinearProgressIndicator(
+                            progress = { (progress / 100.0).toFloat() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        )
                     }
                 }
             }
         }
     }
+}
 
 @Composable
 private fun ExpressiveEpisodeInfoCard(
