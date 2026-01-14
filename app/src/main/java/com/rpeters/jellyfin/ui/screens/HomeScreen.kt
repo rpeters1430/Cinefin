@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,10 +20,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -409,6 +408,51 @@ fun HomeContent(
         }
     }
 
+    val rowSections = remember(contentLists) {
+        listOf(
+            HomeRowSectionConfig(
+                key = HomeSectionKeys.RECENT_MOVIES,
+                contentType = HomeSectionContentTypes.POSTER_ROW,
+                titleRes = R.string.home_recently_added_movies,
+                items = contentLists.recentMovies,
+                rowKind = HomeRowKind.POSTER,
+                imageSelector = HomeImageSelector.DEFAULT,
+            ),
+            HomeRowSectionConfig(
+                key = HomeSectionKeys.RECENT_TV_SHOWS,
+                contentType = HomeSectionContentTypes.POSTER_ROW,
+                titleRes = R.string.home_recently_added_tv_shows,
+                items = contentLists.recentTVShows,
+                rowKind = HomeRowKind.POSTER,
+                imageSelector = HomeImageSelector.DEFAULT,
+            ),
+            HomeRowSectionConfig(
+                key = HomeSectionKeys.RECENT_EPISODES,
+                contentType = HomeSectionContentTypes.POSTER_ROW,
+                titleRes = R.string.home_recently_added_tv_episodes,
+                items = contentLists.recentEpisodes,
+                rowKind = HomeRowKind.POSTER,
+                imageSelector = HomeImageSelector.SERIES_OR_DEFAULT,
+            ),
+            HomeRowSectionConfig(
+                key = HomeSectionKeys.RECENT_MUSIC,
+                contentType = HomeSectionContentTypes.MUSIC_ROW,
+                titleRes = R.string.home_recently_added_music,
+                items = contentLists.recentMusic,
+                rowKind = HomeRowKind.SQUARE,
+                imageSelector = HomeImageSelector.DEFAULT,
+            ),
+            HomeRowSectionConfig(
+                key = HomeSectionKeys.RECENT_HOME_VIDEOS,
+                contentType = HomeSectionContentTypes.MEDIA_ROW,
+                titleRes = R.string.home_recently_added_home_videos,
+                items = contentLists.recentVideos,
+                rowKind = HomeRowKind.MEDIA,
+                imageSelector = HomeImageSelector.BACKDROP_OR_DEFAULT,
+            ),
+        ).filter { it.items.isNotEmpty() }
+    }
+
     val surfaceCoordinatorViewModel: SurfaceCoordinatorViewModel = hiltViewModel()
 
     LaunchedEffect(surfaceCoordinatorViewModel, contentLists.continueWatching) {
@@ -430,6 +474,17 @@ fun HomeContent(
         modifier = modifier,
     ) {
         val listState = rememberLazyListState()
+        val imageProviders = remember(getImageUrl, getSeriesImageUrl, getBackdropUrl) {
+            mapOf<HomeImageSelector, (BaseItemDto) -> String?>(
+                HomeImageSelector.DEFAULT to getImageUrl,
+                HomeImageSelector.SERIES_OR_DEFAULT to { item ->
+                    getSeriesImageUrl(item) ?: getImageUrl(item)
+                },
+                HomeImageSelector.BACKDROP_OR_DEFAULT to { item ->
+                    getBackdropUrl(item) ?: getImageUrl(item)
+                },
+            )
+        }
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
@@ -502,68 +557,43 @@ fun HomeContent(
                 }
             }
 
-            if (contentLists.recentMovies.isNotEmpty()) {
-                item(key = "recent_movies", contentType = "poster_row") {
-                    PosterRowSection(
-                        title = "Recently Added Movies",
-                        items = contentLists.recentMovies,
-                        getImageUrl = getImageUrl,
-                        onItemClick = onItemClick,
-                        onItemLongPress = onItemLongPress,
-                        cardWidth = layoutConfig.posterCardWidth,
-                    )
-                }
-            }
+            rowSections.forEach { section ->
+                item(key = section.key, contentType = section.contentType) {
+                    val imageProvider = imageProviders.getValue(section.imageSelector)
+                    val title = stringResource(id = section.titleRes)
 
-            if (contentLists.recentTVShows.isNotEmpty()) {
-                item(key = "recent_tvshows", contentType = "poster_row") {
-                    PosterRowSection(
-                        title = "Recently Added TV Shows",
-                        items = contentLists.recentTVShows,
-                        getImageUrl = getImageUrl,
-                        onItemClick = onItemClick,
-                        onItemLongPress = onItemLongPress,
-                        cardWidth = layoutConfig.posterCardWidth,
-                    )
-                }
-            }
-
-            if (contentLists.recentEpisodes.isNotEmpty()) {
-                item(key = "recent_episodes", contentType = "poster_row") {
-                    PosterRowSection(
-                        title = "Recently Added TV Episodes",
-                        items = contentLists.recentEpisodes,
-                        getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
-                        onItemClick = onItemClick,
-                        onItemLongPress = onItemLongPress,
-                        cardWidth = layoutConfig.posterCardWidth,
-                    )
-                }
-            }
-
-            if (contentLists.recentMusic.isNotEmpty()) {
-                item(key = "recent_music", contentType = "music_row") {
-                    SquareRowSection(
-                        title = "Recently Added Music",
-                        items = contentLists.recentMusic,
-                        getImageUrl = getImageUrl,
-                        onItemClick = onItemClick,
-                        onItemLongPress = onItemLongPress,
-                        cardWidth = layoutConfig.mediaCardWidth,
-                    )
-                }
-            }
-
-            if (contentLists.recentVideos.isNotEmpty()) {
-                item(key = "recent_home_videos", contentType = "media_row") {
-                    MediaRowSection(
-                        title = "Recently Added Home Videos",
-                        items = contentLists.recentVideos,
-                        getImageUrl = { item -> getBackdropUrl(item) ?: getImageUrl(item) },
-                        onItemClick = onItemClick,
-                        onItemLongPress = onItemLongPress,
-                        cardWidth = layoutConfig.mediaCardWidth,
-                    )
+                    when (section.rowKind) {
+                        HomeRowKind.POSTER -> {
+                            PosterRowSection(
+                                title = title,
+                                items = section.items,
+                                getImageUrl = imageProvider,
+                                onItemClick = onItemClick,
+                                onItemLongPress = onItemLongPress,
+                                cardWidth = layoutConfig.posterCardWidth,
+                            )
+                        }
+                        HomeRowKind.SQUARE -> {
+                            SquareRowSection(
+                                title = title,
+                                items = section.items,
+                                getImageUrl = imageProvider,
+                                onItemClick = onItemClick,
+                                onItemLongPress = onItemLongPress,
+                                cardWidth = layoutConfig.mediaCardWidth,
+                            )
+                        }
+                        HomeRowKind.MEDIA -> {
+                            MediaRowSection(
+                                title = title,
+                                items = section.items,
+                                getImageUrl = imageProvider,
+                                onItemClick = onItemClick,
+                                onItemLongPress = onItemLongPress,
+                                cardWidth = layoutConfig.mediaCardWidth,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -599,6 +629,42 @@ private data class HomeContentLists(
     val recentVideos: List<BaseItemDto>,
 )
 
+@Stable
+private data class HomeRowSectionConfig(
+    val key: String,
+    val contentType: String,
+    @StringRes val titleRes: Int,
+    val items: List<BaseItemDto>,
+    val rowKind: HomeRowKind,
+    val imageSelector: HomeImageSelector,
+)
+
+private object HomeSectionKeys {
+    const val RECENT_MOVIES = "recent_movies"
+    const val RECENT_TV_SHOWS = "recent_tvshows"
+    const val RECENT_EPISODES = "recent_episodes"
+    const val RECENT_MUSIC = "recent_music"
+    const val RECENT_HOME_VIDEOS = "recent_home_videos"
+}
+
+private object HomeSectionContentTypes {
+    const val POSTER_ROW = "poster_row"
+    const val MUSIC_ROW = "music_row"
+    const val MEDIA_ROW = "media_row"
+}
+
+private enum class HomeRowKind {
+    POSTER,
+    SQUARE,
+    MEDIA,
+}
+
+private enum class HomeImageSelector {
+    DEFAULT,
+    SERIES_OR_DEFAULT,
+    BACKDROP_OR_DEFAULT,
+}
+
 @Composable
 private fun rememberHomeLayoutConfig(): HomeLayoutConfig {
     val configuration = LocalConfiguration.current
@@ -633,64 +699,6 @@ private fun rememberHomeLayoutConfig(): HomeLayoutConfig {
                 posterCardWidth = 150.dp,
                 mediaCardWidth = 280.dp,
             )
-        }
-    }
-}
-
-@Composable
-private fun HomeHeader(currentServer: JellyfinServer?) {
-    ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
-        elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 4.dp,
-        ),
-        shape = RoundedCornerShape(20.dp),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        modifier = Modifier.size(40.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(8.dp),
-                        )
-                    }
-                    Text(
-                        text = "Welcome back!",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-                currentServer?.let { server ->
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Connected to ${server.name}",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                    )
-                }
-            }
         }
     }
 }
