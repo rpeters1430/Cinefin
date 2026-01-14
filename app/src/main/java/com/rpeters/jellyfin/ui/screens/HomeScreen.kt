@@ -61,6 +61,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.annotation.StringRes
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
@@ -408,68 +409,48 @@ fun HomeContent(
     }
 
     val rowSections = remember(contentLists) {
-        buildList {
-            if (contentLists.recentMovies.isNotEmpty()) {
-                add(
-                    HomeRowSectionConfig(
-                        key = "recent_movies",
-                        contentType = "poster_row",
-                        title = "Recently Added Movies",
-                        items = contentLists.recentMovies,
-                        rowKind = HomeRowKind.POSTER,
-                        imageSelector = HomeImageSelector.DEFAULT,
-                    ),
-                )
-            }
-            if (contentLists.recentTVShows.isNotEmpty()) {
-                add(
-                    HomeRowSectionConfig(
-                        key = "recent_tvshows",
-                        contentType = "poster_row",
-                        title = "Recently Added TV Shows",
-                        items = contentLists.recentTVShows,
-                        rowKind = HomeRowKind.POSTER,
-                        imageSelector = HomeImageSelector.DEFAULT,
-                    ),
-                )
-            }
-            if (contentLists.recentEpisodes.isNotEmpty()) {
-                add(
-                    HomeRowSectionConfig(
-                        key = "recent_episodes",
-                        contentType = "poster_row",
-                        title = "Recently Added TV Episodes",
-                        items = contentLists.recentEpisodes,
-                        rowKind = HomeRowKind.POSTER,
-                        imageSelector = HomeImageSelector.SERIES_OR_DEFAULT,
-                    ),
-                )
-            }
-            if (contentLists.recentMusic.isNotEmpty()) {
-                add(
-                    HomeRowSectionConfig(
-                        key = "recent_music",
-                        contentType = "music_row",
-                        title = "Recently Added Music",
-                        items = contentLists.recentMusic,
-                        rowKind = HomeRowKind.SQUARE,
-                        imageSelector = HomeImageSelector.DEFAULT,
-                    ),
-                )
-            }
-            if (contentLists.recentVideos.isNotEmpty()) {
-                add(
-                    HomeRowSectionConfig(
-                        key = "recent_home_videos",
-                        contentType = "media_row",
-                        title = "Recently Added Home Videos",
-                        items = contentLists.recentVideos,
-                        rowKind = HomeRowKind.MEDIA,
-                        imageSelector = HomeImageSelector.BACKDROP_OR_DEFAULT,
-                    ),
-                )
-            }
-        }
+        listOf(
+            HomeRowSectionConfig(
+                key = HomeSectionKeys.RECENT_MOVIES,
+                contentType = HomeSectionContentTypes.POSTER_ROW,
+                titleRes = R.string.home_recently_added_movies,
+                items = contentLists.recentMovies,
+                rowKind = HomeRowKind.POSTER,
+                imageSelector = HomeImageSelector.DEFAULT,
+            ),
+            HomeRowSectionConfig(
+                key = HomeSectionKeys.RECENT_TV_SHOWS,
+                contentType = HomeSectionContentTypes.POSTER_ROW,
+                titleRes = R.string.home_recently_added_tv_shows,
+                items = contentLists.recentTVShows,
+                rowKind = HomeRowKind.POSTER,
+                imageSelector = HomeImageSelector.DEFAULT,
+            ),
+            HomeRowSectionConfig(
+                key = HomeSectionKeys.RECENT_EPISODES,
+                contentType = HomeSectionContentTypes.POSTER_ROW,
+                titleRes = R.string.home_recently_added_tv_episodes,
+                items = contentLists.recentEpisodes,
+                rowKind = HomeRowKind.POSTER,
+                imageSelector = HomeImageSelector.SERIES_OR_DEFAULT,
+            ),
+            HomeRowSectionConfig(
+                key = HomeSectionKeys.RECENT_MUSIC,
+                contentType = HomeSectionContentTypes.MUSIC_ROW,
+                titleRes = R.string.home_recently_added_music,
+                items = contentLists.recentMusic,
+                rowKind = HomeRowKind.SQUARE,
+                imageSelector = HomeImageSelector.DEFAULT,
+            ),
+            HomeRowSectionConfig(
+                key = HomeSectionKeys.RECENT_HOME_VIDEOS,
+                contentType = HomeSectionContentTypes.MEDIA_ROW,
+                titleRes = R.string.home_recently_added_home_videos,
+                items = contentLists.recentVideos,
+                rowKind = HomeRowKind.MEDIA,
+                imageSelector = HomeImageSelector.BACKDROP_OR_DEFAULT,
+            ),
+        ).filter { it.items.isNotEmpty() }
     }
 
     val surfaceCoordinatorViewModel: SurfaceCoordinatorViewModel = hiltViewModel()
@@ -493,6 +474,17 @@ fun HomeContent(
         modifier = modifier,
     ) {
         val listState = rememberLazyListState()
+        val imageProviders = remember(getImageUrl, getSeriesImageUrl, getBackdropUrl) {
+            mapOf<HomeImageSelector, (BaseItemDto) -> String?>(
+                HomeImageSelector.DEFAULT to getImageUrl,
+                HomeImageSelector.SERIES_OR_DEFAULT to { item ->
+                    getSeriesImageUrl(item) ?: getImageUrl(item)
+                },
+                HomeImageSelector.BACKDROP_OR_DEFAULT to { item ->
+                    getBackdropUrl(item) ?: getImageUrl(item)
+                },
+            )
+        }
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
@@ -567,20 +559,13 @@ fun HomeContent(
 
             rowSections.forEach { section ->
                 item(key = section.key, contentType = section.contentType) {
-                    val imageProvider: (BaseItemDto) -> String? = when (section.imageSelector) {
-                        HomeImageSelector.DEFAULT -> getImageUrl
-                        HomeImageSelector.SERIES_OR_DEFAULT -> { item ->
-                            getSeriesImageUrl(item) ?: getImageUrl(item)
-                        }
-                        HomeImageSelector.BACKDROP_OR_DEFAULT -> { item ->
-                            getBackdropUrl(item) ?: getImageUrl(item)
-                        }
-                    }
+                    val imageProvider = imageProviders.getValue(section.imageSelector)
+                    val title = stringResource(id = section.titleRes)
 
                     when (section.rowKind) {
                         HomeRowKind.POSTER -> {
                             PosterRowSection(
-                                title = section.title,
+                                title = title,
                                 items = section.items,
                                 getImageUrl = imageProvider,
                                 onItemClick = onItemClick,
@@ -590,7 +575,7 @@ fun HomeContent(
                         }
                         HomeRowKind.SQUARE -> {
                             SquareRowSection(
-                                title = section.title,
+                                title = title,
                                 items = section.items,
                                 getImageUrl = imageProvider,
                                 onItemClick = onItemClick,
@@ -600,7 +585,7 @@ fun HomeContent(
                         }
                         HomeRowKind.MEDIA -> {
                             MediaRowSection(
-                                title = section.title,
+                                title = title,
                                 items = section.items,
                                 getImageUrl = imageProvider,
                                 onItemClick = onItemClick,
@@ -644,15 +629,29 @@ private data class HomeContentLists(
     val recentVideos: List<BaseItemDto>,
 )
 
-@Immutable
+@Stable
 private data class HomeRowSectionConfig(
     val key: String,
     val contentType: String,
-    val title: String,
+    @StringRes val titleRes: Int,
     val items: List<BaseItemDto>,
     val rowKind: HomeRowKind,
     val imageSelector: HomeImageSelector,
 )
+
+private object HomeSectionKeys {
+    const val RECENT_MOVIES = "recent_movies"
+    const val RECENT_TV_SHOWS = "recent_tvshows"
+    const val RECENT_EPISODES = "recent_episodes"
+    const val RECENT_MUSIC = "recent_music"
+    const val RECENT_HOME_VIDEOS = "recent_home_videos"
+}
+
+private object HomeSectionContentTypes {
+    const val POSTER_ROW = "poster_row"
+    const val MUSIC_ROW = "music_row"
+    const val MEDIA_ROW = "media_row"
+}
 
 private enum class HomeRowKind {
     POSTER,
