@@ -388,7 +388,7 @@ private fun SeriesDetailsHeader(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            // Subtle gradient at bottom for logo visibility
+            // Fade image into the screen background near the bottom edge
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -397,9 +397,8 @@ private fun SeriesDetailsHeader(
                             colors = listOf(
                                 Color.Transparent,
                                 Color.Transparent,
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.1f),
-                                Color.Black.copy(alpha = 0.3f),
+                                MaterialTheme.colorScheme.background.copy(alpha = 0.6f),
+                                MaterialTheme.colorScheme.background,
                             ),
                         ),
                     ),

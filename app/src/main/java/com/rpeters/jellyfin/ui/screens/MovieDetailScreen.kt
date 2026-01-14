@@ -157,7 +157,7 @@ fun MovieDetailScreen(
                                 modifier = Modifier.fillMaxSize(),
                             )
 
-                            // Subtle gradient at bottom for logo visibility
+                            // Fade image into the screen background near the bottom edge
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -166,9 +166,8 @@ fun MovieDetailScreen(
                                             colors = listOf(
                                                 androidx.compose.ui.graphics.Color.Transparent,
                                                 androidx.compose.ui.graphics.Color.Transparent,
-                                                androidx.compose.ui.graphics.Color.Transparent,
-                                                androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.1f),
-                                                androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.3f),
+                                                MaterialTheme.colorScheme.background.copy(alpha = 0.6f),
+                                                MaterialTheme.colorScheme.background,
                                             ),
                                             startY = 0f,
                                             endY = Float.POSITIVE_INFINITY,
