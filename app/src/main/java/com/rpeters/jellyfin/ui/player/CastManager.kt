@@ -50,6 +50,10 @@ data class CastState(
     val isRemotePlaying: Boolean = false,
     val castPlayer: CastPlayer? = null,
     val error: String? = null,
+    // Playback position tracking
+    val currentPosition: Long = 0L,
+    val duration: Long = 0L,
+    val volume: Float = 1.0f,
 )
 
 @UnstableApi
@@ -610,6 +614,110 @@ class CastManager @Inject constructor(
             _castState.update { state ->
                 state.copy(error = "Failed to resume casting: ${e.message}")
             }
+        }
+    }
+
+    /**
+     * Seek to a specific position during cast playback.
+     * @param positionMs The position to seek to in milliseconds.
+     */
+    fun seekTo(positionMs: Long) {
+        try {
+            val remoteClient = castContext?.sessionManager?.currentCastSession?.remoteMediaClient
+            if (remoteClient != null) {
+                remoteClient.seek(positionMs)
+                _castState.update { state ->
+                    state.copy(currentPosition = positionMs, error = null)
+                }
+                if (BuildConfig.DEBUG) {
+                    SecureLogger.d("CastManager", "Seeking to: ${positionMs}ms")
+                }
+            }
+        } catch (e: Exception) {
+            SecureLogger.e("CastManager", "Failed to seek: ${e.message}", e)
+            _castState.update { state ->
+                state.copy(error = "Failed to seek: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Set the cast device volume.
+     * @param volume Volume level from 0.0 (mute) to 1.0 (max).
+     */
+    fun setVolume(volume: Float) {
+        try {
+            val castSession = castContext?.sessionManager?.currentCastSession
+            if (castSession?.isConnected == true) {
+                castSession.volume = volume.toDouble().coerceIn(0.0, 1.0)
+                _castState.update { state ->
+                    state.copy(volume = volume.coerceIn(0f, 1f), error = null)
+                }
+                if (BuildConfig.DEBUG) {
+                    SecureLogger.d("CastManager", "Volume set to: $volume")
+                }
+            }
+        } catch (e: Exception) {
+            SecureLogger.e("CastManager", "Failed to set volume: ${e.message}", e)
+            _castState.update { state ->
+                state.copy(error = "Failed to set volume: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Get the current cast device volume.
+     * @return Volume level from 0.0 to 1.0, or 1.0 if not connected.
+     */
+    fun getVolume(): Float {
+        return try {
+            castContext?.sessionManager?.currentCastSession?.volume?.toFloat() ?: 1.0f
+        } catch (e: Exception) {
+            1.0f
+        }
+    }
+
+    /**
+     * Get the current playback position on the cast device.
+     * @return Position in milliseconds, or 0 if not available.
+     */
+    fun getCurrentPosition(): Long {
+        return try {
+            castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.approximateStreamPosition ?: 0L
+        } catch (e: Exception) {
+            0L
+        }
+    }
+
+    /**
+     * Get the duration of the current media on the cast device.
+     * @return Duration in milliseconds, or 0 if not available.
+     */
+    fun getDuration(): Long {
+        return try {
+            castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.mediaInfo?.streamDuration ?: 0L
+        } catch (e: Exception) {
+            0L
+        }
+    }
+
+    /**
+     * Update the cast state with current position and duration.
+     * Call this periodically to keep the UI in sync.
+     */
+    fun updatePlaybackState() {
+        val position = getCurrentPosition()
+        val duration = getDuration()
+        val volume = getVolume()
+        val playing = isRemotePlaying()
+
+        _castState.update { state ->
+            state.copy(
+                currentPosition = position,
+                duration = duration,
+                volume = volume,
+                isRemotePlaying = playing,
+            )
         }
     }
 

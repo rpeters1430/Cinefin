@@ -26,6 +26,7 @@ sealed class Screen(val route: String) {
     }
     object Music : Screen("music")
     object NowPlaying : Screen("now_playing")
+    object AudioQueue : Screen("audio_queue")
     object HomeVideos : Screen("home_videos")
     object Books : Screen("books")
     object Stuff : Screen("stuff/{libraryId}/{collectionType}") {
