@@ -10,11 +10,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.rpeters.jellyfin.ui.screens.AudioQueueScreen
 import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.screens.LibraryTypeScreen
-import com.rpeters.jellyfin.ui.screens.AudioQueueScreen
 import com.rpeters.jellyfin.ui.screens.MusicScreen
 import com.rpeters.jellyfin.ui.screens.NowPlayingScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodesScreen
