@@ -20,9 +20,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Brightness6
@@ -109,6 +111,8 @@ fun VideoPlayerScreen(
     onCastPause: () -> Unit,
     onCastResume: () -> Unit,
     onCastStop: () -> Unit,
+    onCastSeek: (Long) -> Unit,
+    onCastVolumeChange: (Float) -> Unit,
     onSubtitlesClick: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     onOrientationToggle: () -> Unit,
@@ -499,6 +503,8 @@ fun VideoPlayerScreen(
                 onPauseCast = onCastPause,
                 onResumeCast = onCastResume,
                 onStopCast = onCastStop,
+                onSeekCast = onCastSeek,
+                onVolumeChange = onCastVolumeChange,
             )
         }
 
@@ -645,6 +651,8 @@ private fun CastNowPlayingOverlay(
     onPauseCast: () -> Unit,
     onResumeCast: () -> Unit,
     onStopCast: () -> Unit,
+    onSeekCast: (Long) -> Unit,
+    onVolumeChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val artwork = playerState.castBackdropUrl ?: playerState.castPosterUrl
@@ -664,10 +672,10 @@ private fun CastNowPlayingOverlay(
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp),
+                        .height(220.dp),
                     contentScale = ContentScale.Crop,
                     alpha = 0.45f,
-                    requestSize = rememberScreenWidthHeight(180.dp),
+                    requestSize = rememberScreenWidthHeight(220.dp),
                 )
 
                 val playerColors = rememberVideoPlayerColors()
@@ -686,7 +694,7 @@ private fun CastNowPlayingOverlay(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -735,18 +743,114 @@ private fun CastNowPlayingOverlay(
                     }
                 }
 
+                // Seek bar with position/duration
+                if (playerState.castDuration > 0) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        var seekPosition by remember { mutableStateOf(playerState.castPosition.toFloat()) }
+                        var isSeeking by remember { mutableStateOf(false) }
+
+                        // Update seek position from state when not actively seeking
+                        LaunchedEffect(playerState.castPosition) {
+                            if (!isSeeking) {
+                                seekPosition = playerState.castPosition.toFloat()
+                            }
+                        }
+
+                        Slider(
+                            value = seekPosition,
+                            onValueChange = { newValue ->
+                                isSeeking = true
+                                seekPosition = newValue
+                            },
+                            onValueChangeFinished = {
+                                onSeekCast(seekPosition.toLong())
+                                isSeeking = false
+                            },
+                            valueRange = 0f..playerState.castDuration.toFloat(),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            ),
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                text = formatDuration(if (isSeeking) seekPosition.toLong() else playerState.castPosition),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = formatDuration(playerState.castDuration),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+
+                // Volume control
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        imageVector = if (playerState.castVolume > 0f) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                        contentDescription = "Volume",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Slider(
+                        value = playerState.castVolume,
+                        onValueChange = onVolumeChange,
+                        valueRange = 0f..1f,
+                        modifier = Modifier.weight(1f),
+                        colors = SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.secondary,
+                            activeTrackColor = MaterialTheme.colorScheme.secondary,
+                            inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                        ),
+                    )
+                    Text(
+                        text = "${(playerState.castVolume * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.width(36.dp),
+                    )
+                }
+
                 val overview = playerState.castOverview
                 if (!overview.isNullOrBlank()) {
                     Text(
                         text = overview,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
         }
+    }
+}
+
+private fun formatDuration(millis: Long): String {
+    val totalSeconds = millis / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) {
+        String.format("%d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        String.format("%d:%02d", minutes, seconds)
     }
 }
 
@@ -1305,10 +1409,16 @@ private fun CastOverlayPreview() {
                 itemName = "The Bear",
                 castDeviceName = "Living Room TV",
                 castOverview = "Carmen brings fine dining back home while the kitchen finds its rhythm.",
+                isCastPlaying = true,
+                castPosition = 1234567L, // ~20 minutes
+                castDuration = 3600000L, // 1 hour
+                castVolume = 0.75f,
             ),
             onPauseCast = {},
             onResumeCast = {},
             onStopCast = {},
+            onSeekCast = {},
+            onVolumeChange = {},
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),

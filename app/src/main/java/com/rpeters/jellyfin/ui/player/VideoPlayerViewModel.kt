@@ -79,6 +79,10 @@ data class VideoPlayerState(
     val castPosterUrl: String? = null,
     val castBackdropUrl: String? = null,
     val castOverview: String? = null,
+    // Cast playback position and volume
+    val castPosition: Long = 0L,
+    val castDuration: Long = 0L,
+    val castVolume: Float = 1.0f,
     val availableAudioTracks: List<TrackInfo> = emptyList(),
     val selectedAudioTrack: TrackInfo? = null,
     val availableSubtitleTracks: List<TrackInfo> = emptyList(),
@@ -525,6 +529,9 @@ class VideoPlayerViewModel @Inject constructor(
             isCastConnected = castState.isConnected,
             castDeviceName = castState.deviceName,
             isCastPlaying = castState.isRemotePlaying,
+            castPosition = castState.currentPosition,
+            castDuration = castState.duration,
+            castVolume = castState.volume,
             showCastDialog = if (hideDialog) false else currentState.showCastDialog,
             error = castState.error ?: currentState.error, // Propagate Cast errors to UI
         )
@@ -559,10 +566,14 @@ class VideoPlayerViewModel @Inject constructor(
                     player.pause()
                 }
             }
+            // Start tracking cast position
+            startCastPositionUpdates()
         }
 
         if (!castState.isCasting && !castState.isConnected) {
             wasPlayingBeforeCast = false
+            // Stop tracking cast position
+            stopCastPositionUpdates()
         }
     }
 
@@ -628,6 +639,32 @@ class VideoPlayerViewModel @Inject constructor(
         castManager.stopCasting()
         hasSentCastLoad = false
         wasPlayingBeforeCast = false
+        stopCastPositionUpdates()
+    }
+
+    fun seekCastPlayback(positionMs: Long) {
+        castManager.seekTo(positionMs)
+    }
+
+    fun setCastVolume(volume: Float) {
+        castManager.setVolume(volume)
+    }
+
+    private var castPositionJob: kotlinx.coroutines.Job? = null
+
+    private fun startCastPositionUpdates() {
+        if (castPositionJob?.isActive == true) return
+        castPositionJob = viewModelScope.launch(Dispatchers.Main) {
+            while (true) {
+                castManager.updatePlaybackState()
+                kotlinx.coroutines.delay(1000) // Update every second
+            }
+        }
+    }
+
+    private fun stopCastPositionUpdates() {
+        castPositionJob?.cancel()
+        castPositionJob = null
     }
 
     fun releasePlayer() {

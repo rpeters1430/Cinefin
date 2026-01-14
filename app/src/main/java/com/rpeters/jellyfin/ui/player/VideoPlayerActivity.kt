@@ -184,6 +184,8 @@ class VideoPlayerActivity : FragmentActivity() {
                             onCastPause = playerViewModel::pauseCastPlayback,
                             onCastResume = playerViewModel::resumeCastPlayback,
                             onCastStop = playerViewModel::stopCastPlayback,
+                            onCastSeek = playerViewModel::seekCastPlayback,
+                            onCastVolumeChange = playerViewModel::setCastVolume,
                             onSubtitlesClick = playerViewModel::showSubtitleDialog,
                             onPictureInPictureClick = ::enterPictureInPictureModeCustom,
                             onOrientationToggle = ::toggleOrientation,

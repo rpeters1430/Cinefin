@@ -10,11 +10,15 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
+import com.rpeters.jellyfin.ui.player.PlaybackProgressManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -27,11 +31,14 @@ import kotlin.coroutines.resumeWithException
 @Singleton
 class AudioServiceConnection @Inject constructor(
     @ApplicationContext private val appContext: Context,
+    private val playbackProgressManager: PlaybackProgressManager,
 ) {
 
     private val controllerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var mediaController: MediaController? = null
+    private var progressUpdateJob: Job? = null
+    private var currentTrackingItemId: String? = null
 
     private val _playbackState = kotlinx.coroutines.flow.MutableStateFlow(AudioPlaybackState())
     private val _queueState = kotlinx.coroutines.flow.MutableStateFlow<List<MediaItem>>(emptyList())
@@ -41,6 +48,21 @@ class AudioServiceConnection @Inject constructor(
             mediaController?.let { controller ->
                 updateQueue(controller)
                 updatePlaybackState(controller)
+            }
+        }
+
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            // Track changed - report progress for previous item and start tracking new one
+            controllerScope.launch {
+                handleTrackChange(mediaItem)
+            }
+        }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            if (isPlaying) {
+                startProgressUpdates()
+            } else {
+                stopProgressUpdates()
             }
         }
     }
@@ -209,6 +231,15 @@ class AudioServiceConnection @Inject constructor(
     }
 
     fun releaseController() {
+        // Stop progress tracking
+        stopProgressUpdates()
+        controllerScope.launch {
+            if (currentTrackingItemId != null) {
+                playbackProgressManager.stopTracking()
+                currentTrackingItemId = null
+            }
+        }
+
         mediaController?.let { controller ->
             try {
                 controller.removeListener(controllerListener)
@@ -253,6 +284,58 @@ class AudioServiceConnection @Inject constructor(
             }
         }
         _queueState.value = items
+    }
+
+    private suspend fun handleTrackChange(newMediaItem: MediaItem?) {
+        // Stop tracking previous item
+        if (currentTrackingItemId != null) {
+            playbackProgressManager.stopTracking()
+        }
+
+        // Start tracking new item
+        val itemId = newMediaItem?.mediaId
+        if (!itemId.isNullOrBlank()) {
+            currentTrackingItemId = itemId
+            playbackProgressManager.startTracking(itemId, controllerScope)
+            Log.d(TAG, "Started tracking audio progress for item: $itemId")
+        } else {
+            currentTrackingItemId = null
+        }
+    }
+
+    private fun startProgressUpdates() {
+        if (progressUpdateJob?.isActive == true) return
+
+        progressUpdateJob = controllerScope.launch {
+            while (isActive) {
+                mediaController?.let { controller ->
+                    val position = controller.currentPosition
+                    val duration = controller.duration
+                    if (duration > 0 && currentTrackingItemId != null) {
+                        playbackProgressManager.updateProgress(position, duration)
+                    }
+                }
+                delay(PROGRESS_UPDATE_INTERVAL)
+            }
+        }
+    }
+
+    private fun stopProgressUpdates() {
+        progressUpdateJob?.cancel()
+        progressUpdateJob = null
+
+        // Report final position when pausing
+        mediaController?.let { controller ->
+            val position = controller.currentPosition
+            val duration = controller.duration
+            if (duration > 0 && currentTrackingItemId != null) {
+                playbackProgressManager.updateProgress(position, duration)
+            }
+        }
+    }
+
+    companion object {
+        private const val PROGRESS_UPDATE_INTERVAL = 5000L // 5 seconds
     }
 }
 

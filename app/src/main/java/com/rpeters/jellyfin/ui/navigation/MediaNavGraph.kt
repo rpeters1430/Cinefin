@@ -14,6 +14,7 @@ import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.screens.LibraryTypeScreen
+import com.rpeters.jellyfin.ui.screens.AudioQueueScreen
 import com.rpeters.jellyfin.ui.screens.MusicScreen
 import com.rpeters.jellyfin.ui.screens.NowPlayingScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodesScreen
@@ -213,8 +214,14 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
         NowPlayingScreen(
             onNavigateBack = { navController.popBackStack() },
             onOpenQueue = {
-                // TODO: Navigate to queue screen when implemented
+                navController.navigate(Screen.AudioQueue.route)
             },
+        )
+    }
+
+    composable(Screen.AudioQueue.route) {
+        AudioQueueScreen(
+            onNavigateBack = { navController.popBackStack() },
         )
     }
 
