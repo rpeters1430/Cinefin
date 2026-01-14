@@ -489,6 +489,8 @@ fun HomeContent(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(layoutConfig.sectionSpacing),
+            // ✅ Performance: Reduce overdraw by limiting prefetch
+            userScrollEnabled = true,
         ) {
             if (contentLists.featuredItems.isNotEmpty()) {
                 item(key = "featured", contentType = "carousel") {
