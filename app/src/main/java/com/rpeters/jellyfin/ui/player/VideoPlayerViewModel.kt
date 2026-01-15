@@ -376,9 +376,12 @@ class VideoPlayerViewModel @Inject constructor(
                 )
 
                 withContext(Dispatchers.Main) {
-                    // Create ExoPlayer with FFmpeg extension renderer support for Vorbis
+                    // Create ExoPlayer with optimized renderer support
+                    // Use ON mode for extensions to allow hardware decoders for HEVC/high-res content
+                    // while falling back to FFmpeg for unsupported codecs like Vorbis
                     val renderersFactory = DefaultRenderersFactory(context)
-                        .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+                        .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+                        .setEnableDecoderFallback(true) // Enable fallback for codec issues
 
                     // Ensure HTTP requests carry the token header
                     val token = repository.getCurrentServer()?.accessToken
@@ -398,6 +401,8 @@ class VideoPlayerViewModel @Inject constructor(
                         .setSeekForwardIncrementMs(10_000)
                         .setMediaSourceFactory(mediaSourceFactory)
                         .setRenderersFactory(renderersFactory)
+                        // Handle video output to ensure proper surface attachment
+                        .setVideoScalingMode(androidx.media3.common.C.VIDEO_SCALING_MODE_SCALE_TO_FIT)
                         .build()
 
                     // Add listener
@@ -690,8 +695,11 @@ class VideoPlayerViewModel @Inject constructor(
                 p.removeListener(playerListener)
                 // Stop playback to flush decoders before releasing
                 p.stop()
-                // Clear any video surface to avoid surface detachment warnings
+                // Clear all video outputs to properly detach surfaces and prevent black screen issues
+                // This is critical for proper cleanup with HEVC/high-resolution content
                 p.clearVideoSurface()
+                p.clearVideoSurfaceHolder(null)
+                p.clearVideoSurfaceView(null)
             } catch (_: Exception) {
             }
             try {
