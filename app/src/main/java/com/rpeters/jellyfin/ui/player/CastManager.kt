@@ -186,7 +186,6 @@ class CastManager @Inject constructor(
         }
     }
 
-
     fun initialize() {
         // Cancel any existing initialization job to prevent duplicate listeners
         initializationJob?.cancel()
