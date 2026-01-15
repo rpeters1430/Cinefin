@@ -298,14 +298,20 @@ fun VideoPlayerScreen(
                 PlayerView(context).apply {
                     useController = false // We'll use custom controls
                     setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
+                    // Keep surface alive during lifecycle changes to prevent black screen
+                    keepScreenOn = true
                 }
             },
             update = { playerView ->
                 // Set player and configuration
                 if (playerView.player != exoPlayer) {
                     playerView.player = exoPlayer
-                    // Force a surface layout after player assignment
-                    playerView.requestLayout()
+                    // Force surface recreation and layout to ensure proper attachment
+                    // This is critical for high-resolution HEVC content
+                    playerView.post {
+                        playerView.invalidate()
+                        playerView.requestLayout()
+                    }
                 }
                 playerView.resizeMode = playerState.selectedAspectRatio.resizeMode
             },

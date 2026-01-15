@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -103,6 +104,7 @@ class VideoPlayerViewModel @Inject constructor(
     private val repository: JellyfinRepository,
     private val castManager: CastManager,
     private val playbackProgressManager: PlaybackProgressManager,
+    private val enhancedPlaybackManager: com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager,
 ) : ViewModel() {
 
     init {
@@ -136,7 +138,7 @@ class VideoPlayerViewModel @Inject constructor(
     private var positionJob: kotlinx.coroutines.Job? = null
     private var currentMediaItem: MediaItem? = null
     private var currentItemMetadata: BaseItemDto? = null
-    private var currentSubtitleSpecs: List<SubtitleSpec> = emptyList()
+    private var currentSubtitleSpecs: List<com.rpeters.jellyfin.ui.player.SubtitleSpec> = emptyList()
     private var wasPlayingBeforeCast: Boolean = false
     private var hasSentCastLoad: Boolean = false
     private var lastCastState: CastState? = null
@@ -316,69 +318,66 @@ class VideoPlayerViewModel @Inject constructor(
                 val resumePosition = playbackProgressManager.getResumePosition(itemId)
                 val initialStartPosition = if (startPosition > 0) startPosition else resumePosition
 
-                // Get playback info with our device profile for direct play
-                val playbackInfo = repository.getPlaybackInfo(itemId)
-
-                // Attempt to load chapter markers for intro/outro skip
+                // Attempt to load chapter markers and full metadata for intro/outro skip
                 currentItemMetadata = loadSkipMarkers(itemId)
+
+                // Get playbook info once and reuse it for both subtitle extraction and playback URL selection
+                val playbackInfo = try {
+                    repository.getPlaybackInfo(itemId)
+                } catch (e: Exception) {
+                    null
+                }
+
+                // Extract subtitle specs from metadata and playback info for casting support
+                currentSubtitleSpecs = extractSubtitleSpecs(currentItemMetadata, playbackInfo)
+
+                // Update cast state with poster and backdrop if connected
                 if (lastCastState?.isConnected == true && !hasSentCastLoad) {
                     _playerState.value = _playerState.value.copy(
                         castPosterUrl = repository.getImageUrl(itemId),
                         castBackdropUrl = currentItemMetadata?.let { repository.getBackdropUrl(it) },
                         castOverview = currentItemMetadata?.overview,
                     )
-                    if (startCastingIfReady()) {
-                        hasSentCastLoad = true
-                    }
                 }
 
-                // Find the best media source for direct play
-                val mediaSource = playbackInfo.mediaSources?.find { source ->
-                    source.supportsDirectPlay == true || source.supportsDirectStream == true
-                } ?: playbackInfo.mediaSources?.firstOrNull()
+                // Use EnhancedPlaybackManager for intelligent playback URL selection
+                val playbackResult = enhancedPlaybackManager.getOptimalPlaybackUrl(
+                    currentItemMetadata ?: throw Exception("Failed to load item metadata"),
+                )
 
-                if (mediaSource == null) {
-                    throw Exception("No media source available")
-                }
-
-                // Choose the best stream URL
-                val streamUrl = when {
-                    // Direct play - use original file with static=true
-                    mediaSource.supportsDirectPlay == true -> {
-                        val container = mediaSource.container
-                        SecureLogger.d("VideoPlayer", "Using direct play with container: $container")
-                        "${repository.getCurrentServer()?.url}/Videos/$itemId/stream.$container?static=true&mediaSourceId=${mediaSource.id}"
+                val streamUrl = when (playbackResult) {
+                    is com.rpeters.jellyfin.data.playback.PlaybackResult.DirectPlay -> {
+                        SecureLogger.d(
+                            "VideoPlayer",
+                            "Direct Play: ${playbackResult.container} (${playbackResult.videoCodec}/${playbackResult.audioCodec}) @ ${playbackResult.bitrate / 1_000_000}Mbps - ${playbackResult.reason}",
+                        )
+                        playbackResult.url
                     }
-                    // Direct stream - server remuxes without transcoding
-                    mediaSource.supportsDirectStream == true -> {
-                        SecureLogger.d("VideoPlayer", "Using direct stream")
-                        repository.getDirectStreamUrl(itemId)
+                    is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> {
+                        SecureLogger.d(
+                            "VideoPlayer",
+                            "Transcoding: ${playbackResult.targetResolution} ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} @ ${playbackResult.targetBitrate / 1_000_000}Mbps - ${playbackResult.reason}",
+                        )
+                        playbackResult.url
                     }
-                    // Fallback to transcoded stream
-                    else -> {
-                        SecureLogger.d("VideoPlayer", "Falling back to transcoded stream")
-                        repository.getStreamUrl(itemId)
+                    is com.rpeters.jellyfin.data.playback.PlaybackResult.Error -> {
+                        throw Exception("Playback URL error: ${playbackResult.message}")
                     }
                 }
 
                 if (streamUrl.isNullOrEmpty()) {
-                    throw Exception("No stream URL available")
+                    throw Exception("No stream URL available from playback manager")
                 }
 
-                SecureLogger.d("VideoPlayer", "Stream URL: $streamUrl")
-                SecureLogger.d(
-                    "VideoPlayer",
-                    "Media source supports direct play: ${mediaSource.supportsDirectPlay}",
-                )
-                SecureLogger.d(
-                    "VideoPlayer",
-                    "Media source supports direct stream: ${mediaSource.supportsDirectStream}",
-                )
+                SecureLogger.d("VideoPlayer", "Final stream URL: $streamUrl")
 
                 withContext(Dispatchers.Main) {
-                    // Create ExoPlayer with FFmpeg extension renderer support for Vorbis
+                    // Create ExoPlayer with optimized renderer support
+                    // Use ON mode for extensions to allow hardware decoders for HEVC/high-res content
+                    // while falling back to FFmpeg for unsupported codecs like Vorbis
                     val renderersFactory = DefaultRenderersFactory(context)
-                        .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+                        .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+                        .setEnableDecoderFallback(true) // Enable fallback for codec issues
 
                     // Ensure HTTP requests carry the token header
                     val token = repository.getCurrentServer()?.accessToken
@@ -398,6 +397,8 @@ class VideoPlayerViewModel @Inject constructor(
                         .setSeekForwardIncrementMs(10_000)
                         .setMediaSourceFactory(mediaSourceFactory)
                         .setRenderersFactory(renderersFactory)
+                        // Handle video output to ensure proper surface attachment
+                        .setVideoScalingMode(androidx.media3.common.C.VIDEO_SCALING_MODE_SCALE_TO_FIT)
                         .build()
 
                     // Add listener
@@ -509,6 +510,69 @@ class VideoPlayerViewModel @Inject constructor(
             item
         } catch (_: Exception) {
             null
+        }
+    }
+
+    /**
+     * Extract subtitle specifications from item metadata for casting support
+     * @param item The media item metadata
+     * @param playbackInfo Pre-fetched playback info to avoid redundant API calls
+     */
+    private suspend fun extractSubtitleSpecs(
+        item: BaseItemDto?,
+        playbackInfo: org.jellyfin.sdk.model.api.PlaybackInfoResponse?,
+    ): List<com.rpeters.jellyfin.ui.player.SubtitleSpec> {
+        if (item == null || playbackInfo == null) return emptyList()
+
+        return try {
+            val subtitleSpecs = mutableListOf<com.rpeters.jellyfin.ui.player.SubtitleSpec>()
+            val itemId = item.id?.toString() ?: return emptyList()
+            val serverUrl = repository.getCurrentServer()?.url ?: return emptyList()
+            val accessToken = repository.getCurrentServer()?.accessToken ?: return emptyList()
+
+            val mediaSource = playbackInfo.mediaSources?.firstOrNull() ?: return emptyList()
+
+            // Extract subtitle streams
+            mediaSource.mediaStreams
+                ?.filter { stream -> stream.type == org.jellyfin.sdk.model.api.MediaStreamType.SUBTITLE }
+                ?.filter { stream -> !stream.isExternal } // Only include embedded subtitles
+                ?.forEach { stream ->
+                    val codec = stream.codec?.lowercase() ?: return@forEach
+                    val language = stream.language ?: "und"
+                    val displayTitle = stream.displayTitle ?: stream.title ?: language.uppercase()
+
+                    // Map codec to MIME type
+                    val mimeType = when (codec) {
+                        "srt", "subrip" -> MimeTypes.APPLICATION_SUBRIP
+                        "vtt", "webvtt" -> MimeTypes.TEXT_VTT
+                        "ass", "ssa" -> MimeTypes.TEXT_SSA
+                        "ttml" -> MimeTypes.APPLICATION_TTML
+                        else -> null
+                    }
+
+                    if (mimeType != null && stream.index != null) {
+                        // Build subtitle URL with authentication
+                        // Note: Using query parameter for auth because Cast receiver may not support custom headers
+                        val subtitleUrl = "$serverUrl/Videos/$itemId/${mediaSource.id}/Subtitles/${stream.index}/Stream.$codec?api_key=$accessToken"
+
+                        subtitleSpecs.add(
+                            com.rpeters.jellyfin.ui.player.SubtitleSpec(
+                                url = subtitleUrl,
+                                mimeType = mimeType,
+                                language = language,
+                                label = displayTitle,
+                                isForced = false,
+                            ),
+                        )
+
+                        SecureLogger.d("VideoPlayer", "Added subtitle spec: $displayTitle ($language) - $codec")
+                    }
+                }
+
+            subtitleSpecs
+        } catch (e: Exception) {
+            SecureLogger.e("VideoPlayer", "Failed to extract subtitle specs", e)
+            emptyList()
         }
     }
 
@@ -690,7 +754,8 @@ class VideoPlayerViewModel @Inject constructor(
                 p.removeListener(playerListener)
                 // Stop playback to flush decoders before releasing
                 p.stop()
-                // Clear any video surface to avoid surface detachment warnings
+                // Clear all video outputs to properly detach surfaces and prevent black screen issues
+                // This is critical for proper cleanup with HEVC/high-resolution content
                 p.clearVideoSurface()
             } catch (_: Exception) {
             }
