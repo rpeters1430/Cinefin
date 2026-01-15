@@ -2,7 +2,6 @@
 
 package com.rpeters.jellyfin.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
@@ -29,7 +28,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -250,10 +248,7 @@ fun MediaCard(
                         }
 
                         item.communityRating?.let { rating ->
-                            val animatedRating by animateFloatAsState(
-                                targetValue = rating,
-                                label = "rating_anim",
-                            )
+                            // ✅ Performance: Removed animation to reduce recomposition overhead
                             val ratingColor = when {
                                 rating >= 7.5f -> RatingGold
                                 rating >= 5.0f -> RatingSilver
@@ -261,7 +256,7 @@ fun MediaCard(
                             }
                             Box(contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator(
-                                    progress = { animatedRating / 10f },
+                                    progress = { rating / 10f },
                                     modifier = Modifier.size(28.dp),
                                     strokeWidth = 2.dp,
                                     color = ratingColor,
@@ -492,10 +487,7 @@ fun PosterMediaCard(
                             }
 
                             item.communityRating?.let { rating ->
-                                val animatedRating by animateFloatAsState(
-                                    targetValue = rating,
-                                    label = "rating_anim",
-                                )
+                                // ✅ Performance: Removed animation to reduce recomposition overhead
                                 val ratingColor = when {
                                     rating >= 7.5f -> RatingGold
                                     rating >= 5.0f -> RatingSilver
@@ -503,7 +495,7 @@ fun PosterMediaCard(
                                 }
                                 Box(contentAlignment = Alignment.Center) {
                                     CircularProgressIndicator(
-                                        progress = { animatedRating / 10f },
+                                        progress = { rating / 10f },
                                         modifier = Modifier.size(20.dp),
                                         strokeWidth = 1.5.dp,
                                         color = ratingColor,
@@ -712,10 +704,7 @@ fun RecentlyAddedCard(
                     }
 
                     item.communityRating?.let { rating ->
-                        val animatedRating by animateFloatAsState(
-                            targetValue = rating,
-                            label = "rating_anim",
-                        )
+                        // ✅ Performance: Removed animation to reduce recomposition overhead
                         val ratingColor = when {
                             rating >= 7.5f -> RatingGold
                             rating >= 5.0f -> RatingSilver
@@ -723,7 +712,7 @@ fun RecentlyAddedCard(
                         }
                         Box(contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(
-                                progress = { animatedRating / 10f },
+                                progress = { rating / 10f },
                                 modifier = Modifier.size(24.dp),
                                 strokeWidth = 2.dp,
                                 color = ratingColor,

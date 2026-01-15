@@ -2,8 +2,6 @@
 
 package com.rpeters.jellyfin.ui.components
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,9 +32,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,7 +43,6 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
-import com.rpeters.jellyfin.ui.theme.MotionTokens
 
 /**
  * Material 3 Expressive Carousel for hero content
@@ -147,17 +144,17 @@ private fun ExpressiveHeroCard(
     isActive: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val scale = animateFloatAsState(
-        targetValue = if (isActive) 1.0f else 0.95f,
-        animationSpec = MotionTokens.carouselScroll,
-        label = "hero_card_scale",
-    )
+    // ✅ Performance: Use graphicsLayer instead of scale() modifier for better performance
+    // graphicsLayer doesn't cause layout/recomposition, just draws differently
+    val scale = if (isActive) 1.0f else 0.95f
 
     Card(
         modifier = modifier
             .fillMaxSize()
-            .scale(scale.value)
-            .animateContentSize(),
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),

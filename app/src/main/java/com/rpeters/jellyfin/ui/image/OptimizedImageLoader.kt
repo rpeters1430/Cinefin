@@ -119,7 +119,8 @@ fun OptimizedImage(
     val context = LocalContext.current
     val backgroundColor = MaterialTheme.colorScheme.surfaceVariant.toArgb()
 
-    val imageRequest: ImageRequest = remember(imageUrl, size, quality) {
+    // ✅ Performance: Remember request with stable key to prevent recreation
+    val imageRequest: ImageRequest = remember(imageUrl, size.width, size.height, cornerRadius.value) {
         val builder = ImageRequest.Builder(context)
             .data(imageUrl)
             .size(Size(size.width, size.height))
