@@ -4,12 +4,12 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.common.MimeTypes
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,7 +44,6 @@ data class TrackInfo(
     val isSelected: Boolean,
     val displayName: String,
 )
-
 
 data class VideoQuality(
     val id: String,
@@ -520,8 +519,8 @@ class VideoPlayerViewModel @Inject constructor(
      * @param playbackInfo Pre-fetched playback info to avoid redundant API calls
      */
     private suspend fun extractSubtitleSpecs(
-        item: BaseItemDto?, 
-        playbackInfo: org.jellyfin.sdk.model.api.PlaybackInfoResponse?
+        item: BaseItemDto?,
+        playbackInfo: org.jellyfin.sdk.model.api.PlaybackInfoResponse?,
     ): List<com.rpeters.jellyfin.ui.player.SubtitleSpec> {
         if (item == null || playbackInfo == null) return emptyList()
 
