@@ -636,6 +636,17 @@ class VideoPlayerViewModel @Inject constructor(
         stopCastPositionUpdates()
     }
 
+    /**
+     * Disconnect from Cast device entirely (stops playback AND ends session).
+     * This will dismiss the persistent notification.
+     */
+    fun disconnectCast() {
+        castManager.disconnectCastSession()
+        hasSentCastLoad = false
+        wasPlayingBeforeCast = false
+        stopCastPositionUpdates()
+    }
+
     fun seekCastPlayback(positionMs: Long) {
         castManager.seekTo(positionMs)
     }
@@ -726,6 +737,21 @@ class VideoPlayerViewModel @Inject constructor(
     fun setPlaybackSpeed(speed: Float) {
         exoPlayer?.setPlaybackSpeed(speed)
         _playerState.value = _playerState.value.copy(playbackSpeed = speed)
+    }
+
+    /**
+     * Handle cast button click:
+     * - If already connected, disconnect from the cast device
+     * - If not connected, show the device selection dialog
+     */
+    fun handleCastButtonClick() {
+        if (_playerState.value.isCastConnected) {
+            // Already connected - disconnect
+            disconnectCast()
+        } else {
+            // Not connected - show dialog
+            showCastDialog()
+        }
     }
 
     fun showCastDialog() {

@@ -184,16 +184,16 @@ private fun ExpressiveTopControls(
                     }
                 }
 
-                // Right side - Cast button only
+                // Right side - Cast button (click to disconnect when connected)
                 AnimatedContent(
-                    targetState = playerState.isCasting,
+                    targetState = playerState.isCastConnected,
                     label = "cast_button",
-                ) { isCasting ->
+                ) { isConnected ->
                     ExpressiveIconButton(
-                        icon = if (isCasting) Icons.Default.CastConnected else Icons.Default.Cast,
-                        contentDescription = if (isCasting) "Disconnect Cast" else "Cast to Device",
+                        icon = if (isConnected) Icons.Default.CastConnected else Icons.Default.Cast,
+                        contentDescription = if (isConnected) "Disconnect from ${playerState.castDeviceName ?: "Cast Device"}" else "Cast to Device",
                         onClick = onCastClick,
-                        isActive = isCasting,
+                        isActive = isConnected,
                     )
                 }
             }

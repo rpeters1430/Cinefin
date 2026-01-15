@@ -180,7 +180,7 @@ class VideoPlayerActivity : FragmentActivity() {
                             onQualityChange = playerViewModel::changeQuality,
                             onPlaybackSpeedChange = playerViewModel::setPlaybackSpeed,
                             onAspectRatioChange = playerViewModel::changeAspectRatio,
-                            onCastClick = playerViewModel::showCastDialog,
+                            onCastClick = playerViewModel::handleCastButtonClick,
                             onCastPause = playerViewModel::pauseCastPlayback,
                             onCastResume = playerViewModel::resumeCastPlayback,
                             onCastStop = playerViewModel::stopCastPlayback,

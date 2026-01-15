@@ -64,7 +64,7 @@ scripts/gen-local-properties.ps1  # PowerShell (Windows)
 
 ### High-Level Architecture
 This is a modern Android client for Jellyfin media servers built with:
-- **UI**: Jetpack Compose (BOM 2025.12.01) with Material 3 design system
+- **UI**: Jetpack Compose (BOM 2026.01.00) with Material 3 design system
 - **Architecture**: MVVM pattern with Repository pattern for data access
 - **DI**: Hilt 2.57.2 for dependency injection throughout the app
 - **Async**: Kotlin Coroutines 1.10.2 with StateFlow for reactive UI updates
@@ -183,10 +183,10 @@ val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 ## Material 3 Design System
 
 ### Current Implementation
-- Using Material 3 alpha versions (1.5.0-alpha11)
+- Using Material 3 alpha versions (1.5.0-alpha12)
 - **Material 3 Expressive Components** (1.5.0-alpha02) for enhanced UI elements
 - **Custom carousel implementation** instead of official Material 3 Carousel (dependency disabled in libs.versions.toml)
-- **Adaptive layouts** using Material 3 adaptive components (1.3.0-alpha05) for different screen sizes
+- **Adaptive layouts** using Material 3 adaptive components (1.3.0-alpha06) for different screen sizes
 - Theme defined in `ui/theme/` with Jellyfin brand colors:
   - Primary: Jellyfin Purple (#6200EE)
   - Secondary: Jellyfin Blue (#2962FF)
