@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
-import com.rpeters.jellyfin.ui.theme.MotionTokens
 
 /**
  * Material 3 Expressive Carousel for hero content
