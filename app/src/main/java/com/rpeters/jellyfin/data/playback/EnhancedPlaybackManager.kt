@@ -100,13 +100,24 @@ class EnhancedPlaybackManager @Inject constructor(
         for (mediaSource in mediaSources) {
             val canDirectPlay = canDirectPlayMediaSource(mediaSource, item)
             if (canDirectPlay) {
-                val directPlayUrl = mediaSource.path
-                    ?: streamRepository.getDirectStreamUrl(item.id.toString(), mediaSource.container)
+                // Build proper direct play URL with mediaSourceId for server tracking
+                val itemId = item.id.toString()
+                val mediaSourceId = mediaSource.id
+                val container = mediaSource.container ?: "mkv"
+
+                // Construct direct play URL with static=true and mediaSourceId
+                val server = repository.getCurrentServer()
+                val directPlayUrl = if (server?.url != null && mediaSourceId != null) {
+                    "${server.url}/Videos/$itemId/stream.$container?static=true&mediaSourceId=$mediaSourceId"
+                } else {
+                    // Fallback to stream repository method
+                    streamRepository.getDirectStreamUrl(itemId, container)
+                }
 
                 if (directPlayUrl != null) {
                     return PlaybackResult.DirectPlay(
                         url = directPlayUrl,
-                        container = mediaSource.container ?: "unknown",
+                        container = container,
                         videoCodec = getVideoCodec(mediaSource),
                         audioCodec = getAudioCodec(mediaSource),
                         bitrate = mediaSource.bitrate ?: 0,
