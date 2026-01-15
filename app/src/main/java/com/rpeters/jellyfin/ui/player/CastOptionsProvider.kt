@@ -32,11 +32,13 @@ class CastOptionsProvider : OptionsProvider {
             .build()
 
         // Build and return Cast options
+        // Note: Disabled auto-resume to prevent unwanted automatic casting
+        // Cast will only start when user explicitly clicks the Cast button
         return CastOptions.Builder()
             .setReceiverApplicationId(getReceiverApplicationId())
             .setCastMediaOptions(mediaOptions)
-            .setEnableReconnectionService(true)
-            .setResumeSavedSession(true)
+            .setEnableReconnectionService(false) // Disable auto-reconnection
+            .setResumeSavedSession(false) // Disable auto-resume of previous sessions
             .build()
     }
 

@@ -2,11 +2,8 @@ package com.rpeters.jellyfin.ui.player
 
 import android.content.Context
 import androidx.core.net.toUri
-import androidx.media3.cast.CastPlayer
-import androidx.media3.cast.SessionAvailabilityListener
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
-import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.MediaInfo
@@ -48,7 +45,6 @@ data class CastState(
     val deviceName: String? = null,
     val isCasting: Boolean = false,
     val isRemotePlaying: Boolean = false,
-    val castPlayer: CastPlayer? = null,
     val error: String? = null,
     // Playback position tracking
     val currentPosition: Long = 0L,
@@ -69,7 +65,6 @@ class CastManager @Inject constructor(
     val castState: StateFlow<CastState> = _castState.asStateFlow()
 
     private var castContext: CastContext? = null
-    private var castPlayer: CastPlayer? = null
 
     // Single coroutine scope for this singleton, tied to the manager's lifecycle
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -179,37 +174,18 @@ class CastManager @Inject constructor(
 
         override fun onSessionResumeFailed(session: CastSession, error: Int) {
             SecureLogger.e("CastManager", "Cast session resume failed: $error")
+            // Don't show error to user - resume failures are expected when sessions expire
+            // Just clear the saved session so we don't keep trying
+            managerScope.launch {
+                castPreferencesRepository.clearLastCastSession()
+            }
+            // Clear error state to avoid showing persistent error messages
             _castState.update { state ->
-                state.copy(error = "Failed to resume Cast session (error code: $error)")
+                state.copy(error = null)
             }
         }
     }
 
-    private val sessionAvailabilityListener = object : SessionAvailabilityListener {
-        override fun onCastSessionAvailable() {
-            if (BuildConfig.DEBUG) {
-                SecureLogger.d("CastManager", "Cast session available")
-            }
-            _castState.update { state ->
-                state.copy(
-                    isAvailable = true,
-                    isRemotePlaying = isRemotePlaying(),
-                )
-            }
-        }
-
-        override fun onCastSessionUnavailable() {
-            if (BuildConfig.DEBUG) {
-                SecureLogger.d("CastManager", "Cast session unavailable")
-            }
-            _castState.update { state ->
-                state.copy(
-                    isAvailable = false,
-                    isRemotePlaying = false,
-                )
-            }
-        }
-    }
 
     fun initialize() {
         // Cancel any existing initialization job to prevent duplicate listeners
@@ -227,18 +203,10 @@ class CastManager @Inject constructor(
                     castContext = ctx
                     ctx.sessionManager.addSessionManagerListener(sessionManagerListener, CastSession::class.java)
 
-                    // Create CastPlayer and add session availability listener
-                    @Suppress("DEPRECATION")
-                    castPlayer = CastPlayer(ctx).apply {
-                        @Suppress("DEPRECATION")
-                        setSessionAvailabilityListener(sessionAvailabilityListener)
-                    }
-
                     _castState.update { state ->
                         state.copy(
                             isAvailable = ctx.sessionManager.currentCastSession != null,
                             isRemotePlaying = isRemotePlaying(),
-                            castPlayer = castPlayer,
                             error = null,
                         )
                     }
@@ -589,6 +557,50 @@ class CastManager @Inject constructor(
         }
     }
 
+    /**
+     * Disconnect from the current Cast session entirely.
+     * This stops media playback AND ends the session, which will dismiss the notification.
+     * Use this when the user wants to completely disconnect from the Cast device.
+     */
+    fun disconnectCastSession() {
+        try {
+            val sessionManager = castContext?.sessionManager
+            val currentSession = sessionManager?.currentCastSession
+
+            if (currentSession != null) {
+                // Stop media first
+                currentSession.remoteMediaClient?.stop()
+
+                // Then end the session - this will dismiss the notification
+                sessionManager.endCurrentSession(true)
+
+                if (BuildConfig.DEBUG) {
+                    SecureLogger.d("CastManager", "Disconnected cast session")
+                }
+            }
+
+            _castState.update { state ->
+                state.copy(
+                    isRemotePlaying = false,
+                    isCasting = false,
+                    isConnected = false,
+                    deviceName = null,
+                    error = null,
+                )
+            }
+
+            // Clear persisted session
+            managerScope.launch {
+                castPreferencesRepository.clearLastCastSession()
+            }
+        } catch (e: Exception) {
+            SecureLogger.e("CastManager", "Failed to disconnect cast session", e)
+            _castState.update { state ->
+                state.copy(error = "Failed to disconnect: ${e.message}")
+            }
+        }
+    }
+
     fun pauseCasting() {
         try {
             castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.pause()
@@ -721,11 +733,6 @@ class CastManager @Inject constructor(
         }
     }
 
-    fun getCastPlayer(): Player? {
-        return castPlayer
-    }
-
-    @Suppress("DEPRECATION")
     fun release() {
         try {
             // Cancel initialization job to prevent scope leak
@@ -736,9 +743,6 @@ class CastManager @Inject constructor(
             managerScope.coroutineContext[kotlinx.coroutines.Job]?.cancel()
 
             castContext?.sessionManager?.removeSessionManagerListener(sessionManagerListener, CastSession::class.java)
-            castPlayer?.setSessionAvailabilityListener(null)
-            castPlayer?.release()
-            castPlayer = null
 
             if (BuildConfig.DEBUG) {
                 SecureLogger.d("CastManager", "Cast manager released")
