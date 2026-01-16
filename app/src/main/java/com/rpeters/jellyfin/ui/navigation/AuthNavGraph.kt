@@ -23,7 +23,7 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
     navController: NavHostController,
 ) {
     composable(Screen.ServerConnection.route) {
-        val viewModel: ServerConnectionViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+        val viewModel: ServerConnectionViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
         val lifecycleOwner = LocalLifecycleOwner.current
         val context = LocalContext.current
         val connectionState by viewModel.connectionState.collectAsStateWithLifecycle(
@@ -73,7 +73,7 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
     }
 
     composable(Screen.QuickConnect.route) {
-        val viewModel: ServerConnectionViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+        val viewModel: ServerConnectionViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
         val lifecycleOwner = LocalLifecycleOwner.current
         val connectionState by viewModel.connectionState.collectAsStateWithLifecycle(
             lifecycle = lifecycleOwner.lifecycle,

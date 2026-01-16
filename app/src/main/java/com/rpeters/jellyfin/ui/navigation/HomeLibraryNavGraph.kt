@@ -23,7 +23,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
     navController: NavHostController,
 ) {
     composable(Screen.Home.route) {
-        val viewModel: MainAppViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+        val viewModel: MainAppViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by viewModel.appState.collectAsStateWithLifecycle(
             lifecycle = lifecycleOwner.lifecycle,
@@ -118,7 +118,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
     }
 
     composable(Screen.Library.route) {
-        val viewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
+        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by viewModel.appState.collectAsStateWithLifecycle(
             lifecycle = lifecycleOwner.lifecycle,

@@ -151,11 +151,7 @@ class BiometricAuthManager(private val context: Context) {
                 BiometricManager.Authenticators.BIOMETRIC_WEAK or deviceCredentialAuth
             }
         }
-        val status = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R && allowsDeviceCredentialFallback) {
-            biometricManager.canAuthenticate()
-        } else {
-            biometricManager.canAuthenticate(authenticators)
-        }
+        val status = biometricManager.canAuthenticate(authenticators)
 
         return BiometricCapability(
             authenticators = authenticators,

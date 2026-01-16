@@ -219,7 +219,15 @@ class SecureCredentialManager @Inject constructor(
             .setUserAuthenticationRequired(requireUserAuthentication)
             .apply {
                 if (requireUserAuthentication) {
-                    setUserAuthenticationValidityDurationSeconds(USER_AUTH_VALIDITY_WINDOW_SECONDS)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        setUserAuthenticationParameters(
+                            USER_AUTH_VALIDITY_WINDOW_SECONDS,
+                            KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL,
+                        )
+                    } else {
+                        @Suppress("DEPRECATION")
+                        setUserAuthenticationValidityDurationSeconds(USER_AUTH_VALIDITY_WINDOW_SECONDS)
+                    }
                 }
             }
             .build()
@@ -525,7 +533,7 @@ class SecureCredentialManager @Inject constructor(
         val credentials = mutableListOf<StoredCredential>()
 
         preferences.asMap().forEach { (key, value) ->
-            if (key is Preferences.Key<*> && key.name.startsWith("pwd_") && !key.name.endsWith("_timestamp")) {
+            if (key.name.startsWith("pwd_") && !key.name.endsWith("_timestamp")) {
                 val encryptedPassword = value as? String ?: return@forEach
                 val decryptedPassword = decrypt(encryptedPassword)
                 if (decryptedPassword == null) {

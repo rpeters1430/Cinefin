@@ -56,7 +56,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
     ) { backStackEntry ->
         val albumId =
             backStackEntry.arguments?.getString(Screen.ALBUM_ID_ARG) ?: return@composable
-        val mainViewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
+        val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         AlbumDetailScreen(
             albumId = albumId,
             onBackClick = { navController.popBackStack() },
@@ -73,7 +73,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         val artistId =
             backStackEntry.arguments?.getString(Screen.ARTIST_ID_ARG) ?: return@composable
         val artistName: String? = null
-        val mainViewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
+        val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         ArtistDetailScreen(
             artistId = artistId,
             artistName = artistName,
@@ -94,8 +94,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             SecureLogger.e("NavGraph", "HomeVideoDetail navigation cancelled: videoId is null or blank")
             return@composable
         }
-        val mainViewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
-        val detailViewModel = androidx.hilt.navigation.compose.hiltViewModel<ItemDetailViewModel>()
+        val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
+        val detailViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<ItemDetailViewModel>()
         LaunchedEffect(videoId) {
             try {
                 detailViewModel.load(videoId)
@@ -150,8 +150,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
     ) { backStackEntry ->
         val itemId =
             backStackEntry.arguments?.getString(Screen.ITEM_ID_ARG) ?: return@composable
-        val mainViewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
-        val detailViewModel = androidx.hilt.navigation.compose.hiltViewModel<ItemDetailViewModel>()
+        val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
+        val detailViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<ItemDetailViewModel>()
         LaunchedEffect(itemId) {
             try {
                 detailViewModel.load(itemId)
@@ -215,8 +215,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             SecureLogger.e("NavGraph", "MovieDetail navigation cancelled: movieId is null or blank")
             return@composable
         }
-        val mainViewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
-        val detailViewModel = androidx.hilt.navigation.compose.hiltViewModel<MovieDetailViewModel>()
+        val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
+        val detailViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MovieDetailViewModel>()
 
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by mainViewModel.appState.collectAsStateWithLifecycle(
@@ -295,8 +295,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             return@composable
         }
 
-        val mainViewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
-        val viewModel = androidx.hilt.navigation.compose.hiltViewModel<TVEpisodeDetailViewModel>()
+        val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
+        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<TVEpisodeDetailViewModel>()
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by mainViewModel.appState.collectAsStateWithLifecycle(
             lifecycle = lifecycleOwner.lifecycle,

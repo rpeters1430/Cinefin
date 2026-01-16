@@ -24,7 +24,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
     onLogout: () -> Unit,
 ) {
     composable(Screen.Search.route) {
-        val viewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
+        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by viewModel.appState.collectAsStateWithLifecycle(
             lifecycle = lifecycleOwner.lifecycle,
@@ -42,7 +42,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
     }
 
     composable(Screen.Favorites.route) {
-        val viewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
+        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by viewModel.appState.collectAsStateWithLifecycle(
             lifecycle = lifecycleOwner.lifecycle,
@@ -65,7 +65,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
     }
 
     composable(Screen.Profile.route) {
-        val viewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
+        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         val lifecycleOwner = LocalLifecycleOwner.current
         val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(
             lifecycle = lifecycleOwner.lifecycle,

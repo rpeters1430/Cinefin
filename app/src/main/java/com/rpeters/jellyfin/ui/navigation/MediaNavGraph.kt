@@ -96,7 +96,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             SecureLogger.e("NavGraph", "TVSeasons navigation cancelled: seriesId is null or blank")
             return@composable
         }
-        val viewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
+        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         LocalLifecycleOwner.current
 
         LaunchedEffect(seriesId) {
@@ -129,8 +129,8 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             SecureLogger.e("NavGraph", "TVEpisodes navigation cancelled: seasonId is null or blank")
             return@composable
         }
-        val viewModel = androidx.hilt.navigation.compose.hiltViewModel<SeasonEpisodesViewModel>()
-        val mainViewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
+        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<SeasonEpisodesViewModel>()
+        val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         LocalLifecycleOwner.current
 
         LaunchedEffect(seasonId) {
@@ -279,7 +279,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             SecureLogger.e("NavGraph", "Stuff navigation cancelled: libraryId is null or blank")
             return@composable
         }
-        val viewModel = androidx.hilt.navigation.compose.hiltViewModel<MainAppViewModel>()
+        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by viewModel.appState.collectAsStateWithLifecycle(
             lifecycle = lifecycleOwner.lifecycle,
