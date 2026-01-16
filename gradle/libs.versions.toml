@@ -1,5 +1,5 @@
 [versions]
-agp = "9.0.0"
+agp = "8.13.2"
 desugar_jdk_libs = "2.1.5"
 hiltAndroidTestingVersion = "2.58"
 kotlin = "2.3.0"
