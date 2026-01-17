@@ -78,6 +78,7 @@ import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
+import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import kotlin.math.roundToInt
@@ -709,7 +710,7 @@ private fun ExpressiveMovieInfoCard(
 
             // Media info with resolution and codecs
             movie.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
-                val videoStream = streams.firstOrNull { it.type == MediaStreamType.VIDEO }
+                val videoStream = streams.findDefaultVideoStream()
                 val audioStream = streams.firstOrNull { it.type == MediaStreamType.AUDIO }
                 val resolution = getMovieResolution(videoStream)
 
