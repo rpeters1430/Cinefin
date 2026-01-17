@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.data
 
 import android.content.Context
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64

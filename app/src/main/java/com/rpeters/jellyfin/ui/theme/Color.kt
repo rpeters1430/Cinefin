@@ -56,6 +56,7 @@ val RatingGold = Color(0xFFFFD700)
 val RatingSilver = Color(0xFFC0C0C0)
 val RatingBronze = Color(0xFFCD7F32)
 val Quality4K = Color(0xFF00FF00)
+val Quality1440 = Color(0xFF00E5FF)
 val QualityHD = Color(0xFF00BFFF)
 val QualitySD = Color(0xFFFFA500)
 
@@ -217,6 +218,7 @@ fun getContentTypeColor(contentType: String?): Color {
 fun getQualityColor(quality: String?): Color {
     return when (quality?.uppercase()) {
         "4K", "UHD" -> Quality4K
+        "1440P", "QHD" -> Quality1440
         "HD", "1080P", "720P" -> QualityHD
         "SD", "480P" -> QualitySD
         else -> Neutral50

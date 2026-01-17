@@ -52,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -71,6 +72,10 @@ import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.ShimmerBox
 import com.rpeters.jellyfin.ui.theme.JellyfinBlue80
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
+import com.rpeters.jellyfin.ui.theme.Quality1440
+import com.rpeters.jellyfin.ui.theme.Quality4K
+import com.rpeters.jellyfin.ui.theme.QualityHD
+import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -709,13 +714,14 @@ private fun ExpressiveMovieInfoCard(
             movie.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
                 val videoStream = streams.firstOrNull { it.type == MediaStreamType.VIDEO }
                 val audioStream = streams.firstOrNull { it.type == MediaStreamType.AUDIO }
-                val resolution = getMovieResolution(videoStream, stringResource(id = R.string.unknown))
+                val resolution = getMovieResolution(videoStream)
 
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     videoStream?.let { stream ->
-                        ExpressiveInfoRow(
+                        ExpressiveVideoInfoRow(
                             label = stringResource(id = R.string.video),
-                            value = listOfNotNull(resolution, stream.codec?.uppercase()).joinToString(" • "),
+                            resolution = resolution,
+                            codec = stream.codec?.uppercase(),
                             icon = Icons.Default.HighQuality,
                         )
                     }
@@ -1042,18 +1048,96 @@ private fun CrewInfoRow(
     }
 }
 
+@Composable
+private fun ExpressiveVideoInfoRow(
+    label: String,
+    resolution: Pair<String, Color>?,
+    codec: String?,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(40.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(10.dp),
+            )
+        }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                resolution?.let { (labelText, color) ->
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = color,
+                    ) {
+                        Text(
+                            text = labelText,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                codec?.let { codecText ->
+                    Text(
+                        text = codecText,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                if (resolution == null && codec == null) {
+                    Text(
+                        text = stringResource(id = R.string.unknown),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+    }
+}
+
 // Helper function for movie resolution detection
 private fun getMovieResolution(
     videoStream: org.jellyfin.sdk.model.api.MediaStream?,
-    unknownLabel: String,
-): String {
-    return when (videoStream?.height) {
-        null -> unknownLabel
-        in 1..719 -> "SD"
-        720 -> "720p"
-        in 721..1079 -> "HD"
-        1080 -> "1080p"
-        in 1081..2159 -> "QHD"
-        else -> "4K"
+): Pair<String, Color>? {
+    val height = videoStream?.height
+    val width = videoStream?.width
+    val maxDimension = maxOf(height ?: 0, width ?: 0)
+
+    if (maxDimension == 0) {
+        return null
+    }
+
+    return when {
+        maxDimension >= 2160 || (width ?: 0) >= 3840 -> "4K" to Quality4K
+        maxDimension >= 1440 -> "1440p" to Quality1440
+        maxDimension >= 1080 -> "HD" to QualityHD
+        else -> "SD" to QualitySD
     }
 }

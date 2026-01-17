@@ -79,6 +79,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.ToolbarAction
 import com.rpeters.jellyfin.ui.theme.MotionTokens
+import com.rpeters.jellyfin.ui.theme.Quality1440
 import com.rpeters.jellyfin.ui.theme.Quality4K
 import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
@@ -550,11 +551,12 @@ private fun ExpressiveEpisodeInfoCard(
                     }
 
                     // Video information
-                    val videoResolution = getEpisodeResolution(episode)?.first
+                    val videoResolution = getEpisodeResolution(episode)
                     videoStream?.let { stream ->
-                        ExpressiveInfoRow(
+                        ExpressiveVideoInfoRow(
                             label = stringResource(id = R.string.video),
-                            value = listOfNotNull(videoResolution, stream.codec?.uppercase()).joinToString(" \u2022 "),
+                            resolution = videoResolution,
+                            codec = stream.codec?.uppercase(),
                             icon = Icons.Default.HighQuality,
                         )
                     }
@@ -681,13 +683,90 @@ private fun formatDate(date: Any): String {
     }
 }
 
+@Composable
+private fun ExpressiveVideoInfoRow(
+    label: String,
+    resolution: Pair<String, Color>?,
+    codec: String?,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(24.dp),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier
+                    .size(16.dp)
+                    .padding(4.dp),
+            )
+        }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+            )
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                resolution?.let { (labelText, color) ->
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = color,
+                    ) {
+                        Text(
+                            text = labelText,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                codec?.let { codecText ->
+                    Text(
+                        text = codecText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                if (resolution == null && codec == null) {
+                    Text(
+                        text = stringResource(id = R.string.unknown),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+    }
+}
+
 /**
  * Get episode resolution label and color based on video height
  * Requirements:
- * - Under 720p -> SD
- * - 720p -> 720p
- * - 1080p -> 1080p
- * - Over 1080p -> 4K
+ * - 4K -> 4K
+ * - 1440p -> 1440p
+ * - 1080p -> HD
+ * - 720p or lower -> SD
  */
 private fun getEpisodeResolution(episode: BaseItemDto): Pair<String, Color>? {
     val mediaSource = episode.mediaSources?.firstOrNull() ?: return null
@@ -695,14 +774,19 @@ private fun getEpisodeResolution(episode: BaseItemDto): Pair<String, Color>? {
         it.type == MediaStreamType.VIDEO
     } ?: return null
 
-    val height = videoStream.height ?: return null
+    val height = videoStream.height
+    val width = videoStream.width
+    val maxDimension = maxOf(height ?: 0, width ?: 0)
+
+    if (maxDimension == 0) {
+        return null
+    }
 
     return when {
-        height > 1080 -> "4K" to Quality4K
-        height == 1080 -> "1080p" to QualityHD
-        height == 720 -> "720p" to QualityHD
-        height < 720 -> "SD" to QualitySD
-        else -> null
+        maxDimension >= 2160 || (width ?: 0) >= 3840 -> "4K" to Quality4K
+        maxDimension >= 1440 -> "1440p" to Quality1440
+        maxDimension >= 1080 -> "HD" to QualityHD
+        else -> "SD" to QualitySD
     }
 }
 
