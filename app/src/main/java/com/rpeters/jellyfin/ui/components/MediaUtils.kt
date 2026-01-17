@@ -24,7 +24,6 @@ import com.rpeters.jellyfin.ui.utils.PlaybackMethod
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
-import java.util.Locale
 
 /**
  * Get quality label and color for a media item
