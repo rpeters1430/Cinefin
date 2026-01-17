@@ -78,8 +78,8 @@ import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
-import org.jellyfin.sdk.model.api.BaseItemDto
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
+import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import kotlin.math.roundToInt
 

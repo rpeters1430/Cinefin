@@ -85,9 +85,9 @@ import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.ShareUtils
+import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
-import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.time.format.DateTimeFormatter
 import java.util.Locale

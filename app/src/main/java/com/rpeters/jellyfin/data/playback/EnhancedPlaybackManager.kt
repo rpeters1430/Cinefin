@@ -7,11 +7,11 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
+import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
-import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.PlaybackInfoResponse
 import javax.inject.Inject

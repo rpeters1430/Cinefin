@@ -31,11 +31,11 @@ import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.ui.components.InContextPlaybackRecommendation
 import com.rpeters.jellyfin.ui.components.PlaybackCapabilityDetails
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
+import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.ui.viewmodel.PlaybackRecommendationViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
-import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import org.jellyfin.sdk.model.api.MediaStreamType
 import javax.inject.Inject
 
