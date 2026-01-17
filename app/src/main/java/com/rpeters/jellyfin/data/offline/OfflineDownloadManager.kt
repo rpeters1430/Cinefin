@@ -12,9 +12,21 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
@@ -69,23 +81,17 @@ class OfflineDownloadManager @Inject constructor(
         }
     }
 
-    fun startDownload(
+    suspend fun startDownload(
         item: BaseItemDto,
         quality: VideoQuality? = null,
         downloadUrl: String? = null,
     ): String {
-        // Need to launch in scope since createDownload is now suspend
-        var downloadId = ""
-        downloadScope.launch {
+        return withContext(Dispatchers.IO) {
             val download = createDownload(item, quality, downloadUrl)
-            downloadId = download.id
             addDownload(download)
             executeDownload(download)
+            download.id
         }
-
-        // Note: This returns before download.id is set due to async nature
-        // Consider refactoring to return Flow or suspending this function
-        return downloadId.ifEmpty { java.util.UUID.randomUUID().toString() }
     }
 
     fun pauseDownload(downloadId: String) {
@@ -198,11 +204,9 @@ class OfflineDownloadManager @Inject constructor(
     private suspend fun getDecryptedUrl(urlKeyOrUrl: String): String? {
         // Check if this is an encrypted key (new format)
         if (urlKeyOrUrl.startsWith(ENCRYPTED_URL_PREFIX)) {
-            var decryptedUrl: String? = null
-            encryptedPreferences.getEncryptedString(urlKeyOrUrl).collect { url ->
-                decryptedUrl = url
+            return withTimeoutOrNull(2000L) {
+                encryptedPreferences.getEncryptedString(urlKeyOrUrl).first()
             }
-            return decryptedUrl
         }
 
         // Legacy format: URL was stored directly (unencrypted)
@@ -214,9 +218,7 @@ class OfflineDownloadManager @Inject constructor(
     }
 
     private suspend fun downloadFile(response: Response, download: OfflineDownload) {
-        // Validate response body exists
         val body = response.body
-            ?: throw IOException("Response body is null - cannot download file")
 
         val contentLength = body.contentLength()
         val outputFile = File(download.localFilePath)
@@ -304,7 +306,7 @@ class OfflineDownloadManager @Inject constructor(
             id = downloadId,
             jellyfinItemId = item.id.toString(),
             itemName = item.name ?: context.getString(R.string.unknown),
-            itemType = item.type?.toString() ?: "Video",
+            itemType = item.type.toString(),
             downloadUrl = encryptedUrlKey, // Store the key, not the actual URL
             localFilePath = localPath,
             fileSize = 0L, // Will be updated during download
@@ -420,7 +422,7 @@ class OfflineDownloadManager @Inject constructor(
         // Cancel all ongoing download jobs
         downloadJobs.values.forEach { job ->
             if (job.isActive) {
-                job.cancel("OfflineDownloadManager cleanup")
+                job.cancel(CancellationException("OfflineDownloadManager cleanup"))
             }
         }
         downloadJobs.clear()
@@ -429,7 +431,7 @@ class OfflineDownloadManager @Inject constructor(
         _downloadProgress.update { emptyMap() }
 
         // Cancel the supervisor job and scope
-        supervisorJob.cancel("OfflineDownloadManager cleanup")
+        supervisorJob.cancel(CancellationException("OfflineDownloadManager cleanup"))
     }
 
     /**
@@ -438,7 +440,7 @@ class OfflineDownloadManager @Inject constructor(
     fun cancelDownload(downloadId: String) {
         downloadJobs[downloadId]?.let { job ->
             if (job.isActive) {
-                job.cancel("Download cancelled by user")
+                job.cancel(CancellationException("Download cancelled by user"))
             }
             downloadJobs.remove(downloadId)
         }

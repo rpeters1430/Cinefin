@@ -122,13 +122,12 @@ class MainAppViewModel @Inject constructor(
     }
 
     internal fun libraryItemKey(item: BaseItemDto): String =
-        item.id?.toString()
-            ?: run {
-                // For items without IDs, generate a deterministic UUID from metadata
-                // This prevents exposing sensitive library content information
-                val fallbackString = "${item.name ?: "unknown"}-${item.sortName ?: "unknown"}-${item.type ?: "unknown"}"
-                UUID.nameUUIDFromBytes(fallbackString.toByteArray()).toString()
-            }
+        item.id.toString().ifBlank {
+            // For items without IDs, generate a deterministic UUID from metadata
+            // This prevents exposing sensitive library content information
+            val fallbackString = "${item.name ?: "unknown"}-${item.sortName ?: "unknown"}-${item.type}"
+            UUID.nameUUIDFromBytes(fallbackString.toByteArray()).toString()
+        }
 
     internal fun mergeLibraryItems(currentItems: List<BaseItemDto>, newItems: List<BaseItemDto>): List<BaseItemDto> {
         val merged = LinkedHashMap<String, BaseItemDto>(currentItems.size + newItems.size)
@@ -570,7 +569,7 @@ class MainAppViewModel @Inject constructor(
         viewModelScope.launch {
             if (!ensureValidToken()) return@launch
 
-            val libraryId = library.id?.toString() ?: return@launch
+            val libraryId = library.id.toString()
 
             // ✅ DEBUG: Enhanced logging for library loading
             SecureLogger.v("MainAppViewModel-Load", "🔄 Starting loadLibraryTypeData:")
@@ -771,7 +770,7 @@ class MainAppViewModel @Inject constructor(
     }
 
     fun getLibraryTypeData(library: BaseItemDto): List<BaseItemDto> {
-        val id = library.id?.toString() ?: return emptyList()
+        val id = library.id.toString()
         return _appState.value.itemsByLibrary[id] ?: emptyList()
     }
 
@@ -896,7 +895,7 @@ class MainAppViewModel @Inject constructor(
 
             when (
                 val result = mediaRepository.getLibraryItems(
-                    parentId = movieLibrary.id?.toString(),
+                    parentId = movieLibrary.id.toString(),
                     itemTypes = "Movie",
                     startIndex = startIndex,
                     limit = DEFAULT_PAGE_SIZE,
@@ -963,7 +962,7 @@ class MainAppViewModel @Inject constructor(
 
             when (
                 val result = mediaRepository.getLibraryItems(
-                    parentId = tvLibrary.id?.toString(),
+                    parentId = tvLibrary.id.toString(),
                     itemTypes = "Series",
                     startIndex = startIndex,
                     limit = DEFAULT_PAGE_SIZE,
@@ -1028,7 +1027,7 @@ class MainAppViewModel @Inject constructor(
         streamRepository.getLogoUrl(item)
 
     fun getPersonImageUrl(person: BaseItemPerson): String? {
-        val personId = person.id?.toString() ?: return null
+        val personId = person.id.toString()
         return streamRepository.getImageUrl(personId, "Primary", person.primaryImageTag)
     }
 
@@ -1079,7 +1078,9 @@ class MainAppViewModel @Inject constructor(
         viewModelScope.launch {
             val paginationState = _appState.value.libraryPaginationState[libraryId]
             if (paginationState?.isLoadingMore == true || paginationState?.hasMore == false) {
-                SecureLogger.v("MainAppViewModel", "Skipping loadMore: isLoadingMore=${paginationState?.isLoadingMore}, hasMore=${paginationState?.hasMore}")
+                val isLoadingMore = paginationState?.isLoadingMore == true
+                val hasMore = paginationState?.hasMore == true
+                SecureLogger.v("MainAppViewModel", "Skipping loadMore: isLoadingMore=$isLoadingMore, hasMore=$hasMore")
                 return@launch
             }
 
@@ -1175,7 +1176,7 @@ class MainAppViewModel @Inject constructor(
                     val episode = result.data
                     // Add episode to allItems so it can be found by the detail screen
                     val updatedAllItems = _appState.value.allItems.toMutableList()
-                    updatedAllItems.removeAll { it.id?.toString() == episodeId }
+                    updatedAllItems.removeAll { it.id.toString() == episodeId }
                     updatedAllItems.add(episode)
 
                     _appState.value = _appState.value.copy(
@@ -1224,15 +1225,7 @@ class MainAppViewModel @Inject constructor(
 
     fun loadMoreHomeVideos(homeVideoLibraries: List<BaseItemDto>) {
         val libraryToLoad = homeVideoLibraries.firstOrNull { library ->
-            val libraryId = library.id?.toString()
-            if (libraryId == null) {
-                SecureLogger.w(
-                    "MainAppViewModel",
-                    "Skipping home video library with null ID: ${library.name ?: context.getString(R.string.unknown)}",
-                )
-                return@firstOrNull false
-            }
-
+            val libraryId = library.id.toString()
             val paginationState = _appState.value.libraryPaginationState[libraryId]
             val hasMore = paginationState?.hasMore ?: false
             val isLoadingMore = paginationState?.isLoadingMore == true
@@ -1240,8 +1233,8 @@ class MainAppViewModel @Inject constructor(
             hasMore && !isLoadingMore
         }
 
-        libraryToLoad?.id?.toString()?.let { libraryId ->
-            loadMoreLibraryItems(libraryId)
+        libraryToLoad?.let { library ->
+            loadMoreLibraryItems(library.id.toString())
         }
     }
 

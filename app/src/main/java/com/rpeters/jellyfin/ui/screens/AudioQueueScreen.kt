@@ -176,6 +176,7 @@ fun AudioQueueScreen(
     }
 }
 
+@Suppress("DEPRECATION")
 @OptIn(ExperimentalMaterial3Api::class)
 @OptInAppExperimentalApis
 @Composable

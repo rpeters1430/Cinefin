@@ -54,12 +54,8 @@ fun LibraryItemCard(
         .combinedClickable(
             onClick = {
                 if (libraryType == LibraryType.TV_SHOWS && item.type == BaseItemKind.SERIES) {
-                    val seriesId = item.id?.toString()
-                    if (seriesId != null) {
-                        onTVShowClick?.invoke(seriesId) ?: onItemClick(item)
-                    } else {
-                        onItemClick(item)
-                    }
+                    val seriesId = item.id.toString()
+                    onTVShowClick?.invoke(seriesId) ?: onItemClick(item)
                 } else {
                     onItemClick(item)
                 }
@@ -276,13 +272,11 @@ fun LibraryItemCard(
                             }
                         }
                         LibraryType.STUFF -> {
-                            item.type?.let { type ->
-                                Text(
-                                    text = type.toString(),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = libraryType.color,
-                                )
-                            }
+                            Text(
+                                text = item.type.toString(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = libraryType.color,
+                            )
                         }
                     }
                 }

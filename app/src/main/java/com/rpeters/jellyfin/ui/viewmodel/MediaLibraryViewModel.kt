@@ -106,7 +106,7 @@ class MediaLibraryViewModel @Inject constructor(
                 if (result.errorType != ErrorType.OPERATION_CANCELLED) {
                     Log.e("MediaLibraryViewModel", "ensureLibrariesLoaded: Failed to load libraries: ${result.message}")
                     _libraryState.value = currentState.copy(
-                        errorMessage = result.message ?: "Failed to load libraries",
+                        errorMessage = result.message,
                     )
                 }
                 null

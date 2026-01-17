@@ -159,7 +159,7 @@ class ModernSurfaceCoordinator @Inject constructor(
     }
 
     private fun BaseItemDto.toSurfaceMediaItem(): SurfaceMediaItem? {
-        val idValue = id?.toString() ?: return null
+        val idValue = id.toString()
         val titleValue = name?.takeIf { it.isNotBlank() } ?: return null
         val mediaType = when (type) {
             BaseItemKind.MOVIE -> MOVIE
@@ -182,7 +182,7 @@ class ModernSurfaceCoordinator @Inject constructor(
         val playbackProgress = userData?.let { data ->
             SurfacePlaybackProgress(
                 percentage = data.playedPercentage,
-                positionMs = data.playbackPositionTicks?.div(TICKS_TO_MILLIS_DIVISOR),
+                positionMs = data.playbackPositionTicks.div(TICKS_TO_MILLIS_DIVISOR),
             )
         }
 

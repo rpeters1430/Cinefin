@@ -62,7 +62,7 @@ class SharedAppStateManager @Inject constructor() {
      */
     suspend fun addOrUpdateItem(item: BaseItemDto) {
         stateMutex.withLock {
-            val itemId = item.id?.toString() ?: return
+            val itemId = item.id.toString()
 
             itemCache[itemId] = item
 
@@ -84,10 +84,8 @@ class SharedAppStateManager @Inject constructor() {
     suspend fun addOrUpdateItems(items: List<BaseItemDto>) {
         stateMutex.withLock {
             items.forEach { item ->
-                val itemId = item.id?.toString()
-                if (itemId != null) {
-                    itemCache[itemId] = item
-                }
+                val itemId = item.id.toString()
+                itemCache[itemId] = item
             }
 
             // Single state update for better performance
@@ -132,10 +130,8 @@ class SharedAppStateManager @Inject constructor() {
 
             // Cache libraries by ID for quick access
             libraries.forEach { library ->
-                val libraryId = library.id?.toString()
-                if (libraryId != null) {
-                    libraryCache[libraryId] = listOf(library)
-                }
+                val libraryId = library.id.toString()
+                libraryCache[libraryId] = listOf(library)
             }
 
             if (BuildConfig.DEBUG) {

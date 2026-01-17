@@ -162,7 +162,7 @@ fun TvHomeScreen(
                         )
                     },
                     onItemSelect = { item ->
-                        item.id?.let { onItemSelect(it.toString()) }
+                        onItemSelect(item.id.toString())
                     },
                     getImageUrl = viewModel::getImageUrl,
                     getSeriesImageUrl = viewModel::getSeriesImageUrl,
@@ -185,7 +185,7 @@ fun TvHomeScreen(
                         )
                     },
                     onItemSelect = { item ->
-                        item.id?.let { onItemSelect(it.toString()) }
+                        onItemSelect(item.id.toString())
                     },
                     libraries = appState.libraries,
                     onLibrarySelect = onLibrarySelect,

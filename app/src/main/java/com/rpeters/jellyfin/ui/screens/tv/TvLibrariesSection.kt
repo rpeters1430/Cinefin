@@ -49,7 +49,7 @@ fun TvLibrariesSection(
     ) {
         items(
             libraries,
-            key = { it.id?.toString() ?: "" },
+            key = { it.id.toString() },
             contentType = { "tv_library_card" },
         ) { library ->
             TvLibraryCard(
@@ -94,7 +94,7 @@ fun TvLibraryCard(
             ),
         ),
         onClick = {
-            library.id?.let { onLibrarySelect(it.toString()) }
+            onLibrarySelect(library.id.toString())
         },
     ) {
         androidx.compose.foundation.layout.Box(

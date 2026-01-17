@@ -327,7 +327,7 @@ class CertificatePinningManager @Inject constructor(
         return try {
             if (raw.trimStart().startsWith("{")) {
                 val json = JSONObject(raw)
-                val primaryPin = json.optString("pin", null) ?: return null
+                val primaryPin = json.optString("pin", "").ifBlank { return null }
                 val backupPins = json.optJSONArray("backups")?.let { array ->
                     (0 until array.length()).mapNotNull { index ->
                         array.optString(index, null)

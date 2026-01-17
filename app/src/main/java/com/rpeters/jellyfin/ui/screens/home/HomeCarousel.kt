@@ -44,6 +44,7 @@ import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.theme.Dimens
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @OptInAppExperimentalApis
@@ -200,20 +201,20 @@ fun EnhancedContentCarousel(
             ) {
                 ExpressiveMediaCard(
                     title = item.name ?: stringResource(R.string.unknown),
-                    subtitle = when (item.type?.toString()) {
-                        "Episode" -> item.seriesName ?: ""
-                        "Series" -> item.productionYear?.toString() ?: ""
-                        "Audio" -> item.artists?.firstOrNull() ?: ""
-                        "Movie" -> item.productionYear?.toString() ?: ""
+                    subtitle = when (item.type) {
+                        BaseItemKind.EPISODE -> item.seriesName ?: ""
+                        BaseItemKind.SERIES -> item.productionYear?.toString() ?: ""
+                        BaseItemKind.AUDIO -> item.artists?.firstOrNull() ?: ""
+                        BaseItemKind.MOVIE -> item.productionYear?.toString() ?: ""
                         else -> ""
                     },
-                    imageUrl = when (item.type?.toString()) {
-                        "Episode" -> getSeriesImageUrl(item) ?: getImageUrl(item) ?: ""
-                        "Audio", "MusicAlbum" -> getImageUrl(item) ?: ""
-                        "Series" -> getSeriesImageUrl(item) ?: getBackdropUrl(item) ?: getImageUrl(item) ?: ""
+                    imageUrl = when (item.type) {
+                        BaseItemKind.EPISODE -> getSeriesImageUrl(item) ?: getImageUrl(item) ?: ""
+                        BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM -> getImageUrl(item) ?: ""
+                        BaseItemKind.SERIES -> getSeriesImageUrl(item) ?: getBackdropUrl(item) ?: getImageUrl(item) ?: ""
                         else -> getBackdropUrl(item) ?: getImageUrl(item) ?: ""
                     },
-                    rating = item.communityRating?.toFloat(),
+                    rating = item.communityRating,
                     onCardClick = { onItemClick(item) },
                     onPlayClick = { onItemClick(item) },
                     cardType = ExpressiveCardType.ELEVATED,
@@ -246,10 +247,10 @@ private fun CarouselContentCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Use appropriate image based on content type
-            val imageUrl = when (item.type?.toString()) {
-                "Episode" -> getSeriesImageUrl(item) ?: getImageUrl(item)
-                "Audio", "MusicAlbum" -> getImageUrl(item)
-                "Series" -> getSeriesImageUrl(item) ?: getBackdropUrl(item) ?: getImageUrl(item)
+            val imageUrl = when (item.type) {
+                BaseItemKind.EPISODE -> getSeriesImageUrl(item) ?: getImageUrl(item)
+                BaseItemKind.AUDIO, BaseItemKind.MUSIC_ALBUM -> getImageUrl(item)
+                BaseItemKind.SERIES -> getSeriesImageUrl(item) ?: getBackdropUrl(item) ?: getImageUrl(item)
                 else -> getBackdropUrl(item) ?: getImageUrl(item)
             }
 
@@ -301,8 +302,8 @@ private fun CarouselContentCard(
                 )
 
                 // Additional info based on content type
-                when (item.type?.toString()) {
-                    "Episode" -> {
+                when (item.type) {
+                    BaseItemKind.EPISODE -> {
                         item.seriesName?.let { seriesName ->
                             Text(
                                 text = seriesName,
@@ -312,7 +313,7 @@ private fun CarouselContentCard(
                             )
                         }
                     }
-                    "Series" -> {
+                    BaseItemKind.SERIES -> {
                         item.productionYear?.let { year ->
                             Text(
                                 text = year.toString(),
@@ -322,7 +323,7 @@ private fun CarouselContentCard(
                             )
                         }
                     }
-                    "Audio" -> {
+                    BaseItemKind.AUDIO -> {
                         item.artists?.firstOrNull()?.let { artist ->
                             Text(
                                 text = artist,
@@ -332,6 +333,7 @@ private fun CarouselContentCard(
                             )
                         }
                     }
+                    else -> Unit
                 }
             }
         }

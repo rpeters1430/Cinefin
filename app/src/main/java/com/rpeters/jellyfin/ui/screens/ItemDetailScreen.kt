@@ -55,7 +55,7 @@ class ItemDetailViewModel @Inject constructor(
             when (val result = mediaRepository.getItemDetails(itemId)) {
                 is ApiResult.Success -> {
                     item.value = result.data
-                    result.data?.let { analyzePlayback(it) }
+                    analyzePlayback(result.data)
                 }
                 is ApiResult.Error -> error.value = result.message
                 else -> {}

@@ -242,10 +242,10 @@ class ServerConnectionViewModel @Inject constructor(
                             // Network errors or temporary failures should never clear saved credentials
                             if (!isAutoLogin &&
                                 (
-                                    authResult.message?.contains("401") == true ||
-                                        authResult.message?.contains("403") == true ||
-                                        authResult.message?.contains("Unauthorized") == true ||
-                                        authResult.message?.contains("Invalid username or password") == true
+                                    authResult.message.contains("401") ||
+                                        authResult.message.contains("403") ||
+                                        authResult.message.contains("Unauthorized") ||
+                                        authResult.message.contains("Invalid username or password")
                                     )
                             ) {
                                 // Only clear for actual auth failures on manual login, not auto-login
@@ -628,15 +628,15 @@ class ServerConnectionViewModel @Inject constructor(
                             val result = quickConnectResult.data
                             _connectionState.value = _connectionState.value.copy(
                                 isConnecting = false,
-                                quickConnectCode = result.code ?: "",
-                                quickConnectSecret = result.secret ?: "",
+                                quickConnectCode = result.code,
+                                quickConnectSecret = result.secret,
                                 isQuickConnectPolling = true,
                                 quickConnectStatus = "Code generated! Enter this code in your Jellyfin server.",
                             )
 
                             // Start polling for approval
                             quickConnectPollingJob = viewModelScope.launch {
-                                pollQuickConnectState(normalizedServerUrl, result.secret ?: "")
+                                pollQuickConnectState(normalizedServerUrl, result.secret)
                             }
                         }
                         is ApiResult.Error -> {

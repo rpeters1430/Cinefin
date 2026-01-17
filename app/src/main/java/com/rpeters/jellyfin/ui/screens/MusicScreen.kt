@@ -624,12 +624,12 @@ private fun ExpressiveMusicCard(
             artist?.let { "$it • ${item.productionYear ?: ""}" } ?: "${item.productionYear ?: ""}"
         }
         else -> {
-            item.type?.toString() ?: ""
+            item.type.toString()
         }
     }
 
     // Get rating if available
-    val rating = item.communityRating?.toFloat()
+    val rating = item.communityRating
 
     // Check if favorite
     val isFavorite = item.userData?.isFavorite == true

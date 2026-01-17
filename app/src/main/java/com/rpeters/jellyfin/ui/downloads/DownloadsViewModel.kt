@@ -51,8 +51,10 @@ class DownloadsViewModel @Inject constructor(
         item: BaseItemDto,
         quality: VideoQuality? = null,
         downloadUrl: String? = null,
-    ): String {
-        return downloadManager.startDownload(item, quality, downloadUrl)
+    ) {
+        viewModelScope.launch {
+            downloadManager.startDownload(item, quality, downloadUrl)
+        }
     }
 
     fun pauseDownload(downloadId: String) {

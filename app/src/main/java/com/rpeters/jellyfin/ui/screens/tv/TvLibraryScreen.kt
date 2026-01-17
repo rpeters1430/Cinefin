@@ -33,7 +33,7 @@ fun TvLibraryScreen(
     val layoutConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
     val focusManager = rememberTvFocusManager()
     val appState by viewModel.appState.collectAsState()
-    val library = appState.libraries.firstOrNull { it.id?.toString() == libraryId }
+    val library = appState.libraries.firstOrNull { it.id.toString() == libraryId }
 
     // Ensure libraries are loaded first
     androidx.compose.runtime.LaunchedEffect(appState.libraries, appState.isLoading) {
@@ -138,7 +138,7 @@ fun TvLibraryScreen(
                 layoutConfig = layoutConfig,
                 focusManager = focusManager,
                 onItemSelect = { baseItem ->
-                    baseItem.id?.toString()?.let(onItemSelect)
+                    onItemSelect(baseItem.id.toString())
                 },
             )
         }

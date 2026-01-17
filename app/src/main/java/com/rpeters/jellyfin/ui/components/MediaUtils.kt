@@ -23,6 +23,7 @@ import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.PlaybackMethod
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
 
 /**
@@ -30,7 +31,7 @@ import java.util.Locale
  */
 fun getQualityLabel(item: BaseItemDto): Pair<String, Color>? {
     val mediaSource = item.mediaSources?.firstOrNull() ?: return null
-    val videoStream = mediaSource.mediaStreams?.firstOrNull { (it.type as? String)?.lowercase(Locale.ROOT) == "video" }
+    val videoStream = mediaSource.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
     val width = videoStream?.width ?: 0
     return when {
         width >= 3800 -> "4K" to Quality4K

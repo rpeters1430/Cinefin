@@ -55,10 +55,10 @@ fun TvItemDetailScreen(
 
     val item: BaseItemDto? = itemId?.let { id ->
         // Search common sources first; fall back to recently added and home videos
-        appState.allMovies.firstOrNull { it.id?.toString() == id }
-            ?: appState.allTVShows.firstOrNull { it.id?.toString() == id }
-            ?: appState.recentlyAdded.firstOrNull { it.id?.toString() == id }
-            ?: appState.itemsByLibrary.values.asSequence().flatten().firstOrNull { it.id?.toString() == id }
+        appState.allMovies.firstOrNull { it.id.toString() == id }
+            ?: appState.allTVShows.firstOrNull { it.id.toString() == id }
+            ?: appState.recentlyAdded.firstOrNull { it.id.toString() == id }
+            ?: appState.itemsByLibrary.values.asSequence().flatten().firstOrNull { it.id.toString() == id }
     }
 
     Column(
@@ -160,11 +160,11 @@ fun TvItemDetailScreen(
                     if (!id.isNullOrBlank()) {
                         runCatching { playerVm.fetchPlaybackInfo(id) }
                             .onSuccess { info ->
-                                val ms = info.mediaSources?.firstOrNull()
+                                val ms = info.mediaSources.firstOrNull()
                                 val container = ms?.container
-                                val streams = ms?.mediaStreams
-                                val v = streams?.firstOrNull { it.type?.toString()?.equals("Video", true) == true }
-                                val a = streams?.firstOrNull { it.type?.toString()?.equals("Audio", true) == true }
+                                val streams = ms?.mediaStreams.orEmpty()
+                                val v = streams.firstOrNull { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
+                                val a = streams.firstOrNull { it.type == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO }
                                 val vCodec = v?.codec
                                 val width = (v?.width as? Number)?.toInt()
                                 val height = (v?.height as? Number)?.toInt()
@@ -191,9 +191,10 @@ fun TvItemDetailScreen(
                 }
 
                 // Overview / metadata
-                if (!item?.overview.isNullOrBlank()) {
+                val overview = item?.overview
+                if (!overview.isNullOrBlank()) {
                     TvText(
-                        text = item?.overview ?: "",
+                        text = overview,
                         style = TvMaterialTheme.typography.bodyLarge,
                         color = TvMaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 6,

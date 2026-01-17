@@ -250,11 +250,11 @@ fun HomeScreen(
     }
 }
 
-private fun itemSubtitle(item: BaseItemDto): String = when (item.type?.toString()) {
-    "Episode" -> item.seriesName ?: ""
-    "Series" -> item.productionYear?.toString() ?: ""
-    "Audio" -> item.artists?.firstOrNull() ?: ""
-    "Movie" -> item.productionYear?.toString() ?: ""
+private fun itemSubtitle(item: BaseItemDto): String = when (item.type) {
+    BaseItemKind.EPISODE -> item.seriesName ?: ""
+    BaseItemKind.SERIES -> item.productionYear?.toString() ?: ""
+    BaseItemKind.AUDIO -> item.artists?.firstOrNull() ?: ""
+    BaseItemKind.MOVIE -> item.productionYear?.toString() ?: ""
     else -> ""
 }
 
@@ -263,7 +263,7 @@ private fun BaseItemDto.toCarouselItem(
     subtitleOverride: String,
     imageUrl: String,
 ): CarouselItem = CarouselItem(
-    id = this.id?.toString() ?: (this.name ?: "") + hashCode(),
+    id = this.id.toString(),
     title = titleOverride,
     subtitle = subtitleOverride,
     imageUrl = imageUrl,
@@ -508,11 +508,11 @@ fun HomeContent(
                     ExpressiveHeroCarousel(
                         items = featured,
                         onItemClick = { selected ->
-                            contentLists.featuredItems.firstOrNull { it.id?.toString() == selected.id }
+                            contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
                                 ?.let(onItemClick)
                         },
                         onPlayClick = { selected ->
-                            contentLists.featuredItems.firstOrNull { it.id?.toString() == selected.id }
+                            contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
                                 ?.let(onItemClick)
                         },
                         heroHeight = layoutConfig.heroHeight,
@@ -783,7 +783,7 @@ fun SearchResultsContent(
                         BaseItemKind.MUSIC_ARTIST -> "Artists"
                         BaseItemKind.BOOK -> "Books"
                         BaseItemKind.AUDIO_BOOK -> "Audiobooks"
-                        else -> type?.toString() ?: "Other"
+                        else -> type.toString()
                     },
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(vertical = 8.dp),

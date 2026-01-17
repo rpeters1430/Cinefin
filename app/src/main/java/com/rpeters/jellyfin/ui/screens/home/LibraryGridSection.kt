@@ -63,11 +63,11 @@ fun LibraryGridSection(
             libraries.forEach { library ->
                 ExpressiveCompactCard(
                     title = library.name ?: stringResource(R.string.unknown),
-                    subtitle = library.type?.toString()?.replace("_", " ")?.lowercase()
-                        ?.replaceFirstChar { it.uppercase() } ?: "",
+                    subtitle = library.type.toString().replace("_", " ").lowercase()
+                        .replaceFirstChar { it.uppercase() },
                     imageUrl = getImageUrl(library) ?: "",
                     onClick = { onLibraryClick(library) },
-                    leadingIcon = when (library.type?.toString()?.lowercase()) {
+                    leadingIcon = when (library.type.toString().lowercase()) {
                         "movies" -> Icons.Default.Movie
                         "tvshows" -> Icons.Default.Tv
                         "music" -> Icons.Default.MusicNote
@@ -86,7 +86,7 @@ private fun LibraryCard(
     onClick: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val contentTypeColor = getContentTypeColor(library.type?.toString())
+    val contentTypeColor = getContentTypeColor(library.type.toString())
     Card(
         modifier = modifier.width(200.dp).clickable { onClick(library) },
         shape = RoundedCornerShape(12.dp),
@@ -133,15 +133,13 @@ private fun LibraryCard(
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                library.type?.let { type ->
-                    Text(
-                        text = type.toString().replace("_", " ").lowercase()
-                            .replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
+                Text(
+                    text = library.type.toString().replace("_", " ").lowercase()
+                        .replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
             }
         }
     }

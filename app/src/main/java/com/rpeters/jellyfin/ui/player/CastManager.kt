@@ -7,6 +7,7 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.MediaInfo
+import com.google.android.gms.cast.MediaSeekOptions
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaStatus
 import com.google.android.gms.cast.framework.CastContext
@@ -636,7 +637,10 @@ class CastManager @Inject constructor(
         try {
             val remoteClient = castContext?.sessionManager?.currentCastSession?.remoteMediaClient
             if (remoteClient != null) {
-                remoteClient.seek(positionMs)
+                val seekOptions = MediaSeekOptions.Builder()
+                    .setPosition(positionMs)
+                    .build()
+                remoteClient.seek(seekOptions)
                 _castState.update { state ->
                     state.copy(currentPosition = positionMs, error = null)
                 }
@@ -788,14 +792,7 @@ class CastManager @Inject constructor(
     }
 
     private fun buildImageUrl(item: BaseItemDto, imageType: ImageType): String? {
-        val itemId = item.id?.toString()
-        if (itemId.isNullOrBlank()) {
-            SecureLogger.w(
-                "CastManager",
-                "buildImageUrl: Item missing ID; cannot load ${imageType.name.lowercase(Locale.ROOT)} image",
-            )
-            return null
-        }
+        val itemId = item.id.toString()
 
         val url = when (imageType) {
             ImageType.BACKDROP -> streamRepository.getBackdropUrl(item)

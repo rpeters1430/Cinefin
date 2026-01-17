@@ -258,7 +258,7 @@ private fun TabletMediaSection(
                 ) {
                     itemsIndexed(
                         items = items,
-                        key = { index, item -> item.id?.toString() ?: index.toString() },
+                        key = { _, item -> item.id.toString() },
                         contentType = { _, _ -> "tv_adaptive_grid_item" },
                     ) { index, item ->
                         TvContentCard(

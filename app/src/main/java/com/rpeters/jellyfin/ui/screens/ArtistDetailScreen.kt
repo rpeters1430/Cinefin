@@ -66,7 +66,7 @@ fun ArtistDetailScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            items(state.albums, key = { it.id ?: it.name ?: it.toString() }) { album ->
+            items(state.albums, key = { it.id.toString() }) { album ->
                 ExpressiveMediaCard(
                     title = album.name ?: "",
                     subtitle = album.productionYear?.toString() ?: "",

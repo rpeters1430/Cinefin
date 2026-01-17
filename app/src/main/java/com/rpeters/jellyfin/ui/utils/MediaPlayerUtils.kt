@@ -41,7 +41,7 @@ object MediaPlayerUtils {
                 Log.d("MediaPlayerUtils", "Launching internal video player for: ${item.name}")
             }
 
-            val itemId = item.id?.toString() ?: ""
+            val itemId = item.id.toString()
             val resumePosition = item.userData?.playbackPositionTicks?.div(10_000) ?: 0L
 
             val intent = VideoPlayerActivity.createIntent(
@@ -78,7 +78,7 @@ object MediaPlayerUtils {
     private fun buildAudioMediaItem(item: BaseItemDto, streamUrl: String): MediaItem {
         val extras = Bundle().apply {
             putString(AudioService.EXTRA_STREAM_URL, streamUrl)
-            putString(AudioService.EXTRA_ITEM_ID, item.id?.toString())
+            putString(AudioService.EXTRA_ITEM_ID, item.id.toString())
             putString(AudioService.EXTRA_ITEM_NAME, item.name)
             putString(AudioService.EXTRA_ALBUM_NAME, item.album ?: item.albumId?.toString())
             putString(AudioService.EXTRA_ARTIST_NAME, item.albumArtist ?: item.artists?.firstOrNull())
@@ -93,7 +93,7 @@ object MediaPlayerUtils {
             .build()
 
         val builder = MediaItem.Builder()
-            .setMediaId(item.id?.toString() ?: streamUrl)
+            .setMediaId(item.id.toString())
             .setMediaMetadata(mediaMetadata)
 
         if (streamUrl.isNotBlank()) {
@@ -163,7 +163,7 @@ object MediaPlayerUtils {
 
             val intent = VideoPlayerActivity.createIntent(
                 context = context,
-                itemId = item.id?.toString() ?: "",
+                itemId = item.id.toString(),
                 itemName = item.name ?: context.getString(R.string.unknown),
                 startPosition = startPosition,
             )

@@ -526,11 +526,11 @@ class VideoPlayerViewModel @Inject constructor(
 
         return try {
             val subtitleSpecs = mutableListOf<com.rpeters.jellyfin.ui.player.SubtitleSpec>()
-            val itemId = item.id?.toString() ?: return emptyList()
+            val itemId = item.id.toString()
             val serverUrl = repository.getCurrentServer()?.url ?: return emptyList()
             val accessToken = repository.getCurrentServer()?.accessToken ?: return emptyList()
 
-            val mediaSource = playbackInfo.mediaSources?.firstOrNull() ?: return emptyList()
+            val mediaSource = playbackInfo.mediaSources.firstOrNull() ?: return emptyList()
 
             // Extract subtitle streams
             mediaSource.mediaStreams
@@ -550,7 +550,7 @@ class VideoPlayerViewModel @Inject constructor(
                         else -> null
                     }
 
-                    if (mimeType != null && stream.index != null) {
+                    if (mimeType != null) {
                         // Build subtitle URL with authentication
                         // Note: Using query parameter for auth because Cast receiver may not support custom headers
                         val subtitleUrl = "$serverUrl/Videos/$itemId/${mediaSource.id}/Subtitles/${stream.index}/Stream.$codec?api_key=$accessToken"

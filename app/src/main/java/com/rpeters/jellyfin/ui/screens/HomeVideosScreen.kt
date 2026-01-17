@@ -72,17 +72,16 @@ fun HomeVideosScreen(
     LaunchedEffect(homeVideosLibraries) {
         if (homeVideosLibraries.isNotEmpty()) {
             homeVideosLibraries.forEach { library ->
-                library.id?.let { libraryId ->
-                    val currentItems = appState.itemsByLibrary[libraryId.toString()] ?: emptyList()
-                    if (currentItems.isEmpty()) {
-                        if (BuildConfig.DEBUG) {
-                            SecureLogger.d(
-                                "HomeVideosScreen",
-                                "Loading home videos for library: $libraryId",
-                            )
-                        }
-                        viewModel.loadHomeVideos(libraryId.toString())
+                val libraryId = library.id
+                val currentItems = appState.itemsByLibrary[libraryId.toString()] ?: emptyList()
+                if (currentItems.isEmpty()) {
+                    if (BuildConfig.DEBUG) {
+                        SecureLogger.d(
+                            "HomeVideosScreen",
+                            "Loading home videos for library: $libraryId",
+                        )
                     }
+                    viewModel.loadHomeVideos(libraryId.toString())
                 }
             }
         }
@@ -93,36 +92,27 @@ fun HomeVideosScreen(
         val allItems = mutableListOf<BaseItemDto>()
 
         homeVideosLibraries.forEach { library ->
-            library.id?.let { libraryId ->
-                val items = appState.itemsByLibrary[libraryId.toString()] ?: emptyList()
-                if (BuildConfig.DEBUG) {
+            val libraryId = library.id
+            val items = appState.itemsByLibrary[libraryId.toString()] ?: emptyList()
+            if (BuildConfig.DEBUG) {
+                SecureLogger.d(
+                    "HomeVideosScreen",
+                    "Found ${items.size} items in library: $libraryId",
+                )
+                if (items.isNotEmpty()) {
+                    val typeBreakdown = items.groupBy { it.type.name }.mapValues { it.value.size }
                     SecureLogger.d(
                         "HomeVideosScreen",
-                        "Found ${items.size} items in library: $libraryId",
+                        "Item types in library $libraryId: $typeBreakdown",
                     )
-                    if (items.isNotEmpty()) {
-                        val typeBreakdown = items.groupBy { it.type?.name }.mapValues { it.value.size }
-                        SecureLogger.d(
-                            "HomeVideosScreen",
-                            "Item types in library $libraryId: $typeBreakdown",
-                        )
-                    }
                 }
-                allItems.addAll(items)
             }
+            allItems.addAll(items)
         }
 
         // Filter for videos only - handle both enum and string types
         val filteredItems = allItems.filter { item ->
-            when {
-                // Handle BaseItemKind enum (preferred)
-                item.type == BaseItemKind.VIDEO -> true
-                // Handle string types from API response
-                item.type?.toString() == "Video" -> true
-                // Also include common home video related types
-                item.type?.toString() == "Movie" -> true
-                else -> false
-            }
+            item.type == BaseItemKind.VIDEO || item.type == BaseItemKind.MOVIE
         }.sortedBy { it.sortName ?: it.name }
 
         if (BuildConfig.DEBUG) {
@@ -136,11 +126,10 @@ fun HomeVideosScreen(
     }
 
     val homeVideosPaginationStates = remember(appState.libraryPaginationState, homeVideosLibraries) {
-        homeVideosLibraries.mapNotNull { library ->
-            library.id?.toString()?.let { libraryId ->
-                libraryId to appState.libraryPaginationState[libraryId]
-            }
-        }.toMap()
+        homeVideosLibraries.associate { library ->
+            val libraryId = library.id.toString()
+            libraryId to appState.libraryPaginationState[libraryId]
+        }
     }
 
     val hasMoreHomeVideos = remember(homeVideosPaginationStates) {
@@ -290,12 +279,12 @@ fun HomeVideosGrid(
         ) { homeVideoItem ->
             ExpressiveMediaCard(
                 title = homeVideoItem.name ?: "",
-                subtitle = homeVideoItem.type?.toString() ?: "",
+                subtitle = homeVideoItem.type.toString(),
                 imageUrl = getImageUrl(homeVideoItem) ?: "",
-                rating = (homeVideoItem.communityRating as? Double)?.toFloat(),
+                rating = homeVideoItem.communityRating,
                 isFavorite = homeVideoItem.userData?.isFavorite == true,
                 onCardClick = {
-                    onItemClick?.invoke(homeVideoItem.id?.toString() ?: "")
+                    onItemClick?.invoke(homeVideoItem.id.toString())
                 },
             )
         }

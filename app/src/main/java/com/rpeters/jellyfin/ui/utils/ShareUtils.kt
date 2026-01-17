@@ -55,6 +55,6 @@ object ShareUtils {
             "\nRuntime: $runtimeText"
         } ?: ""
 
-        return "Check out this ${item.type?.toString()?.lowercase() ?: "media"}: $title$year$rating$runtime$genres$overview"
+        return "Check out this ${item.type.toString().lowercase()}: $title$year$rating$runtime$genres$overview"
     }
 }

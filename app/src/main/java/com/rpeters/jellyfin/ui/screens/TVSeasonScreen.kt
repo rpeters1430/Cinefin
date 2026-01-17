@@ -280,13 +280,13 @@ private fun TVSeasonContent(
         // Cast and Crew Section (if available)
         state.seriesDetails?.people?.takeIf { it.isNotEmpty() }?.let { people ->
             val cast = people.filter { person ->
-                when (person.type?.toString()?.lowercase()) {
+                when (person.type.toString().lowercase()) {
                     "actor", "gueststar", "guest star" -> true
                     else -> false
                 }
             }
             val crew = people.filter { person ->
-                when (person.type?.toString()?.lowercase()) {
+                when (person.type.toString().lowercase()) {
                     "director", "producer", "writer", "executiveproducer", "executive producer", "creator" -> true
                     else -> false
                 }
@@ -555,9 +555,7 @@ private fun ExpressiveSeasonCard(
                 scaleY = scale
             }
             .clickable {
-                season.id?.let { seasonId ->
-                    onClick(seasonId.toString())
-                }
+                onClick(season.id.toString())
             },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
@@ -832,7 +830,7 @@ private fun CastAndCrewSection(
                 ) {
                     items(
                         items = cast.take(12),
-                        key = { it.id?.toString() ?: it.name ?: it.toString() },
+                        key = { it.id.toString() },
                         contentType = { "cast_member" },
                     ) { person ->
                         PersonCard(
@@ -861,7 +859,7 @@ private fun CastAndCrewSection(
                 ) {
                     items(
                         items = crew.take(12),
-                        key = { it.id?.toString() ?: it.name ?: it.toString() },
+                        key = { it.id.toString() },
                         contentType = { "crew_member" },
                     ) { person ->
                         PersonCard(
@@ -925,7 +923,7 @@ private fun MoreLikeThisSection(
                     PosterMediaCard(
                         item = show,
                         getImageUrl = getImageUrl,
-                        onClick = { show.id?.let { onSeriesClick(it.toString()) } },
+                        onClick = { onSeriesClick(show.id.toString()) },
                         showMetadata = false,
                         cardWidth = 140.dp,
                     )
@@ -999,7 +997,7 @@ private fun PersonCard(
                     val role = person.role ?: ""
                     if (role.length > 20) "${role.take(17)}..." else role
                 }
-                person.type?.name?.isNotBlank() == true -> person.type?.name
+                person.type.name.isNotBlank() -> person.type.name
                 else -> null
             }
 

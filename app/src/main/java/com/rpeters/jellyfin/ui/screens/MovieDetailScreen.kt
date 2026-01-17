@@ -506,9 +506,7 @@ fun MovieDetailScreen(
                                         imageUrl = getImageUrl(relatedMovie) ?: "",
                                         rating = relatedMovie.communityRating,
                                         onCardClick = {
-                                            relatedMovie.id?.let { movieId ->
-                                                onRelatedMovieClick(movieId.toString())
-                                            }
+                                            onRelatedMovieClick(relatedMovie.id.toString())
                                         },
                                         modifier = Modifier.width(140.dp),
                                     )
@@ -568,25 +566,24 @@ fun MovieDetailScreen(
                     onDismissRequest = { showMoreOptions = false },
                 ) {
                     // Open in Browser
-                    movie.id?.let { movieId ->
-                        DropdownMenuItem(
-                            text = { Text("Open in Browser") },
-                            onClick = {
-                                val intent = android.content.Intent(
-                                    android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse("${movie.serverId}/web/index.html#!/details?id=$movieId"),
-                                )
-                                context.startActivity(intent)
-                                showMoreOptions = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.OpenInBrowser,
-                                    contentDescription = null,
-                                )
-                            },
-                        )
-                    }
+                    val movieId = movie.id.toString()
+                    DropdownMenuItem(
+                        text = { Text("Open in Browser") },
+                        onClick = {
+                            val intent = android.content.Intent(
+                                android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse("${movie.serverId}/web/index.html#!/details?id=$movieId"),
+                            )
+                            context.startActivity(intent)
+                            showMoreOptions = false
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.OpenInBrowser,
+                                contentDescription = null,
+                            )
+                        },
+                    )
 
                     // Share
                     DropdownMenuItem(

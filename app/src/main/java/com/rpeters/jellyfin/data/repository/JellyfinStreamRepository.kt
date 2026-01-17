@@ -349,8 +349,8 @@ class JellyfinStreamRepository @Inject constructor(
      */
     fun getImageUrl(itemId: String, imageType: String = "Primary", tag: String? = null): String? {
         return try {
-            val server = authRepository.getCurrentServer()
-            if (server?.accessToken.isNullOrBlank() || server?.url.isNullOrBlank()) {
+            val server = authRepository.getCurrentServer() ?: return null
+            if (server.accessToken.isNullOrBlank() || server.url.isNullOrBlank()) {
                 Log.w("JellyfinStreamRepository", "getImageUrl: Server not available or missing credentials")
                 return null
             }
@@ -368,8 +368,8 @@ class JellyfinStreamRepository @Inject constructor(
      */
     fun getSeriesImageUrl(item: BaseItemDto): String? {
         return try {
-            val server = authRepository.getCurrentServer()
-            if (server?.accessToken.isNullOrBlank() || server?.url.isNullOrBlank()) {
+            val server = authRepository.getCurrentServer() ?: return null
+            if (server.accessToken.isNullOrBlank() || server.url.isNullOrBlank()) {
                 Log.w("JellyfinStreamRepository", "getSeriesImageUrl: Server not available or missing credentials")
                 return null
             }
@@ -392,8 +392,8 @@ class JellyfinStreamRepository @Inject constructor(
      */
     fun getBackdropUrl(item: BaseItemDto): String? {
         return try {
-            val server = authRepository.getCurrentServer()
-            if (server?.accessToken.isNullOrBlank() || server?.url.isNullOrBlank()) {
+            val server = authRepository.getCurrentServer() ?: return null
+            if (server.accessToken.isNullOrBlank() || server.url.isNullOrBlank()) {
                 Log.w("JellyfinStreamRepository", "getBackdropUrl: Server not available or missing credentials")
                 return null
             }
@@ -415,8 +415,8 @@ class JellyfinStreamRepository @Inject constructor(
      */
     fun getLogoUrl(item: BaseItemDto): String? {
         return try {
-            val server = authRepository.getCurrentServer()
-            if (server?.accessToken.isNullOrBlank() || server?.url.isNullOrBlank()) {
+            val server = authRepository.getCurrentServer() ?: return null
+            if (server.accessToken.isNullOrBlank() || server.url.isNullOrBlank()) {
                 Log.w("JellyfinStreamRepository", "getLogoUrl: Server not available or missing credentials")
                 return null
             }
