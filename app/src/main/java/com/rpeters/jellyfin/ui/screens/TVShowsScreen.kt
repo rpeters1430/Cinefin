@@ -10,11 +10,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.ViewList
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.ViewCarousel
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -27,13 +34,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.ExpressiveEmptyState
+import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
+import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarMenuAction
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
 import com.rpeters.jellyfin.ui.theme.MotionTokens
+import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -154,13 +169,53 @@ fun TVShowsScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
-            TVShowsTopBar(
-                viewMode = viewMode,
-                onViewModeChange = { viewMode = it },
-                showSortMenu = showSortMenu,
-                onShowSortMenuChange = { showSortMenu = it },
-                onSortChange = { sortOrder = it },
-                onRefresh = { viewModel.refreshTVShows() },
+            ExpressiveTopAppBar(
+                title = stringResource(id = R.string.tv_shows),
+                actions = {
+                    // View mode toggle
+                    ExpressiveTopAppBarAction(
+                        icon = when (viewMode) {
+                            TVShowViewMode.GRID -> Icons.AutoMirrored.Filled.ViewList
+                            TVShowViewMode.LIST -> Icons.Default.ViewCarousel
+                            TVShowViewMode.CAROUSEL -> Icons.Default.GridView
+                        },
+                        contentDescription = "Toggle view mode",
+                        onClick = {
+                            viewMode = when (viewMode) {
+                                TVShowViewMode.GRID -> TVShowViewMode.LIST
+                                TVShowViewMode.LIST -> TVShowViewMode.CAROUSEL
+                                TVShowViewMode.CAROUSEL -> TVShowViewMode.GRID
+                            }
+                        },
+                    )
+
+                    // Sort menu
+                    ExpressiveTopAppBarMenuAction(
+                        icon = Icons.AutoMirrored.Filled.Sort,
+                        contentDescription = "Sort",
+                        expanded = showSortMenu,
+                        onExpandedChange = { showSortMenu = it },
+                    ) {
+                        TVShowSortOrder.getAllSortOrders().forEach { order ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(id = order.displayNameResId)) },
+                                onClick = {
+                                    sortOrder = order
+                                    showSortMenu = false
+                                },
+                            )
+                        }
+                    }
+
+                    // Refresh button
+                    ExpressiveTopAppBarAction(
+                        icon = Icons.Default.Refresh,
+                        contentDescription = "Refresh",
+                        onClick = { viewModel.refreshTVShows() },
+                        tint = MusicGreen,
+                        modifier = Modifier.padding(end = 4.dp),
+                    )
+                },
             )
         },
         modifier = modifier,
@@ -205,15 +260,17 @@ fun TVShowsScreen(
                         }
 
                         TVShowContentState.ERROR -> {
-                            TVShowsErrorState(
+                            ExpressiveErrorState(
+                                title = "Error Loading TV Shows",
                                 message = appState.errorMessage ?: stringResource(R.string.unknown_error),
+                                icon = Icons.Default.Tv,
                                 onRetry = { viewModel.refreshTVShows() },
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
 
                         TVShowContentState.EMPTY -> {
-                            TVShowsEmptyState(
+                            ExpressiveSimpleEmptyState(
                                 icon = Icons.Default.Tv,
                                 title = stringResource(id = R.string.no_tv_shows_found),
                                 subtitle = stringResource(id = R.string.adjust_tv_shows_filters_hint),

@@ -68,6 +68,7 @@ data class VideoPlayerState(
     val availableAspectRatios: List<AspectRatioMode> = AspectRatioMode.entries.toList(),
     val videoWidth: Int = 0,
     val videoHeight: Int = 0,
+    val isHdrContent: Boolean = false,
     val isControlsVisible: Boolean = true,
     val showSubtitleDialog: Boolean = false,
     val showCastDialog: Boolean = false,
@@ -188,6 +189,7 @@ class VideoPlayerViewModel @Inject constructor(
             // Map current tracks to audio and subtitle lists with selection state
             val audio = mutableListOf<TrackInfo>()
             val text = mutableListOf<TrackInfo>()
+            var isHdr = false
 
             tracks.groups.forEachIndexed { groupIndex, group ->
                 val trackType = group.type
@@ -212,6 +214,11 @@ class VideoPlayerViewModel @Inject constructor(
                     when (trackType) {
                         androidx.media3.common.C.TRACK_TYPE_AUDIO -> audio += info
                         androidx.media3.common.C.TRACK_TYPE_TEXT -> text += info
+                        androidx.media3.common.C.TRACK_TYPE_VIDEO -> {
+                            if (isSelected && isHdrFormat(format)) {
+                                isHdr = true
+                            }
+                        }
                     }
                 }
             }
@@ -221,6 +228,7 @@ class VideoPlayerViewModel @Inject constructor(
                 selectedAudioTrack = audio.firstOrNull { it.isSelected },
                 availableSubtitleTracks = text,
                 selectedSubtitleTrack = text.firstOrNull { it.isSelected },
+                isHdrContent = isHdr,
             )
 
             // Apply one-time defaults: English audio if available; subtitles off
@@ -861,6 +869,15 @@ class VideoPlayerViewModel @Inject constructor(
                 }
             }
         }.ifBlank { "Track ${index + 1}" }
+    }
+
+    private fun isHdrFormat(format: androidx.media3.common.Format): Boolean {
+        val colorInfo = format.colorInfo ?: return false
+        return when (colorInfo.colorTransfer) {
+            androidx.media3.common.C.COLOR_TRANSFER_ST2084,
+            androidx.media3.common.C.COLOR_TRANSFER_HLG -> true
+            else -> false
+        }
     }
 
     private fun String.toDisplayLanguage(): String? {

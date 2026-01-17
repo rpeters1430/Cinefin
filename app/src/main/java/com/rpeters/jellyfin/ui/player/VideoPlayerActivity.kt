@@ -31,10 +31,12 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @androidx.media3.common.util.UnstableApi
 @AndroidEntryPoint
@@ -44,6 +46,10 @@ class VideoPlayerActivity : FragmentActivity() {
     private var isInPipMode = false
     private var currentItemName: String = ""
     private var pipSourceRect: Rect? = null
+    private var isHdrModeEnabled = false
+
+    @Inject
+    lateinit var deviceCapabilities: DeviceCapabilities
 
     // Receiver for PiP control actions
     private val playerCommandReceiver = object : BroadcastReceiver() {
@@ -162,6 +168,7 @@ class VideoPlayerActivity : FragmentActivity() {
                     if (isInPipMode) {
                         updatePipParams()
                     }
+                    updateHdrMode(it.isHdrContent)
                 }
             }
 
@@ -245,6 +252,7 @@ class VideoPlayerActivity : FragmentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        updateHdrMode(false)
         try {
             unregisterReceiver(playerCommandReceiver)
         } catch (e: Exception) {
@@ -259,6 +267,17 @@ class VideoPlayerActivity : FragmentActivity() {
         controller.hide(WindowInsetsCompat.Type.systemBars())
         controller.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    }
+
+    private fun updateHdrMode(isHdrContent: Boolean) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val shouldEnable = isHdrContent && deviceCapabilities.supportsHdrDisplay()
+        if (shouldEnable == isHdrModeEnabled) return
+        window.setColorMode(
+            if (shouldEnable) ActivityInfo.COLOR_MODE_HDR else ActivityInfo.COLOR_MODE_DEFAULT,
+        )
+        isHdrModeEnabled = shouldEnable
+        SecureLogger.d("VideoPlayerActivity", "HDR mode ${if (shouldEnable) "enabled" else "disabled"}")
     }
 
     private fun enterPictureInPictureModeCustom() {

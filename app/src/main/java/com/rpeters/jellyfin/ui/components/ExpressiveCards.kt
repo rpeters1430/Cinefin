@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -16,18 +17,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
-// import androidx.compose.material.ripple.rememberRipple // Deprecated
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
-// import androidx.compose.material3.FilledCard // Not available in current version
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
@@ -44,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -56,6 +60,21 @@ import com.rpeters.jellyfin.ui.theme.MotionTokens
 
 /**
  * Material 3 Expressive Media Card for displaying movies, shows, music, etc.
+ *
+ * @param title The title to display
+ * @param subtitle Optional subtitle text
+ * @param imageUrl URL of the image to display
+ * @param rating Optional rating value (e.g., 8.5)
+ * @param isFavorite Whether the item is marked as favorite
+ * @param isWatched Whether the item has been watched (shows checkmark badge)
+ * @param watchProgress Progress value from 0.0 to 1.0 (shows progress bar)
+ * @param unwatchedEpisodeCount For series - shows count badge if > 0
+ * @param onCardClick Click handler for the card
+ * @param onPlayClick Click handler for play action
+ * @param onFavoriteClick Click handler for favorite action
+ * @param onMoreClick Click handler for more actions
+ * @param modifier Optional modifier
+ * @param cardType Card style variant
  */
 @Composable
 fun ExpressiveMediaCard(
@@ -64,6 +83,9 @@ fun ExpressiveMediaCard(
     imageUrl: String,
     rating: Float? = null,
     isFavorite: Boolean = false,
+    isWatched: Boolean = false,
+    watchProgress: Float = 0f,
+    unwatchedEpisodeCount: Int? = null,
     onCardClick: () -> Unit,
     onPlayClick: () -> Unit = {},
     onFavoriteClick: () -> Unit = {},
@@ -100,6 +122,9 @@ fun ExpressiveMediaCard(
                     imageUrl = imageUrl,
                     rating = rating,
                     isFavorite = isFavorite,
+                    isWatched = isWatched,
+                    watchProgress = watchProgress,
+                    unwatchedEpisodeCount = unwatchedEpisodeCount,
                     onCardClick = onCardClick,
                     onPlayClick = onPlayClick,
                     onFavoriteClick = onFavoriteClick,
@@ -123,6 +148,9 @@ fun ExpressiveMediaCard(
                     imageUrl = imageUrl,
                     rating = rating,
                     isFavorite = isFavorite,
+                    isWatched = isWatched,
+                    watchProgress = watchProgress,
+                    unwatchedEpisodeCount = unwatchedEpisodeCount,
                     onCardClick = onCardClick,
                     onPlayClick = onPlayClick,
                     onFavoriteClick = onFavoriteClick,
@@ -148,6 +176,9 @@ fun ExpressiveMediaCard(
                     imageUrl = imageUrl,
                     rating = rating,
                     isFavorite = isFavorite,
+                    isWatched = isWatched,
+                    watchProgress = watchProgress,
+                    unwatchedEpisodeCount = unwatchedEpisodeCount,
                     onCardClick = onCardClick,
                     onPlayClick = onPlayClick,
                     onFavoriteClick = onFavoriteClick,
@@ -166,6 +197,9 @@ private fun MediaCardContent(
     imageUrl: String,
     rating: Float?,
     isFavorite: Boolean,
+    isWatched: Boolean,
+    watchProgress: Float,
+    unwatchedEpisodeCount: Int?,
     onCardClick: () -> Unit,
     onPlayClick: () -> Unit,
     onFavoriteClick: () -> Unit,
@@ -229,7 +263,7 @@ private fun MediaCardContent(
                     .padding(8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                // Rating
+                // Rating or watch status badge
                 if (rating != null) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
@@ -253,6 +287,34 @@ private fun MediaCardContent(
                             )
                         }
                     }
+                } else if (unwatchedEpisodeCount != null && unwatchedEpisodeCount > 0) {
+                    // Unwatched episode count badge for series
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ) {
+                        val countText = if (unwatchedEpisodeCount > 99) "99+" else unwatchedEpisodeCount.toString()
+                        Text(
+                            text = countText,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        )
+                    }
+                } else if (isWatched) {
+                    // Watched checkmark badge
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Watched",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .padding(4.dp),
+                        )
+                    }
                 }
 
                 // More actions
@@ -263,6 +325,22 @@ private fun MediaCardContent(
                         tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
+            }
+
+            // Watch progress bar at bottom of image
+            if (watchProgress > 0f && watchProgress < 1f) {
+                LinearProgressIndicator(
+                    progress = { watchProgress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 8.dp, vertical = 8.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    strokeCap = StrokeCap.Round,
+                )
             }
         }
 
@@ -323,6 +401,15 @@ private fun MediaCardContent(
 
 /**
  * Compact expressive card for lists and grids
+ *
+ * @param title The title to display
+ * @param subtitle Optional subtitle text
+ * @param imageUrl URL of the image to display
+ * @param onClick Click handler for the card
+ * @param onLongClick Optional long click handler (for action menus)
+ * @param leadingIcon Optional leading icon
+ * @param trailingContent Optional trailing content slot
+ * @param modifier Optional modifier
  */
 @Composable
 fun ExpressiveCompactCard(
@@ -330,6 +417,7 @@ fun ExpressiveCompactCard(
     subtitle: String = "",
     imageUrl: String,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
     leadingIcon: ImageVector? = null,
     trailingContent: @Composable (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -337,7 +425,16 @@ fun ExpressiveCompactCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .then(
+                if (onLongClick != null) {
+                    Modifier.combinedClickable(
+                        onClick = onClick,
+                        onLongClick = onLongClick,
+                    )
+                } else {
+                    Modifier.clickable { onClick() }
+                },
+            ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),

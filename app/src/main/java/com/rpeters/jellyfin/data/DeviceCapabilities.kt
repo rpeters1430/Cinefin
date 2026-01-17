@@ -1,13 +1,18 @@
 package com.rpeters.jellyfin.data
 
+import android.content.Context
+import android.hardware.display.DisplayManager
 import android.media.MediaCodecList
 import android.os.Build
 import com.rpeters.jellyfin.utils.SecureLogger
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DeviceCapabilities @Inject constructor() {
+class DeviceCapabilities @Inject constructor(
+    @ApplicationContext private val context: Context,
+) {
 
     companion object {
         private const val TAG = "DeviceCapabilities"
@@ -34,6 +39,7 @@ class DeviceCapabilities @Inject constructor() {
     private var supportedVideoCodecs: Set<String>? = null
     private var supportedAudioCodecs: Set<String>? = null
     private var maxResolution: Pair<Int, Int>? = null
+    private var hdrSupported: Boolean? = null
 
     /**
      * Check if the device can directly play a given media format
@@ -101,7 +107,7 @@ class DeviceCapabilities @Inject constructor() {
             supportedVideoCodecs = getSupportedVideoCodecs(),
             supportedAudioCodecs = getSupportedAudioCodecs(),
             maxResolution = getMaxSupportedResolution(),
-            supportsHdr = supportsHdr(),
+            supportsHdr = supportsHdrDisplay(),
             supports4K = supports4K(),
             maxBitrate = getMaxSupportedBitrate(),
             networkCapabilities = getNetworkCapabilities(),
@@ -374,8 +380,19 @@ class DeviceCapabilities @Inject constructor() {
         return maxResolution ?: Pair(1920, 1080)
     }
 
-    private fun supportsHdr(): Boolean {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+    fun supportsHdrDisplay(): Boolean {
+        hdrSupported?.let { return it }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            hdrSupported = false
+            return false
+        }
+
+        val displayManager = context.getSystemService(DisplayManager::class.java)
+        val display = displayManager?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
+        val hdrTypes = display?.hdrCapabilities?.supportedHdrTypes ?: IntArray(0)
+        val supported = hdrTypes.isNotEmpty()
+        hdrSupported = supported
+        return supported
     }
 
     private fun supports4K(): Boolean {

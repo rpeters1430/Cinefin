@@ -131,8 +131,10 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideDeviceCapabilities(): DeviceCapabilities {
-        return DeviceCapabilities()
+    fun provideDeviceCapabilities(
+        @ApplicationContext context: Context,
+    ): DeviceCapabilities {
+        return DeviceCapabilities(context)
     }
 
     @Provides

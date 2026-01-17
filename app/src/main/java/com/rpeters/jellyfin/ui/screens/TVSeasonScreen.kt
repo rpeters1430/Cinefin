@@ -12,6 +12,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -50,6 +51,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,9 +73,12 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
+import com.rpeters.jellyfin.ui.components.ExpressiveEmptyState
+import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaActionsMenu
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberCoilSize
@@ -132,7 +139,9 @@ fun TVSeasonScreen(
                 }
                 SeasonScreenState.ERROR -> {
                     ExpressiveErrorState(
+                        title = "Error Loading TV Show",
                         message = state.errorMessage ?: stringResource(id = R.string.unknown_error),
+                        icon = Icons.Default.Tv,
                         onRetry = { viewModel.refresh() },
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -539,6 +548,7 @@ private fun ExpressiveSeasonCard(
     season: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     onClick: (String) -> Unit,
+    onLongClick: ((BaseItemDto) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val scale by animateFloatAsState(
@@ -547,16 +557,23 @@ private fun ExpressiveSeasonCard(
         label = "season_card_scale",
     )
 
-    ElevatedCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .clickable {
-                onClick(season.id.toString())
-            },
+    var showActionMenu by remember { mutableStateOf(false) }
+
+    Box {
+        ElevatedCard(
+            modifier = modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                }
+                .combinedClickable(
+                    onClick = { onClick(season.id.toString()) },
+                    onLongClick = {
+                        onLongClick?.invoke(season)
+                        showActionMenu = true
+                    },
+                ),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
         colors = CardDefaults.elevatedCardColors(
@@ -751,6 +768,19 @@ private fun ExpressiveSeasonCard(
                 }
             }
         }
+        }
+
+        // Action menu
+        ExpressiveMediaActionsMenu(
+            expanded = showActionMenu,
+            onDismissRequest = { showActionMenu = false },
+            onPlayClick = { /* Play next unwatched */ },
+            onAddToQueueClick = { /* Add to queue */ },
+            onDownloadClick = { /* Download season */ },
+            onFavoriteClick = { /* Toggle favorite */ },
+            onShareClick = { /* Share */ },
+            isFavorite = season.userData?.isFavorite == true,
+        )
     }
 }
 
@@ -1022,123 +1052,4 @@ enum class SeasonScreenState {
     ERROR,
     EMPTY,
     CONTENT,
-}
-
-// Expressive Error State component
-@Composable
-private fun ExpressiveErrorState(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        ElevatedCard(
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-        ) {
-            Column(
-                modifier = Modifier.padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Tv,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(64.dp),
-                )
-                Text(
-                    text = "Error Loading TV Show",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = message,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                )
-                ExpressiveFilledButton(
-                    onClick = onRetry,
-                    modifier = Modifier.padding(top = 8.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Try Again")
-                }
-            }
-        }
-    }
-}
-
-// Expressive Empty State component
-@Composable
-private fun ExpressiveEmptyState(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    subtitle: String,
-    iconTint: androidx.compose.ui.graphics.Color,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            modifier = Modifier.padding(48.dp),
-        ) {
-            val scale by animateFloatAsState(
-                targetValue = 1.0f,
-                animationSpec = MotionTokens.expressiveEnter,
-                label = "empty_icon_scale",
-            )
-
-            Surface(
-                shape = CircleShape,
-                color = iconTint.copy(alpha = 0.1f),
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(96.dp)
-                        .padding(24.dp)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                        },
-                    tint = iconTint,
-                )
-            }
-
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
 }

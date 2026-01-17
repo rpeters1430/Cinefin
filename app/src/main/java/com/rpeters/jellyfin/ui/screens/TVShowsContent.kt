@@ -226,6 +226,7 @@ internal fun TVShowsContent(
                             onClick = {
                                 onTVShowClick(tvShow.id.toString())
                             },
+                            onLongClick = { onTVShowLongPress(tvShow) },
                             leadingIcon = if (tvShow.userData?.isFavorite == true) Icons.Default.Star else null,
                             modifier = Modifier.graphicsLayer {
                                 scaleX = scale

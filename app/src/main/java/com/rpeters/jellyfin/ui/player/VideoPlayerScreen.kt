@@ -1202,6 +1202,21 @@ private fun VideoControlsOverlay(
                     }
                 }
 
+                if (playerState.isHdrContent) {
+                    Surface(
+                        color = playerColors.chipBackground,
+                        shape = CircleShape,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    ) {
+                        Text(
+                            text = "HDR",
+                            color = playerColors.chipContent,
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                    }
+                }
+
                 // Playback Speed control (chip with dropdown)
                 Box {
                     Surface(
