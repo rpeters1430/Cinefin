@@ -30,6 +30,7 @@ import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberCoilSize
 import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
 import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
+import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.UserPreferencesViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -163,7 +164,7 @@ fun TvItemDetailScreen(
                                 val ms = info.mediaSources.firstOrNull()
                                 val container = ms?.container
                                 val streams = ms?.mediaStreams.orEmpty()
-                                val v = streams.firstOrNull { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
+                                val v = streams.findDefaultVideoStream()
                                 val a = streams.firstOrNull { it.type == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO }
                                 val vCodec = v?.codec
                                 val width = (v?.width as? Number)?.toInt()

@@ -7,6 +7,7 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
+import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -145,7 +146,7 @@ class EnhancedPlaybackManager @Inject constructor(
         }
 
         // Check video codec support
-        val videoStream = mediaSource.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
+        val videoStream = mediaSource.mediaStreams.findDefaultVideoStream()
         if (videoStream != null) {
             val videoCodec = videoStream.codec
             val width = videoStream.width ?: 0
@@ -327,7 +328,7 @@ class EnhancedPlaybackManager @Inject constructor(
      * Extract video codec from media source
      */
     private fun getVideoCodec(mediaSource: org.jellyfin.sdk.model.api.MediaSourceInfo): String? {
-        return mediaSource.mediaStreams?.find { it.type == MediaStreamType.VIDEO }?.codec
+        return mediaSource.mediaStreams.findDefaultVideoStream()?.codec
     }
 
     /**

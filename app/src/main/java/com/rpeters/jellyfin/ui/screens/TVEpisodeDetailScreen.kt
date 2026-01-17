@@ -85,6 +85,7 @@ import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.ShareUtils
+import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -485,7 +486,7 @@ private fun ExpressiveEpisodeInfoCard(
     )
 
     val mediaStreams = episode.mediaSources?.firstOrNull()?.mediaStreams
-    val videoStream = mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+    val videoStream = mediaStreams.findDefaultVideoStream()
     val audioStream = mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }
 
     ElevatedCard(
@@ -770,9 +771,7 @@ private fun ExpressiveVideoInfoRow(
  */
 private fun getEpisodeResolution(episode: BaseItemDto): Pair<String, Color>? {
     val mediaSource = episode.mediaSources?.firstOrNull() ?: return null
-    val videoStream = mediaSource.mediaStreams?.firstOrNull {
-        it.type == MediaStreamType.VIDEO
-    } ?: return null
+    val videoStream = mediaSource.mediaStreams.findDefaultVideoStream() ?: return null
 
     val height = videoStream.height
     val width = videoStream.width

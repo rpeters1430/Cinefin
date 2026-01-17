@@ -31,6 +31,7 @@ import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.ui.components.InContextPlaybackRecommendation
 import com.rpeters.jellyfin.ui.components.PlaybackCapabilityDetails
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
+import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.ui.viewmodel.PlaybackRecommendationViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -184,7 +185,7 @@ fun ItemDetailScreen(
 
                 // Technical Details Section
                 item {
-                    val videoStream = item.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+                    val videoStream = item.mediaStreams.findDefaultVideoStream()
                     val audioStream = item.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
