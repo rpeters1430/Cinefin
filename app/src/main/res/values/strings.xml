@@ -25,7 +25,10 @@
     <string name="search">Search</string>
     <string name="profile">Profile</string>
     <string name="episodes">Episodes</string>
+    <string name="episode">Episode</string>
+    <string name="episode_label">Episode %1$s</string>
     <string name="season">Season</string>
+    <string name="seasons">Seasons</string>
     <string name="tv_show">TV Show</string>
     <string name="video">Video</string>
     <string name="audio">Audio</string>
@@ -47,13 +50,18 @@
     
     <!-- Error Messages -->
     <string name="error_loading_episodes">Error loading episodes</string>
+    <string name="error_loading_tv_show">Error loading TV show</string>
+    <string name="error">Error</string>
     <string name="error_loading_data">Error loading data</string>
     <string name="unknown_error">An unknown error occurred</string>
     <string name="no_data_available">No data available</string>
+    <string name="check_connection_and_try_again">Please check your connection and try again</string>
     <string name="no_tv_shows_found">No TV shows found</string>
     <string name="no_episodes_found">No episodes found</string>
     <string name="loading_more_tv_shows">Loading more TV shows…</string>
+    <string name="loading_tv_show">Loading TV show…</string>
     <string name="no_more_tv_shows">No more TV shows to load</string>
+    <string name="no_seasons_available">No seasons available</string>
     
     <!-- Profile -->
     <string name="version">Version %1$s</string>
@@ -106,6 +114,8 @@
     <string name="content_description_cover_art">Cover art for %1$s</string>
     <string name="content_description_poster">Poster for %1$s</string>
     <string name="content_description_avatar">User avatar</string>
+    <string name="rating">Rating</string>
+    <string name="season_watched">Season watched</string>
     
     <!-- Library Screen -->
     <string name="browse_by_type">Browse by type</string>
@@ -188,6 +198,8 @@
     
     <!-- TV Shows Screen -->
     <string name="adjust_tv_shows_filters_hint">Try adjusting your filters or refresh the library</string>
+    <string name="filters">Filters</string>
+    <string name="filters_smart">Smart Filters</string>
     
     <!-- TV Show Filters -->
     <string name="filter_all_shows">All Shows</string>
@@ -198,6 +210,8 @@
     <string name="filter_unwatched_shows">Unwatched</string>
     <string name="filter_in_progress">In Progress</string>
     <string name="filter_high_rated_shows">High Rated</string>
+    <string name="filter_segment_basic">Basic</string>
+    <string name="filter_segment_smart">Smart</string>
     
     <!-- TV Show Sort Orders -->
     <string name="sort_title_asc_shows">Title A-Z</string>
