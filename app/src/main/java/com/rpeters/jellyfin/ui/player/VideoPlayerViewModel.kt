@@ -875,7 +875,8 @@ class VideoPlayerViewModel @Inject constructor(
         val colorInfo = format.colorInfo ?: return false
         return when (colorInfo.colorTransfer) {
             androidx.media3.common.C.COLOR_TRANSFER_ST2084,
-            androidx.media3.common.C.COLOR_TRANSFER_HLG -> true
+            androidx.media3.common.C.COLOR_TRANSFER_HLG,
+            -> true
             else -> false
         }
     }

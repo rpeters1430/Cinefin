@@ -11,7 +11,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -574,200 +573,200 @@ private fun ExpressiveSeasonCard(
                         showActionMenu = true
                     },
                 ),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+            colors = CardDefaults.elevatedCardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            ),
         ) {
-            // Season Poster with enhanced styling
-            Box {
-                SubcomposeAsyncImage(
-                    model = getImageUrl(season),
-                    contentDescription = season.name,
-                    loading = {
-                        ExpressiveLoadingCard(
-                            modifier = Modifier
-                                .width(90.dp)
-                                .height(130.dp),
-                            showTitle = false,
-                            showSubtitle = false,
-                            imageHeight = 130.dp,
-                        )
-                    },
-                    error = {
-                        Surface(
-                            modifier = Modifier
-                                .width(90.dp)
-                                .height(130.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(12.dp),
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center,
+            Row(
+                modifier = Modifier.padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                // Season Poster with enhanced styling
+                Box {
+                    SubcomposeAsyncImage(
+                        model = getImageUrl(season),
+                        contentDescription = season.name,
+                        loading = {
+                            ExpressiveLoadingCard(
+                                modifier = Modifier
+                                    .width(90.dp)
+                                    .height(130.dp),
+                                showTitle = false,
+                                showSubtitle = false,
+                                imageHeight = 130.dp,
+                            )
+                        },
+                        error = {
+                            Surface(
+                                modifier = Modifier
+                                    .width(90.dp)
+                                    .height(130.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(12.dp),
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxSize(),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Tv,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(32.dp),
+                                    )
+                                    Text(
+                                        text = season.name ?: "Season",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        maxLines = 2,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
+                            }
+                        },
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .width(90.dp)
+                            .height(130.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp),
+                    ) {
+                        // Favorite indicator
+                        if (season.userData?.isFavorite == true) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f),
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Tv,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(32.dp),
-                                )
-                                Text(
-                                    text = season.name ?: "Season",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    maxLines = 2,
-                                    textAlign = TextAlign.Center,
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = "Favorite",
+                                    tint = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .padding(4.dp),
                                 )
                             }
                         }
-                    },
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .width(90.dp)
-                        .height(130.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                )
 
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(6.dp),
+                        val unplayedCount = season.userData?.unplayedItemCount ?: 0
+                        val played = season.userData?.played == true
+
+                        when {
+                            unplayedCount > 0 -> {
+                                Badge(
+                                    modifier = Modifier.align(Alignment.TopEnd),
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                ) {
+                                    val countText = when {
+                                        unplayedCount > 99 -> "99+"
+                                        else -> unplayedCount.toString()
+                                    }
+                                    Text(
+                                        text = countText,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    )
+                                }
+                            }
+                            unplayedCount == 0 && played -> {
+                                Badge(
+                                    modifier = Modifier.align(Alignment.TopEnd),
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Season watched",
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Season Details with enhanced typography
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    // Favorite indicator
-                    if (season.userData?.isFavorite == true) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "Favorite",
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .padding(4.dp),
+                    Text(
+                        text = buildString {
+                            val seasonName = season.name ?: stringResource(R.string.unknown)
+                            append(seasonName)
+
+                            // Add episode count in parentheses for more compact display
+                            season.childCount?.let { count ->
+                                // Extract season number from name if possible, otherwise use full name
+                                val seasonDisplay = if (seasonName.startsWith("Season ", ignoreCase = true)) {
+                                    "S${seasonName.substring(7)}"
+                                } else {
+                                    seasonName
+                                }
+                                // Replace the basic name with enhanced format
+                                clear()
+                                append("$seasonDisplay ($count)")
+                            }
+                        },
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        season.productionYear?.let { year ->
+                            Text(
+                                text = year.toString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
 
-                    val unplayedCount = season.userData?.unplayedItemCount ?: 0
-                    val played = season.userData?.played == true
-
-                    when {
-                        unplayedCount > 0 -> {
-                            Badge(
-                                modifier = Modifier.align(Alignment.TopEnd),
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            ) {
-                                val countText = when {
-                                    unplayedCount > 99 -> "99+"
-                                    else -> unplayedCount.toString()
-                                }
-                                Text(
-                                    text = countText,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                )
-                            }
+                    // Rating if available
+                    season.communityRating?.let { rating ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Text(
+                                text = String.format(java.util.Locale.ROOT, "%.1f", rating),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
                         }
-                        unplayedCount == 0 && played -> {
-                            Badge(
-                                modifier = Modifier.align(Alignment.TopEnd),
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Season watched",
-                                    modifier = Modifier.size(16.dp),
-                                )
-                            }
+                    }
+
+                    season.overview?.let { overview ->
+                        if (overview.isNotBlank()) {
+                            Text(
+                                text = overview,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                         }
                     }
                 }
             }
-
-            // Season Details with enhanced typography
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Text(
-                    text = buildString {
-                        val seasonName = season.name ?: stringResource(R.string.unknown)
-                        append(seasonName)
-
-                        // Add episode count in parentheses for more compact display
-                        season.childCount?.let { count ->
-                            // Extract season number from name if possible, otherwise use full name
-                            val seasonDisplay = if (seasonName.startsWith("Season ", ignoreCase = true)) {
-                                "S${seasonName.substring(7)}"
-                            } else {
-                                seasonName
-                            }
-                            // Replace the basic name with enhanced format
-                            clear()
-                            append("$seasonDisplay ($count)")
-                        }
-                    },
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    season.productionYear?.let { year ->
-                        Text(
-                            text = year.toString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-
-                // Rating if available
-                season.communityRating?.let { rating ->
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Text(
-                            text = String.format(java.util.Locale.ROOT, "%.1f", rating),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
-
-                season.overview?.let { overview ->
-                    if (overview.isNotBlank()) {
-                        Text(
-                            text = overview,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-            }
-        }
         }
 
         // Action menu
