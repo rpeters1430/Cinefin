@@ -44,8 +44,8 @@ import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.theme.Dimens
-import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 
 @OptInAppExperimentalApis
 @Composable
