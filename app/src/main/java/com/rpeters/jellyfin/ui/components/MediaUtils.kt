@@ -21,16 +21,16 @@ import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.PlaybackMethod
+import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.MediaStreamType
 
 /**
  * Get quality label and color for a media item
  */
 fun getQualityLabel(item: BaseItemDto): Pair<String, Color>? {
     val mediaSource = item.mediaSources?.firstOrNull() ?: return null
-    val videoStream = mediaSource.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+    val videoStream = mediaSource.mediaStreams.findDefaultVideoStream()
     val width = videoStream?.width ?: 0
     return when {
         width >= 3800 -> "4K" to Quality4K
