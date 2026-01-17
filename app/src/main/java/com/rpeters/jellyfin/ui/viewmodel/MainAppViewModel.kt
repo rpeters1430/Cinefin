@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.OptInAppExperimentalApis
-import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.common.DispatcherProvider
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
