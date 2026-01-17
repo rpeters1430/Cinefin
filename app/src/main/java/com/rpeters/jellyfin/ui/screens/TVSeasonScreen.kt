@@ -125,13 +125,13 @@ fun TVSeasonScreen(
             when (screenState) {
                 SeasonScreenState.LOADING -> {
                     ExpressiveFullScreenLoading(
-                        message = "Loading TV Show...",
+                        message = stringResource(id = R.string.loading_tv_show),
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
                 SeasonScreenState.ERROR -> {
                     ExpressiveErrorState(
-                        title = "Error Loading TV Show",
+                        title = stringResource(id = R.string.error_loading_tv_show),
                         message = state.errorMessage ?: stringResource(id = R.string.unknown_error),
                         icon = Icons.Default.Tv,
                         onRetry = { viewModel.refresh() },
@@ -142,7 +142,7 @@ fun TVSeasonScreen(
                     ExpressiveEmptyState(
                         icon = Icons.Default.Tv,
                         title = stringResource(id = R.string.no_data_available),
-                        subtitle = "Please check your connection and try again",
+                        subtitle = stringResource(id = R.string.check_connection_and_try_again),
                         iconTint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -233,6 +233,7 @@ private fun TVSeasonContent(
                     getImageUrl = getImageUrl,
                     getBackdropUrl = getBackdropUrl,
                     getLogoUrl = getLogoUrl,
+                    onSeriesClick = onSeriesClick,
                 )
             }
         }
@@ -241,7 +242,7 @@ private fun TVSeasonContent(
         if (state.seasons.isNotEmpty()) {
             item {
                 Text(
-                    text = "Seasons",
+                    text = stringResource(id = R.string.seasons),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
@@ -270,7 +271,7 @@ private fun TVSeasonContent(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "No seasons available",
+                        text = stringResource(id = R.string.no_seasons_available),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -339,6 +340,7 @@ private fun SeriesDetailsHeader(
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     getLogoUrl: (BaseItemDto) -> String?,
+    onSeriesClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val heroImage = getBackdropUrl(series).takeIf { !it.isNullOrBlank() } ?: getImageUrl(series).orEmpty()
@@ -355,8 +357,8 @@ private fun SeriesDetailsHeader(
     if (heroImage.isNotBlank()) {
         ExpressiveHeroCarousel(
             items = heroItems,
-            onItemClick = {},
-            onPlayClick = {},
+            onItemClick = { onSeriesClick(series.id.toString()) },
+            onPlayClick = { onSeriesClick(series.id.toString()) },
             heroHeight = 320.dp,
             modifier = modifier
                 .fillMaxWidth()
@@ -582,50 +584,53 @@ private fun ExpressiveSeasonListItem(
                         .align(Alignment.TopEnd)
                         .padding(6.dp),
                 ) {
-                    if (season.userData?.isFavorite == true) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "Favorite",
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .padding(4.dp),
-                            )
-                        }
-                    }
-
-                    when {
-                        unplayedCount > 0 -> {
-                            Badge(
-                                modifier = Modifier.align(Alignment.TopEnd),
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalAlignment = Alignment.End,
+                    ) {
+                        if (season.userData?.isFavorite == true) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f),
                             ) {
-                                val countText = when {
-                                    unplayedCount > 99 -> "99+"
-                                    else -> unplayedCount.toString()
-                                }
-                                Text(
-                                    text = countText,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = stringResource(id = R.string.favorites),
+                                    tint = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .padding(4.dp),
                                 )
                             }
                         }
-                        unplayedCount == 0 && played -> {
-                            Badge(
-                                modifier = Modifier.align(Alignment.TopEnd),
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Season watched",
-                                    modifier = Modifier.size(16.dp),
-                                )
+
+                        when {
+                            unplayedCount > 0 -> {
+                                Badge(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                ) {
+                                    val countText = when {
+                                        unplayedCount > 99 -> "99+"
+                                        else -> unplayedCount.toString()
+                                    }
+                                    Text(
+                                        text = countText,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    )
+                                }
+                            }
+                            unplayedCount == 0 && played -> {
+                                Badge(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = stringResource(id = R.string.season_watched),
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
                             }
                         }
                     }
@@ -640,7 +645,7 @@ private fun ExpressiveSeasonListItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Star,
-                        contentDescription = null,
+                        contentDescription = stringResource(id = R.string.rating),
                         tint = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.size(16.dp),
                     )
@@ -669,7 +674,7 @@ fun ErrorContent(
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "Error",
+            text = stringResource(id = R.string.error),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.error,
         )
@@ -694,7 +699,7 @@ fun ErrorContent(
                 modifier = Modifier.size(18.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Retry")
+            Text(stringResource(id = R.string.retry))
         }
     }
 }

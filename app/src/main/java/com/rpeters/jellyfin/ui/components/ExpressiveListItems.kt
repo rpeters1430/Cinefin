@@ -307,6 +307,7 @@ fun ExpressiveSegmentedListItem(
             }
         },
         modifier = modifier
+            .fillMaxWidth()
             .combinedClickable(onClick = onClick),
         supportingContent = subtitle?.let {
             {

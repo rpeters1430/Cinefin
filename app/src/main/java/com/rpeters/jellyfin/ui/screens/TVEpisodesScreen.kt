@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -70,6 +72,7 @@ import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.utils.getItemKey
+import com.rpeters.jellyfin.utils.isPartiallyWatched
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.util.Locale
@@ -298,10 +301,12 @@ private fun ExpressiveEpisodeListItem(
             if (isNotEmpty()) append(" • ")
             append("${minutes}m")
         }
-        episode.communityRating?.let { rating ->
-            if (isNotEmpty()) append(" • ")
-            append(String.format(Locale.ROOT, "%.1f★", rating))
-        }
+    }
+    val episodeNumber = episode.indexNumber?.toString()
+    val fallbackTitle = if (episodeNumber.isNullOrBlank()) {
+        stringResource(id = R.string.episode)
+    } else {
+        stringResource(id = R.string.episode_label, episodeNumber)
     }
 
     Column(
@@ -309,7 +314,7 @@ private fun ExpressiveEpisodeListItem(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         ExpressiveMediaListItem(
-            title = episode.name ?: "Episode ${episode.indexNumber ?: ""}",
+            title = episode.name ?: fallbackTitle,
             subtitle = episode.overview?.takeIf { it.isNotBlank() },
             overline = metadata.takeIf { it.isNotBlank() },
             leadingContent = {
@@ -367,21 +372,30 @@ private fun ExpressiveEpisodeListItem(
                 }
             },
             trailingContent = {
-                episode.communityRating?.let {
-                    Icon(
-                        imageVector = Icons.Default.Tv,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp),
-                    )
+                episode.communityRating?.let { rating ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = stringResource(id = R.string.rating),
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Text(
+                            text = String.format(Locale.ROOT, "%.1f", rating),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             },
             onClick = { onClick(episode) },
             onLongClick = { onLongClick(episode) },
         )
 
-        val progress = episode.userData?.playedPercentage ?: 0.0
-        if (progress > 0.0 && progress < 100.0) {
+        if (episode.isPartiallyWatched()) {
             WatchProgressBar(
                 item = episode,
                 modifier = Modifier
