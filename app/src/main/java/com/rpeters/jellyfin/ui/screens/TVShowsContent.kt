@@ -1,7 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -41,7 +40,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -165,12 +163,6 @@ internal fun TVShowsContent(
                         key = { tvShow -> tvShow.getItemKey() },
                         contentType = { "tv_grid_item" },
                     ) { tvShow ->
-                        val scale by animateFloatAsState(
-                            targetValue = 1.0f,
-                            animationSpec = MotionTokens.expressiveEnter,
-                            label = "tv_show_card_scale",
-                        )
-
                         ExpressiveMediaCard(
                             title = tvShow.name ?: stringResource(id = R.string.unknown),
                             subtitle = tvShow.productionYear?.toString().orEmpty(),
@@ -182,10 +174,6 @@ internal fun TVShowsContent(
                             unwatchedEpisodeCount = tvShow.userData?.unplayedItemCount?.toInt(),
                             onCardClick = { onTVShowClick(tvShow.id.toString()) },
                             onMoreClick = { onTVShowLongPress(tvShow) },
-                            modifier = Modifier.graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                            },
                         )
                     }
 
@@ -213,12 +201,6 @@ internal fun TVShowsContent(
                         key = { tvShow -> tvShow.getItemKey() },
                         contentType = { "tv_list_item" },
                     ) { tvShow ->
-                        val scale by animateFloatAsState(
-                            targetValue = 1.0f,
-                            animationSpec = MotionTokens.expressiveEnter,
-                            label = "tv_show_list_card_scale",
-                        )
-
                         ExpressiveMediaListItem(
                             title = tvShow.name ?: stringResource(id = R.string.unknown),
                             subtitle = buildString {
@@ -249,7 +231,7 @@ internal fun TVShowsContent(
                                     if (tvShow.userData?.isFavorite == true) {
                                         Icon(
                                             imageVector = Icons.Default.Star,
-                                            contentDescription = null,
+                                            contentDescription = stringResource(id = R.string.favorites),
                                             tint = MaterialTheme.colorScheme.tertiary,
                                             modifier = Modifier.size(18.dp),
                                         )
@@ -264,10 +246,6 @@ internal fun TVShowsContent(
                             },
                             onClick = { onTVShowClick(tvShow.id.toString()) },
                             onLongClick = { onTVShowLongPress(tvShow) },
-                            modifier = Modifier.graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                            },
                         )
                     }
 
@@ -298,7 +276,7 @@ internal fun TVShowsContent(
                 }
 
                 ExpressiveMediaCarousel(
-                    title = "TV Shows",
+                    title = stringResource(id = R.string.tv_shows),
                     items = carouselItems,
                     onItemClick = { item ->
                         onTVShowClick(item.id)
@@ -333,18 +311,18 @@ internal fun TVShowsPaginationFooter(
                     modifier = Modifier.padding(8.dp),
                 )
                 Text(
-                    text = "Loading more TV shows...",
+                    text = stringResource(id = R.string.loading_more_tv_shows),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         } else if (hasMoreItems) {
             TextButton(onClick = onLoadMore) {
-                Text("Load more")
+                Text(stringResource(id = R.string.retry))
             }
         } else {
             Text(
-                text = "No more TV shows",
+                text = stringResource(id = R.string.no_more_tv_shows),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
