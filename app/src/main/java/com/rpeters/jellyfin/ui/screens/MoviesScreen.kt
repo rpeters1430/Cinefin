@@ -18,9 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import com.rpeters.jellyfin.OptInAppExperimentalApis
-import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.models.MovieFilter
 import com.rpeters.jellyfin.data.models.MovieSortOrder
 import com.rpeters.jellyfin.data.models.MovieViewMode

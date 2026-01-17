@@ -349,7 +349,6 @@ private fun filterAndSortTvShows(
     }
 }
 
-
 // Content state enum for animated transitions
 enum class TVShowContentState {
     LOADING,
