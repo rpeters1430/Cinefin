@@ -50,9 +50,9 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveSegmentedListItem
-import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
 import com.rpeters.jellyfin.ui.components.MediaType
 import com.rpeters.jellyfin.ui.components.WatchedIndicatorBadge
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
@@ -60,8 +60,8 @@ import com.rpeters.jellyfin.ui.image.rememberCoilSize
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.utils.getItemKey
-import java.util.Locale
 import org.jellyfin.sdk.model.api.BaseItemDto
+import java.util.Locale
 
 @Composable
 internal fun TVShowFilters(
