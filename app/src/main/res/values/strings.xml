@@ -188,6 +188,8 @@
     
     <!-- TV Shows Screen -->
     <string name="adjust_tv_shows_filters_hint">Try adjusting your filters or refresh the library</string>
+    <string name="filters">Filters</string>
+    <string name="filters_smart">Smart Filters</string>
     
     <!-- TV Show Filters -->
     <string name="filter_all_shows">All Shows</string>
@@ -198,6 +200,8 @@
     <string name="filter_unwatched_shows">Unwatched</string>
     <string name="filter_in_progress">In Progress</string>
     <string name="filter_high_rated_shows">High Rated</string>
+    <string name="filter_segment_basic">Basic</string>
+    <string name="filter_segment_smart">Smart</string>
     
     <!-- TV Show Sort Orders -->
     <string name="sort_title_asc_shows">Title A-Z</string>

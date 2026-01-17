@@ -3,13 +3,11 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,8 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -48,11 +44,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -66,6 +59,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveEmptyState
 import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarRefreshAction
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
@@ -80,6 +74,7 @@ import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import java.util.Locale
 
 @Composable
 fun TVEpisodesScreen(
@@ -278,7 +273,7 @@ private fun EpisodeList(
             items = episodes,
             key = { episode -> episode.getItemKey().ifEmpty { episode.name ?: episode.toString() } },
         ) { episode ->
-            ExpressiveEpisodeRow(
+            ExpressiveEpisodeListItem(
                 episode = episode,
                 getImageUrl = getImageUrl,
                 onClick = onEpisodeClick,
@@ -289,184 +284,112 @@ private fun EpisodeList(
 }
 
 @Composable
-private fun ExpressiveEpisodeRow(
+private fun ExpressiveEpisodeListItem(
     episode: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     onClick: (BaseItemDto) -> Unit,
     onLongClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val scale by animateFloatAsState(
-        targetValue = 1.0f,
-        animationSpec = MotionTokens.expressiveEnter,
-        label = "episode_card_scale",
-    )
+    val metadata = buildString {
+        episode.indexNumber?.let { index ->
+            append("E$index")
+        }
+        episode.runTimeTicks?.let { runtime ->
+            val minutes = (runtime / 600_000_000).toInt()
+            if (isNotEmpty()) append(" • ")
+            append("${minutes}m")
+        }
+        episode.communityRating?.let { rating ->
+            if (isNotEmpty()) append(" • ")
+            append(String.format(Locale.ROOT, "%.1f★", rating))
+        }
+    }
 
-    ElevatedCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .combinedClickable(
-                onClick = { onClick(episode) },
-                onLongClick = { onLongClick(episode) },
-            ),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(120.dp)
-                    .height(80.dp),
-            ) {
-                SubcomposeAsyncImage(
-                    model = getImageUrl(episode),
-                    contentDescription = episode.name,
-                    loading = {
-                        ExpressiveLoadingCard(
-                            modifier = Modifier
-                                .width(120.dp)
-                                .height(80.dp),
-                            showTitle = false,
-                            showSubtitle = false,
-                            imageHeight = 80.dp,
-                        )
-                    },
-                    error = {
-                        Surface(
-                            modifier = Modifier
-                                .width(120.dp)
-                                .height(80.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                            shape = RoundedCornerShape(12.dp),
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Tv,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(32.dp),
-                                )
-                            }
-                        }
-                    },
+        ExpressiveMediaListItem(
+            title = episode.name ?: "Episode ${episode.indexNumber ?: ""}",
+            subtitle = episode.overview?.takeIf { it.isNotBlank() },
+            overline = metadata.takeIf { it.isNotBlank() },
+            leadingContent = {
+                Box(
                     modifier = Modifier
                         .width(120.dp)
-                        .height(80.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                )
-
-                // Enhanced watch status badge
-                WatchedIndicatorBadge(
-                    item = episode,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(6.dp),
-                )
-
-                // Enhanced progress bar with rounded corners
-                WatchProgressBar(
-                    item = episode,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .padding(horizontal = 6.dp, vertical = 6.dp),
-                )
-            }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                // Episode number and title
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                        .height(80.dp),
                 ) {
-                    episode.indexNumber?.let { episodeNum ->
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                        ) {
-                            Text(
-                                text = "E$episodeNum",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    SubcomposeAsyncImage(
+                        model = getImageUrl(episode),
+                        contentDescription = episode.name,
+                        loading = {
+                            ExpressiveLoadingCard(
+                                modifier = Modifier
+                                    .width(120.dp)
+                                    .height(80.dp),
+                                showTitle = false,
+                                showSubtitle = false,
+                                imageHeight = 80.dp,
                             )
-                        }
-                    }
+                        },
+                        error = {
+                            Surface(
+                                modifier = Modifier
+                                    .width(120.dp)
+                                    .height(80.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(12.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Tv,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(32.dp),
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .width(120.dp)
+                            .height(80.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                    )
 
-                    Text(
-                        text = episode.name ?: "Episode ${episode.indexNumber ?: ""}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
+                    WatchedIndicatorBadge(
+                        item = episode,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp),
                     )
                 }
-
-                // Episode metadata
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    episode.runTimeTicks?.let { runtime ->
-                        val minutes = (runtime / 600_000_000).toInt()
-                        Text(
-                            text = "${minutes}min",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    episode.communityRating?.let { rating ->
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Tv,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(12.dp),
-                            )
-                            Text(
-                                text = String.format(java.util.Locale.ROOT, "%.1f", rating),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+            },
+            trailingContent = {
+                episode.communityRating?.let {
+                    Icon(
+                        imageVector = Icons.Default.Tv,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp),
+                    )
                 }
+            },
+            onClick = { onClick(episode) },
+            onLongClick = { onLongClick(episode) },
+        )
 
-                episode.overview?.let { overview ->
-                    if (overview.isNotBlank()) {
-                        Text(
-                            text = overview,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.2,
-                        )
-                    }
-                }
-            }
+        val progress = episode.userData?.playedPercentage ?: 0.0
+        if (progress > 0.0 && progress < 100.0) {
+            WatchProgressBar(
+                item = episode,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+            )
         }
     }
 }

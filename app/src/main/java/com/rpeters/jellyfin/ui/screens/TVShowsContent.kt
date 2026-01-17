@@ -12,14 +12,17 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
@@ -27,8 +30,6 @@ import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,20 +40,27 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.CarouselItem
-import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
+import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
+import com.rpeters.jellyfin.ui.components.ExpressiveSegmentedListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
 import com.rpeters.jellyfin.ui.components.MediaType
-import com.rpeters.jellyfin.ui.components.PosterMediaCard
+import com.rpeters.jellyfin.ui.components.WatchedIndicatorBadge
+import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
+import com.rpeters.jellyfin.ui.image.rememberCoilSize
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.utils.getItemKey
+import java.util.Locale
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @Composable
@@ -61,69 +69,62 @@ internal fun TVShowFilters(
     onFilterSelected: (TVShowFilter) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
-        // Basic Filters
+    Column(
+        modifier = modifier.padding(bottom = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = stringResource(id = R.string.filters),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+
+        val basicSegmentLabel = stringResource(id = R.string.filter_segment_basic)
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
         ) {
             items(
                 items = TVShowFilter.getBasicFilters(),
                 key = { it.name },
                 contentType = { "tv_basic_filter" },
             ) { filter ->
-                FilterChip(
+                ExpressiveSegmentedListItem(
+                    title = stringResource(id = filter.displayNameResId),
+                    segment = basicSegmentLabel,
+                    isSelected = selectedFilter == filter,
                     onClick = { onFilterSelected(filter) },
-                    label = {
-                        Text(
-                            text = stringResource(id = filter.displayNameResId),
-                            fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
-                        )
-                    },
-                    selected = selectedFilter == filter,
-                    leadingIcon = if (filter == TVShowFilter.FAVORITES) {
-                        {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
-                    } else {
-                        null
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ),
+                    modifier = Modifier.width(220.dp),
                 )
             }
         }
 
-        // Smart Filters
+        Text(
+            text = stringResource(id = R.string.filters_smart),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+
+        val smartSegmentLabel = stringResource(id = R.string.filter_segment_smart)
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
         ) {
             items(
                 items = TVShowFilter.getSmartFilters(),
                 key = { it.name },
                 contentType = { "tv_smart_filter" },
             ) { filter ->
-                FilterChip(
+                ExpressiveSegmentedListItem(
+                    title = stringResource(id = filter.displayNameResId),
+                    segment = smartSegmentLabel,
+                    isSelected = selectedFilter == filter,
                     onClick = { onFilterSelected(filter) },
-                    label = {
-                        Text(
-                            text = stringResource(id = filter.displayNameResId),
-                            fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
-                        )
-                    },
-                    selected = selectedFilter == filter,
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    ),
+                    modifier = Modifier.width(220.dp),
                 )
             }
         }
@@ -153,7 +154,7 @@ internal fun TVShowsContent(
         when (currentViewMode) {
             TVShowViewMode.GRID -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(160.dp),
+                    columns = GridCells.Adaptive(200.dp),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -170,15 +171,17 @@ internal fun TVShowsContent(
                             label = "tv_show_card_scale",
                         )
 
-                        PosterMediaCard(
-                            item = tvShow,
-                            getImageUrl = { getImageUrl(it) },
-                            onClick = { tvShow ->
-                                onTVShowClick(tvShow.id.toString())
-                            },
-                            onLongPress = onTVShowLongPress,
-                            showTitle = true,
-                            showMetadata = true,
+                        ExpressiveMediaCard(
+                            title = tvShow.name ?: stringResource(id = R.string.unknown),
+                            subtitle = tvShow.productionYear?.toString().orEmpty(),
+                            imageUrl = getImageUrl(tvShow) ?: "",
+                            rating = tvShow.communityRating?.toFloat(),
+                            isFavorite = tvShow.userData?.isFavorite == true,
+                            isWatched = tvShow.userData?.played == true,
+                            watchProgress = ((tvShow.userData?.playedPercentage ?: 0.0) / 100.0).toFloat(),
+                            unwatchedEpisodeCount = tvShow.userData?.unplayedItemCount?.toInt(),
+                            onCardClick = { onTVShowClick(tvShow.id.toString()) },
+                            onMoreClick = { onTVShowLongPress(tvShow) },
                             modifier = Modifier.graphicsLayer {
                                 scaleX = scale
                                 scaleY = scale
@@ -216,18 +219,51 @@ internal fun TVShowsContent(
                             label = "tv_show_list_card_scale",
                         )
 
-                        ExpressiveCompactCard(
+                        ExpressiveMediaListItem(
                             title = tvShow.name ?: stringResource(id = R.string.unknown),
                             subtitle = buildString {
-                                tvShow.productionYear?.let { append("$it • ") }
-                                tvShow.childCount?.let { append("$it episodes") }
+                                tvShow.childCount?.let { count -> append("$count episodes") }
+                                tvShow.communityRating?.let { rating ->
+                                    if (isNotEmpty()) append(" • ")
+                                    append(String.format(Locale.ROOT, "%.1f★", rating))
+                                }
                             },
-                            imageUrl = getImageUrl(tvShow) ?: "",
-                            onClick = {
-                                onTVShowClick(tvShow.id.toString())
+                            overline = tvShow.productionYear?.toString(),
+                            leadingContent = {
+                                JellyfinAsyncImage(
+                                    model = getImageUrl(tvShow),
+                                    contentDescription = tvShow.name,
+                                    modifier = Modifier
+                                        .width(72.dp)
+                                        .height(96.dp)
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Crop,
+                                    requestSize = rememberCoilSize(72.dp, 96.dp),
+                                )
                             },
+                            trailingContent = {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    if (tvShow.userData?.isFavorite == true) {
+                                        Icon(
+                                            imageVector = Icons.Default.Star,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.tertiary,
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                    }
+                                    if (tvShow.userData?.played == true) {
+                                        WatchedIndicatorBadge(
+                                            item = tvShow,
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                    }
+                                }
+                            },
+                            onClick = { onTVShowClick(tvShow.id.toString()) },
                             onLongClick = { onTVShowLongPress(tvShow) },
-                            leadingIcon = if (tvShow.userData?.isFavorite == true) Icons.Default.Star else null,
                             modifier = Modifier.graphicsLayer {
                                 scaleX = scale
                                 scaleY = scale

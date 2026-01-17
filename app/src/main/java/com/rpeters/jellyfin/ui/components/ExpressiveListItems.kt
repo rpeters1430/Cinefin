@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.components
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,10 +46,19 @@ fun ExpressiveMediaListItem(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     overline: String? = null,
+    leadingContent: @Composable (() -> Unit)? = null,
     leadingIcon: ImageVector? = null,
     trailingContent: @Composable (() -> Unit)? = null,
     onClick: () -> Unit = {},
+    onLongClick: (() -> Unit)? = null,
 ) {
+    val clickModifier = modifier
+        .fillMaxWidth()
+        .combinedClickable(
+            onClick = onClick,
+            onLongClick = onLongClick,
+        )
+
     ListItem(
         headlineContent = {
             Text(
@@ -57,7 +68,6 @@ fun ExpressiveMediaListItem(
                 overflow = TextOverflow.Ellipsis,
             )
         },
-        modifier = modifier.fillMaxWidth(),
         overlineContent = overline?.let {
             {
                 Text(
@@ -78,7 +88,7 @@ fun ExpressiveMediaListItem(
                 )
             }
         },
-        leadingContent = leadingIcon?.let {
+        leadingContent = leadingContent ?: leadingIcon?.let {
             {
                 Icon(
                     imageVector = it,
@@ -95,6 +105,7 @@ fun ExpressiveMediaListItem(
             supportingColor = MaterialTheme.colorScheme.onSurfaceVariant,
             leadingIconColor = MaterialTheme.colorScheme.primary,
         ),
+        modifier = clickModifier,
     )
 }
 
@@ -260,21 +271,33 @@ fun ExpressiveSegmentedListItem(
     segment: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    isSelected: Boolean = false,
     onClick: () -> Unit = {},
 ) {
+    val containerColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surfaceContainer
+    }
+
     ListItem(
         headlineContent = {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = segment,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                )
+                Surface(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    shape = MaterialTheme.shapes.extraLarge,
+                ) {
+                    Text(
+                        text = segment,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
@@ -283,7 +306,8 @@ fun ExpressiveSegmentedListItem(
                 )
             }
         },
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .combinedClickable(onClick = onClick),
         supportingContent = subtitle?.let {
             {
                 Text(
@@ -294,7 +318,7 @@ fun ExpressiveSegmentedListItem(
             }
         },
         colors = ListItemDefaults.colors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            containerColor = containerColor,
         ),
     )
 }
