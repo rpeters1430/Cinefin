@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.theme.Quality4K
+import com.rpeters.jellyfin.ui.theme.Quality1440
 import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
@@ -32,10 +33,13 @@ fun getQualityLabel(item: BaseItemDto): Pair<String, Color>? {
     val mediaSource = item.mediaSources?.firstOrNull() ?: return null
     val videoStream = mediaSource.mediaStreams.findDefaultVideoStream()
     val width = videoStream?.width ?: 0
+    val height = videoStream?.height ?: 0
     return when {
-        width >= 3800 -> "4K" to Quality4K
-        width >= 1900 -> "HD" to QualityHD
-        width > 0 -> "SD" to QualitySD
+        height >= 2160 || width >= 3840 -> "4K" to Quality4K
+        height >= 1440 || width >= 2560 -> "1440p" to Quality1440
+        height >= 1080 || width >= 1920 -> "1080p" to QualityHD
+        height >= 720 || width >= 1280 -> "720p" to QualityHD
+        height > 0 || width > 0 -> "SD" to QualitySD
         mediaSource.container?.contains("4k", ignoreCase = true) == true -> "4K" to Quality4K
         mediaSource.container?.contains("hd", ignoreCase = true) == true -> "HD" to QualityHD
         else -> null
