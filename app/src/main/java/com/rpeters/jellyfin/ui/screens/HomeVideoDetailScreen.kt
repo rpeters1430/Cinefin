@@ -46,8 +46,8 @@ import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.findDefaultAudioStream
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.utils.getFormattedDuration
-import java.util.Locale
 import org.jellyfin.sdk.model.api.BaseItemDto
+import java.util.Locale
 
 @OptInAppExperimentalApis
 @Composable
