@@ -41,8 +41,8 @@ import coil3.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.getQualityLabel
-import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
+import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 
