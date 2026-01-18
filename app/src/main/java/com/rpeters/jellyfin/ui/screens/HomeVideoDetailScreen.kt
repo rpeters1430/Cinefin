@@ -4,23 +4,28 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -35,8 +40,11 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
+import com.rpeters.jellyfin.ui.components.getQualityLabel
+import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.MediaStreamType
 
 @OptInAppExperimentalApis
 @Composable
@@ -132,6 +140,12 @@ fun HomeVideoDetailScreen(
                 }
             }
             item {
+                HomeVideoTechnicalDetails(
+                    item = item,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
+            item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -156,5 +170,142 @@ fun HomeVideoDetailScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun HomeVideoTechnicalDetails(
+    item: BaseItemDto,
+    modifier: Modifier = Modifier,
+) {
+    val mediaSource = item.mediaSources?.firstOrNull()
+    val videoStream = mediaSource?.mediaStreams?.findDefaultVideoStream()
+    val audioStream = mediaSource?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }
+    val qualityLabel = getQualityLabel(item)
+
+    val videoDetails = buildList {
+        val width = videoStream?.width
+        val height = videoStream?.height
+        if (width != null && height != null) {
+            add("${width}x$height")
+        }
+        videoStream?.codec?.let { add(it.uppercase()) }
+        videoStream?.averageFrameRate?.let { frameRate ->
+            add("${"%.2f".format(frameRate)} fps")
+        }
+    }.joinToString(" • ")
+
+    val audioDetails = buildList {
+        audioStream?.codec?.let { add(it.uppercase()) }
+        audioStream?.channels?.let { add("${it}ch") }
+        audioStream?.bitRate?.let { add("${it / 1000} kbps") }
+    }.joinToString(" • ")
+
+    val runtime = item.runTimeTicks?.let { formatRuntime(it) }
+    val sizeLabel = mediaSource?.size?.let { formatFileSize(it) }
+    val container = mediaSource?.container?.uppercase()
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "Video Details",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            runtime?.let { DetailRow(label = "Length", value = it) }
+
+            qualityLabel?.let { (label, color) ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Quality",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Surface(
+                        color = color,
+                        shape = RoundedCornerShape(6.dp),
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+            }
+
+            if (videoDetails.isNotBlank()) {
+                DetailRow(label = "Video", value = videoDetails)
+            }
+            if (audioDetails.isNotBlank()) {
+                DetailRow(label = "Audio", value = audioDetails)
+            }
+            container?.let { DetailRow(label = "Container", value = it) }
+            sizeLabel?.let { DetailRow(label = "File Size", value = it) }
+            videoStream?.bitRate?.let { DetailRow(label = "Video Bitrate", value = "${it / 1000} kbps") }
+        }
+    }
+}
+
+@Composable
+private fun DetailRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+private fun formatRuntime(ticks: Long): String {
+    val totalSeconds = ticks / 10_000_000L
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    return if (hours > 0) {
+        "${hours}h ${minutes}m"
+    } else {
+        "${minutes}m"
+    }
+}
+
+private fun formatFileSize(bytes: Long): String {
+    val kilo = 1024.0
+    val mega = kilo * 1024
+    val giga = mega * 1024
+    return when {
+        bytes >= giga -> String.format("%.2f GB", bytes / giga)
+        bytes >= mega -> String.format("%.0f MB", bytes / mega)
+        bytes >= kilo -> String.format("%.0f KB", bytes / kilo)
+        else -> "$bytes B"
     }
 }
