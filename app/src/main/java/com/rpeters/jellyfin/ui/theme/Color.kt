@@ -254,12 +254,12 @@ object HeroGradient {
 
     /** Alpha values for each gradient stop (0.0 = transparent, 1.0 = opaque) */
     val alphaStops = listOf(
-        0.0f,  // Fully transparent at top
-        0.0f,  // Still transparent
-        0.0f,  // Still transparent (60% down)
-        0.3f,  // Start fade
-        0.7f,  // Medium fade
-        0.9f,  // Almost solid
-        1.0f,  // Fully opaque at bottom
+        0.0f, // Fully transparent at top
+        0.0f, // Still transparent
+        0.0f, // Still transparent (60% down)
+        0.3f, // Start fade
+        0.7f, // Medium fade
+        0.9f, // Almost solid
+        1.0f, // Fully opaque at bottom
     )
 }
