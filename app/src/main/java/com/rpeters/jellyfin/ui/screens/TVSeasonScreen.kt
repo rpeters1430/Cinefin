@@ -63,14 +63,13 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
-import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveEmptyState
 import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
-import com.rpeters.jellyfin.ui.components.ExpressiveHeroCarousel
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
+import com.rpeters.jellyfin.ui.components.HeroImageWithLogo
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberCoilSize
@@ -344,25 +343,39 @@ private fun SeriesDetailsHeader(
     modifier: Modifier = Modifier,
 ) {
     val heroImage = getBackdropUrl(series).takeIf { !it.isNullOrBlank() } ?: getImageUrl(series).orEmpty()
-    val heroItems = listOf(
-        CarouselItem(
-            id = series.id.toString(),
-            title = series.name ?: stringResource(id = R.string.unknown),
-            subtitle = series.tagline ?: "",
-            imageUrl = heroImage,
-            type = com.rpeters.jellyfin.ui.components.MediaType.TV_SHOW,
-        ),
-    )
 
     if (heroImage.isNotBlank()) {
-        ExpressiveHeroCarousel(
-            items = heroItems,
-            onItemClick = { onSeriesClick(series.id.toString()) },
-            onPlayClick = { onSeriesClick(series.id.toString()) },
-            heroHeight = 320.dp,
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+        // Full-bleed Hero Section - Extended to screen edges
+        HeroImageWithLogo(
+            imageUrl = heroImage,
+            logoUrl = getLogoUrl(series),
+            contentDescription = "${series.name} backdrop",
+            logoContentDescription = "${series.name} logo",
+            modifier = modifier,
+            minHeight = 400.dp,
+            aspectRatio = 1.0f,
+            loadingContent = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceContainer),
+                )
+            },
+            errorContent = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Tv,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(72.dp),
+                    )
+                }
+            },
         )
     } else {
         Box(
@@ -389,6 +402,7 @@ private fun SeriesDetailsHeader(
             .padding(horizontal = 20.dp)
             .padding(top = 24.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         getLogoUrl(series)?.let { logoUrl ->
             JellyfinAsyncImage(
@@ -407,13 +421,16 @@ private fun SeriesDetailsHeader(
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth(),
         )
 
         // Metadata Row
         Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Rating with star icon
