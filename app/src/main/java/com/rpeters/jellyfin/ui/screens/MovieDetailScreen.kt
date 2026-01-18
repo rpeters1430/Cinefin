@@ -1070,16 +1070,18 @@ private fun getMovieResolution(
 ): Pair<String, Color>? {
     val height = videoStream?.height
     val width = videoStream?.width
-    val maxDimension = maxOf(height ?: 0, width ?: 0)
+    val maxHeight = height ?: 0
+    val maxWidth = width ?: 0
 
-    if (maxDimension == 0) {
+    if (maxHeight == 0 && maxWidth == 0) {
         return null
     }
 
     return when {
-        maxDimension >= 2160 || (width ?: 0) >= 3840 -> "4K" to Quality4K
-        maxDimension >= 1440 -> "1440p" to Quality1440
-        maxDimension >= 1080 -> "HD" to QualityHD
+        maxHeight >= 2160 || maxWidth >= 3840 -> "4K" to Quality4K
+        maxHeight >= 1440 || maxWidth >= 2560 -> "1440p" to Quality1440
+        maxHeight >= 1080 || maxWidth >= 1920 -> "1080p" to QualityHD
+        maxHeight >= 720 || maxWidth >= 1280 -> "720p" to QualityHD
         else -> "SD" to QualitySD
     }
 }
