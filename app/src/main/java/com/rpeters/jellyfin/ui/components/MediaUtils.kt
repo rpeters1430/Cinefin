@@ -15,8 +15,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.rpeters.jellyfin.ui.theme.Quality4K
 import com.rpeters.jellyfin.ui.theme.Quality1440
+import com.rpeters.jellyfin.ui.theme.Quality4K
 import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
