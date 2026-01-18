@@ -121,17 +121,17 @@ fun MovieDetailScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
             ) {
-                // Full-bleed Hero Section - Google TV style
+                // Full-bleed Hero Section - Extended to screen edges
                 item {
                     BoxWithConstraints {
-                        val heroHeight = maxOf(maxWidth * 0.75f, 320.dp)
+                        val heroHeight = maxOf(maxWidth * 1.0f, 400.dp)
 
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(heroHeight),
                         ) {
-                            // Backdrop Image - Full bleed with proper aspect ratio
+                            // Backdrop Image - Full bleed extending to edges
                             SubcomposeAsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
                                     .data(getBackdropUrl(movie))
@@ -163,7 +163,7 @@ fun MovieDetailScreen(
                                 modifier = Modifier.fillMaxSize(),
                             )
 
-                            // Fade image into the screen background near the bottom edge
+                            // Smooth gradient blend into background on lower side
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -172,7 +172,10 @@ fun MovieDetailScreen(
                                             colors = listOf(
                                                 androidx.compose.ui.graphics.Color.Transparent,
                                                 androidx.compose.ui.graphics.Color.Transparent,
-                                                MaterialTheme.colorScheme.background.copy(alpha = 0.6f),
+                                                androidx.compose.ui.graphics.Color.Transparent,
+                                                MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
+                                                MaterialTheme.colorScheme.background.copy(alpha = 0.7f),
+                                                MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
                                                 MaterialTheme.colorScheme.background,
                                             ),
                                             startY = 0f,

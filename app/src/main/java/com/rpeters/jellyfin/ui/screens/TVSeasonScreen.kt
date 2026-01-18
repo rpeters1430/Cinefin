@@ -63,12 +63,10 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
-import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveEmptyState
 import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
-import com.rpeters.jellyfin.ui.components.ExpressiveHeroCarousel
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
@@ -344,26 +342,94 @@ private fun SeriesDetailsHeader(
     modifier: Modifier = Modifier,
 ) {
     val heroImage = getBackdropUrl(series).takeIf { !it.isNullOrBlank() } ?: getImageUrl(series).orEmpty()
-    val heroItems = listOf(
-        CarouselItem(
-            id = series.id.toString(),
-            title = series.name ?: stringResource(id = R.string.unknown),
-            subtitle = series.tagline ?: "",
-            imageUrl = heroImage,
-            type = com.rpeters.jellyfin.ui.components.MediaType.TV_SHOW,
-        ),
-    )
 
     if (heroImage.isNotBlank()) {
-        ExpressiveHeroCarousel(
-            items = heroItems,
-            onItemClick = { onSeriesClick(series.id.toString()) },
-            onPlayClick = { onSeriesClick(series.id.toString()) },
-            heroHeight = 320.dp,
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        )
+        // Full-bleed Hero Section - Extended to screen edges
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            modifier = modifier.fillMaxWidth(),
+        ) {
+            val heroHeight = maxOf(maxWidth * 1.0f, 400.dp)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(heroHeight),
+            ) {
+                // Backdrop Image - Full bleed extending to edges
+                SubcomposeAsyncImage(
+                    model = heroImage,
+                    contentDescription = "${series.name} backdrop",
+                    loading = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceContainer),
+                        )
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceContainer),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Tv,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(72.dp),
+                            )
+                        }
+                    },
+                    contentScale = ContentScale.Crop,
+                    alignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize(),
+                )
+
+                // Smooth gradient blend into background on lower side
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                colors = listOf(
+                                    androidx.compose.ui.graphics.Color.Transparent,
+                                    androidx.compose.ui.graphics.Color.Transparent,
+                                    androidx.compose.ui.graphics.Color.Transparent,
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0.7f),
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
+                                    MaterialTheme.colorScheme.background,
+                                ),
+                                startY = 0f,
+                                endY = Float.POSITIVE_INFINITY,
+                            ),
+                        ),
+                )
+
+                // Logo overlay (centered on bottom third)
+                getLogoUrl(series)?.let { logoUrl ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 32.dp)
+                            .padding(bottom = 48.dp),
+                        contentAlignment = Alignment.BottomCenter,
+                    ) {
+                        SubcomposeAsyncImage(
+                            model = logoUrl,
+                            contentDescription = "${series.name} logo",
+                            loading = { /* No loading state for logos */ },
+                            error = { /* Silently fail - title will be shown below */ },
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxWidth(0.7f)
+                                .height(120.dp),
+                        )
+                    }
+                }
+            }
+        }
     } else {
         Box(
             modifier = modifier
