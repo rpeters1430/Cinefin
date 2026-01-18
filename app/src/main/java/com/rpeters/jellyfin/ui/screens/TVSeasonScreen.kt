@@ -402,6 +402,7 @@ private fun SeriesDetailsHeader(
             .padding(horizontal = 20.dp)
             .padding(top = 24.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         getLogoUrl(series)?.let { logoUrl ->
             JellyfinAsyncImage(
@@ -420,13 +421,16 @@ private fun SeriesDetailsHeader(
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth(),
         )
 
         // Metadata Row
         Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Rating with star icon
