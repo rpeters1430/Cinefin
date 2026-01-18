@@ -110,6 +110,7 @@ dependencies {
     implementation(libs.androidx.material3.adaptive.navigation)
     implementation(libs.androidx.material3.window.size)
     implementation(libs.androidx.window)
+    implementation(libs.google.material)
 
     // Material 3 Expressive Components (2024-2025)
     // Note: Some components not yet available in stable releases
