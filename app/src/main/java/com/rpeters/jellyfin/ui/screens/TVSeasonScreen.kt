@@ -69,6 +69,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
+import com.rpeters.jellyfin.ui.components.HeroImageWithLogo
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberCoilSize
@@ -345,91 +346,37 @@ private fun SeriesDetailsHeader(
 
     if (heroImage.isNotBlank()) {
         // Full-bleed Hero Section - Extended to screen edges
-        androidx.compose.foundation.layout.BoxWithConstraints(
-            modifier = modifier.fillMaxWidth(),
-        ) {
-            val heroHeight = maxOf(maxWidth * 1.0f, 400.dp)
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(heroHeight),
-            ) {
-                // Backdrop Image - Full bleed extending to edges
-                SubcomposeAsyncImage(
-                    model = heroImage,
-                    contentDescription = "${series.name} backdrop",
-                    loading = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surfaceContainer),
-                        )
-                    },
-                    error = {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surfaceContainer),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Tv,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(72.dp),
-                            )
-                        }
-                    },
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize(),
-                )
-
-                // Smooth gradient blend into background on lower side
+        HeroImageWithLogo(
+            imageUrl = heroImage,
+            logoUrl = getLogoUrl(series),
+            contentDescription = "${series.name} backdrop",
+            logoContentDescription = "${series.name} logo",
+            modifier = modifier,
+            minHeight = 400.dp,
+            aspectRatio = 1.0f,
+            loadingContent = {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            androidx.compose.ui.graphics.Brush.verticalGradient(
-                                colors = listOf(
-                                    androidx.compose.ui.graphics.Color.Transparent,
-                                    androidx.compose.ui.graphics.Color.Transparent,
-                                    androidx.compose.ui.graphics.Color.Transparent,
-                                    MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
-                                    MaterialTheme.colorScheme.background.copy(alpha = 0.7f),
-                                    MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
-                                    MaterialTheme.colorScheme.background,
-                                ),
-                                startY = 0f,
-                                endY = Float.POSITIVE_INFINITY,
-                            ),
-                        ),
+                        .background(MaterialTheme.colorScheme.surfaceContainer),
                 )
-
-                // Logo overlay (centered on bottom third)
-                getLogoUrl(series)?.let { logoUrl ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 32.dp)
-                            .padding(bottom = 48.dp),
-                        contentAlignment = Alignment.BottomCenter,
-                    ) {
-                        SubcomposeAsyncImage(
-                            model = logoUrl,
-                            contentDescription = "${series.name} logo",
-                            loading = { /* No loading state for logos */ },
-                            error = { /* Silently fail - title will be shown below */ },
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .fillMaxWidth(0.7f)
-                                .height(120.dp),
-                        )
-                    }
+            },
+            errorContent = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Tv,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(72.dp),
+                    )
                 }
-            }
-        }
+            },
+        )
     } else {
         Box(
             modifier = modifier

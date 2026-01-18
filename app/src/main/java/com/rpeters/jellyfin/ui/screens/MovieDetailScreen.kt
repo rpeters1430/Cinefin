@@ -3,7 +3,6 @@ package com.rpeters.jellyfin.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -68,6 +67,7 @@ import coil3.request.crossfade
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
+import com.rpeters.jellyfin.ui.components.HeroImageWithLogo
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.ShimmerBox
 import com.rpeters.jellyfin.ui.theme.JellyfinBlue80
@@ -123,93 +123,34 @@ fun MovieDetailScreen(
             ) {
                 // Full-bleed Hero Section - Extended to screen edges
                 item {
-                    BoxWithConstraints {
-                        val heroHeight = maxOf(maxWidth * 1.0f, 400.dp)
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(heroHeight),
-                        ) {
-                            // Backdrop Image - Full bleed extending to edges
-                            SubcomposeAsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(getBackdropUrl(movie))
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = "${movie.name} backdrop",
-                                loading = {
-                                    ShimmerBox(
-                                        modifier = Modifier.fillMaxSize(),
-                                        cornerRadius = 0,
-                                    )
-                                },
-                                error = {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(
-                                                Brush.linearGradient(
-                                                    colors = listOf(
-                                                        JellyfinBlue80.copy(alpha = 0.3f),
-                                                        JellyfinTeal80.copy(alpha = 0.2f),
-                                                    ),
-                                                ),
-                                            ),
-                                    )
-                                },
-                                contentScale = ContentScale.Crop,
-                                alignment = Alignment.Center,
+                    HeroImageWithLogo(
+                        imageUrl = getBackdropUrl(movie),
+                        logoUrl = getLogoUrl(movie),
+                        contentDescription = "${movie.name} backdrop",
+                        logoContentDescription = "${movie.name} logo",
+                        minHeight = 400.dp,
+                        aspectRatio = 1.0f,
+                        loadingContent = {
+                            ShimmerBox(
                                 modifier = Modifier.fillMaxSize(),
+                                cornerRadius = 0,
                             )
-
-                            // Smooth gradient blend into background on lower side
+                        },
+                        errorContent = {
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .background(
-                                        Brush.verticalGradient(
+                                        Brush.linearGradient(
                                             colors = listOf(
-                                                androidx.compose.ui.graphics.Color.Transparent,
-                                                androidx.compose.ui.graphics.Color.Transparent,
-                                                androidx.compose.ui.graphics.Color.Transparent,
-                                                MaterialTheme.colorScheme.background.copy(alpha = 0.3f),
-                                                MaterialTheme.colorScheme.background.copy(alpha = 0.7f),
-                                                MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
-                                                MaterialTheme.colorScheme.background,
+                                                JellyfinBlue80.copy(alpha = 0.3f),
+                                                JellyfinTeal80.copy(alpha = 0.2f),
                                             ),
-                                            startY = 0f,
-                                            endY = Float.POSITIVE_INFINITY,
                                         ),
                                     ),
                             )
-
-                            // Logo overlay (centered on bottom third)
-                            getLogoUrl(movie)?.let { logoUrl ->
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(horizontal = 32.dp)
-                                        .padding(bottom = 48.dp),
-                                    contentAlignment = Alignment.BottomCenter,
-                                ) {
-                                    SubcomposeAsyncImage(
-                                        model = ImageRequest.Builder(LocalContext.current)
-                                            .data(logoUrl)
-                                            .crossfade(true)
-                                            .build(),
-                                        contentDescription = "${movie.name} logo",
-                                        loading = { /* No loading state for logos */ },
-                                        error = { /* Silently fail - title will be shown below */ },
-                                        contentScale = ContentScale.Fit,
-                                        modifier = Modifier
-                                            .fillMaxWidth(0.7f)
-                                            .height(120.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
+                        },
+                    )
                 }
 
                 // Title and Metadata Section (Below Image)

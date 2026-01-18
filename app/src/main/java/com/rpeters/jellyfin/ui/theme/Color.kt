@@ -239,3 +239,27 @@ fun getStatusColor(status: String?): Color {
         else -> Neutral50
     }
 }
+
+// ============================================================================
+// HERO IMAGE GRADIENTS
+// ============================================================================
+
+/**
+ * Gradient stops for hero image fade-to-background effect
+ * Used in detail screens (Movie, TV Show) for seamless blending
+ */
+object HeroGradient {
+    /** Number of gradient color stops for smooth blending */
+    const val GRADIENT_STOPS = 7
+
+    /** Alpha values for each gradient stop (0.0 = transparent, 1.0 = opaque) */
+    val alphaStops = listOf(
+        0.0f,  // Fully transparent at top
+        0.0f,  // Still transparent
+        0.0f,  // Still transparent (60% down)
+        0.3f,  // Start fade
+        0.7f,  // Medium fade
+        0.9f,  // Almost solid
+        1.0f,  // Fully opaque at bottom
+    )
+}
