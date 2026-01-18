@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,15 +35,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.getQualityLabel
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
+import com.rpeters.jellyfin.ui.utils.findDefaultAudioStream
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
+import com.rpeters.jellyfin.utils.getFormattedDuration
+import java.util.Locale
 import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.MediaStreamType
 
 @OptInAppExperimentalApis
 @Composable
@@ -180,7 +183,7 @@ private fun HomeVideoTechnicalDetails(
 ) {
     val mediaSource = item.mediaSources?.firstOrNull()
     val videoStream = mediaSource?.mediaStreams?.findDefaultVideoStream()
-    val audioStream = mediaSource?.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }
+    val audioStream = mediaSource?.mediaStreams?.findDefaultAudioStream()
     val qualityLabel = getQualityLabel(item)
 
     val videoDetails = buildList {
@@ -191,7 +194,7 @@ private fun HomeVideoTechnicalDetails(
         }
         videoStream?.codec?.let { add(it.uppercase()) }
         videoStream?.averageFrameRate?.let { frameRate ->
-            add("${"%.2f".format(frameRate)} fps")
+            add(String.format(Locale.US, "%.2f fps", frameRate))
         }
     }.joinToString(" • ")
 
@@ -201,7 +204,7 @@ private fun HomeVideoTechnicalDetails(
         audioStream?.bitRate?.let { add("${it / 1000} kbps") }
     }.joinToString(" • ")
 
-    val runtime = item.runTimeTicks?.let { formatRuntime(it) }
+    val runtime = item.getFormattedDuration()
     val sizeLabel = mediaSource?.size?.let { formatFileSize(it) }
     val container = mediaSource?.container?.uppercase()
 
@@ -277,35 +280,29 @@ private fun DetailRow(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
         )
-        Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.End,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
 
-private fun formatRuntime(ticks: Long): String {
-    val totalSeconds = ticks / 10_000_000L
-    val hours = totalSeconds / 3600
-    val minutes = (totalSeconds % 3600) / 60
-    return if (hours > 0) {
-        "${hours}h ${minutes}m"
-    } else {
-        "${minutes}m"
-    }
-}
-
 private fun formatFileSize(bytes: Long): String {
-    val kilo = 1024.0
-    val mega = kilo * 1024
-    val giga = mega * 1024
-    return when {
-        bytes >= giga -> String.format("%.2f GB", bytes / giga)
-        bytes >= mega -> String.format("%.0f MB", bytes / mega)
-        bytes >= kilo -> String.format("%.0f KB", bytes / kilo)
-        else -> "$bytes B"
+    val units = arrayOf("B", "KB", "MB", "GB", "TB")
+    var size = bytes.toDouble()
+    var unitIndex = 0
+
+    while (size >= 1024 && unitIndex < units.size - 1) {
+        size /= 1024
+        unitIndex++
     }
+
+    return String.format(Locale.US, "%.1f %s", size, units[unitIndex])
 }

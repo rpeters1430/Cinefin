@@ -8,3 +8,9 @@ fun List<MediaStream>?.findDefaultVideoStream(): MediaStream? {
         stream.type == MediaStreamType.VIDEO && stream.isDefault == true
     } ?: this?.firstOrNull { stream -> stream.type == MediaStreamType.VIDEO }
 }
+
+fun List<MediaStream>?.findDefaultAudioStream(): MediaStream? {
+    return this?.firstOrNull { stream ->
+        stream.type == MediaStreamType.AUDIO && stream.isDefault == true
+    } ?: this?.firstOrNull { stream -> stream.type == MediaStreamType.AUDIO }
+}
