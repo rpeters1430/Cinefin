@@ -1,6 +1,8 @@
 package com.rpeters.jellyfin.data.repository
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
@@ -1065,9 +1067,13 @@ class JellyfinRepository @Inject constructor(
 
         val deviceProfile = JellyfinDeviceProfile.createAndroidDeviceProfile()
 
+        // Set maxStreamingBitrate based on network quality to guide server transcoding decisions
+        // This helps the server choose appropriate transcoding quality instead of using a very high default
+        val maxBitrate = getNetworkBasedMaxBitrate()
+
         val playbackInfoDto = PlaybackInfoDto(
             userId = userUuid,
-            maxStreamingBitrate = 400_000_000, // 400Mbps for direct play
+            maxStreamingBitrate = maxBitrate,
             startTimeTicks = null,
             audioStreamIndex = null,
             subtitleStreamIndex = null,
@@ -1087,11 +1093,12 @@ class JellyfinRepository @Inject constructor(
             SecureLogger.d(
                 "JellyfinRepository",
                 "PlaybackInfo request for item $itemId: " +
-                    "maxBitrate=${playbackInfoDto.maxStreamingBitrate}, " +
+                    "maxBitrate=${playbackInfoDto.maxStreamingBitrate} (${playbackInfoDto.maxStreamingBitrate / 1_000_000}Mbps), " +
                     "directPlay=${playbackInfoDto.enableDirectPlay}, " +
                     "directStream=${playbackInfoDto.enableDirectStream}, " +
                     "transcode=${playbackInfoDto.enableTranscoding}",
             )
+            Log.d("JellyfinRepository", "Network-based maxStreamingBitrate: ${maxBitrate / 1_000_000}Mbps")
 
             // Log DeviceProfile details
             val transcodingProfiles = deviceProfile.transcodingProfiles.orEmpty()
@@ -1129,6 +1136,38 @@ class JellyfinRepository @Inject constructor(
         }
 
         return response
+    }
+
+    /**
+     * Get maximum streaming bitrate based on current network quality.
+     * This provides a realistic bitrate limit for the server to use when making transcoding decisions.
+     * Returns higher values for better networks to allow direct play or high-quality transcoding.
+     */
+    private fun getNetworkBasedMaxBitrate(): Int {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return 25_000_000 // Default to 25 Mbps if network service unavailable
+
+        val activeNetwork = connectivityManager.activeNetwork
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+
+        return when {
+            // Ethernet: Best quality, allow high bitrates
+            networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) == true -> {
+                120_000_000 // 120 Mbps - excellent quality for direct play or 4K transcoding
+            }
+            // WiFi: Good quality, allow good bitrates
+            networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true -> {
+                80_000_000 // 80 Mbps - very good quality for 1080p/4K
+            }
+            // Cellular: Medium quality, conservative bitrate
+            networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true -> {
+                25_000_000 // 25 Mbps - good quality 1080p transcoding
+            }
+            // Unknown network: Low quality, very conservative
+            else -> {
+                10_000_000 // 10 Mbps - basic 720p/1080p transcoding
+            }
+        }
     }
 
     fun getCurrentServer(): JellyfinServer? = authRepository.getCurrentServer()
