@@ -101,30 +101,24 @@ class EnhancedPlaybackManager @Inject constructor(
             return PlaybackResult.Error("No media sources available for playback")
         }
 
-        val transcodingSource = mediaSources.firstOrNull { !it.transcodingUrl.isNullOrBlank() }
-        if (transcodingSource != null) {
-            val serverTranscodingUrl = transcodingSource.transcodingUrl?.let { url ->
-                if (!serverUrl.isNullOrBlank()) buildServerUrl(serverUrl, url) else null
-            }
+        // Check if server recommends transcoding
+        val transcodingSource = mediaSources.firstOrNull {
+            it.supportsTranscoding && !it.supportsDirectPlay
+        } ?: mediaSources.firstOrNull { it.supportsTranscoding }
+
+        if (transcodingSource != null && !transcodingSource.supportsDirectPlay) {
             if (BuildConfig.DEBUG) {
                 SecureLogger.d(
                     TAG,
-                    "Server-directed transcoding source id=${transcodingSource.id}, " +
+                    "Server recommends transcoding: id=${transcodingSource.id}, " +
                         "container=${transcodingSource.container}, " +
-                        "urlPresent=${!transcodingSource.transcodingUrl.isNullOrBlank()}",
+                        "directPlay=${transcodingSource.supportsDirectPlay}, " +
+                        "transcode=${transcodingSource.supportsTranscoding}",
                 )
             }
-            if (!serverTranscodingUrl.isNullOrBlank()) {
-                return PlaybackResult.Transcoding(
-                    url = serverTranscodingUrl,
-                    targetBitrate = 0,
-                    targetResolution = "server-selected",
-                    targetVideoCodec = getVideoCodec(transcodingSource) ?: "unknown",
-                    targetAudioCodec = getAudioCodec(transcodingSource) ?: "unknown",
-                    targetContainer = transcodingSource.container ?: "mp4",
-                    reason = "Server-directed transcoding",
-                )
-            }
+
+            // Use optimized transcoding URL builder which constructs proper parameters
+            return getOptimalTranscodingUrl(item, playbackInfo)
         }
 
         val mediaSource = mediaSources.firstOrNull { it.supportsDirectPlay }
@@ -172,6 +166,7 @@ class EnhancedPlaybackManager @Inject constructor(
             audioCodec = getAudioCodec(mediaSource),
             bitrate = mediaSource.bitrate ?: 0,
             reason = "Server-directed direct play",
+            playSessionId = playSessionId,
         )
     }
 
@@ -301,18 +296,8 @@ class EnhancedPlaybackManager @Inject constructor(
             )
         }
 
-        // Prefer server-provided transcoding URL when available.
-        if (!serverTranscodingUrl.isNullOrBlank()) {
-            return PlaybackResult.Transcoding(
-                url = serverTranscodingUrl,
-                targetBitrate = transcodingParams.maxBitrate,
-                targetResolution = "${transcodingParams.maxWidth}x${transcodingParams.maxHeight}",
-                targetVideoCodec = transcodingParams.videoCodec,
-                targetAudioCodec = transcodingParams.audioCodec,
-                targetContainer = transcodingParams.container,
-                reason = "Server transcoding selected",
-            )
-        }
+        // Note: We no longer use server-provided transcoding URL as it may be incomplete.
+        // Instead, we always build a proper transcoding URL with all required parameters.
 
         // Try primary transcoding URL
         val transcodingUrl = streamRepository.getTranscodedStreamUrl(
@@ -341,6 +326,7 @@ class EnhancedPlaybackManager @Inject constructor(
             targetAudioCodec = transcodingParams.audioCodec,
             targetContainer = transcodingParams.container,
             reason = "Optimized for $networkQuality network quality",
+            playSessionId = playSessionId,
         )
     }
 
@@ -459,6 +445,7 @@ sealed class PlaybackResult {
         val audioCodec: String?,
         val bitrate: Int,
         val reason: String,
+        val playSessionId: String? = null,
     ) : PlaybackResult()
 
     data class Transcoding(
@@ -469,6 +456,7 @@ sealed class PlaybackResult {
         val targetAudioCodec: String,
         val targetContainer: String,
         val reason: String,
+        val playSessionId: String? = null,
     ) : PlaybackResult()
 
     data class Error(val message: String) : PlaybackResult()
