@@ -73,18 +73,34 @@ object JellyfinDeviceProfile {
             ),
 
             // Transcoding profiles for fallback when direct play isn't possible
+            // NOTE: Conditions removed to let URL parameters (MaxWidth/MaxHeight) control output resolution.
+            // ProfileConditions define when to USE a profile, not output capabilities.
             transcodingProfiles = listOf(
+                // H.265/HEVC transcoding profile (preferred for better quality/compression)
+                TranscodingProfile(
+                    container = "mp4",
+                    type = DlnaProfileType.VIDEO,
+                    videoCodec = "h265,hevc",
+                    audioCodec = "opus,aac",
+                    context = EncodingContext.STREAMING,
+                    protocol = MediaStreamProtocol.HTTP,
+                    enableMpegtsM2TsMode = false,
+                    minSegments = 2,
+                    segmentLength = 6,
+                    conditions = emptyList(), // Let URL parameters control resolution
+                ),
+                // H.264 transcoding profile (fallback for compatibility)
                 TranscodingProfile(
                     container = "mp4",
                     type = DlnaProfileType.VIDEO,
                     videoCodec = "h264",
-                    audioCodec = "aac",
+                    audioCodec = "aac,opus",
                     context = EncodingContext.STREAMING,
                     protocol = MediaStreamProtocol.HLS,
                     enableMpegtsM2TsMode = false,
                     minSegments = 2,
                     segmentLength = 6,
-                    conditions = emptyList(),
+                    conditions = emptyList(), // Let URL parameters control resolution
                 ),
                 TranscodingProfile(
                     container = "mp3",
@@ -139,8 +155,46 @@ object JellyfinDeviceProfile {
                     ),
                 ),
                 CodecProfile(
+                    type = CodecType.VIDEO,
+                    codec = "h265,hevc",
+                    applyConditions = emptyList(),
+                    conditions = listOf(
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.VIDEO_LEVEL,
+                            value = "153", // Support up to H.265 Level 5.1
+                            isRequired = false,
+                        ),
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.WIDTH,
+                            value = "4096", // Support up to 4K width
+                            isRequired = false,
+                        ),
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.HEIGHT,
+                            value = "2304", // Support up to 4K height
+                            isRequired = false,
+                        ),
+                    ),
+                ),
+                CodecProfile(
                     type = CodecType.AUDIO,
                     codec = "vorbis",
+                    applyConditions = emptyList(),
+                    conditions = listOf(
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.AUDIO_CHANNELS,
+                            value = "8", // Support up to 7.1 surround
+                            isRequired = false,
+                        ),
+                    ),
+                ),
+                CodecProfile(
+                    type = CodecType.AUDIO,
+                    codec = "opus",
                     applyConditions = emptyList(),
                     conditions = listOf(
                         ProfileCondition(

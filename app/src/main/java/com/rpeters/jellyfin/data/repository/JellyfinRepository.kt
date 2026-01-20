@@ -1063,6 +1063,8 @@ class JellyfinRepository @Inject constructor(
         val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull()
             ?: throw IllegalArgumentException("Invalid item UUID: $itemId")
 
+        val deviceProfile = JellyfinDeviceProfile.createAndroidDeviceProfile()
+
         val playbackInfoDto = PlaybackInfoDto(
             userId = userUuid,
             maxStreamingBitrate = 400_000_000, // 400Mbps for direct play
@@ -1072,7 +1074,7 @@ class JellyfinRepository @Inject constructor(
             maxAudioChannels = null,
             mediaSourceId = null,
             liveStreamId = null,
-            deviceProfile = JellyfinDeviceProfile.createAndroidDeviceProfile(), // Custom profile with Vorbis support
+            deviceProfile = deviceProfile, // Custom profile with Vorbis support
             enableDirectPlay = true,
             enableDirectStream = true,
             enableTranscoding = true,
@@ -1090,6 +1092,16 @@ class JellyfinRepository @Inject constructor(
                     "directStream=${playbackInfoDto.enableDirectStream}, " +
                     "transcode=${playbackInfoDto.enableTranscoding}",
             )
+
+            // Log DeviceProfile details
+            val transcodingProfiles = deviceProfile.transcodingProfiles.orEmpty()
+            Log.d("JellyfinRepository", "DeviceProfile: ${deviceProfile.name}, maxStreamBitrate=${deviceProfile.maxStreamingBitrate}, maxStaticBitrate=${deviceProfile.maxStaticBitrate}")
+            transcodingProfiles.forEachIndexed { index, profile ->
+                Log.d("JellyfinRepository", "  TranscodingProfile[$index]: codec=${profile.videoCodec}, container=${profile.container}, protocol=${profile.protocol}, conditions=${profile.conditions.orEmpty().size}")
+                profile.conditions.orEmpty().forEach { condition ->
+                    Log.d("JellyfinRepository", "    Condition: ${condition.property} ${condition.condition} ${condition.value}")
+                }
+            }
         }
 
         val response = client.mediaInfoApi.getPostedPlaybackInfo(

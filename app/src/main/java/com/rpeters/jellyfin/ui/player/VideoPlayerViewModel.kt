@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.player
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -361,10 +362,9 @@ class VideoPlayerViewModel @Inject constructor(
 
                 when (playbackResult) {
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.DirectPlay -> {
-                        SecureLogger.d(
-                            "VideoPlayer",
-                            "Direct Play: ${playbackResult.container} (${playbackResult.videoCodec}/${playbackResult.audioCodec}) @ ${playbackResult.bitrate / 1_000_000}Mbps - ${playbackResult.reason}",
-                        )
+                        val directPlayMsg = "Direct Play: ${playbackResult.container} (${playbackResult.videoCodec}/${playbackResult.audioCodec}) @ ${playbackResult.bitrate / 1_000_000}Mbps - ${playbackResult.reason}"
+                        SecureLogger.d("VideoPlayer", directPlayMsg)
+                        Log.d("VideoPlayer", directPlayMsg) // Direct log bypass SecureLogger
                         streamUrl = playbackResult.url
                         sessionId = playbackResult.playSessionId ?: java.util.UUID.randomUUID().toString()
                         // Infer MIME type from container for direct play
@@ -377,10 +377,9 @@ class VideoPlayerViewModel @Inject constructor(
                         }
                     }
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> {
-                        SecureLogger.d(
-                            "VideoPlayer",
-                            "Transcoding: ${playbackResult.targetResolution} ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} @ ${playbackResult.targetBitrate / 1_000_000}Mbps - ${playbackResult.reason}",
-                        )
+                        val transcodingMsg = "Transcoding: ${playbackResult.targetResolution} ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} @ ${playbackResult.targetBitrate / 1_000_000}Mbps - ${playbackResult.reason}"
+                        SecureLogger.d("VideoPlayer", transcodingMsg)
+                        Log.d("VideoPlayer", transcodingMsg) // Direct log bypass SecureLogger
                         streamUrl = playbackResult.url
                         sessionId = playbackResult.playSessionId ?: java.util.UUID.randomUUID().toString()
 
@@ -416,13 +415,16 @@ class VideoPlayerViewModel @Inject constructor(
                 }
 
                 SecureLogger.d("VideoPlayer", "Final stream URL: $streamUrl")
+                Log.d("VideoPlayer", "Final stream URL: $streamUrl") // Direct log
                 SecureLogger.d("VideoPlayer", "MIME type: $mimeType")
+                Log.d("VideoPlayer", "MIME type: $mimeType") // Direct log
 
                 // Log URL parameters for debugging transcoding issues
                 if (streamUrl.contains("?")) {
                     val params = streamUrl.substringAfter("?")
                     val paramList = params.split("&")
                     SecureLogger.d("VideoPlayer", "URL Parameters:")
+                    Log.d("VideoPlayer", "URL Parameters:") // Direct log
                     paramList.forEach { param ->
                         if (param.contains("=")) {
                             val (key, value) = param.split("=", limit = 2)
@@ -432,7 +434,9 @@ class VideoPlayerViewModel @Inject constructor(
                                 key.contains("Bitrate", ignoreCase = true) ||
                                 key.contains("Codec", ignoreCase = true) ||
                                 key.contains("Container", ignoreCase = true) -> {
-                                    SecureLogger.d("VideoPlayer", "  $key = $value")
+                                    val paramLog = "  $key = $value"
+                                    SecureLogger.d("VideoPlayer", paramLog)
+                                    Log.d("VideoPlayer", paramLog) // Direct log
                                 }
                             }
                         }

@@ -1,0 +1,1211 @@
+--------- beginning of main
+01-19 22:36:50.945   646  2507 D NativePermissionController: checkPermission: missing 13 for 10227
+01-19 22:36:50.945   646  2507 D NativePermissionController: checkPermission: missing 13 for 10227
+01-19 22:36:50.947   646  2507 D NativePermissionController: checkPermission: missing 13 for 10227
+01-19 22:36:50.948   646  2507 D NativePermissionController: checkPermission: missing 13 for 10227
+01-19 22:36:50.968  3765  3900 D nativeloader: Load /data/app/~~4_RbhzhQm-sFVXWSEdOUdQ==/com.rpeters.jellyfin-4tnvhAhZajaSnjVltk7Bwg==/base.apk!/lib/x86_64/libffmpegJNI.so using class loader ns clns-9 (caller=/data/app/~~4_RbhzhQm-sFVXWSEdOUdQ==/com.rpeters.jellyfin-4tnvhAhZajaSnjVltk7Bwg==/base.apk!classes19.dex): ok
+01-19 22:36:50.971  3765  3900 W FfmpegLibrary: No opus decoder available. Check the FFmpeg build configuration.
+01-19 22:36:50.994  3765  3900 W FfmpegLibrary: No opus decoder available. Check the FFmpeg build configuration.
+01-19 22:36:51.094  3765  3900 I DMCodecAdapterFactory: Creating an asynchronous MediaCodec adapter for track type video
+01-19 22:36:51.097  3765  3915 D CCodec  : allocate(c2.goldfish.hevc.decoder)
+01-19 22:36:51.100  3765  3915 I ApexCodecsLazy: ApexCodecs loaded
+01-19 22:36:51.100  3765  3915 I Codec2Client: Available Codec2 services: "default" "software" "__ApexCodecs__"
+01-19 22:36:51.102  3765  3915 I CCodec  : setting up 'default' as default (vendor) store
+01-19 22:36:51.105   595   625 I GoldfishComponentStore: in init
+01-19 22:36:51.105   595   625 I GoldfishComponentStore: loading dll of path libcodec2_goldfish_hevcdec.so
+01-19 22:36:51.105   595   625 I GoldfishComponentStore: Create()
+01-19 22:36:51.105   595   625 I GoldfishComponentStore: created interface
+01-19 22:36:51.106   595   625 I GoldfishComponentStore: created component
+01-19 22:36:51.111  3765  3915 I CCodec  : Created component [c2.goldfish.hevc.decoder] for [c2.goldfish.hevc.decoder]
+01-19 22:36:51.112  3765  3915 D CCodecConfig: read media type: video/hevc
+01-19 22:36:51.118  3765  3915 D ReflectedParamUpdater: extent() != 1 for single value type: algo.buffers.max-count.values
+01-19 22:36:51.120  3765  3915 D ReflectedParamUpdater: extent() != 1 for single value type: output.subscribed-indices.values
+01-19 22:36:51.120  3765  3915 D ReflectedParamUpdater: extent() != 1 for single value type: input.buffers.allocator-ids.values
+01-19 22:36:51.120  3765  3915 D ReflectedParamUpdater: extent() != 1 for single value type: output.buffers.allocator-ids.values
+01-19 22:36:51.121  3765  3915 D ReflectedParamUpdater: extent() != 1 for single value type: algo.buffers.allocator-ids.values
+01-19 22:36:51.121  3765  3915 D ReflectedParamUpdater: extent() != 1 for single value type: output.buffers.pool-ids.values
+01-19 22:36:51.122  3765  3915 D ReflectedParamUpdater: extent() != 1 for single value type: algo.buffers.pool-ids.values
+01-19 22:36:51.125  3765  3915 D ReflectedParamUpdater: ignored struct field coded.color-format.locations
+01-19 22:36:51.129  3765  3915 D CCodecConfig: ignoring local param raw.size (0xd2001800) as it is already supported
+01-19 22:36:51.129  3765  3915 D CCodecConfig: ignoring local param default.color (0x5200180b) as it is already supported
+01-19 22:36:51.129  3765  3915 D ReflectedParamUpdater: ignored struct field raw.hdr-static-info.mastering
+01-19 22:36:51.130  3765  3915 I CCodecConfig: query failed after returning 12 values (BAD_INDEX)
+01-19 22:36:51.131  3765  3915 D CCodecConfig: c2 config diff is Dict {
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 coded.pl.level = 24584
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 coded.pl.profile = 24576
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 coded.vui.color.matrix = 0
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 coded.vui.color.primaries = 0
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 coded.vui.color.range = 2
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 coded.vui.color.transfer = 0
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 default.color.matrix = 0
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 default.color.primaries = 0
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 default.color.range = 0
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 default.color.transfer = 0
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 input.buffers.max-size.value = 6291456
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 input.delay.value = 0
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   string input.media-type.value = "video/hevc"
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 output.delay.value = 8
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   string output.media-type.value = "video/raw"
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 raw.color.matrix = 0
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 raw.color.primaries = 0
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 raw.color.range = 2
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 raw.color.transfer = 0
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 raw.max-size.height = 240
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 raw.max-size.width = 320
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 raw.pixel-format.value = 35
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::i32 raw.rotation.flip = 0
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::i32 raw.rotation.value = 0
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 raw.sar.height = 1
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 raw.sar.width = 1
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 raw.size.height = 240
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2::u32 raw.size.width = 320
+01-19 22:36:51.131  3765  3915 D CCodecConfig:   c2
+01-19 22:36:51.131  3765  3915 W ColorUtils: expected specified color aspects (2:0:0:0)
+01-19 22:36:51.135  3765  3914 I MediaCodec: MediaCodec will operate in async mode
+01-19 22:36:51.136  3765  3900 I MediaCodec: media_quality service unavailable, skipping updatePictureProfile
+01-19 22:36:51.137  3765  3914 D SurfaceUtils: connecting to surface 0x731d040ac8b0, reason connectToSurface
+01-19 22:36:51.137  3765  3914 I MediaCodec: [c2.goldfish.hevc.decoder] setting surface generation to 3855361
+01-19 22:36:51.137  3765  3914 D SurfaceUtils: disconnecting from surface 0x731d040ac8b0, reason connectToSurface(reconnect)
+01-19 22:36:51.137  3765  3914 D SurfaceUtils: connecting to surface 0x731d040ac8a0, reason connectToSurface(reconnect-with-listener)
+01-19 22:36:51.138  3765  3915 I CCodecBufferChannel: Using latch times for frame rendered signals - present fences not supported
+01-19 22:36:51.138  3765  3915 D CCodec  : [c2.goldfish.hevc.decoder] buffers are bound to CCodec for this session
+01-19 22:36:51.139  3765  3915 D CCodecConfig: no c2 equivalents for log-session-id
+01-19 22:36:51.139  3765  3915 D CCodecConfig: no c2 equivalents for importance
+01-19 22:36:51.139  3765  3915 D CCodecConfig: no c2 equivalents for color-standard
+01-19 22:36:51.139  3765  3915 D CCodecConfig: no c2 equivalents for native-window
+01-19 22:36:51.139  3765  3915 D CCodecConfig: no c2 equivalents for native-window-generation
+01-19 22:36:51.139  3765  3915 D CCodecConfig: no c2 equivalents for flags
+01-19 22:36:51.140  3765  3915 D CCodecConfig: config failed => CORRUPTED
+01-19 22:36:51.140  3765  3915 D CCodecConfig: c2 config diff is   c2::u32 default.color.matrix = 1
+01-19 22:36:51.140  3765  3915 D CCodecConfig:   c2::u32 default.color.primaries = 1
+01-19 22:36:51.140  3765  3915 D CCodecConfig:   c2::u32 default.color.range = 2
+01-19 22:36:51.140  3765  3915 D CCodecConfig:   c2::u32 default.color.transfer = 3
+01-19 22:36:51.140  3765  3915 D CCodecConfig:   c2::u32 raw.max-size.width = 416
+01-19 22:36:51.140  3765  3915 D CCodecConfig:   c2::u32 raw.size.height = 234
+01-19 22:36:51.140  3765  3915 D CCodecConfig:   c2::u32 raw.size.width = 416
+01-19 22:36:51.141  3765  3915 W Codec2Client: query -- param skipped: index = 1107298332.
+01-19 22:36:51.141  3765  3915 D CCodec  : client requested max input size 2097152, which is smaller than what component recommended (6291456); overriding with component recommendation.
+01-19 22:36:51.141  3765  3915 W CCodec  : This behavior is subject to change. It is recommended that app developers double check whether the requested max input size is in reasonable range.
+01-19 22:36:51.141  3765  3915 D CCodec  : encoding statistics level = 0
+01-19 22:36:51.141  3765  3915 D CCodec  : setup formats input: AMessage(what = 0x00000000) = {
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t height = 234
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t level = 65536
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t max-input-size = 6291456
+01-19 22:36:51.141  3765  3915 D CCodec  :   string mime = "video/hevc"
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t profile = 1
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t width = 416
+01-19 22:36:51.141  3765  3915 D CCodec  :   Rect crop(0, 0, 415, 233)
+01-19 22:36:51.141  3765  3915 D CCodec  : }
+01-19 22:36:51.141  3765  3915 D CCodec  : setup formats output: AMessage(what = 0x00000000) = {
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t android._color-format = 2135033992
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t android._video-scaling = 1
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t rotation-degrees = 0
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t color-standard = 4
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t color-range = 2
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t color-transfer = 3
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t sar-height = 1
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t sar-width = 1
+01-19 22:36:51.141  3765  3915 D CCodec  :   Rect crop(0, 0, 415, 233)
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t width = 416
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t height = 234
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t max-height = 240
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t max-width = 416
+01-19 22:36:51.141  3765  3915 D CCodec  :   string mime = "video/raw"
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t android._dataspace = 259
+01-19 22:36:51.141  3765  3915 D CCodec  :   int32_t color-format = 2130708361
+01-19 22:36:51.141  3765  3915 D CCodec  : }
+01-19 22:36:51.142  3765  3915 I CCodecConfig: query failed after returning 12 values (BAD_INDEX)
+01-19 22:36:51.142  3765  3915 D CCodecConfig: c2 config diff is   c2::u32 raw.color.matrix = 1
+01-19 22:36:51.142  3765  3915 D CCodecConfig:   c2::u32 raw.color.primaries = 1
+01-19 22:36:51.142  3765  3915 D CCodecConfig:   c2::u32 raw.color.transfer = 3
+01-19 22:36:51.143  3765  3915 E peters.jellyfin: Failed to query component interface for required system resources: 6
+01-19 22:36:51.144  3765  3900 D MediaCodec: keep callback message for reclaim
+01-19 22:36:51.148  3765  3915 W Codec2Client: query -- param skipped: index = 1342179345.
+01-19 22:36:51.148  3765  3915 W Codec2Client: query -- param skipped: index = 2415921170.
+01-19 22:36:51.148  3765  3915 W Codec2Client: query -- param skipped: index = 1610614798.
+01-19 22:36:51.148  3765  3915 W Codec2Client: query -- param skipped: index = 2684356609.
+01-19 22:36:51.149  3765  3915 D C2Store : Using DMABUF Heaps
+01-19 22:36:51.153  3765  3915 D CCodecBufferChannel: [c2.goldfish.hevc.decoder#72] Created input block pool with allocatorID 16 => poolID 17 - OK (0)
+01-19 22:36:51.156  3765  3915 D CCodecBufferChannel: [c2.goldfish.hevc.decoder#72] Query output surface allocator returned 0 params => BAD_INDEX (6)
+01-19 22:36:51.157  3765  3915 I CCodecBufferChannel: [c2.goldfish.hevc.decoder#72] Created output block pool with allocatorID 18 => poolID 17 - OK
+01-19 22:36:51.158  3765  3915 D CCodecBufferChannel: [c2.goldfish.hevc.decoder#72] Configured output block pool ids 17 => OK
+01-19 22:36:51.158  3765  3915 D Codec2-OutputBufferQueue: remote graphic buffer migration 0/0
+01-19 22:36:51.158  3765  3915 D Codec2Client: setOutputSurface -- failed to set consumer usage (6/BAD_INDEX)
+01-19 22:36:51.158  3765  3915 D Codec2Client: setOutputSurface -- generation=3855361 consumer usage=0x900
+01-19 22:36:51.177   595   625 W libbinder.BackendUnifiedServiceManager: Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: android.hardware.graphics.allocator.IAllocator/default
+01-19 22:36:51.181   595   625 W libbinder.BackendUnifiedServiceManager: Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: android.hardware.graphics.allocator.IAllocator/default
+01-19 22:36:51.201   595   625 D C2BqBuffer: local generation change 3855361 , bqId: 16170551869442 migrated buffers # 0
+01-19 22:36:51.201  3765  3915 D Codec2Client: Surface configure completed
+01-19 22:36:51.201  3765  3915 I DMABUFHEAPS: Using DMA-BUF heap named: system
+01-19 22:36:51.342   721  1860 W ResourceManagerServiceUtils: Ignoring request to add new resource entry with value <= 0
+01-19 22:36:51.345   595   625 D C2Store : Using DMABUF Heaps
+01-19 22:36:51.345   595  3920 D SimpleC2Component: Using output block pool with poolID 17 => got 17 - 0
+01-19 22:36:51.345   595  3920 D android.hardware.media.c2@1.0-service-goldfish: isMinigbmFromProperty:codecs: minigbm query prop value is: ranchu
+01-19 22:36:51.345   595  3920 D android.hardware.media.c2@1.0-service-goldfish: isMinigbmFromProperty:codecs: Is not using minigbm, in goldfish mode.
+01-19 22:36:51.348  3765  3900 I DMCodecAdapterFactory: Creating an asynchronous MediaCodec adapter for track type audio
+01-19 22:36:51.350  3765  3923 D CCodec  : allocate(c2.android.opus.decoder)
+01-19 22:36:51.350   595  3920 I android.hardware.media.c2@1.0-service-goldfish: successfully allocated 33558528 bytes in goldfish_address_block
+01-19 22:36:51.350   595  3920 I android.hardware.media.c2@1.0-service-goldfish: guest address is 0x761f9444b000
+01-19 22:36:51.351   595  3920 I android.hardware.media.c2@1.0-service-goldfish: successfully pinged host to allocate memory
+01-19 22:36:51.427  3765  3923 I CCodec  : setting up 'default' as default (vendor) store
+01-19 22:36:51.431   810   932 D BufferPoolAccessor2.0: bufferpool2 0x731cc4076ea8 : 0(0 size) total buffers - 0(0 size) used buffers - 2/7 (recycle/alloc) - 5/18 (fetch/transfer)
+01-19 22:36:51.432   810   932 D BufferPoolAccessor2.0: Destruction - bufferpool2 0x731cc4076ea8 cached: 0/0M, 0/0% in use; allocs: 7, 29% recycled; transfers: 18, 72% unfetched
+01-19 22:36:51.432  1082  1488 D BufferPoolAccessor2.0: bufferpool2 0x731cc4030188 : 0(0 size) total buffers - 0(0 size) used buffers - 2/7 (recycle/alloc) - 5/38 (fetch/transfer)
+01-19 22:36:51.432   810  1112 D BufferPoolAccessor2.0: bufferpool2 0x731cc402c7b8 : 0(0 size) total buffers - 0(0 size) used buffers - 2/7 (recycle/alloc) - 5/34 (fetch/transfer)
+01-19 22:36:51.432   810  1112 D BufferPoolAccessor2.0: Destruction - bufferpool2 0x731cc402c7b8 cached: 0/0M, 0/0% in use; allocs: 7, 29% recycled; transfers: 34, 85% unfetched
+01-19 22:36:51.433  1082  1488 D BufferPoolAccessor2.0: Destruction - bufferpool2 0x731cc4030188 cached: 0/0M, 0/0% in use; allocs: 7, 29% recycled; transfers: 38, 87% unfetched
+01-19 22:36:51.433  1082  1488 D BufferPoolAccessor2.0: bufferpool2 0x731cc40318a8 : 0(0 size) total buffers - 0(0 size) used buffers - 2/7 (recycle/alloc) - 5/36 (fetch/transfer)
+01-19 22:36:51.433  1082  1488 D BufferPoolAccessor2.0: Destruction - bufferpool2 0x731cc40318a8 cached: 0/0M, 0/0% in use; allocs: 7, 29% recycled; transfers: 36, 86% unfetched
+01-19 22:36:51.433  1082  1488 D BufferPoolAccessor2.0: bufferpool2 0x731cc402bc28 : 0(0 size) total buffers - 0(0 size) used buffers - 2/7 (recycle/alloc) - 5/18 (fetch/transfer)
+01-19 22:36:51.433  1082  1488 D BufferPoolAccessor2.0: Destruction - bufferpool2 0x731cc402bc28 cached: 0/0M, 0/0% in use; allocs: 7, 29% recycled; transfers: 18, 72% unfetched
+01-19 22:36:51.433   810  1142 D BufferPoolAccessor2.0: bufferpool2 0x731cc40752e8 : 0(0 size) total buffers - 0(0 size) used buffers - 2/7 (recycle/alloc) - 5/24 (fetch/transfer)
+01-19 22:36:51.433   810  1142 D BufferPoolAccessor2.0: Destruction - bufferpool2 0x731cc40752e8 cached: 0/0M, 0/0% in use; allocs: 7, 29% recycled; transfers: 24, 79% unfetched
+01-19 22:36:51.434  3765  3923 I CCodec  : Created component [c2.android.opus.decoder] for [c2.android.opus.decoder]
+01-19 22:36:51.434   810   933 D BufferPoolAccessor2.0: bufferpool2 0x731cc406b108 : 0(0 size) total buffers - 0(0 size) used buffers - 2/7 (recycle/alloc) - 5/24 (fetch/transfer)
+01-19 22:36:51.434   810   933 D BufferPoolAccessor2.0: Destruction - bufferpool2 0x731cc406b108 cached: 0/0M, 0/0% in use; allocs: 7, 29% recycled; transfers: 24, 79% unfetched
+01-19 22:36:51.434  3765  3923 D CCodecConfig: read media type: audio/opus
+01-19 22:36:51.435   810   933 D BufferPoolAccessor2.0: bufferpool2 0x731cc406cf18 : 0(0 size) total buffers - 0(0 size) used buffers - 2/7 (recycle/alloc) - 10/34 (fetch/transfer)
+01-19 22:36:51.435   810   933 D BufferPoolAccessor2.0: Destruction - bufferpool2 0x731cc406cf18 cached: 0/0M, 0/0% in use; allocs: 7, 29% recycled; transfers: 34, 71% unfetched
+01-19 22:36:51.435   810  1118 D BufferPoolAccessor2.0: bufferpool2 0x731cc406b7f8 : 0(0 size) total buffers - 0(0 size) used buffers - 1/7 (recycle/alloc) - 7/26 (fetch/transfer)
+01-19 22:36:51.435   810  1118 D BufferPoolAccessor2.0: Destruction - bufferpool2 0x731cc406b7f8 cached: 0/0M, 0/0% in use; allocs: 7, 14% recycled; transfers: 26, 73% unfetched
+01-19 22:36:51.440  3765  3923 D ReflectedParamUpdater: extent() != 1 for single value type: algo.buffers.max-count.values
+01-19 22:36:51.441  3765  3923 D ReflectedParamUpdater: extent() != 1 for single value type: output.subscribed-indices.values
+01-19 22:36:51.441  3765  3923 D ReflectedParamUpdater: extent() != 1 for single value type: input.buffers.allocator-ids.values
+01-19 22:36:51.442  3765  3923 D ReflectedParamUpdater: extent() != 1 for single value type: output.buffers.allocator-ids.values
+01-19 22:36:51.442  3765  3923 D ReflectedParamUpdater: extent() != 1 for single value type: algo.buffers.allocator-ids.values
+01-19 22:36:51.445  3765  3923 D ReflectedParamUpdater: extent() != 1 for single value type: output.buffers.pool-ids.values
+01-19 22:36:51.445  3765  3923 D ReflectedParamUpdater: extent() != 1 for single value type: algo.buffers.pool-ids.values
+01-19 22:36:51.448  3765  3923 I CCodecConfig: query failed after returning 8 values (BAD_INDEX)
+01-19 22:36:51.448  3765  3923 D CCodecConfig: c2 config diff is Dict {
+01-19 22:36:51.448  3765  3923 D CCodecConfig:   c2::u32 coded.bitrate.value = 6000
+01-19 22:36:51.448  3765  3923 D CCodecConfig:   c2::u32 input.buffers.max-size.value = 5760
+01-19 22:36:51.448  3765  3923 D CCodecConfig:   c2::u32 input.delay.value = 0
+01-19 22:36:51.448  3765  3923 D CCodecConfig:   string input.media-type.value = "audio/opus"
+01-19 22:36:51.448  3765  3923 D CCodecConfig:   c2::u32 output.large-frame.max-size = 0
+01-19 22:36:51.448  3765  3923 D CCodecConfig:   c2::u32 output.large-frame.threshold-size = 0
+01-19 22:36:51.448  3765  3923 D CCodecConfig:   string output.media-type.value = "audio/raw"
+01-19 22:36:51.448  3765  3923 D CCodecConfig:   c2::u32 raw.channel-count.value = 1
+01-19 22:36:51.448  3765  3923 D CCodecConfig:   c2::u32 raw.sample-rate.value = 48000
+01-19 22:36:51.448  3765  3923 D CCodecConfig: }
+01-19 22:36:51.451  3765  3923 I MediaCodec: MediaCodec will operate in async mode
+01-19 22:36:51.452  3765  3900 I MediaCodec: media_quality service unavailable, skipping updatePictureProfile
+01-19 22:36:51.452  3765  3923 D CCodec  : [c2.android.opus.decoder] buffers are bound to CCodec for this session
+01-19 22:36:51.452  3765  3923 D CCodecConfig: no c2 equivalents for csd-1
+01-19 22:36:51.452  3765  3923 D CCodecConfig: no c2 equivalents for csd-2
+01-19 22:36:51.452  3765  3923 D CCodecConfig: no c2 equivalents for log-session-id
+01-19 22:36:51.452  3765  3923 D CCodecConfig: no c2 equivalents for importance
+01-19 22:36:51.452  3765  3923 D CCodecConfig: no c2 equivalents for flags
+01-19 22:36:51.453  3765  3923 D CCodecConfig: c2 config diff is   c2::u32 raw.channel-count.value = 2
+01-19 22:36:51.454  3765  3923 W Codec2Client: query -- param skipped: index = 1107298332.
+01-19 22:36:51.454  3765  3923 D CCodec  : encoding statistics level = 0
+01-19 22:36:51.454  3765  3923 D CCodec  : setup formats input: AMessage(what = 0x00000000) = {
+01-19 22:36:51.454  3765  3923 D CCodec  :   int32_t bitrate = 6000
+01-19 22:36:51.454  3765  3923 D CCodec  :   int32_t channel-count = 2
+01-19 22:36:51.454  3765  3923 D CCodec  :   int32_t max-input-size = 5760
+01-19 22:36:51.454  3765  3923 D CCodec  :   string mime = "audio/opus"
+01-19 22:36:51.454  3765  3923 D CCodec  :   int32_t sample-rate = 48000
+01-19 22:36:51.454  3765  3923 D CCodec  : }
+01-19 22:36:51.454  3765  3923 D CCodec  : setup formats output: AMessage(what = 0x00000000) = {
+01-19 22:36:51.454  3765  3923 D CCodec  :   int32_t buffer-batch-max-output-size = 0
+01-19 22:36:51.454  3765  3923 D CCodec  :   int32_t buffer-batch-threshold-output-size = 0
+01-19 22:36:51.454  3765  3923 D CCodec  :   int32_t channel-count = 2
+01-19 22:36:51.454  3765  3923 D CCodec  :   string mime = "audio/raw"
+01-19 22:36:51.454  3765  3923 D CCodec  :   int32_t sample-rate = 48000
+01-19 22:36:51.454  3765  3923 D CCodec  :   int32_t android._config-pcm-encoding = 2
+01-19 22:36:51.454  3765  3923 D CCodec  : }
+01-19 22:36:51.454  3765  3923 I CCodecConfig: query failed after returning 8 values (BAD_INDEX)
+01-19 22:36:51.454  3765  3923 E peters.jellyfin: Failed to query component interface for required system resources: 6
+01-19 22:36:51.455  3765  3900 D MediaCodec: keep callback message for reclaim
+01-19 22:36:51.457  3765  3923 W Codec2Client: query -- param skipped: index = 1342179345.
+01-19 22:36:51.457  3765  3923 W Codec2Client: query -- param skipped: index = 2415921170.
+01-19 22:36:51.458  3765  3923 D CCodecBufferChannel: [c2.android.opus.decoder#432] Created input block pool with allocatorID 16 => poolID 18 - OK (0)
+01-19 22:36:51.459  3765  3923 I CCodecBufferChannel: [c2.android.opus.decoder#432] Created output block pool with allocatorID 16 => poolID 36 - OK
+01-19 22:36:51.459  3765  3923 D CCodecBufferChannel: [c2.android.opus.decoder#432] Configured output block pool ids 36 => OK
+01-19 22:36:51.459   725  1148 E Codec2-ComponentInterface: We have a failed config
+01-19 22:36:51.460   725  3924 D SimpleC2Component: Using output block pool with poolID 36 => got 36 - 0
+--------- beginning of system
+01-19 22:36:51.463   810  1686 E TaskPersister: File error accessing recents directory (directory doesn't exist?).
+01-19 22:36:51.465  3765  3900 W LoudnessCodecController: MediaCodec mime type not supported for loudness annotation
+01-19 22:36:51.465  3765  3900 V LoudnessCodecController: Could not extract codec loudness information
+01-19 22:36:51.466   725  3924 I C2SoftOpusDec: Configuring decoder: 48000 Hz, 2 channels
+01-19 22:36:51.539  3765  3915 D CCodecConfig: c2 config diff is   c2::u32 raw.crop.height = 234
+01-19 22:36:51.539  3765  3915 D CCodecConfig:   c2::u32 raw.crop.left = 0
+01-19 22:36:51.539  3765  3915 D CCodecConfig:   c2::u32 raw.crop.top = 0
+01-19 22:36:51.539  3765  3915 D CCodecConfig:   c2::u32 raw.crop.width = 416
+01-19 22:36:51.660   646  2507 D NativePermissionController: checkPermission: missing 1 for 10227
+01-19 22:36:51.660   646  2507 D NativePermissionController: checkPermission: missing 3 for 10227
+01-19 22:36:51.660   646  2507 D NativePermissionController: checkPermission: missing 5 for 10227
+01-19 22:36:51.660   646  2507 W AudioFlinger: createTrack_l(): mismatch between requested flags (00000008) and output flags (00000002)
+01-19 22:36:51.661   646  2507 D AudioFlinger: Client defaulted notificationFrames to 8720 for frameCount 17440
+01-19 22:36:51.661   646  2507 I AF::PthrPatchRecord: creating track with enforcement level 0
+01-19 22:36:51.676  3765  3900 I peters.jellyfin: hiddenapi: Accessing hidden method Landroid/media/AudioTrack;->getLatency()I (runtime_flags=0, domain=platform, api=unsupported) from Landroidx/media3/exoplayer/audio/AudioTrackPositionTracker; (domain=app, TargetSdkVersion=35) using reflection: allowed
+01-19 22:36:51.701   810   810 D MediaSessionService: Media button session is changed to com.rpeters.jellyfin/androidx.media3.session.id.JellyfinAudioSession/2 (userId=0)
+01-19 22:36:51.705   810   890 E AppOps  : attributionTag  not declared in manifest of com.rpeters.jellyfin
+01-19 22:36:51.706  1191  1191 I MediaPlayerList: onMediaKeyEventSessionChanged: token=com.rpeters.jellyfin
+01-19 22:36:51.707   589  3928 W libprocessgroup: A JoinCgroup action in the SystemMemoryProcess profile is used for controller memory in the cgroup v2 hierarchy and will be ignored
+01-19 22:36:51.707   810  2091 E AppOps  : attributionTag  not declared in manifest of com.rpeters.jellyfin
+01-19 22:36:51.709   646  2507 D NativePermissionController: checkPermission: missing 13 for 10227
+01-19 22:36:51.710   646   646 D NativePermissionController: checkPermission: missing 13 for 10227
+01-19 22:36:51.711   646   646 D NativePermissionController: checkPermission: missing 13 for 10227
+01-19 22:36:51.711   646   646 D NativePermissionController: checkPermission: missing 13 for 10227
+01-19 22:36:51.711  1191  1191 I PlayerSettingsManager: activePlayerChanged : com.rpeters.jellyfin
+01-19 22:36:51.715  1191  1191 I PlayerSettingsManager: updateRemoteDevice: repeat (STATE_REPEAT_OFF -> STATE_REPEAT_OFF), shuffle (STATE_SHUFFLE_OFF -> STATE_SHUFFLE_OFF)
+01-19 22:36:51.715  1191  1191 I MediaPlayerList: sendMediaUpdate: Creating a one item queue for a player with no queue
+01-19 22:36:51.715  1191  1191 I bluetooth: system/btif/avrcp/avrcp_service.cc:532 SendMediaUpdate: track_changed=true :  play_state=true :  queue=true
+01-19 22:36:51.719  3765  3765 D MediaRouter: onRestoreRoute() : route=RouteInfo{ name=Phone, description=null, status=null, category=RouteCategory{ name=System types=ROUTE_TYPE_LIVE_AUDIO ROUTE_TYPE_LIVE_VIDEO  groupable=false }, supportedTypes=ROUTE_TYPE_LIVE_AUDIO ROUTE_TYPE_LIVE_VIDEO , presentationDisplay=null }
+01-19 22:36:51.719  3765  3765 V MediaRouter: Selecting route: RouteInfo{ name=Phone, description=null, status=null, category=RouteCategory{ name=System types=ROUTE_TYPE_LIVE_AUDIO ROUTE_TYPE_LIVE_VIDEO  groupable=false }, supportedTypes=ROUTE_TYPE_LIVE_AUDIO ROUTE_TYPE_LIVE_VIDEO , presentationDisplay=null }
+01-19 22:36:51.722  1191  1191 I MediaPlayerList: onMediaKeyEventSessionChanged: token=com.rpeters.jellyfin
+01-19 22:36:51.877  1590  1590 D WM-DelayedWorkTracker: Scheduling work 480d5372-babe-4c65-ad1b-f1a90da12f6b
+01-19 22:36:51.877  1191  1191 I MediaPlayerList: sendMediaUpdate: Creating a one item queue for a player with no queue
+01-19 22:36:51.879  1590  1590 D WM-GreedyScheduler: Starting work for 480d5372-babe-4c65-ad1b-f1a90da12f6b
+01-19 22:36:51.884  1590  1808 D WM-Processor: Processor: processing WorkGenerationalId(workSpecId=480d5372-babe-4c65-ad1b-f1a90da12f6b, generation=0)
+01-19 22:36:51.885  1191  1191 E MediaControlProfile: onCurrentPlayerStateUpdated: base actions not supported, player actions= 6ffe85, expected at least= 7f
+01-19 22:36:51.885  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:36:51.886  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:36:51.886  1191  1191 W MediaControlGattService: Feature PLAYER_NAME support: true
+01-19 22:36:51.886  1191  1191 W MediaControlGattService: Feature PLAYER_ICON_URL support: false
+01-19 22:36:51.886  1191  1191 W MediaControlGattService: Feature PLAYER_ICON_OBJ_ID support: false
+01-19 22:36:51.886  1191  1191 W MediaControlGattService: Feature CURRENT_TRACK_SEGMENT_OBJ_ID support: false
+01-19 22:36:51.886  1191  1191 W MediaControlGattService: Feature CURRENT_TRACK_OBJ_ID support: false
+01-19 22:36:51.886  1191  1191 W MediaControlGattService: Feature NEXT_TRACK_OBJ_ID support: false
+01-19 22:36:51.886  1191  1191 W MediaControlGattService: Feature CURRENT_GROUP_OBJ_ID support: false
+01-19 22:36:51.886  1191  1191 W MediaControlGattService: Feature PARENT_GROUP_OBJ_ID support: false
+01-19 22:36:51.886  1191  1191 W MediaControlGattService: Feature SEARCH_RESULT_OBJ_ID support: false
+01-19 22:36:51.886  1191  1191 W MediaControlGattService: Feature TRACK_TITLE support: true
+01-19 22:36:51.886  1191  1191 W MediaControlGattService: Feature TRACK_DURATION support: true
+01-19 22:36:51.886  1191  1191 W MediaControlGattService: Feature TRACK_POSITION support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature TRACK_POSITION_NOTIFY support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature PLAYBACK_SPEED support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature PLAYBACK_SPEED support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature PLAYBACK_SPEED support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature SEEKING_SPEED support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature SEEKING_SPEED support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature SEEKING_SPEED support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER_SUPPORTED support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature MEDIA_CONTROL_POINT_OPCODES_SUPPORTED support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature TRACK_POSITION support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature TRACK_POSITION_NOTIFY support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:36:51.887  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:36:51.889  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:36:51.889  1191  1191 W MediaControlGattService: Feature PLAYER_NAME support: true
+01-19 22:36:51.889  1191  1191 W MediaControlGattService: Feature PLAYER_NAME support: true
+01-19 22:36:51.889  1191  1191 W MediaControlGattService: Feature PLAYER_NAME support: true
+01-19 22:36:51.889  1191  1191 W MediaControlGattService: Feature PLAYER_NAME_NOTIFY support: true
+01-19 22:36:51.890  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:36:51.890  1191  1191 W MediaControlGattService: Feature MEDIA_CONTROL_POINT_OPCODES_SUPPORTED support: true
+01-19 22:36:51.890  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER_SUPPORTED support: true
+01-19 22:36:51.890  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER support: true
+01-19 22:36:51.890  1191  1191 W MediaControlGattService: Feature PLAYER_ICON_OBJ_ID support: false
+01-19 22:36:51.890  1191  1191 W MediaControlGattService: Feature PLAYER_ICON_URL support: false
+01-19 22:36:51.890  1191  1191 W MediaControlGattService: Feature MEDIA_CONTROL_POINT_OPCODES_SUPPORTED support: true
+01-19 22:36:51.890  1191  1191 W MediaControlGattService: Feature TRACK_TITLE support: true
+01-19 22:36:51.890  1191  1191 W MediaControlGattService: Feature TRACK_TITLE support: true
+01-19 22:36:51.890  1191  1191 W MediaControlGattService: Feature TRACK_TITLE_NOTIFY support: true
+01-19 22:36:51.891  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:36:51.891  1191  1191 W MediaControlGattService: Feature TRACK_DURATION support: true
+01-19 22:36:51.891  1191  1191 W MediaControlGattService: Feature TRACK_DURATION support: true
+01-19 22:36:51.891  1191  1191 W MediaControlGattService: Feature TRACK_DURATION_NOTIFY support: true
+01-19 22:36:51.891  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:36:51.892  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:36:51.892  1191  1191 W MediaControlGattService: Feature TRACK_CHANGED support: true
+01-19 22:36:51.892  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:36:51.894  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER_SUPPORTED support: true
+01-19 22:36:51.894  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER support: true
+01-19 22:36:51.894  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER_NOTIFY support: true
+01-19 22:36:51.895  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:36:51.895  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:36:51.903  1590  1590 D WM-WorkerWrapper: Starting work for com.android.providers.media.MediaServiceV2
+01-19 22:36:51.905  1590  3930 I MediaServiceV2: Work initiated for action [ android.intent.action.MEDIA_MOUNTED ]
+01-19 22:36:51.905  1590  3930 I MediaProvider: Volume MediaVolume name: [external_primary] id: [emulated;0] user: [UserHandle{0}] path: [/storage/emulated/0] externallyManaged: [false] mPublicVolume: [false] already attached
+01-19 22:36:51.905  1590  3930 I MediaServiceV2: Work ended for action [ android.intent.action.MEDIA_MOUNTED ]
+01-19 22:36:51.907  1590  1726 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=480d5372-babe-4c65-ad1b-f1a90da12f6b, tags={ com.android.providers.media.MediaServiceV2 } ]
+01-19 22:36:51.908  1590  1726 I WM-WorkerWrapper: Setting status to enqueued for 91c14d84-2ecc-4feb-8bf0-0182d7884f12
+01-19 22:36:51.910  1191  1191 I MediaPlayerList: sendMediaUpdate: Creating a one item queue for a player with no queue
+01-19 22:36:51.910  1191  1191 I bluetooth: system/btif/avrcp/avrcp_service.cc:532 SendMediaUpdate: track_changed=false :  play_state=false :  queue=false
+01-19 22:36:51.911  1590  1590 D WM-Processor: Processor 480d5372-babe-4c65-ad1b-f1a90da12f6b executed; reschedule = false
+01-19 22:36:51.912  1191  1191 I bluetooth: system/btif/avrcp/avrcp_service.cc:532 SendMediaUpdate: track_changed=false :  play_state=true :  queue=false
+01-19 22:36:51.916  1191  1191 E MediaControlProfile: onCurrentPlayerStateUpdated: base actions not supported, player actions= 0, expected at least= 7f
+01-19 22:36:51.916  1191  1191 W MediaControlGattService: Feature PLAYBACK_SPEED support: true
+01-19 22:36:51.916  1191  1191 W MediaControlGattService: Feature PLAYBACK_SPEED support: true
+01-19 22:36:51.916  1191  1191 W MediaControlGattService: Feature PLAYBACK_SPEED support: true
+01-19 22:36:51.916  1191  1191 W MediaControlGattService: Feature TRACK_POSITION support: true
+01-19 22:36:51.916  1191  1191 W MediaControlGattService: Feature TRACK_POSITION_NOTIFY support: true
+01-19 22:36:51.916  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:36:51.916  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:36:51.916  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:36:51.916  1191  1191 W MediaControlGattService: Feature PLAYER_NAME support: true
+01-19 22:36:51.916  1191  1191 W MediaControlGattService: Feature PLAYER_NAME support: true
+01-19 22:36:51.916  1191  1191 W MediaControlGattService: Feature MEDIA_CONTROL_POINT_OPCODES_SUPPORTED support: true
+01-19 22:36:51.916  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:36:51.916  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:36:51.917  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:36:51.917  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:36:51.917  1191  1191 W MediaControlGattService: Feature SEEKING_SPEED support: true
+01-19 22:36:51.917  1191  1191 W MediaControlGattService: Feature SEEKING_SPEED support: true
+01-19 22:36:51.917  1191  1191 W MediaControlGattService: Feature SEEKING_SPEED support: true
+01-19 22:36:51.920  1590  1811 D WM-GreedyScheduler: Cancelling work ID 480d5372-babe-4c65-ad1b-f1a90da12f6b
+01-19 22:36:51.927  1191  1191 I PlayerSettingsManager: updateRemoteDevice: repeat (STATE_REPEAT_OFF -> STATE_REPEAT_OFF), shuffle (STATE_SHUFFLE_OFF -> STATE_SHUFFLE_OFF)
+01-19 22:36:51.928  1590  1811 D WM-SystemJobScheduler: Scheduling work ID 91c14d84-2ecc-4feb-8bf0-0182d7884f12Job ID 26
+01-19 22:36:51.929  1590  1811 D WM-GreedyScheduler: Ignoring {WorkSpec: 2efd7951-e345-4dfb-9e45-b8ce7c5fb9e3}. Requires device idle.
+01-19 22:36:51.930  1590  1811 D WM-GreedyScheduler: Ignoring {WorkSpec: 96c3c110-f95d-4928-9fe0-a6fbb51d7ea1}. Requires device idle.
+01-19 22:36:51.930  1590  1811 D WM-GreedyScheduler: Ignoring {WorkSpec: 41daca9e-83c2-42ad-9ff8-d16cd3526a4a}. Requires device idle.
+01-19 22:36:51.930  1590  1811 D WM-GreedyScheduler: Ignoring {WorkSpec: dcecff1a-5854-43ab-b3b3-f0ce6509ec59}. Requires device idle.
+01-19 22:36:51.932  3765  3900 D AudioTrack: getTimestamp_l(15): device stall time corrected using current time 142898942460
+01-19 22:36:52.422   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:36:52.738   810   846 D OomAdjuster: Not killing cached processes
+01-19 22:36:53.475   810   840 I DisplayDeviceRepository: Display device changed render timings: "Built-in Screen", renderFrameRate=60.000004, presentationDeadlineNanos=16666666, appVsyncOffsetNanos=1000000, frameRateOverrides=[{uid=10227 frameRateHz=60.000004}]
+01-19 22:36:53.496   810   974 D NetworkStatsObservers: Registering observer for RequestInfo from pid/uid:810/1000(android) for DataUsageRequest [ requestId=9, networkTemplate=NetworkTemplate: matchRule=MOBILE, matchSubscriberIds=[310260...], matchWifiNetworkKeys=[], metered=YES, defaultNetwork=NO, thresholdInBytes=3209542 ] accessLevel:3
+01-19 22:36:53.497   810  1080 D NetworkStatsObservers: Unregistering RequestInfo from pid/uid:810/1000(android) for DataUsageRequest [ requestId=8, networkTemplate=NetworkTemplate: matchRule=MOBILE, matchSubscriberIds=[310260...], matchWifiNetworkKeys=[], metered=YES, defaultNetwork=NO, thresholdInBytes=3223556 ] accessLevel:3
+01-19 22:36:54.035   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+01-19 22:36:54.035   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+01-19 22:36:54.036   810   984 D InetDiagMessage: Destroyed live tcp sockets for uids={10170} in 1ms
+01-19 22:36:54.036   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+01-19 22:36:54.036   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+01-19 22:36:54.037   810   984 D InetDiagMessage: Destroyed live tcp sockets for uids={20170} in 1ms
+01-19 22:36:54.186   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+01-19 22:36:54.186   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+01-19 22:36:54.186   810   984 D InetDiagMessage: Destroyed live tcp sockets for uids={10146} in 1ms
+01-19 22:36:54.186   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+01-19 22:36:54.187   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+01-19 22:36:54.188   810   984 D InetDiagMessage: Destroyed live tcp sockets for uids={20146} in 1ms
+01-19 22:36:54.406   810   840 I DisplayDeviceRepository: Display device changed render timings: "Built-in Screen", renderFrameRate=60.000004, presentationDeadlineNanos=16666666, appVsyncOffsetNanos=1000000, frameRateOverrides=[]
+01-19 22:36:54.441  3765  3769 I peters.jellyfin: Compiler allocated 14MB to compile void com.rpeters.jellyfin.ui.player.VideoPlayerScreenKt.VideoPlayerScreen(com.rpeters.jellyfin.ui.player.VideoPlayerState, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function1, androidx.media3.exoplayer.ExoPlayer, boolean, androidx.compose.ui.Modifier, androidx.compose.runtime.Composer, int, int, int, int)
+01-19 22:36:55.397  1199  1371 D SatelliteController: iisInCarrierRoamingNbIotNtn: satellite is disabled
+01-19 22:36:55.398  1199  1371 D SatelliteController: getCarrierRoamingNtnConnectType: Falling back to global carrier config connect type: 0
+01-19 22:36:55.426   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:36:55.957   810   840 I DisplayDeviceRepository: Display device changed render timings: "Built-in Screen", renderFrameRate=60.000004, presentationDeadlineNanos=16666666, appVsyncOffsetNanos=1000000, frameRateOverrides=[{uid=10227 frameRateHz=60.000004}]
+01-19 22:36:56.186  3765  3914 D BufferPoolAccessor2.0: bufferpool2 0x731cc407d218 : 5(31457280 size) total buffers - 4(25165824 size) used buffers - 116/121 (recycle/alloc) - 5/121 (fetch/transfer)
+01-19 22:36:56.439   725   776 D BufferPoolAccessor2.0: bufferpool2 0x701aa600a9d8 : 0(0 size) total buffers - 0(0 size) used buffers - 0/0 (recycle/alloc) - 0/0 (fetch/transfer)
+01-19 22:36:56.439   810  1108 D BufferPoolAccessor2.0: evictor expired: 6, evicted: 0
+01-19 22:36:56.439   725   776 D BufferPoolAccessor2.0: evictor expired: 1, evicted: 1
+01-19 22:36:56.440  1082  1487 D BufferPoolAccessor2.0: evictor expired: 3, evicted: 0
+01-19 22:36:56.623  2021  2392 D WM-DelayedWorkTracker: Scheduling work 77388de0-68dd-42a1-9448-115131f0077f
+01-19 22:36:56.623  2021  2392 D WM-GreedyScheduler: Starting tracking for 77388de0-68dd-42a1-9448-115131f0077f
+01-19 22:36:56.625  2021  2369 D WM-ConstraintTracker: gcp: initial state = NetworkState(isConnected=false, isValidated=false, isMetered=true, isNotRoaming=true)
+01-19 22:36:56.625  2021  2369 D WM-NetworkStateTracker: Registering network callback
+01-19 22:36:56.626   810   889 D ConnectivityService: requestNetwork for uid/pid:10146/2021 activeRequest: null callbackRequest: 183 [NetworkRequest [ REQUEST id=184, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10146 RequestorUid: 10146 RequestorPkg: com.google.android.dialer UnderlyingNetworks: Null] ]] callback flags: 0 order: 2147483647 isUidTracked: false declaredMethods: AVAIL|LOST|NC
+01-19 22:36:56.627  2021  2366 D WM-GreedyScheduler: Constraints not met: Cancelling work ID WorkGenerationalId(workSpecId=77388de0-68dd-42a1-9448-115131f0077f, generation=0)
+01-19 22:36:56.627  2021  2580 D WM-NetworkStateTracker: Network capabilities changed: [ Transports: WIFI Capabilities: NOT_METERED&INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VPN&VALIDATED&NOT_ROAMING&FOREGROUND&NOT_CONGESTED&NOT_SUSPENDED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED LinkUpBandwidth>=12000Kbps LinkDnBandwidth>=30000Kbps TransportInfo: <SSID: <unknown ssid>, BSSID: 02:00:00:00:00:00, MAC: 02:00:00:00:00:00, IP: /10.0.2.16, Security type: 0, Supplicant state: COMPLETED, Wi-Fi standard: legacy, RSSI: -50, Link speed: 1Mbps, Tx Link speed: 1Mbps, Max Supported Tx Link speed: 11Mbps, Rx Link speed: 2Mbps, Max Supported Rx Link speed: 11Mbps, Frequency: 2447MHz, Net ID: -1, Metered hint: false, score: 83, isUsable: true, CarrierMerged: false, SubscriptionId: -1, IsPrimary: -1, Trusted: true, Restricted: false, Ephemeral: false, OEM paid: false, OEM private: false, OSU AP: false, FQDN: <none>, Provider friendly name: <none>, Requesting package name: <none><none>MLO Information: , Is TID-To-Link negotiation supported by the AP: false, AP MLD Address: <none>, AP MLO Link Id: <none>, AP MLO Affiliated links: <none>, Vendor Data: <none>> SignalStrength: -50 UnderlyingNetworks: Null]
+01-19 22:36:56.627   810   977 D WifiNetworkFactory: got request NetworkRequest [ REQUEST id=184, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10146 RequestorUid: 10146 RequestorPkg: com.google.android.dialer UnderlyingNetworks: Null] ]
+01-19 22:36:56.627   810   977 D UntrustedWifiNetworkFactory: got request NetworkRequest [ REQUEST id=184, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10146 RequestorUid: 10146 RequestorPkg: com.google.android.dialer UnderlyingNetworks: Null] ]
+01-19 22:36:56.627   810   977 D OemPaidWifiNetworkFactory: got request NetworkRequest [ REQUEST id=184, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10146 RequestorUid: 10146 RequestorPkg: com.google.android.dialer UnderlyingNetworks: Null] ]
+01-19 22:36:56.627   810   984 D ConnectivityService: NetReassign [184 : null → 100] [c 0] [a 0] [i 1]
+01-19 22:36:56.627   810   977 D MultiInternetWifiNetworkFactory: got request NetworkRequest [ REQUEST id=184, [ Capabilities: INTERNET&NOT_RESTRICTED&TRUSTED&NOT_VCN_MANAGED&NOT_BANDWIDTH_CONSTRAINED Uid: 10146 RequestorUid: 10146 RequestorPkg: com.google.android.dialer UnderlyingNetworks: Null] ]
+01-19 22:36:56.627  2021  2369 D WM-GreedyScheduler: Constraints met: Scheduling work ID WorkGenerationalId(workSpecId=77388de0-68dd-42a1-9448-115131f0077f, generation=0)
+01-19 22:36:56.629  2021  2366 D WM-Processor: fzi: processing WorkGenerationalId(workSpecId=77388de0-68dd-42a1-9448-115131f0077f, generation=0)
+01-19 22:36:56.630  2021  2021 D WM-WorkerWrapper: Starting work for com.google.apps.tiktok.contrib.work.TikTokListenableWorker
+01-19 22:36:56.631  2021  2221 I DialerSingletonScopedExternalsLogging: com.google.android.dialershared.externals.logging.SingletonScopedExternalsLogging.recordCallMethodInvocation:75 event: TIKTOK_WORK_EXECUTION_MONITOR_ON_WORK_STARTED, function parameters: [77388de0-68dd-42a1-9448-115131f0077f,com.android.dialer.voicemail.service.impl.VvmTaskWorker], return value: <empty>
+01-19 22:36:56.631  2021  2221 I DialerVvmTaskWorkerDelegate: com.android.dialer.voicemail.service.impl.scheduler.VvmTaskWorker$VvmTaskWorkerDelegate.executeVvmJob:191 Beginning execution of job ID: 1
+01-19 22:36:56.631  2021  2221 I DialerSingletonScopedExternalsLogging: com.google.android.dialershared.externals.logging.SingletonScopedExternalsLogging.recordCallMethodInvocation:66 event: VVM_TASK_WORKER_EXECUTE_VVM_JOB, function parameters: [1], return value: <empty> [CONTEXT enable_persistent_logger=true ]
+01-19 22:36:56.633  2021  2450 I DialerVvmCarrierIdentifierImpl: com.android.dialer.voicemail.service.impl.carriermapping.VvmCarrierIdentifierImpl.getVvmCarrierNameBlocking:101 Looking up carrier name for phone account handle: 1 [CONTEXT ratelimit_period="1 MINUTES" skipped=15 ]
+01-19 22:36:56.633  2021  2221 I DialerRestVoicemailEnabledFn: com.android.dialer.voicemail.service.impl.vvmclients.rest.RestVoicemailEnabledFn.isEnabled:67 device is supported, enabling. [CONTEXT ratelimit_period="1 MINUTES" skipped=95 ]
+01-19 22:36:56.654  3765  3923 D BufferPoolAccessor2.0: bufferpool2 0x731cc4057fc8 : 5(28800 size) total buffers - 4(23040 size) used buffers - 277/282 (recycle/alloc) - 6/555 (fetch/transfer)
+01-19 22:36:56.662  2021  2244 I DialerVvmExecutorImpl: com.android.dialer.voicemail.service.impl.scheduler.VvmExecutorImpl.execute:250 Beginning VVM action: UPDATE_STATUS with retryCount: 2 for ComponentInfo{com.android.phone/com.android.services.telephony.TelephonyConnectionService}, 1, UserHandle{0} [CONTEXT enable_persistent_logger=true ]
+01-19 22:36:56.671  2021  2242 E DialerRestVvmCarrierService: com.android.dialer.voicemail.service.impl.vvmclients.rest.RestVvmCarrierService.getMsisdn:420 Retrieved phone number in an unexpected format: +15551234567 [CONTEXT disable_client_error_logging=true ]
+01-19 22:36:56.671  2021  2242 E DialerRestVvmCarrierService: adis: MEDIUM
+01-19 22:36:56.671  2021  2242 E DialerRestVvmCarrierService: 	at a.dC(PG:15)
+01-19 22:36:56.671  2021  2242 E DialerRestVvmCarrierService: 	at smu.apply(PG:1019)
+01-19 22:36:56.671  2021  2242 E DialerRestVvmCarrierService: 	at acnt.apply(PG:13)
+01-19 22:36:56.671  2021  2242 E DialerRestVvmCarrierService: 	at advm.d(PG:3)
+01-19 22:36:56.671  2021  2242 E DialerRestVvmCarrierService: 	at advn.run(PG:38)
+01-19 22:36:56.671  2021  2242 E DialerRestVvmCarrierService: 	at xlk.run(PG:7)
+01-19 22:36:56.671  2021  2242 E DialerRestVvmCarrierService: 	at adoy.run(PG:44)
+01-19 22:36:56.671  2021  2242 E DialerRestVvmCarrierService: 	at wvj.run(PG:254)
+01-19 22:36:56.671  2021  2242 E DialerRestVvmCarrierService: 	at tif.run(PG:267)
+01-19 22:36:56.671  2021  2242 E DialerRestVvmCarrierService: 	at java.lang.Thread.run(Thread.java:1563)
+01-19 22:36:56.671  2021  2242 E DialerRestVvmCarrierService: 	at xmm.run(PG:61)
+01-19 22:36:56.671  2021  2242 I DialerStatusCheck: com.android.dialer.voicemail.service.impl.vvmclients.rest.StatusCheck.updateStatus:55 updateStatus
+01-19 22:36:56.672  2021  2221 I DialerAndroidAutoStatusLookupImpl: com.android.dialer.androidautostatuslookup.impl.AndroidAutoStatusLookupImpl.isAndroidAutoConnected:97 Android Auto connected in 0 mode [CONTEXT ratelimit_period="1 MINUTES" skipped=6 ]
+01-19 22:36:56.675  2021  2392 D WM-DelayedWorkTracker: Scheduling work 95738489-255f-4241-873a-2eb0e4654096
+01-19 22:36:56.675  2021  2244 W DialerGbaCredentialProvider: com.android.dialer.voicemail.service.impl.vvmclients.rest.GbaCredentialProvider$1.onAuthenticationFailure:93 GBA failed with reason: 1 [CONTEXT disable_client_error_logging=true ]
+01-19 22:36:56.675  2021  2392 D WM-GreedyScheduler: Starting tracking for 95738489-255f-4241-873a-2eb0e4654096
+01-19 22:36:56.676  2021  2242 I DialerSingletonScopedExternalsLogging: com.google.android.dialershared.externals.logging.SingletonScopedExternalsLogging.recordCallMethodInvocation:75 event: TELEPHONY_BOOTSTRAP_AUTHENTICATION_REQUEST, function parameters: [], return value: Default
+01-19 22:36:56.676  2021  2221 I DialerLogcatLoggingBindings: com.android.dialer.logging.logcat.LogcatLoggingBindings.logImpression:54 Impression: ANDROID_API_UNEXPECTED_PHONE_NUMBER_FORMAT
+01-19 22:36:56.678  2021  2369 D WM-GreedyScheduler: Constraints met: Scheduling work ID WorkGenerationalId(workSpecId=95738489-255f-4241-873a-2eb0e4654096, generation=0)
+01-19 22:36:56.678  2021  2244 W DialerVvmExecutorImpl: com.android.dialer.voicemail.service.impl.scheduler.VvmExecutorImpl.executeWorkOnCarrierService:459 Could not complete vvm work with action: UPDATE_STATUS. Error: [GeneralFailureReason: UNSPECIFIED, RestFailureReason: GBA_AUTHENTICATION_FAILURE_FEATURE_NOT_SUPPORTED, OmtpFailureReason: OMTP_UNSPECIFIED] for ComponentInfo{com.android.phone/com.android.services.telephony.TelephonyConnectionService}, 1, UserHandle{0} [CONTEXT disable_client_error_logging=true enable_persistent_logger=true ]
+01-19 22:36:56.679  2021  2242 I DialerLoggingConsentCheckerImpl: com.google.android.dialershared.logging.consent.impl.LoggingConsentCheckerImpl.getConsent:72 timer stop with success, timer present: false
+01-19 22:36:56.679  2021  2369 D WM-Processor: fzi: processing WorkGenerationalId(workSpecId=95738489-255f-4241-873a-2eb0e4654096, generation=0)
+01-19 22:36:56.680  2021  2244 I DialerVvmExecutorImpl: com.android.dialer.voicemail.service.impl.scheduler.VvmExecutorImpl.executeWork:215 VvmResult is: # sev@1db0ddb for ComponentInfo{com.android.phone/com.android.services.telephony.TelephonyConnectionService}, 1, UserHandle{0}
+01-19 22:36:56.681  2021  2242 I DialerLoggingConsentCheckerImpl: com.google.android.dialershared.logging.consent.impl.LoggingConsentCheckerImpl.getConsent:72 timer stop with success, timer present: false
+01-19 22:36:56.683  2021  2021 D WM-WorkerWrapper: Starting work for com.google.apps.tiktok.contrib.work.TikTokListenableWorker
+01-19 22:36:56.685  2021  2241 I DialerSingletonScopedExternalsLogging: com.google.android.dialershared.externals.logging.SingletonScopedExternalsLogging.recordCallMethodInvocation:75 event: TIKTOK_WORK_EXECUTION_MONITOR_ON_WORK_STARTED, function parameters: [95738489-255f-4241-873a-2eb0e4654096,com.android.dialer.voicemail.service.impl.VvmTaskWorker], return value: <empty>
+01-19 22:36:56.687  2021  2241 I DialerVvmTaskWorkerDelegate: com.android.dialer.voicemail.service.impl.scheduler.VvmTaskWorker$VvmTaskWorkerDelegate.executeVvmJob:191 Beginning execution of job ID: 2
+01-19 22:36:56.687  2021  2241 I DialerSingletonScopedExternalsLogging: com.google.android.dialershared.externals.logging.SingletonScopedExternalsLogging.recordCallMethodInvocation:66 event: VVM_TASK_WORKER_EXECUTE_VVM_JOB, function parameters: [2], return value: <empty> [CONTEXT enable_persistent_logger=true ]
+01-19 22:36:56.688  2021  2241 I DialerSingletonScopedExternalsLogging: com.google.android.dialershared.externals.logging.SingletonScopedExternalsLogging.recordCallMethodInvocation:75 event: TIKTOK_WORK_EXECUTION_MONITOR_ON_WORK_FINISHED, function parameters: [77388de0-68dd-42a1-9448-115131f0077f,com.android.dialer.voicemail.service.impl.VvmTaskWorker], return value: Retry
+01-19 22:36:56.693  2021  2221 I DialerLoggingConsentCheckerImpl: com.google.android.dialershared.logging.consent.impl.LoggingConsentCheckerImpl.getConsent:72 timer stop with success, timer present: false
+01-19 22:36:56.694  2021  2366 I WM-WorkerWrapper: Worker result RETRY for Work [ id=77388de0-68dd-42a1-9448-115131f0077f, tags={ com.google.apps.tiktok.contrib.work.TikTokListenableWorker,1,UPDATE_STATUS,TikTokWorker#com.android.dialer.voicemail.service.impl.VvmTaskWorker } ]
+01-19 22:36:56.695  2021  2021 D WM-Processor: fzi 77388de0-68dd-42a1-9448-115131f0077f executed; reschedule = true
+01-19 22:36:56.695  2021  2021 D WM-GreedyScheduler: Stopping tracking for WorkGenerationalId(workSpecId=77388de0-68dd-42a1-9448-115131f0077f, generation=0)
+01-19 22:36:56.700  2021  2366 D WM-GreedyScheduler: Cancelling work ID 77388de0-68dd-42a1-9448-115131f0077f
+01-19 22:36:56.703  2021  2366 D WM-SystemJobScheduler: Scheduling work ID 1a922bb6-f607-4a64-85c3-1725380466f0Job ID 49
+01-19 22:36:56.706  2021  2366 D WM-GreedyScheduler: Ignoring {WorkSpec: 97fce51c-4df2-43ef-a537-dc226d06bf69}. Requires device idle.
+01-19 22:36:56.706  2021  2366 D WM-GreedyScheduler: Ignoring {WorkSpec: 14a1c447-c1ad-4d4a-a77b-5d3021a9af79}. Requires device idle.
+01-19 22:36:56.706  2021  2366 D WM-GreedyScheduler: Ignoring {WorkSpec: 0c51f29f-0cbd-4721-8325-bfc4bdfd6a66}. Requires device idle.
+01-19 22:36:56.706  2021  2366 D WM-GreedyScheduler: Ignoring {WorkSpec: 7542f5cb-73ce-4ab5-b5da-77a21de825c9}. Requires device idle.
+01-19 22:36:56.706  2021  2366 D WM-GreedyScheduler: Ignoring {WorkSpec: 8b078090-399b-414a-9aa7-32373e530e06}. Requires device idle.
+01-19 22:36:56.706  2021  2366 D WM-GreedyScheduler: Ignoring {WorkSpec: 0546b31f-76a4-449d-b6d8-d0aec66712de}. Requires device idle.
+01-19 22:36:56.706  2021  2366 D WM-GreedyScheduler: Ignoring {WorkSpec: 501e35ba-0ed4-405a-bc6b-cf02e649eadc}. Requires device idle.
+01-19 22:36:56.706  2021  2366 D WM-GreedyScheduler: Ignoring {WorkSpec: 02326ac9-0cd2-47a4-a8dc-4ab2e408d35f}. Requires device idle.
+01-19 22:36:56.730  2021  2241 I DialerVvmExecutorImpl: com.android.dialer.voicemail.service.impl.scheduler.VvmExecutorImpl.execute:250 Beginning VVM action: SYNC_VOICEMAIL with retryCount: 2 for ComponentInfo{com.android.phone/com.android.services.telephony.TelephonyConnectionService}, 1, UserHandle{0} [CONTEXT enable_persistent_logger=true ]
+01-19 22:36:56.736  2021  2241 E DialerRestVvmCarrierService: com.android.dialer.voicemail.service.impl.vvmclients.rest.RestVvmCarrierService.getMsisdn:420 Retrieved phone number in an unexpected format: +15551234567 [CONTEXT disable_client_error_logging=true ]
+01-19 22:36:56.736  2021  2241 E DialerRestVvmCarrierService: adis: MEDIUM
+01-19 22:36:56.736  2021  2241 E DialerRestVvmCarrierService: 	at a.dC(PG:15)
+01-19 22:36:56.736  2021  2241 E DialerRestVvmCarrierService: 	at smu.apply(PG:1019)
+01-19 22:36:56.736  2021  2241 E DialerRestVvmCarrierService: 	at acnt.apply(PG:13)
+01-19 22:36:56.736  2021  2241 E DialerRestVvmCarrierService: 	at advm.d(PG:3)
+01-19 22:36:56.736  2021  2241 E DialerRestVvmCarrierService: 	at advn.run(PG:38)
+01-19 22:36:56.736  2021  2241 E DialerRestVvmCarrierService: 	at xlk.run(PG:7)
+01-19 22:36:56.736  2021  2241 E DialerRestVvmCarrierService: 	at adoy.run(PG:44)
+01-19 22:36:56.736  2021  2241 E DialerRestVvmCarrierService: 	at wvj.run(PG:254)
+01-19 22:36:56.736  2021  2241 E DialerRestVvmCarrierService: 	at tif.run(PG:267)
+01-19 22:36:56.736  2021  2241 E DialerRestVvmCarrierService: 	at java.lang.Thread.run(Thread.java:1563)
+01-19 22:36:56.736  2021  2241 E DialerRestVvmCarrierService: 	at xmm.run(PG:61)
+01-19 22:36:56.737  2021  2244 I DialerLogcatLoggingBindings: com.android.dialer.logging.logcat.LogcatLoggingBindings.logImpression:54 Impression: ANDROID_API_UNEXPECTED_PHONE_NUMBER_FORMAT
+01-19 22:36:56.741  2021  2242 I DialerLogcatLoggingBindings: com.android.dialer.logging.logcat.LogcatLoggingBindings.logImpression:47 Impression: VVM_SYNC_STARTED
+01-19 22:36:56.742  2021  2241 W DialerGbaCredentialProvider: com.android.dialer.voicemail.service.impl.vvmclients.rest.GbaCredentialProvider$1.onAuthenticationFailure:93 GBA failed with reason: 1 [CONTEXT disable_client_error_logging=true ]
+01-19 22:36:56.742  2021  2221 I DialerSingletonScopedExternalsLogging: com.google.android.dialershared.externals.logging.SingletonScopedExternalsLogging.recordCallMethodInvocation:75 event: TELEPHONY_BOOTSTRAP_AUTHENTICATION_REQUEST, function parameters: [], return value: Default
+01-19 22:36:56.743  2021  2242 I DialerLoggingConsentCheckerImpl: com.google.android.dialershared.logging.consent.impl.LoggingConsentCheckerImpl.getConsent:72 timer stop with success, timer present: false
+01-19 22:36:56.744   725  3924 D BufferPoolAccessor2.0: bufferpool2 0x701aa600c348 : 3(276480 size) total buffers - 1(92160 size) used buffers - 276/279 (recycle/alloc) - 3/264 (fetch/transfer)
+01-19 22:36:56.745  2021  2221 W DialerVvmExecutorImpl: com.android.dialer.voicemail.service.impl.scheduler.VvmExecutorImpl.executeWorkOnCarrierService:459 Could not complete vvm work with action: SYNC_VOICEMAIL. Error: [GeneralFailureReason: UNSPECIFIED, RestFailureReason: GBA_AUTHENTICATION_FAILURE_FEATURE_NOT_SUPPORTED, OmtpFailureReason: OMTP_UNSPECIFIED] for ComponentInfo{com.android.phone/com.android.services.telephony.TelephonyConnectionService}, 1, UserHandle{0} [CONTEXT disable_client_error_logging=true enable_persistent_logger=true ]
+01-19 22:36:56.745  2021  2244 I DialerLoggingConsentCheckerImpl: com.google.android.dialershared.logging.consent.impl.LoggingConsentCheckerImpl.getConsent:72 timer stop with success, timer present: false
+01-19 22:36:56.746  2021  2244 I DialerVvmExecutorImpl: com.android.dialer.voicemail.service.impl.scheduler.VvmExecutorImpl.executeWork:215 VvmResult is: # sev@1db0ddb for ComponentInfo{com.android.phone/com.android.services.telephony.TelephonyConnectionService}, 1, UserHandle{0}
+01-19 22:36:56.747  2021  2242 I DialerLoggingConsentCheckerImpl: com.google.android.dialershared.logging.consent.impl.LoggingConsentCheckerImpl.getConsent:72 timer stop with success, timer present: false
+01-19 22:36:56.751  2021  2242 I DialerSingletonScopedExternalsLogging: com.google.android.dialershared.externals.logging.SingletonScopedExternalsLogging.recordCallMethodInvocation:75 event: TIKTOK_WORK_EXECUTION_MONITOR_ON_WORK_FINISHED, function parameters: [95738489-255f-4241-873a-2eb0e4654096,com.android.dialer.voicemail.service.impl.VvmTaskWorker], return value: Retry
+01-19 22:36:56.754  2021  2221 I DialerLoggingConsentCheckerImpl: com.google.android.dialershared.logging.consent.impl.LoggingConsentCheckerImpl.getConsent:72 timer stop with success, timer present: false
+01-19 22:36:56.754  2021  2366 I WM-WorkerWrapper: Worker result RETRY for Work [ id=95738489-255f-4241-873a-2eb0e4654096, tags={ com.google.apps.tiktok.contrib.work.TikTokListenableWorker,1,SYNC_VOICEMAIL,TikTokWorker#com.android.dialer.voicemail.service.impl.VvmTaskWorker } ]
+01-19 22:36:56.757  2021  2021 D WM-Processor: fzi 95738489-255f-4241-873a-2eb0e4654096 executed; reschedule = true
+01-19 22:36:56.762  2021  2021 D WM-GreedyScheduler: Stopping tracking for WorkGenerationalId(workSpecId=95738489-255f-4241-873a-2eb0e4654096, generation=0)
+01-19 22:36:56.763  2021  2369 D WM-GreedyScheduler: Cancelling work ID 95738489-255f-4241-873a-2eb0e4654096
+01-19 22:36:56.769  2021  2369 D WM-GreedyScheduler: Ignoring {WorkSpec: 97fce51c-4df2-43ef-a537-dc226d06bf69}. Requires device idle.
+01-19 22:36:56.769  2021  2369 D WM-GreedyScheduler: Ignoring {WorkSpec: 14a1c447-c1ad-4d4a-a77b-5d3021a9af79}. Requires device idle.
+01-19 22:36:56.769  2021  2369 D WM-GreedyScheduler: Ignoring {WorkSpec: 0c51f29f-0cbd-4721-8325-bfc4bdfd6a66}. Requires device idle.
+01-19 22:36:56.769  2021  2369 D WM-GreedyScheduler: Ignoring {WorkSpec: 7542f5cb-73ce-4ab5-b5da-77a21de825c9}. Requires device idle.
+01-19 22:36:56.769  2021  2369 D WM-GreedyScheduler: Ignoring {WorkSpec: 8b078090-399b-414a-9aa7-32373e530e06}. Requires device idle.
+01-19 22:36:56.769  2021  2369 D WM-GreedyScheduler: Ignoring {WorkSpec: 0546b31f-76a4-449d-b6d8-d0aec66712de}. Requires device idle.
+01-19 22:36:56.769  2021  2369 D WM-GreedyScheduler: Ignoring {WorkSpec: 501e35ba-0ed4-405a-bc6b-cf02e649eadc}. Requires device idle.
+01-19 22:36:56.769  2021  2369 D WM-GreedyScheduler: Ignoring {WorkSpec: 02326ac9-0cd2-47a4-a8dc-4ab2e408d35f}. Requires device idle.
+01-19 22:36:56.769  2021  2369 D WM-NetworkStateTracker: Unregistering network callback
+01-19 22:36:57.795   810   847 D OomAdjuster: Not killing cached processes
+01-19 22:36:57.844   810  2091 D ActivityManager: sync unfroze 1732 com.google.android.gms for 6
+01-19 22:36:57.855  1413  1956 I NetworkScheduler.Stats: (REDACTED) Task %s/%s started execution. cause:%s exec_start_elapsed_seconds: %s
+01-19 22:36:57.857  1732  2022 I TelephonySpamChimeraSer: Running Telephony Spam Chimera Service [CONTEXT service_id=150 ]
+01-19 22:36:57.858  1732  2022 I TelephonySpamChimeraSer: Cleaning SIP Header local table of old entries [CONTEXT service_id=150 ]
+01-19 22:36:57.858  1732  2022 I SpamListSync: Call spam module disabled. Skipping cleaning cache sip header table. [CONTEXT service_id=150 ]
+01-19 22:36:57.858  1732  2022 I TelephonySpamChimeraSer: Syncing Call Spam List [CONTEXT service_id=150 ]
+01-19 22:36:57.858  1732  2022 I SpamListSync: (REDACTED) SpamListSyncChimeraService.syncSpamList called with tag: %s, extras: %s
+01-19 22:36:57.858  1732  2022 I SpamListSync: Call spam module disabled. Skipping spam list syncing. [CONTEXT service_id=150 ]
+01-19 22:36:57.861  1413  3896 I NetworkScheduler.Stats: (REDACTED) Task %s/%s finished executing. cause:%s result: %s elapsed_millis: %s uptime_millis: %s exec_start_elapsed_seconds: %s
+01-19 22:36:58.431   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:36:58.460   810   920 D ActivityManager: freezing 2619 com.google.android.apps.messaging
+01-19 22:36:59.016  3934  3934 W libbinder.BackendUnifiedServiceManager: Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: package
+01-19 22:36:59.033   810   920 D ActivityManager: freezing 1772 com.google.android.apps.photos
+01-19 22:36:59.038   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+01-19 22:36:59.038   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+01-19 22:36:59.038   810   984 D InetDiagMessage: Destroyed live tcp sockets for uids={10170} in 1ms
+01-19 22:36:59.076  3360  3369 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/base.odex) is kOatUpToDate with filter 'speed-profile' executable 'false'
+01-19 22:36:59.077  3360  3369 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_AdsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:36:59.078  3360  3368 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_CronetDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:36:59.079  3360  3369 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteLoader_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:36:59.081  3360  3368 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteModulesA_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:36:59.082  3360  3369 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteModulesC_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:36:59.083  3360  3368 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_GoogleCertificates_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:36:59.084  3360  3369 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_MapsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:36:59.085  3360  3368 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_MeasurementDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:36:59.087  3360  3369 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_all_locale_splits.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:36:59.087  3360  3369 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000001/CronetDynamite.apk has no usable artifacts
+01-19 22:36:59.089  3360  3369 I artd    : GetBestInfo: vdex next to the dex file (/data/user/0/com.google.android.gms/app_dg_cache/9C3914BA639C225C3270B81DD57E92CD956143E9/oat/x86_64/the.vdex) is kOatUpToDate with filter 'verify' executable 'false'
+01-19 22:36:59.091  3360  3369 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000002/DynamiteLoader.apk has no usable artifacts
+01-19 22:36:59.092  3360  3369 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000011/dl-MlkitBarcodeUi.optional_255034100800.apk has no usable artifacts
+01-19 22:36:59.093  3360  3369 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000005/GoogleCertificates.apk has no usable artifacts
+01-19 22:36:59.094  3360  3368 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000c/dl-PlayCloudSearch.optional_253434100000.apk has no usable artifacts
+01-19 22:36:59.096  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000009/dl-TfliteDynamiteDynamite.integ_243930802100800.apk has no usable artifacts
+01-19 22:36:59.097  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000007/MeasurementDynamite.apk has no usable artifacts
+01-19 22:36:59.183   810   920 D ActivityManager: freezing 2021 com.google.android.dialer
+01-19 22:36:59.185   810   920 D ActivityManager: freezing 1787 android.process.acore
+01-19 22:36:59.188   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+01-19 22:36:59.189   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+01-19 22:36:59.189   810   984 D InetDiagMessage: Destroyed live tcp sockets for uids={10146} in 2ms
+01-19 22:36:59.215   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+01-19 22:36:59.216   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+01-19 22:36:59.216   810   984 D InetDiagMessage: Destroyed live tcp sockets for uids={10104} in 1ms
+01-19 22:36:59.334  3765  3788 I OkHttpClient: POST https://rpeters1428.huron.usbx.me/jellyfin/Sessions/Playing/Progress
+01-19 22:36:59.496  3765  3765 D PlaybackProgressManager: Reported progress at 579000ms for 73389e0d-fe8f-2953-2528-3c43bc3fc917
+01-19 22:37:01.375  3765  3914 D BufferPoolAccessor2.0: bufferpool2 0x731cc407d218 : 5(31457280 size) total buffers - 4(25165824 size) used buffers - 240/245 (recycle/alloc) - 5/245 (fetch/transfer)
+01-19 22:37:01.436   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:01.755  3765  3923 D BufferPoolAccessor2.0: bufferpool2 0x731cc4057fc8 : 5(28800 size) total buffers - 4(23040 size) used buffers - 532/537 (recycle/alloc) - 6/1065 (fetch/transfer)
+01-19 22:37:01.928   725  3924 D BufferPoolAccessor2.0: bufferpool2 0x701aa600c348 : 4(368640 size) total buffers - 1(92160 size) used buffers - 534/538 (recycle/alloc) - 4/523 (fetch/transfer)
+01-19 22:37:04.442   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:04.805   810  2150 D OomAdjuster: Not killing cached processes
+01-19 22:37:05.398  1199  1371 D SatelliteController: iisInCarrierRoamingNbIotNtn: satellite is disabled
+01-19 22:37:05.398  1199  1371 D SatelliteController: getCarrierRoamingNtnConnectType: Falling back to global carrier config connect type: 0
+01-19 22:37:06.529  3765  3915 D BufferPoolAccessor2.0: bufferpool2 0x731cc407d218 : 5(31457280 size) total buffers - 4(25165824 size) used buffers - 364/369 (recycle/alloc) - 5/368 (fetch/transfer)
+01-19 22:37:06.848  3765  3919 D BufferPoolAccessor2.0: bufferpool2 0x731cc4057fc8 : 5(28800 size) total buffers - 4(23040 size) used buffers - 787/792 (recycle/alloc) - 6/1576 (fetch/transfer)
+01-19 22:37:07.196   725  3924 D BufferPoolAccessor2.0: bufferpool2 0x701aa600c348 : 4(368640 size) total buffers - 1(92160 size) used buffers - 799/803 (recycle/alloc) - 4/788 (fetch/transfer)
+01-19 22:37:07.449   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:07.903   810   920 D ActivityManager: freezing 1732 com.google.android.gms
+01-19 22:37:09.015  3938  3938 W libbinder.BackendUnifiedServiceManager: Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: package
+01-19 22:37:09.068  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/base.odex) is kOatUpToDate with filter 'speed-profile' executable 'false'
+01-19 22:37:09.070  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_AdsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:09.071  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_CronetDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:09.072  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteLoader_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:09.075  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteModulesA_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:09.076  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteModulesC_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:09.077  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_GoogleCertificates_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:09.079  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_MapsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:09.080  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_MeasurementDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:09.081  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_all_locale_splits.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:09.082  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000001/CronetDynamite.apk has no usable artifacts
+01-19 22:37:09.083  3360  3937 I artd    : GetBestInfo: vdex next to the dex file (/data/user/0/com.google.android.gms/app_dg_cache/9C3914BA639C225C3270B81DD57E92CD956143E9/oat/x86_64/the.vdex) is kOatUpToDate with filter 'verify' executable 'false'
+01-19 22:37:09.084  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000002/DynamiteLoader.apk has no usable artifacts
+01-19 22:37:09.085  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000011/dl-MlkitBarcodeUi.optional_255034100800.apk has no usable artifacts
+01-19 22:37:09.088  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000005/GoogleCertificates.apk has no usable artifacts
+01-19 22:37:09.089  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000c/dl-PlayCloudSearch.optional_253434100000.apk has no usable artifacts
+01-19 22:37:09.091  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000009/dl-TfliteDynamiteDynamite.integ_243930802100800.apk has no usable artifacts
+01-19 22:37:09.092  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000007/MeasurementDynamite.apk has no usable artifacts
+01-19 22:37:09.500  3765  3785 I OkHttpClient: POST https://rpeters1428.huron.usbx.me/jellyfin/Sessions/Playing/Progress
+01-19 22:37:09.614  3765  3765 D PlaybackProgressManager: Reported progress at 579000ms for 73389e0d-fe8f-2953-2528-3c43bc3fc917
+01-19 22:37:10.454   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:11.618  3765  3919 D BufferPoolAccessor2.0: bufferpool2 0x731cc407d218 : 5(31457280 size) total buffers - 5(31457280 size) used buffers - 486/491 (recycle/alloc) - 5/490 (fetch/transfer)
+01-19 22:37:12.041  3765  3923 D BufferPoolAccessor2.0: bufferpool2 0x731cc4057fc8 : 5(28800 size) total buffers - 4(23040 size) used buffers - 1046/1051 (recycle/alloc) - 7/2093 (fetch/transfer)
+01-19 22:37:12.562   725  3924 D BufferPoolAccessor2.0: bufferpool2 0x701aa600c348 : 4(368640 size) total buffers - 1(92160 size) used buffers - 1066/1070 (recycle/alloc) - 4/1055 (fetch/transfer)
+01-19 22:37:13.459   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:15.397  1199  1371 D SatelliteController: iisInCarrierRoamingNbIotNtn: satellite is disabled
+01-19 22:37:15.398  1199  1371 D SatelliteController: getCarrierRoamingNtnConnectType: Falling back to global carrier config connect type: 0
+01-19 22:37:16.465   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:16.749  3765  3915 D BufferPoolAccessor2.0: bufferpool2 0x731cc407d218 : 5(31457280 size) total buffers - 4(25165824 size) used buffers - 609/614 (recycle/alloc) - 5/613 (fetch/transfer)
+01-19 22:37:17.225  3765  3923 D BufferPoolAccessor2.0: bufferpool2 0x731cc4057fc8 : 5(28800 size) total buffers - 1(5760 size) used buffers - 1303/1308 (recycle/alloc) - 7/2612 (fetch/transfer)
+01-19 22:37:17.727   725  3924 D BufferPoolAccessor2.0: bufferpool2 0x701aa600c348 : 4(368640 size) total buffers - 3(276480 size) used buffers - 1328/1332 (recycle/alloc) - 5/1318 (fetch/transfer)
+01-19 22:37:19.029  3941  3941 W libbinder.BackendUnifiedServiceManager: Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: package
+01-19 22:37:19.096  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/base.odex) is kOatUpToDate with filter 'speed-profile' executable 'false'
+01-19 22:37:19.097  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_AdsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:19.099  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_CronetDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:19.100  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteLoader_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:19.101  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteModulesA_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:19.103  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteModulesC_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:19.104  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_GoogleCertificates_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:19.105  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_MapsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:19.106  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_MeasurementDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:19.108  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_all_locale_splits.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:19.108  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000001/CronetDynamite.apk has no usable artifacts
+01-19 22:37:19.110  3360  3360 I artd    : GetBestInfo: vdex next to the dex file (/data/user/0/com.google.android.gms/app_dg_cache/9C3914BA639C225C3270B81DD57E92CD956143E9/oat/x86_64/the.vdex) is kOatUpToDate with filter 'verify' executable 'false'
+01-19 22:37:19.110  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000002/DynamiteLoader.apk has no usable artifacts
+01-19 22:37:19.111  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000011/dl-MlkitBarcodeUi.optional_255034100800.apk has no usable artifacts
+01-19 22:37:19.112  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000005/GoogleCertificates.apk has no usable artifacts
+01-19 22:37:19.113  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000c/dl-PlayCloudSearch.optional_253434100000.apk has no usable artifacts
+01-19 22:37:19.114  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000009/dl-TfliteDynamiteDynamite.integ_243930802100800.apk has no usable artifacts
+01-19 22:37:19.115  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000007/MeasurementDynamite.apk has no usable artifacts
+01-19 22:37:19.471   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:19.617  3765  3785 I OkHttpClient: POST https://rpeters1428.huron.usbx.me/jellyfin/Sessions/Playing/Progress
+01-19 22:37:19.759  3765  3765 D PlaybackProgressManager: Reported progress at 579000ms for 73389e0d-fe8f-2953-2528-3c43bc3fc917
+01-19 22:37:21.916  3765  3919 D BufferPoolAccessor2.0: bufferpool2 0x731cc407d218 : 5(31457280 size) total buffers - 5(31457280 size) used buffers - 733/738 (recycle/alloc) - 5/737 (fetch/transfer)
+01-19 22:37:21.939  1590  1590 D WM-DelayedWorkTracker: Scheduling work 91c14d84-2ecc-4feb-8bf0-0182d7884f12
+01-19 22:37:21.939  1590  1590 D WM-GreedyScheduler: Starting work for 91c14d84-2ecc-4feb-8bf0-0182d7884f12
+01-19 22:37:21.940  1590  1811 D WM-Processor: Processor: processing WorkGenerationalId(workSpecId=91c14d84-2ecc-4feb-8bf0-0182d7884f12, generation=0)
+01-19 22:37:21.941  1590  1590 D WM-WorkerWrapper: Starting work for com.android.providers.media.MediaServiceV2
+01-19 22:37:21.942  1590  3944 I MediaServiceV2: Work initiated for action [ android.intent.action.MEDIA_MOUNTED ]
+01-19 22:37:21.942  1590  3944 I MediaProvider: Volume MediaVolume name: [0000-0000] id: [public:253,80] user: [UserHandle{0}] path: [/storage/0000-0000] externallyManaged: [false] mPublicVolume: [true] already attached
+01-19 22:37:21.942  1590  3944 I MediaServiceV2: Work ended for action [ android.intent.action.MEDIA_MOUNTED ]
+01-19 22:37:21.943  1590  1811 I WM-WorkerWrapper: Worker result SUCCESS for Work [ id=91c14d84-2ecc-4feb-8bf0-0182d7884f12, tags={ com.android.providers.media.MediaServiceV2 } ]
+01-19 22:37:21.944  1590  1590 D WM-Processor: Processor 91c14d84-2ecc-4feb-8bf0-0182d7884f12 executed; reschedule = false
+01-19 22:37:21.945  1590  1811 D WM-GreedyScheduler: Cancelling work ID 91c14d84-2ecc-4feb-8bf0-0182d7884f12
+01-19 22:37:21.947  1590  1811 D WM-GreedyScheduler: Ignoring {WorkSpec: 2efd7951-e345-4dfb-9e45-b8ce7c5fb9e3}. Requires device idle.
+01-19 22:37:21.947  1590  1811 D WM-GreedyScheduler: Ignoring {WorkSpec: 96c3c110-f95d-4928-9fe0-a6fbb51d7ea1}. Requires device idle.
+01-19 22:37:21.947  1590  1811 D WM-GreedyScheduler: Ignoring {WorkSpec: 41daca9e-83c2-42ad-9ff8-d16cd3526a4a}. Requires device idle.
+01-19 22:37:21.947  1590  1811 D WM-GreedyScheduler: Ignoring {WorkSpec: dcecff1a-5854-43ab-b3b3-f0ce6509ec59}. Requires device idle.
+01-19 22:37:22.336  3765  3923 D BufferPoolAccessor2.0: bufferpool2 0x731cc4057fc8 : 5(28800 size) total buffers - 1(5760 size) used buffers - 1557/1562 (recycle/alloc) - 8/3120 (fetch/transfer)
+01-19 22:37:22.474   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:23.004   725  3924 D BufferPoolAccessor2.0: bufferpool2 0x701aa600c348 : 4(368640 size) total buffers - 1(92160 size) used buffers - 1588/1592 (recycle/alloc) - 6/1577 (fetch/transfer)
+01-19 22:37:25.398  1199  1371 D SatelliteController: iisInCarrierRoamingNbIotNtn: satellite is disabled
+01-19 22:37:25.398  1199  1371 D SatelliteController: getCarrierRoamingNtnConnectType: Falling back to global carrier config connect type: 0
+01-19 22:37:25.478   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:27.104  3765  3915 D BufferPoolAccessor2.0: bufferpool2 0x731cc407d218 : 5(31457280 size) total buffers - 4(25165824 size) used buffers - 857/862 (recycle/alloc) - 5/861 (fetch/transfer)
+01-19 22:37:27.429  3765  3923 D BufferPoolAccessor2.0: bufferpool2 0x731cc4057fc8 : 5(28800 size) total buffers - 1(5760 size) used buffers - 1812/1817 (recycle/alloc) - 8/3630 (fetch/transfer)
+01-19 22:37:27.938   810  2150 D WifiNl80211Manager: Scan result ready event
+01-19 22:37:27.938   810  2150 D WifiNative: Scan result ready event
+01-19 22:37:27.940  1413  2153 I WifiScanner: onFullResults
+01-19 22:37:27.941   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:28.211   725  3924 D BufferPoolAccessor2.0: bufferpool2 0x701aa600c348 : 4(368640 size) total buffers - 1(92160 size) used buffers - 1848/1852 (recycle/alloc) - 6/1837 (fetch/transfer)
+01-19 22:37:28.482   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:29.028  3945  3945 W libbinder.BackendUnifiedServiceManager: Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: package
+01-19 22:37:29.077  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/base.odex) is kOatUpToDate with filter 'speed-profile' executable 'false'
+01-19 22:37:29.078  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_AdsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:29.079  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_CronetDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:29.081  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteLoader_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:29.082  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteModulesA_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:29.083  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteModulesC_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:29.084  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_GoogleCertificates_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:29.086  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_MapsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:29.087  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_MeasurementDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:29.088  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_all_locale_splits.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:29.088  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000001/CronetDynamite.apk has no usable artifacts
+01-19 22:37:29.090  3360  3937 I artd    : GetBestInfo: vdex next to the dex file (/data/user/0/com.google.android.gms/app_dg_cache/9C3914BA639C225C3270B81DD57E92CD956143E9/oat/x86_64/the.vdex) is kOatUpToDate with filter 'verify' executable 'false'
+01-19 22:37:29.090  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000002/DynamiteLoader.apk has no usable artifacts
+01-19 22:37:29.091  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000011/dl-MlkitBarcodeUi.optional_255034100800.apk has no usable artifacts
+01-19 22:37:29.092  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000005/GoogleCertificates.apk has no usable artifacts
+01-19 22:37:29.093  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000c/dl-PlayCloudSearch.optional_253434100000.apk has no usable artifacts
+01-19 22:37:29.094  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000009/dl-TfliteDynamiteDynamite.integ_243930802100800.apk has no usable artifacts
+01-19 22:37:29.096  3360  3937 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000007/MeasurementDynamite.apk has no usable artifacts
+01-19 22:37:29.764  3765  3785 I OkHttpClient: POST https://rpeters1428.huron.usbx.me/jellyfin/Sessions/Playing/Progress
+01-19 22:37:29.886  3765  3765 D PlaybackProgressManager: Reported progress at 579000ms for 73389e0d-fe8f-2953-2528-3c43bc3fc917
+01-19 22:37:30.584   810   974 D NetworkStatsObservers: Registering observer for RequestInfo from pid/uid:810/1000(android) for DataUsageRequest [ requestId=10, networkTemplate=NetworkTemplate: matchRule=MOBILE, matchSubscriberIds=[310260...], matchWifiNetworkKeys=[], metered=YES, defaultNetwork=NO, thresholdInBytes=3206807 ] accessLevel:3
+01-19 22:37:30.584   810  1080 D NetworkStatsObservers: Unregistering RequestInfo from pid/uid:810/1000(android) for DataUsageRequest [ requestId=9, networkTemplate=NetworkTemplate: matchRule=MOBILE, matchSubscriberIds=[310260...], matchWifiNetworkKeys=[], metered=YES, defaultNetwork=NO, thresholdInBytes=3209542 ] accessLevel:3
+01-19 22:37:31.489   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:32.264  3765  3919 D BufferPoolAccessor2.0: bufferpool2 0x731cc407d218 : 5(31457280 size) total buffers - 5(31457280 size) used buffers - 981/986 (recycle/alloc) - 5/985 (fetch/transfer)
+01-19 22:37:32.626   810   840 I DisplayDeviceRepository: Display device changed render timings: "Built-in Screen", renderFrameRate=60.000004, presentationDeadlineNanos=16666666, appVsyncOffsetNanos=1000000, frameRateOverrides=[]
+01-19 22:37:32.690  3765  3923 D BufferPoolAccessor2.0: bufferpool2 0x731cc4057fc8 : 5(28800 size) total buffers - 4(23040 size) used buffers - 2079/2084 (recycle/alloc) - 8/4159 (fetch/transfer)
+01-19 22:37:32.780  3765  3769 I peters.jellyfin: JIT allocated 50KB for stack maps of void com.rpeters.jellyfin.ui.player.VideoPlayerScreenKt.VideoControlsOverlay(com.rpeters.jellyfin.ui.player.VideoPlayerState, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, boolean, kotlin.jvm.functions.Function1, boolean, kotlin.jvm.functions.Function1, boolean, kotlin.jvm.functions.Function1, boolean, com.rpeters.jellyfin.ui.player.VideoPlayerColors, boolean, androidx.compose.ui.Modifier, androidx.compose.runtime.Composer, int, int, int, int)
+01-19 22:37:32.780  3765  3769 I peters.jellyfin: Compiler allocated 19MB to compile void com.rpeters.jellyfin.ui.player.VideoPlayerScreenKt.VideoControlsOverlay(com.rpeters.jellyfin.ui.player.VideoPlayerState, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, kotlin.jvm.functions.Function0, boolean, kotlin.jvm.functions.Function1, boolean, kotlin.jvm.functions.Function1, boolean, kotlin.jvm.functions.Function1, boolean, com.rpeters.jellyfin.ui.player.VideoPlayerColors, boolean, androidx.compose.ui.Modifier, androidx.compose.runtime.Composer, int, int, int, int)
+01-19 22:37:33.559   725  3924 D BufferPoolAccessor2.0: bufferpool2 0x701aa600c348 : 4(368640 size) total buffers - 1(92160 size) used buffers - 2115/2119 (recycle/alloc) - 6/2104 (fetch/transfer)
+01-19 22:37:34.436  1082  1143 V WindowManagerShell: Transition requested (#12): android.os.BinderProxy@de0fd9d TransitionRequestInfo { type = CLOSE, triggerTask = null, pipChange = null, remoteTransition = null, displayChange = null, requestedLocation = null, userChange = null, windowingLayerChange = null, flags = 0, debugId = 12 }
+01-19 22:37:34.436  1082  1143 V ShellDesktopMode: DesktopTasksController: handleRequest request=TransitionRequestInfo { type = CLOSE, triggerTask = null, pipChange = null, remoteTransition = null, displayChange = null, requestedLocation = null, userChange = null, windowingLayerChange = null, flags = 0, debugId = 12 }
+01-19 22:37:34.436  1082  1143 V ShellDesktopMode: DesktopTasksController: skipping handleRequest reason=triggerTask is null
+01-19 22:37:34.441   810  2091 E AppOps  : attributionTag  not declared in manifest of com.rpeters.jellyfin
+01-19 22:37:34.441   810  2091 E AppOps  : attributionTag  not declared in manifest of com.rpeters.jellyfin
+01-19 22:37:34.443   810   840 D OomAdjuster: Not killing cached processes
+01-19 22:37:34.444   810  1030 D BackgroundInstallControlService: Package event received: 0
+01-19 22:37:34.444   810  1030 D BackgroundInstallControlService: Package event received: 0
+01-19 22:37:34.444   810  1030 D BackgroundInstallControlService: Package event received: 0
+01-19 22:37:34.463  1191  1191 I bluetooth: system/btif/avrcp/avrcp_service.cc:532 SendMediaUpdate: track_changed=false :  play_state=true :  queue=false
+01-19 22:37:34.467  1191  1191 E MediaControlProfile: onCurrentPlayerStateUpdated: base actions not supported, player actions= 6ffe85, expected at least= 7f
+01-19 22:37:34.467  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:37:34.468  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature PLAYER_NAME support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature PLAYER_ICON_URL support: false
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature PLAYER_ICON_OBJ_ID support: false
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature CURRENT_TRACK_SEGMENT_OBJ_ID support: false
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature CURRENT_TRACK_OBJ_ID support: false
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature NEXT_TRACK_OBJ_ID support: false
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature CURRENT_GROUP_OBJ_ID support: false
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature PARENT_GROUP_OBJ_ID support: false
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature SEARCH_RESULT_OBJ_ID support: false
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature TRACK_TITLE support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature TRACK_DURATION support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature TRACK_POSITION support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature TRACK_POSITION_NOTIFY support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature PLAYBACK_SPEED support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature PLAYBACK_SPEED support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature PLAYBACK_SPEED support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature SEEKING_SPEED support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature SEEKING_SPEED support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature SEEKING_SPEED support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER_SUPPORTED support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature MEDIA_CONTROL_POINT_OPCODES_SUPPORTED support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature PLAYER_NAME support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature PLAYER_NAME support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature PLAYER_NAME support: true
+01-19 22:37:34.468  1191  1191 W MediaControlGattService: Feature PLAYER_NAME_NOTIFY support: true
+01-19 22:37:34.469  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:37:34.469  1191  1191 W MediaControlGattService: Feature MEDIA_CONTROL_POINT_OPCODES_SUPPORTED support: true
+01-19 22:37:34.469  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER_SUPPORTED support: true
+01-19 22:37:34.469  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER support: true
+01-19 22:37:34.469  1191  1191 W MediaControlGattService: Feature PLAYER_ICON_OBJ_ID support: false
+01-19 22:37:34.469  1191  1191 W MediaControlGattService: Feature PLAYER_ICON_URL support: false
+01-19 22:37:34.469  1191  1191 W MediaControlGattService: Feature MEDIA_CONTROL_POINT_OPCODES_SUPPORTED support: true
+01-19 22:37:34.469  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:37:34.469  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:37:34.470  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:37:34.470  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER_SUPPORTED support: true
+01-19 22:37:34.470  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER support: true
+01-19 22:37:34.470  1191  1191 W MediaControlGattService: Feature PLAYING_ORDER_NOTIFY support: true
+01-19 22:37:34.470  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:37:34.470  1191  1191 W MediaControlGattService: Feature TRACK_DURATION support: true
+01-19 22:37:34.470  1191  1191 W MediaControlGattService: Feature TRACK_DURATION support: true
+01-19 22:37:34.470  1191  1191 W MediaControlGattService: Feature TRACK_DURATION_NOTIFY support: true
+01-19 22:37:34.471  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:37:34.471  1191  1191 W MediaControlGattService: Feature MEDIA_STATE support: true
+01-19 22:37:34.471  1191  1191 W MediaControlGattService: Feature TRACK_CHANGED support: true
+01-19 22:37:34.472  1191  1191 I BluetoothAdapterProperties: getBondedDevices: length=0
+01-19 22:37:34.481  3765  3765 D WindowOnBackDispatcher: setTopOnBackInvokedCallback (unwrapped): androidx.navigationevent.OnBackInvokedInput$createOnBackAnimationCallback$1@6539bde
+01-19 22:37:34.481   810   890 D CoreBackPreview: Window{c00b430 u0 com.rpeters.jellyfin/com.rpeters.jellyfin.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@e49c2bd, mPriority=0, mIsAnimationCallback=true, mOverrideBehavior=0}
+01-19 22:37:34.492   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:34.550  1082  1588 V WindowManagerShell: onTransitionReady(transaction=3478923511124)
+01-19 22:37:34.551   810   837 V WindowManager: Sent Transition (#12) createdAt=01-19 22:37:34.435 via request=TransitionRequestInfo { type = CLOSE, triggerTask = null, pipChange = null, remoteTransition = null, displayChange = null, requestedLocation = null, userChange = null, windowingLayerChange = null, flags = 0, debugId = 12 }
+01-19 22:37:34.551   810   837 V WindowManager:     startWCT=WindowContainerTransaction { changes= {} hops= [] errorCallbackToken=null taskFragmentOrganizer=null }
+01-19 22:37:34.551  1082  1143 V WindowManagerShell: onTransitionReady (#12) android.os.BinderProxy@de0fd9d: {id=12 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[
+01-19 22:37:34.551  1082  1143 V WindowManagerShell:         {m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{158809494 u0 com.rpeters.jellyfin/.ui.player.VideoPlayerActivity t15}#136)/@0xa800212 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 2992, 1344) epz=Point(2992, 1344) d=0 bc=fffef7ff activity=ActivityTransitionInfo { component = ComponentInfo{com.rpeters.jellyfin/com.rpeters.jellyfin.ui.player.VideoPlayerActivity}, taskId = 15, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},
+01-19 22:37:34.551  1082  1143 V WindowManagerShell:         {m=TO_FRONT f=NONE leash=Surface(name=Surface(name=ActivityRecord{129869899 u0 com.rpeters.jellyfin/.MainActivity t15}#122)/@0xcb3a18c - rotation-leash#160)/@0x50e8de3 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 2992, 1344) epz=Point(2992, 1344) d=0 bc=fffef7ff activity=ActivityTransitionInfo { component = ComponentInfo{com.rpeters.jellyfin/com.rpeters.jellyfin.MainActivity}, taskId = 15, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}
+01-19 22:37:34.551  1082  1143 V WindowManagerShell:     ]}
+01-19 22:37:34.551  1082  1143 V WindowManagerShell: Playing animation for (#12) android.os.BinderProxy@de0fd9d@0
+01-19 22:37:34.551   810   837 V WindowManager:     info={id=12 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[
+01-19 22:37:34.551   810   837 V WindowManager:         {m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{158809494 u0 com.rpeters.jellyfin/.ui.player.VideoPlayerActivity t15}#136)/@0x1fca0d5 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 2992, 1344) epz=Point(2992, 1344) d=0 bc=fffef7ff activity=ActivityTransitionInfo { component = ComponentInfo{com.rpeters.jellyfin/com.rpeters.jellyfin.ui.player.VideoPlayerActivity}, taskId = 15, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},
+01-19 22:37:34.551   810   837 V WindowManager:         {m=TO_FRONT f=NONE leash=Surface(name=Surface(name=ActivityRecord{129869899 u0 com.rpeters.jellyfin/.MainActivity t15}#122)/@0xcb3a18c - rotation-leash#160)/@0xbe025fe sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 2992, 1344) epz=Point(2992, 1344) d=0 bc=fffef7ff activity=ActivityTransitionInfo { component = ComponentInfo{com.rpeters.jellyfin/com.rpeters.jellyfin.MainActivity}, taskId = 15, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}
+01-19 22:37:34.551   810   837 V WindowManager:     ]}
+01-19 22:37:34.551  1082  1143 V ShellRecents: RecentsTransitionHandler.startAnimation: no controller found
+01-19 22:37:34.551  1082  1143 V ShellDesktopMode: DesktopMixedTransitionHandler: No pending desktop transition
+01-19 22:37:34.551  1082  1143 V WindowManagerShell: Transition doesn't have explicit remote, search filters for match for {id=12 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{158809494 u0 com.rpeters.jellyfin/.ui.player.VideoPlayerActivity t15}#136)/@0xa800212 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 2992, 1344) epz=Point(2992, 1344) d=0 bc=fffef7ff activity=ActivityTransitionInfo { component = ComponentInfo{com.rpeters.jellyfin/com.rpeters.jellyfin.ui.player.VideoPlayerActivity}, taskId = 15, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},{m=TO_FRONT f=NONE leash=Surface(name=Surface(name=ActivityRecord{129869899 u0 com.rpeters.jellyfin/.MainActivity t15}#122)/@0xcb3a18c - rotation-leash#160)/@0x50e8de3 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 2992, 1344) epz=Point(2992, 1344) d=0 bc=fffef7ff activity=ActivityTransitionInfo { component = ComponentInfo{com.rpeters.jellyfin/com.rpeters.jellyfin.MainActivity}, taskId = 15, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}]}
+01-19 22:37:34.551  1082  1143 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=undefined independent=true modes=[CLOSE,TO_BACK] flags=IN_TASK_WITH_EMBEDDED_ACTIVITY mustBeTask=false order=ANY topActivity=null launchCookie=null taskFragmentToken=android.os.BinderProxy@c073b3e windowingMode=undefined isCrossDisplayMove=false}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@3154d9f, appThread = android.app.IApplicationThread$Stub$Proxy@5b2aeec, debugName = overlayBackTransition }}
+01-19 22:37:34.551  1082  1143 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x0 checks=[{atype=dream independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null windowingMode=undefined isCrossDisplayMove=false},{atype=home independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null windowingMode=undefined isCrossDisplayMove=false}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@4e892b5, appThread = android.app.IApplicationThread$Stub$Proxy@b7cd4a, debugName = LauncherToDream }}
+01-19 22:37:34.551  1082  1143 V WindowManagerShell:  Checking filter Pair{{types=[] flags=0x0] notFlags=0x100 checks=[{atype=home independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=false order=TOP topActivity=ComponentInfo{com.google.android.apps.nexuslauncher/com.google.android.apps.nexuslauncher.NexusLauncherActivity} launchCookie=null windowingMode=undefined isCrossDisplayMove=false},{atype=standard independent=true modes=[CLOSE,TO_BACK] flags=NONE mustBeTask=false order=ANY topActivity=null launchCookie=null windowingMode=undefined isCrossDisplayMove=false},{NOT atype=undefined independent=true modes=[] flags=NONE mustBeTask=true order=ANY topActivity=null launchCookie=null customAnim=true windowingMode=undefined isCrossDisplayMove=false}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@b24bb, appThread = android.app.IApplicationThread$Stub$Proxy@d91cdd8, debugName = QuickstepLaunchHome }}
+01-19 22:37:34.551  1082  1143 V WindowManagerShell:  Checking filter Pair{{types=[OPEN,TO_FRONT] flags=0x0] notFlags=0x0 checks=[{atype=standard independent=true modes=[OPEN,TO_FRONT] flags=NONE mustBeTask=true order=ANY topActivity=null launchCookie=null windowingMode=freeform isCrossDisplayMove=false}]} RemoteTransition { remoteTransition = android.window.IRemoteTransition$Stub$Proxy@dca531, appThread = null, debugName = DesktopWindowLimitUnminimize }}
+01-19 22:37:34.551  1082  1143 V WindowManagerShell:  Delegate animation for (#12) to null
+01-19 22:37:34.552  1082  1143 V WindowManagerShell: start default transition animation, info = {id=12 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=CLOSE f=FILLS_TASK leash=Surface(name=ActivityRecord{158809494 u0 com.rpeters.jellyfin/.ui.player.VideoPlayerActivity t15}#136)/@0xa800212 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 2992, 1344) epz=Point(2992, 1344) d=0 bc=fffef7ff activity=ActivityTransitionInfo { component = ComponentInfo{com.rpeters.jellyfin/com.rpeters.jellyfin.ui.player.VideoPlayerActivity}, taskId = 15, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}},{m=TO_FRONT f=NONE leash=Surface(name=Surface(name=ActivityRecord{129869899 u0 com.rpeters.jellyfin/.MainActivity t15}#122)/@0xcb3a18c - rotation-leash#160)/@0x50e8de3 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 2992, 1344) epz=Point(2992, 1344) d=0 bc=fffef7ff activity=ActivityTransitionInfo { component = ComponentInfo{com.rpeters.jellyfin/com.rpeters.jellyfin.MainActivity}, taskId = 15, appCompatTransitionInfo = null } opt={t=FROM_STYLE mUserId=0}}]}
+01-19 22:37:34.553  1082  1143 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@2582d5e animAttr=0x6 type=CLOSE isEntrance=true
+01-19 22:37:34.553  1082  1143 V WindowManagerShell: loadAnimation: anim=android.view.animation.AnimationSet@7934355 animAttr=0x7 type=CLOSE isEntrance=false
+01-19 22:37:34.556   606   606 I RanchuHwc: logCompositionFallbackIfChanged: layer 37 CompositionType fallback from 2 to 1
+01-19 22:37:34.556  1082  1143 V WindowManagerShell:  animated by com.android.wm.shell.transition.DefaultTransitionHandler@ce395b9
+01-19 22:37:34.564  1209  1209 D b/417220811: invalidateLoadedTasks - previous requestLoadId: -1
+01-19 22:37:34.583   810   941 I ImeTracker: com.rpeters.jellyfin:e5daa045: onRequestHide at ORIGIN_SERVER reason HIDE_UNSPECIFIED_WINDOW fromUser false
+01-19 22:37:34.584  3765  3765 D InsetsController: hide(ime())
+01-19 22:37:34.584  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():2057 
+01-19 22:37:34.585  3765  3765 I ImeTracker: com.rpeters.jellyfin:e5daa045: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+01-19 22:37:34.585   810  2091 I ImeTracker: system_server:20ed671a: onRequestHide at ORIGIN_SERVER reason IME_REQUESTED_CHANGED_LISTENER fromUser false
+01-19 22:37:34.586  1545  1545 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():100 repeatCheckTimes = 0, locked = false
+01-19 22:37:34.586   810   840 I ImeTracker: system_server:20ed671a: onCancelled at PHASE_SERVER_SHOULD_HIDE
+01-19 22:37:34.586  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1318 onStartInput(EditorInfo{EditorInfo{packageName=com.rpeters.jellyfin, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+01-19 22:37:34.587  1545  1545 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():100 repeatCheckTimes = 1, locked = false
+01-19 22:37:34.587   810  2091 W PackageConfigPersister: App-specific configuration not found for packageName: com.rpeters.jellyfin and userId: 0
+01-19 22:37:34.606   606   606 I RanchuHwc: logCompositionFallbackIfChanged: layer 38 CompositionType fallback from 2 to 1
+01-19 22:37:34.606   606   606 I RanchuHwc: logCompositionFallbackIfChanged: layer 39 CompositionType fallback from 2 to 1
+01-19 22:37:34.626   810   840 W ProcessStats: Tracking association SourceState{db6a730 com.google.android.as/10145 BFgs #1756} whose proc state 4 is better than process ProcessState{76b4c9c com.google.android.as.oss/10144 pkg=com.google.android.as.oss} proc state 14 (7 skipped)
+01-19 22:37:35.023  1082  1143 V WindowManagerShell: Transition animation finished (aborted=false), notifying core (#12) android.os.BinderProxy@de0fd9d@0
+01-19 22:37:35.025   810   837 V WindowManager: Finish Transition (#12): created at 01-19 22:37:34.435 collect-started=0.027ms request-sent=0.041ms started=2.611ms ready=27.308ms sent=114.329ms commit=6.622ms finished=589.553ms
+01-19 22:37:35.026   810  2091 I WindowManager: Display id=0 rotation changed to 0 from 1, lastOrientation=2 userRotationMode=0 userRotation=0 lastSensorRotation=0
+01-19 22:37:35.026  3765  3765 D VRI[VideoPlayerActivity]: visibilityChanged oldVisibility=true newVisibility=false
+01-19 22:37:35.027   650  1063 I libbinder.BpBinder: onLastStrongRef automatically unlinking death recipients for descriptor: '(not cached)'
+01-19 22:37:35.027  1082  1143 V WindowManagerShell: Track 0 became idle
+01-19 22:37:35.028  1082  1143 V WindowManagerShell: All active transition animations finished
+01-19 22:37:35.028  1082  1143 V WindowManagerShell: Transition requested (#13): android.os.BinderProxy@8162ef8 TransitionRequestInfo { type = CHANGE, triggerTask = null, pipChange = null, remoteTransition = null, displayChange = DisplayChange { displayId = 0, startAbsBounds = null, endAbsBounds = null, startRotation = 1, endRotation = 0, physicalDisplayChanged = false, disconnectReparentDisplay = -1 }, requestedLocation = null, userChange = null, windowingLayerChange = null, flags = 0, debugId = 13 }
+01-19 22:37:35.028  1082  1143 V ShellDesktopMode: DesktopTasksController: handleRequest request=TransitionRequestInfo { type = CHANGE, triggerTask = null, pipChange = null, remoteTransition = null, displayChange = DisplayChange { displayId = 0, startAbsBounds = null, endAbsBounds = null, startRotation = 1, endRotation = 0, physicalDisplayChanged = false, disconnectReparentDisplay = -1 }, requestedLocation = null, userChange = null, windowingLayerChange = null, flags = 0, debugId = 13 }
+01-19 22:37:35.028  1082  1143 V ShellDesktopMode: DesktopTasksController: skipping handleRequest reason=triggerTask is null
+01-19 22:37:35.029   810   869 D BrightnessThermalClamper: Thermal status observer already started
+01-19 22:37:35.029   810   840 I DisplayTopology: Display with ID 0 updated, new logical width: 1344, new logicalHeight: 2992, new density: 480
+01-19 22:37:35.030   810   840 I ActivityTaskManager: Config changes=20000480 {1.0 310mcc260mnc [en_US] ldltr sw448dp w448dp h997dp 480dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1344, 2992) mAppBounds=Rect(0, 0 - 1344, 2992) mMaxBounds=Rect(0, 0 - 1344, 2992) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.144 fontWeightAdjustment=0}
+01-19 22:37:35.030   810  1030 D BackgroundInstallControlService: Package event received: 0
+01-19 22:37:35.033   810   840 I WindowManager: Override config changes=20000480 {1.0 310mcc260mnc [en_US] ldltr sw448dp w448dp h997dp 480dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1344, 2992) mAppBounds=Rect(0, 0 - 1344, 2992) mMaxBounds=Rect(0, 0 - 1344, 2992) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.144 fontWeightAdjustment=0} for displayId=0
+01-19 22:37:35.033   810   840 W TransitionChain: Combining dispOverCfg into #13(CHANGE|R|0x0) from updateRot
+01-19 22:37:35.034   810   840 W libbinder.IPCThreadState: Sending oneway calls to frozen process.
+01-19 22:37:35.034   810   840 W libbinder.IPCThreadState: Sending oneway calls to frozen process.
+01-19 22:37:35.037  1082  1143 V ShellDesktopMode: DesktopDisplayEventHandler: displayAreaChanged in displayId=0, keyguardLocked=false
+01-19 22:37:35.037  1082  1143 V ShellDesktopMode: DesktopDisplayEventHandler: handlePotentialReconnect: No preserved display found for uniqueDisplayId=local:4619827259835644672; aborting.
+01-19 22:37:35.037  1082  1143 V ShellDesktopMode: DesktopDisplayEventHandler: createDefaultDesksIfNeeded displays=[0] userId=null
+01-19 22:37:35.038  1082  1143 V ShellDragAndDrop: Display changed: 0
+01-19 22:37:35.039  1082  1143 V ShellDesktopMode: DesktopDisplayEventHandler: shouldCreateOrWarmUpDesk skipping displayId=0 reason: desktop ineligible
+01-19 22:37:35.044  1209  1209 D TaskbarManager: onConfigurationChanged: {1.0 310mcc260mnc [en_US] ldltr sw448dp w448dp h997dp 480dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1344, 2992) mAppBounds=Rect(0, 0 - 1344, 2992) mMaxBounds=Rect(0, 0 - 1344, 2992) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.144 fontWeightAdjustment=0} displayId=0 isDefaultDisplay=true
+01-19 22:37:35.044  1209  1209 D TaskbarManager: onConfigurationChanged: | configDiff={} displayId=0 isDefaultDisplay=true
+01-19 22:37:35.044  1545  1545 I AppBase : AppBase.onConfigurationChanged():406 onConfigurationChanged() : NewConfig = {1.0 310mcc260mnc [en_US] ldltr sw448dp w448dp h997dp 480dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1344, 2992) mAppBounds=Rect(0, 0 - 1344, 2992) mMaxBounds=Rect(0, 0 - 1344, 2992) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.195 fontWeightAdjustment=0}
+01-19 22:37:35.044  1209  1209 D TaskbarManager: onConfigurationChanged: isTaskbarEnabled(dp)=True displayId=0 isDefaultDisplay=true
+01-19 22:37:35.044  1209  1209 D TaskbarManager: onConfigurationChanged: call recreateTaskbars displayId=0 isDefaultDisplay=true
+01-19 22:37:35.044  1209  1209 D TaskbarManager: recreateTaskbarForDisplay:  displayId=0 isDefaultDisplay=true
+01-19 22:37:35.044  1209  1209 D TaskbarManager: recreateTaskbarForDisplay: getting device profile displayId=0 isDefaultDisplay=true
+01-19 22:37:35.044  1209  1209 D TaskbarManager: recreateTaskbarForDisplay: destroying taskbar displayId=0 isDefaultDisplay=true
+01-19 22:37:35.044  1209  1209 D TaskbarManager: destroyTaskbarForDisplay displayId=0 isDefaultDisplay=true
+01-19 22:37:35.044  1209  1209 V HandoffSuggestionMetadataLoader: cancelPendingLoads
+01-19 22:37:35.044  1209  1209 V HandoffSuggestionList: Clearing Handoff suggestions.
+01-19 22:37:35.045  1209  1209 D TaskbarManager: recreateTaskbarForDisplay: isTaskbarEnabled=true [dp != null (i.e. mUserUnlocked)]=true dp.isTaskbarPresent=false isTaskbarEnabled=true displayExists=true displayId=0 isDefaultDisplay=true
+01-19 22:37:35.045  1209  1209 D TaskbarManager: recreateTaskbarForDisplay: creating taskbar displayId=0 isDefaultDisplay=true
+01-19 22:37:35.046  1082  1143 D ShellSplitScreen: onTaskInfoChanged: taskId=4 taskAct=null stageId=MAIN displayId=0
+01-19 22:37:35.046  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.onConfigurationChanged():1031 onConfigurationChanged() : NewConfig = {1.0 310mcc260mnc [en_US] ldltr sw448dp w448dp h997dp 480dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1344, 2992) mAppBounds=Rect(0, 0 - 1344, 2992) mMaxBounds=Rect(0, 0 - 1344, 2992) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.144 fontWeightAdjustment=0}
+01-19 22:37:35.046  1082  1143 D ShellSplitScreen: Updating status bar override leftRight=true currentSplit=1 splitVisible=false overridden=false
+01-19 22:37:35.046  1082  1143 D ShellSplitScreen: No change in status bar override state
+01-19 22:37:35.046   810   840 I InputManager-JNI: Viewport [0] to add: local:4619827259835644672, isActive: true
+01-19 22:37:35.046  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.onConfigurationChanged():1032 device real metrics: DisplayMetrics{density=3.0, width=1344, height=2992, scaledDensity=3.0, xdpi=480.0, ydpi=480.0}
+01-19 22:37:35.046  1082  1082 I NoBackGesture: Config changed: newConfig={1.0 310mcc260mnc [en_US] ldltr sw448dp w448dp h997dp 480dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1344, 2992) mAppBounds=Rect(0, 0 - 1344, 2992) mMaxBounds=Rect(0, 0 - 1344, 2992) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.204 fontWeightAdjustment=0} lastReportedConfig={1.0 310mcc260mnc [en_US] ldltr sw448dp w997dp h448dp 480dpi nrml long compactNeeded land finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 2992, 1344) mAppBounds=Rect(0, 0 - 2992, 1344) mMaxBounds=Rect(0, 0 - 2992, 1344) mDisplayRotation=ROTATION_90 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_90} as.3 s.139 fontWeightAdjustment=0}
+01-19 22:37:35.046  1082  1082 I NoBackGesture: NavbarController: newConfig={1.0 310mcc260mnc [en_US] ldltr sw448dp w448dp h997dp 480dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1344, 2992) mAppBounds=Rect(0, 0 - 1344, 2992) mMaxBounds=Rect(0, 0 - 1344, 2992) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.204 fontWeightAdjustment=0} mTaskbarDelegate initialized=true willApplyConfigToNavbars=false navBarCount=0
+01-19 22:37:35.046   810   931 I InputReader: Reconfiguring input devices, changes=DISPLAY_INFO
+01-19 22:37:35.046  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.onConfigurationChanged():1040 Maybe update OEM display config because of configuration change
+01-19 22:37:35.046   810   931 I InputReader: Touch device 'virtio_input_multi_touch_11' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+01-19 22:37:35.046   810   931 I InputReader: Touch device 'virtio_input_multi_touch_10' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+01-19 22:37:35.046   810   931 I InputReader: Touch device 'virtio_input_multi_touch_9' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+01-19 22:37:35.046   810   931 I InputReader: Touch device 'virtio_input_multi_touch_8' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+01-19 22:37:35.046  1082  1143 V ShellSplitScreen: Updating status bar for split, no change in state
+01-19 22:37:35.046   810   931 I InputReader: Touch device 'virtio_input_multi_touch_7' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+01-19 22:37:35.046  1545  1545 I InputMethodEntryManager: InputMethodEntryManager.notifyCurrentInputMethodEntryOnContextChanged():550 notifyCurrentInputMethodEntryOnContextChanged()
+01-19 22:37:35.046   810   931 I InputReader: Touch device 'virtio_input_multi_touch_6' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+01-19 22:37:35.046   810   931 I InputReader: Touch device 'virtio_input_multi_touch_5' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+01-19 22:37:35.046   810   931 I InputReader: Touch device 'virtio_input_multi_touch_4' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+01-19 22:37:35.046   810   931 I InputReader: Touch device 'virtio_input_multi_touch_3' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+01-19 22:37:35.046   810   931 I InputReader: Touch device 'virtio_input_multi_touch_2' could not query the properties of its associated display.  The device will be inoperable until the display size becomes available.
+01-19 22:37:35.046  1082  1618 V WindowManagerShell: onTransitionReady(transaction=3478923511159)
+01-19 22:37:35.046  1545  1545 I InputMethodEntryManager: InputMethodEntryManager.notifyCurrentInputMethodEntryOnContextChanged():571 Notify current input method entry changed on context change
+01-19 22:37:35.047  1545  1545 I SystemSubtypesReportModule: SystemSubtypesReportModule$2.onCurrentInputMethodEntryChanged():141 entry: en-US, source: UNSPECIFIED
+01-19 22:37:35.047  1082  1143 V WindowManagerShell: onTransitionReady (#13) android.os.BinderProxy@8162ef8: {id=13 t=CHANGE f=0x0 trk=0 r=[0@Point(0, 0)] c=[
+01-19 22:37:35.047  1082  1143 V WindowManagerShell:         {m=CHANGE f=NONE p=WCT{android.os.BinderProxy@92969b} leash=Surface(name=Task=15#121)/@0x6268a36 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:0 taskParent=-1 winMode=1 userId=0},
+01-19 22:37:35.047  1082  1143 V WindowManagerShell:         {m=CHANGE f=FLAG_IS_TASK_DISPLAY_AREA p=WCT{android.os.BinderProxy@77f9437} leash=Surface(name=DefaultTaskDisplayArea#10)/@0xa21880d sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:-1},
+01-19 22:37:35.047  1082  1143 V WindowManagerShell:         {m=CHANGE f=NONE p=WCT{android.os.BinderProxy@13a6d3c} leash=Surface(name=AppZoomOut:2:14#9)/@0xec913c2 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:-1},
+01-19 22:37:35.047  1082  1143 V WindowManagerShell:         {m=CHANGE f=NONE p=WCT{android.os.BinderProxy@f2f8a38} leash=Surface(name=WindowedMagnification:0:31#3)/@0x9aeb5d3 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:-1},
+01-19 22:37:35.047  1082  1143 V WindowManagerShell:         {m=CHANGE f=IS_DISPLAY leash=Surface(name=WindowedMagnification:0:31#3)/@0xefbe510 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:3}
+01-19 22:37:35.047  1082  1143 V WindowManagerShell:     ]}
+01-19 22:37:35.047   810   837 V WindowManager: Sent Transition (#13) createdAt=01-19 22:37:35.026 via request=TransitionRequestInfo { type = CHANGE, triggerTask = null, pipChange = null, remoteTransition = null, displayChange = DisplayChange { displayId = 0, startAbsBounds = null, endAbsBounds = null, startRotation = 1, endRotation = 0, physicalDisplayChanged = false, disconnectReparentDisplay = -1 }, requestedLocation = null, userChange = null, windowingLayerChange = null, flags = 0, debugId = 13 }
+01-19 22:37:35.047   810   837 V WindowManager:     startWCT=WindowContainerTransaction { changes= {} hops= [] errorCallbackToken=null taskFragmentOrganizer=null }
+01-19 22:37:35.047   810   837 V WindowManager:     info={id=13 t=CHANGE f=0x0 trk=0 r=[0@Point(0, 0)] c=[
+01-19 22:37:35.047   810   837 V WindowManager:         {WCT{RemoteToken{99ba8f6 Task{a09b228 #15 type=standard A=10227:com.rpeters.jellyfin}}} m=CHANGE f=NONE p=WCT{RemoteToken{db1618e DefaultTaskDisplayArea@82767971}} leash=Surface(name=Task=15#121)/@0x59c721b sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:0 taskParent=-1 winMode=1 userId=0},
+01-19 22:37:35.047   810   837 V WindowManager:         {WCT{RemoteToken{db1618e DefaultTaskDisplayArea@82767971}} m=CHANGE f=FLAG_IS_TASK_DISPLAY_AREA p=WCT{RemoteToken{213fdaf AppZoomOut:2:14@214056850}} leash=Surface(name=DefaultTaskDisplayArea#10)/@0xacde6bf sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:-1},
+01-19 22:37:35.047   810   837 V WindowManager:         {WCT{RemoteToken{213fdaf AppZoomOut:2:14@214056850}} m=CHANGE f=NONE p=WCT{RemoteToken{e2885bc WindowedMagnification:0:31@106359548}} leash=Surface(name=AppZoomOut:2:14#9)/@0x48c04de sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:-1},
+01-19 22:37:35.047   810   837 V WindowManager:         {WCT{RemoteToken{e2885bc WindowedMagnification:0:31@106359548}} m=CHANGE f=NONE p=WCT{RemoteToken{af89a13 Display{#0 state=ON size=1344x2992 ROTATION_0}}} leash=Surface(name=WindowedMagnification:0:31#3)/@0x4048252 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:-1},
+01-19 22:37:35.047   810   837 V WindowManager:         {WCT{RemoteToken{af89a13 Display{#0 state=ON size=1344x2992 ROTATION_0}}} m=CHANGE f=IS_DISPLAY leash=Surface(name=WindowedMagnification:0:31#3)/@0x4048252 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:3}
+01-19 22:37:35.047   810   837 V WindowManager:     ]}
+01-19 22:37:35.047  1082  1143 V WindowManagerShell: Playing animation for (#13) android.os.BinderProxy@8162ef8@0
+01-19 22:37:35.047  1082  1143 V WindowManagerShell: PipTransitionState: Set mIsDisplayChangeScheduled=false
+01-19 22:37:35.047  1082  1143 V ShellRecents: RecentsTransitionHandler.startAnimation: no controller found
+01-19 22:37:35.047  1082  1143 V ShellDesktopMode: DesktopMixedTransitionHandler: No pending desktop transition
+01-19 22:37:35.047  1082  1143 V WindowManagerShell: start default transition animation, info = {id=13 t=CHANGE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=CHANGE f=NONE p=WCT{android.os.BinderProxy@92969b} leash=Surface(name=Task=15#121)/@0x6268a36 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:0 taskParent=-1 winMode=1 userId=0},{m=CHANGE f=FLAG_IS_TASK_DISPLAY_AREA p=WCT{android.os.BinderProxy@77f9437} leash=Surface(name=DefaultTaskDisplayArea#10)/@0xa21880d sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:-1},{m=CHANGE f=NONE p=WCT{android.os.BinderProxy@13a6d3c} leash=Surface(name=AppZoomOut:2:14#9)/@0xec913c2 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:-1},{m=CHANGE f=NONE p=WCT{android.os.BinderProxy@f2f8a38} leash=Surface(name=WindowedMagnification:0:31#3)/@0x9aeb5d3 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:-1},{m=CHANGE f=IS_DISPLAY leash=Surface(name=WindowedMagnification:0:31#3)/@0xefbe510 sb=Rect(0, 0 - 2992, 1344) eb=Rect(0, 0 - 1344, 2992) epz=Point(1344, 2992) d=0 r=1->0:3}]}
+01-19 22:37:35.048  1082  1143 V WindowManagerShell: Display is changing, resolve the animation hint.
+01-19 22:37:35.048  1082  1143 V WindowManagerShell:   display requests explicit seamless
+01-19 22:37:35.048  1545  1545 I KeyboardContextProvider: KeyboardContextProvider$KeyboardContextCache.createKeyboardContext():173 createKeyboardContext(): en-US, kpz@f0b2501(com.android.inputmethod.latin.LatinIME@a3c31b1), {1.0 310mcc260mnc [en_US] ldltr sw448dp w448dp h997dp 480dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1344, 2992) mAppBounds=Rect(0, 0 - 1344, 2992) mMaxBounds=Rect(0, 0 - 1344, 2992) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.144 fontWeightAdjustment=0}
+01-19 22:37:35.048  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.onCurrentInputMethodEntryChanged():2305 onCurrentInputMethodEntryChanged(): imeDefsChanged=false, entryLanguageVariantChanged=false, keyboardContextChanged=true
+01-19 22:37:35.048  1545  1545 I KeyboardContextProvider: KeyboardContextProvider.setBaseContextAndInvalidKeyboardContextCache():88 setBaseContextAndInvalidKeyboardContextCache(): com.android.inputmethod.latin.LatinIME@a3c31b1
+01-19 22:37:35.048  1545  1545 I InputMethodEntryManager: InputMethodEntryManager.resetLanguages():2745 resetLanguages(): languages=null, conditionName=orientation
+01-19 22:37:35.048  1545  1545 I ImeDefCache: ImeDefCache.clearCacheForLanguages():384 clearCacheForLanguages(): []
+01-19 22:37:35.048  1082  1143 V WindowManagerShell: Transition animation finished (aborted=false), notifying core (#13) android.os.BinderProxy@8162ef8@0
+01-19 22:37:35.048  1545  1545 I AdditionalImeDefCache: AdditionalImeDefCache.clearAdditionalImeDefsForCondition():425 clearAdditionalImeDefsForCondition() clear additional ImeDefs: []
+01-19 22:37:35.048  1545  1545 I InputMethodEntryManager: InputMethodEntryManager.resetLanguages():2756 Clear cache for languages: null, changed=false
+01-19 22:37:35.048  1545  1545 I InputMethodEntryManager: InputMethodEntryManager.startLoadingInputMethodEntrySettings():745 Start loading input method entry settings: [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}]
+01-19 22:37:35.049  1545  1545 I InputMethodEntryManager: InputMethodEntryManager.updateInputMethodEntrySettingsLoadingTask():877 update loading task with resetImplicitlyEnabledEntries is false
+01-19 22:37:35.049   650   784 I libbinder.BpBinder: onLastStrongRef automatically unlinking death recipients for descriptor: '(not cached)'
+01-19 22:37:35.050  1545  1545 I InputMethodEntryManager: InputMethodEntryManager$4.onSuccess():896 Success load entries: [LanguageTagVariantTuple{languageTag=en-US, variant=qwerty}], resetImplicitlyEnabledEntries=false, initialized=true
+01-19 22:37:35.050  1545  1545 I InputMethodEntryManager: InputMethodEntryManager.changeCurrentInputMethodEntry():2956 Set current input method entry: source=UNSPECIFIED, entryChanged=false, lpl{languageTag=en-US, variant=qwerty, hasLocalizedResources=true, conditionCacheKey=_app_first_start_timestamp=1768878311370_bottom_period_popup_slash=false_cache_additional_ime_defs_for_condition_change=false_cache_ime_defs_for_condition_change=false_deprecate_long_press_space_for_ime_picker=false_device=phone_device_size=default_enable_access_points_in_password_number=true_enable_correction_settings_updates=true_enable_flick_symbols=true_enable_more_candidates_view_for_multilingual=false_enable_number_row=false_enable_number_row_in_password=true_enable_pk_simulator=false_enable_pk_simulator_setting=false_enable_preemptive_decode=true_enable_secondary_digits=true_enable_secondary_symbols=false_expressions=normal_four_or_more_letter_rows=false_keyboard_mode=normal_language=en-US_layout_9key_split=false_orientation=portrait_physical_keyboard=qwerty_pref_enable_flick_symbols=false_rtl_layout=false_show_comma_key=true_show_period_key=true_show_secondary_digits=true_show_suggestion_strip=true_show_suggestions=true_split_with_duplicate_keys=true_true=true_variant=qwerty_writing_helper_enable_by_word_revert=false, imeDef.stringId=ime_english_united_states, imeDef.className=com.google.android.apps.inputmethod.libs.latin5.LatinIme, imeDef.languageTag=en-US}
+01-19 22:37:35.051  1545  1545 I InputMethodEntryManager: InputMethodEntryManager.loadAdditionalImeDefsForCurrentEntry():2979 loadAdditionalImeDefsForCurrentEntry(): lpl{languageTag=en-US, variant=qwerty, hasLocalizedResources=true, conditionCacheKey=_app_first_start_timestamp=1768878311370_bottom_period_popup_slash=false_cache_additional_ime_defs_for_condition_change=false_cache_ime_defs_for_condition_change=false_deprecate_long_press_space_for_ime_picker=false_device=phone_device_size=default_enable_access_points_in_password_number=true_enable_correction_settings_updates=true_enable_flick_symbols=true_enable_more_candidates_view_for_multilingual=false_enable_number_row=false_enable_number_row_in_password=true_enable_pk_simulator=false_enable_pk_simulator_setting=false_enable_preemptive_decode=true_enable_secondary_digits=true_enable_secondary_symbols=false_expressions=normal_four_or_more_letter_rows=false_keyboard_mode=normal_language=en-US_layout_9key_split=false_orientation=portrait_physical_keyboard=qwerty_pref_enable_flick_symbols=false_rtl_layout=false_show_comma_key=true_show_period_key=true_show_secondary_digits=true_show_suggestion_strip=true_show_suggestions=true_split_with_duplicate_keys=true_true=true_variant=qwerty_writing_helper_enable_by_word_revert=false, imeDef.stringId=ime_english_united_states, imeDef.className=com.google.android.apps.inputmethod.libs.latin5.LatinIme, imeDef.languageTag=en-US}
+01-19 22:37:35.051  1545  2048 I SP      : Registering emoticon_content_description.2022081613, url: https://www.gstatic.com/android/keyboard/emoticon_content_desc/202208161305/superpacks_manifest.json, constraints: W:*:*:*, flags: bg, requested: 2022081613, current: 2022081613
+01-19 22:37:35.051   810   840 D DisplayManagerService: Sending topology graph to Input Manager: DisplayTopologyGraph{mPrimaryDisplayId=0}
+01-19 22:37:35.051   810   840 D DisplayManagerService:   DisplayNode{displayId=0, density=480, bounds=RectF(0.0, 0.0, 448.0, 997.3333)}
+01-19 22:37:35.051  1545  1545 I InputMethodEntryManager: InputMethodEntryManager$6.onSuccess():2995 Success load additional ImeDefs, entryChanged=false, additionalImeDefsChanged=false, [mir{stringId=password, language=und-Latn-x-password, languageTag=und-Latn-x-password, processedConditions={writing_helper_enable_by_word_revert=false, enable_access_points_in_password_number=true, variant=qwerty, true=true, language=en-US, enable_number_row=true, device=phone, enable_number_row_in_password=true, enable_pk_simulator=false}, className=com.google.android.libraries.inputmethod.ime.password.PasswordIme, label=2132019269, keyEventInterpreter=null, inlineComposing=true, autoCapital=true, announceAutoSelectedCandidate=true, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=mik{}, processors=mkj@fe1c243, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=mjs@f2250c0, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}, mir{stringId=number, language=und-Latn-x-number, languageTag=und-Latn-x-number, processedConditions={}, className=com.google.android.libraries.inputmethod.ime.DummyIme, label=2132019211, keyEventInterpreter=null, inlineComposing=true, autoCapital=false, announceAutoSelectedCandidate=false, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=mik{}, processors=mkj@fe1c243, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=mjs@ab711f9, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}, mir{stringId=number_password, language=und-Latn-x-number-password, languageTag=und-Latn-x-number-password, processedConditions={}, className=com.google.android.libraries.inputmethod.ime.DummyIme, label=2132019212, keyEventInterpreter=null, inlineComposing=true, autoCapital=false, announceAutoSelectedCandidate=false, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=mik{}, processors=mkj@fe1c243, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=mjs@702b53e, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}, mir{stringId=phone_number, language=und-Latn-x-phone-number, languageTag=und-Latn-x-phone-number, processedConditions={}, className=com.google.android.libraries.inputmethod.ime.DummyIme, label=2132019306, keyEventInterpreter=null, inlineComposing=true, autoCapital=false, announceAutoSelectedCandidate=false, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=mik{}, processors=mkj@fe1c243, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=mjs@b543f9f, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}, mir{stringId=date_time, language=und-Latn-x-date-time, languageTag=und-Latn-x-date-time, processedConditions={}, className=com.google.android.libraries.inputmethod.ime.DummyIme, label=2132017777, keyEventInterpreter=null, inlineComposing=true, autoCapital=false, announceAutoSelectedCandidate=false, statusIcon=0, indicatorIcon=0, indicatorLabel=null, displayAppCompletions=false, extraValues=mik{}, processors=mkj@fe1c243, unacceptableMetaKeys=4098, languageSpecificSettings=0, asciiCapable=false, alwaysShowSuggestions=false, useAsciiPasswordKeyboard=false, keyboardGroupDef=mjs@23bb8ec, phenotypeFlagId=0, localizationLanguageTag=null, supportsInlineSuggestion=false}]
+01-19 22:37:35.052  1545  1545 I InputMethodEntryManager: InputMethodEntryManager.onSuccessLoadingAdditionalImeDefs():3061 Additional ImeDefs have been loaded, maybe notify entry change: false
+01-19 22:37:35.052  1545  1545 I SystemSubtypesReportModule: SystemSubtypesReportModule$2.onCurrentInputMethodEntryChanged():141 entry: en-US, source: UNSPECIFIED
+01-19 22:37:35.052  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.onCurrentInputMethodEntryChanged():2305 onCurrentInputMethodEntryChanged(): imeDefsChanged=false, entryLanguageVariantChanged=false, keyboardContextChanged=false
+01-19 22:37:35.053  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.onCurrentInputMethodEntryChanged():2323 Skip the entry change as the input method entry is consider as not changed.
+01-19 22:37:35.053  1545  1545 I DeviceModeModule: DeviceModeModule.calculateAndNotify():225 Device mode 'phone' from display metrics 'DisplayMetrics{density=0.0, width=2992, height=1344, scaledDensity=0.0, xdpi=480.0, ydpi=480.0}' or smallestScreenWidthDp: 448
+01-19 22:37:35.054   810   837 V WindowManager: Finish Transition (#13): created at 01-19 22:37:35.026 collect-started=0.094ms request-sent=0.108ms started=2.579ms ready=11.135ms sent=18.835ms finished=25.554ms
+01-19 22:37:35.054  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.onConfigurationChanged():1062 changedMask : 20000480
+01-19 22:37:35.054  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.clearInputMethodServiceData():1017 clearInputMethodServiceData for configurationChange
+01-19 22:37:35.054  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.discardAllKeyboardViewAndInputView():1232 discardAllKeyboardViewAndInputView()
+01-19 22:37:35.054  1545  1545 I AbstractOpenableExtension: AbstractOpenableExtension.maybeDestroyExistingKeyboardGroupManager():534 Destroy existing keyboard group manager in emp
+01-19 22:37:35.054  1545  1545 I AbstractOpenableExtension: AbstractOpenableExtension.createKeyboardGroupManagerListenableFuture():121 Create keyboard group manager listenable future in emp
+01-19 22:37:35.054  1082  1143 V WindowManagerShell: Track 0 became idle
+01-19 22:37:35.054  1082  1143 V WindowManagerShell: All active transition animations finished
+01-19 22:37:35.054  1082  1143 V WindowManagerShell:  animated by com.android.wm.shell.transition.DefaultTransitionHandler@ce395b9
+01-19 22:37:35.054  1082  1143 V WindowManagerShell: Track 0 became idle
+01-19 22:37:35.054  1082  1143 V WindowManagerShell: All active transition animations finished
+01-19 22:37:35.054  1545  1545 I AbstractOpenableExtension: AbstractOpenableExtension.maybeDestroyExistingKeyboardGroupManager():534 Destroy existing keyboard group manager in gvt
+01-19 22:37:35.055  1545  1545 I AbstractOpenableExtension: AbstractOpenableExtension.createKeyboardGroupManagerListenableFuture():121 Create keyboard group manager listenable future in gvt
+01-19 22:37:35.055  1545  1545 I AbstractOpenableExtension: AbstractOpenableExtension.maybeDestroyExistingKeyboardGroupManager():534 Destroy existing keyboard group manager in gyp
+01-19 22:37:35.055  1545  1545 I AbstractOpenableExtension: AbstractOpenableExtension.createKeyboardGroupManagerListenableFuture():121 Create keyboard group manager listenable future in gyp
+01-19 22:37:35.055  1545  2013 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():86 parseKeyboardGroupDef() 2132213996 -> 0_resource_name_obfuscated : WaitTime = 0 ms : RunTime = 1 ms
+01-19 22:37:35.055  1545  2013 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():86 parseKeyboardGroupDef() 2132213993 -> 0_resource_name_obfuscated : WaitTime = 1 ms : RunTime = 0 ms
+01-19 22:37:35.056  1545  2013 I KeyboardGroupDefParser: KeyboardGroupDefParser.parseKeyboardGroupDef():86 parseKeyboardGroupDef() 2132213997 -> 0_resource_name_obfuscated : WaitTime = 1 ms : RunTime = 0 ms
+01-19 22:37:35.056  1082  1143 D Bubbles : update positioner: insets=Insets{left=0, top=159, right=0, bottom=72} largeScreen=false smallTablet=false isBubbleBar=false bounds=Rect(0, 0 - 1344, 2992)
+01-19 22:37:35.058  3765  3914 D SurfaceUtils: connecting to surface 0x731d0402d000, reason connectToSurface
+01-19 22:37:35.059  3765  3914 I MediaCodec: [c2.goldfish.hevc.decoder] setting surface generation to 3855362
+01-19 22:37:35.059  3765  3914 D SurfaceUtils: disconnecting from surface 0x731d0402d000, reason connectToSurface(reconnect)
+01-19 22:37:35.059  3765  3914 D SurfaceUtils: connecting to surface 0x731d0402cff0, reason connectToSurface(reconnect-with-listener)
+01-19 22:37:35.059  3765  3914 D Codec2-OutputBufferQueue: remote graphic buffer migration 12/12
+01-19 22:37:35.059  1545  1545 I DeviceModeModule: DeviceModeModule.calculateAndNotify():225 Device mode 'phone' from display metrics 'DisplayMetrics{density=0.0, width=1344, height=2992, scaledDensity=0.0, xdpi=480.0, ydpi=480.0}' or smallestScreenWidthDp: 448
+01-19 22:37:35.059  1545  1545 I GoogleInputMethodService: GoogleInputMethodService$7.onWindowMetricsChanged():786 windowMetrics: bounds() = Rect(0, 159 - 1344, 2992), insets() = Rect(0, 0 - 0, 0)
+01-19 22:37:35.059  1545  1545 I WindowMetricsNotification: WindowMetricsNotification.notify():159 pdp[bounds=Rect(0, 159 - 1344, 2992), insets=Rect(0, 0 - 0, 0), densityDpi=480, smallestScreenWidthDp=448, displayWidth=1344, displayHeight=2992, xdpi=480.0, ydpi=480.0, isTrustable=true, displayId=0]; DisplayMetrics{density=3.0, width=1344, height=2992, scaledDensity=3.0, xdpi=480.0, ydpi=480.0}
+01-19 22:37:35.059  1545  1545 I WindowMetricsHelper: WindowMetricsHelper.predictAndNotify():145 Window metrics predicted.
+01-19 22:37:35.060  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.initializeInputMethodServiceData():842 initializeInputMethodServiceData for lpl{languageTag=en-US, variant=qwerty, hasLocalizedResources=true, conditionCacheKey=_app_first_start_timestamp=1768878311370_bottom_period_popup_slash=false_cache_additional_ime_defs_for_condition_change=false_cache_ime_defs_for_condition_change=false_deprecate_long_press_space_for_ime_picker=false_device=phone_device_size=default_enable_access_points_in_password_number=true_enable_correction_settings_updates=true_enable_flick_symbols=true_enable_more_candidates_view_for_multilingual=false_enable_number_row=false_enable_number_row_in_password=true_enable_pk_simulator=false_enable_pk_simulator_setting=false_enable_preemptive_decode=true_enable_secondary_digits=true_enable_secondary_symbols=false_expressions=normal_four_or_more_letter_rows=false_keyboard_mode=normal_language=en-US_layout_9key_split=false_orientation=portrait_physical_keyboard=qwerty_pref_enable_flick_symbols=false_rtl_layout=false_show_comma_key=true_show_period_key=true_show_secondary_digits=true_show_suggestion_strip=true_show_suggestions=true_split_with_duplicate_keys=true_true=true_variant=qwerty_writing_helper_enable_by_word_revert=false, imeDef.stringId=ime_english_united_states, imeDef.className=com.google.android.apps.inputmethod.libs.latin5.LatinIme, imeDef.languageTag=en-US}
+01-19 22:37:35.060  3765  3914 D Codec2Client: setOutputSurface -- failed to set consumer usage (6/BAD_INDEX)
+01-19 22:37:35.060  3765  3914 D Codec2Client: setOutputSurface -- generation=3855362 consumer usage=0x900
+01-19 22:37:35.063  1082  1082 D ShadeStateTraceLogger: New configuration change from Shade window. smallestScreenWidthDp: 448, densityDpi: 480
+01-19 22:37:35.063   810  2150 D FileUtils: Rounded bytes from 6211579904 to 8000000000
+01-19 22:37:35.063  1082  1082 D ShadeStateTraceLogger: New shadeHeaderHeight: 0, displayId: 0
+01-19 22:37:35.064  1545  1545 I KeyboardThemeProvider: KeyboardThemeProvider.applyKeyboardTheme():27 Apply keyboard theme: theme,!gsf,!pgsans,!pgsf,!use_system_font,BORDER,FLAVOR_DPI=XXHDPI,GOOGLE_ICONS,IS_LIGHT,KEYBOARD_WIDTH_CATEGORY=NORMAL,KEY_BORDER_SHAPE=1,LIGHT_THEME=true,PHYSICAL_DIAGONAL=6.532579,POPUP,SCREEN_SHORTEST_WIDTH=448,SCREEN_SHORTEST_WIDTH_NO_SCALE=448,SW400DP,XXHDPI,bottom4dp,enable_emoji_kitchen_browse_color_v2=true,enable_google_fonts_icons=true,enable_popup_on_keypress=true,keyboard_redesign_google_sans=true,non_linear_scale,noshadow,overlay_builtin_dynamic_color_light_base.binarypb:gm3-light-fffaf8fe-ff4c5e8b-4fb1adea13304a190d4abf12326cf60c,roundedchip,silkpopup
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: No service published for: ethernet
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: android.os.ServiceManager$ServiceNotFoundException: No service published for: ethernet
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.os.ServiceManager.getServiceOrThrow(ServiceManager.java:203)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.app.SystemServiceRegistry$156.createService(SystemServiceRegistry.java:2418)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.app.SystemServiceRegistry$CachedServiceFetcher.getService(SystemServiceRegistry.java:2531)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.app.SystemServiceRegistry.getSystemService(SystemServiceRegistry.java:2063)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.app.ContextImpl.getSystemService(ContextImpl.java:2434)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.content.ContextWrapper.getSystemService(ContextWrapper.java:991)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at com.android.networkstack.tethering.Tethering.isEthernetSupported(Tethering.java:1853)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at com.android.networkstack.tethering.Tethering.makeSupportedDownstreams(Tethering.java:2834)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at com.android.networkstack.tethering.Tethering.updateSupportedDownstreams(Tethering.java:2808)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at com.android.networkstack.tethering.Tethering.updateConfiguration(Tethering.java:561)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at com.android.networkstack.tethering.Tethering.-$$Nest$mupdateConfiguration(Tethering.java:0)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at com.android.networkstack.tethering.Tethering$StateReceiver.onReceive(Tethering.java:1376)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.app.LoadedApk$ReceiverDispatcher$Args.lambda$getRunnable$0(LoadedApk.java:1931)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.app.LoadedApk$ReceiverDispatcher$Args.$r8$lambda$mcNAAl1SQ4MyJPyDg8TJ2x2h0Rk(Unknown Source:0)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.app.LoadedApk$ReceiverDispatcher$Args$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.os.Handler.handleCallback(Handler.java:1070)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.os.Handler.dispatchMessage(Handler.java:125)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.os.Looper.dispatchMessage(Looper.java:333)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.os.Looper.loopOnce(Looper.java:263)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.os.Looper.loop(Looper.java:367)
+01-19 22:37:35.065  1156  1262 E SystemServiceRegistry: 	at android.os.HandlerThread.run(HandlerThread.java:139)
+01-19 22:37:35.065  1545  2048 I SP      : Syncing emoticon_content_description (2022081613) with slices: [7a635888cb828dfa2fc744b7b9b50f04], metadata: false
+01-19 22:37:35.068   595   625 D C2BqBuffer: local generation change 3855362 , bqId: 16170551869444 migrated buffers # 0
+01-19 22:37:35.070  3765  3914 D Codec2Client: Surface configure completed
+01-19 22:37:35.070  3765  3914 D SurfaceUtils: disconnecting from surface 0x731d040ac8b0, reason disconnectFromSurface
+01-19 22:37:35.071  1545  2065 W LatinCommonMetricsProcessor: LatinCommonMetricsProcessor.processInputMethodEntryChanged():2426 The new entry is equal to the old entry
+01-19 22:37:35.105  1545  1545 I AndroidIME: InputBundleManager.loadActiveInputBundleId():528 loadActiveInputBundleId: und-Latn-x-password, password
+01-19 22:37:35.109  3765  3765 D LeakCanary: Watching instance of androidx.fragment.app.FragmentManagerViewModel (androidx.fragment.app.FragmentManagerViewModel received ViewModel#onCleared() callback) with key d2c68412-9d57-4dcc-9da2-0199d36c402f
+01-19 22:37:35.109  3765  3765 D LeakCanary: Watching instance of dagger.hilt.android.internal.managers.ActivityRetainedComponentManager$ActivityRetainedComponentViewModel (dagger.hilt.android.internal.managers.ActivityRetainedComponentManager$ActivityRetainedComponentViewModel received ViewModel#onCleared() callback) with key 7ef71245-6fd3-444e-93fc-5c21467d04b8
+01-19 22:37:35.109  3765  3765 D LeakCanary: Watching instance of leakcanary.internal.ViewModelClearedWatcher (leakcanary.internal.ViewModelClearedWatcher received ViewModel#onCleared() callback) with key b12c11a7-e85c-47d7-ba3b-df87b1388196
+01-19 22:37:35.109  3765  3765 D LeakCanary: Watching instance of androidx.lifecycle.SavedStateHandlesVM (androidx.lifecycle.SavedStateHandlesVM received ViewModel#onCleared() callback) with key 32fb798c-3292-42be-ad72-7be097475f46
+01-19 22:37:35.109  3765  3765 D LeakCanary: Watching instance of com.rpeters.jellyfin.ui.player.VideoPlayerViewModel (com.rpeters.jellyfin.ui.player.VideoPlayerViewModel received ViewModel#onCleared() callback) with key 77f7ae63-b2dc-43c3-8ffe-8ecfd31e6d39
+01-19 22:37:35.109  3765  3765 D LeakCanary: Watching instance of androidx.compose.ui.platform.LifecycleRetainedValuesStoreOwner (androidx.compose.ui.platform.LifecycleRetainedValuesStoreOwner received ViewModel#onCleared() callback) with key 47f2f305-1073-4de5-af00-079e523d4e0f
+01-19 22:37:35.110  1209  1209 I ContextualSearchInvoker: Contextual Search invocation failed: no ContextualSearchManager
+01-19 22:37:35.110  1209  1209 D StatsLog: LAUNCHER_LAUNCH_ASSISTANT_FAILED_SERVICE_ERROR
+01-19 22:37:35.113  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1318 onStartInput(EditorInfo{EditorInfo{packageName=com.rpeters.jellyfin, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, true)
+01-19 22:37:35.113  1545  1545 W SessionManager: SessionManager.beginSession():53 Try to begin an already begun session [INPUT_SESSION], end it first
+01-19 22:37:35.115  3765  3782 I OkHttpClient: POST https://rpeters1428.huron.usbx.me/jellyfin/Sessions/Playing/Progress
+01-19 22:37:35.116  1545  2048 I SP      : Sync for emoticon_content_description succeeded in 55 ms: no changes
+01-19 22:37:35.116  1545  2048 I SP      : GC for 'emoticon_content_description' (10) with ttl of 0 ms took 0 ms (0/0/0)
+01-19 22:37:35.117  1545  1545 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():100 repeatCheckTimes = 1, locked = false
+01-19 22:37:35.117   810   889 W PackageConfigPersister: App-specific configuration not found for packageName: com.rpeters.jellyfin and userId: 0
+01-19 22:37:35.118  1545  1545 I AbstractOpenableExtension: AbstractOpenableExtension$3.onSuccess():552 KeyboardGroupManager destroyed in emp.
+01-19 22:37:35.118  1545  1545 I AbstractOpenableExtension: AbstractOpenableExtension$3.onSuccess():552 KeyboardGroupManager destroyed in gvt.
+01-19 22:37:35.118  1545  1545 I AbstractOpenableExtension: AbstractOpenableExtension$3.onSuccess():552 KeyboardGroupManager destroyed in gyp.
+01-19 22:37:35.128  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Settings sectionName: S
+01-19 22:37:35.128  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Photos sectionName: P
+01-19 22:37:35.128  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Battery sectionName: B
+01-19 22:37:35.128  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Chrome sectionName: C
+01-19 22:37:35.128  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Gmail sectionName: G
+01-19 22:37:35.129  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Drive sectionName: D
+01-19 22:37:35.129  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Clock sectionName: C
+01-19 22:37:35.129  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Contacts sectionName: C
+01-19 22:37:35.129  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Calendar sectionName: C
+01-19 22:37:35.129  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Maps sectionName: M
+01-19 22:37:35.129  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: YouTube Music sectionName: Y
+01-19 22:37:35.129  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: YouTube sectionName: Y
+01-19 22:37:35.130  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Google sectionName: G
+01-19 22:37:35.130  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Android System Intelligence sectionName: A
+01-19 22:37:35.134  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Digital Wellbeing sectionName: D
+01-19 22:37:35.135   810  2412 I WindowManager: finishDrawing of orientation change: Window{f6bdf4f u0 ScreenDecorOverlay} 92ms
+01-19 22:37:35.136  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Conversations sectionName: C
+01-19 22:37:35.139  1209  1209 D TaskbarManager: createTaskbarUIControllerForRecentsViewContainer displayId=0 isDefaultDisplay=true
+01-19 22:37:35.139  1209  1209 D TaskbarManager: recreateTaskbarForDisplay: adding rootView displayId=0 isDefaultDisplay=true
+01-19 22:37:35.139  1209  1209 D TaskbarManager: addTaskbarRootViewToWindow: displayId=0 isDefaultDisplay=true
+01-19 22:37:35.139  1209  1209 D TaskbarManager: addTaskbarRootViewToWindow: rootLayout already added! displayId=0 isDefaultDisplay=true
+01-19 22:37:35.139  1209  1209 D TaskbarManager: getTaskbarRootLayoutForDisplay: displayId=0 isDefaultDisplay=true
+01-19 22:37:35.139  1209  1209 D TaskbarManager: recreateTaskbarForDisplay: adding root layout displayId=0 isDefaultDisplay=true
+01-19 22:37:35.141  1209  1209 D b/254119092: DisplayController#onConfigurationChanged: {1.0 310mcc260mnc [en_US] ldltr sw448dp w448dp h997dp 480dpi nrml long compactNeeded port finger qwerty/v/v dpad/v winConfig={ mBounds=Rect(0, 0 - 1344, 2992) mAppBounds=Rect(0, 0 - 1344, 2992) mMaxBounds=Rect(0, 0 - 1344, 2992) mDisplayRotation=ROTATION_0 mWindowingMode=fullscreen mActivityType=undefined mAlwaysOnTop=undefined mRotation=ROTATION_0} as.3 s.144 fontWeightAdjustment=0}
+01-19 22:37:35.152  1209  1209 D TaskbarManager: onDisplayInfoChanged: Rotation changed displayId=0 isDefaultDisplay=true
+01-19 22:37:35.153  1209  1209 D TaskbarManager: recreateTaskbarForDisplay:  displayId=0 isDefaultDisplay=true
+01-19 22:37:35.153  1209  1209 D TaskbarManager: recreateTaskbarForDisplay: getting device profile displayId=0 isDefaultDisplay=true
+01-19 22:37:35.153  1209  1209 D TaskbarManager: recreateTaskbarForDisplay: destroying taskbar displayId=0 isDefaultDisplay=true
+01-19 22:37:35.153  1209  1209 D TaskbarManager: destroyTaskbarForDisplay displayId=0 isDefaultDisplay=true
+01-19 22:37:35.154  1209  1209 V HandoffSuggestionMetadataLoader: cancelPendingLoads
+01-19 22:37:35.155  1209  1209 V HandoffSuggestionList: Clearing Handoff suggestions.
+01-19 22:37:35.155  1209  1209 D TaskbarManager: recreateTaskbarForDisplay: isTaskbarEnabled=true [dp != null (i.e. mUserUnlocked)]=true dp.isTaskbarPresent=false isTaskbarEnabled=true displayExists=true displayId=0 isDefaultDisplay=true
+01-19 22:37:35.156  1209  1209 D TaskbarManager: recreateTaskbarForDisplay: creating taskbar displayId=0 isDefaultDisplay=true
+01-19 22:37:35.168   810   890 I WindowManager: finishDrawing of orientation change: Window{b37fa9d u0 ScreenDecorOverlayBottom} 126ms
+01-19 22:37:35.194  1209  1209 I ContextualSearchInvoker: Contextual Search invocation failed: no ContextualSearchManager
+01-19 22:37:35.195  1209  1209 D StatsLog: LAUNCHER_LAUNCH_ASSISTANT_FAILED_SERVICE_ERROR
+01-19 22:37:35.202  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Settings sectionName: S
+01-19 22:37:35.202  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Photos sectionName: P
+01-19 22:37:35.202  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Battery sectionName: B
+01-19 22:37:35.202  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Chrome sectionName: C
+01-19 22:37:35.202  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Gmail sectionName: G
+01-19 22:37:35.202  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Drive sectionName: D
+01-19 22:37:35.204  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Clock sectionName: C
+01-19 22:37:35.205  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Contacts sectionName: C
+01-19 22:37:35.205  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Calendar sectionName: C
+01-19 22:37:35.205  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Maps sectionName: M
+01-19 22:37:35.206  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: YouTube Music sectionName: Y
+01-19 22:37:35.206  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: YouTube sectionName: Y
+01-19 22:37:35.206  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Google sectionName: G
+01-19 22:37:35.206  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Android System Intelligence sectionName: A
+01-19 22:37:35.207  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Digital Wellbeing sectionName: D
+01-19 22:37:35.207  1209  1209 D AlphabeticIndexCompat: computeSectionName: cs: Conversations sectionName: C
+01-19 22:37:35.207  1209  1209 D TaskbarManager: createTaskbarUIControllerForRecentsViewContainer displayId=0 isDefaultDisplay=true
+01-19 22:37:35.208  1209  1209 D TaskbarManager: recreateTaskbarForDisplay: adding rootView displayId=0 isDefaultDisplay=true
+01-19 22:37:35.208  1209  1209 D TaskbarManager: addTaskbarRootViewToWindow: displayId=0 isDefaultDisplay=true
+01-19 22:37:35.208  1209  1209 D TaskbarManager: addTaskbarRootViewToWindow: rootLayout already added! displayId=0 isDefaultDisplay=true
+01-19 22:37:35.208  1209  1209 D TaskbarManager: getTaskbarRootLayoutForDisplay: displayId=0 isDefaultDisplay=true
+01-19 22:37:35.208  1209  1209 D TaskbarManager: recreateTaskbarForDisplay: adding root layout displayId=0 isDefaultDisplay=true
+01-19 22:37:35.209  1209  1209 D BubbleBarView: BubbleBar RTL properties changed, new layoutDirection=0 previous layoutDirection=-1
+01-19 22:37:35.232   810  2412 I WindowManager: finishDrawing of orientation change: Window{486db71 u0 Taskbar} 190ms
+01-19 22:37:35.243   810  2412 I WindowManager: finishDrawing of orientation change: Window{d0905c1 u0 StatusBar} 200ms
+01-19 22:37:35.271  1082  1082 D SsCardRecyclerViewAdapter: Updating Smartspace targets to targets for Lockscreen
+01-19 22:37:35.273  1082  1082 D SsCardRecyclerViewAdapter: Updating Smartspace targets to targets for Lockscreen
+01-19 22:37:35.274  1082  1082 W SsPagerDots: Total number of pages invalid: 0. Assuming 1 page.
+01-19 22:37:35.274  1082  1082 W SsPagerDots: Total number of pages invalid: 0. Assuming 1 page.
+01-19 22:37:35.274  1082  1082 W SsPagerDots: Total number of pages invalid: 0. Assuming 1 page.
+01-19 22:37:35.274  1082  1082 W SsPagerDots: Total number of pages invalid: 0. Assuming 1 page.
+01-19 22:37:35.274  1082  1082 W BcSmartspaceView: Current card is not present in the Adapter; cannot log.
+01-19 22:37:35.275  1082  1082 W AlarmManager: Unrecognized alarm listener com.google.android.systemui.smartspace.KeyguardZenAlarmViewController$showNextAlarm$1@72dffdc
+01-19 22:37:35.275  1082  1082 W AlarmManager: Unrecognized alarm listener com.google.android.systemui.smartspace.KeyguardZenAlarmViewController$showNextAlarm$1@72dffdc
+01-19 22:37:35.276  1082  1082 W SsPagerDots: Total number of pages invalid: 0. Assuming 1 page.
+01-19 22:37:35.276  1082  1082 W BcSmartspaceView: Current card is not present in the Adapter; cannot log.
+01-19 22:37:35.276  1082  1082 W SsPagerDots: Total number of pages invalid: 0. Assuming 1 page.
+01-19 22:37:35.277  1082  1082 W BcSmartspaceView: Current card is not present in the Adapter; cannot log.
+01-19 22:37:35.278  1082  1082 W AlarmManager: Unrecognized alarm listener com.google.android.systemui.smartspace.KeyguardZenAlarmViewController$showNextAlarm$1@72dffdc
+01-19 22:37:35.278  1082  1082 W SsPagerDots: Total number of pages invalid: 0. Assuming 1 page.
+01-19 22:37:35.278  1082  1082 W BcSmartspaceView: Current card is not present in the Adapter; cannot log.
+01-19 22:37:35.279  1082  1082 W SsPagerDots: Total number of pages invalid: 0. Assuming 1 page.
+01-19 22:37:35.279  1082  1082 W BcSmartspaceView: Current card is not present in the Adapter; cannot log.
+01-19 22:37:35.282  1649  1863 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+01-19 22:37:35.282  1649  1863 I AiAiEcho: EchoTargets: 
+01-19 22:37:35.282  1649  1863 I AiAiEcho: Filtered by AiAi flag check: 
+01-19 22:37:35.282  1649  1863 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+01-19 22:37:35.282  1649  1863 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+01-19 22:37:35.282  1649  1863 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+01-19 22:37:35.283  1649  1863 I AiAiEcho: EchoTargets: 
+01-19 22:37:35.283  1649  1863 I AiAiEcho: Filtered by AiAi flag check: 
+01-19 22:37:35.283  1649  1863 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+01-19 22:37:35.283  1649  1863 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+01-19 22:37:35.284  1649  1863 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+01-19 22:37:35.285  1649  1863 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+01-19 22:37:35.291  1082  1082 W SsPagerDots: Total number of pages invalid: 0. Assuming 1 page.
+01-19 22:37:35.295  1649  1863 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+01-19 22:37:35.295  1649  1863 I AiAiEcho: EchoTargets: 
+01-19 22:37:35.295  1649  1863 I AiAiEcho: Filtered by AiAi flag check: 
+01-19 22:37:35.295  1649  1863 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+01-19 22:37:35.295  1649  1863 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+01-19 22:37:35.296  1649  1863 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+01-19 22:37:35.296  1649  1863 I AiAiEcho: EchoTargets: 
+01-19 22:37:35.296  1649  1863 I AiAiEcho: Filtered by AiAi flag check: 
+01-19 22:37:35.296  1649  1863 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+01-19 22:37:35.296  1649  1863 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+01-19 22:37:35.297  1649  1863 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+01-19 22:37:35.297  1649  1863 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+01-19 22:37:35.307  1082  1082 W SsPagerDots: Total number of pages invalid: 0. Assuming 1 page.
+01-19 22:37:35.309  1649  1863 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+01-19 22:37:35.309  1649  1863 I AiAiEcho: EchoTargets: 
+01-19 22:37:35.309  1649  1863 I AiAiEcho: Filtered by AiAi flag check: 
+01-19 22:37:35.309  1649  1863 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+01-19 22:37:35.309  1649  1863 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+01-19 22:37:35.309  1649  1863 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+01-19 22:37:35.310  1649  1863 I AiAiEcho: EchoTargets: 
+01-19 22:37:35.310  1649  1863 I AiAiEcho: Filtered by AiAi flag check: 
+01-19 22:37:35.310  1649  1863 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+01-19 22:37:35.310  1649  1863 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+01-19 22:37:35.310  1649  1863 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+01-19 22:37:35.311  1649  1863 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+01-19 22:37:35.341  1082  1082 W SsPagerDots: Total number of pages invalid: 0. Assuming 1 page.
+01-19 22:37:35.399  1199  1371 D SatelliteController: iisInCarrierRoamingNbIotNtn: satellite is disabled
+01-19 22:37:35.400  1199  1371 D SatelliteController: getCarrierRoamingNtnConnectType: Falling back to global carrier config connect type: 0
+01-19 22:37:35.478  3765  3765 D PlaybackProgressManager: Reported progress at 579000ms for 73389e0d-fe8f-2953-2528-3c43bc3fc917
+01-19 22:37:35.480  3765  3782 I OkHttpClient: POST https://rpeters1428.huron.usbx.me/jellyfin/Sessions/Playing/Stopped
+01-19 22:37:36.382   595  3920 W C2BqBuffer: last successful dequeue was 1299433 us ago, 114 consecutive failures
+01-19 22:37:37.453   589  3928 D android.hardware.audio@7.1-impl.ranchu: threadLoop: entering standby, frames: 2190144
+01-19 22:37:37.453   589  3928 D android.hardware.audio@7.1-impl.ranchu: ~TinyalsaSink: joining consumeThread
+01-19 22:37:37.461   589  3929 D android.hardware.audio@7.1-impl.ranchu: consumeThread: exiting
+01-19 22:37:37.461   589  3928 D android.hardware.audio@7.1-impl.ranchu: ~TinyalsaSink: stopping PCM stream
+01-19 22:37:37.498   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:37.502  3765  3765 D PlaybackProgressManager: Reported playback stop for: 73389e0d-fe8f-2953-2528-3c43bc3fc917 at 579000ms
+01-19 22:37:37.502  3765  3765 D PlaybackProgressManager: Stopped tracking
+01-19 22:37:37.504  3765  3765 I ExoPlayerImpl: Release 96a3f1f [AndroidXMedia3/1.9.0] [emu64xa, sdk_gphone64_x86_64, Google, 36] [media3.common, media3.session, media3.exoplayer, media3.decoder, media3.ui, media3.datasource, media3.extractor, media3.decoder.ffmpeg]
+01-19 22:37:37.506  3765  3915 D BufferPoolAccessor2.0: bufferpool2 0x731cc407d218 : 5(31457280 size) total buffers - 4(25165824 size) used buffers - 1035/1040 (recycle/alloc) - 6/1040 (fetch/transfer)
+01-19 22:37:37.507  3765  3900 D MediaCodec: keep callback message for reclaim
+01-19 22:37:37.507  3765  3914 I CCodecConfig: query failed after returning 12 values (BAD_INDEX)
+01-19 22:37:37.507  3765  3914 D CCodecConfig: c2 config diff is   c2::u32 coded.vui.color.matrix = 1
+01-19 22:37:37.507  3765  3914 D CCodecConfig:   c2::u32 coded.vui.color.primaries = 1
+01-19 22:37:37.507  3765  3914 D CCodecConfig:   c2::u32 coded.vui.color.transfer = 3
+01-19 22:37:37.509  3765  3914 W Codec2Client: query -- param skipped: index = 1342179345.
+01-19 22:37:37.509  3765  3914 W Codec2Client: query -- param skipped: index = 2415921170.
+01-19 22:37:37.509  3765  3914 W Codec2Client: query -- param skipped: index = 1610614798.
+01-19 22:37:37.513   595  3920 W SimpleC2Component: unknown frame index: 1033
+01-19 22:37:37.513   595  3920 D SimpleC2Component: work form old generation: was 1 now 0
+01-19 22:37:37.514  3765  3915 D CCodecBufferChannel: [c2.goldfish.hevc.decoder#72] flushed work; ignored.
+01-19 22:37:37.514  3765  3915 D CCodecBufferChannel: [c2.goldfish.hevc.decoder#72] Discard frames from previous generation.
+01-19 22:37:37.514  3765  3900 D MediaCodec: keep callback message for reclaim
+01-19 22:37:37.515  3765  3923 I CCodecConfig: query failed after returning 8 values (BAD_INDEX)
+01-19 22:37:37.516  3765  3923 W Codec2Client: query -- param skipped: index = 1342179345.
+01-19 22:37:37.516  3765  3923 W Codec2Client: query -- param skipped: index = 2415921170.
+01-19 22:37:37.518  3765  3914 I MediaCodec: [c2.goldfish.hevc.decoder] connecting to the same surface. Nothing to do.
+01-19 22:37:37.519  3765  3914 D CCodecBufferChannel: [c2.goldfish.hevc.decoder#72] MediaCodec discarded an unknown buffer
+01-19 22:37:37.520  3765  3914 D CCodecBufferChannel: [c2.goldfish.hevc.decoder#72] MediaCodec discarded an unknown buffer
+01-19 22:37:37.520   595   625 D C2BqBuffer: configuring null producer: igbp_information(0)
+01-19 22:37:37.520  3765  3914 D CCodecBufferChannel: [c2.goldfish.hevc.decoder#72] MediaCodec discarded an unknown buffer
+01-19 22:37:37.521  3765  3914 D CCodecBufferChannel: [c2.goldfish.hevc.decoder#72] MediaCodec discarded an unknown buffer
+01-19 22:37:37.553  3765  3914 D SurfaceUtils: disconnecting from surface 0x731d0402d000, reason disconnectFromSurface
+01-19 22:37:37.555  3765  3923 D CCodecBufferChannel: [c2.android.opus.decoder#432] MediaCodec discarded an unknown buffer
+01-19 22:37:37.557  3765  3923 D CCodecBufferChannel: [c2.android.opus.decoder#432] MediaCodec discarded an unknown buffer
+01-19 22:37:37.557  3765  3923 D CCodecBufferChannel: [c2.android.opus.decoder#432] MediaCodec discarded an unknown buffer
+01-19 22:37:37.558  3765  3923 D CCodecBufferChannel: [c2.android.opus.decoder#432] MediaCodec discarded an unknown buffer
+01-19 22:37:37.559  3765  3923 I hw-BpHwBinder: onLastStrongRef automatically unlinking death recipients
+01-19 22:37:37.559   725   773 I hw-BpHwBinder: onLastStrongRef automatically unlinking death recipients
+01-19 22:37:37.559   725   773 I hw-BpHwBinder: onLastStrongRef automatically unlinking death recipients
+01-19 22:37:37.559   725   773 D BufferPoolAccessor2.0: bufferpool2 0x701aa600a9d8 : 0(0 size) total buffers - 0(0 size) used buffers - 0/0 (recycle/alloc) - 0/0 (fetch/transfer)
+01-19 22:37:37.559   725   773 D BufferPoolAccessor2.0: Destruction - bufferpool2 0x701aa600a9d8 cached: 0/0M, 0/0% in use; allocs: 0, 0% recycled; transfers: 0, 0% unfetched
+01-19 22:37:37.564  3765  3765 D LeakCanary: Watching instance of androidx.lifecycle.ReportFragment (androidx.lifecycle.ReportFragment received Fragment#onDestroy() callback) with key 0ff7bd8d-4d33-4c89-a9c1-1d6b6ce4cabe
+01-19 22:37:37.564  3765  3765 D LeakCanary: Watching instance of com.rpeters.jellyfin.ui.player.VideoPlayerActivity (com.rpeters.jellyfin.ui.player.VideoPlayerActivity received Activity#onDestroy() callback) with key 542b1044-4ca9-426f-931f-d62ae6f0065c
+01-19 22:37:37.564  3765  3765 D WindowOnBackDispatcher: setTopOnBackInvokedCallback (unwrapped): null
+01-19 22:37:37.565   810  2412 D CoreBackPreview: Window{f5715 u0 com.rpeters.jellyfin/com.rpeters.jellyfin.ui.player.VideoPlayerActivity}: Setting back callback null
+01-19 22:37:37.569  3765  3765 D ViewRootImpl: Skipping stats log for color mode
+01-19 22:37:37.572  3765  3915 I hw-BpHwBinder: onLastStrongRef automatically unlinking death recipients
+01-19 22:37:37.572   595   625 I hw-BpHwBinder: onLastStrongRef automatically unlinking death recipients
+01-19 22:37:37.574   810  1030 D BackgroundInstallControlService: Package event received: 0
+01-19 22:37:37.577   595   625 I GoldfishComponentStore: in ~ComponentModule
+01-19 22:37:37.577   595   625 I GoldfishComponentStore: unloading dll
+01-19 22:37:37.582  3765  3765 I Choreographer: Skipped 149 frames!  The application may be doing too much work on its main thread.
+01-19 22:37:37.583   810  2412 I ImeTracker: system_server:e231486a: onRequestHide at ORIGIN_SERVER reason IME_REQUESTED_CHANGED_LISTENER fromUser false
+01-19 22:37:37.584   810   840 I ImeTracker: system_server:e231486a: onCancelled at PHASE_SERVER_SHOULD_HIDE
+01-19 22:37:37.591  3765  3775 I HWUI    : Davey! duration=2500ms; Flags=0, FrameTimelineVsyncId=28225, IntendedVsync=186054904788, Vsync=188521571356, InputEventId=0, HandleInputStart=188549603236, AnimationStart=188549603992, PerformTraversalsStart=188551673320, DrawStart=188551710103, FrameDeadline=186104904786, FrameStartTime=188549023453, FrameInterval=16666666, WorkloadTarget=16666666, SyncQueued=188551762799, SyncStart=188551798967, IssueDrawCommandsStart=188551925756, SwapBuffers=188552970291, FrameCompleted=188555540731, DequeueBufferDuration=2043, QueueBufferDuration=116599, GpuCompleted=188555540731, SwapBuffersCompleted=188553670812, DisplayPresentTime=0, CommandSubmissionCompleted=188552970291, 
+01-19 22:37:38.523   595  3956 D C2BqPoolInvalidator: invalidated 1 bqpool items
+01-19 22:37:39.012  3959  3959 W libbinder.BackendUnifiedServiceManager: Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: package
+01-19 22:37:39.062  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/base.odex) is kOatUpToDate with filter 'speed-profile' executable 'false'
+01-19 22:37:39.063  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_AdsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:39.065  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_CronetDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:39.066  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteLoader_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:39.068  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteModulesA_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:39.069  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteModulesC_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:39.070  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_GoogleCertificates_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:39.072  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_MapsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:39.074  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_MeasurementDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:39.075  3360  3937 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_all_locale_splits.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:39.076  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000001/CronetDynamite.apk has no usable artifacts
+01-19 22:37:39.077  3360  3360 I artd    : GetBestInfo: vdex next to the dex file (/data/user/0/com.google.android.gms/app_dg_cache/9C3914BA639C225C3270B81DD57E92CD956143E9/oat/x86_64/the.vdex) is kOatUpToDate with filter 'verify' executable 'false'
+01-19 22:37:39.078  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000002/DynamiteLoader.apk has no usable artifacts
+01-19 22:37:39.079  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000011/dl-MlkitBarcodeUi.optional_255034100800.apk has no usable artifacts
+01-19 22:37:39.079  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000005/GoogleCertificates.apk has no usable artifacts
+01-19 22:37:39.081  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000c/dl-PlayCloudSearch.optional_253434100000.apk has no usable artifacts
+01-19 22:37:39.082  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000009/dl-TfliteDynamiteDynamite.integ_243930802100800.apk has no usable artifacts
+01-19 22:37:39.083  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000007/MeasurementDynamite.apk has no usable artifacts
+01-19 22:37:40.127  3765  3780 W peters.jellyfin: Cleared Reference was only reachable from finalizer (only reported once)
+01-19 22:37:40.147  3765  3780 I peters.jellyfin: Explicit concurrent mark compact GC freed 1725KB AllocSpace bytes, 31(780KB) LOS objects, 49% free, 12MB/25MB, paused 76us,1.465ms total 37.331ms
+01-19 22:37:40.503   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:40.578   810  1686 E TaskPersister: File error accessing recents directory (directory doesn't exist?).
+01-19 22:37:42.368  1649  2298 I libbinder.IPCThreadState: oneway function results for code 2 on binder at 0x731bb40ab790 will be dropped but finished with status UNKNOWN_TRANSACTION
+01-19 22:37:42.368   810  2412 D OomAdjuster: Not killing cached processes
+01-19 22:37:43.211  3765  3918 D BufferPoolAccessor2.0: bufferpool2 0x731cc407d218 : 0(0 size) total buffers - 0(0 size) used buffers - 1039/1044 (recycle/alloc) - 6/1043 (fetch/transfer)
+01-19 22:37:43.211  3765  3918 D BufferPoolAccessor2.0: bufferpool2 0x731cc4057fc8 : 0(0 size) total buffers - 0(0 size) used buffers - 2169/2174 (recycle/alloc) - 8/4336 (fetch/transfer)
+01-19 22:37:43.211  3765  3918 D BufferPoolAccessor2.0: evictor expired: 2, evicted: 2
+01-19 22:37:43.501   725   776 D BufferPoolAccessor2.0: bufferpool2 0x701aa600c348 : 0(0 size) total buffers - 0(0 size) used buffers - 2161/2165 (recycle/alloc) - 6/2151 (fetch/transfer)
+01-19 22:37:43.501   725   776 D BufferPoolAccessor2.0: evictor expired: 2, evicted: 1
+01-19 22:37:43.507   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:45.399  1199  1371 D SatelliteController: iisInCarrierRoamingNbIotNtn: satellite is disabled
+01-19 22:37:45.399  1199  1371 D SatelliteController: getCarrierRoamingNtnConnectType: Falling back to global carrier config connect type: 0
+01-19 22:37:46.514   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:46.969  1545  1545 I NativeLibHelper: NativeLibHelper.loadLibrary():190 Loaded native library:integrated_shared_object (result=true)
+01-19 22:37:46.972  1545  1545 I StylusModule: StylusModule.onUpdateToolType():805 Update tool type = 0
+01-19 22:37:46.993  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():2057 
+01-19 22:37:46.994  1545  1545 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():100 repeatCheckTimes = 0, locked = false
+01-19 22:37:46.994  1545  1545 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1318 onStartInput(EditorInfo{EditorInfo{packageName=com.rpeters.jellyfin, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+01-19 22:37:46.995  1545  1545 I Module  : DeviceLockedStatusModuleProvider$Module.updateDeviceLockedStatus():100 repeatCheckTimes = 1, locked = false
+01-19 22:37:46.996   810   889 W PackageConfigPersister: App-specific configuration not found for packageName: com.rpeters.jellyfin and userId: 0
+01-19 22:37:47.378   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+01-19 22:37:47.379   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+01-19 22:37:47.379   810   984 D InetDiagMessage: Destroyed live tcp sockets for uids={10144} in 0ms
+01-19 22:37:47.379   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+01-19 22:37:47.380   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+01-19 22:37:47.380   810   984 D InetDiagMessage: Destroyed live tcp sockets for uids={20144} in 1ms
+01-19 22:37:49.020  3962  3962 W libbinder.BackendUnifiedServiceManager: Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: package
+01-19 22:37:49.070  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/base.odex) is kOatUpToDate with filter 'speed-profile' executable 'false'
+01-19 22:37:49.071  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_AdsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:49.073  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_CronetDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:49.075  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteLoader_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:49.076  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteModulesA_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:49.078  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_DynamiteModulesC_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:49.080  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_GoogleCertificates_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:49.082  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_MapsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:49.083  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_MeasurementDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:49.085  3360  3360 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~6Fx2stUZf9VHWzn0Kkn8Sg==/com.google.android.gms-e8mZq9Ak3P8uIKVbXWQuHw==/oat/x86_64/split_all_locale_splits.odex) is kOatUpToDate with filter 'speed' executable 'false'
+01-19 22:37:49.085  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000001/CronetDynamite.apk has no usable artifacts
+01-19 22:37:49.087  3360  3360 I artd    : GetBestInfo: vdex next to the dex file (/data/user/0/com.google.android.gms/app_dg_cache/9C3914BA639C225C3270B81DD57E92CD956143E9/oat/x86_64/the.vdex) is kOatUpToDate with filter 'verify' executable 'false'
+01-19 22:37:49.087  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000002/DynamiteLoader.apk has no usable artifacts
+01-19 22:37:49.088  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000011/dl-MlkitBarcodeUi.optional_255034100800.apk has no usable artifacts
+01-19 22:37:49.089  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000005/GoogleCertificates.apk has no usable artifacts
+01-19 22:37:49.091  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000c/dl-PlayCloudSearch.optional_253434100000.apk has no usable artifacts
+01-19 22:37:49.092  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000009/dl-TfliteDynamiteDynamite.integ_243930802100800.apk has no usable artifacts
+01-19 22:37:49.094  3360  3360 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000007/MeasurementDynamite.apk has no usable artifacts
+01-19 22:37:49.519   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+01-19 22:37:51.704   810   847 D OomAdjuster: Not killing cached processes
+01-19 22:37:51.705   810   847 D ActivityManager: sync unfroze 2993 com.android.dynsystem:dynsystem for 10
+01-19 22:37:51.706   810   847 D ActivityManager: sync unfroze 2957 com.android.dynsystem for 10
+01-19 22:37:51.707   810   847 D ActivityManager: sync unfroze 2225 com.android.localtransport for 10
+01-19 22:37:51.709   810   847 D ActivityManager: sync unfroze 1760 com.android.keychain for 10
+01-19 22:37:52.375   810   920 D ActivityManager: freezing 1975 com.google.android.as.oss
+01-19 22:37:52.377   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+01-19 22:37:52.378   810   984 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+01-19 22:37:52.378   810   984 D InetDiagMessage: Destroyed live tcp sockets for uids={10144} in 1ms
+01-19 22:37:52.523   810   977 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
