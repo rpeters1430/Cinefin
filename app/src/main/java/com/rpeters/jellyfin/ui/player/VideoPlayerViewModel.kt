@@ -430,10 +430,10 @@ class VideoPlayerViewModel @Inject constructor(
                             val (key, value) = param.split("=", limit = 2)
                             when {
                                 key.contains("Width", ignoreCase = true) ||
-                                key.contains("Height", ignoreCase = true) ||
-                                key.contains("Bitrate", ignoreCase = true) ||
-                                key.contains("Codec", ignoreCase = true) ||
-                                key.contains("Container", ignoreCase = true) -> {
+                                    key.contains("Height", ignoreCase = true) ||
+                                    key.contains("Bitrate", ignoreCase = true) ||
+                                    key.contains("Codec", ignoreCase = true) ||
+                                    key.contains("Container", ignoreCase = true) -> {
                                     val paramLog = "  $key = $value"
                                     SecureLogger.d("VideoPlayer", paramLog)
                                     Log.d("VideoPlayer", paramLog) // Direct log
