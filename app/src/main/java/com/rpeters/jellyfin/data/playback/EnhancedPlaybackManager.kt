@@ -62,30 +62,22 @@ class EnhancedPlaybackManager @Inject constructor(
                     return@withContext PlaybackResult.Error("Failed to get playback info")
                 }
 
-                // Analyze media sources for Direct Play capability
-                val directPlayResult = analyzeDirectPlayCapability(item, playbackInfo)
-                if (directPlayResult != null) {
-                    if (BuildConfig.DEBUG) {
-                        SecureLogger.v(TAG, "Direct Play available: ${directPlayResult.url}")
-                    }
-                    return@withContext directPlayResult
-                }
-
-                // Fallback to optimized transcoding
-                val transcodingResult = getOptimalTranscodingUrl(item, playbackInfo)
+                val serverDirectedResult = getServerDirectedPlaybackUrl(item, playbackInfo)
                 if (BuildConfig.DEBUG) {
-                    when (transcodingResult) {
+                    when (serverDirectedResult) {
+                        is PlaybackResult.DirectPlay -> {
+                            SecureLogger.v(TAG, "Server-directed direct play: ${serverDirectedResult.url}")
+                        }
                         is PlaybackResult.Transcoding -> {
-                            SecureLogger.v(TAG, "Using transcoding: ${transcodingResult.url}")
+                            SecureLogger.v(TAG, "Server-directed transcoding: ${serverDirectedResult.url}")
                         }
                         is PlaybackResult.Error -> {
-                            SecureLogger.e(TAG, "Transcoding failed: ${transcodingResult.message}")
+                            SecureLogger.e(TAG, "Server-directed playback failed: ${serverDirectedResult.message}")
                         }
-                        else -> {}
                     }
                 }
 
-                return@withContext transcodingResult
+                return@withContext serverDirectedResult
             } catch (e: Exception) {
                 SecureLogger.e(TAG, "Failed to get optimal playback URL", e)
                 PlaybackResult.Error("Failed to get playback URL: ${e.message}")
@@ -94,63 +86,75 @@ class EnhancedPlaybackManager @Inject constructor(
     }
 
     /**
-     * Analyze if Direct Play is possible based on device capabilities and network conditions
+     * Use server playback decision (PlaybackInfo) to select direct play vs transcoding.
      */
-    private suspend fun analyzeDirectPlayCapability(
+    private fun getServerDirectedPlaybackUrl(
         item: BaseItemDto,
         playbackInfo: PlaybackInfoResponse,
-    ): PlaybackResult.DirectPlay? {
+    ): PlaybackResult {
+        val itemId = item.id.toString()
+        val serverUrl = repository.getCurrentServer()?.url
         val mediaSources = playbackInfo.mediaSources
+
         if (mediaSources.isNullOrEmpty()) {
-            SecureLogger.v(TAG, "No media sources available for Direct Play analysis")
-            return null
+            SecureLogger.v(TAG, "No media sources available for server-directed playback")
+            return PlaybackResult.Error("No media sources available for playback")
         }
 
-        // Check each media source for Direct Play compatibility
-        for (mediaSource in mediaSources) {
-            val canDirectPlay = canDirectPlayMediaSource(mediaSource, item)
-            if (canDirectPlay) {
-                // Build proper direct play URL with mediaSourceId for server tracking
-                val itemId = item.id.toString()
-                val mediaSourceId = mediaSource.id
-                val container = mediaSource.container ?: "mkv"
-                val playSessionId = playbackInfo.playSessionId
-
-                // Construct direct play URL with static=true and mediaSourceId
-                val server = repository.getCurrentServer()
-                val directPlayUrl = if (server?.url != null && mediaSourceId != null) {
-                    buildString {
-                        append(server.url)
-                        append("/Videos/")
-                        append(itemId)
-                        append("/stream.")
-                        append(container)
-                        append("?static=true&mediaSourceId=")
-                        append(mediaSourceId)
-                        if (!playSessionId.isNullOrBlank()) {
-                            append("&PlaySessionId=")
-                            append(playSessionId)
-                        }
-                    }
-                } else {
-                    // Fallback to stream repository method
-                    streamRepository.getDirectStreamUrl(itemId, container)
-                }
-
-                if (directPlayUrl != null) {
-                    return PlaybackResult.DirectPlay(
-                        url = directPlayUrl,
-                        container = container,
-                        videoCodec = getVideoCodec(mediaSource),
-                        audioCodec = getAudioCodec(mediaSource),
-                        bitrate = mediaSource.bitrate ?: 0,
-                        reason = "Device supports all codecs and container format",
-                    )
-                }
+        val transcodingSource = mediaSources.firstOrNull { !it.transcodingUrl.isNullOrBlank() }
+        if (transcodingSource != null) {
+            val serverTranscodingUrl = transcodingSource.transcodingUrl?.let { url ->
+                if (!serverUrl.isNullOrBlank()) buildServerUrl(serverUrl, url) else null
+            }
+            if (!serverTranscodingUrl.isNullOrBlank()) {
+                return PlaybackResult.Transcoding(
+                    url = serverTranscodingUrl,
+                    targetBitrate = 0,
+                    targetResolution = "server-selected",
+                    targetVideoCodec = getVideoCodec(transcodingSource) ?: "unknown",
+                    targetAudioCodec = getAudioCodec(transcodingSource) ?: "unknown",
+                    targetContainer = transcodingSource.container ?: "mp4",
+                    reason = "Server-directed transcoding",
+                )
             }
         }
 
-        return null
+        val mediaSource = mediaSources.firstOrNull { it.supportsDirectPlay }
+            ?: mediaSources.firstOrNull { it.supportsDirectStream }
+            ?: mediaSources.first()
+        val mediaSourceId = mediaSource.id
+        val container = mediaSource.container ?: "mkv"
+        val playSessionId = playbackInfo.playSessionId
+        val directPlayUrl = if (serverUrl != null && mediaSourceId != null) {
+            buildString {
+                append(serverUrl)
+                append("/Videos/")
+                append(itemId)
+                append("/stream.")
+                append(container)
+                append("?static=true&mediaSourceId=")
+                append(mediaSourceId)
+                if (!playSessionId.isNullOrBlank()) {
+                    append("&PlaySessionId=")
+                    append(playSessionId)
+                }
+            }
+        } else {
+            streamRepository.getDirectStreamUrl(itemId, container)
+        }
+
+        if (directPlayUrl.isNullOrBlank()) {
+            return PlaybackResult.Error("Unable to generate playback URL")
+        }
+
+        return PlaybackResult.DirectPlay(
+            url = directPlayUrl,
+            container = container,
+            videoCodec = getVideoCodec(mediaSource),
+            audioCodec = getAudioCodec(mediaSource),
+            bitrate = mediaSource.bitrate ?: 0,
+            reason = "Server-directed direct play",
+        )
     }
 
     /**
@@ -243,6 +247,9 @@ class EnhancedPlaybackManager @Inject constructor(
         val transcodingSource = playbackInfo.mediaSources.firstOrNull {
             it.supportsTranscoding || it.supportsDirectStream
         }
+        val serverTranscodingUrl = transcodingSource?.transcodingUrl?.let { url ->
+            if (!serverUrl.isNullOrBlank()) buildServerUrl(serverUrl, url) else null
+        }
         val mediaSourceId = transcodingSource?.id
         val playSessionId = playbackInfo.playSessionId
         val networkQuality = getNetworkQuality()
@@ -272,6 +279,19 @@ class EnhancedPlaybackManager @Inject constructor(
                 videoCodec = "h264",
                 audioCodec = "aac",
                 container = "mp4",
+            )
+        }
+
+        // Prefer server-provided transcoding URL when available.
+        if (!serverTranscodingUrl.isNullOrBlank()) {
+            return PlaybackResult.Transcoding(
+                url = serverTranscodingUrl,
+                targetBitrate = transcodingParams.maxBitrate,
+                targetResolution = "${transcodingParams.maxWidth}x${transcodingParams.maxHeight}",
+                targetVideoCodec = transcodingParams.videoCodec,
+                targetAudioCodec = transcodingParams.audioCodec,
+                targetContainer = transcodingParams.container,
+                reason = "Server transcoding selected",
             )
         }
 
