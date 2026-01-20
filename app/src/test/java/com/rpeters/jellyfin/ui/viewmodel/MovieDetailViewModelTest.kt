@@ -1,7 +1,7 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
+import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import io.mockk.coEvery
