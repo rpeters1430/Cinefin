@@ -188,6 +188,8 @@ class JellyfinStreamRepository @Inject constructor(
         videoCodec: String = DEFAULT_VIDEO_CODEC,
         audioCodec: String = DEFAULT_AUDIO_CODEC,
         container: String = DEFAULT_CONTAINER,
+        mediaSourceId: String? = null,
+        playSessionId: String? = null,
     ): String? {
         val server = authRepository.getCurrentServer() ?: return null
 
@@ -224,8 +226,10 @@ class JellyfinStreamRepository @Inject constructor(
             // Force transcoding - don't allow stream copy when we explicitly need transcoding
             params.add("AllowVideoStreamCopy=false")
             params.add("AllowAudioStreamCopy=true")
-            // Add play session for server-side tracking
-            params.add("PlaySessionId=${UUID.randomUUID()}")
+            // Add playback identifiers when available so the server can apply session-specific settings.
+            mediaSourceId?.let { params.add("MediaSourceId=$it") }
+            playSessionId?.let { params.add("PlaySessionId=$it") }
+                ?: params.add("PlaySessionId=${UUID.randomUUID()}")
             // Auth via header (OkHttp interceptor)
 
             // Use progressive stream endpoint instead of HLS for better compatibility

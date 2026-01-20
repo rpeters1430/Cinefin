@@ -240,13 +240,11 @@ class EnhancedPlaybackManager @Inject constructor(
         playbackInfo: PlaybackInfoResponse,
     ): PlaybackResult {
         val itemId = item.id.toString()
-        val serverUrl = repository.getCurrentServer()?.url
-        val serverTranscodingSource = playbackInfo.mediaSources.firstOrNull {
-            it.transcodingUrl != null && (it.supportsTranscoding || it.supportsDirectStream)
+        val transcodingSource = playbackInfo.mediaSources.firstOrNull {
+            it.supportsTranscoding || it.supportsDirectStream
         }
-        val serverTranscodingUrl = serverTranscodingSource?.transcodingUrl?.let { url ->
-            if (!serverUrl.isNullOrBlank()) buildServerUrl(serverUrl, url) else null
-        }
+        val mediaSourceId = transcodingSource?.id
+        val playSessionId = playbackInfo.playSessionId
         val networkQuality = getNetworkQuality()
         val deviceCaps = deviceCapabilities.getDirectPlayCapabilities()
 
@@ -277,25 +275,6 @@ class EnhancedPlaybackManager @Inject constructor(
             )
         }
 
-        if (!serverTranscodingUrl.isNullOrBlank()) {
-            val reason = if (serverTranscodingSource.supportsDirectStream &&
-                !serverTranscodingSource.supportsTranscoding
-            ) {
-                "Server direct stream selected"
-            } else {
-                "Server transcoding selected"
-            }
-            return PlaybackResult.Transcoding(
-                url = serverTranscodingUrl,
-                targetBitrate = transcodingParams.maxBitrate,
-                targetResolution = "${transcodingParams.maxWidth}x${transcodingParams.maxHeight}",
-                targetVideoCodec = transcodingParams.videoCodec,
-                targetAudioCodec = transcodingParams.audioCodec,
-                targetContainer = transcodingParams.container,
-                reason = reason,
-            )
-        }
-
         // Try primary transcoding URL
         val transcodingUrl = streamRepository.getTranscodedStreamUrl(
             itemId = itemId,
@@ -305,6 +284,8 @@ class EnhancedPlaybackManager @Inject constructor(
             videoCodec = transcodingParams.videoCodec,
             audioCodec = transcodingParams.audioCodec,
             container = transcodingParams.container,
+            mediaSourceId = mediaSourceId,
+            playSessionId = playSessionId,
         )
 
         // Return error if no valid URL could be generated
