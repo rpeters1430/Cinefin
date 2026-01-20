@@ -22,8 +22,8 @@ import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow

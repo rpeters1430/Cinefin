@@ -7,8 +7,8 @@ import android.net.NetworkCapabilities
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
-import io.mockk.coEvery
 import io.mockk.clearMocks
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
