@@ -120,8 +120,10 @@ class VideoPlayerViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        // Release player resources
-        releasePlayer()
+        // Release player resources - use runBlocking since viewModelScope is already cancelled
+        kotlinx.coroutines.runBlocking {
+            releasePlayer()
+        }
         // Release CastManager listeners to prevent memory leaks
         castManager.release()
         SecureLogger.d("VideoPlayer", "ViewModel cleared - resources released")
@@ -307,9 +309,8 @@ class VideoPlayerViewModel @Inject constructor(
         hasSentCastLoad = false
         wasPlayingBeforeCast = false
 
-        val sessionId = java.util.UUID.randomUUID().toString()
-        playbackSessionId = sessionId
-        playbackProgressManager.startTracking(itemId, viewModelScope, sessionId)
+        // Note: We'll set the sessionId from PlaybackResult later to use server's playSessionId
+        playbackSessionId = null
 
         _playerState.value = _playerState.value.copy(
             itemId = itemId,
@@ -356,6 +357,7 @@ class VideoPlayerViewModel @Inject constructor(
 
                 val streamUrl: String
                 val mimeType: String?
+                val sessionId: String
 
                 when (playbackResult) {
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.DirectPlay -> {
@@ -364,6 +366,7 @@ class VideoPlayerViewModel @Inject constructor(
                             "Direct Play: ${playbackResult.container} (${playbackResult.videoCodec}/${playbackResult.audioCodec}) @ ${playbackResult.bitrate / 1_000_000}Mbps - ${playbackResult.reason}",
                         )
                         streamUrl = playbackResult.url
+                        sessionId = playbackResult.playSessionId ?: java.util.UUID.randomUUID().toString()
                         // Infer MIME type from container for direct play
                         mimeType = when (playbackResult.container.lowercase(Locale.ROOT)) {
                             "mp4", "m4v" -> MimeTypes.VIDEO_MP4
@@ -379,12 +382,24 @@ class VideoPlayerViewModel @Inject constructor(
                             "Transcoding: ${playbackResult.targetResolution} ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} @ ${playbackResult.targetBitrate / 1_000_000}Mbps - ${playbackResult.reason}",
                         )
                         streamUrl = playbackResult.url
-                        // Transcoded streams are always MP4 - CRITICAL for ExoPlayer to initialize correctly
-                        mimeType = when (playbackResult.targetContainer.lowercase(Locale.ROOT)) {
-                            "mp4" -> MimeTypes.VIDEO_MP4
-                            "webm" -> MimeTypes.VIDEO_WEBM
-                            "mkv" -> MimeTypes.VIDEO_MATROSKA
-                            else -> MimeTypes.VIDEO_MP4 // Safe default for transcoding
+                        sessionId = playbackResult.playSessionId ?: java.util.UUID.randomUUID().toString()
+
+                        // Detect MIME type from URL - Jellyfin often uses HLS for transcoding
+                        val lowerUrl = streamUrl.lowercase(Locale.ROOT)
+                        mimeType = when {
+                            lowerUrl.contains(".m3u8") || lowerUrl.contains("master.m3u8") -> {
+                                SecureLogger.d("VideoPlayer", "Detected HLS transcoding (m3u8)")
+                                MimeTypes.APPLICATION_M3U8
+                            }
+                            lowerUrl.contains(".mpd") -> {
+                                SecureLogger.d("VideoPlayer", "Detected DASH transcoding (mpd)")
+                                MimeTypes.APPLICATION_MPD
+                            }
+                            else -> {
+                                // Let ExoPlayer auto-detect for progressive formats
+                                SecureLogger.d("VideoPlayer", "Using auto-detection for transcoded stream")
+                                null
+                            }
                         }
                     }
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.Error -> {
@@ -392,11 +407,37 @@ class VideoPlayerViewModel @Inject constructor(
                     }
                 }
 
+                // Set the session ID and start tracking with it
+                playbackSessionId = sessionId
+                playbackProgressManager.startTracking(itemId, viewModelScope, sessionId)
+
                 if (streamUrl.isNullOrEmpty()) {
                     throw Exception("No stream URL available from playback manager")
                 }
 
-                SecureLogger.d("VideoPlayer", "Final stream URL: $streamUrl (MIME: $mimeType)")
+                SecureLogger.d("VideoPlayer", "Final stream URL: $streamUrl")
+                SecureLogger.d("VideoPlayer", "MIME type: $mimeType")
+
+                // Log URL parameters for debugging transcoding issues
+                if (streamUrl.contains("?")) {
+                    val params = streamUrl.substringAfter("?")
+                    val paramList = params.split("&")
+                    SecureLogger.d("VideoPlayer", "URL Parameters:")
+                    paramList.forEach { param ->
+                        if (param.contains("=")) {
+                            val (key, value) = param.split("=", limit = 2)
+                            when {
+                                key.contains("Width", ignoreCase = true) ||
+                                key.contains("Height", ignoreCase = true) ||
+                                key.contains("Bitrate", ignoreCase = true) ||
+                                key.contains("Codec", ignoreCase = true) ||
+                                key.contains("Container", ignoreCase = true) -> {
+                                    SecureLogger.d("VideoPlayer", "  $key = $value")
+                                }
+                            }
+                        }
+                    }
+                }
 
                 withContext(Dispatchers.Main) {
                     // Create ExoPlayer with optimized renderer support
@@ -777,17 +818,15 @@ class VideoPlayerViewModel @Inject constructor(
         castPositionJob = null
     }
 
-    fun releasePlayer() {
+    suspend fun releasePlayer() {
         SecureLogger.d("VideoPlayer", "Releasing player")
         stopPositionUpdates()
 
-        // Stop tracking in a coroutine since it's a suspend function
-        viewModelScope.launch {
-            try {
-                playbackProgressManager.stopTracking()
-            } catch (e: Exception) {
-                SecureLogger.e("VideoPlayer", "Error stopping playback tracking: ${e.message}")
-            }
+        // Stop tracking synchronously to ensure stop playback is reported before player is released
+        try {
+            playbackProgressManager.stopTracking()
+        } catch (e: Exception) {
+            SecureLogger.e("VideoPlayer", "Error stopping playback tracking: ${e.message}")
         }
 
         exoPlayer?.let { p ->

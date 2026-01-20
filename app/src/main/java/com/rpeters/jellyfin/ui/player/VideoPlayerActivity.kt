@@ -35,7 +35,9 @@ import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @androidx.media3.common.util.UnstableApi
@@ -231,8 +233,15 @@ class VideoPlayerActivity : FragmentActivity() {
             playerViewModel.hideCastDialog()
             return
         }
-        @Suppress("DEPRECATION")
-        super.onBackPressed()
+
+        // Use NonCancellable to ensure stop playback is reported before finishing
+        lifecycleScope.launch {
+            withContext(NonCancellable) {
+                playerViewModel.releasePlayer()
+            }
+            @Suppress("DEPRECATION")
+            super.onBackPressed()
+        }
     }
 
     override fun onResume() {
@@ -260,7 +269,13 @@ class VideoPlayerActivity : FragmentActivity() {
         } catch (e: Exception) {
             SecureLogger.w("VideoPlayerActivity", "Error unregistering receiver: ${e.message}")
         }
-        playerViewModel.releasePlayer()
+
+        // Use NonCancellable to ensure stop playback is reported before activity is destroyed
+        lifecycleScope.launch {
+            withContext(NonCancellable) {
+                playerViewModel.releasePlayer()
+            }
+        }
     }
 
     private fun setupFullScreenMode() {

@@ -351,38 +351,67 @@ class EnhancedPlaybackManagerTest {
     }
 
     @Test
-    fun `getOptimalPlaybackUrl prefers server transcoding url when provided`() = runTest {
+    fun `getOptimalPlaybackUrl builds proper transcoding url when server recommends transcoding`() = runTest {
         val itemId = UUID.randomUUID()
         val item = buildBaseItem(id = itemId)
         val mediaSource = buildMediaSource(
-            container = "mp4",
-            videoCodec = "h264",
+            container = "mkv",
+            videoCodec = "h265",
             audioCodec = "aac",
             bitrate = 10_000_000,
-            transcodingUrl = "/Videos/$itemId/master.m3u8?VideoCodec=h264",
+            supportsDirectPlay = false, // Server recommends transcoding
+            supportsTranscoding = true,
         )
         val playbackInfo = buildPlaybackInfo(listOf(mediaSource))
 
-        every { deviceCapabilities.getDirectPlayCapabilities() } returns mockk(relaxed = true)
+        every { deviceCapabilities.getDirectPlayCapabilities() } returns mockk(relaxed = true) {
+            every { supportedVideoCodecs } returns listOf("h264", "h265")
+            every { supportedAudioCodecs } returns listOf("aac", "mp3")
+            every { supports4K } returns false
+        }
         every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
+        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) } returns false
+        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns false
 
         coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
-        every {
-            repository.getCurrentServer()
-        } returns com.rpeters.jellyfin.data.JellyfinServer(
+        every { repository.getCurrentServer() } returns com.rpeters.jellyfin.data.JellyfinServer(
             id = "server",
             name = "Test",
             url = "https://server",
         )
+        every {
+            streamRepository.getTranscodedStreamUrl(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } returns "https://server/Videos/$itemId/stream?transcoding=params"
 
         val result = manager.getOptimalPlaybackUrl(item)
 
         assertTrue(result is PlaybackResult.Transcoding)
-        assertEquals(
-            "https://server/Videos/$itemId/master.m3u8?VideoCodec=h264",
-            (result as PlaybackResult.Transcoding).url,
-        )
-        verify(exactly = 0) { streamRepository.getTranscodedStreamUrl(any(), any(), any(), any(), any(), any(), any()) }
+        val transcoding = result as PlaybackResult.Transcoding
+        assertEquals("https://server/Videos/$itemId/stream?transcoding=params", transcoding.url)
+        // Verify that we built our own transcoding URL with proper parameters
+        verify(atLeast = 1) {
+            streamRepository.getTranscodedStreamUrl(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        }
     }
 
     @Test
@@ -417,6 +446,99 @@ class EnhancedPlaybackManagerTest {
         verify { deviceCapabilities.canPlayContainer("mkv") }
         verify { deviceCapabilities.canPlayVideoCodec("h265", 1920, 1080) }
         verify { deviceCapabilities.canPlayAudioCodec("ac3") }
+    }
+
+    @Test
+    fun `getOptimalPlaybackUrl includes playSessionId in DirectPlay result`() = runTest {
+        val itemId = UUID.randomUUID()
+        val item = buildBaseItem(id = itemId)
+        val testSessionId = "test-play-session-123"
+        val mediaSource = buildMediaSource(
+            container = "mp4",
+            videoCodec = "h264",
+            audioCodec = "aac",
+            bitrate = 10_000_000,
+        )
+        val playbackInfo = buildPlaybackInfo(listOf(mediaSource), playSessionId = testSessionId)
+
+        // Mock device capabilities
+        every { deviceCapabilities.canPlayContainer("mp4") } returns true
+        every { deviceCapabilities.canPlayVideoCodec("h264", any(), any()) } returns true
+        every { deviceCapabilities.canPlayAudioCodec("aac") } returns true
+
+        // Mock network
+        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
+        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) } returns false
+        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns false
+
+        // Mock repository responses
+        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        every { repository.getCurrentServer() } returns com.rpeters.jellyfin.data.JellyfinServer(
+            id = "server",
+            name = "Test",
+            url = "https://server",
+        )
+
+        val result = manager.getOptimalPlaybackUrl(item)
+
+        assertTrue("Expected DirectPlay result", result is PlaybackResult.DirectPlay)
+        val directPlay = result as PlaybackResult.DirectPlay
+        assertEquals("PlaySessionId should match server response", testSessionId, directPlay.playSessionId)
+    }
+
+    @Test
+    fun `getOptimalPlaybackUrl includes playSessionId in Transcoding result`() = runTest {
+        val itemId = UUID.randomUUID()
+        val item = buildBaseItem(id = itemId)
+        val testSessionId = "test-play-session-456"
+        val mediaSource = buildMediaSource(
+            container = "mkv",
+            videoCodec = "h265",
+            audioCodec = "aac",
+            bitrate = 10_000_000,
+            supportsDirectPlay = false,
+            supportsTranscoding = true,
+        )
+        val playbackInfo = buildPlaybackInfo(listOf(mediaSource), playSessionId = testSessionId)
+
+        // Mock device capabilities
+        every { deviceCapabilities.getDirectPlayCapabilities() } returns mockk(relaxed = true) {
+            every { supportedVideoCodecs } returns listOf("h264")
+            every { supportedAudioCodecs } returns listOf("aac")
+            every { supports4K } returns false
+        }
+
+        // Mock network
+        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
+        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) } returns false
+        every { networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) } returns false
+
+        // Mock repository responses
+        coEvery { repository.getPlaybackInfo(itemId.toString()) } returns playbackInfo
+        every { repository.getCurrentServer() } returns com.rpeters.jellyfin.data.JellyfinServer(
+            id = "server",
+            name = "Test",
+            url = "https://server",
+        )
+        every {
+            streamRepository.getTranscodedStreamUrl(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } returns "https://server/transcode"
+
+        val result = manager.getOptimalPlaybackUrl(item)
+
+        assertTrue("Expected Transcoding result", result is PlaybackResult.Transcoding)
+        val transcoding = result as PlaybackResult.Transcoding
+        assertEquals("PlaySessionId should match server response", testSessionId, transcoding.playSessionId)
     }
 
     // Helper functions
@@ -465,8 +587,11 @@ class EnhancedPlaybackManagerTest {
         )
     }
 
-    private fun buildPlaybackInfo(mediaSources: List<MediaSourceInfo>): PlaybackInfoResponse =
-        mockk<PlaybackInfoResponse>(relaxed = true).also { info ->
-            every { info.mediaSources } returns mediaSources
-        }
+    private fun buildPlaybackInfo(
+        mediaSources: List<MediaSourceInfo>,
+        playSessionId: String? = "test-session-id",
+    ): PlaybackInfoResponse = mockk<PlaybackInfoResponse>(relaxed = true).also { info ->
+        every { info.mediaSources } returns mediaSources
+        every { info.playSessionId } returns playSessionId
+    }
 }

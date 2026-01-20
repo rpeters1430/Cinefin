@@ -39,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,6 +71,7 @@ import com.rpeters.jellyfin.ui.player.VideoPlayerState
 import com.rpeters.jellyfin.ui.player.VideoPlayerViewModel
 import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.tv.material3.Button as TvButton
 import androidx.tv.material3.ButtonDefaults as TvButtonDefaults
 import androidx.tv.material3.Card as TvCard
@@ -107,12 +109,18 @@ fun TvVideoPlayerRoute(
         }
     }
 
+    val scope = rememberCoroutineScope()
+
     LaunchedEffect(itemId) {
         viewModel.initializePlayer(itemId, itemName, startPositionMs)
     }
 
     DisposableEffect(Unit) {
-        onDispose { viewModel.releasePlayer() }
+        onDispose {
+            scope.launch {
+                viewModel.releasePlayer()
+            }
+        }
     }
 
     val onSeekForward = remember(playerState.currentPosition, playerState.duration) {
