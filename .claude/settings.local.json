@@ -40,7 +40,8 @@
       "Bash(xargs:*)",
       "Bash(python3:*)",
       "Bash(kill:*)",
-      "Bash(emulator:*)"
+      "Bash(emulator:*)",
+      "WebFetch(domain:ossgit.org)"
     ],
     "deny": [],
     "ask": [],
