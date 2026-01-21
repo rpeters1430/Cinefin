@@ -45,7 +45,7 @@ testServices = "1.6.0"
 turbine = "1.2.1"
 window = "1.6.0-alpha01"
 androidxTestCore = "1.7.0"
-robolectric = "4.16"
+robolectric = "4.16.1"
 kotlinxMetadataJvm = "2.3.0"
 
 [libraries]
