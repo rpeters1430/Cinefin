@@ -1093,7 +1093,7 @@ class JellyfinRepository @Inject constructor(
             SecureLogger.d(
                 "JellyfinRepository",
                 "PlaybackInfo request for item $itemId: " +
-                    "maxBitrate=${playbackInfoDto.maxStreamingBitrate} (${playbackInfoDto.maxStreamingBitrate / 1_000_000}Mbps), " +
+                    "maxBitrate=${playbackInfoDto.maxStreamingBitrate} (${maxBitrate / 1_000_000}Mbps), " +
                     "directPlay=${playbackInfoDto.enableDirectPlay}, " +
                     "directStream=${playbackInfoDto.enableDirectStream}, " +
                     "transcode=${playbackInfoDto.enableTranscoding}",

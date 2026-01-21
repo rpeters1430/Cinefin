@@ -127,85 +127,10 @@ object JellyfinDeviceProfile {
                 ),
             ),
 
-            // Codec profiles can specify additional constraints
-            codecProfiles = listOf(
-                CodecProfile(
-                    type = CodecType.VIDEO,
-                    codec = "h264",
-                    applyConditions = emptyList(),
-                    conditions = listOf(
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.VIDEO_LEVEL,
-                            value = "52", // Support up to H.264 Level 5.2
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.WIDTH,
-                            value = "4096", // Support up to 4K width
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.HEIGHT,
-                            value = "2304", // Support up to 4K height
-                            isRequired = false,
-                        ),
-                    ),
-                ),
-                CodecProfile(
-                    type = CodecType.VIDEO,
-                    codec = "h265,hevc",
-                    applyConditions = emptyList(),
-                    conditions = listOf(
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.VIDEO_LEVEL,
-                            value = "153", // Support up to H.265 Level 5.1
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.WIDTH,
-                            value = "4096", // Support up to 4K width
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.HEIGHT,
-                            value = "2304", // Support up to 4K height
-                            isRequired = false,
-                        ),
-                    ),
-                ),
-                CodecProfile(
-                    type = CodecType.AUDIO,
-                    codec = "vorbis",
-                    applyConditions = emptyList(),
-                    conditions = listOf(
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.AUDIO_CHANNELS,
-                            value = "8", // Support up to 7.1 surround
-                            isRequired = false,
-                        ),
-                    ),
-                ),
-                CodecProfile(
-                    type = CodecType.AUDIO,
-                    codec = "opus",
-                    applyConditions = emptyList(),
-                    conditions = listOf(
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.AUDIO_CHANNELS,
-                            value = "8", // Support up to 7.1 surround
-                            isRequired = false,
-                        ),
-                    ),
-                ),
-            ),
+            // Codec profiles removed - let URL parameters (MaxWidth/MaxHeight) control transcoding
+            // The server was misinterpreting WIDTH/HEIGHT conditions as transcoding output limits
+            // rather than client decoding capabilities
+            codecProfiles = emptyList(),
 
             // Subtitle profiles
             subtitleProfiles = listOf(
