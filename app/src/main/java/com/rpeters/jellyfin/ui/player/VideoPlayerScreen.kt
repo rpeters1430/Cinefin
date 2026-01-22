@@ -44,6 +44,8 @@ import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Sd
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Stop
@@ -942,17 +944,71 @@ private fun VideoControlsOverlay(
             )
 
             // Item name with expressive styling
-            Text(
-                text = playerState.itemName,
-                color = playerColors.overlayContent,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+            Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 16.dp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text(
+                    text = playerState.itemName,
+                    color = playerColors.overlayContent,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                
+                // Transcoding info
+                if (playerState.isTranscoding || playerState.isDirectPlaying) {
+                    val (icon, color, text) = when {
+                        playerState.isDirectPlaying -> Triple(
+                            Icons.Default.PlayArrow,
+                            androidx.compose.ui.graphics.Color.Green,
+                            "Direct Play"
+                        )
+                        playerState.isTranscoding -> Triple(
+                            Icons.Default.Settings,
+                            androidx.compose.ui.graphics.Color(0xFFFF9800), // Orange color
+                            "Transcoding"
+                        )
+                        else -> Triple(
+                            Icons.Default.Info,
+                            androidx.compose.ui.graphics.Color.Gray,
+                            "Unknown"
+                        )
+                    }
+                    
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = text,
+                            tint = color,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = text,
+                            color = color,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        
+                        playerState.transcodingReason?.let { reason ->
+                            Text(
+                                text = "• $reason",
+                                color = playerColors.overlayContent.copy(alpha = 0.7f),
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                        }
+                    }
+                }
+            }
 
             // Casting button - top right
             // Using custom button instead of MediaRouteButton to prevent unintended navigation

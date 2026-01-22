@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data.model
 
+import android.util.Log
 import org.jellyfin.sdk.model.api.*
 
 /**
@@ -10,67 +11,98 @@ import org.jellyfin.sdk.model.api.*
 object JellyfinDeviceProfile {
 
     fun createAndroidDeviceProfile(): DeviceProfile {
+        return createAndroidDeviceProfile(maxWidth = 1920, maxHeight = 1080)
+    }
+
+    fun createAndroidDeviceProfile(maxWidth: Int = 1920, maxHeight: Int = 1080): DeviceProfile {
+        Log.d("JellyfinDeviceProfile", "Creating device profile with maxWidth=$maxWidth, maxHeight=$maxHeight")
+        
+        // 1. Define the "Permissive Audio" list
+        // We list almost everything because ExoPlayer (software) can handle these easily.
+        // This tells the server: "Don't transcode just because the audio is FLAC or OPUS."
+        val permissiveAudioCodecs = "aac,mp3,ac3,eac3,flac,vorbis,opus,pcm,alac,dtshd,dts,truehd"
+        
+        // 2. Define the "Subtitle Fix"
+        // "External" means: "Send me the subtitle file separately. I will render it."
+        // Without this, the server burns the text into the video (Transcoding).
+        val mySubtitleProfiles = listOf(
+            SubtitleProfile(format = "srt", method = SubtitleDeliveryMethod.EXTERNAL),
+            SubtitleProfile(format = "vtt", method = SubtitleDeliveryMethod.EXTERNAL),
+            SubtitleProfile(format = "ass", method = SubtitleDeliveryMethod.EXTERNAL), // ExoPlayer handles basic ASS/SSA
+            SubtitleProfile(format = "ssa", method = SubtitleDeliveryMethod.EXTERNAL)
+        )
+        
+        // 3. Combine with our existing smart Video detection
+        // We take the detected video capabilities, but OVERWRITE the audio
+        // to be our permissive list.
+        val myDirectPlayProfiles = listOf(
+            DirectPlayProfile(
+                container = "mkv",
+                type = DlnaProfileType.VIDEO,
+                videoCodec = "h264,h265,hevc",
+                audioCodec = permissiveAudioCodecs, // <--- The magic fix
+            ),
+            DirectPlayProfile(
+                container = "mp4,m4v",
+                type = DlnaProfileType.VIDEO,
+                videoCodec = "h264,h265,hevc",
+                audioCodec = permissiveAudioCodecs, // <--- The magic fix
+            ),
+            DirectPlayProfile(
+                container = "webm",
+                type = DlnaProfileType.VIDEO,
+                videoCodec = "vp8,vp9,av1",
+                audioCodec = permissiveAudioCodecs, // <--- The magic fix
+            ),
+            DirectPlayProfile(
+                container = "avi",
+                type = DlnaProfileType.VIDEO,
+                videoCodec = "h264,xvid,divx",
+                audioCodec = permissiveAudioCodecs, // <--- The magic fix
+            ),
+            DirectPlayProfile(
+                container = "mov",
+                type = DlnaProfileType.VIDEO,
+                videoCodec = "h264",
+                audioCodec = permissiveAudioCodecs, // <--- The magic fix
+            ),
+
+            // Audio-only containers
+            DirectPlayProfile(
+                container = "flac",
+                type = DlnaProfileType.AUDIO,
+                audioCodec = "flac",
+            ),
+            DirectPlayProfile(
+                container = "mp3",
+                type = DlnaProfileType.AUDIO,
+                audioCodec = "mp3",
+            ),
+            DirectPlayProfile(
+                container = "ogg",
+                type = DlnaProfileType.AUDIO,
+                audioCodec = "vorbis,opus",
+            ),
+            DirectPlayProfile(
+                container = "aac",
+                type = DlnaProfileType.AUDIO,
+                audioCodec = "aac",
+            ),
+            DirectPlayProfile(
+                container = "m4a",
+                type = DlnaProfileType.AUDIO,
+                audioCodec = "aac",
+            ),
+        )
+        
         return DeviceProfile(
             name = "Jellyfin Android Client",
             maxStreamingBitrate = 400_000_000, // 400 Mbps for high-quality direct play
             maxStaticBitrate = 400_000_000,
             musicStreamingTranscodingBitrate = 192_000, // 192 kbps for music transcoding
 
-            // Enable direct play for supported containers and codecs
-            directPlayProfiles = listOf(
-                // Video containers with H.264 and various audio codecs including Vorbis
-                DirectPlayProfile(
-                    container = "mkv",
-                    type = DlnaProfileType.VIDEO,
-                    videoCodec = "h264,h265,hevc",
-                    audioCodec = "vorbis,aac,ac3,eac3,mp3,opus,flac,pcm",
-                ),
-                DirectPlayProfile(
-                    container = "mp4,m4v",
-                    type = DlnaProfileType.VIDEO,
-                    videoCodec = "h264,h265,hevc",
-                    audioCodec = "aac,ac3,eac3,mp3,opus,flac,pcm",
-                ),
-                DirectPlayProfile(
-                    container = "webm",
-                    type = DlnaProfileType.VIDEO,
-                    videoCodec = "vp8,vp9,av1",
-                    audioCodec = "vorbis,opus",
-                ),
-                DirectPlayProfile(
-                    container = "avi",
-                    type = DlnaProfileType.VIDEO,
-                    videoCodec = "h264,xvid,divx",
-                    audioCodec = "aac,mp3,ac3,pcm",
-                ),
-
-                // Audio-only containers
-                DirectPlayProfile(
-                    container = "flac",
-                    type = DlnaProfileType.AUDIO,
-                    audioCodec = "flac",
-                ),
-                DirectPlayProfile(
-                    container = "mp3",
-                    type = DlnaProfileType.AUDIO,
-                    audioCodec = "mp3",
-                ),
-                DirectPlayProfile(
-                    container = "ogg",
-                    type = DlnaProfileType.AUDIO,
-                    audioCodec = "vorbis,opus",
-                ),
-                DirectPlayProfile(
-                    container = "aac",
-                    type = DlnaProfileType.AUDIO,
-                    audioCodec = "aac",
-                ),
-                DirectPlayProfile(
-                    container = "m4a",
-                    type = DlnaProfileType.AUDIO,
-                    audioCodec = "aac",
-                ),
-            ),
+            // 4. Use our enhanced direct play profiles with permissive audio
+            directPlayProfiles = myDirectPlayProfiles,
 
             // Transcoding profiles for fallback when direct play isn't possible
             // NOTE: Conditions removed to let URL parameters (MaxWidth/MaxHeight) control output resolution.
@@ -127,30 +159,109 @@ object JellyfinDeviceProfile {
                 ),
             ),
 
-            // Codec profiles removed - let URL parameters (MaxWidth/MaxHeight) control transcoding
-            // The server was misinterpreting WIDTH/HEIGHT conditions as transcoding output limits
-            // rather than client decoding capabilities
-            codecProfiles = emptyList(),
-
-            // Subtitle profiles
-            subtitleProfiles = listOf(
-                SubtitleProfile(
-                    format = "srt",
-                    method = SubtitleDeliveryMethod.EXTERNAL,
+            // Codec profiles to report device decoding capabilities
+            // These profiles tell the server what the device can decode, not what to transcode to
+            codecProfiles = listOf(
+                // H.264 profile - report device can decode up to device max resolution
+                CodecProfile(
+                    type = CodecType.VIDEO,
+                    codec = "h264",
+                    applyConditions = emptyList(),
+                    conditions = listOf(
+                        ProfileCondition(
+                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
+                            property = ProfileConditionValue.HEIGHT,
+                            value = "1",
+                            isRequired = false,
+                        ),
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.HEIGHT,
+                            value = "$maxHeight", // Use device's max height
+                            isRequired = false,
+                        ),
+                        ProfileCondition(
+                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
+                            property = ProfileConditionValue.WIDTH,
+                            value = "1",
+                            isRequired = false,
+                        ),
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.WIDTH,
+                            value = "$maxWidth", // Use device's max width
+                            isRequired = false,
+                        ),
+                    ),
                 ),
-                SubtitleProfile(
-                    format = "ass",
-                    method = SubtitleDeliveryMethod.EXTERNAL,
+                // H.265/HEVC profile - report device can decode up to device max resolution
+                CodecProfile(
+                    type = CodecType.VIDEO,
+                    codec = "h265,hevc",
+                    applyConditions = emptyList(),
+                    conditions = listOf(
+                        ProfileCondition(
+                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
+                            property = ProfileConditionValue.HEIGHT,
+                            value = "1",
+                            isRequired = false,
+                        ),
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.HEIGHT,
+                            value = "$maxHeight", // Use device's max height
+                            isRequired = false,
+                        ),
+                        ProfileCondition(
+                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
+                            property = ProfileConditionValue.WIDTH,
+                            value = "1",
+                            isRequired = false,
+                        ),
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.WIDTH,
+                            value = "$maxWidth", // Use device's max width
+                            isRequired = false,
+                        ),
+                    ),
                 ),
-                SubtitleProfile(
-                    format = "ssa",
-                    method = SubtitleDeliveryMethod.EXTERNAL,
-                ),
-                SubtitleProfile(
-                    format = "vtt",
-                    method = SubtitleDeliveryMethod.EXTERNAL,
+                // VP9 profile - report device can decode up to device max resolution
+                CodecProfile(
+                    type = CodecType.VIDEO,
+                    codec = "vp9",
+                    applyConditions = emptyList(),
+                    conditions = listOf(
+                        ProfileCondition(
+                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
+                            property = ProfileConditionValue.HEIGHT,
+                            value = "1",
+                            isRequired = false,
+                        ),
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.HEIGHT,
+                            value = "$maxHeight", // Use device's max height
+                            isRequired = false,
+                        ),
+                        ProfileCondition(
+                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
+                            property = ProfileConditionValue.WIDTH,
+                            value = "1",
+                            isRequired = false,
+                        ),
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.WIDTH,
+                            value = "$maxWidth", // Use device's max width
+                            isRequired = false,
+                        ),
+                    ),
                 ),
             ),
+
+            // 5. Use our external-only subtitle profiles to prevent burning
+            subtitleProfiles = mySubtitleProfiles,
         )
     }
 }

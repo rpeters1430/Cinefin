@@ -4,6 +4,7 @@ import android.content.Context
 import android.hardware.display.DisplayManager
 import android.media.MediaCodecList
 import android.os.Build
+import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -341,6 +342,9 @@ class DeviceCapabilities @Inject constructor(
             "mp3" -> if (!isVideo) "audio/mpeg" else null
             "ac3" -> if (!isVideo) "audio/ac3" else null
             "eac3" -> if (!isVideo) "audio/eac3" else null
+            "dts" -> if (!isVideo) "audio/dts" else null
+            "dtshd" -> if (!isVideo) "audio/dts-hd" else null
+            "truehd" -> if (!isVideo) "audio/true-hd" else null
             "vorbis" -> if (!isVideo) "audio/vorbis" else null
             "opus" -> if (!isVideo) "audio/opus" else null
             "flac" -> if (!isVideo) "audio/flac" else null
@@ -353,8 +357,9 @@ class DeviceCapabilities @Inject constructor(
         if (maxResolution == null) {
             maxResolution = try {
                 val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
-                var maxWidth = 1920
-                var maxHeight = 1080
+                var maxWidth = 1280  // Start with a reasonable minimum
+                var maxHeight = 720   // Start with 720p as minimum
+                var foundValidCodec = false
 
                 for (codecInfo in codecList.codecInfos) {
                     if (codecInfo.isEncoder) continue
@@ -365,14 +370,53 @@ class DeviceCapabilities @Inject constructor(
                                 val capabilities = codecInfo.getCapabilitiesForType(type)
                                 val videoCapabilities = capabilities.videoCapabilities
                                 if (videoCapabilities != null) {
-                                    maxWidth = maxOf(maxWidth, videoCapabilities.supportedWidths.upper)
-                                    maxHeight = maxOf(maxHeight, videoCapabilities.supportedHeights.upper)
+                                    val supportedWidths = videoCapabilities.supportedWidths
+                                    val supportedHeights = videoCapabilities.supportedHeights
+                                    
+                                    // Only update if we get reasonable values
+                                    if (supportedWidths.upper > maxWidth && supportedWidths.upper >= 1280) {
+                                        maxWidth = supportedWidths.upper
+                                        foundValidCodec = true
+                                    }
+                                    if (supportedHeights.upper > maxHeight && supportedHeights.upper >= 720) {
+                                        maxHeight = supportedHeights.upper
+                                        foundValidCodec = true
+                                    }
                                 }
                             } catch (e: Exception) {
                                 // Ignore codec-specific errors
                             }
                         }
                     }
+                }
+
+                // If we didn't find any valid codec info, use device display metrics as fallback
+                if (!foundValidCodec) {
+                    try {
+                        val displayMetrics = context.resources.displayMetrics
+                        val displayWidth = displayMetrics.widthPixels
+                        val displayHeight = displayMetrics.heightPixels
+                        
+                        // Use display resolution as a reasonable fallback, but cap at 4K
+                        maxWidth = minOf(displayWidth, 3840)
+                        maxHeight = minOf(displayHeight, 2160)
+                        SecureLogger.d(TAG, "Using display metrics as resolution fallback: ${maxWidth}x${maxHeight}")
+                    } catch (e: Exception) {
+                        // Final fallback - assume 1080p for modern devices
+                        maxWidth = 1920
+                        maxHeight = 1080
+                        SecureLogger.w(TAG, "Using final fallback resolution: 1080p")
+                    }
+                } else {
+                    // Cap detected resolution at reasonable limits (4K)
+                    maxWidth = minOf(maxWidth, 3840)
+                    maxHeight = minOf(maxHeight, 2160)
+                    SecureLogger.d(TAG, "Detected max resolution: ${maxWidth}x${maxHeight}")
+                    
+                    // Log device info for debugging
+                    val deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}"
+                    val displayMetrics = context.resources.displayMetrics
+                    SecureLogger.d(TAG, "Device: $deviceModel, Display: ${displayMetrics.widthPixels}x${displayMetrics.heightPixels}")
                 }
 
                 Pair(maxWidth, maxHeight)

@@ -7,6 +7,7 @@ import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.constants.Constants
+import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.model.JellyfinDeviceProfile
@@ -47,6 +48,7 @@ class JellyfinRepository @Inject constructor(
     private val sessionManager: JellyfinSessionManager,
     private val secureCredentialManager: SecureCredentialManager,
     @ApplicationContext private val context: Context,
+    private val deviceCapabilities: DeviceCapabilities,
     private val authRepository: JellyfinAuthRepository,
     private val streamRepository: JellyfinStreamRepository,
 ) {
@@ -1065,7 +1067,19 @@ class JellyfinRepository @Inject constructor(
         val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull()
             ?: throw IllegalArgumentException("Invalid item UUID: $itemId")
 
-        val deviceProfile = JellyfinDeviceProfile.createAndroidDeviceProfile()
+        // Get device capabilities to create proper device profile
+        val capabilities = deviceCapabilities.getDirectPlayCapabilities()
+        Log.d("JellyfinRepository", "Device capabilities: maxResolution=${capabilities.maxResolution}, supports4K=${capabilities.supports4K}")
+        val deviceProfile = JellyfinDeviceProfile.createAndroidDeviceProfile(
+            maxWidth = capabilities.maxResolution.first,
+            maxHeight = capabilities.maxResolution.second
+        )
+        Log.d("JellyfinRepository", "DeviceProfile created with codecProfiles: ${deviceProfile.codecProfiles?.size ?: 0}")
+        
+        // Log the actual codec profiles being sent
+        deviceProfile.codecProfiles?.forEachIndexed { index, codecProfile ->
+            Log.d("JellyfinRepository", "  CodecProfile[$index]: type=${codecProfile.type}, codec=${codecProfile.codec}, conditions=${codecProfile.conditions.size}")
+        }
 
         // Set maxStreamingBitrate based on network quality to guide server transcoding decisions
         // This helps the server choose appropriate transcoding quality instead of using a very high default
@@ -1076,7 +1090,7 @@ class JellyfinRepository @Inject constructor(
             maxStreamingBitrate = maxBitrate,
             startTimeTicks = null,
             audioStreamIndex = null,
-            subtitleStreamIndex = null,
+            subtitleStreamIndex = null, // Don't force subtitle stream to avoid unnecessary transcoding
             maxAudioChannels = null,
             mediaSourceId = null,
             liveStreamId = null,
@@ -1117,6 +1131,37 @@ class JellyfinRepository @Inject constructor(
         ).content
 
         if (BuildConfig.DEBUG) {
+            // Log the response from the server
+        Log.d("JellyfinRepository", "Server response:")
+        Log.d("JellyfinRepository", "  PlaySessionId: ${response.playSessionId}")
+        Log.d("JellyfinRepository", "  MediaSources: ${response.mediaSources?.size ?: 0}")
+        
+        response.mediaSources?.forEachIndexed { index, mediaSource ->
+            Log.d("JellyfinRepository", "  MediaSource[$index]:")
+            Log.d("JellyfinRepository", "    Name: ${mediaSource.name}")
+            Log.d("JellyfinRepository", "    Container: ${mediaSource.container}")
+            Log.d("JellyfinRepository", "    Size: ${mediaSource.size}")
+            Log.d("JellyfinRepository", "    IsRemote: ${mediaSource.isRemote}")
+            
+            // Log video stream info
+            mediaSource.mediaStreams?.filter { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }?.forEach { stream ->
+                Log.d("JellyfinRepository", "    Video Stream: ${stream.codec}, ${stream.width}x${stream.height}, bitrate=${stream.bitRate}")
+            }
+            
+            // Log direct play and transcoding support
+            Log.d("JellyfinRepository", "    SupportsDirectPlay: ${mediaSource.supportsDirectPlay}")
+            Log.d("JellyfinRepository", "    SupportsDirectStream: ${mediaSource.supportsDirectStream}")
+            Log.d("JellyfinRepository", "    SupportsTranscoding: ${mediaSource.supportsTranscoding}")
+            
+            // Log transcoding URL if present
+            mediaSource.transcodingUrl?.let { url ->
+                Log.d("JellyfinRepository", "    TranscodingUrl: $url")
+                // Extract resolution from transcoding URL
+                val maxWidth = Regex("MaxWidth=(\\d+)").find(url)?.groupValues?.get(1)
+                val maxHeight = Regex("MaxHeight=(\\d+)").find(url)?.groupValues?.get(1)
+                Log.d("JellyfinRepository", "    Transcoding resolution: ${maxWidth}x${maxHeight}")
+            }
+        }
             val sourceSummaries = response.mediaSources.orEmpty().map { source ->
                 "id=${source.id}, " +
                     "directPlay=${source.supportsDirectPlay}, " +

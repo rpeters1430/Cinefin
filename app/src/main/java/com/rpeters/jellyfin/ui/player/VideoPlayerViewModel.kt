@@ -82,6 +82,12 @@ data class VideoPlayerState(
     val castDeviceName: String? = null,
     val isCastPlaying: Boolean = false,
     val castPosterUrl: String? = null,
+    // Transcoding information
+    val isDirectPlaying: Boolean = false,
+    val isDirectStreaming: Boolean = false,
+    val isTranscoding: Boolean = false,
+    val transcodingReason: String? = null,
+    val playbackMethod: String = "Unknown",
     val castBackdropUrl: String? = null,
     val castOverview: String? = null,
     // Cast playback position and volume
@@ -375,6 +381,15 @@ class VideoPlayerViewModel @Inject constructor(
                             "avi" -> "video/avi"
                             else -> null // Let ExoPlayer auto-detect
                         }
+                        
+                        // Update state with direct play info
+                        _playerState.value = _playerState.value.copy(
+                            isDirectPlaying = true,
+                            isDirectStreaming = false,
+                            isTranscoding = false,
+                            transcodingReason = null,
+                            playbackMethod = "Direct Play"
+                        )
                     }
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> {
                         val transcodingMsg = "Transcoding: ${playbackResult.targetResolution} ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} @ ${playbackResult.targetBitrate / 1_000_000}Mbps - ${playbackResult.reason}"
@@ -400,6 +415,15 @@ class VideoPlayerViewModel @Inject constructor(
                                 null
                             }
                         }
+                        
+                        // Update state with transcoding info
+                        _playerState.value = _playerState.value.copy(
+                            isDirectPlaying = false,
+                            isDirectStreaming = false,
+                            isTranscoding = true,
+                            transcodingReason = playbackResult.reason,
+                            playbackMethod = "Transcoding"
+                        )
                     }
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.Error -> {
                         throw Exception("Playback URL error: ${playbackResult.message}")
