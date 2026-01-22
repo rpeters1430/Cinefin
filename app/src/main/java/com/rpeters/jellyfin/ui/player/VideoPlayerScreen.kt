@@ -41,12 +41,12 @@ import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Hd
 import androidx.compose.material.icons.filled.HighQuality
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Sd
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
@@ -947,7 +947,7 @@ private fun VideoControlsOverlay(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp),
             ) {
                 Text(
                     text = playerState.itemName,
@@ -957,45 +957,45 @@ private fun VideoControlsOverlay(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                
+
                 // Transcoding info
                 if (playerState.isTranscoding || playerState.isDirectPlaying) {
                     val (icon, color, text) = when {
                         playerState.isDirectPlaying -> Triple(
                             Icons.Default.PlayArrow,
                             androidx.compose.ui.graphics.Color.Green,
-                            "Direct Play"
+                            "Direct Play",
                         )
                         playerState.isTranscoding -> Triple(
                             Icons.Default.Settings,
                             androidx.compose.ui.graphics.Color(0xFFFF9800), // Orange color
-                            "Transcoding"
+                            "Transcoding",
                         )
                         else -> Triple(
                             Icons.Default.Info,
                             androidx.compose.ui.graphics.Color.Gray,
-                            "Unknown"
+                            "Unknown",
                         )
                     }
-                    
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = text,
                             tint = color,
-                            modifier = Modifier.size(12.dp)
+                            modifier = Modifier.size(12.dp),
                         )
                         Text(
                             text = text,
                             color = color,
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
-                        
+
                         playerState.transcodingReason?.let { reason ->
                             Text(
                                 text = "• $reason",
@@ -1003,7 +1003,7 @@ private fun VideoControlsOverlay(
                                 style = MaterialTheme.typography.bodySmall,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
+                                modifier = Modifier.weight(1f, fill = false),
                             )
                         }
                     }

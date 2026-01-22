@@ -164,7 +164,7 @@ class JellyfinStreamRepository @Inject constructor(
         params.add("AllowVideoStreamCopy=false") // Force re-encoding for compatibility
         params.add("AllowAudioStreamCopy=true") // Allow audio copy if compatible
         params.add("PlaySessionId=${UUID.randomUUID()}")
-        
+
         // Prevent subtitle encoding to avoid forced transcoding
         params.add("SubtitleMethod=Skip")
 
@@ -175,7 +175,7 @@ class JellyfinStreamRepository @Inject constructor(
             "Intelligent transcoding: $videoCodec/$audioCodec in $container, " +
                 "max ${qualityParams.maxWidth}x${qualityParams.maxHeight} @ ${qualityParams.maxBitrate / 1_000_000}Mbps",
         )
-        
+
         // Enhanced debug logging
         Log.d("JellyfinStreamRepository", "Device capabilities: maxRes=${capabilities.maxResolution}, supports4K=${capabilities.supports4K}")
         Log.d("JellyfinStreamRepository", "Network quality: $networkQuality")

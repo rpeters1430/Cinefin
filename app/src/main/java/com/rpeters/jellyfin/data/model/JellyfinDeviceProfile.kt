@@ -16,12 +16,12 @@ object JellyfinDeviceProfile {
 
     fun createAndroidDeviceProfile(maxWidth: Int = 1920, maxHeight: Int = 1080): DeviceProfile {
         Log.d("JellyfinDeviceProfile", "Creating device profile with maxWidth=$maxWidth, maxHeight=$maxHeight")
-        
+
         // 1. Define the "Permissive Audio" list
         // We list almost everything because ExoPlayer (software) can handle these easily.
         // This tells the server: "Don't transcode just because the audio is FLAC or OPUS."
         val permissiveAudioCodecs = "aac,mp3,ac3,eac3,flac,vorbis,opus,pcm,alac,dtshd,dts,truehd"
-        
+
         // 2. Define the "Subtitle Fix"
         // "External" means: "Send me the subtitle file separately. I will render it."
         // Without this, the server burns the text into the video (Transcoding).
@@ -29,9 +29,9 @@ object JellyfinDeviceProfile {
             SubtitleProfile(format = "srt", method = SubtitleDeliveryMethod.EXTERNAL),
             SubtitleProfile(format = "vtt", method = SubtitleDeliveryMethod.EXTERNAL),
             SubtitleProfile(format = "ass", method = SubtitleDeliveryMethod.EXTERNAL), // ExoPlayer handles basic ASS/SSA
-            SubtitleProfile(format = "ssa", method = SubtitleDeliveryMethod.EXTERNAL)
+            SubtitleProfile(format = "ssa", method = SubtitleDeliveryMethod.EXTERNAL),
         )
-        
+
         // 3. Combine with our existing smart Video detection
         // We take the detected video capabilities, but OVERWRITE the audio
         // to be our permissive list.
@@ -94,7 +94,7 @@ object JellyfinDeviceProfile {
                 audioCodec = "aac",
             ),
         )
-        
+
         return DeviceProfile(
             name = "Jellyfin Android Client",
             maxStreamingBitrate = 400_000_000, // 400 Mbps for high-quality direct play

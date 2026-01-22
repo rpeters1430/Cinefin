@@ -381,14 +381,14 @@ class VideoPlayerViewModel @Inject constructor(
                             "avi" -> "video/avi"
                             else -> null // Let ExoPlayer auto-detect
                         }
-                        
+
                         // Update state with direct play info
                         _playerState.value = _playerState.value.copy(
                             isDirectPlaying = true,
                             isDirectStreaming = false,
                             isTranscoding = false,
                             transcodingReason = null,
-                            playbackMethod = "Direct Play"
+                            playbackMethod = "Direct Play",
                         )
                     }
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> {
@@ -415,14 +415,14 @@ class VideoPlayerViewModel @Inject constructor(
                                 null
                             }
                         }
-                        
+
                         // Update state with transcoding info
                         _playerState.value = _playerState.value.copy(
                             isDirectPlaying = false,
                             isDirectStreaming = false,
                             isTranscoding = true,
                             transcodingReason = playbackResult.reason,
-                            playbackMethod = "Transcoding"
+                            playbackMethod = "Transcoding",
                         )
                     }
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.Error -> {
