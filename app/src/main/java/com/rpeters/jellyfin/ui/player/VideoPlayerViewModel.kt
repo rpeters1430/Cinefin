@@ -8,13 +8,11 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.trackselection.AdaptiveTrackSelection
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
-import androidx.media3.common.TrackSelectionParameters
-import androidx.media3.common.Tracks
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -1030,7 +1028,7 @@ class VideoPlayerViewModel @Inject constructor(
                     if (width > 0 && height > 0) {
                         // Create quality label based on resolution
                         val label = when {
-                            height >= 2160 -> "4K (${width}x${height})"
+                            height >= 2160 -> "4K (${width}x$height)"
                             height >= 1440 -> "1440p"
                             height >= 1080 -> "1080p"
                             height >= 720 -> "720p"
@@ -1040,7 +1038,7 @@ class VideoPlayerViewModel @Inject constructor(
                         }
 
                         val quality = VideoQuality(
-                            id = "${width}x${height}",
+                            id = "${width}x$height",
                             label = label,
                             bitrate = if (bitrate > 0) bitrate else 0,
                             width = width,

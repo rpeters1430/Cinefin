@@ -202,6 +202,7 @@ class JellyfinAuthInterceptor @Inject constructor(
         private const val USER_AGENT = "JellyfinAndroid/1.0.0"
         private const val MAX_AUTH_RETRIES = 3
         private val AUTH_PATHS = listOf("/Users/Authenticate", "/Sessions")
+
         // Optimized backoff delays: 0ms (immediate), 100ms, 500ms
         // Reduced from 0ms, 250ms, 1000ms to minimize thread blocking
         private val RETRY_BACKOFF_MS = longArrayOf(0L, 100L, 500L)
