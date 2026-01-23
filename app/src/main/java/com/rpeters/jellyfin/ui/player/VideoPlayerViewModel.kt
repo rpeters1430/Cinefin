@@ -1114,7 +1114,7 @@ class VideoPlayerViewModel @Inject constructor(
         val seasonId = metadata.seasonId?.toString() ?: return
         val currentEpisodeIndex = metadata.indexNumber ?: return
 
-        SecureLogger.d("VideoPlayer", "Current item is episode ${currentEpisodeIndex} in season ${seasonId}")
+        SecureLogger.d("VideoPlayer", "Current item is episode $currentEpisodeIndex in season $seasonId")
 
         try {
             val result = repository.getEpisodesForSeason(seasonId)

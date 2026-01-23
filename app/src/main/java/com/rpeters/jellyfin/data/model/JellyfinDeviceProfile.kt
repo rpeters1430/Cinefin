@@ -1,7 +1,6 @@
 package com.rpeters.jellyfin.data.model
 
 import android.util.Log
-import com.rpeters.jellyfin.data.DeviceCapabilities
 import org.jellyfin.sdk.model.api.*
 
 /**
