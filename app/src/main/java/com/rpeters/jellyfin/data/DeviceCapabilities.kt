@@ -485,7 +485,7 @@ class DeviceCapabilities @Inject constructor(
                 if (codecInfo.isEncoder) continue
 
                 // Check if this is a hardware or software decoder
-                val isHardware = !codecInfo.name.lowercase().contains("software") && 
+                val isHardware = !codecInfo.name.lowercase().contains("software") &&
                     !codecInfo.name.lowercase().contains("omx.google") &&
                     !codecInfo.name.lowercase().contains("c2.android")
 
@@ -539,12 +539,15 @@ class DeviceCapabilities @Inject constructor(
                         codecInfo == null -> CodecSupport.NOT_SUPPORTED
                         else -> {
                             // Check if this is a hardware decoder
-                            val isHardware = !codecInfo.name.lowercase().contains("software") && 
+                            val isHardware = !codecInfo.name.lowercase().contains("software") &&
                                 !codecInfo.name.lowercase().contains("omx.google") &&
                                 !codecInfo.name.lowercase().contains("c2.android")
-                            
-                            if (isHardware) CodecSupport.HARDWARE_ACCELERATED 
-                            else CodecSupport.SOFTWARE_ONLY
+
+                            if (isHardware) {
+                                CodecSupport.HARDWARE_ACCELERATED
+                            } else {
+                                CodecSupport.SOFTWARE_ONLY
+                            }
                         }
                     }
 
@@ -612,10 +615,10 @@ class DeviceCapabilities @Inject constructor(
             val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
             val memInfo = android.app.ActivityManager.MemoryInfo()
             activityManager?.getMemoryInfo(memInfo)
-            
+
             val totalMemory = memInfo.totalMem
             SecureLogger.d(TAG, "Detected total RAM: ${totalMemory / 1_000_000L}MB")
-            
+
             if (totalMemory > 0) {
                 totalMemory
             } else {
