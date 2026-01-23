@@ -479,26 +479,39 @@ class DeviceCapabilities @Inject constructor(
         return try {
             val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
             val hardwareCodecs = mutableSetOf<String>()
+            val softwareCodecs = mutableSetOf<String>()
 
             for (codecInfo in codecList.codecInfos) {
                 if (codecInfo.isEncoder) continue
-                // Skip software-only decoders for hardware acceleration detection
+
+                // Check if this is a hardware or software decoder
+                val isHardware = !codecInfo.name.lowercase().contains("software") && 
+                    !codecInfo.name.lowercase().contains("omx.google") &&
+                    !codecInfo.name.lowercase().contains("c2.android")
 
                 for (type in codecInfo.supportedTypes) {
                     val codec = mimeTypeToCodec(type, type.startsWith("video/"))
                     if (codec != null) {
-                        hardwareCodecs.add(codec)
+                        if (isHardware) {
+                            hardwareCodecs.add(codec)
+                        } else {
+                            softwareCodecs.add(codec)
+                        }
                     }
                 }
             }
 
+            SecureLogger.d(TAG, "Hardware codecs: $hardwareCodecs")
+            SecureLogger.d(TAG, "Software codecs: $softwareCodecs")
+
             HardwareAccelerationInfo(
                 supportedCodecs = hardwareCodecs.toList(),
                 hasHardwareDecoding = hardwareCodecs.isNotEmpty(),
+                softwareOnlyCodecs = softwareCodecs.toList(),
             )
         } catch (e: Exception) {
             SecureLogger.w(TAG, "Failed to detect hardware acceleration", e)
-            HardwareAccelerationInfo(emptyList(), false)
+            HardwareAccelerationInfo(emptyList(), false, emptyList())
         }
     }
 
@@ -524,8 +537,15 @@ class DeviceCapabilities @Inject constructor(
 
                     val supportLevel = when {
                         codecInfo == null -> CodecSupport.NOT_SUPPORTED
-                        // We'll assume hardware acceleration is available unless we can determine otherwise
-                        else -> CodecSupport.HARDWARE_ACCELERATED
+                        else -> {
+                            // Check if this is a hardware decoder
+                            val isHardware = !codecInfo.name.lowercase().contains("software") && 
+                                !codecInfo.name.lowercase().contains("omx.google") &&
+                                !codecInfo.name.lowercase().contains("c2.android")
+                            
+                            if (isHardware) CodecSupport.HARDWARE_ACCELERATED 
+                            else CodecSupport.SOFTWARE_ONLY
+                        }
                     }
 
                     support[codec] = CodecSupportDetail(
@@ -589,9 +609,22 @@ class DeviceCapabilities @Inject constructor(
      */
     private fun getTotalRAM(): Long {
         return try {
-            // ActivityManager needs to be obtained from Context, returning a safe fallback for now
-            4_000_000_000L // 4GB assumption for modern devices
+            val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+            val memInfo = android.app.ActivityManager.MemoryInfo()
+            activityManager?.getMemoryInfo(memInfo)
+            
+            val totalMemory = memInfo.totalMem
+            SecureLogger.d(TAG, "Detected total RAM: ${totalMemory / 1_000_000L}MB")
+            
+            if (totalMemory > 0) {
+                totalMemory
+            } else {
+                // Fallback for devices that don't expose memory info
+                SecureLogger.w(TAG, "Could not detect RAM, using fallback")
+                4_000_000_000L // 4GB assumption for modern devices
+            }
         } catch (e: Exception) {
+            SecureLogger.w(TAG, "Failed to get RAM info", e)
             2_000_000_000L // 2GB fallback
         }
     }
@@ -710,4 +743,5 @@ data class NetworkCapabilityInfo(
 data class HardwareAccelerationInfo(
     val supportedCodecs: List<String>,
     val hasHardwareDecoding: Boolean,
+    val softwareOnlyCodecs: List<String> = emptyList(),
 )

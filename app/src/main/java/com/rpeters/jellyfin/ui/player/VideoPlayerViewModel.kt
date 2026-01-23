@@ -104,6 +104,11 @@ data class VideoPlayerState(
     val introEndMs: Long? = null,
     val outroStartMs: Long? = null,
     val outroEndMs: Long? = null,
+    // Auto-play next episode
+    val nextEpisode: BaseItemDto? = null,
+    val showNextEpisodeCountdown: Boolean = false,
+    val nextEpisodeCountdown: Int = 0, // seconds remaining
+    val hasEnded: Boolean = false,
 )
 
 @UnstableApi
@@ -154,6 +159,7 @@ class VideoPlayerViewModel @Inject constructor(
     private var hasSentCastLoad: Boolean = false
     private var lastCastState: CastState? = null
     private var playbackSessionId: String? = null
+    private var countdownJob: kotlinx.coroutines.Job? = null
 
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -166,17 +172,28 @@ class VideoPlayerViewModel @Inject constructor(
             }
             SecureLogger.d("VideoPlayer", "State: $stateString, isPlaying: ${exoPlayer?.isPlaying}")
 
+            // Only update duration if ExoPlayer has a valid duration (> 0)
+            // HLS/transcoded streams may initially return C.TIME_UNSET (negative value)
+            val rawDuration = exoPlayer?.duration
+            val currentDuration = _playerState.value.duration
+            val validDuration = rawDuration?.takeIf { it > 0 } ?: currentDuration
+
+            SecureLogger.d("VideoPlayer", "Duration update: rawDuration=$rawDuration, currentDuration=$currentDuration, validDuration=$validDuration")
+
             _playerState.value = _playerState.value.copy(
                 isLoading = playbackState == Player.STATE_BUFFERING,
                 isPlaying = exoPlayer?.isPlaying == true,
-                duration = exoPlayer?.duration ?: _playerState.value.duration,
+                duration = validDuration,
                 bufferedPosition = exoPlayer?.bufferedPosition
                     ?: _playerState.value.bufferedPosition,
                 currentPosition = exoPlayer?.currentPosition ?: _playerState.value.currentPosition,
+                hasEnded = playbackState == Player.STATE_ENDED,
             )
 
             if (playbackState == Player.STATE_READY) {
                 startPositionUpdates()
+            } else if (playbackState == Player.STATE_ENDED) {
+                handlePlaybackEnded()
             }
         }
 
@@ -337,6 +354,17 @@ class VideoPlayerViewModel @Inject constructor(
 
                 // Attempt to load chapter markers and full metadata for intro/outro skip
                 currentItemMetadata = loadSkipMarkers(itemId)
+
+                // Set initial duration from metadata (converts ticks to milliseconds)
+                // This ensures the seek bar is visible even before ExoPlayer reports duration
+                val initialDuration = currentItemMetadata?.runTimeTicks?.let { it / 10_000 } ?: 0L
+                if (initialDuration > 0) {
+                    _playerState.value = _playerState.value.copy(duration = initialDuration)
+                    SecureLogger.d("VideoPlayer", "Set initial duration from metadata: ${initialDuration}ms (${initialDuration / 60000}min)")
+                }
+
+                // Load next episode if this is an episode
+                loadNextEpisodeIfAvailable(currentItemMetadata)
 
                 // Get playbook info once and reuse it for both subtitle extraction and playback URL selection
                 val playbackInfo = try {
@@ -1074,5 +1102,112 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun clearError() {
         _playerState.value = _playerState.value.copy(error = null)
+    }
+
+    /**
+     * Load the next episode if the current item is an episode
+     */
+    private suspend fun loadNextEpisodeIfAvailable(metadata: BaseItemDto?) {
+        if (metadata == null) return
+
+        // Check if this is an episode
+        val seasonId = metadata.seasonId?.toString() ?: return
+        val currentEpisodeIndex = metadata.indexNumber ?: return
+
+        SecureLogger.d("VideoPlayer", "Current item is episode ${currentEpisodeIndex} in season ${seasonId}")
+
+        try {
+            val result = repository.getEpisodesForSeason(seasonId)
+            if (result is com.rpeters.jellyfin.data.repository.common.ApiResult.Success) {
+                val episodes = result.data.sortedBy { it.indexNumber }
+                val currentIndex = episodes.indexOfFirst { it.indexNumber == currentEpisodeIndex }
+
+                if (currentIndex >= 0) {
+                    val nextEpisode = episodes.getOrNull(currentIndex + 1)
+                    if (nextEpisode != null) {
+                        _playerState.value = _playerState.value.copy(nextEpisode = nextEpisode)
+                        SecureLogger.d("VideoPlayer", "Next episode loaded: ${nextEpisode.name} (${nextEpisode.id})")
+                    } else {
+                        SecureLogger.d("VideoPlayer", "No next episode available (last in season)")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            SecureLogger.e("VideoPlayer", "Failed to load next episode", e)
+        }
+    }
+
+    /**
+     * Handle playback ended - start auto-play countdown for episodes, or signal activity to finish for movies
+     */
+    private fun handlePlaybackEnded() {
+        SecureLogger.d("VideoPlayer", "Playback ended")
+        stopPositionUpdates()
+
+        val nextEpisode = _playerState.value.nextEpisode
+        if (nextEpisode != null) {
+            // Episode with next episode available - start countdown
+            startNextEpisodeCountdown()
+        } else {
+            // Movie or last episode in season - activity will handle finish
+            SecureLogger.d("VideoPlayer", "No next episode, video ended")
+        }
+    }
+
+    /**
+     * Start the countdown timer for auto-playing the next episode
+     */
+    private fun startNextEpisodeCountdown() {
+        val countdownSeconds = 10 // 10 seconds countdown
+
+        _playerState.value = _playerState.value.copy(
+            showNextEpisodeCountdown = true,
+            nextEpisodeCountdown = countdownSeconds,
+        )
+
+        countdownJob?.cancel()
+        countdownJob = viewModelScope.launch {
+            for (i in countdownSeconds downTo 1) {
+                _playerState.value = _playerState.value.copy(nextEpisodeCountdown = i)
+                kotlinx.coroutines.delay(1000)
+            }
+
+            // Countdown finished - play next episode
+            playNextEpisode()
+        }
+    }
+
+    /**
+     * Cancel the next episode countdown
+     */
+    fun cancelNextEpisodeCountdown() {
+        countdownJob?.cancel()
+        countdownJob = null
+        _playerState.value = _playerState.value.copy(
+            showNextEpisodeCountdown = false,
+            nextEpisodeCountdown = 0,
+        )
+        SecureLogger.d("VideoPlayer", "Next episode countdown cancelled")
+    }
+
+    /**
+     * Play the next episode immediately
+     */
+    fun playNextEpisode() {
+        val nextEpisode = _playerState.value.nextEpisode ?: return
+
+        cancelNextEpisodeCountdown()
+
+        SecureLogger.d("VideoPlayer", "Playing next episode: ${nextEpisode.name} (${nextEpisode.id})")
+
+        // Release current player and start new playback
+        viewModelScope.launch {
+            releasePlayer()
+            initializePlayer(
+                itemId = nextEpisode.id.toString(),
+                itemName = nextEpisode.name ?: "Episode ${nextEpisode.indexNumber}",
+                startPosition = 0L,
+            )
+        }
     }
 }

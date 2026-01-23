@@ -50,6 +50,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -128,6 +130,8 @@ fun VideoPlayerScreen(
     onCastDialogDismiss: () -> Unit,
     onErrorDismiss: () -> Unit,
     onClose: () -> Unit = {},
+    onPlayNextEpisode: () -> Unit = {},
+    onCancelNextEpisode: () -> Unit = {},
     onPlayerViewBoundsChanged: (android.graphics.Rect) -> Unit = {},
     exoPlayer: ExoPlayer?,
     supportsPip: Boolean,
@@ -469,6 +473,74 @@ fun VideoPlayerScreen(
                             }
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                     )
+                }
+            }
+        }
+
+        // Next Episode Countdown Overlay
+        AnimatedVisibility(
+            visible = playerState.showNextEpisodeCountdown,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = playerColors.overlayScrim,
+                ),
+                shape = MaterialTheme.shapes.large,
+                modifier = Modifier
+                    .padding(bottom = 80.dp)
+                    .fillMaxWidth(0.9f),
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = "Next Episode",
+                        color = playerColors.overlayContent,
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                    playerState.nextEpisode?.let { nextEp ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = nextEp.name ?: "Episode ${nextEp.indexNumber}",
+                            color = playerColors.overlayContent,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Starting in ${playerState.nextEpisodeCountdown}...",
+                        color = playerColors.overlayContent.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                    ) {
+                        TextButton(
+                            onClick = {
+                                onCancelNextEpisode()
+                                onClose()
+                            },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = playerColors.overlayContent,
+                            ),
+                        ) {
+                            Text("Close")
+                        }
+                        Button(
+                            onClick = onPlayNextEpisode,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        ) {
+                            Text("Play Now")
+                        }
+                    }
                 }
             }
         }

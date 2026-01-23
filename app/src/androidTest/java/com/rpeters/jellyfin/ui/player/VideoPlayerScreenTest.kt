@@ -135,6 +135,8 @@ class VideoPlayerScreenTest {
                     onCastPause = {},
                     onCastResume = {},
                     onCastStop = {},
+                    onCastSeek = {},
+                    onCastVolumeChange = {},
                     onSubtitlesClick = {},
                     onPictureInPictureClick = onPictureInPictureClick,
                     onOrientationToggle = {},
@@ -145,6 +147,9 @@ class VideoPlayerScreenTest {
                     onCastDialogDismiss = {},
                     onErrorDismiss = {},
                     onClose = {},
+                    onPlayNextEpisode = {},
+                    onCancelNextEpisode = {},
+                    onPlayerViewBoundsChanged = {},
                     exoPlayer = null,
                     supportsPip = supportsPip,
                 )

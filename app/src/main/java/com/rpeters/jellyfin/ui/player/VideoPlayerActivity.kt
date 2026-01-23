@@ -184,6 +184,15 @@ class VideoPlayerActivity : FragmentActivity() {
                     ) {
                         val playerState by playerViewModel.playerState.collectAsState()
 
+                        // Auto-finish when video ends without next episode
+                        androidx.compose.runtime.LaunchedEffect(playerState.hasEnded, playerState.nextEpisode) {
+                            if (playerState.hasEnded && playerState.nextEpisode == null && !playerState.showNextEpisodeCountdown) {
+                                // Wait a brief moment before finishing to allow smooth transition
+                                kotlinx.coroutines.delay(500)
+                                finish()
+                            }
+                        }
+
                         VideoPlayerScreen(
                             playerState = playerState,
                             onPlayPause = playerViewModel::togglePlayPause,
@@ -207,6 +216,8 @@ class VideoPlayerActivity : FragmentActivity() {
                             onCastDialogDismiss = playerViewModel::hideCastDialog,
                             onErrorDismiss = playerViewModel::clearError,
                             onClose = { finish() },
+                            onPlayNextEpisode = playerViewModel::playNextEpisode,
+                            onCancelNextEpisode = playerViewModel::cancelNextEpisodeCountdown,
                             onPlayerViewBoundsChanged = { pipSourceRect = it },
                             exoPlayer = playerViewModel.exoPlayer,
                             supportsPip = isPipSupported(),
