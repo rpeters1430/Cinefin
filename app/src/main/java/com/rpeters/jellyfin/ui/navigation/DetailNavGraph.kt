@@ -28,13 +28,13 @@ import androidx.navigation.navArgument
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.screens.AlbumDetailScreen
 import com.rpeters.jellyfin.ui.screens.ArtistDetailScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideoDetailScreen
 import com.rpeters.jellyfin.ui.screens.ItemDetailViewModel
 import com.rpeters.jellyfin.ui.screens.MovieDetailScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodeDetailScreen
-import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
