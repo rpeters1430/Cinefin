@@ -28,14 +28,21 @@ import java.util.Locale
 import javax.inject.Inject
 
 @UnstableApi
-enum class AspectRatioMode(val label: String, val resizeMode: Int) {
-    FIT("Fit", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT),
-    FILL("Fill", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FILL),
-    ZOOM("Zoom", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM),
-    FIXED_WIDTH("Fixed Width", androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH),
-    FIXED_HEIGHT(
-        "Fixed Height",
-        androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT,
+enum class AspectRatioMode(val label: String, val description: String, val resizeMode: Int) {
+    AUTO(
+        "Auto",
+        "Maintains aspect ratio with letterboxing",
+        androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT,
+    ),
+    FILL(
+        "Fill",
+        "Stretches to fill screen (may distort)",
+        androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FILL,
+    ),
+    CROP(
+        "Crop",
+        "Zooms to fill screen (may crop edges)",
+        androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM,
     ),
 }
 
@@ -67,7 +74,7 @@ data class VideoPlayerState(
     val itemId: String = "",
     val itemName: String = "",
     val aspectRatio: Float = 16f / 9f,
-    val selectedAspectRatio: AspectRatioMode = AspectRatioMode.FIT,
+    val selectedAspectRatio: AspectRatioMode = AspectRatioMode.AUTO,
     val availableAspectRatios: List<AspectRatioMode> = AspectRatioMode.entries.toList(),
     val videoWidth: Int = 0,
     val videoHeight: Int = 0,

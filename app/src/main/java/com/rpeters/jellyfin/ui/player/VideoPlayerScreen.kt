@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.Cast
@@ -140,7 +141,20 @@ fun VideoPlayerScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context as? android.app.Activity
     val isTvDevice = remember { com.rpeters.jellyfin.utils.DeviceTypeUtils.isTvDevice(context) }
+
+    // Get audio manager for volume control
+    val audioManager = remember { context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager }
+    val maxVolume = remember { audioManager.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC) }
+
+    // Track current brightness and volume for gesture controls
+    var currentBrightness by remember {
+        mutableStateOf(activity?.window?.attributes?.screenBrightness ?: -1f)
+    }
+    var currentVolume by remember {
+        mutableStateOf(audioManager.getStreamVolume(android.media.AudioManager.STREAM_MUSIC))
+    }
 
     // Use TV-optimized player for TV devices
     if (isTvDevice) {
@@ -297,20 +311,48 @@ fun VideoPlayerScreen(
                     // Only respond to significant vertical drags
                     if (kotlin.math.abs(deltaY) > 5f) {
                         if (isLeftSide) {
-                            // Left side - brightness control (visual feedback only)
-                            val brightnessChange = deltaY / (screenHeight * 0.3f)
-                            if (kotlin.math.abs(brightnessChange) > 0.1f) {
+                            // Left side - brightness control
+                            val brightnessChange = deltaY / (screenHeight * 0.5f)
+                            if (kotlin.math.abs(brightnessChange) > 0.01f && activity != null) {
+                                // Get current brightness (-1 means system default)
+                                val currentBrightnessValue = if (currentBrightness < 0f) 0.5f else currentBrightness
+                                // Calculate new brightness (0.0 to 1.0)
+                                val newBrightness = (currentBrightnessValue + brightnessChange).coerceIn(0.0f, 1.0f)
+
+                                // Apply brightness change
+                                val layoutParams = activity.window.attributes
+                                layoutParams.screenBrightness = newBrightness
+                                activity.window.attributes = layoutParams
+
+                                // Update state and show feedback
+                                currentBrightness = newBrightness
                                 showSeekFeedback = true
                                 seekFeedbackIcon = Icons.Default.Brightness6
-                                seekFeedbackText = "Brightness"
+                                seekFeedbackText = "${(newBrightness * 100).toInt()}%"
                             }
                         } else {
-                            // Right side - volume control (visual feedback only)
-                            val volumeChange = deltaY / (screenHeight * 0.3f)
-                            if (kotlin.math.abs(volumeChange) > 0.1f) {
+                            // Right side - volume control
+                            val volumeChange = (deltaY / (screenHeight * 0.5f) * maxVolume).toInt()
+                            if (kotlin.math.abs(volumeChange) > 0) {
+                                // Calculate new volume
+                                val newVolume = (currentVolume + volumeChange).coerceIn(0, maxVolume)
+
+                                // Apply volume change
+                                audioManager.setStreamVolume(
+                                    android.media.AudioManager.STREAM_MUSIC,
+                                    newVolume,
+                                    0,
+                                )
+
+                                // Update state and show feedback
+                                currentVolume = newVolume
                                 showSeekFeedback = true
-                                seekFeedbackIcon = Icons.AutoMirrored.Filled.VolumeUp
-                                seekFeedbackText = "Volume"
+                                seekFeedbackIcon = if (newVolume == 0) {
+                                    Icons.AutoMirrored.Filled.VolumeOff
+                                } else {
+                                    Icons.AutoMirrored.Filled.VolumeUp
+                                }
+                                seekFeedbackText = "${(newVolume * 100 / maxVolume)}%"
                             }
                         }
                     }
@@ -1352,6 +1394,83 @@ private fun VideoControlsOverlay(
                     }
                 }
 
+                // Aspect Ratio control (chip with dropdown)
+                Box {
+                    Surface(
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .clip(CircleShape)
+                            .clickable { onShowAspectRatioMenu(true) },
+                        color = playerColors.chipBackground,
+                        shape = CircleShape,
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AspectRatio,
+                                contentDescription = "Aspect ratio",
+                                tint = playerColors.chipContent,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Spacer(modifier = Modifier.size(6.dp))
+                            Text(
+                                text = playerState.selectedAspectRatio.label,
+                                color = playerColors.chipContent,
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = showAspectRatioMenu,
+                        onDismissRequest = { onShowAspectRatioMenu(false) },
+                    ) {
+                        AspectRatioMode.entries.forEach { mode ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Text(
+                                                text = mode.label,
+                                                fontWeight = if (mode == playerState.selectedAspectRatio) {
+                                                    FontWeight.Bold
+                                                } else {
+                                                    FontWeight.Normal
+                                                },
+                                            )
+                                            if (mode == playerState.selectedAspectRatio) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = "Selected",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(16.dp),
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            text = mode.description,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(top = 2.dp),
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    onAspectRatioChange(mode)
+                                    onShowAspectRatioMenu(false)
+                                },
+                            )
+                        }
+                    }
+                }
+
                 if (playerState.isHdrContent) {
                     Surface(
                         color = playerColors.chipBackground,
@@ -1399,7 +1518,7 @@ private fun VideoControlsOverlay(
                         expanded = showSpeedMenu,
                         onDismissRequest = { onShowSpeedMenu(false) },
                     ) {
-                        val speeds = listOf(0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
+                        val speeds = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
                         speeds.forEach { s ->
                             DropdownMenuItem(
                                 text = {
