@@ -17,9 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -27,7 +24,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.carousel.CarouselDefaults
+import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +41,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -43,10 +49,16 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
- * Material 3 Expressive Carousel for hero content
+ * Material 3 Expressive Carousel for hero content using official carousel component
  * Perfect for featuring movies, shows, and other media
+ *
+ * Uses HorizontalUncontainedCarousel which maintains consistent item sizes
+ * and is ideal for large hero content where aspect ratios must be preserved.
+ *
+ * Features auto-scrolling every 15 seconds through the carousel items.
  */
 @Composable
 fun ExpressiveHeroCarousel(
@@ -56,35 +68,70 @@ fun ExpressiveHeroCarousel(
     heroHeight: Dp = 280.dp,
     horizontalPadding: Dp = 16.dp,
     pageSpacing: Dp = 8.dp,
+    autoScrollEnabled: Boolean = true,
+    autoScrollIntervalMillis: Long = 15000L, // 15 seconds
     modifier: Modifier = Modifier,
 ) {
-    val pagerState = rememberPagerState(pageCount = { items.size })
+    if (items.isEmpty()) return
+
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    // Calculate item width to show one item with slight peek of next item
+    val itemWidth = remember(screenWidth, horizontalPadding) {
+        screenWidth - (horizontalPadding * 2) + (pageSpacing * 2)
+    }
+
+    val carouselState = rememberCarouselState { items.size }
+
+    // Track current item for indicators
+    val currentItem by remember {
+        derivedStateOf {
+            carouselState.currentItem
+        }
+    }
+
+    // Auto-scroll effect
+    LaunchedEffect(carouselState, autoScrollEnabled, autoScrollIntervalMillis, items.size) {
+        if (!autoScrollEnabled || items.size <= 1) return@LaunchedEffect
+
+        while (true) {
+            kotlinx.coroutines.delay(autoScrollIntervalMillis)
+            val nextPage = (carouselState.currentItem + 1) % items.size
+            carouselState.scrollToItem(nextPage)
+        }
+    }
 
     Column(
         modifier = modifier.fillMaxWidth(),
     ) {
-        // Hero Pager
+        // Hero Carousel using Material 3 Carousel component
         Box {
-            HorizontalPager(
-                state = pagerState,
+            HorizontalUncontainedCarousel(
+                state = carouselState,
+                itemWidth = itemWidth,
+                itemSpacing = pageSpacing,
                 contentPadding = PaddingValues(horizontal = horizontalPadding),
-                pageSpacing = pageSpacing,
+                flingBehavior = CarouselDefaults.singleAdvanceFlingBehavior(state = carouselState),
                 modifier = Modifier.height(heroHeight),
-                // Add key to prevent incorrect recomposition and state reuse
-                key = { page -> items[page].id },
-            ) { page ->
-                val item = items[page]
+            ) { index ->
+                val item = items[index]
+                val isActive = index == currentItem
+
                 ExpressiveHeroCard(
                     item = item,
                     onItemClick = { onItemClick(item) },
                     onPlayClick = { onPlayClick(item) },
-                    isActive = page == pagerState.currentPage,
+                    isActive = isActive,
+                    modifier = Modifier
+                        .maskClip(shape = RoundedCornerShape(16.dp))
+                        .height(heroHeight),
                 )
             }
 
             // Carousel indicators
             ExpressiveCarouselIndicators(
-                pagerState = pagerState,
+                currentIndex = currentItem,
+                itemCount = items.size,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 16.dp),
@@ -301,15 +348,16 @@ private fun ExpressiveMediaCard(
 
 @Composable
 private fun ExpressiveCarouselIndicators(
-    pagerState: PagerState,
+    currentIndex: Int,
+    itemCount: Int,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        repeat(pagerState.pageCount) { index ->
-            val isActive = index == pagerState.currentPage
+        repeat(itemCount) { index ->
+            val isActive = index == currentIndex
             Surface(
                 modifier = Modifier.size(
                     width = if (isActive) 24.dp else 8.dp,

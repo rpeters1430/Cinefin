@@ -410,6 +410,16 @@ fun HomeContent(
 
     val rowSections = remember(contentLists) {
         listOf(
+            // Next Up - Next unwatched episodes (currently showing recent episodes as placeholder)
+            // TODO: Implement true "Next Up" functionality that shows next unwatched episode per series
+            HomeRowSectionConfig(
+                key = HomeSectionKeys.NEXT_UP,
+                contentType = HomeSectionContentTypes.POSTER_ROW,
+                titleRes = R.string.home_next_up,
+                items = contentLists.recentEpisodes,
+                rowKind = HomeRowKind.POSTER,
+                imageSelector = HomeImageSelector.SERIES_OR_DEFAULT,
+            ),
             HomeRowSectionConfig(
                 key = HomeSectionKeys.RECENT_MOVIES,
                 contentType = HomeSectionContentTypes.POSTER_ROW,
@@ -426,26 +436,11 @@ fun HomeContent(
                 rowKind = HomeRowKind.POSTER,
                 imageSelector = HomeImageSelector.DEFAULT,
             ),
+            // Recently Added in Stuff (home videos, etc.) - Uses horizontal cards
             HomeRowSectionConfig(
-                key = HomeSectionKeys.RECENT_EPISODES,
-                contentType = HomeSectionContentTypes.POSTER_ROW,
-                titleRes = R.string.home_recently_added_tv_episodes,
-                items = contentLists.recentEpisodes,
-                rowKind = HomeRowKind.POSTER,
-                imageSelector = HomeImageSelector.SERIES_OR_DEFAULT,
-            ),
-            HomeRowSectionConfig(
-                key = HomeSectionKeys.RECENT_MUSIC,
-                contentType = HomeSectionContentTypes.MUSIC_ROW,
-                titleRes = R.string.home_recently_added_music,
-                items = contentLists.recentMusic,
-                rowKind = HomeRowKind.SQUARE,
-                imageSelector = HomeImageSelector.DEFAULT,
-            ),
-            HomeRowSectionConfig(
-                key = HomeSectionKeys.RECENT_HOME_VIDEOS,
+                key = HomeSectionKeys.RECENT_STUFF,
                 contentType = HomeSectionContentTypes.MEDIA_ROW,
-                titleRes = R.string.home_recently_added_home_videos,
+                titleRes = R.string.home_recently_added_stuff,
                 items = contentLists.recentVideos,
                 rowKind = HomeRowKind.MEDIA,
                 imageSelector = HomeImageSelector.BACKDROP_OR_DEFAULT,
@@ -485,7 +480,6 @@ fun HomeContent(
     // ✅ Performance: Pre-cache string resources outside lazy content
     val unknownText = stringResource(id = R.string.unknown)
     val continueWatchingTitle = "Continue Watching"
-    val librariesTitle = "Libraries"
 
     // ✅ Performance: Stabilize callbacks to prevent recomposition
     val stableOnItemClick = remember(onItemClick) { onItemClick }
@@ -549,30 +543,7 @@ fun HomeContent(
                 }
             }
 
-            if (appState.libraries.isNotEmpty()) {
-                item(key = "libraries", contentType = "libraries") {
-                    val orderedLibraries = remember(appState.libraries) {
-                        appState.libraries.sortedBy { library ->
-                            when (
-                                library.collectionType?.toString()
-                                    ?.lowercase(Locale.getDefault())
-                            ) {
-                                "movies" -> 0
-                                "tvshows" -> 1
-                                "music" -> 2
-                                else -> 3
-                            }
-                        }
-                    }
-                    LibraryGridSection(
-                        libraries = orderedLibraries,
-                        getImageUrl = getImageUrl,
-                        onLibraryClick = stableOnLibraryClick,
-                        title = librariesTitle,
-                    )
-                }
-            }
-
+            // Media row sections (Next Up, Movies, Shows, Stuff)
             rowSections.forEach { section ->
                 item(key = section.key, contentType = section.contentType) {
                     val imageProvider = imageProviders.getValue(section.imageSelector)
@@ -656,11 +627,10 @@ private data class HomeRowSectionConfig(
 )
 
 private object HomeSectionKeys {
+    const val NEXT_UP = "next_up"
     const val RECENT_MOVIES = "recent_movies"
     const val RECENT_TV_SHOWS = "recent_tvshows"
-    const val RECENT_EPISODES = "recent_episodes"
-    const val RECENT_MUSIC = "recent_music"
-    const val RECENT_HOME_VIDEOS = "recent_home_videos"
+    const val RECENT_STUFF = "recent_stuff"
 }
 
 private object HomeSectionContentTypes {

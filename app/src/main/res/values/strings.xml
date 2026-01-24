@@ -34,11 +34,12 @@
     <string name="video">Video</string>
     <string name="audio">Audio</string>
     <string name="home_videos">Home Videos</string>
-    <string name="home_recently_added_movies">Recently Added Movies</string>
-    <string name="home_recently_added_tv_shows">Recently Added TV Shows</string>
+    <string name="home_next_up">Next Up</string>
+    <string name="home_recently_added_movies">Recently Added in Movies</string>
+    <string name="home_recently_added_tv_shows">Recently Added in Shows</string>
     <string name="home_recently_added_tv_episodes">Recently Added TV Episodes</string>
     <string name="home_recently_added_music">Recently Added Music</string>
-    <string name="home_recently_added_home_videos">Recently Added Home Videos</string>
+    <string name="home_recently_added_stuff">Recently Added in Stuff</string>
 
     <!-- Search -->
     <string name="search_hint">Search for movies, TV shows, music…</string>

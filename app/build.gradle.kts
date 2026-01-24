@@ -53,6 +53,7 @@ android {
             freeCompilerArgs.addAll(
                 listOf(
                     "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+                    "-opt-in=androidx.compose.material3.ExperimentalMaterial3ExpressiveApi",
                     "-opt-in=androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi",
                     "-Xannotation-default-target=param-property",
                 ),
@@ -104,11 +105,6 @@ dependencies {
     implementation(libs.androidx.material3.window.size)
     implementation(libs.androidx.window)
     implementation(libs.google.material)
-
-    // Material 3 Expressive Components (2024-2025)
-    // Note: Some components not yet available in stable releases
-    // Pull-to-refresh is included in the Compose BOM
-    // implementation(libs.androidx.material3.carousel)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)

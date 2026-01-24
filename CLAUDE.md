@@ -184,8 +184,11 @@ val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
 ### Current Implementation
 - Using Material 3 alpha versions (1.5.0-alpha12)
-- **Material 3 Expressive Components** (1.5.0-alpha02) for enhanced UI elements
-- **Custom carousel implementation** instead of official Material 3 Carousel (dependency disabled in libs.versions.toml)
+- **Material 3 Expressive Components** enabled with official carousel implementation
+- **Official Material 3 Carousel** (androidx.compose.material3:material3-carousel) for hero content
+  - `HorizontalUncontainedCarousel` for hero carousel with auto-scrolling (15 second intervals)
+  - Maintains consistent item sizes ideal for large media content
+  - Uses `CarouselState` and `CarouselDefaults` for state management
 - **Adaptive layouts** using Material 3 adaptive components (1.3.0-alpha06) for different screen sizes
 - Theme defined in `ui/theme/` with Jellyfin brand colors:
   - Primary: Jellyfin Purple (#6200EE)
@@ -195,7 +198,18 @@ val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 ### Material 3 Opt-ins
 Compiler flags already configured for:
 - `@OptIn(ExperimentalMaterial3Api::class)`
+- `@OptIn(ExperimentalMaterial3ExpressiveApi::class)`
 - `@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)`
+
+### Home Screen Layout
+The home screen uses Material 3 Expressive components in the following order:
+1. **Hero Carousel** - Auto-scrolling carousel (15s intervals) showcasing newest movies/shows (4-5 items)
+2. **Continue Watching** - Horizontal list with vertical poster cards for partially watched items
+3. **Next Up** - Horizontal list for next unwatched episodes (currently shows recent episodes)
+4. **Recently Added in Movies** - Horizontal list with vertical poster cards
+5. **Recently Added in Shows** - Horizontal list with vertical poster cards
+6. **Recently Added in Stuff** - Horizontal list with horizontal cards for home videos
+7. **Libraries** - Grid of available media libraries (at bottom)
 
 ## Android TV Considerations
 
@@ -244,7 +258,7 @@ Example: `feat: add movie detail screen`, `fix: prevent crash on empty library`
 
 ## Known Limitations
 
-1. **Material 3 Carousel**: Official dependency disabled, using custom implementation
+1. **Next Up Feature**: Currently shows recent episodes; true "Next Up" (next unwatched episode per series) requires backend implementation
 2. **Android TV**: Partial implementation exists, needs comprehensive D-pad testing
 3. **Music Playback**: UI exists but playback controls incomplete
 4. **Offline Downloads**: Screen exists but core functionality incomplete
