@@ -9,7 +9,6 @@ import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.util.DebugLogger
 import com.rpeters.jellyfin.OptInAppExperimentalApis
-import com.rpeters.jellyfin.utils.DevicePerformanceProfile.Companion.detect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
