@@ -67,12 +67,12 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
-import com.rpeters.jellyfin.ui.player.applySubtitleAppearance
 import com.rpeters.jellyfin.ui.player.TrackInfo
 import com.rpeters.jellyfin.ui.player.VideoPlayerState
 import com.rpeters.jellyfin.ui.player.VideoPlayerViewModel
-import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
+import com.rpeters.jellyfin.ui.player.applySubtitleAppearance
 import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
+import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.tv.material3.Button as TvButton

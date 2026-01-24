@@ -29,8 +29,8 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
