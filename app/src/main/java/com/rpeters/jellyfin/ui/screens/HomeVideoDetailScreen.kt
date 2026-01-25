@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -77,6 +78,7 @@ fun HomeVideoDetailScreen(
     var isFavorite by remember { mutableStateOf(item.userData?.isFavorite == true) }
     var isWatched by remember { mutableStateOf(item.userData?.played == true) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {

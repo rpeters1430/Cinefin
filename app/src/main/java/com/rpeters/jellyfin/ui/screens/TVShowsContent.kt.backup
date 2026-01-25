@@ -300,7 +300,6 @@ internal fun TVShowsContent(
                     }
                 }
 
-                }
                 TVShowViewMode.CAROUSEL -> {
                     val unknownText = stringResource(id = R.string.unknown)
                     val carouselItems = remember(tvShows, unknownText) {

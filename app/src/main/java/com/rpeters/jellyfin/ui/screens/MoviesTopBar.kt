@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
@@ -13,6 +14,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -23,9 +27,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.models.MovieSortOrder
 import com.rpeters.jellyfin.data.models.MovieViewMode
 
+@OptInAppExperimentalApis
 @Composable
 internal fun MoviesTopBar(
     viewMode: MovieViewMode,
@@ -51,31 +57,41 @@ internal fun MoviesTopBar(
             }
         },
         actions = {
-            // View mode toggle
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 4.dp,
+            // View mode segmented button
+            SingleChoiceSegmentedButtonRow(
                 modifier = Modifier.padding(horizontal = 4.dp),
             ) {
-                IconButton(
-                    onClick = {
-                        onViewModeChange(
-                            when (viewMode) {
-                                MovieViewMode.GRID -> MovieViewMode.LIST
-                                MovieViewMode.LIST -> MovieViewMode.GRID
-                            },
-                        )
+                SegmentedButton(
+                    selected = viewMode == MovieViewMode.GRID,
+                    onClick = { onViewModeChange(MovieViewMode.GRID) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                    icon = {
+                        SegmentedButtonDefaults.Icon(active = viewMode == MovieViewMode.GRID) {
+                            Icon(
+                                imageVector = Icons.Default.GridView,
+                                contentDescription = "Grid view",
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
                     },
                 ) {
-                    Icon(
-                        imageVector = when (viewMode) {
-                            MovieViewMode.GRID -> Icons.AutoMirrored.Filled.ViewList
-                            MovieViewMode.LIST -> Icons.Default.GridView
-                        },
-                        contentDescription = "Toggle view mode",
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
+                    Text("Grid", style = MaterialTheme.typography.labelMedium)
+                }
+                SegmentedButton(
+                    selected = viewMode == MovieViewMode.LIST,
+                    onClick = { onViewModeChange(MovieViewMode.LIST) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                    icon = {
+                        SegmentedButtonDefaults.Icon(active = viewMode == MovieViewMode.LIST) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ViewList,
+                                contentDescription = "List view",
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    },
+                ) {
+                    Text("List", style = MaterialTheme.typography.labelMedium)
                 }
             }
 

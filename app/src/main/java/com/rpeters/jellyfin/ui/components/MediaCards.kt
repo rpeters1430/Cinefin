@@ -79,9 +79,13 @@ fun MediaCard(
             )
             .focusable(),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp,
+            pressedElevation = 2.dp,
+            hoveredElevation = 8.dp,
+        ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
     ) {
         Box {
@@ -328,9 +332,13 @@ fun PosterMediaCard(
             )
             .focusable(),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp,
+            pressedElevation = 2.dp,
+            hoveredElevation = 8.dp,
+        ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
     ) {
         Column {
@@ -542,9 +550,13 @@ fun RecentlyAddedCard(
             )
             .focusable(),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp,
+            pressedElevation = 2.dp,
+            hoveredElevation = 8.dp,
+        ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
     ) {
         Column {

@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -39,13 +41,17 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.models.MovieFilter
 import com.rpeters.jellyfin.data.models.MovieViewMode
+import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
+import com.rpeters.jellyfin.ui.components.ExpressiveHeroCarousel
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
+import com.rpeters.jellyfin.ui.components.MediaType
 import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.MovieRed
 import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
+import kotlin.math.roundToInt
 
 @Composable
 internal fun MoviesLoadingContent(
@@ -53,7 +59,7 @@ internal fun MoviesLoadingContent(
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(160.dp),
-        modifier = modifier,
+        modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLowest),
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -84,6 +90,40 @@ internal fun MoviesContent(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
+        // Featured movies carousel - top 5 highly rated movies
+        val featuredMovies = remember(filteredAndSortedMovies) {
+            filteredAndSortedMovies
+                .filter { it.communityRating != null && it.communityRating!! >= 7.5f }
+                .sortedByDescending { it.communityRating }
+                .take(5)
+        }
+
+        if (featuredMovies.isNotEmpty()) {
+            ExpressiveHeroCarousel(
+                items = featuredMovies.map { movie ->
+                    CarouselItem(
+                        id = movie.id.toString(),
+                        title = movie.name ?: "Unknown",
+                        subtitle = buildMovieSubtitle(movie),
+                        imageUrl = getImageUrl(movie) ?: "",
+                        type = MediaType.MOVIE,
+                    )
+                },
+                onItemClick = { item ->
+                    featuredMovies.find { it.id.toString() == item.id }?.let { movie ->
+                        onMovieClick(movie)
+                    }
+                },
+                onPlayClick = { item ->
+                    featuredMovies.find { it.id.toString() == item.id }?.let { movie ->
+                        onMovieClick(movie)
+                    }
+                },
+                heroHeight = 280.dp,
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
+        }
+
         // Filter chips with enhanced styling and organization
         Column {
             // Basic Filters
@@ -101,7 +141,8 @@ internal fun MoviesContent(
                         label = {
                             Text(
                                 text = stringResource(id = filter.displayNameResId),
-                                fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
+                                fontWeight = if (selectedFilter == filter) FontWeight.Bold else FontWeight.Medium,
+                                style = MaterialTheme.typography.labelLarge,
                             )
                         },
                         selected = selectedFilter == filter,
@@ -110,7 +151,7 @@ internal fun MoviesContent(
                                 Icon(
                                     imageVector = Icons.Default.Star,
                                     contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
+                                    modifier = Modifier.size(18.dp),
                                 )
                             }
                         } else {
@@ -120,6 +161,20 @@ internal fun MoviesContent(
                             selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                             selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        ),
+                        border = if (selectedFilter == filter) {
+                            FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = true,
+                                borderColor = MaterialTheme.colorScheme.primary,
+                                borderWidth = 2.dp,
+                            )
+                        } else {
+                            FilterChipDefaults.filterChipBorder(enabled = true, selected = false)
+                        },
+                        elevation = FilterChipDefaults.filterChipElevation(
+                            elevation = if (selectedFilter == filter) 4.dp else 0.dp,
                         ),
                     )
                 }
@@ -140,7 +195,8 @@ internal fun MoviesContent(
                         label = {
                             Text(
                                 text = stringResource(id = filter.displayNameResId),
-                                fontWeight = if (selectedFilter == filter) FontWeight.SemiBold else FontWeight.Medium,
+                                fontWeight = if (selectedFilter == filter) FontWeight.Bold else FontWeight.Medium,
+                                style = MaterialTheme.typography.labelLarge,
                             )
                         },
                         selected = selectedFilter == filter,
@@ -153,6 +209,23 @@ internal fun MoviesContent(
                                 in MovieFilter.getGenreFilters() -> MaterialTheme.colorScheme.onTertiaryContainer
                                 else -> MaterialTheme.colorScheme.onSecondaryContainer
                             },
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        ),
+                        border = if (selectedFilter == filter) {
+                            FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = true,
+                                borderColor = when (filter) {
+                                    in MovieFilter.getGenreFilters() -> MaterialTheme.colorScheme.tertiary
+                                    else -> MaterialTheme.colorScheme.secondary
+                                },
+                                borderWidth = 2.dp,
+                            )
+                        } else {
+                            FilterChipDefaults.filterChipBorder(enabled = true, selected = false)
+                        },
+                        elevation = FilterChipDefaults.filterChipElevation(
+                            elevation = if (selectedFilter == filter) 4.dp else 0.dp,
                         ),
                     )
                 }
@@ -198,7 +271,7 @@ internal fun MoviesGrid(
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(160.dp),
-        modifier = modifier,
+        modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLowest),
         contentPadding = PaddingValues(16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -252,7 +325,7 @@ internal fun MoviesList(
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(1),
-        modifier = modifier,
+        modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLowest),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -343,6 +416,27 @@ internal fun MoviesPaginationFooter(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+/**
+ * Build subtitle text for movie carousel items
+ */
+private fun buildMovieSubtitle(movie: BaseItemDto): String = buildString {
+    movie.productionYear?.let { year ->
+        append(year)
+    }
+    movie.communityRating?.let { rating ->
+        if (isNotEmpty()) append(" • ")
+        append("★ ")
+        append((rating * 10).roundToInt() / 10f)
+    }
+    movie.runTimeTicks?.let { ticks ->
+        val minutes = (ticks / 10_000_000 / 60).toInt()
+        val hours = minutes / 60
+        val remainingMinutes = minutes % 60
+        if (isNotEmpty()) append(" • ")
+        append(if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m")
     }
 }
 

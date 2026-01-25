@@ -105,6 +105,7 @@ import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import java.lang.ref.WeakReference
 import kotlin.math.roundToInt
 
 @UnstableApi
@@ -141,20 +142,24 @@ fun VideoPlayerScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val activity = context as? android.app.Activity
+    val activityRef = remember(context) { WeakReference(context as? android.app.Activity) }
     val isTvDevice = remember { com.rpeters.jellyfin.utils.DeviceTypeUtils.isTvDevice(context) }
 
     // Get audio manager for volume control
-    val audioManager = remember { context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager }
+    val audioManager = remember {
+        context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
+    }
     val maxVolume = remember { audioManager.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC) }
 
     // Track current brightness and volume for gesture controls
-    var currentBrightness by remember {
-        mutableStateOf(activity?.window?.attributes?.screenBrightness ?: -1f)
+    var currentBrightness by remember(context) {
+        mutableStateOf(activityRef.get()?.window?.attributes?.screenBrightness ?: -1f)
     }
     var currentVolume by remember {
         mutableStateOf(audioManager.getStreamVolume(android.media.AudioManager.STREAM_MUSIC))
     }
+    var lastBrightnessUpdateMs by remember { mutableLongStateOf(0L) }
+    var lastVolumeUpdateMs by remember { mutableLongStateOf(0L) }
 
     // Use TV-optimized player for TV devices
     if (isTvDevice) {
@@ -273,13 +278,17 @@ fun VideoPlayerScreen(
                 detectTapGestures(
                     onTap = { offset ->
                         val currentTime = System.currentTimeMillis()
-                        val doubleTapThreshold = 300L // milliseconds
+                        val doubleTapThreshold = VideoPlayerGestureConstants.DOUBLE_TAP_THRESHOLD_MS
                         val screenWidth = size.width.toFloat()
 
                         if (currentTime - lastTapTime <= doubleTapThreshold) {
                             // Double tap detected
                             val isRightSide = offset.x > screenWidth / 2
-                            val seekAmount = if (isRightSide) 10000L else -10000L
+                            val seekAmount = if (isRightSide) {
+                                VideoPlayerGestureConstants.SEEK_AMOUNT_MS
+                            } else {
+                                -VideoPlayerGestureConstants.SEEK_AMOUNT_MS
+                            }
                             // Use real-time position from exoPlayer, fallback to state
                             val currentPos = exoPlayer?.currentPosition ?: currentPosMs
                             val newPosition = (currentPos + seekAmount).coerceIn(0L, playerState.duration)
@@ -306,34 +315,69 @@ fun VideoPlayerScreen(
                     val currentY = change.position.y
                     val deltaY = startY - currentY
                     val screenHeight = size.height.toFloat()
+                    if (screenHeight <= 0f) {
+                        return@detectDragGestures
+                    }
                     val isLeftSide = change.position.x < size.width / 2
 
                     // Only respond to significant vertical drags
-                    if (kotlin.math.abs(deltaY) > 5f) {
+                    if (kotlin.math.abs(deltaY) > VideoPlayerGestureConstants.MIN_VERTICAL_DRAG_PX) {
                         if (isLeftSide) {
                             // Left side - brightness control
-                            val brightnessChange = deltaY / (screenHeight * 0.5f)
-                            if (kotlin.math.abs(brightnessChange) > 0.01f && activity != null) {
+                            val brightnessChange =
+                                deltaY / (screenHeight * VideoPlayerGestureConstants.NORMALIZATION_FRACTION)
+                            if (kotlin.math.abs(brightnessChange) > VideoPlayerGestureConstants.BRIGHTNESS_MIN_DELTA) {
+                                val now = System.currentTimeMillis()
+                                if (now - lastBrightnessUpdateMs <
+                                    VideoPlayerGestureConstants.GESTURE_UPDATE_MIN_INTERVAL_MS
+                                ) {
+                                    return@detectDragGestures
+                                }
+                                lastBrightnessUpdateMs = now
+                                val activity = activityRef.get()
+                                if (activity == null) {
+                                    return@detectDragGestures
+                                }
                                 // Get current brightness (-1 means system default)
-                                val currentBrightnessValue = if (currentBrightness < 0f) 0.5f else currentBrightness
+                                val currentBrightnessValue = if (currentBrightness < 0f) {
+                                    VideoPlayerGestureConstants.DEFAULT_BRIGHTNESS
+                                } else {
+                                    currentBrightness
+                                }
                                 // Calculate new brightness (0.0 to 1.0)
                                 val newBrightness = (currentBrightnessValue + brightnessChange).coerceIn(0.0f, 1.0f)
 
                                 // Apply brightness change
-                                val layoutParams = activity.window.attributes
-                                layoutParams.screenBrightness = newBrightness
-                                activity.window.attributes = layoutParams
+                                try {
+                                    val layoutParams = activity.window.attributes
+                                    layoutParams.screenBrightness = newBrightness
+                                    activity.window.attributes = layoutParams
 
-                                // Update state and show feedback
-                                currentBrightness = newBrightness
-                                showSeekFeedback = true
-                                seekFeedbackIcon = Icons.Default.Brightness6
-                                seekFeedbackText = "${(newBrightness * 100).toInt()}%"
+                                    // Update state and show feedback
+                                    currentBrightness = newBrightness
+                                    showSeekFeedback = true
+                                    seekFeedbackIcon = Icons.Default.Brightness6
+                                    seekFeedbackText = "${(newBrightness * 100).toInt()}%"
+                                } catch (securityException: SecurityException) {
+                                    // Ignore and keep UI responsive if brightness changes are blocked.
+                                }
                             }
                         } else {
                             // Right side - volume control
-                            val volumeChange = (deltaY / (screenHeight * 0.5f) * maxVolume).toInt()
+                            if (maxVolume <= 0) {
+                                return@detectDragGestures
+                            }
+                            val volumeChange =
+                                (deltaY / (screenHeight * VideoPlayerGestureConstants.NORMALIZATION_FRACTION) * maxVolume)
+                                    .toInt()
                             if (kotlin.math.abs(volumeChange) > 0) {
+                                val now = System.currentTimeMillis()
+                                if (now - lastVolumeUpdateMs <
+                                    VideoPlayerGestureConstants.GESTURE_UPDATE_MIN_INTERVAL_MS
+                                ) {
+                                    return@detectDragGestures
+                                }
+                                lastVolumeUpdateMs = now
                                 // Calculate new volume
                                 val newVolume = (currentVolume + volumeChange).coerceIn(0, maxVolume)
 
@@ -1518,8 +1562,7 @@ private fun VideoControlsOverlay(
                         expanded = showSpeedMenu,
                         onDismissRequest = { onShowSpeedMenu(false) },
                     ) {
-                        val speeds = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
-                        speeds.forEach { s ->
+                        VideoPlayerGestureConstants.PLAYBACK_SPEEDS.forEach { s ->
                             DropdownMenuItem(
                                 text = {
                                     Row(
@@ -1583,6 +1626,17 @@ private data class VideoPlayerColors(
     val disabledControlContainer: Color,
     val disabledIcon: Color,
 )
+
+private object VideoPlayerGestureConstants {
+    const val DOUBLE_TAP_THRESHOLD_MS = 300L
+    const val SEEK_AMOUNT_MS = 10_000L
+    const val MIN_VERTICAL_DRAG_PX = 5f
+    const val NORMALIZATION_FRACTION = 0.5f
+    const val BRIGHTNESS_MIN_DELTA = 0.01f
+    const val DEFAULT_BRIGHTNESS = 0.5f
+    const val GESTURE_UPDATE_MIN_INTERVAL_MS = 50L
+    val PLAYBACK_SPEEDS = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
+}
 
 @Composable
 private fun rememberVideoPlayerColors(): VideoPlayerColors {

@@ -9,6 +9,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.ViewList
@@ -17,12 +18,15 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.ViewCarousel
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -41,6 +45,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
+import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
@@ -48,6 +53,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarMenuAction
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.MusicGreen
+import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -171,22 +177,59 @@ fun TVShowsScreen(
             ExpressiveTopAppBar(
                 title = stringResource(id = R.string.tv_shows),
                 actions = {
-                    // View mode toggle
-                    ExpressiveTopAppBarAction(
-                        icon = when (viewMode) {
-                            TVShowViewMode.GRID -> Icons.AutoMirrored.Filled.ViewList
-                            TVShowViewMode.LIST -> Icons.Default.ViewCarousel
-                            TVShowViewMode.CAROUSEL -> Icons.Default.GridView
-                        },
-                        contentDescription = "Toggle view mode",
-                        onClick = {
-                            viewMode = when (viewMode) {
-                                TVShowViewMode.GRID -> TVShowViewMode.LIST
-                                TVShowViewMode.LIST -> TVShowViewMode.CAROUSEL
-                                TVShowViewMode.CAROUSEL -> TVShowViewMode.GRID
-                            }
-                        },
-                    )
+                    // View mode segmented button
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    ) {
+                        SegmentedButton(
+                            selected = viewMode == TVShowViewMode.GRID,
+                            onClick = { viewMode = TVShowViewMode.GRID },
+                            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3),
+                            icon = {
+                                SegmentedButtonDefaults.Icon(active = viewMode == TVShowViewMode.GRID) {
+                                    Icon(
+                                        imageVector = Icons.Default.GridView,
+                                        contentDescription = "Grid view",
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            },
+                        ) {
+                            Text("Grid", style = MaterialTheme.typography.labelMedium)
+                        }
+                        SegmentedButton(
+                            selected = viewMode == TVShowViewMode.LIST,
+                            onClick = { viewMode = TVShowViewMode.LIST },
+                            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3),
+                            icon = {
+                                SegmentedButtonDefaults.Icon(active = viewMode == TVShowViewMode.LIST) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ViewList,
+                                        contentDescription = "List view",
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            },
+                        ) {
+                            Text("List", style = MaterialTheme.typography.labelMedium)
+                        }
+                        SegmentedButton(
+                            selected = viewMode == TVShowViewMode.CAROUSEL,
+                            onClick = { viewMode = TVShowViewMode.CAROUSEL },
+                            shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3),
+                            icon = {
+                                SegmentedButtonDefaults.Icon(active = viewMode == TVShowViewMode.CAROUSEL) {
+                                    Icon(
+                                        imageVector = Icons.Default.ViewCarousel,
+                                        contentDescription = "Carousel view",
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            },
+                        ) {
+                            Text("Carousel", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
 
                     // Sort menu
                     ExpressiveTopAppBarMenuAction(
@@ -219,12 +262,15 @@ fun TVShowsScreen(
         },
         modifier = modifier,
     ) { paddingValues ->
-        PullToRefreshBox(
+        ExpressivePullToRefreshBox(
             isRefreshing = isLoadingState,
             onRefresh = { viewModel.refreshTVShows() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
+            indicatorColor = SeriesBlue,
+            indicatorSize = 52.dp,
+            useWavyIndicator = true,
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
