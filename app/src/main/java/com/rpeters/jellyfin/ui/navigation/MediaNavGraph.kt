@@ -15,10 +15,12 @@ import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.screens.LibraryTypeScreen
+import com.rpeters.jellyfin.ui.screens.MoviesScreenContainer
 import com.rpeters.jellyfin.ui.screens.MusicScreen
 import com.rpeters.jellyfin.ui.screens.NowPlayingScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodesScreen
 import com.rpeters.jellyfin.ui.screens.TVSeasonScreen
+import com.rpeters.jellyfin.ui.screens.TVShowsScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -32,58 +34,27 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
     mainViewModel: MainAppViewModel,
 ) {
     composable(Screen.Movies.route) {
-        val viewModel = mainViewModel
-        val appState by viewModel.appState.collectAsStateWithLifecycle(
-            lifecycle = LocalLifecycleOwner.current.lifecycle,
-            minActiveState = androidx.lifecycle.Lifecycle.State.STARTED,
-        )
-
-        LaunchedEffect(appState.libraries, appState.isLoading) {
-            if (appState.libraries.isEmpty() && !appState.isLoading) {
-                viewModel.loadInitialData()
-            }
-        }
-
-        LibraryTypeScreen(
-            libraryType = LibraryType.MOVIES,
-            onItemClick = { item ->
+        MoviesScreenContainer(
+            onMovieClick = { item ->
                 item.id.let { movieId ->
                     navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
                 }
             },
-            viewModel = viewModel,
+            viewModel = mainViewModel,
         )
     }
 
     composable(Screen.TVShows.route) {
-        val viewModel = mainViewModel
-        val appState by viewModel.appState.collectAsStateWithLifecycle(
-            lifecycle = LocalLifecycleOwner.current.lifecycle,
-            minActiveState = androidx.lifecycle.Lifecycle.State.STARTED,
-        )
-
-        LaunchedEffect(appState.libraries, appState.isLoading) {
-            if (appState.libraries.isEmpty() && !appState.isLoading) {
-                viewModel.loadInitialData()
-            }
-        }
-
-        LibraryTypeScreen(
-            libraryType = LibraryType.TV_SHOWS,
-            onItemClick = { item ->
-                item.id.let { itemId ->
-                    navController.navigate(Screen.ItemDetail.createRoute(itemId.toString()))
-                }
-            },
+        TVShowsScreen(
             onTVShowClick = { seriesId ->
                 try {
-                    SecureLogger.v("NavGraph-TVShows", "?? Navigating to TV Seasons: $seriesId")
+                    SecureLogger.v("NavGraph-TVShows", "Navigating to TV Seasons: $seriesId")
                     navController.navigate(Screen.TVSeasons.createRoute(seriesId))
                 } catch (e: Exception) {
                     SecureLogger.e("NavGraph-TVShows", "Failed to navigate to TV Seasons: $seriesId", e)
                 }
             },
-            viewModel = viewModel,
+            viewModel = mainViewModel,
         )
     }
 

@@ -12,18 +12,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.models.MovieFilter
 import com.rpeters.jellyfin.data.models.MovieSortOrder
 import com.rpeters.jellyfin.data.models.MovieViewMode
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.theme.MovieRed
+import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @OptInAppExperimentalApis
@@ -199,4 +203,51 @@ enum class MovieScreenState {
     LOADING,
     EMPTY,
     CONTENT,
+}
+
+/**
+ * ViewModel-connected wrapper for MoviesScreen
+ * Used in navigation to display movies from the ViewModel
+ */
+@OptInAppExperimentalApis
+@Composable
+fun MoviesScreenContainer(
+    onMovieClick: (BaseItemDto) -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: MainAppViewModel = hiltViewModel(),
+) {
+    val appState by viewModel.appState.collectAsState()
+    var selectedFilter by remember { mutableStateOf(MovieFilter.ALL) }
+    var selectedSort by remember { mutableStateOf(MovieSortOrder.NAME) }
+    var viewMode by remember { mutableStateOf(MovieViewMode.GRID) }
+
+    // Load movies data
+    LaunchedEffect(appState.libraries) {
+        if (appState.libraries.isNotEmpty()) {
+            viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
+        }
+    }
+
+    val movies = viewModel.getLibraryTypeData(LibraryType.MOVIES)
+    val isLoading = appState.isLoadingMovies
+    val isLoadingMore = appState.isLoadingMore
+    val hasMoreItems = appState.hasMoreMovies
+
+    MoviesScreen(
+        movies = movies,
+        isLoading = isLoading,
+        isLoadingMore = isLoadingMore,
+        hasMoreItems = hasMoreItems,
+        selectedFilter = selectedFilter,
+        onFilterChange = { selectedFilter = it },
+        selectedSort = selectedSort,
+        onSortChange = { selectedSort = it },
+        viewMode = viewMode,
+        onViewModeChange = { viewMode = it },
+        onMovieClick = onMovieClick,
+        onRefresh = { viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true) },
+        onLoadMore = { viewModel.loadMoreMovies() },
+        getImageUrl = { viewModel.getImageUrl(it) },
+        modifier = modifier,
+    )
 }

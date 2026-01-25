@@ -66,7 +66,7 @@ scripts/gen-local-properties.ps1  # PowerShell (Windows)
 This is a modern Android client for Jellyfin media servers built with:
 - **UI**: Jetpack Compose (BOM 2026.01.00) with Material 3 design system
 - **Architecture**: MVVM pattern with Repository pattern for data access
-- **DI**: Hilt 2.58 for dependency injection throughout the app
+- **DI**: Hilt 2.59 for dependency injection throughout the app
 - **Async**: Kotlin Coroutines 1.10.2 with StateFlow for reactive UI updates
 - **Media Playback**: ExoPlayer (Media3 1.9.0) with Jellyfin FFmpeg decoder
 - **Networking**: Retrofit 3.0.0 + OkHttp 5.3.2 + Jellyfin SDK 1.8.6
@@ -263,7 +263,7 @@ Example: `feat: add movie detail screen`, `fix: prevent crash on empty library`
 3. **Music Playback**: UI exists but playback controls incomplete
 4. **Offline Downloads**: Screen exists but core functionality incomplete
 
-Refer to CURRENT_STATUS.md for detailed feature status and IMPROVEMENTS.md for roadmap.
+Refer to CURRENT_STATUS.md for detailed feature status and ROADMAP.md for roadmap.
 
 ## Performance Optimization
 
