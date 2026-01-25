@@ -196,24 +196,24 @@ internal fun TVShowsContent(
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.surfaceContainerLowest),
                     ) {
-                    items(
-                        items = tvShows,
-                        key = { tvShow -> tvShow.getItemKey() },
-                        contentType = { "tv_grid_item" },
-                    ) { tvShow ->
-                        ExpressiveMediaCard(
-                            title = tvShow.name ?: stringResource(id = R.string.unknown),
-                            subtitle = tvShow.productionYear?.toString().orEmpty(),
-                            imageUrl = getImageUrl(tvShow) ?: "",
-                            rating = tvShow.communityRating?.toFloat(),
-                            isFavorite = tvShow.userData?.isFavorite == true,
-                            isWatched = tvShow.userData?.played == true,
-                            watchProgress = ((tvShow.userData?.playedPercentage ?: 0.0) / 100.0).toFloat(),
-                            unwatchedEpisodeCount = tvShow.userData?.unplayedItemCount?.toInt(),
-                            onCardClick = { onTVShowClick(tvShow.id.toString()) },
-                            onMoreClick = { onTVShowLongPress(tvShow) },
-                        )
-                    }
+                        items(
+                            items = tvShows,
+                            key = { tvShow -> tvShow.getItemKey() },
+                            contentType = { "tv_grid_item" },
+                        ) { tvShow ->
+                            ExpressiveMediaCard(
+                                title = tvShow.name ?: stringResource(id = R.string.unknown),
+                                subtitle = tvShow.productionYear?.toString().orEmpty(),
+                                imageUrl = getImageUrl(tvShow) ?: "",
+                                rating = tvShow.communityRating?.toFloat(),
+                                isFavorite = tvShow.userData?.isFavorite == true,
+                                isWatched = tvShow.userData?.played == true,
+                                watchProgress = ((tvShow.userData?.playedPercentage ?: 0.0) / 100.0).toFloat(),
+                                unwatchedEpisodeCount = tvShow.userData?.unplayedItemCount?.toInt(),
+                                onCardClick = { onTVShowClick(tvShow.id.toString()) },
+                                onMoreClick = { onTVShowLongPress(tvShow) },
+                            )
+                        }
 
                         if (hasMoreItems || isLoadingMore) {
                             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -228,78 +228,77 @@ internal fun TVShowsContent(
                 }
 
                 TVShowViewMode.LIST -> {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(1),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surfaceContainerLowest),
-                ) {
-                    items(
-                        items = tvShows,
-                        key = { tvShow -> tvShow.getItemKey() },
-                        contentType = { "tv_list_item" },
-                    ) { tvShow ->
-                        ExpressiveMediaListItem(
-                            title = tvShow.name ?: stringResource(id = R.string.unknown),
-                            subtitle = buildString {
-                                tvShow.childCount?.let { count -> append("$count episodes") }
-                                tvShow.communityRating?.let { rating ->
-                                    if (isNotEmpty()) append(" • ")
-                                    append(String.format(Locale.ROOT, "%.1f★", rating))
-                                }
-                            },
-                            overline = tvShow.productionYear?.toString(),
-                            leadingContent = {
-                                JellyfinAsyncImage(
-                                    model = getImageUrl(tvShow),
-                                    contentDescription = tvShow.name,
-                                    modifier = Modifier
-                                        .width(72.dp)
-                                        .height(96.dp)
-                                        .clip(RoundedCornerShape(12.dp)),
-                                    contentScale = ContentScale.Crop,
-                                    requestSize = rememberCoilSize(72.dp, 96.dp),
-                                )
-                            },
-                            trailingContent = {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    if (tvShow.userData?.isFavorite == true) {
-                                        Icon(
-                                            imageVector = Icons.Default.Star,
-                                            contentDescription = stringResource(id = R.string.favorites),
-                                            tint = MaterialTheme.colorScheme.tertiary,
-                                            modifier = Modifier.size(18.dp),
-                                        )
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(1),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+                    ) {
+                        items(
+                            items = tvShows,
+                            key = { tvShow -> tvShow.getItemKey() },
+                            contentType = { "tv_list_item" },
+                        ) { tvShow ->
+                            ExpressiveMediaListItem(
+                                title = tvShow.name ?: stringResource(id = R.string.unknown),
+                                subtitle = buildString {
+                                    tvShow.childCount?.let { count -> append("$count episodes") }
+                                    tvShow.communityRating?.let { rating ->
+                                        if (isNotEmpty()) append(" • ")
+                                        append(String.format(Locale.ROOT, "%.1f★", rating))
                                     }
-                                    if (tvShow.userData?.played == true) {
-                                        WatchedIndicatorBadge(
-                                            item = tvShow,
-                                            modifier = Modifier.size(18.dp),
-                                        )
+                                },
+                                overline = tvShow.productionYear?.toString(),
+                                leadingContent = {
+                                    JellyfinAsyncImage(
+                                        model = getImageUrl(tvShow),
+                                        contentDescription = tvShow.name,
+                                        modifier = Modifier
+                                            .width(72.dp)
+                                            .height(96.dp)
+                                            .clip(RoundedCornerShape(12.dp)),
+                                        contentScale = ContentScale.Crop,
+                                        requestSize = rememberCoilSize(72.dp, 96.dp),
+                                    )
+                                },
+                                trailingContent = {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        if (tvShow.userData?.isFavorite == true) {
+                                            Icon(
+                                                imageVector = Icons.Default.Star,
+                                                contentDescription = stringResource(id = R.string.favorites),
+                                                tint = MaterialTheme.colorScheme.tertiary,
+                                                modifier = Modifier.size(18.dp),
+                                            )
+                                        }
+                                        if (tvShow.userData?.played == true) {
+                                            WatchedIndicatorBadge(
+                                                item = tvShow,
+                                                modifier = Modifier.size(18.dp),
+                                            )
+                                        }
                                     }
-                                }
-                            },
-                            onClick = { onTVShowClick(tvShow.id.toString()) },
-                            onLongClick = { onTVShowLongPress(tvShow) },
-                        )
-                    }
-
-                    if (hasMoreItems || isLoadingMore) {
-                        item {
-                            TVShowsPaginationFooter(
-                                isLoadingMore = isLoadingMore,
-                                hasMoreItems = hasMoreItems,
-                                onLoadMore = onLoadMore,
+                                },
+                                onClick = { onTVShowClick(tvShow.id.toString()) },
+                                onLongClick = { onTVShowLongPress(tvShow) },
                             )
                         }
-                    }
-                }
 
+                        if (hasMoreItems || isLoadingMore) {
+                            item {
+                                TVShowsPaginationFooter(
+                                    isLoadingMore = isLoadingMore,
+                                    hasMoreItems = hasMoreItems,
+                                    onLoadMore = onLoadMore,
+                                )
+                            }
+                        }
+                    }
                 }
                 TVShowViewMode.CAROUSEL -> {
                     val unknownText = stringResource(id = R.string.unknown)
