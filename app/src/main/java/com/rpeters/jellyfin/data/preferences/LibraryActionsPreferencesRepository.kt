@@ -60,8 +60,6 @@ class LibraryActionsPreferencesRepository(
                 "IOException saving library action preferences, keeping previous value",
                 exception,
             )
-        } catch (exception: Exception) {
-            SecureLogger.e(TAG, "Unexpected error saving library action preferences", exception)
         }
     }
 

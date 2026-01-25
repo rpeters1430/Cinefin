@@ -232,8 +232,6 @@ class OptimizedCacheManager @Inject constructor() {
                     // Re-throw to propagate cancellation properly
                     Log.d("OptimizedCacheManager", "Periodic cleanup cancelled")
                     throw e
-                } catch (e: Exception) {
-                    Log.e("OptimizedCacheManager", "Error during periodic cleanup", e)
                 }
             }
         }

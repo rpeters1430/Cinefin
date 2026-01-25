@@ -276,9 +276,6 @@ class JellyfinRepository @Inject constructor(
             Log.e("JellyfinRepository", "getLibraryItems 400/404: ${e.status} ${errorMsg ?: e.message}")
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error(errorMsg ?: "Bad Request: ${e.message}", e, errorType)
-        } catch (e: Exception) {
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("Failed to load items: ${e.message}", e, errorType)
         }
     }
 

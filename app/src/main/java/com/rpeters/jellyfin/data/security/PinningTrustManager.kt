@@ -119,21 +119,6 @@ class PinningTrustManager(
         } catch (e: NoSuchMethodException) {
             // Fallback to 2-parameter version if not available
             systemTrustManager.checkServerTrusted(chain, authType)
-        } catch (e: java.lang.reflect.InvocationTargetException) {
-            // Unwrap the actual exception
-            val cause = e.cause
-            if (cause is CertificateException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "System certificate validation failed for $hostname", cause)
-                }
-                throw cause
-            }
-            throw CertificateException("Certificate validation failed for $hostname", cause)
-        } catch (e: CertificateException) {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, "System certificate validation failed for $hostname", e)
-            }
-            throw e
         }
 
         // Step 2: Perform certificate pinning validation

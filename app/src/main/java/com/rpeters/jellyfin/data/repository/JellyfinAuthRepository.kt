@@ -310,10 +310,6 @@ class JellyfinAuthRepository @Inject constructor(
                     ApiResult.Error("Failed to check Quick Connect state: ${e.message}", e, errorType)
                 }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "getQuickConnectState: Failed", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("Failed to check Quick Connect state: ${e.message}", e, errorType)
         }
     }
 

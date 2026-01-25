@@ -320,9 +320,6 @@ object ServerUrlValidator {
         } catch (e: MalformedURLException) {
             Log.w(TAG, "Malformed URL: $url", e)
             false
-        } catch (e: Exception) {
-            Log.w(TAG, "Unexpected error validating URL: $url", e)
-            false
         }
     }
 

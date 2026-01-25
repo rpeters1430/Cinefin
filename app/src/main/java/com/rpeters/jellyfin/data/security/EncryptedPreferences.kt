@@ -162,12 +162,6 @@ class EncryptedPreferences @Inject constructor(
             }
             // SECURITY: Never log the actual value
             null
-        } catch (e: Exception) {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, "Encryption failed", e)
-            }
-            // SECURITY: Never log the actual value
-            null
         }
     }
 
@@ -224,16 +218,6 @@ class EncryptedPreferences @Inject constructor(
                 Log.e(TAG, "Decryption failed - data may be corrupted, tampered, or using wrong key", e)
             }
             // SECURITY: Don't log the encrypted value or any details that could help an attacker
-            null
-        } catch (e: IllegalArgumentException) {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, "Decryption failed - invalid Base64 encoding", e)
-            }
-            null
-        } catch (e: Exception) {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, "Decryption error", e)
-            }
             null
         }
     }

@@ -188,9 +188,6 @@ class OfflineDownloadManager @Inject constructor(
                 }
                 // Re-throw to propagate cancellation up the coroutine hierarchy
                 throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Download failed for ${download.id}", e)
-                updateDownloadStatus(download.id, DownloadStatus.FAILED)
             }
         }
 
