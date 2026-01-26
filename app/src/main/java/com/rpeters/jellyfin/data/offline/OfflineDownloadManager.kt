@@ -339,6 +339,8 @@ class OfflineDownloadManager @Inject constructor(
             if (file.exists()) {
                 file.delete()
             }
+        } catch (e: IOException) {
+            Log.e("OfflineDownloadManager", "Failed to delete file: ${download.localFilePath}", e)
         } catch (e: Exception) {
             Log.e("OfflineDownloadManager", "Failed to delete file: ${download.localFilePath}", e)
         }
@@ -351,6 +353,11 @@ class OfflineDownloadManager @Inject constructor(
                 val downloads = json.decodeFromString<List<OfflineDownload>>(downloadsJson)
                 _downloads.update { downloads }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e("OfflineDownloadManager", "Failed to load downloads", e)
+            _downloads.update { emptyList() }
         } catch (e: Exception) {
             Log.e("OfflineDownloadManager", "Failed to load downloads", e)
             _downloads.update { emptyList() }
@@ -363,6 +370,10 @@ class OfflineDownloadManager @Inject constructor(
                 val downloadsJson = json.encodeToString(_downloads.value)
                 preferences[stringPreferencesKey(DOWNLOADS_KEY)] = downloadsJson
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e("OfflineDownloadManager", "Failed to save downloads", e)
         } catch (e: Exception) {
             Log.e("OfflineDownloadManager", "Failed to save downloads", e)
         }

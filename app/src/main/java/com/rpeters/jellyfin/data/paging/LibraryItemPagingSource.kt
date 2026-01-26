@@ -6,6 +6,7 @@ import androidx.paging.PagingState
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -81,6 +82,8 @@ class LibraryItemPagingSource(
                     LoadResult.Error(Exception("Unexpected loading state"))
                 }
             }
+        } catch (exception: CancellationException) {
+            throw exception
         } catch (exception: Exception) {
             if (BuildConfig.DEBUG) {
                 Log.e(TAG, "Exception loading page", exception)

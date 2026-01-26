@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.di.ApplicationScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.io.File
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -88,6 +90,10 @@ class JellyfinCache @Inject constructor(
                 }
                 cleanupOldEntries()
                 updateCacheStats()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error during cache initialization", e)
             } catch (e: Exception) {
                 Log.e(TAG, "Error during cache initialization", e)
             }
@@ -131,6 +137,11 @@ class JellyfinCache @Inject constructor(
 
                 updateCacheStats()
                 true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Failed to cache items for key: $key", e)
+                false
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to cache items for key: $key", e)
                 false
@@ -194,6 +205,11 @@ class JellyfinCache @Inject constructor(
                 }
 
                 null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Failed to retrieve cached items for key: $key", e)
+                null
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to retrieve cached items for key: $key", e)
                 null
@@ -222,6 +238,12 @@ class JellyfinCache @Inject constructor(
                 val cacheData = json.decodeFromString<CacheData>(file.readText())
                 val isValid = (System.currentTimeMillis() - cacheData.timestamp) < cacheData.ttlMs
                 return@withContext isValid
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                Log.e(TAG, "Error checking cache validity for key: $key", e)
+                // Delete corrupted file
+                file.delete()
             } catch (e: Exception) {
                 Log.e(TAG, "Error checking cache validity for key: $key", e)
                 // Delete corrupted file
@@ -275,6 +297,11 @@ class JellyfinCache @Inject constructor(
     suspend fun getCacheSizeBytes(): Long = withContext(Dispatchers.IO) {
         try {
             ensureCacheDir().listFiles()?.sumOf { it.length() } ?: 0L
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error calculating cache size", e)
+            0L
         } catch (e: Exception) {
             Log.e(TAG, "Error calculating cache size", e)
             0L
@@ -316,6 +343,12 @@ class JellyfinCache @Inject constructor(
                                     Log.d(TAG, "Deleted expired cache file: ${file.name}")
                                 }
                             }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: IOException) {
+                            // Delete corrupted files
+                            file.delete()
+                            Log.w(TAG, "Deleted corrupted cache file: ${file.name}")
                         } catch (e: Exception) {
                             // Delete corrupted files
                             file.delete()
@@ -371,6 +404,10 @@ class JellyfinCache @Inject constructor(
             if (BuildConfig.DEBUG && deletedCount > 0) {
                 Log.d(TAG, "Evicted $deletedCount cache entries to stay within size limit")
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error during cache eviction", e)
         } catch (e: Exception) {
             Log.e(TAG, "Error during cache eviction", e)
         }
@@ -398,6 +435,10 @@ class JellyfinCache @Inject constructor(
                     totalSizeMB = totalSizeMB,
                 )
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "Error updating cache stats", e)
         } catch (e: Exception) {
             Log.e(TAG, "Error updating cache stats", e)
         }

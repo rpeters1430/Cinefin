@@ -6,6 +6,7 @@ import android.media.MediaCodecList
 import android.os.Build
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -419,6 +420,8 @@ class DeviceCapabilities @Inject constructor(
                 }
 
                 Pair(maxWidth, maxHeight)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 SecureLogger.w(TAG, "Failed to detect max resolution", e)
                 Pair(1920, 1080) // Fallback to 1080p
@@ -509,6 +512,8 @@ class DeviceCapabilities @Inject constructor(
                 hasHardwareDecoding = hardwareCodecs.isNotEmpty(),
                 softwareOnlyCodecs = softwareCodecs.toList(),
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.w(TAG, "Failed to detect hardware acceleration", e)
             HardwareAccelerationInfo(emptyList(), false, emptyList())
@@ -558,6 +563,8 @@ class DeviceCapabilities @Inject constructor(
                     )
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.w(TAG, "Failed to analyze video codec support", e)
         }
@@ -626,6 +633,8 @@ class DeviceCapabilities @Inject constructor(
                 SecureLogger.w(TAG, "Could not detect RAM, using fallback")
                 4_000_000_000L // 4GB assumption for modern devices
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.w(TAG, "Failed to get RAM info", e)
             2_000_000_000L // 2GB fallback
@@ -643,6 +652,8 @@ class DeviceCapabilities @Inject constructor(
             codecInfo?.getCapabilitiesForType(mimeType)?.videoCapabilities?.let { videoCaps ->
                 Pair(videoCaps.supportedWidths.upper, videoCaps.supportedHeights.upper)
             } ?: Pair(1920, 1080)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Pair(1920, 1080) // Fallback
         }
