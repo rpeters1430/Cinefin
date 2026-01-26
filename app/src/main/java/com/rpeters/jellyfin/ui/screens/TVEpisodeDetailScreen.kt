@@ -676,16 +676,12 @@ private fun formatDate(date: Any): String {
                         localDate.format(formatter)
                     } catch (e: CancellationException) {
                         throw e
-                    } catch (e: Exception) {
-                        dateStr
                     }
                 }
             }
         }
     } catch (e: CancellationException) {
         throw e
-    } catch (e: Exception) {
-        date.toString().substringBefore('T')
     }
 }
 

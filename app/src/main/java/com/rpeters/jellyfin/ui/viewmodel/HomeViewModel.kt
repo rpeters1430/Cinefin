@@ -15,11 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import retrofit2.HttpException
-import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -82,38 +79,6 @@ class HomeViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Jellyfin API error loading home data", e)
-                }
-                _homeState.value = _homeState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Failed to load home screen data: Server error",
-                )
-            } catch (e: HttpException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "HTTP error loading home data", e)
-                }
-                _homeState.value = _homeState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Failed to load home screen data: Network error",
-                )
-            } catch (e: IOException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Network error loading home data", e)
-                }
-                _homeState.value = _homeState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Failed to load home screen data: Connection error",
-                )
-            } catch (e: Exception) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Unexpected error loading home data", e)
-                }
-                _homeState.value = _homeState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Failed to load home screen data",
-                )
             } finally {
                 _homeState.value = _homeState.value.copy(isLoading = false)
             }

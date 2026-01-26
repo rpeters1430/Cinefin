@@ -370,8 +370,6 @@ fun FocusRequester.requestInitialFocus(
                 requestFocus()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                // Ignore focus request failures
             }
         }
     }

@@ -62,22 +62,6 @@ class JellyfinSystemRepository @Inject constructor(
             ApiResult.Success(response.content)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            handleException<PublicSystemInfo>(e, "Failed to connect to server")
-        } catch (e: HttpException) {
-            handleException<PublicSystemInfo>(e, "Failed to connect to server")
-        } catch (e: UnknownHostException) {
-            handleException<PublicSystemInfo>(e, "Failed to connect to server")
-        } catch (e: ConnectException) {
-            handleException<PublicSystemInfo>(e, "Failed to connect to server")
-        } catch (e: SocketTimeoutException) {
-            handleException<PublicSystemInfo>(e, "Failed to connect to server")
-        } catch (e: SSLException) {
-            handleException<PublicSystemInfo>(e, "Failed to connect to server")
-        } catch (e: IOException) {
-            handleException<PublicSystemInfo>(e, "Failed to connect to server")
-        } catch (e: Exception) {
-            handleException<PublicSystemInfo>(e, "Failed to connect to server")
         }
     }
 
@@ -99,22 +83,6 @@ class JellyfinSystemRepository @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            false
-        } catch (e: HttpException) {
-            false
-        } catch (e: UnknownHostException) {
-            false
-        } catch (e: ConnectException) {
-            false
-        } catch (e: SocketTimeoutException) {
-            false
-        } catch (e: SSLException) {
-            false
-        } catch (e: IOException) {
-            false
-        } catch (e: Exception) {
-            false
         }
     }
 

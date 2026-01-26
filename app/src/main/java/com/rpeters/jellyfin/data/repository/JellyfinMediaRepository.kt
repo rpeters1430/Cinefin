@@ -18,14 +18,8 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
-import retrofit2.HttpException
-import java.io.IOException
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
-import javax.net.ssl.SSLException
 
 /**
  * Repository containing media-related operations that were previously
@@ -467,54 +461,6 @@ class JellyfinMediaRepository @Inject constructor(
                 response.content.items
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar series: invalid status",
-                )
-                emptyList()
-            } catch (e: HttpException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar series: HTTP error",
-                )
-                emptyList()
-            } catch (e: UnknownHostException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar series: DNS failure",
-                )
-                emptyList()
-            } catch (e: ConnectException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar series: connection refused",
-                )
-                emptyList()
-            } catch (e: SocketTimeoutException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar series: timeout",
-                )
-                emptyList()
-            } catch (e: SSLException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar series: SSL error",
-                )
-                emptyList()
-            } catch (e: IOException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar series: I/O error",
-                )
-                emptyList()
-            } catch (e: Exception) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar series: ${e.message}",
-                )
-                emptyList()
             }
         }
 
@@ -537,54 +483,6 @@ class JellyfinMediaRepository @Inject constructor(
                 response.content.items
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar movies: invalid status",
-                )
-                emptyList()
-            } catch (e: HttpException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar movies: HTTP error",
-                )
-                emptyList()
-            } catch (e: UnknownHostException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar movies: DNS failure",
-                )
-                emptyList()
-            } catch (e: ConnectException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar movies: connection refused",
-                )
-                emptyList()
-            } catch (e: SocketTimeoutException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar movies: timeout",
-                )
-                emptyList()
-            } catch (e: SSLException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar movies: SSL error",
-                )
-                emptyList()
-            } catch (e: IOException) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar movies: I/O error",
-                )
-                emptyList()
-            } catch (e: Exception) {
-                SecureLogger.w(
-                    "JellyfinMediaRepository",
-                    "Failed to load similar movies: ${e.message}",
-                )
-                emptyList()
             }
         }
 

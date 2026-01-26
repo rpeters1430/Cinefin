@@ -65,9 +65,6 @@ fun PlaybackStatusIndicator(
                 analysis = enhancedPlaybackUtils.analyzePlaybackCapabilities(item)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                // Silently handle analysis failures to prevent UI disruption
-                analysis = null
             }
         }
     }

@@ -12,7 +12,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Socket
 
@@ -126,22 +125,6 @@ object NetworkDebugger {
                 )
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: IOException) {
-                val endTime = System.currentTimeMillis()
-                ConnectionTestResult(
-                    success = false,
-                    responseTime = endTime - startTime,
-                    error = e.message ?: "Network I/O error",
-                    details = "Socket connection failed: I/O error",
-                )
-            } catch (e: Exception) {
-                val endTime = System.currentTimeMillis()
-                ConnectionTestResult(
-                    success = false,
-                    responseTime = endTime - startTime,
-                    error = e.message ?: context.getString(R.string.unknown_error),
-                    details = "Socket connection failed: ${e.javaClass.simpleName}",
-                )
             }
         }
     }
@@ -165,9 +148,6 @@ object NetworkDebugger {
             Pair(host, port)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to parse URL: $url", e)
-            null
         }
     }
 

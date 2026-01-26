@@ -33,8 +33,6 @@ object ShareUtils {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.e("ShareUtils", "Failed to share media: ${e.message}", e)
         }
     }
 

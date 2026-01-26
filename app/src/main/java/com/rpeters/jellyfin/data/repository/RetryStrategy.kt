@@ -4,7 +4,6 @@ import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.delay
 import retrofit2.HttpException
 import java.io.IOException
 import java.net.ConnectException
@@ -45,30 +44,6 @@ class RetryStrategy @Inject constructor() {
             } catch (e: CancellationException) {
                 // Always re-throw cancellation exceptions for proper coroutine cancellation
                 throw e
-            } catch (e: HttpException) {
-                lastException = e
-                if (attempt < maxRetries && shouldRetry(e, attempt)) {
-                    val delay = calculateRetryDelay(e, attempt)
-                    logDebug("Retrying HTTP error (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms delay. Status: ${e.code()}")
-                    delay(delay)
-                } else {
-                    logDebug("HTTP operation failed after ${attempt + 1} attempts. Status: ${e.code()}")
-                    return@repeat
-                }
-            } catch (e: IOException) {
-                lastException = e
-                if (attempt < maxRetries && shouldRetry(e, attempt)) {
-                    val delay = calculateRetryDelay(e, attempt)
-                    logDebug("Retrying I/O error (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms delay. Error: ${e.message}")
-                    delay(delay)
-                } else {
-                    logDebug("I/O operation failed after ${attempt + 1} attempts. Error: ${e.message}")
-                    return@repeat
-                }
-            } catch (e: Exception) {
-                lastException = e
-                logDebug("Non-retryable error encountered: ${e.javaClass.simpleName} - ${e.message}")
-                return@repeat
             }
         }
 
@@ -165,30 +140,6 @@ class RetryStrategy @Inject constructor() {
             } catch (e: CancellationException) {
                 // Always re-throw cancellation exceptions for proper coroutine cancellation
                 throw e
-            } catch (e: HttpException) {
-                lastException = e
-                if (attempt < maxRetries && shouldRetryPredicate(e, attempt)) {
-                    val delay = calculateCustomRetryDelay(baseDelayMs, maxDelayMs, attempt)
-                    logDebug("Custom retry HTTP error (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms delay")
-                    delay(delay)
-                } else {
-                    logDebug("Custom retry HTTP failed after ${attempt + 1} attempts")
-                    return@repeat
-                }
-            } catch (e: IOException) {
-                lastException = e
-                if (attempt < maxRetries && shouldRetryPredicate(e, attempt)) {
-                    val delay = calculateCustomRetryDelay(baseDelayMs, maxDelayMs, attempt)
-                    logDebug("Custom retry I/O error (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms delay")
-                    delay(delay)
-                } else {
-                    logDebug("Custom retry I/O failed after ${attempt + 1} attempts")
-                    return@repeat
-                }
-            } catch (e: Exception) {
-                lastException = e
-                logDebug("Custom retry encountered non-retryable error: ${e.javaClass.simpleName}")
-                return@repeat
             }
         }
 

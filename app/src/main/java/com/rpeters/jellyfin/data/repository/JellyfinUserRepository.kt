@@ -5,7 +5,6 @@ import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.BaseJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import kotlinx.coroutines.CancellationException
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.playStateApi
@@ -19,14 +18,8 @@ import org.jellyfin.sdk.model.api.PlaybackStartInfo
 import org.jellyfin.sdk.model.api.PlaybackStopInfo
 import org.jellyfin.sdk.model.api.RepeatMode
 import org.jellyfin.sdk.model.api.UserItemDataDto
-import retrofit2.HttpException
-import java.io.IOException
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
-import javax.net.ssl.SSLException
 
 /**
  * Repository that contains operations specific to the user or session.
@@ -212,22 +205,6 @@ class JellyfinUserRepository @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            false
-        } catch (e: HttpException) {
-            false
-        } catch (e: UnknownHostException) {
-            false
-        } catch (e: ConnectException) {
-            false
-        } catch (e: SocketTimeoutException) {
-            false
-        } catch (e: SSLException) {
-            false
-        } catch (e: IOException) {
-            false
-        } catch (e: Exception) {
-            false
         }
     }
 }

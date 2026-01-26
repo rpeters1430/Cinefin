@@ -68,9 +68,6 @@ object ApiParameterValidator {
             return finalParams
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.e(TAG, "Parameter validation failed", e)
-            return null
         }
     }
 
@@ -90,9 +87,6 @@ object ApiParameterValidator {
             parentId
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IllegalArgumentException) {
-            Log.w(TAG, "Invalid parentId format: $parentId")
-            null
         }
     }
 
@@ -280,9 +274,6 @@ object ApiParameterValidator {
                 id
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                Log.w(TAG, "Invalid parentId '$id', ignoring")
-                null
             }
         }
 

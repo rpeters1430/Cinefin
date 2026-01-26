@@ -17,7 +17,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.io.File
-import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -92,10 +91,6 @@ class JellyfinCache @Inject constructor(
                 updateCacheStats()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: IOException) {
-                Log.e(TAG, "Error during cache initialization", e)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error during cache initialization", e)
             }
         }
     }
@@ -139,12 +134,6 @@ class JellyfinCache @Inject constructor(
                 true
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: IOException) {
-                Log.e(TAG, "Failed to cache items for key: $key", e)
-                false
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to cache items for key: $key", e)
-                false
             }
         }
     }
@@ -207,12 +196,6 @@ class JellyfinCache @Inject constructor(
                 null
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: IOException) {
-                Log.e(TAG, "Failed to retrieve cached items for key: $key", e)
-                null
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to retrieve cached items for key: $key", e)
-                null
             }
         }
     }
@@ -240,14 +223,6 @@ class JellyfinCache @Inject constructor(
                 return@withContext isValid
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: IOException) {
-                Log.e(TAG, "Error checking cache validity for key: $key", e)
-                // Delete corrupted file
-                file.delete()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error checking cache validity for key: $key", e)
-                // Delete corrupted file
-                file.delete()
             }
         }
 
@@ -299,12 +274,6 @@ class JellyfinCache @Inject constructor(
             ensureCacheDir().listFiles()?.sumOf { it.length() } ?: 0L
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "Error calculating cache size", e)
-            0L
-        } catch (e: Exception) {
-            Log.e(TAG, "Error calculating cache size", e)
-            0L
         }
     }
 
@@ -345,14 +314,6 @@ class JellyfinCache @Inject constructor(
                             }
                         } catch (e: CancellationException) {
                             throw e
-                        } catch (e: IOException) {
-                            // Delete corrupted files
-                            file.delete()
-                            Log.w(TAG, "Deleted corrupted cache file: ${file.name}")
-                        } catch (e: Exception) {
-                            // Delete corrupted files
-                            file.delete()
-                            Log.w(TAG, "Deleted corrupted cache file: ${file.name}")
                         }
                     }
                 }
@@ -406,10 +367,6 @@ class JellyfinCache @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "Error during cache eviction", e)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error during cache eviction", e)
         }
     }
 
@@ -437,10 +394,6 @@ class JellyfinCache @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "Error updating cache stats", e)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error updating cache stats", e)
         }
     }
 

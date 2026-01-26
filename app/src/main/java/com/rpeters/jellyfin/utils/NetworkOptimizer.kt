@@ -31,8 +31,6 @@ object NetworkOptimizer {
                 Log.d(TAG, "Network optimizations initialized successfully")
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to initialize network optimizations", e)
             }
         }
     }

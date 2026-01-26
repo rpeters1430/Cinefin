@@ -104,8 +104,6 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 detailViewModel.load(videoId)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                SecureLogger.e("NavGraph", "Error loading video details: ${e.message}", e)
             }
         }
         val item by detailViewModel.item
@@ -183,8 +181,6 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 detailViewModel.load(itemId)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                SecureLogger.e("NavGraph", "Error loading item details: ${e.message}", e)
             }
         }
         val item by detailViewModel.item
@@ -431,8 +427,6 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                             }
                         } catch (e: CancellationException) {
                             throw e
-                        } catch (e: Exception) {
-                            SecureLogger.e("NavGraph", "Failed to play episode: ${e.message}", e)
                         }
                     },
                     onDownloadClick = { episodeItem ->
@@ -465,8 +459,6 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                             }
                         } catch (e: CancellationException) {
                             throw e
-                        } catch (e: Exception) {
-                            SecureLogger.e("NavGraph", "Failed to download episode: ${e.message}", e)
                         }
                     },
                     onDeleteClick = { episodeItem ->

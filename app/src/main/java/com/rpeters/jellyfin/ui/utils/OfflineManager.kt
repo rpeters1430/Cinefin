@@ -142,8 +142,6 @@ class OfflineManager(private val context: Context) {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to refresh offline content", e)
         }
     }
 
@@ -183,9 +181,6 @@ class OfflineManager(private val context: Context) {
             cleared
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to clear offline content", e)
-            false
         }
     }
 
@@ -254,8 +249,6 @@ class OfflineManager(private val context: Context) {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.e(TAG, "Error during cleanup", e)
         }
     }
 

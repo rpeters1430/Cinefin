@@ -111,8 +111,6 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                     }
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Exception) {
-                    SecureLogger.e("NavGraph", "Error navigating to library: ${library.name}", e)
                 }
             },
             onSettingsClick = { navController.navigate(Screen.Profile.route) },
@@ -155,8 +153,6 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                     }
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Exception) {
-                    SecureLogger.e("NavGraph", "Error navigating to library: ${library.name}", e)
                 }
             },
             onSearchClick = { navController.navigate(Screen.Search.route) },

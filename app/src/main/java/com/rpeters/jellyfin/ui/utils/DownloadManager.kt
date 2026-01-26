@@ -88,12 +88,6 @@ object MediaDownloadManager {
             downloadId
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "I/O error starting download for ${item.name}", e)
-            null
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start download for ${item.name}: ${e.message}", e)
-            null
         }
     }
 
@@ -116,12 +110,6 @@ object MediaDownloadManager {
             queryDownloadEntry(context, fileName, subPath) != null
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "I/O error checking download status for ${item.name}", e)
-            false
-        } catch (e: Exception) {
-            Log.e(TAG, "Error checking download status for ${item.name}: ${e.message}", e)
-            false
         }
     }
 
@@ -144,12 +132,6 @@ object MediaDownloadManager {
             queryDownloadEntry(context, fileName, subPath)?.uri?.toString()
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "I/O error getting local file path for ${item.name}", e)
-            null
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting local file path for ${item.name}: ${e.message}", e)
-            null
         }
     }
 
@@ -184,12 +166,6 @@ object MediaDownloadManager {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "I/O error deleting download for ${item.name}", e)
-            false
-        } catch (e: Exception) {
-            Log.e(TAG, "Error deleting download for ${item.name}: ${e.message}", e)
-            false
         }
     }
 
@@ -231,12 +207,6 @@ object MediaDownloadManager {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "I/O error getting download status for ID $downloadId", e)
-            null
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting download status for ID $downloadId: ${e.message}", e)
-            null
         }
     }
 
@@ -251,12 +221,6 @@ object MediaDownloadManager {
             sumMediaStoreDownloads(context)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "I/O error calculating total download size", e)
-            0L
-        } catch (e: Exception) {
-            Log.e(TAG, "Error calculating total download size: ${e.message}", e)
-            0L
         }
     }
 
@@ -271,12 +235,6 @@ object MediaDownloadManager {
             deleteMediaStoreDownloads(context)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "I/O error clearing all downloads", e)
-            false
-        } catch (e: Exception) {
-            Log.e(TAG, "Error clearing all downloads: ${e.message}", e)
-            false
         }
     }
 

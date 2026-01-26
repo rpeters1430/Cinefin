@@ -341,8 +341,6 @@ class OfflineDownloadManager @Inject constructor(
             }
         } catch (e: IOException) {
             Log.e("OfflineDownloadManager", "Failed to delete file: ${download.localFilePath}", e)
-        } catch (e: Exception) {
-            Log.e("OfflineDownloadManager", "Failed to delete file: ${download.localFilePath}", e)
         }
     }
 
@@ -355,12 +353,6 @@ class OfflineDownloadManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e("OfflineDownloadManager", "Failed to load downloads", e)
-            _downloads.update { emptyList() }
-        } catch (e: Exception) {
-            Log.e("OfflineDownloadManager", "Failed to load downloads", e)
-            _downloads.update { emptyList() }
         }
     }
 
@@ -372,10 +364,6 @@ class OfflineDownloadManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e("OfflineDownloadManager", "Failed to save downloads", e)
-        } catch (e: Exception) {
-            Log.e("OfflineDownloadManager", "Failed to save downloads", e)
         }
     }
 

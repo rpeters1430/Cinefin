@@ -49,8 +49,6 @@ class CredentialSecurityPreferencesViewModel @Inject constructor(
                 secureCredentialManager.applyCredentialAuthenticationRequirement(enabled)
             } catch (e: CancellationException) {
                 throw e
-            } catch (exception: Exception) {
-                _errorMessage.value = exception.message
             } finally {
                 _isUpdating.value = false
             }

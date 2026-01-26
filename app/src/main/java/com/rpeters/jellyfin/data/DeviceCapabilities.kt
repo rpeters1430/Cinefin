@@ -422,9 +422,6 @@ class DeviceCapabilities @Inject constructor(
                 Pair(maxWidth, maxHeight)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                SecureLogger.w(TAG, "Failed to detect max resolution", e)
-                Pair(1920, 1080) // Fallback to 1080p
             }
         }
         // Use safe call with safe default to prevent NPE
@@ -514,9 +511,6 @@ class DeviceCapabilities @Inject constructor(
             )
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.w(TAG, "Failed to detect hardware acceleration", e)
-            HardwareAccelerationInfo(emptyList(), false, emptyList())
         }
     }
 
@@ -565,8 +559,6 @@ class DeviceCapabilities @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.w(TAG, "Failed to analyze video codec support", e)
         }
 
         return support
@@ -635,9 +627,6 @@ class DeviceCapabilities @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.w(TAG, "Failed to get RAM info", e)
-            2_000_000_000L // 2GB fallback
         }
     }
 
@@ -654,8 +643,6 @@ class DeviceCapabilities @Inject constructor(
             } ?: Pair(1920, 1080)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Pair(1920, 1080) // Fallback
         }
     }
 

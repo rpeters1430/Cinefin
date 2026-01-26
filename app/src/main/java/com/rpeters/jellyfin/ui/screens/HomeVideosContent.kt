@@ -405,8 +405,6 @@ private fun buildHomeVideoSubtitle(video: BaseItemDto): String = buildString {
             append(date.format(formatter))
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            // If formatting fails, just skip the date
         }
     }
     video.runTimeTicks?.let { ticks ->

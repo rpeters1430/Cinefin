@@ -43,9 +43,6 @@ object RepositoryUtils {
             matches.firstOrNull { it in 400..599 }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.w(TAG, "Failed to extract status code from exception", e)
-            null
         }
     }
 

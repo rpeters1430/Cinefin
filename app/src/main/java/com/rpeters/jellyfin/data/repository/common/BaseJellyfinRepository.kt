@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.data.repository.common
 
-import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.JellyfinServer
@@ -9,23 +8,14 @@ import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.ui.utils.RetryManager
-import com.rpeters.jellyfin.utils.AppResources
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.model.api.BaseItemDto
-import retrofit2.HttpException
-import java.io.IOException
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 import javax.inject.Inject
-import javax.net.ssl.SSLException
 
 /**
  * Lightweight base class shared by repository implementations.
@@ -110,122 +100,6 @@ open class BaseJellyfinRepository @Inject constructor(
             operation()
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            if (RepositoryUtils.is401Error(e)) {
-                return tokenRefreshMutex.withLock {
-                    Logger.d(LogCategory.NETWORK, javaClass.simpleName, "HTTP 401 detected, attempting force token refresh")
-
-                    // Double-check if another thread already refreshed the token
-                    val currentServer = authRepository.getCurrentServer()
-                    if (currentServer?.accessToken != null && !authRepository.isTokenExpired()) {
-                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token already refreshed by another thread, retrying operation")
-                        sessionManager.invalidateClients()
-                        // Add small delay to ensure client cache is properly cleared
-                        kotlinx.coroutines.delay(50)
-                        return@withLock operation()
-                    }
-
-                    // Check if authentication is already in progress to prevent concurrent attempts
-                    if (authRepository.isAuthenticating.first()) {
-                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication already in progress, waiting for completion")
-                        // Wait for authentication to complete, with timeout
-                        val maxWaitMs = 10000L // 10 seconds timeout
-                        val pollIntervalMs = 100L
-                        var waitedMs = 0L
-                        while (authRepository.isAuthenticating.first() && waitedMs < maxWaitMs) {
-                            kotlinx.coroutines.delay(pollIntervalMs)
-                            waitedMs += pollIntervalMs
-                        }
-
-                        // Authentication completed, retry operation
-                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication completed by another thread, retrying operation")
-                        sessionManager.invalidateClients()
-                        // Add small delay to ensure client cache is properly cleared
-                        kotlinx.coroutines.delay(50)
-                        return@withLock operation()
-                    }
-
-                    val refreshResult = authRepository.forceReAuthenticate()
-                    if (refreshResult) {
-                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Force token refresh successful, retrying operation")
-                        // Invalidate clients to ensure new token is used
-                        sessionManager.invalidateClients()
-
-                        // Retry the operation with refreshed token
-                        // Note: The operation closure should re-fetch server state for updated tokens
-                        operation()
-                    } else {
-                        Logger.e(LogCategory.NETWORK, javaClass.simpleName, "Force token refresh failed")
-                        throw Exception("Authentication failed: Unable to refresh token")
-                    }
-                }
-            } else {
-                throw e
-            }
-        } catch (e: HttpException) {
-            if (RepositoryUtils.is401Error(e)) {
-                return tokenRefreshMutex.withLock {
-                    Logger.d(LogCategory.NETWORK, javaClass.simpleName, "HTTP 401 detected, attempting force token refresh")
-
-                    // Double-check if another thread already refreshed the token
-                    val currentServer = authRepository.getCurrentServer()
-                    if (currentServer?.accessToken != null && !authRepository.isTokenExpired()) {
-                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Token already refreshed by another thread, retrying operation")
-                        sessionManager.invalidateClients()
-                        // Add small delay to ensure client cache is properly cleared
-                        kotlinx.coroutines.delay(50)
-                        return@withLock operation()
-                    }
-
-                    // Check if authentication is already in progress to prevent concurrent attempts
-                    if (authRepository.isAuthenticating.first()) {
-                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication already in progress, waiting for completion")
-                        // Wait for authentication to complete, with timeout
-                        val maxWaitMs = 10000L // 10 seconds timeout
-                        val pollIntervalMs = 100L
-                        var waitedMs = 0L
-                        while (authRepository.isAuthenticating.first() && waitedMs < maxWaitMs) {
-                            kotlinx.coroutines.delay(pollIntervalMs)
-                            waitedMs += pollIntervalMs
-                        }
-
-                        // Authentication completed, retry operation
-                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Authentication completed by another thread, retrying operation")
-                        sessionManager.invalidateClients()
-                        // Add small delay to ensure client cache is properly cleared
-                        kotlinx.coroutines.delay(50)
-                        return@withLock operation()
-                    }
-
-                    val refreshResult = authRepository.forceReAuthenticate()
-                    if (refreshResult) {
-                        Logger.d(LogCategory.NETWORK, javaClass.simpleName, "Force token refresh successful, retrying operation")
-                        // Invalidate clients to ensure new token is used
-                        sessionManager.invalidateClients()
-
-                        // Retry the operation with refreshed token
-                        // Note: The operation closure should re-fetch server state for updated tokens
-                        operation()
-                    } else {
-                        Logger.e(LogCategory.NETWORK, javaClass.simpleName, "Force token refresh failed")
-                        throw Exception("Authentication failed: Unable to refresh token")
-                    }
-                }
-            } else {
-                throw e
-            }
-        } catch (e: UnknownHostException) {
-            throw e
-        } catch (e: ConnectException) {
-            throw e
-        } catch (e: SocketTimeoutException) {
-            throw e
-        } catch (e: SSLException) {
-            throw e
-        } catch (e: IOException) {
-            throw e
-        } catch (e: Exception) {
-            throw e
         }
     }
 
@@ -242,78 +116,6 @@ open class BaseJellyfinRepository @Inject constructor(
             ApiResult.Success(result)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: HttpException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: UnknownHostException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: ConnectException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: SocketTimeoutException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: SSLException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: IOException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: Exception) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
         }
 
     /**
@@ -355,78 +157,6 @@ open class BaseJellyfinRepository @Inject constructor(
             ApiResult.Success(result)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: InvalidStatusException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: HttpException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: UnknownHostException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: ConnectException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: SocketTimeoutException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: SSLException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: IOException) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-        } catch (e: Exception) {
-            Logger.e(
-                LogCategory.NETWORK,
-                javaClass.simpleName,
-                "Error executing $operationName",
-                e,
-            )
-            val error = RepositoryUtils.getErrorType(e)
-            ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
         }
     }
 
@@ -446,78 +176,6 @@ open class BaseJellyfinRepository @Inject constructor(
                 ApiResult.Success(result)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: HttpException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: UnknownHostException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: ConnectException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: SocketTimeoutException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: SSLException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: IOException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: Exception) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
             }
         }
     }
@@ -539,78 +197,6 @@ open class BaseJellyfinRepository @Inject constructor(
                 ApiResult.Success(result)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: HttpException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: UnknownHostException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: ConnectException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: SocketTimeoutException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: SSLException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: IOException) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
-            } catch (e: Exception) {
-                Logger.e(
-                    LogCategory.NETWORK,
-                    javaClass.simpleName,
-                    "Error executing $operationName on attempt $attempt",
-                    e,
-                )
-                val error = RepositoryUtils.getErrorType(e)
-                ApiResult.Error(e.message ?: AppResources.getString(R.string.unknown_error), e, error)
             }
         }
     }

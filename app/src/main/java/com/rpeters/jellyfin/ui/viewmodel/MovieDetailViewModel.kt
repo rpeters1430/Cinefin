@@ -44,8 +44,6 @@ class MovieDetailViewModel @Inject constructor(
                         enhancedPlaybackUtils.analyzePlaybackCapabilities(result.data)
                     } catch (e: CancellationException) {
                         throw e
-                    } catch (e: Exception) {
-                        null
                     }
                     _state.value = _state.value.copy(
                         movie = result.data,

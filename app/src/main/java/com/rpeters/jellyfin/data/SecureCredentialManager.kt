@@ -29,8 +29,6 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import java.io.IOException
-import java.security.GeneralSecurityException
 import java.security.KeyStore
 import java.security.KeyStoreException
 import java.security.MessageDigest
@@ -142,10 +140,6 @@ class SecureCredentialManager @Inject constructor(
                         keyStore.deleteEntry(alias)
                     } catch (e: CancellationException) {
                         throw e
-                    } catch (e: KeyStoreException) {
-                        SecureLogger.w(TAG, "Failed to delete old key: $alias", e)
-                    } catch (e: Exception) {
-                        SecureLogger.w(TAG, "Failed to delete old key: $alias", e)
                     }
                 }
             }
@@ -168,8 +162,6 @@ class SecureCredentialManager @Inject constructor(
                 keyStore.deleteEntry(alias)
             } catch (e: KeyStoreException) {
                 Log.w(TAG, "Failed to delete key alias: $alias", e)
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to delete key alias: $alias", e)
             }
         }
     }
@@ -182,8 +174,6 @@ class SecureCredentialManager @Inject constructor(
                 try {
                     keyStore.deleteEntry(alias)
                 } catch (e: KeyStoreException) {
-                    Log.w(TAG, "Failed to delete old key: $alias", e)
-                } catch (e: Exception) {
                     Log.w(TAG, "Failed to delete old key: $alias", e)
                 }
             }
@@ -273,15 +263,6 @@ class SecureCredentialManager @Inject constructor(
             Base64.encodeToString(combined, Base64.NO_WRAP)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: GeneralSecurityException) {
-            SecureLogger.e(TAG, "Encryption failed", e)
-            throw SecurityException("Failed to encrypt data", e)
-        } catch (e: KeyStoreException) {
-            SecureLogger.e(TAG, "Encryption failed", e)
-            throw SecurityException("Failed to encrypt data", e)
-        } catch (e: Exception) {
-            SecureLogger.e(TAG, "Encryption failed", e)
-            throw SecurityException("Failed to encrypt data", e)
         }
     }
 
@@ -302,15 +283,6 @@ class SecureCredentialManager @Inject constructor(
             String(cipher.doFinal(cipherData))
         } catch (e: CancellationException) {
             throw e
-        } catch (e: GeneralSecurityException) {
-            SecureLogger.e(TAG, "Decryption failed", e)
-            null // Return null if decryption fails
-        } catch (e: KeyStoreException) {
-            SecureLogger.e(TAG, "Decryption failed", e)
-            null // Return null if decryption fails
-        } catch (e: Exception) {
-            SecureLogger.e(TAG, "Decryption failed", e)
-            null // Return null if decryption fails
         }
     }
 
@@ -323,18 +295,6 @@ class SecureCredentialManager @Inject constructor(
             logDebug { "Key rotation completed successfully" }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: GeneralSecurityException) {
-            SecureLogger.e(TAG, "Key rotation failed", e)
-            throw SecurityException("Failed to rotate encryption key", e)
-        } catch (e: KeyStoreException) {
-            SecureLogger.e(TAG, "Key rotation failed", e)
-            throw SecurityException("Failed to rotate encryption key", e)
-        } catch (e: IOException) {
-            SecureLogger.e(TAG, "Key rotation failed", e)
-            throw SecurityException("Failed to rotate encryption key", e)
-        } catch (e: Exception) {
-            SecureLogger.e(TAG, "Key rotation failed", e)
-            throw SecurityException("Failed to rotate encryption key", e)
         }
     }
 
@@ -355,58 +315,6 @@ class SecureCredentialManager @Inject constructor(
             removeOldKeys(newAlias)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: GeneralSecurityException) {
-            try {
-                withContext(NonCancellable + Dispatchers.IO) {
-                    deleteAliasIfExists(newAlias)
-                    restoreCredentials(existingCredentials)
-                    credentialSecurityPreferencesRepository.setRequireStrongAuthForCredentials(currentRequirement)
-                    cachedUserAuthRequired = currentRequirement
-                }
-            } catch (rollbackException: Exception) {
-                Log.e(TAG, "Failed to rollback credential authentication requirement", rollbackException)
-            }
-            Log.e(TAG, "Failed to apply credential authentication requirement", e)
-            throw SecurityException("Failed to update credential encryption policy", e)
-        } catch (e: KeyStoreException) {
-            try {
-                withContext(NonCancellable + Dispatchers.IO) {
-                    deleteAliasIfExists(newAlias)
-                    restoreCredentials(existingCredentials)
-                    credentialSecurityPreferencesRepository.setRequireStrongAuthForCredentials(currentRequirement)
-                    cachedUserAuthRequired = currentRequirement
-                }
-            } catch (rollbackException: Exception) {
-                Log.e(TAG, "Failed to rollback credential authentication requirement", rollbackException)
-            }
-            Log.e(TAG, "Failed to apply credential authentication requirement", e)
-            throw SecurityException("Failed to update credential encryption policy", e)
-        } catch (e: IOException) {
-            try {
-                withContext(NonCancellable + Dispatchers.IO) {
-                    deleteAliasIfExists(newAlias)
-                    restoreCredentials(existingCredentials)
-                    credentialSecurityPreferencesRepository.setRequireStrongAuthForCredentials(currentRequirement)
-                    cachedUserAuthRequired = currentRequirement
-                }
-            } catch (rollbackException: Exception) {
-                Log.e(TAG, "Failed to rollback credential authentication requirement", rollbackException)
-            }
-            Log.e(TAG, "Failed to apply credential authentication requirement", e)
-            throw SecurityException("Failed to update credential encryption policy", e)
-        } catch (e: Exception) {
-            try {
-                withContext(NonCancellable + Dispatchers.IO) {
-                    deleteAliasIfExists(newAlias)
-                    restoreCredentials(existingCredentials)
-                    credentialSecurityPreferencesRepository.setRequireStrongAuthForCredentials(currentRequirement)
-                    cachedUserAuthRequired = currentRequirement
-                }
-            } catch (rollbackException: Exception) {
-                Log.e(TAG, "Failed to rollback credential authentication requirement", rollbackException)
-            }
-            Log.e(TAG, "Failed to apply credential authentication requirement", e)
-            throw SecurityException("Failed to update credential encryption policy", e)
         }
     }
 
@@ -484,18 +392,6 @@ class SecureCredentialManager @Inject constructor(
             }
             logDebug { "savePassword: 🟢 EXITED NonCancellable block - password save operation completed" }
         } catch (e: CancellationException) {
-            throw e
-        } catch (e: GeneralSecurityException) {
-            SecureLogger.e(TAG, "savePassword: EXCEPTION during save operation", e)
-            throw e
-        } catch (e: KeyStoreException) {
-            SecureLogger.e(TAG, "savePassword: EXCEPTION during save operation", e)
-            throw e
-        } catch (e: IOException) {
-            SecureLogger.e(TAG, "savePassword: EXCEPTION during save operation", e)
-            throw e
-        } catch (e: Exception) {
-            SecureLogger.e(TAG, "savePassword: EXCEPTION during save operation", e)
             throw e
         }
     }

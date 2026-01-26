@@ -58,11 +58,6 @@ object MediaPlayerUtils {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.e("MediaPlayerUtils", "Failed to launch internal player, trying external: ${e.message}", e)
-
-            // Fallback to external player
-            playMediaExternal(context, streamUrl, item)
         }
     }
 
@@ -132,24 +127,6 @@ object MediaPlayerUtils {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.e("MediaPlayerUtils", "Failed to launch external player: ${e.message}", e)
-
-            // Last resort fallback: try with generic intent
-            try {
-                val fallbackIntent = Intent(Intent.ACTION_VIEW, streamUrl.toUri()).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                context.startActivity(fallbackIntent)
-                if (BuildConfig.DEBUG) {
-                    Log.d("MediaPlayerUtils", "Successfully launched fallback intent")
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (fallbackException: Exception) {
-                Log.e("MediaPlayerUtils", "All playback methods failed: ${fallbackException.message}", fallbackException)
-                throw MediaPlayerException("Unable to play media. No compatible media player found.")
-            }
         }
     }
 
@@ -181,10 +158,6 @@ object MediaPlayerUtils {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.e("MediaPlayerUtils", "Failed to launch video player with quality: ${e.message}", e)
-            // Fallback to regular playback
-            playMedia(context, streamUrl, item)
         }
     }
 
@@ -200,9 +173,6 @@ object MediaPlayerUtils {
             activities.isNotEmpty()
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.w("MediaPlayerUtils", "Error checking for media player availability: ${e.message}")
-            false
         }
     }
 
@@ -237,9 +207,6 @@ object MediaPlayerUtils {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.w("MediaPlayerUtils", "Failed to compute optimal stream URL: ${e.message}", e)
-            baseStreamUrl
         }
     }
 }

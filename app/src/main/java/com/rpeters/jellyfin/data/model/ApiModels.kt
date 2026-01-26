@@ -61,9 +61,6 @@ suspend fun <T> withRetry(
             return operation()
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            kotlinx.coroutines.delay(currentDelay)
-            currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)
         }
     }
     return operation() // Last attempt without catch

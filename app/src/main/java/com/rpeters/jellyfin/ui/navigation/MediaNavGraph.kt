@@ -53,8 +53,6 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                     navController.navigate(Screen.TVSeasons.createRoute(seriesId))
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: Exception) {
-                    SecureLogger.e("NavGraph-TVShows", "Failed to navigate to TV Seasons: $seriesId", e)
                 }
             },
             viewModel = mainViewModel,

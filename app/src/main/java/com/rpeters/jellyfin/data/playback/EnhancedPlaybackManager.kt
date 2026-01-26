@@ -80,9 +80,6 @@ class EnhancedPlaybackManager @Inject constructor(
                 return@withContext serverDirectedResult
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                SecureLogger.e(TAG, "Failed to get optimal playback URL", e)
-                PlaybackResult.Error("Failed to get playback URL: ${e.message}")
             }
         }
     }
@@ -364,9 +361,6 @@ class EnhancedPlaybackManager @Inject constructor(
             repository.getPlaybackInfo(itemId)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e(TAG, "Failed to get playback info for item $itemId", e)
-            null
         }
     }
 

@@ -33,13 +33,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.BaseItemPerson
 import org.jellyfin.sdk.model.api.CollectionType
-import retrofit2.HttpException
-import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 
@@ -165,8 +162,6 @@ class MainAppViewModel @Inject constructor(
                 return@withContext authRepository.reAuthenticate()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                false
             }
         }
     }
@@ -314,26 +309,6 @@ class MainAppViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                _appState.value = _appState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Error loading data: Server error",
-                )
-            } catch (e: HttpException) {
-                _appState.value = _appState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Error loading data: Network error",
-                )
-            } catch (e: IOException) {
-                _appState.value = _appState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Error loading data: Connection error",
-                )
-            } catch (e: Exception) {
-                _appState.value = _appState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Error loading data: ${e.message}",
-                )
             }
         }
     }
@@ -577,22 +552,6 @@ class MainAppViewModel @Inject constructor(
                 repository.validateAndRefreshTokenManually()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to refresh authentication: Server error",
-                )
-            } catch (e: HttpException) {
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to refresh authentication: Network error",
-                )
-            } catch (e: IOException) {
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to refresh authentication: Connection error",
-                )
-            } catch (e: Exception) {
-                _appState.value = _appState.value.copy(
-                    errorMessage = "Failed to refresh authentication: ${e.message}",
-                )
             }
         }
     }

@@ -84,11 +84,6 @@ class LibraryItemPagingSource(
             }
         } catch (exception: CancellationException) {
             throw exception
-        } catch (exception: Exception) {
-            if (BuildConfig.DEBUG) {
-                Log.e(TAG, "Exception loading page", exception)
-            }
-            LoadResult.Error(exception)
         }
     }
 

@@ -14,9 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import retrofit2.HttpException
-import java.io.IOException
 
 /**
  * Enhanced base ViewModel that provides common functionality for error handling,
@@ -109,38 +106,6 @@ abstract class BaseJellyfinViewModel : ViewModel() {
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Jellyfin API error in operation: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                _errorState.value = processedError
-                onError(processedError)
-            } catch (e: HttpException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "HTTP error in operation: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                _errorState.value = processedError
-                onError(processedError)
-            } catch (e: IOException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Network error in operation: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                _errorState.value = processedError
-                onError(processedError)
-            } catch (e: Exception) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Unexpected error in operation: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                _errorState.value = processedError
-                onError(processedError)
             } finally {
                 if (showLoading) {
                     _isLoading.value = false
@@ -191,34 +156,6 @@ abstract class BaseJellyfinViewModel : ViewModel() {
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: InvalidStatusException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Jellyfin API error in refresh: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                onError(processedError)
-            } catch (e: HttpException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "HTTP error in refresh: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                onError(processedError)
-            } catch (e: IOException) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Network error in refresh: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                onError(processedError)
-            } catch (e: Exception) {
-                if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Unexpected error in refresh: $operationName", e)
-                }
-
-                val processedError = ErrorHandler.processError(e, operation = operationName)
-                onError(processedError)
             } finally {
                 _isRefreshing.value = false
             }
@@ -316,9 +253,6 @@ suspend fun <T> safeCall(
         operation()
     } catch (e: CancellationException) {
         throw e
-    } catch (e: Exception) {
-        onError(e)
-        null
     }
 }
 

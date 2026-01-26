@@ -149,8 +149,6 @@ class TrackSelectionManager(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.e("TrackSelectionManager", "Failed to select audio track: $trackId", e)
         }
     }
 
@@ -203,8 +201,6 @@ class TrackSelectionManager(
             trackSelector.setParameters(parametersBuilder.build())
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            Log.e("TrackSelectionManager", "Failed to select subtitle track: $trackId", e)
         }
     }
 

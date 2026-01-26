@@ -9,11 +9,8 @@ import kotlinx.coroutines.sync.withLock
 import okhttp3.CertificatePinner
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.IOException
-import java.security.GeneralSecurityException
 import java.security.MessageDigest
 import java.security.cert.Certificate
-import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -125,15 +122,6 @@ class CertificatePinningManager @Inject constructor(
                 computeCertificatePin(cert)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: CertificateException) {
-                Log.e(TAG, "Failed to compute pin for certificate: ${e.message}", e)
-                null
-            } catch (e: GeneralSecurityException) {
-                Log.e(TAG, "Security error computing pin for certificate: ${e.message}", e)
-                null
-            } catch (e: Exception) {
-                Log.e(TAG, "Unexpected error computing pin for certificate: ${e.message}", e)
-                null
             }
         }
 
@@ -190,12 +178,6 @@ class CertificatePinningManager @Inject constructor(
             url.host
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "I/O error extracting hostname from: $serverUrl - ${e.message}", e)
-            serverUrl
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error extracting hostname from: $serverUrl - ${e.message}", e)
-            serverUrl
         }
     }
 
@@ -214,12 +196,6 @@ class CertificatePinningManager @Inject constructor(
             }.sortedBy { it.hostname }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "I/O error retrieving pinned certificates: ${e.message}", e)
-            emptyList()
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error retrieving pinned certificates: ${e.message}", e)
-            emptyList()
         }
     }
 
@@ -288,15 +264,6 @@ class CertificatePinningManager @Inject constructor(
                 cert.toCertificateDetails(pin)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: CertificateException) {
-                Log.e(TAG, "Certificate error computing details: ${e.message}", e)
-                null
-            } catch (e: GeneralSecurityException) {
-                Log.e(TAG, "Security error computing certificate details: ${e.message}", e)
-                null
-            } catch (e: Exception) {
-                Log.e(TAG, "Unexpected error computing certificate details: ${e.message}", e)
-                null
             }
         }
     }
@@ -400,12 +367,6 @@ class CertificatePinningManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
-            Log.e(TAG, "I/O error parsing pin record for $hostname: ${e.message}", e)
-            null
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error parsing pin record for $hostname: ${e.message}", e)
-            null
         }
     }
 

@@ -70,9 +70,6 @@ class ItemDetailViewModel @Inject constructor(
             playbackAnalysis.value = enhancedPlaybackUtils.analyzePlaybackCapabilities(item)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            // Silently handle analysis failures
-            playbackAnalysis.value = null
         }
     }
 }

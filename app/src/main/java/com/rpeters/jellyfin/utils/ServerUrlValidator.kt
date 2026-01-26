@@ -130,12 +130,6 @@ object ServerUrlValidator {
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: URISyntaxException) {
-            Log.w(TAG, "Failed to parse URI from URL: $inputUrl", e)
-            return emptyList()
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to extract components from URL: $inputUrl", e)
-            return emptyList()
         }
 
         if (host.isNullOrBlank() || !isValidHost(host)) {
