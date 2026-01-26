@@ -8,9 +8,11 @@ import android.os.Process
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Socket
 
@@ -122,6 +124,16 @@ object NetworkDebugger {
                     error = "Connection timeout after ${CONNECTION_TIMEOUT}ms",
                     details = "Failed to connect to $host:$port within timeout",
                 )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                val endTime = System.currentTimeMillis()
+                ConnectionTestResult(
+                    success = false,
+                    responseTime = endTime - startTime,
+                    error = e.message ?: "Network I/O error",
+                    details = "Socket connection failed: I/O error",
+                )
             } catch (e: Exception) {
                 val endTime = System.currentTimeMillis()
                 ConnectionTestResult(
@@ -151,6 +163,8 @@ object NetworkDebugger {
                 }
             }
             Pair(host, port)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "Failed to parse URL: $url", e)
             null

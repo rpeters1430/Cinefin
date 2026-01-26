@@ -49,6 +49,7 @@ import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.components.shimmer
 import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.getItemKey
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 @OptInAppExperimentalApis
@@ -182,6 +183,8 @@ fun LibraryScreen(
                                     onClick = {
                                         try {
                                             onLibraryClick(library)
+                                        } catch (e: CancellationException) {
+                                            throw e
                                         } catch (e: Exception) {
                                             SecureLogger.e(
                                                 tag = "LibraryScreen",

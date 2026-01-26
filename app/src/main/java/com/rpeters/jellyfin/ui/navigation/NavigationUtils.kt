@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.navigation
 
 import com.rpeters.jellyfin.utils.SecureLogger
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.CollectionType
 import java.util.Locale
@@ -22,6 +23,8 @@ fun libraryRouteFor(library: BaseItemDto): String? {
                 Screen.Stuff.createRoute(id, type)
             }
         }
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         SecureLogger.e("NavGraph", "Error determining library route for ${library.name}", e)
         null

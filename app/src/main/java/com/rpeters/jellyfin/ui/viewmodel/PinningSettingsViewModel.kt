@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.security.CertificatePinningManager
 import com.rpeters.jellyfin.data.security.PinnedCertificateRecord
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,6 +36,8 @@ class PinningSettingsViewModel @Inject constructor(
             _errorMessage.value = null
             _pins.value = try {
                 certificatePinningManager.getPinnedCertificates().map { it.toUiModel() }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _errorMessage.value = e.message
                 emptyList()
@@ -49,6 +52,8 @@ class PinningSettingsViewModel @Inject constructor(
             try {
                 certificatePinningManager.removePin(hostname)
                 refreshPins()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _errorMessage.value = e.message
             }

@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.TrafficStats
 import android.os.StrictMode
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,6 +29,8 @@ object NetworkOptimizer {
                 setupGlobalNetworkTagging()
 
                 Log.d(TAG, "Network optimizations initialized successfully")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize network optimizations", e)
             }

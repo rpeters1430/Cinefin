@@ -87,6 +87,7 @@ import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.time.format.DateTimeFormatter
@@ -673,12 +674,16 @@ private fun formatDate(date: Any): String {
                         val localDate = java.time.LocalDate.parse(dateStr)
                         val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
                         localDate.format(formatter)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         dateStr
                     }
                 }
             }
         }
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         date.toString().substringBefore('T')
     }

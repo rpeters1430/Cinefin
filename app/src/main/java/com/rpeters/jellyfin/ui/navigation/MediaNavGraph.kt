@@ -24,6 +24,7 @@ import com.rpeters.jellyfin.ui.screens.TVShowsScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemKind
 
 /**
@@ -50,6 +51,8 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                 try {
                     SecureLogger.v("NavGraph-TVShows", "Navigating to TV Seasons: $seriesId")
                     navController.navigate(Screen.TVSeasons.createRoute(seriesId))
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     SecureLogger.e("NavGraph-TVShows", "Failed to navigate to TV Seasons: $seriesId", e)
                 }

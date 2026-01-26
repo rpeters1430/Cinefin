@@ -41,6 +41,7 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MovieDetailViewModel
 import com.rpeters.jellyfin.ui.viewmodel.TVEpisodeDetailViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
+import kotlinx.coroutines.CancellationException
 
 /**
  * Detail and playback-adjacent destinations.
@@ -101,6 +102,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         LaunchedEffect(videoId) {
             try {
                 detailViewModel.load(videoId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 SecureLogger.e("NavGraph", "Error loading video details: ${e.message}", e)
             }
@@ -178,6 +181,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         LaunchedEffect(itemId) {
             try {
                 detailViewModel.load(itemId)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 SecureLogger.e("NavGraph", "Error loading item details: ${e.message}", e)
             }
@@ -424,6 +429,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                                     "No stream URL available for episode: ${episodeItem.name}",
                                 )
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             SecureLogger.e("NavGraph", "Failed to play episode: ${e.message}", e)
                         }
@@ -456,6 +463,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                                     "Failed to start download for episode: ${episodeItem.name}",
                                 )
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             SecureLogger.e("NavGraph", "Failed to download episode: ${e.message}", e)
                         }

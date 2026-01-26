@@ -34,6 +34,7 @@ import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.ui.viewmodel.PlaybackRecommendationViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -67,6 +68,8 @@ class ItemDetailViewModel @Inject constructor(
     private suspend fun analyzePlayback(item: BaseItemDto) {
         try {
             playbackAnalysis.value = enhancedPlaybackUtils.analyzePlaybackCapabilities(item)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Silently handle analysis failures
             playbackAnalysis.value = null

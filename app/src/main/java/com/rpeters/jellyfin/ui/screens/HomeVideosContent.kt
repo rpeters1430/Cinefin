@@ -403,6 +403,8 @@ private fun buildHomeVideoSubtitle(video: BaseItemDto): String = buildString {
         try {
             val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
             append(date.format(formatter))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // If formatting fails, just skip the date
         }

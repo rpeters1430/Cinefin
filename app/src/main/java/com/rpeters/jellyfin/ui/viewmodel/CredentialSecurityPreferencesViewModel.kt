@@ -6,6 +6,7 @@ import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.preferences.CredentialSecurityPreferences
 import com.rpeters.jellyfin.data.preferences.CredentialSecurityPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,6 +47,8 @@ class CredentialSecurityPreferencesViewModel @Inject constructor(
             _errorMessage.value = null
             try {
                 secureCredentialManager.applyCredentialAuthenticationRequirement(enabled)
+            } catch (e: CancellationException) {
+                throw e
             } catch (exception: Exception) {
                 _errorMessage.value = exception.message
             } finally {

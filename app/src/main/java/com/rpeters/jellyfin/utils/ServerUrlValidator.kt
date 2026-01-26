@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.utils
 
 import android.util.Log
 import android.util.Patterns
+import kotlinx.coroutines.CancellationException
 import java.net.MalformedURLException
 import java.net.URI
 import java.net.URISyntaxException
@@ -127,6 +128,11 @@ object ServerUrlValidator {
                     Triple(host, port, path)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: URISyntaxException) {
+            Log.w(TAG, "Failed to parse URI from URL: $inputUrl", e)
+            return emptyList()
         } catch (e: Exception) {
             Log.w(TAG, "Failed to extract components from URL: $inputUrl", e)
             return emptyList()

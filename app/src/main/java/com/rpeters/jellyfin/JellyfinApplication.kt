@@ -11,6 +11,7 @@ import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.NetworkOptimizer
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -86,6 +87,8 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
             if (clearDiskCache) {
                 loader.diskCache?.clear()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.e(TAG, "Failed to clear image caches", e)
         }
@@ -103,6 +106,8 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
                 }
 
                 SecureLogger.i(TAG, "Performance optimizations initialized")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 SecureLogger.e(TAG, "Failed to initialize performance optimizations", e)
 
@@ -148,6 +153,8 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
                 offlineDownloadManager.cleanup()
             }
             applicationJob.cancel()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.e(TAG, "Error during resource cleanup", e)
         }

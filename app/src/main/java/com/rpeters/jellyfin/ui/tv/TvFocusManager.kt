@@ -27,6 +27,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 
 /**
@@ -367,6 +368,8 @@ fun FocusRequester.requestInitialFocus(
             delay(delayMs)
             try {
                 requestFocus()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 // Ignore focus request failures
             }

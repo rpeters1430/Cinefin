@@ -23,6 +23,7 @@ import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.PlaybackMethod
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -62,6 +63,8 @@ fun PlaybackStatusIndicator(
         coroutineScope.launch {
             try {
                 analysis = enhancedPlaybackUtils.analyzePlaybackCapabilities(item)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 // Silently handle analysis failures to prevent UI disruption
                 analysis = null

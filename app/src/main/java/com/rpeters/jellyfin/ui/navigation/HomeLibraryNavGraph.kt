@@ -15,6 +15,7 @@ import com.rpeters.jellyfin.ui.screens.HomeScreen
 import com.rpeters.jellyfin.ui.screens.LibraryScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
+import kotlinx.coroutines.CancellationException
 
 /**
  * Home and library navigation destinations.
@@ -108,6 +109,8 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                             "No route found for library: ${library.name} (${library.collectionType})",
                         )
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     SecureLogger.e("NavGraph", "Error navigating to library: ${library.name}", e)
                 }
@@ -150,6 +153,8 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                             "No route found for library: ${library.name} (${library.collectionType})",
                         )
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     SecureLogger.e("NavGraph", "Error navigating to library: ${library.name}", e)
                 }
