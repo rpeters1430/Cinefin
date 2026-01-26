@@ -3,8 +3,8 @@ package com.rpeters.jellyfin.data.repository
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.common.ApiResult
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import retrofit2.HttpException
 import java.io.IOException
 import java.net.ConnectException
