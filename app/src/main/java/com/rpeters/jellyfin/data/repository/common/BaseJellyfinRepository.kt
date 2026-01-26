@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.data.repository.common
 
-import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.JellyfinServer
@@ -9,23 +8,14 @@ import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.session.JellyfinSessionManager
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.ui.utils.RetryManager
-import com.rpeters.jellyfin.utils.AppResources
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.model.api.BaseItemDto
-import retrofit2.HttpException
-import java.io.IOException
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 import javax.inject.Inject
-import javax.net.ssl.SSLException
 
 /**
  * Lightweight base class shared by repository implementations.

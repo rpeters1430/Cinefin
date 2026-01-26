@@ -26,14 +26,9 @@ import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.model.api.AuthenticateUserByName
 import org.jellyfin.sdk.model.api.AuthenticationResult
 import org.jellyfin.sdk.model.api.PublicSystemInfo
-import retrofit2.HttpException
 import java.io.IOException
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
-import javax.net.ssl.SSLException
 import org.jellyfin.sdk.model.api.QuickConnectResult as SdkQuickConnectResult
 
 @Singleton
@@ -132,7 +127,7 @@ class JellyfinAuthRepository @Inject constructor(
             Log.e(TAG, "authenticateUser: Server returned error status", e)
             val errorType = RepositoryUtils.getErrorType(e)
             return ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
-        }    finally {
+        } finally {
             _isAuthenticating.update { false }
         }
     }
@@ -342,7 +337,7 @@ class JellyfinAuthRepository @Inject constructor(
                 Log.e(TAG, "authenticateWithQuickConnect: Server returned error status", e)
                 val errorType = RepositoryUtils.getErrorType(e)
                 ApiResult.Error("Quick Connect authentication failed: ${e.message}", e, errorType)
-            }    finally {
+            } finally {
                 _isAuthenticating.update { false }
             }
         }

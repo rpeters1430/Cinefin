@@ -12,7 +12,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Socket
 

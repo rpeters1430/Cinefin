@@ -1,7 +1,6 @@
 package com.rpeters.jellyfin
 
 import android.app.Application
-import android.os.StrictMode
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import com.rpeters.jellyfin.core.Logger

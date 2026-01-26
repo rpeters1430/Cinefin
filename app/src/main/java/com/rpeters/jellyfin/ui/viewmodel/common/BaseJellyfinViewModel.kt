@@ -14,9 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import retrofit2.HttpException
-import java.io.IOException
 
 /**
  * Enhanced base ViewModel that provides common functionality for error handling,
@@ -109,7 +106,7 @@ abstract class BaseJellyfinViewModel : ViewModel() {
                 }
             } catch (e: CancellationException) {
                 throw e
-            }     finally {
+            } finally {
                 if (showLoading) {
                     _isLoading.value = false
                 }
@@ -159,7 +156,7 @@ abstract class BaseJellyfinViewModel : ViewModel() {
                 }
             } catch (e: CancellationException) {
                 throw e
-            }     finally {
+            } finally {
                 _isRefreshing.value = false
             }
         }

@@ -17,7 +17,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.io.File
-import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
