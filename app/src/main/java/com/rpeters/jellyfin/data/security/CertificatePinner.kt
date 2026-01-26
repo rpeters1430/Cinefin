@@ -17,7 +17,6 @@ import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
 import javax.inject.Inject
 import javax.inject.Singleton
-import javax.net.ssl.SSLException
 
 /**
  * Manages SSL certificate pinning for Jellyfin servers.
