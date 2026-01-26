@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.data.repository.common
 
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.CollectionType
 import java.util.UUID
@@ -65,6 +66,8 @@ object ApiParameterValidator {
             }
 
             return finalParams
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Parameter validation failed", e)
             return null
@@ -85,6 +88,8 @@ object ApiParameterValidator {
         return try {
             UUID.fromString(parentId)
             parentId
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: IllegalArgumentException) {
             Log.w(TAG, "Invalid parentId format: $parentId")
             null
@@ -273,6 +278,8 @@ object ApiParameterValidator {
             try {
                 UUID.fromString(id)
                 id
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.w(TAG, "Invalid parentId '$id', ignoring")
                 null

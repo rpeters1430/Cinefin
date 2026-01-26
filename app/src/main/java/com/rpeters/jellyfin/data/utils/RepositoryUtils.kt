@@ -5,9 +5,15 @@ import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.security.PinningValidationException
 import com.rpeters.jellyfin.utils.SecureLogger
+import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import retrofit2.HttpException
+import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.*
+import javax.net.ssl.SSLException
 
 /**
  * ✅ PHASE 4: Utility functions extracted from JellyfinRepository
@@ -37,6 +43,8 @@ object RepositoryUtils {
 
             // Return the first match that looks like an HTTP status code
             matches.firstOrNull { it in 400..599 }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SecureLogger.w(TAG, "Failed to extract status code from exception", e)
             null
