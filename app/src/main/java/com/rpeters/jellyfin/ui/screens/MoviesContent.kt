@@ -79,11 +79,10 @@ internal fun MoviesLoadingContent(
 @Composable
 internal fun MoviesContent(
     filteredAndSortedMovies: List<BaseItemDto>,
-    selectedFilter: MovieFilter,
-    onFilterChange: (MovieFilter) -> Unit,
     viewMode: MovieViewMode,
     onMovieClick: (BaseItemDto) -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
+    getBackdropUrl: (BaseItemDto) -> String?,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
@@ -105,7 +104,7 @@ internal fun MoviesContent(
                         id = movie.id.toString(),
                         title = movie.name ?: "Unknown",
                         subtitle = buildMovieSubtitle(movie),
-                        imageUrl = getImageUrl(movie) ?: "",
+                        imageUrl = getBackdropUrl(movie) ?: getImageUrl(movie) ?: "",
                         type = MediaType.MOVIE,
                     )
                 },
@@ -119,117 +118,9 @@ internal fun MoviesContent(
                         onMovieClick(movie)
                     }
                 },
-                heroHeight = 280.dp,
+                heroHeight = 220.dp,
                 modifier = Modifier.padding(bottom = 16.dp),
             )
-        }
-
-        // Filter chips with enhanced styling and organization
-        Column {
-            // Basic Filters
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-            ) {
-                items(
-                    items = MovieFilter.getBasicFilters(),
-                    key = { it },
-                    contentType = { "movie_basic_filter" },
-                ) { filter ->
-                    FilterChip(
-                        onClick = { onFilterChange(filter) },
-                        label = {
-                            Text(
-                                text = stringResource(id = filter.displayNameResId),
-                                fontWeight = if (selectedFilter == filter) FontWeight.Bold else FontWeight.Medium,
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                        },
-                        selected = selectedFilter == filter,
-                        leadingIcon = if (filter == MovieFilter.FAVORITES) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            }
-                        } else {
-                            null
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        ),
-                        border = if (selectedFilter == filter) {
-                            FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = true,
-                                borderColor = MaterialTheme.colorScheme.primary,
-                                borderWidth = 2.dp,
-                            )
-                        } else {
-                            FilterChipDefaults.filterChipBorder(enabled = true, selected = false)
-                        },
-                        elevation = FilterChipDefaults.filterChipElevation(
-                            elevation = if (selectedFilter == filter) 4.dp else 0.dp,
-                        ),
-                    )
-                }
-            }
-
-            // Smart & Genre Filters
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
-            ) {
-                items(
-                    items = MovieFilter.getSmartFilters() + MovieFilter.getGenreFilters(),
-                    key = { it },
-                    contentType = { "movie_smart_filter" },
-                ) { filter ->
-                    FilterChip(
-                        onClick = { onFilterChange(filter) },
-                        label = {
-                            Text(
-                                text = stringResource(id = filter.displayNameResId),
-                                fontWeight = if (selectedFilter == filter) FontWeight.Bold else FontWeight.Medium,
-                                style = MaterialTheme.typography.labelLarge,
-                            )
-                        },
-                        selected = selectedFilter == filter,
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = when (filter) {
-                                in MovieFilter.getGenreFilters() -> MaterialTheme.colorScheme.tertiaryContainer
-                                else -> MaterialTheme.colorScheme.secondaryContainer
-                            },
-                            selectedLabelColor = when (filter) {
-                                in MovieFilter.getGenreFilters() -> MaterialTheme.colorScheme.onTertiaryContainer
-                                else -> MaterialTheme.colorScheme.onSecondaryContainer
-                            },
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        ),
-                        border = if (selectedFilter == filter) {
-                            FilterChipDefaults.filterChipBorder(
-                                enabled = true,
-                                selected = true,
-                                borderColor = when (filter) {
-                                    in MovieFilter.getGenreFilters() -> MaterialTheme.colorScheme.tertiary
-                                    else -> MaterialTheme.colorScheme.secondary
-                                },
-                                borderWidth = 2.dp,
-                            )
-                        } else {
-                            FilterChipDefaults.filterChipBorder(enabled = true, selected = false)
-                        },
-                        elevation = FilterChipDefaults.filterChipElevation(
-                            elevation = if (selectedFilter == filter) 4.dp else 0.dp,
-                        ),
-                    )
-                }
-            }
         }
 
         // Movies grid/list with expressive animations

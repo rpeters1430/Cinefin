@@ -139,6 +139,7 @@ internal fun TVShowsContent(
     tvShows: List<BaseItemDto>,
     viewMode: TVShowViewMode,
     getImageUrl: (BaseItemDto) -> String?,
+    getBackdropUrl: (BaseItemDto) -> String?,
     onTVShowClick: (String) -> Unit,
     onTVShowLongPress: (BaseItemDto) -> Unit = {},
     isLoadingMore: Boolean,
@@ -162,7 +163,7 @@ internal fun TVShowsContent(
                         id = show.id.toString(),
                         title = show.name ?: "Unknown",
                         subtitle = buildTVShowSubtitle(show),
-                        imageUrl = getImageUrl(show) ?: "",
+                        imageUrl = getBackdropUrl(show) ?: getImageUrl(show) ?: "",
                         type = MediaType.TV_SHOW,
                     )
                 },
@@ -172,7 +173,7 @@ internal fun TVShowsContent(
                 onPlayClick = { item ->
                     onTVShowClick(item.id)
                 },
-                heroHeight = 280.dp,
+                heroHeight = 220.dp,
                 modifier = Modifier.padding(bottom = 16.dp),
             )
         }

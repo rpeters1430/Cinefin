@@ -47,6 +47,7 @@ fun MoviesScreen(
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
+    getBackdropUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
 ) {
     var showSortMenu by remember { mutableStateOf(false) }
@@ -115,11 +116,10 @@ fun MoviesScreen(
                     MovieScreenState.CONTENT -> {
                         MoviesContent(
                             filteredAndSortedMovies = filteredAndSortedMovies,
-                            selectedFilter = selectedFilter,
-                            onFilterChange = onFilterChange,
                             viewMode = viewMode,
                             onMovieClick = onMovieClick,
                             getImageUrl = getImageUrl,
+                            getBackdropUrl = getBackdropUrl,
                             isLoadingMore = isLoadingMore,
                             hasMoreItems = hasMoreItems,
                             onLoadMore = onLoadMore,
@@ -221,9 +221,29 @@ fun MoviesScreenContainer(
     var selectedSort by remember { mutableStateOf(MovieSortOrder.NAME) }
     var viewMode by remember { mutableStateOf(MovieViewMode.GRID) }
 
-    // Load movies data
+    // Load movies data when libraries are available
     LaunchedEffect(appState.libraries) {
         if (appState.libraries.isNotEmpty()) {
+            if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                android.util.Log.d("MoviesScreenContainer", "Libraries loaded: ${appState.libraries.size}, triggering movie data load")
+            }
+            // Small delay to ensure state is properly set
+            kotlinx.coroutines.delay(100)
+            viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
+        } else {
+            if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                android.util.Log.d("MoviesScreenContainer", "Libraries not yet loaded, waiting...")
+            }
+        }
+    }
+
+    // Additional safety check: if libraries are empty but we should be loading, trigger library loading
+    LaunchedEffect(Unit) {
+        if (appState.libraries.isEmpty()) {
+            if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                android.util.Log.d("MoviesScreenContainer", "Libraries empty on composition, ensuring libraries are loaded")
+            }
+            // This will trigger library loading if not already done
             viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = false)
         }
     }
@@ -232,6 +252,13 @@ fun MoviesScreenContainer(
     val isLoading = appState.isLoadingMovies
     val isLoadingMore = appState.isLoadingMore
     val hasMoreItems = appState.hasMoreMovies
+
+    // Debug logging to track state
+    LaunchedEffect(movies.size, isLoading) {
+        if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+            android.util.Log.d("MoviesScreenContainer", "State: movies=${movies.size}, isLoading=$isLoading, libraries=${appState.libraries.size}")
+        }
+    }
 
     MoviesScreen(
         movies = movies,
@@ -248,6 +275,7 @@ fun MoviesScreenContainer(
         onRefresh = { viewModel.loadLibraryTypeData(LibraryType.MOVIES, forceRefresh = true) },
         onLoadMore = { viewModel.loadMoreMovies() },
         getImageUrl = { viewModel.getImageUrl(it) },
+        getBackdropUrl = { viewModel.getBackdropUrl(it) },
         modifier = modifier,
     )
 }

@@ -29,6 +29,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +52,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarMenuAction
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
+import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
@@ -118,7 +120,6 @@ fun TVShowsScreen(
 ) {
     val appState by viewModel.appState.collectAsState()
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
-    var selectedFilter by remember { mutableStateOf(TVShowFilter.ALL) }
     var sortOrder by remember { mutableStateOf(TVShowSortOrder.getDefault()) }
     var viewMode by remember { mutableStateOf(TVShowViewMode.GRID) }
     var showSortMenu by remember { mutableStateOf(false) }
@@ -156,17 +157,49 @@ fun TVShowsScreen(
 
     // TV show data is loaded via NavGraph effect
 
+    // Load TV Shows data when libraries are available
+    LaunchedEffect(appState.libraries) {
+        if (appState.libraries.isNotEmpty()) {
+            if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                android.util.Log.d("TVShowsScreen", "Libraries loaded: ${appState.libraries.size}, triggering TV show data load")
+            }
+            viewModel.loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = false)
+        } else {
+            if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                android.util.Log.d("TVShowsScreen", "Libraries not yet loaded, waiting...")
+            }
+        }
+    }
+
+    // Additional safety check: if libraries are empty but we should be loading, trigger library loading
+    LaunchedEffect(Unit) {
+        if (appState.libraries.isEmpty()) {
+            if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+                android.util.Log.d("TVShowsScreen", "Libraries empty on composition, ensuring libraries are loaded")
+            }
+            // This will trigger library loading if not already done
+            viewModel.loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = false)
+        }
+    }
+
     // Get items provided by the unified library loader (Series only)
     // Don't use remember() here - we want fresh data on every recomposition
     val tvShowItems = viewModel.getLibraryTypeData(LibraryType.TV_SHOWS)
     // Merge NavGraph-provided loading state with the ViewModel flag to avoid flashing an empty state
     val isLoadingState = isLoading || appState.isLoadingTVShows
 
-    // Apply filtering and sorting with proper keys to prevent unnecessary recomputation
-    val filteredAndSortedTVShows = remember(tvShowItems, selectedFilter, sortOrder) {
+    // Debug logging to track state
+    LaunchedEffect(tvShowItems.size, isLoadingState) {
+        if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+            android.util.Log.d("TVShowsScreen", "State: tvShows=${tvShowItems.size}, isLoading=$isLoadingState, libraries=${appState.libraries.size}")
+        }
+    }
+
+    // Apply filtering and sorting with proper keys to prevent unnecessary recomposition
+    val filteredAndSortedTVShows = remember(tvShowItems, sortOrder) {
         filterAndSortTvShows(
             tvShowItems = tvShowItems,
-            selectedFilter = selectedFilter,
+            selectedFilter = TVShowFilter.ALL,
             sortOrder = sortOrder,
         )
     }
@@ -272,70 +305,62 @@ fun TVShowsScreen(
             indicatorSize = 52.dp,
             useWavyIndicator = true,
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                TVShowFilters(
-                    selectedFilter = selectedFilter,
-                    onFilterSelected = { selectedFilter = it },
-                )
-
-                // Content with Expressive animations
-                val contentState = when {
-                    isLoadingState -> TVShowContentState.LOADING
-                    appState.errorMessage != null -> TVShowContentState.ERROR
-                    filteredAndSortedTVShows.isEmpty() -> TVShowContentState.EMPTY
-                    else -> TVShowContentState.CONTENT
-                }
+            // Content with Expressive animations
+            val contentState = when {
+                isLoadingState -> TVShowContentState.LOADING
+                appState.errorMessage != null -> TVShowContentState.ERROR
+                filteredAndSortedTVShows.isEmpty() -> TVShowContentState.EMPTY
+                else -> TVShowContentState.CONTENT
+            }
 
                 AnimatedContent(
-                    targetState = contentState,
-                    transitionSpec = {
-                        fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it / 4 } togetherWith
-                            fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
-                    },
-                    label = "tv_shows_content",
-                ) { contentState ->
-                    when (contentState) {
-                        TVShowContentState.LOADING -> {
-                            ExpressiveFullScreenLoading(
-                                message = "Loading TV Shows...",
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
+                targetState = contentState,
+                transitionSpec = {
+                    fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it / 4 } togetherWith
+                        fadeOut(MotionTokens.expressiveExit) + slideOutVertically { -it / 4 }
+                },
+                label = "tv_shows_content",
+            ) { contentState ->
+                when (contentState) {
+                    TVShowContentState.LOADING -> {
+                        ExpressiveFullScreenLoading(
+                            message = "Loading TV Shows...",
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
 
-                        TVShowContentState.ERROR -> {
-                            ExpressiveErrorState(
-                                title = "Error Loading TV Shows",
-                                message = appState.errorMessage ?: stringResource(R.string.unknown_error),
-                                icon = Icons.Default.Tv,
-                                onRetry = { viewModel.refreshTVShows() },
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
+                    TVShowContentState.ERROR -> {
+                        ExpressiveErrorState(
+                            title = "Error Loading TV Shows",
+                            message = appState.errorMessage ?: stringResource(R.string.unknown_error),
+                            icon = Icons.Default.Tv,
+                            onRetry = { viewModel.refreshTVShows() },
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
 
-                        TVShowContentState.EMPTY -> {
-                            ExpressiveSimpleEmptyState(
-                                icon = Icons.Default.Tv,
-                                title = stringResource(id = R.string.no_tv_shows_found),
-                                subtitle = stringResource(id = R.string.adjust_tv_shows_filters_hint),
-                                iconTint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
+                    TVShowContentState.EMPTY -> {
+                        ExpressiveSimpleEmptyState(
+                            icon = Icons.Default.Tv,
+                            title = stringResource(id = R.string.no_tv_shows_found),
+                            subtitle = stringResource(id = R.string.adjust_tv_shows_filters_hint),
+                            iconTint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
 
-                        TVShowContentState.CONTENT -> {
-                            TVShowsContent(
-                                tvShows = filteredAndSortedTVShows,
-                                viewMode = viewMode,
-                                getImageUrl = { item -> viewModel.getImageUrl(item) },
-                                onTVShowClick = onTVShowClick,
-                                onTVShowLongPress = handleItemLongPress,
-                                isLoadingMore = appState.isLoadingTVShows,
-                                hasMoreItems = appState.hasMoreTVShows,
-                                onLoadMore = { viewModel.loadMoreTVShows() },
-                            )
-                        }
+                    TVShowContentState.CONTENT -> {
+                        TVShowsContent(
+                            tvShows = filteredAndSortedTVShows,
+                            viewMode = viewMode,
+                            getImageUrl = { item -> viewModel.getImageUrl(item) },
+                            getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
+                            onTVShowClick = onTVShowClick,
+                            onTVShowLongPress = handleItemLongPress,
+                            isLoadingMore = appState.isLoadingTVShows,
+                            hasMoreItems = appState.hasMoreTVShows,
+                            onLoadMore = { viewModel.loadMoreTVShows() },
+                        )
                     }
                 }
             }
