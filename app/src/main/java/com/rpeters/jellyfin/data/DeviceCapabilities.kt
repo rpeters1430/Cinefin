@@ -437,6 +437,7 @@ class DeviceCapabilities @Inject constructor(
 
         val displayManager = context.getSystemService(DisplayManager::class.java)
         val display = displayManager?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
+
         @Suppress("DEPRECATION")
         val hdrTypes = display?.hdrCapabilities?.supportedHdrTypes ?: IntArray(0)
         val supported = hdrTypes.isNotEmpty()
