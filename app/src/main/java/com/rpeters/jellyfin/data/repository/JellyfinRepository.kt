@@ -523,17 +523,6 @@ class JellyfinRepository @Inject constructor(
                 // For other errors or final attempt, throw the exception
                 throw e
             }
-                    } else {
-                        Log.w("JellyfinRepository", "Force re-authentication failed, will not retry")
-                        throw e
-                    }
-                }
-
-                // For other errors or if we've exhausted retries, throw the exception
-                if (attempt == maxRetries) {
-                    throw e
-                }
-            }
         }
 
         throw lastException ?: Exception(AppResources.getString(R.string.unknown_error))
