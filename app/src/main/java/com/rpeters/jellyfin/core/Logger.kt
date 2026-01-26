@@ -65,7 +65,7 @@ data class LogEntry(
 object Logger {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
     private val logQueue = ConcurrentLinkedQueue<LogEntry>()
-    private const val maxLogEntries = 1000
+    private const val MAX_LOG_ENTRIES = 1000
     private const val LOG_FILE_NAME = "jellyfin.log"
     private const val MAX_LOG_FILE_SIZE = 1024 * 1024 // 1 MB
 
