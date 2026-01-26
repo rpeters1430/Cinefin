@@ -8,12 +8,10 @@ import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import retrofit2.HttpException
-import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.*
-import javax.net.ssl.SSLException
 
 /**
  * ✅ PHASE 4: Utility functions extracted from JellyfinRepository
