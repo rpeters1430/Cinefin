@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -42,12 +41,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.models.HomeVideoFilter
 import com.rpeters.jellyfin.ui.components.CarouselItem
-import com.rpeters.jellyfin.ui.components.ExpressiveCompactCard
 import com.rpeters.jellyfin.ui.components.ExpressiveHeroCarousel
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
@@ -55,7 +52,6 @@ import com.rpeters.jellyfin.ui.components.ExpressiveMediaCarousel
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveSegmentedListItem
 import com.rpeters.jellyfin.ui.components.MediaType
-import com.rpeters.jellyfin.ui.components.PosterMediaCard
 import com.rpeters.jellyfin.ui.components.WatchedIndicatorBadge
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberCoilSize
