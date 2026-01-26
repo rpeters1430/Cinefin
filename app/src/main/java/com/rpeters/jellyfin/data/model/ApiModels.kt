@@ -1,5 +1,7 @@
 package com.rpeters.jellyfin.data.model
 
+import kotlinx.coroutines.CancellationException
+
 /**
  * ✅ IMPROVEMENT: Enhanced error handling with specific error types
  * Extracted from JellyfinRepository for better organization
@@ -57,6 +59,8 @@ suspend fun <T> withRetry(
     repeat(times - 1) { attempt ->
         try {
             return operation()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             kotlinx.coroutines.delay(currentDelay)
             currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)

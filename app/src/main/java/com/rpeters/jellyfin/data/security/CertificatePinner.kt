@@ -2,17 +2,22 @@ package com.rpeters.jellyfin.data.security
 
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.CertificatePinner
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.IOException
+import java.security.GeneralSecurityException
 import java.security.MessageDigest
 import java.security.cert.Certificate
+import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
 import javax.inject.Inject
 import javax.inject.Singleton
+import javax.net.ssl.SSLException
 
 /**
  * Manages SSL certificate pinning for Jellyfin servers.
@@ -117,9 +122,20 @@ class CertificatePinningManager @Inject constructor(
         val record = getStoredPinRecord(hostname) ?: return
         val x509Chain = certificates.filterIsInstance<X509Certificate>()
         val chainPins = x509Chain.mapNotNull { cert ->
-            runCatching { computeCertificatePin(cert) }
-                .onFailure { Log.e(TAG, "Failed to compute pin for certificate", it) }
-                .getOrNull()
+            try {
+                computeCertificatePin(cert)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: CertificateException) {
+                Log.e(TAG, "Failed to compute pin for certificate: ${e.message}", e)
+                null
+            } catch (e: GeneralSecurityException) {
+                Log.e(TAG, "Security error computing pin for certificate: ${e.message}", e)
+                null
+            } catch (e: Exception) {
+                Log.e(TAG, "Unexpected error computing pin for certificate: ${e.message}", e)
+                null
+            }
         }
 
         val matchedPin = chainPins.firstOrNull { pin ->
@@ -173,8 +189,13 @@ class CertificatePinningManager @Inject constructor(
         return try {
             val url = java.net.URL(serverUrl)
             url.host
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "I/O error extracting hostname from: $serverUrl - ${e.message}", e)
+            serverUrl
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to extract hostname from: $serverUrl", e)
+            Log.e(TAG, "Unexpected error extracting hostname from: $serverUrl - ${e.message}", e)
             serverUrl
         }
     }
@@ -183,14 +204,24 @@ class CertificatePinningManager @Inject constructor(
      * Returns all pinned certificates, sorted by hostname.
      */
     suspend fun getPinnedCertificates(): List<PinnedCertificateRecord> {
-        val entries = encryptedPreferences.getEntriesWithPrefix(PIN_PREFIX)
-        return entries.mapNotNull { (hostname, raw) ->
-            parsePinRecord(hostname, raw)?.also { record ->
-                if (!raw.trimStart().startsWith("{")) {
-                    storeRecord(record)
+        return try {
+            val entries = encryptedPreferences.getEntriesWithPrefix(PIN_PREFIX)
+            entries.mapNotNull { (hostname, raw) ->
+                parsePinRecord(hostname, raw)?.also { record ->
+                    if (!raw.trimStart().startsWith("{")) {
+                        storeRecord(record)
+                    }
                 }
-            }
-        }.sortedBy { it.hostname }
+            }.sortedBy { it.hostname }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "I/O error retrieving pinned certificates: ${e.message}", e)
+            emptyList()
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error retrieving pinned certificates: ${e.message}", e)
+            emptyList()
+        }
     }
 
     /**
@@ -253,9 +284,21 @@ class CertificatePinningManager @Inject constructor(
 
     internal suspend fun toCertificateDetails(chain: List<X509Certificate>): List<CertificateDetails> {
         return chain.mapNotNull { cert ->
-            runCatching { computeCertificatePin(cert) }
-                .map { pin -> cert.toCertificateDetails(pin) }
-                .getOrNull()
+            try {
+                val pin = computeCertificatePin(cert)
+                cert.toCertificateDetails(pin)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: CertificateException) {
+                Log.e(TAG, "Certificate error computing details: ${e.message}", e)
+                null
+            } catch (e: GeneralSecurityException) {
+                Log.e(TAG, "Security error computing certificate details: ${e.message}", e)
+                null
+            } catch (e: Exception) {
+                Log.e(TAG, "Unexpected error computing certificate details: ${e.message}", e)
+                null
+            }
         }
     }
 
@@ -356,8 +399,13 @@ class CertificatePinningManager @Inject constructor(
                     expiresAtEpochMillis = now + defaultExpiryMillis,
                 )
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "I/O error parsing pin record for $hostname: ${e.message}", e)
+            null
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse pin record for $hostname", e)
+            Log.e(TAG, "Unexpected error parsing pin record for $hostname: ${e.message}", e)
             null
         }
     }

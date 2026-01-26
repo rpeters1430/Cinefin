@@ -2,11 +2,15 @@ package com.rpeters.jellyfin.data.security
 
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
+import java.io.IOException
 import java.net.Socket
+import java.security.GeneralSecurityException
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLException
 import javax.net.ssl.X509ExtendedTrustManager
 import javax.net.ssl.X509TrustManager
 
@@ -136,9 +140,31 @@ class PinningTrustManager(
                     // Subsequent connection - validate against stored pin
                     validateAgainstStoredPin(hostname, chain.toList(), storedPin)
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: CertificateException) {
+                if (BuildConfig.DEBUG) {
+                    Log.e(TAG, "Certificate validation failed for $hostname: ${e.message}", e)
+                }
+                throw e
+            } catch (e: SSLException) {
+                if (BuildConfig.DEBUG) {
+                    Log.e(TAG, "SSL/TLS error during pinning validation for $hostname: ${e.message}", e)
+                }
+                throw CertificateException("SSL/TLS error: ${e.message}", e)
+            } catch (e: GeneralSecurityException) {
+                if (BuildConfig.DEBUG) {
+                    Log.e(TAG, "Security error during pinning validation for $hostname: ${e.message}", e)
+                }
+                throw CertificateException("Security error: ${e.message}", e)
+            } catch (e: IOException) {
+                if (BuildConfig.DEBUG) {
+                    Log.e(TAG, "I/O error during pinning validation for $hostname: ${e.message}", e)
+                }
+                throw CertificateException("I/O error: ${e.message}", e)
             } catch (e: Exception) {
                 if (BuildConfig.DEBUG) {
-                    Log.e(TAG, "Certificate pinning validation failed for $hostname", e)
+                    Log.e(TAG, "Unexpected error during pinning validation for $hostname: ${e.message}", e)
                 }
                 throw CertificateException("Certificate pinning failed: ${e.message}", e)
             }
@@ -191,8 +217,16 @@ class PinningTrustManager(
         val chainPins = chain.mapNotNull { cert ->
             try {
                 certPinningManager.computeCertificatePin(cert)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: CertificateException) {
+                Log.e(TAG, "Certificate error computing pin for certificate in chain: ${e.message}", e)
+                null
+            } catch (e: GeneralSecurityException) {
+                Log.e(TAG, "Security error computing pin for certificate in chain: ${e.message}", e)
+                null
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to compute pin for certificate in chain", e)
+                Log.e(TAG, "Unexpected error computing pin for certificate in chain: ${e.message}", e)
                 null
             }
         }
