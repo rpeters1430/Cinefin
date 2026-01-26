@@ -141,11 +141,15 @@
     <string name="filter_1990s">1990s</string>
     <string name="filter_high_rated">High Rated</string>
     <string name="filter_unwatched">Unwatched</string>
+    <string name="filter_watched">Watched</string>
     <string name="filter_recent_releases">Recent Releases</string>
     <string name="filter_action">Action</string>
     <string name="filter_comedy">Comedy</string>
     <string name="filter_drama">Drama</string>
     <string name="filter_sci_fi">Sci-Fi</string>
+
+    <!-- Home Video Filters -->
+    <string name="filter_all_home_videos">All Videos</string>
     
     <!-- Sort Orders -->
     <string name="sort_title_asc">Title A-Z</string>
@@ -158,16 +162,25 @@
     <string name="sort_runtime_asc">Shortest First</string>
     <string name="sort_date_added_desc">Recently Added</string>
     <string name="sort_date_added_asc">Oldest Added</string>
+    <string name="sort_date_created_desc">Date Created (Newest)</string>
+    <string name="sort_date_created_asc">Date Created (Oldest)</string>
     
     <!-- Loading States -->
     <string name="loading_more_movies">Loading more movies…</string>
     <string name="no_more_movies">No more movies to load</string>
     <string name="loading_more_music">Loading more music…</string>
     <string name="no_more_music">No more music to load</string>
+    <string name="loading_more_home_videos">Loading more videos…</string>
+    <string name="no_more_home_videos">No more videos to load</string>
+    <string name="load_more">Load more</string>
     
     <!-- Music Screen -->
     <string name="no_music_found">No music found</string>
     <string name="adjust_music_filters_hint">Try adjusting your filters or refresh the library</string>
+
+    <!-- Home Videos Screen -->
+    <string name="no_home_videos_found">No home videos found</string>
+    <string name="adjust_home_videos_filters_hint">Try adjusting your filters or refresh the library</string>
     <string name="now_playing">Now playing</string>
     <string name="music_queue_size">%1$d tracks queued</string>
     <string name="music_queue_empty">Queue is empty</string>
