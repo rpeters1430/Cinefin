@@ -11,18 +11,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.model.api.PublicSystemInfo
-import retrofit2.HttpException
-import java.io.IOException
-import java.net.ConnectException
-import java.net.SocketTimeoutException
 import java.net.URI
-import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
-import javax.net.ssl.SSLException
 
 /**
  * Optimized connection management for Jellyfin servers.

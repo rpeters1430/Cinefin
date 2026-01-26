@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.navigation
 
-import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.CollectionType

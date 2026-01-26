@@ -15,9 +15,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import retrofit2.HttpException
-import java.io.IOException
 import javax.inject.Inject
 
 data class AuthenticationState(

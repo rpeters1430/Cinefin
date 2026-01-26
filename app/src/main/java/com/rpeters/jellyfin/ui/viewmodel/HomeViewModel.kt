@@ -15,11 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
-import retrofit2.HttpException
-import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -82,7 +79,7 @@ class HomeViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            }     finally {
+            } finally {
                 _homeState.value = _homeState.value.copy(isLoading = false)
             }
         }

@@ -41,9 +41,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
-import retrofit2.HttpException
-import java.io.IOException
 import javax.inject.Inject
 
 @androidx.media3.common.util.UnstableApi

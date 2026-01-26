@@ -3,19 +3,12 @@ package com.rpeters.jellyfin.data.repository
 import android.util.Log
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import kotlinx.coroutines.CancellationException
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
-import retrofit2.HttpException
-import java.io.IOException
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
-import javax.net.ssl.SSLException
 
 /**
  * Repository component responsible for streaming URLs, image URLs, and media playback.

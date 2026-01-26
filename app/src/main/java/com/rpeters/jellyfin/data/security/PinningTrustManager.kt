@@ -4,13 +4,10 @@ import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
-import java.io.IOException
 import java.net.Socket
-import java.security.GeneralSecurityException
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLEngine
-import javax.net.ssl.SSLException
 import javax.net.ssl.X509ExtendedTrustManager
 import javax.net.ssl.X509TrustManager
 

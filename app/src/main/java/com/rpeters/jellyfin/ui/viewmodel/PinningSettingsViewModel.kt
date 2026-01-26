@@ -38,7 +38,7 @@ class PinningSettingsViewModel @Inject constructor(
                 certificatePinningManager.getPinnedCertificates().map { it.toUiModel() }
             } catch (e: CancellationException) {
                 throw e
-            }  finally {
+            } finally {
                 _isLoading.value = false
             }
         }
