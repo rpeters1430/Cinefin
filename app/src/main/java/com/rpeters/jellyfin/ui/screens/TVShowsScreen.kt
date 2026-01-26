@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -52,7 +51,6 @@ import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
 import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarMenuAction
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
-import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.theme.MusicGreen
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
@@ -313,7 +311,7 @@ fun TVShowsScreen(
                 else -> TVShowContentState.CONTENT
             }
 
-                AnimatedContent(
+            AnimatedContent(
                 targetState = contentState,
                 transitionSpec = {
                     fadeIn(MotionTokens.expressiveEnter) + slideInVertically { it / 4 } togetherWith
