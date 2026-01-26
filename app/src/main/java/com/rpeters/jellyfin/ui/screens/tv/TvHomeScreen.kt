@@ -38,7 +38,7 @@ import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
 
 private const val RECENT_MOVIES_ID = "recent_movies"
-private const val RECENT_TV_SHOWS_ID = "recent_tv_shows"
+private const val RECENT_TV_SHOW_EPISODES_ID = "recent_tv_show_episodes"
 private const val ALL_MOVIES_ID = "all_movies"
 private const val ALL_TV_SHOWS_ID = "all_tv_shows"
 
@@ -65,7 +65,7 @@ fun TvHomeScreen(
     }
 
     val recentMovies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(10) ?: emptyList()
-    val recentTvShows = appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]?.take(10) ?: emptyList()
+    val recentTvShowEpisodes = appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(10) ?: emptyList()
     val allMovies = appState.allMovies.take(10)
     val allTvShows = appState.allTVShows.take(10)
 
@@ -77,9 +77,9 @@ fun TvHomeScreen(
             isLoading = appState.isLoading,
         ),
         TvHomeMediaSection(
-            id = RECENT_TV_SHOWS_ID,
-            title = "Recently Added TV Shows",
-            items = recentTvShows,
+            id = RECENT_TV_SHOW_EPISODES_ID,
+            title = "Recently Added TV Show Episodes",
+            items = recentTvShowEpisodes,
             isLoading = appState.isLoading,
         ),
         TvHomeMediaSection(

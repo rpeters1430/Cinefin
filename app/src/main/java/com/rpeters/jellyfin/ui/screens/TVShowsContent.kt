@@ -253,15 +253,16 @@ internal fun TVShowsContent(
                                 },
                                 overline = tvShow.productionYear?.toString(),
                                 leadingContent = {
+                                    val listImageUrl = getBackdropUrl(tvShow) ?: getImageUrl(tvShow)
                                     JellyfinAsyncImage(
-                                        model = getImageUrl(tvShow),
+                                        model = listImageUrl,
                                         contentDescription = tvShow.name,
                                         modifier = Modifier
-                                            .width(72.dp)
-                                            .height(96.dp)
+                                            .width(128.dp)
+                                            .height(72.dp)
                                             .clip(RoundedCornerShape(12.dp)),
                                         contentScale = ContentScale.Crop,
-                                        requestSize = rememberCoilSize(72.dp, 96.dp),
+                                        requestSize = rememberCoilSize(128.dp, 72.dp),
                                     )
                                 },
                                 trailingContent = {

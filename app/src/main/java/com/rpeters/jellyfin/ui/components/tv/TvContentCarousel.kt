@@ -160,7 +160,7 @@ fun TvContentCard(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 val imageUrl = if (item.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE) {
-                    getSeriesImageUrl(item)
+                    getImageUrl(item) ?: getSeriesImageUrl(item)
                 } else {
                     getImageUrl(item)
                 }
