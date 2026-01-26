@@ -4,7 +4,9 @@ import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
 import retrofit2.HttpException
+import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -40,17 +42,33 @@ class RetryStrategy @Inject constructor() {
                     logDebug("Operation succeeded on attempt ${attempt + 1}")
                 }
                 return ApiResult.Success(result)
-            } catch (e: Exception) {
+            } catch (e: CancellationException) {
+                // Always re-throw cancellation exceptions for proper coroutine cancellation
+                throw e
+            } catch (e: HttpException) {
                 lastException = e
-
                 if (attempt < maxRetries && shouldRetry(e, attempt)) {
                     val delay = calculateRetryDelay(e, attempt)
-                    logDebug("Retrying operation (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms delay. Error: ${e.message}")
+                    logDebug("Retrying HTTP error (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms delay. Status: ${e.code()}")
                     delay(delay)
                 } else {
-                    logDebug("Operation failed after ${attempt + 1} attempts. Final error: ${e.message}")
+                    logDebug("HTTP operation failed after ${attempt + 1} attempts. Status: ${e.code()}")
                     return@repeat
                 }
+            } catch (e: IOException) {
+                lastException = e
+                if (attempt < maxRetries && shouldRetry(e, attempt)) {
+                    val delay = calculateRetryDelay(e, attempt)
+                    logDebug("Retrying I/O error (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms delay. Error: ${e.message}")
+                    delay(delay)
+                } else {
+                    logDebug("I/O operation failed after ${attempt + 1} attempts. Error: ${e.message}")
+                    return@repeat
+                }
+            } catch (e: Exception) {
+                lastException = e
+                logDebug("Non-retryable error encountered: ${e.javaClass.simpleName} - ${e.message}")
+                return@repeat
             }
         }
 
@@ -95,10 +113,13 @@ class RetryStrategy @Inject constructor() {
                 logDebug("Not retrying DNS failure: ${exception.message}")
                 false // Don't retry DNS failures
             }
+            is IOException -> {
+                logDebug("Retrying I/O exception (attempt $attempt)")
+                true // Retry other I/O errors
+            }
             else -> {
-                val shouldRetry = attempt < 1
-                logDebug("Limited retry for unknown error: $shouldRetry")
-                shouldRetry // Limited retries for unknown errors
+                logDebug("Not retrying unknown error type: ${exception.javaClass.simpleName}")
+                false // Don't retry unknown errors
             }
         }
     }
@@ -141,17 +162,33 @@ class RetryStrategy @Inject constructor() {
                     logDebug("Custom retry operation succeeded on attempt ${attempt + 1}")
                 }
                 return ApiResult.Success(result)
-            } catch (e: Exception) {
+            } catch (e: CancellationException) {
+                // Always re-throw cancellation exceptions for proper coroutine cancellation
+                throw e
+            } catch (e: HttpException) {
                 lastException = e
-
                 if (attempt < maxRetries && shouldRetryPredicate(e, attempt)) {
                     val delay = calculateCustomRetryDelay(baseDelayMs, maxDelayMs, attempt)
-                    logDebug("Custom retry (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms delay")
+                    logDebug("Custom retry HTTP error (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms delay")
                     delay(delay)
                 } else {
-                    logDebug("Custom retry failed after ${attempt + 1} attempts")
+                    logDebug("Custom retry HTTP failed after ${attempt + 1} attempts")
                     return@repeat
                 }
+            } catch (e: IOException) {
+                lastException = e
+                if (attempt < maxRetries && shouldRetryPredicate(e, attempt)) {
+                    val delay = calculateCustomRetryDelay(baseDelayMs, maxDelayMs, attempt)
+                    logDebug("Custom retry I/O error (attempt ${attempt + 1}/${maxRetries + 1}) after ${delay}ms delay")
+                    delay(delay)
+                } else {
+                    logDebug("Custom retry I/O failed after ${attempt + 1} attempts")
+                    return@repeat
+                }
+            } catch (e: Exception) {
+                lastException = e
+                logDebug("Custom retry encountered non-retryable error: ${e.javaClass.simpleName}")
+                return@repeat
             }
         }
 
