@@ -346,15 +346,15 @@ private fun getWatchButtonText(series: BaseItemDto, nextEpisode: BaseItemDto?): 
     val playedPercentage = series.userData?.playedPercentage ?: 0.0
     val unwatchedCount = series.getUnwatchedEpisodeCount()
 
-    if (totalCount == 0) {
-        return "Browse Series"
-    }
-
     if (series.isCompletelyWatched()) {
         return "Rewatch Series"
     }
 
-    val hasNotStarted = unwatchedCount == totalCount && playedPercentage == 0.0
+    if (nextEpisode == null) {
+        return "Browse Series"
+    }
+
+    val hasNotStarted = totalCount > 0 && unwatchedCount == totalCount && playedPercentage == 0.0
     if (hasNotStarted) {
         return "Start Watching Series"
     }
@@ -540,7 +540,7 @@ private fun SeriesDetailsHeader(
             onClick = {
                 nextEpisode?.let { onPlayEpisode(it) }
             },
-            enabled = nextEpisode != null && !series.isCompletelyWatched(),
+            enabled = nextEpisode != null,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(
