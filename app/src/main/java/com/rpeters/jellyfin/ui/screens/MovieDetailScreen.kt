@@ -82,6 +82,7 @@ import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
+import com.rpeters.jellyfin.utils.normalizeOfficialRating
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import kotlin.math.roundToInt
@@ -209,6 +210,7 @@ fun MovieDetailScreen(
 
                             // Official Rating Badge (if available)
                             movie.officialRating?.let { rating ->
+                                val normalizedRating = normalizeOfficialRating(rating) ?: return@let
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
                                     color = MaterialTheme.colorScheme.surfaceVariant,
@@ -218,7 +220,7 @@ fun MovieDetailScreen(
                                     ),
                                 ) {
                                     Text(
-                                        text = rating,
+                                        text = normalizedRating,
                                         style = MaterialTheme.typography.labelLarge,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
