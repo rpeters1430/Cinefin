@@ -19,12 +19,18 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 - **Recently added carousel** with cinematic 16:9 aspect ratio cards
 - **High-quality poster/backdrop** images with smart loading
 - **Metadata display** including ratings, years, and descriptions
+- **ExoPlayer video playback** with Direct Play detection and subtitles
+- **Auto-play next episode** with countdown UI
 
 ### 🔐 **Secure Authentication**
 - **Server connection testing** before authentication
 - **Token-based authentication** with automatic session management
 - **Multi-server support** (connect to different Jellyfin instances)
 - **Quick Connect** support
+
+### 📺 **Casting & Multitasking**
+- **Chromecast** with seek/volume control and position tracking
+- **Picture-in-Picture** with playback controls
 
 ### 📱 **Modern Android Architecture**
 - **Jetpack Compose** for declarative UI
@@ -35,22 +41,22 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 ## 🛠️ Technical Stack
 
 ### **Core Technologies**
-- **Language:** Kotlin 2.2.10
-- **UI Framework:** Jetpack Compose (2025.08.01 BOM)
+- **Language:** Kotlin 2.3.0
+- **UI Framework:** Jetpack Compose (2026.01.00 BOM)
 - **Architecture:** MVVM + Repository Pattern
-- **Dependency Injection:** Hilt 2.57.1
+- **Dependency Injection:** Hilt 2.59
 - **Async Programming:** Kotlin Coroutines 1.10.2
 
 ### **Networking & API**
-- **Jellyfin SDK:** 1.8.2 (Official Jellyfin Kotlin SDK)
-- **HTTP Client:** Retrofit 3.0.0 + OkHttp 5.3.0 (official Kotlinx Serialization converter)
+- **Jellyfin SDK:** 1.8.6 (Official Jellyfin Kotlin SDK)
+- **HTTP Client:** Retrofit 3.0.0 + OkHttp 5.3.2 (official Kotlinx Serialization converter)
 - **Serialization:** Kotlinx Serialization 1.9.0
-- **Image Loading:** Coil 2.7.0 with Compose integration
+- **Image Loading:** Coil 3.3.0 with Compose integration
 
 ### **Media & UI**
-- **Media Playback:** ExoPlayer (Media3 1.8.0) with Jellyfin FFmpeg decoder
-- **Material Design:** Material 3 with Carousel support
-- **Navigation:** Navigation Compose 2.9.3
+- **Media Playback:** ExoPlayer (Media3 1.9.0) with Jellyfin FFmpeg decoder
+- **Material Design:** Material 3 Expressive (alpha)
+- **Navigation:** Navigation Compose 2.9.6
 - **Data Storage:** DataStore Preferences 1.2.0-alpha02
 
 ## 📱 Requirements
@@ -208,15 +214,15 @@ Automated workflows for:
 
 ### **Current Status** ✅
 - [x] Core functionality (authentication, library browsing, Material 3 UI)
-- [x] Enhanced playback system with intelligent Direct Play detection
-- [x] Video playback with ExoPlayer and advanced capabilities
-- [x] Recently added carousel and favorites management
+- [x] Video playback with Direct Play detection, PiP, and auto-play next episode
+- [x] Search, favorites, and recently added carousel
+- [x] Chromecast support with playback controls
 
-### **Next Priority: Core Experience Polish** 🔴 *HIGH PRIORITY*
-- [ ] **Video Playback**: PiP verification, subtitle/audio improvements
-- [ ] **Material 3**: Design compliance audit
-- [ ] **Performance**: Image loading, scroll optimization
-- [ ] **Search**: Complete advanced filters
+### **Active Development: Core Experience Polish** 🔴 *HIGH PRIORITY*
+- [ ] **Music Playback**: Background playback + notification controls
+- [ ] **Offline Downloads**: Core download logic and offline playback
+- [ ] **Android TV**: D-pad navigation and focus indicators
+- [ ] **Code Quality**: Refactor large composables and address lint warnings
 
 ### **Upcoming Priorities** 📋
 - **Platform Expansion**: Full Android TV support, tablet optimization
