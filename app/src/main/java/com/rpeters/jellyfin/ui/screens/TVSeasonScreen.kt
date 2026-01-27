@@ -336,19 +336,28 @@ private fun TVSeasonContent(
  * Helper function to determine the watch button text based on series watch status
  */
 private fun getWatchButtonText(series: BaseItemDto): String {
-    val isFullyWatched = series.userData?.played == true || (series.userData?.unplayedItemCount ?: 0) == 0
+    val totalCount = series.childCount ?: 0
+    val unwatchedCount = series.userData?.unplayedItemCount
     
-    return if (isFullyWatched) {
-        "Rewatch Series"
-    } else {
-        val unwatchedCount = series.userData?.unplayedItemCount ?: series.childCount ?: 0
-        val totalCount = series.childCount ?: 0
-        
-        if (unwatchedCount == totalCount) {
-            "Start Watching Episode 1"
-        } else {
-            "Watch Next Episode"
+    // If explicitly marked as played, show rewatch
+    if (series.userData?.played == true) {
+        return "Rewatch Series"
+    }
+    
+    // If we have unplayed count information
+    if (unwatchedCount != null) {
+        return when {
+            unwatchedCount == 0 -> "Rewatch Series"
+            unwatchedCount == totalCount && totalCount > 0 -> "Start Watching Episode 1"
+            else -> "Watch Next Episode"
         }
+    }
+    
+    // Fallback when we don't have user data: assume unwatched if series has episodes
+    return if (totalCount > 0) {
+        "Start Watching Episode 1"
+    } else {
+        "Watch Next Episode"
     }
 }
 
