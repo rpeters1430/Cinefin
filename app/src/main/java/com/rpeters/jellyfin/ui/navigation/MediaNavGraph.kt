@@ -21,6 +21,7 @@ import com.rpeters.jellyfin.ui.screens.NowPlayingScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodesScreen
 import com.rpeters.jellyfin.ui.screens.TVSeasonScreen
 import com.rpeters.jellyfin.ui.screens.TVShowsScreen
+import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -87,6 +88,25 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             onSeriesClick = { targetSeriesId ->
                 navController.navigate(Screen.TVSeasons.createRoute(targetSeriesId)) {
                     launchSingleTop = true
+                }
+            },
+            onPlayEpisode = { episodeItem ->
+                try {
+                    val streamUrl = viewModel.getStreamUrl(episodeItem)
+                    if (streamUrl != null) {
+                        MediaPlayerUtils.playMedia(
+                            context = navController.context,
+                            streamUrl = streamUrl,
+                            item = episodeItem,
+                        )
+                    } else {
+                        SecureLogger.e(
+                            "NavGraph",
+                            "No stream URL available for episode: ${episodeItem.name}",
+                        )
+                    }
+                } catch (e: CancellationException) {
+                    throw e
                 }
             },
         )

@@ -76,6 +76,8 @@ import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import com.rpeters.jellyfin.utils.getItemKey
+import com.rpeters.jellyfin.utils.getUnwatchedEpisodeCount
+import com.rpeters.jellyfin.utils.isCompletelyWatched
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
 import java.util.Locale
@@ -89,6 +91,7 @@ fun TVSeasonScreen(
     getLogoUrl: (BaseItemDto) -> String? = { null },
     onSeasonClick: (String) -> Unit,
     onSeriesClick: (String) -> Unit,
+    onPlayEpisode: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: TVSeasonViewModel = hiltViewModel()
@@ -153,6 +156,7 @@ fun TVSeasonScreen(
                         getLogoUrl = getLogoUrl,
                         onSeasonClick = onSeasonClick,
                         onSeriesClick = onSeriesClick,
+                        onPlayEpisode = onPlayEpisode,
                     )
                 }
             }
@@ -218,6 +222,7 @@ private fun TVSeasonContent(
     getLogoUrl: (BaseItemDto) -> String?,
     onSeasonClick: (String) -> Unit,
     onSeriesClick: (String) -> Unit,
+    onPlayEpisode: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -231,7 +236,8 @@ private fun TVSeasonContent(
                     getImageUrl = getImageUrl,
                     getBackdropUrl = getBackdropUrl,
                     getLogoUrl = getLogoUrl,
-                    onSeriesClick = onSeriesClick,
+                    nextEpisode = state.nextEpisode,
+                    onPlayEpisode = onPlayEpisode,
                 )
             }
         }
@@ -335,36 +341,27 @@ private fun TVSeasonContent(
 /**
  * Helper function to determine the watch button text based on series watch status
  */
-private fun getWatchButtonText(series: BaseItemDto): String {
+private fun getWatchButtonText(series: BaseItemDto, nextEpisode: BaseItemDto?): String {
     val totalCount = series.childCount ?: 0
-    val unwatchedCount = series.userData?.unplayedItemCount
     val playedPercentage = series.userData?.playedPercentage ?: 0.0
+    val unwatchedCount = series.getUnwatchedEpisodeCount()
 
-    // If explicitly marked as played, show rewatch
-    if (series.userData?.played == true) {
+    if (totalCount == 0) {
+        return "Browse Series"
+    }
+
+    if (series.isCompletelyWatched()) {
         return "Rewatch Series"
     }
 
-    // If we have unplayed count information
-    if (unwatchedCount != null) {
-        return when {
-            // Only show "Rewatch" if unplayedCount is 0 AND series has episodes
-            // This ensures we don't show "Rewatch" for series that haven't been started
-            unwatchedCount == 0 && totalCount > 0 -> "Rewatch Series"
-            // Show "Start Watching" only if all episodes are unwatched AND nothing has been watched
-            unwatchedCount == totalCount && totalCount > 0 && playedPercentage == 0.0 -> "Start Watching Episode 1"
-            unwatchedCount > 0 -> "Watch Next Episode"
-            else -> "Browse Series" // Fallback for series with 0 episodes
-        }
+    val hasNotStarted = unwatchedCount == totalCount && playedPercentage == 0.0
+    if (hasNotStarted) {
+        return "Start Watching Series"
     }
 
-    // Fallback when we don't have user data: assume unwatched if series has episodes
-    return if (totalCount > 0) {
-        "Start Watching Episode 1"
-    } else {
-        // Series with no episodes - just show a generic watch label
-        "Browse Series"
-    }
+    val nextEpisodeNumber = nextEpisode?.indexNumber
+        ?: (totalCount - unwatchedCount + 1).coerceAtLeast(1)
+    return "Watch Episode $nextEpisodeNumber Next"
 }
 
 @Composable
@@ -373,7 +370,8 @@ private fun SeriesDetailsHeader(
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     getLogoUrl: (BaseItemDto) -> String?,
-    onSeriesClick: (String) -> Unit,
+    nextEpisode: BaseItemDto?,
+    onPlayEpisode: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val heroImage = getBackdropUrl(series).takeIf { !it.isNullOrBlank() } ?: getImageUrl(series).orEmpty()
@@ -537,7 +535,10 @@ private fun SeriesDetailsHeader(
         // Watch Next Episode Button
         Spacer(modifier = Modifier.height(16.dp))
         ExpressiveFilledButton(
-            onClick = { onSeriesClick(series.id.toString()) },
+            onClick = {
+                nextEpisode?.let { onPlayEpisode(it) }
+            },
+            enabled = nextEpisode != null && !series.isCompletelyWatched(),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(
@@ -546,7 +547,7 @@ private fun SeriesDetailsHeader(
                 modifier = Modifier.size(20.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(text = getWatchButtonText(series))
+            Text(text = getWatchButtonText(series, nextEpisode))
         }
     }
 }
