@@ -115,6 +115,7 @@ object NetworkOptimizer {
      */
     fun configureNetworkStrictMode() {
         if (com.rpeters.jellyfin.BuildConfig.DEBUG) {
+            @Suppress("DEPRECATION")
             StrictMode.setThreadPolicy(
                 StrictMode.ThreadPolicy.Builder()
                     .detectDiskReads()
@@ -123,6 +124,8 @@ object NetworkOptimizer {
                     .detectResourceMismatches()
                     .detectCustomSlowCalls()
                     .penaltyLog()
+                    // Crash fast on network calls on main thread in debug builds.
+                    .penaltyDeathOnNetwork()
                     .build(),
             )
 

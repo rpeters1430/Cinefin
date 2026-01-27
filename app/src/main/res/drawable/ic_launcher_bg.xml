@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <!-- Fallback background; system will mask/shade in adaptive containers -->
-    <solid android:color="@color/ic_launcher_background"/>
-</shape>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Modern gradient background for Jellyfin Ryan -->
+    <path
+        android:fillColor="#7C3AED"
+        android:pathData="M0,0 L108,0 L108,108 L0,108 Z"/>
+
+    <!-- Subtle gradient effect with overlapping rectangles -->
+    <path
+        android:fillColor="#6D28D9"
+        android:fillAlpha="0.5"
+        android:pathData="M0,54 L108,54 L108,108 L0,108 Z"/>
+</vector>

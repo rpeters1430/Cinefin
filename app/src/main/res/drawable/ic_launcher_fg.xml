@@ -4,19 +4,37 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Note: VectorDrawables don't support gradients directly without runtime tint. 
-         We'll rely on the colorful SVG for design import; this vector keeps a bold solid style. -->
-    <group android:name="root">
-        <path
-            android:name="play"
-            android:fillColor="#7C3AED"
-            android:pathData="M45,36 L74,54 L45,72 Z"/>
-        <path
-            android:name="wave"
-            android:strokeColor="#7C3AED"
-            android:strokeWidth="6"
-            android:strokeLineCap="round"
-            android:fillColor="@android:color/transparent"
-            android:pathData="M30,74 C38,70 46,78 54,74 C62,70 70,78 78,74"/>
-    </group>
+
+    <!-- Jellyfin Ryan - Custom branded launcher icon -->
+
+    <!-- Background circle for depth -->
+    <path
+        android:fillColor="#9F7AEA"
+        android:pathData="M54,24 A30,30 0 1,1 54,84 A30,30 0 1,1 54,24 Z"/>
+
+    <!-- Main "JR" text - Bold and prominent -->
+    <!-- Letter J -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,40 L38,60 Q38,65 42,65 Q46,65 46,60 L46,40 L42,40 L42,60 Q42,62 40,62 L40,40 Z"/>
+
+    <!-- Letter R -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M52,40 L52,65 L56,65 L56,54 L60,54 L64,65 L68,65 L63.5,53.5 Q67,52 67,47 Q67,40 60,40 Z M56,44 L60,44 Q63,44 63,47 Q63,50 60,50 L56,50 Z"/>
+
+    <!-- Small play button accent in bottom right -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.9"
+        android:pathData="M64,70 L70,74 L64,78 Z"/>
+
+    <!-- Decorative sound wave accent -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:fillAlpha="0.7"
+        android:pathData="M38,32 L38,28 M42,34 L42,26 M46,32 L46,28"/>
 </vector>

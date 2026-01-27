@@ -23,6 +23,8 @@ ProGuard_Rules_Implementation.md
 
 # Additional Android Studio / IntelliJ IDEA
 .idea/
+.gradle/
+gradle.properties
 *.iws
 *.ipr
 *.swp
@@ -41,6 +43,9 @@ ProGuard_Rules_Implementation.md
 # Visual Studio Code
 .vscode/
 *.code-workspace
+
+# Windows reserved device names
+nul
 
 # Additional Build Files
 build/

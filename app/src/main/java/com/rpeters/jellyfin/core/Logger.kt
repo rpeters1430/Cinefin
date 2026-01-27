@@ -160,7 +160,7 @@ object Logger {
         logQueue.offer(entry)
 
         // Remove old entries if queue is too large
-        while (logQueue.size > maxLogEntries) {
+        while (logQueue.size > MAX_LOG_ENTRIES) {
             logQueue.poll()
         }
     }

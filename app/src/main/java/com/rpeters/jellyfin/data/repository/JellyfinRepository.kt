@@ -23,7 +23,9 @@ import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.extensions.itemsApi
@@ -118,6 +120,9 @@ class JellyfinRepository @Inject constructor(
     private suspend fun getClient(serverUrl: String, accessToken: String? = null): ApiClient =
         sessionManager.getClientForUrl(serverUrl)
 
+    private suspend fun <T> withIo(block: suspend () -> T): T =
+        withContext(Dispatchers.IO) { block() }
+
     // ✅ FIX: Helper method to get current authenticated client
     private suspend fun getCurrentAuthenticatedClient(): ApiClient? {
         val currentServer = authRepository.getCurrentServer()
@@ -135,12 +140,16 @@ class JellyfinRepository @Inject constructor(
         block: suspend (server: JellyfinServer, client: ApiClient) -> T,
     ): ApiResult<T> =
         try {
-            val result = sessionManager.executeWithAuth(operationName) { server, client ->
-                block(server, client)
+            val result = withIo {
+                sessionManager.executeWithAuth(operationName) { server, client ->
+                    block(server, client)
+                }
             }
             ApiResult.Success(result)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: Exception) {
+            handleExceptionSafely(e, "$operationName failed")
         }
 
     // ✅ PHASE 4: Simplified error handling using centralized utilities
@@ -244,34 +253,36 @@ class JellyfinRepository @Inject constructor(
         }
 
         return try {
-            val client = getClient(server.url, server.accessToken)
-            val itemKinds = itemTypes?.split(",")?.mapNotNull { type ->
-                when (type.trim()) {
-                    "Movie" -> BaseItemKind.MOVIE
-                    "Series" -> BaseItemKind.SERIES
-                    "Episode" -> BaseItemKind.EPISODE
-                    "Audio" -> BaseItemKind.AUDIO
-                    "MusicAlbum" -> BaseItemKind.MUSIC_ALBUM
-                    "MusicArtist" -> BaseItemKind.MUSIC_ARTIST
-                    "Book" -> BaseItemKind.BOOK
-                    "AudioBook" -> BaseItemKind.AUDIO_BOOK
-                    "Video" -> BaseItemKind.VIDEO
-                    "Photo" -> BaseItemKind.PHOTO
-                    else -> null
+            withIo {
+                val client = getClient(server.url, server.accessToken)
+                val itemKinds = itemTypes?.split(",")?.mapNotNull { type ->
+                    when (type.trim()) {
+                        "Movie" -> BaseItemKind.MOVIE
+                        "Series" -> BaseItemKind.SERIES
+                        "Episode" -> BaseItemKind.EPISODE
+                        "Audio" -> BaseItemKind.AUDIO
+                        "MusicAlbum" -> BaseItemKind.MUSIC_ALBUM
+                        "MusicArtist" -> BaseItemKind.MUSIC_ARTIST
+                        "Book" -> BaseItemKind.BOOK
+                        "AudioBook" -> BaseItemKind.AUDIO_BOOK
+                        "Video" -> BaseItemKind.VIDEO
+                        "Photo" -> BaseItemKind.PHOTO
+                        else -> null
+                    }
                 }
+
+                // Guard against empty list - can cause 400 errors
+                val includeTypes = itemKinds?.takeIf { it.isNotEmpty() }
+
+                val response = client.itemsApi.getItems(
+                    userId = userUuid,
+                    recursive = true,
+                    includeItemTypes = includeTypes,
+                    startIndex = startIndex,
+                    limit = limit,
+                )
+                ApiResult.Success(response.content.items)
             }
-
-            // Guard against empty list - can cause 400 errors
-            val includeTypes = itemKinds?.takeIf { it.isNotEmpty() }
-
-            val response = client.itemsApi.getItems(
-                userId = userUuid,
-                recursive = true,
-                includeItemTypes = includeTypes,
-                startIndex = startIndex,
-                limit = limit,
-            )
-            ApiResult.Success(response.content.items)
         } catch (e: org.jellyfin.sdk.api.client.exception.InvalidStatusException) {
             val errorMsg = try { e.message } catch (_: Throwable) { "Bad Request" }
             Log.e("JellyfinRepository", "getLibraryItems 400/404: ${e.status} ${errorMsg ?: e.message}")
@@ -303,32 +314,34 @@ class JellyfinRepository @Inject constructor(
             logDebug("getRecentlyAdded: Requesting $limit items from server")
 
             val items = executeWithRetry {
-                // ✅ FIX: Always get current server state inside the retry closure to use fresh token
-                val currentServer = authRepository.getCurrentServer()
-                    ?: throw IllegalStateException("Server not available")
-                val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
-                    ?: throw IllegalStateException("Invalid user ID")
+                withIo {
+                    // ✅ FIX: Always get current server state inside the retry closure to use fresh token
+                    val currentServer = authRepository.getCurrentServer()
+                        ?: throw IllegalStateException("Server not available")
+                    val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
+                        ?: throw IllegalStateException("Invalid user ID")
 
-                val client = getClient(currentServer.url, currentServer.accessToken)
-                val response = client.itemsApi.getItems(
-                    userId = currentUserUuid,
-                    recursive = true,
-                    includeItemTypes = listOf(
-                        BaseItemKind.MOVIE,
-                        BaseItemKind.SERIES,
-                        BaseItemKind.EPISODE,
-                        BaseItemKind.AUDIO,
-                        BaseItemKind.MUSIC_ALBUM,
-                        BaseItemKind.MUSIC_ARTIST,
-                        BaseItemKind.BOOK,
-                        BaseItemKind.AUDIO_BOOK,
-                        BaseItemKind.VIDEO,
-                    ),
-                    sortBy = listOf(ItemSortBy.DATE_CREATED),
-                    sortOrder = listOf(SortOrder.DESCENDING),
-                    limit = limit,
-                )
-                response.content.items
+                    val client = getClient(currentServer.url, currentServer.accessToken)
+                    val response = client.itemsApi.getItems(
+                        userId = currentUserUuid,
+                        recursive = true,
+                        includeItemTypes = listOf(
+                            BaseItemKind.MOVIE,
+                            BaseItemKind.SERIES,
+                            BaseItemKind.EPISODE,
+                            BaseItemKind.AUDIO,
+                            BaseItemKind.MUSIC_ALBUM,
+                            BaseItemKind.MUSIC_ARTIST,
+                            BaseItemKind.BOOK,
+                            BaseItemKind.AUDIO_BOOK,
+                            BaseItemKind.VIDEO,
+                        ),
+                        sortBy = listOf(ItemSortBy.DATE_CREATED),
+                        sortOrder = listOf(SortOrder.DESCENDING),
+                        limit = limit,
+                    )
+                    response.content.items
+                }
             }
 
             logDebug("getRecentlyAdded: Retrieved ${items.size} items")
@@ -344,6 +357,8 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Success(items)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: Exception) {
+            handleExceptionSafely(e, "Failed to load recently added items")
         }
     }
 
@@ -446,6 +461,11 @@ class JellyfinRepository @Inject constructor(
                     Log.d("JellyfinRepository", "$operationName: Operation cancelled on attempt ${attempt + 1}")
                 }
                 throw e
+            } catch (e: Exception) {
+                Log.w("JellyfinRepository", "$operationName: Exception on attempt ${attempt + 1}: ${e.message}")
+                if (attempt >= maxRetries) {
+                    return handleExceptionSafely(e, "$operationName failed")
+                }
             }
         }
 
@@ -468,35 +488,37 @@ class JellyfinRepository @Inject constructor(
         }
 
         return executeWithAuthRetry("getRecentlyAddedByType") {
-            val currentServer = authRepository.getCurrentServer()
-                ?: return@executeWithAuthRetry ApiResult.Error("Server not available", errorType = ErrorType.AUTHENTICATION)
-            val client = getClient(currentServer.url, currentServer.accessToken)
-            val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
-                ?: return@executeWithAuthRetry ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+            withIo {
+                val currentServer = authRepository.getCurrentServer()
+                    ?: return@withIo ApiResult.Error("Server not available", errorType = ErrorType.AUTHENTICATION)
+                val client = getClient(currentServer.url, currentServer.accessToken)
+                val currentUserUuid = runCatching { UUID.fromString(currentServer.userId ?: "") }.getOrNull()
+                    ?: return@withIo ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
 
-            val response = client.itemsApi.getItems(
-                userId = currentUserUuid,
-                recursive = true,
-                includeItemTypes = listOf(itemType),
-                sortBy = listOf(ItemSortBy.DATE_CREATED),
-                sortOrder = listOf(SortOrder.DESCENDING),
-                limit = limit,
-            )
-            val items = response.content.items
+                val response = client.itemsApi.getItems(
+                    userId = currentUserUuid,
+                    recursive = true,
+                    includeItemTypes = listOf(itemType),
+                    sortBy = listOf(ItemSortBy.DATE_CREATED),
+                    sortOrder = listOf(SortOrder.DESCENDING),
+                    limit = limit,
+                )
+                val items = response.content.items
 
-            if (BuildConfig.DEBUG) {
-                Log.d("JellyfinRepository", "getRecentlyAddedByType: Retrieved ${items.size} items of type $itemType")
-            }
-
-            // Log details of each item
-            items.forEachIndexed { index, item ->
-                val dateFormatted = item.dateCreated?.toString() ?: AppResources.getString(R.string.unknown)
                 if (BuildConfig.DEBUG) {
-                    Log.d("JellyfinRepository", "getRecentlyAddedByType[$itemType][$index]: '${item.name}' (Created: $dateFormatted)")
+                    Log.d("JellyfinRepository", "getRecentlyAddedByType: Retrieved ${items.size} items of type $itemType")
                 }
-            }
 
-            ApiResult.Success(items)
+                // Log details of each item
+                items.forEachIndexed { index, item ->
+                    val dateFormatted = item.dateCreated?.toString() ?: AppResources.getString(R.string.unknown)
+                    if (BuildConfig.DEBUG) {
+                        Log.d("JellyfinRepository", "getRecentlyAddedByType[$itemType][$index]: '${item.name}' (Created: $dateFormatted)")
+                    }
+                }
+
+                ApiResult.Success(items)
+            }
         }
     }
 
@@ -520,16 +542,18 @@ class JellyfinRepository @Inject constructor(
         }
 
         return try {
-            val client = getClient(server.url, server.accessToken)
-            val response = client.itemsApi.getItems(
-                userId = userUuid,
-                parentId = parentUuid,
-                recursive = true,
-                sortBy = listOf(ItemSortBy.DATE_CREATED),
-                sortOrder = listOf(SortOrder.DESCENDING),
-                limit = limit,
-            )
-            ApiResult.Success(response.content.items)
+            withIo {
+                val client = getClient(server.url, server.accessToken)
+                val response = client.itemsApi.getItems(
+                    userId = userUuid,
+                    parentId = parentUuid,
+                    recursive = true,
+                    sortBy = listOf(ItemSortBy.DATE_CREATED),
+                    sortOrder = listOf(SortOrder.DESCENDING),
+                    limit = limit,
+                )
+                ApiResult.Success(response.content.items)
+            }
         } catch (e: CancellationException) {
             throw e
         }
@@ -609,14 +633,16 @@ class JellyfinRepository @Inject constructor(
         }
 
         return try {
-            val client = getClient(server.url, server.accessToken)
-            val response = client.itemsApi.getItems(
-                userId = userUuid,
-                recursive = true,
-                sortBy = listOf(ItemSortBy.SORT_NAME),
-                filters = listOf(ItemFilter.IS_FAVORITE),
-            )
-            ApiResult.Success(response.content.items)
+            withIo {
+                val client = getClient(server.url, server.accessToken)
+                val response = client.itemsApi.getItems(
+                    userId = userUuid,
+                    recursive = true,
+                    sortBy = listOf(ItemSortBy.SORT_NAME),
+                    filters = listOf(ItemFilter.IS_FAVORITE),
+                )
+                ApiResult.Success(response.content.items)
+            }
         } catch (e: CancellationException) {
             throw e
         }
@@ -633,24 +659,26 @@ class JellyfinRepository @Inject constructor(
             Log.d("JellyfinRepository", "getSeasonsForSeries: Fetching seasons for seriesId=$seriesId")
         }
         return try {
-            val server = validateServer()
-            val userUuid = parseUuid(server.userId ?: "", "user")
-            val seriesUuid = parseUuid(seriesId, "series")
+            withIo {
+                val server = validateServer()
+                val userUuid = parseUuid(server.userId ?: "", "user")
+                val seriesUuid = parseUuid(seriesId, "series")
 
-            // Cache the client to avoid creating it multiple times
-            val client = getClient(server.url, server.accessToken)
-            val response = client.itemsApi.getItems(
-                userId = userUuid,
-                parentId = seriesUuid,
-                includeItemTypes = listOf(BaseItemKind.SEASON),
-                sortBy = listOf(ItemSortBy.SORT_NAME),
-                sortOrder = listOf(SortOrder.ASCENDING),
-                fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW),
-            )
-            if (BuildConfig.DEBUG) {
-                Log.d("JellyfinRepository", "getSeasonsForSeries: Successfully fetched ${response.content.items.size} seasons for seriesId=$seriesId")
+                // Cache the client to avoid creating it multiple times
+                val client = getClient(server.url, server.accessToken)
+                val response = client.itemsApi.getItems(
+                    userId = userUuid,
+                    parentId = seriesUuid,
+                    includeItemTypes = listOf(BaseItemKind.SEASON),
+                    sortBy = listOf(ItemSortBy.SORT_NAME),
+                    sortOrder = listOf(SortOrder.ASCENDING),
+                    fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW),
+                )
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinRepository", "getSeasonsForSeries: Successfully fetched ${response.content.items.size} seasons for seriesId=$seriesId")
+                }
+                ApiResult.Success(response.content.items)
             }
-            ApiResult.Success(response.content.items)
         } catch (e: CancellationException) {
             throw e
         }
@@ -667,24 +695,26 @@ class JellyfinRepository @Inject constructor(
             Log.d("JellyfinRepository", "getEpisodesForSeason: Fetching episodes for seasonId=$seasonId")
         }
         return try {
-            val server = validateServer()
-            val userUuid = parseUuid(server.userId ?: "", "user")
-            val seasonUuid = parseUuid(seasonId, "season")
+            withIo {
+                val server = validateServer()
+                val userUuid = parseUuid(server.userId ?: "", "user")
+                val seasonUuid = parseUuid(seasonId, "season")
 
-            // Cache the client to avoid creating it multiple times
-            val client = getClient(server.url, server.accessToken)
-            val response = client.itemsApi.getItems(
-                userId = userUuid,
-                parentId = seasonUuid,
-                includeItemTypes = listOf(BaseItemKind.EPISODE),
-                sortBy = listOf(ItemSortBy.INDEX_NUMBER),
-                sortOrder = listOf(SortOrder.ASCENDING),
-                fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW),
-            )
-            if (BuildConfig.DEBUG) {
-                Log.d("JellyfinRepository", "getEpisodesForSeason: Successfully fetched ${response.content.items.size} episodes for seasonId=$seasonId")
+                // Cache the client to avoid creating it multiple times
+                val client = getClient(server.url, server.accessToken)
+                val response = client.itemsApi.getItems(
+                    userId = userUuid,
+                    parentId = seasonUuid,
+                    includeItemTypes = listOf(BaseItemKind.EPISODE),
+                    sortBy = listOf(ItemSortBy.INDEX_NUMBER),
+                    sortOrder = listOf(SortOrder.ASCENDING),
+                    fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.DATE_CREATED, ItemFields.OVERVIEW),
+                )
+                if (BuildConfig.DEBUG) {
+                    Log.d("JellyfinRepository", "getEpisodesForSeason: Successfully fetched ${response.content.items.size} episodes for seasonId=$seasonId")
+                }
+                ApiResult.Success(response.content.items)
             }
-            ApiResult.Success(response.content.items)
         } catch (e: CancellationException) {
             throw e
         }
@@ -707,28 +737,30 @@ class JellyfinRepository @Inject constructor(
         }
 
         return try {
-            val client = getClient(server.url, server.accessToken)
-            val response = client.itemsApi.getItems(
-                userId = userUuid,
-                ids = listOf(itemUuid),
-                limit = 1,
-                fields = listOf(
-                    ItemFields.OVERVIEW,
-                    ItemFields.GENRES,
-                    ItemFields.PEOPLE,
-                    ItemFields.MEDIA_SOURCES,
-                    ItemFields.MEDIA_STREAMS,
-                    ItemFields.DATE_CREATED,
-                    ItemFields.STUDIOS,
-                    ItemFields.TAGS,
-                    ItemFields.CHAPTERS,
-                ),
-            )
-            val item = response.content.items.firstOrNull()
-            if (item != null) {
-                ApiResult.Success(item)
-            } else {
-                ApiResult.Error("$itemTypeName not found", errorType = ErrorType.NOT_FOUND)
+            withIo {
+                val client = getClient(server.url, server.accessToken)
+                val response = client.itemsApi.getItems(
+                    userId = userUuid,
+                    ids = listOf(itemUuid),
+                    limit = 1,
+                    fields = listOf(
+                        ItemFields.OVERVIEW,
+                        ItemFields.GENRES,
+                        ItemFields.PEOPLE,
+                        ItemFields.MEDIA_SOURCES,
+                        ItemFields.MEDIA_STREAMS,
+                        ItemFields.DATE_CREATED,
+                        ItemFields.STUDIOS,
+                        ItemFields.TAGS,
+                        ItemFields.CHAPTERS,
+                    ),
+                )
+                val item = response.content.items.firstOrNull()
+                if (item != null) {
+                    ApiResult.Success(item)
+                } else {
+                    ApiResult.Error("$itemTypeName not found", errorType = ErrorType.NOT_FOUND)
+                }
             }
         } catch (e: CancellationException) {
             throw e
@@ -777,24 +809,26 @@ class JellyfinRepository @Inject constructor(
         }
 
         return try {
-            val client = getClient(server.url, server.accessToken)
-            val response = client.itemsApi.getItems(
-                userId = userUuid,
-                searchTerm = query.trim(),
-                recursive = true,
-                includeItemTypes = includeItemTypes ?: listOf(
-                    BaseItemKind.MOVIE,
-                    BaseItemKind.SERIES,
-                    BaseItemKind.EPISODE,
-                    BaseItemKind.AUDIO,
-                    BaseItemKind.MUSIC_ALBUM,
-                    BaseItemKind.MUSIC_ARTIST,
-                    BaseItemKind.BOOK,
-                    BaseItemKind.AUDIO_BOOK,
-                ),
-                limit = limit,
-            )
-            ApiResult.Success(response.content.items)
+            withIo {
+                val client = getClient(server.url, server.accessToken)
+                val response = client.itemsApi.getItems(
+                    userId = userUuid,
+                    searchTerm = query.trim(),
+                    recursive = true,
+                    includeItemTypes = includeItemTypes ?: listOf(
+                        BaseItemKind.MOVIE,
+                        BaseItemKind.SERIES,
+                        BaseItemKind.EPISODE,
+                        BaseItemKind.AUDIO,
+                        BaseItemKind.MUSIC_ALBUM,
+                        BaseItemKind.MUSIC_ARTIST,
+                        BaseItemKind.BOOK,
+                        BaseItemKind.AUDIO_BOOK,
+                    ),
+                    limit = limit,
+                )
+                ApiResult.Success(response.content.items)
+            }
         } catch (e: CancellationException) {
             throw e
         }
@@ -870,13 +904,15 @@ class JellyfinRepository @Inject constructor(
         }
 
         return try {
-            val client = getClient(server.url, server.accessToken)
-            if (isFavorite) {
-                client.userLibraryApi.markFavoriteItem(itemId = itemUuid, userId = userUuid)
-            } else {
-                client.userLibraryApi.unmarkFavoriteItem(itemId = itemUuid, userId = userUuid)
+            withIo {
+                val client = getClient(server.url, server.accessToken)
+                if (isFavorite) {
+                    client.userLibraryApi.markFavoriteItem(itemId = itemUuid, userId = userUuid)
+                } else {
+                    client.userLibraryApi.unmarkFavoriteItem(itemId = itemUuid, userId = userUuid)
+                }
+                ApiResult.Success(!isFavorite) // Return the new state
             }
-            ApiResult.Success(!isFavorite) // Return the new state
         } catch (e: CancellationException) {
             throw e
         }
@@ -894,9 +930,11 @@ class JellyfinRepository @Inject constructor(
         }
 
         return try {
-            val client = getClient(server.url, server.accessToken)
-            client.libraryApi.deleteItem(itemId = itemUuid)
-            ApiResult.Success(true)
+            withIo {
+                val client = getClient(server.url, server.accessToken)
+                client.libraryApi.deleteItem(itemId = itemUuid)
+                ApiResult.Success(true)
+            }
         } catch (e: CancellationException) {
             throw e
         }
@@ -909,10 +947,12 @@ class JellyfinRepository @Inject constructor(
     private suspend fun hasAdminDeletePermission(server: JellyfinServer): ApiResult<Boolean> {
         val userId = server.userId ?: return ApiResult.Success(false)
         return try {
-            val userUuid = parseUuid(userId, "user")
-            val client = getClient(server.url, server.accessToken)
-            val user = client.userApi.getCurrentUser().content
-            ApiResult.Success(user.policy?.isAdministrator == true || user.policy?.enableContentDeletion == true)
+            withIo {
+                val userUuid = parseUuid(userId, "user")
+                val client = getClient(server.url, server.accessToken)
+                val user = client.userApi.getCurrentUser().content
+                ApiResult.Success(user.policy?.isAdministrator == true || user.policy?.enableContentDeletion == true)
+            }
         } catch (e: CancellationException) {
             throw e
         }
@@ -941,9 +981,11 @@ class JellyfinRepository @Inject constructor(
         }
 
         return try {
-            val client = getClient(server.url, server.accessToken)
-            client.libraryApi.deleteItem(itemId = itemUuid)
-            ApiResult.Success(true)
+            withIo {
+                val client = getClient(server.url, server.accessToken)
+                client.libraryApi.deleteItem(itemId = itemUuid)
+                ApiResult.Success(true)
+            }
         } catch (e: CancellationException) {
             throw e
         }
@@ -1048,10 +1090,12 @@ class JellyfinRepository @Inject constructor(
             }
         }
 
-        val response = client.mediaInfoApi.getPostedPlaybackInfo(
-            itemId = itemUuid,
-            data = playbackInfoDto,
-        ).content
+        val response = withIo {
+            client.mediaInfoApi.getPostedPlaybackInfo(
+                itemId = itemUuid,
+                data = playbackInfoDto,
+            ).content
+        }
 
         if (BuildConfig.DEBUG) {
             // Log the response from the server

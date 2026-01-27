@@ -18,12 +18,29 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26 // Android 8.0+ (was 31) - Broader device compatibility
         targetSdk = 35 // Use stable SDK 35 for runtime, keep compileSdk at 36
-        versionCode = 12
-        versionName = "0.12"
+        versionCode = 14
+        versionName = "13.1"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
         // Test configuration
+    }
+
+    signingConfigs {
+        create("release") {
+            // Prefer Gradle properties for local dev, fall back to env vars for CI/CD.
+            val keystorePath = (findProperty("JELLYFIN_KEYSTORE_FILE") as String?)
+                ?: System.getenv("JELLYFIN_KEYSTORE_FILE")
+                ?: "jellyfin-release.keystore"
+            storeFile = file(keystorePath)
+            storePassword = (findProperty("JELLYFIN_KEYSTORE_PASSWORD") as String?)
+                ?: System.getenv("JELLYFIN_KEYSTORE_PASSWORD")
+            keyAlias = (findProperty("JELLYFIN_KEY_ALIAS") as String?)
+                ?: System.getenv("JELLYFIN_KEY_ALIAS")
+                ?: "jellyfin-release"
+            keyPassword = (findProperty("JELLYFIN_KEY_PASSWORD") as String?)
+                ?: System.getenv("JELLYFIN_KEY_PASSWORD")
+        }
     }
 
     buildTypes {
@@ -38,6 +55,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

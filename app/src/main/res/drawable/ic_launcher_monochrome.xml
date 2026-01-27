@@ -4,17 +4,27 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Monochrome themed icon for Android 13+ - "JR" initials -->
     <group android:name="root">
+        <!-- Background circle -->
         <path
-            android:name="play"
             android:fillColor="#000000"
-            android:pathData="M45,36 L74,54 L45,72 Z"/>
+            android:pathData="M54,24 A30,30 0 1,1 54,84 A30,30 0 1,1 54,24 Z"/>
+
+        <!-- Letter J -->
         <path
-            android:name="wave"
-            android:strokeColor="#000000"
-            android:strokeWidth="6"
-            android:strokeLineCap="round"
-            android:fillColor="@android:color/transparent"
-            android:pathData="M30,74 C38,70 46,78 54,74 C62,70 70,78 78,74"/>
+            android:fillColor="#FFFFFF"
+            android:pathData="M38,40 L38,60 Q38,65 42,65 Q46,65 46,60 L46,40 L42,40 L42,60 Q42,62 40,62 L40,40 Z"/>
+
+        <!-- Letter R -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M52,40 L52,65 L56,65 L56,54 L60,54 L64,65 L68,65 L63.5,53.5 Q67,52 67,47 Q67,40 60,40 Z M56,44 L60,44 Q63,44 63,47 Q63,50 60,50 L56,50 Z"/>
+
+        <!-- Small play button accent -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M64,70 L70,74 L64,78 Z"/>
     </group>
 </vector>
