@@ -25,6 +25,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -104,6 +107,8 @@ private fun CarouselMovieCard(
         ),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
+            val scrimColor = MaterialTheme.colorScheme.scrim
+            val overlayTextColor = MaterialTheme.colorScheme.onScrim
             OptimizedImage(
                 imageUrl = getBackdropUrl(movie),
                 contentDescription = "${movie.name} backdrop",
@@ -112,6 +117,21 @@ private fun CarouselMovieCard(
                 quality = ImageQuality.HIGH,
                 contentScale = ContentScale.Crop,
                 cornerRadius = 16.dp,
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawWithCache {
+                        val gradient = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                scrimColor.copy(alpha = 0.75f),
+                            ),
+                            startY = size.height * 0.40f,
+                            endY = size.height,
+                        )
+                        onDrawBehind { drawRect(gradient) }
+                    },
             )
             movie.communityRating?.let { rating ->
                 Surface(
@@ -139,7 +159,7 @@ private fun CarouselMovieCard(
                 MaterialText(
                     text = movie.name ?: stringResource(R.string.unknown),
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = overlayTextColor,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     autoSize = true,
@@ -253,6 +273,8 @@ private fun CarouselContentCard(
                 BaseItemKind.SERIES -> getSeriesImageUrl(item) ?: getBackdropUrl(item) ?: getImageUrl(item)
                 else -> getBackdropUrl(item) ?: getImageUrl(item)
             }
+            val scrimColor = MaterialTheme.colorScheme.scrim
+            val overlayTextColor = MaterialTheme.colorScheme.onScrim
 
             OptimizedImage(
                 imageUrl = imageUrl,
@@ -262,6 +284,21 @@ private fun CarouselContentCard(
                 quality = ImageQuality.HIGH,
                 contentScale = ContentScale.Crop,
                 cornerRadius = 16.dp,
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawWithCache {
+                        val gradient = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                scrimColor.copy(alpha = 0.75f),
+                            ),
+                            startY = size.height * 0.40f,
+                            endY = size.height,
+                        )
+                        onDrawBehind { drawRect(gradient) }
+                    },
             )
 
             // Rating badge
@@ -293,7 +330,7 @@ private fun CarouselContentCard(
                 MaterialText(
                     text = item.name ?: stringResource(R.string.unknown),
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = overlayTextColor,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     autoSize = true,
@@ -308,7 +345,7 @@ private fun CarouselContentCard(
                             Text(
                                 text = seriesName,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                color = overlayTextColor.copy(alpha = 0.85f),
                                 maxLines = 1,
                             )
                         }
@@ -318,7 +355,7 @@ private fun CarouselContentCard(
                             Text(
                                 text = year.toString(),
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                color = overlayTextColor.copy(alpha = 0.85f),
                                 maxLines = 1,
                             )
                         }
@@ -328,7 +365,7 @@ private fun CarouselContentCard(
                             Text(
                                 text = artist,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                color = overlayTextColor.copy(alpha = 0.85f),
                                 maxLines = 1,
                             )
                         }
