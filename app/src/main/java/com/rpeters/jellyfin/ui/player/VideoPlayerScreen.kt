@@ -1643,7 +1643,7 @@ private fun rememberVideoPlayerColors(): VideoPlayerColors {
     val scheme = MaterialTheme.colorScheme
     return remember(scheme) {
         VideoPlayerColors(
-            background = scheme.surface,
+            background = Color.Black,
             overlayContent = scheme.onSurface,
             overlayScrim = scheme.scrim.copy(alpha = 0.75f),
             gradientStops = listOf(
