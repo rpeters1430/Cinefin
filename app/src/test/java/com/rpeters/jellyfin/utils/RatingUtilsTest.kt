@@ -33,7 +33,7 @@ class RatingUtilsTest {
         assertEquals("TV-PG", normalizeOfficialRating("TV-PG"))
         assertEquals("TV-14", normalizeOfficialRating("TV-14"))
         assertEquals("TV-MA", normalizeOfficialRating("TV-MA"))
-        
+
         // Not Rated / Unrated
         assertEquals("NR", normalizeOfficialRating("NR"))
         assertEquals("UR", normalizeOfficialRating("UR"))
@@ -87,7 +87,7 @@ class RatingUtilsTest {
         assertEquals("16+", normalizeOfficialRating("FSK-16"))
         assertEquals("12+", normalizeOfficialRating("FSK-12"))
         assertEquals("18+", normalizeOfficialRating("FSK-18"))
-        
+
         // FSK with space separator
         assertEquals("6+", normalizeOfficialRating("FSK 6"))
 
