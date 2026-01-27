@@ -229,7 +229,7 @@ fun TvVideoPlayerScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color.Black)
             .tvKeyboardHandler(
                 focusManager = focusManager,
                 onBack = {
