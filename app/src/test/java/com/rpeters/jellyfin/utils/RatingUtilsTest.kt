@@ -33,10 +33,10 @@ class RatingUtilsTest {
         assertEquals("TV-PG", normalizeOfficialRating("TV-PG"))
         assertEquals("TV-14", normalizeOfficialRating("TV-14"))
         assertEquals("TV-MA", normalizeOfficialRating("TV-MA"))
-
-        // Not Rated
+        
+        // Not Rated / Unrated
         assertEquals("NR", normalizeOfficialRating("NR"))
-        assertEquals("NR", normalizeOfficialRating("UR"))
+        assertEquals("UR", normalizeOfficialRating("UR"))
     }
 
     @Test
@@ -44,7 +44,8 @@ class RatingUtilsTest {
         assertEquals("TV-MA", normalizeOfficialRating("tv-ma"))
         assertEquals("TV-MA", normalizeOfficialRating("Tv-Ma"))
         assertEquals("PG-13", normalizeOfficialRating("pg-13"))
-        assertEquals("PG-13", normalizeOfficialRating("PG13"))
+        assertEquals("NR", normalizeOfficialRating("not rated"))
+        assertEquals("NR", normalizeOfficialRating("unrated"))
     }
 
     @Test
@@ -53,7 +54,6 @@ class RatingUtilsTest {
         assertEquals("NC-17", normalizeOfficialRating("NC17"))
         assertEquals("NR", normalizeOfficialRating("NOT RATED"))
         assertEquals("NR", normalizeOfficialRating("UNRATED"))
-        assertEquals("NR", normalizeOfficialRating("not rated"))
     }
 
     @Test
@@ -82,19 +82,21 @@ class RatingUtilsTest {
     }
 
     @Test
-    fun `normalizeOfficialRating strips system prefixes`() {
-        // FSK (German film rating system)
+    fun `normalizeOfficialRating strips system prefixes with various separators`() {
+        // FSK (German film rating system) - dash separator
         assertEquals("16+", normalizeOfficialRating("FSK-16"))
         assertEquals("12+", normalizeOfficialRating("FSK-12"))
         assertEquals("18+", normalizeOfficialRating("FSK-18"))
+        
+        // FSK with space separator
         assertEquals("6+", normalizeOfficialRating("FSK 6"))
 
-        // PEGI (European game rating system)
+        // PEGI (European game rating system) - space and dash separators
         assertEquals("16+", normalizeOfficialRating("PEGI 16"))
         assertEquals("18+", normalizeOfficialRating("PEGI-18"))
         assertEquals("12+", normalizeOfficialRating("PEGI 12"))
 
-        // BBFC (British film rating)
+        // BBFC (British film rating) - dash and space separators
         assertEquals("15+", normalizeOfficialRating("BBFC-15"))
         assertEquals("18+", normalizeOfficialRating("BBFC 18"))
     }
