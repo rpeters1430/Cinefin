@@ -31,12 +31,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Badge
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -333,6 +332,41 @@ private fun TVSeasonContent(
     }
 }
 
+/**
+ * Helper function to determine the watch button text based on series watch status
+ */
+private fun getWatchButtonText(series: BaseItemDto): String {
+    val totalCount = series.childCount ?: 0
+    val unwatchedCount = series.userData?.unplayedItemCount
+    val playedPercentage = series.userData?.playedPercentage ?: 0.0
+
+    // If explicitly marked as played, show rewatch
+    if (series.userData?.played == true) {
+        return "Rewatch Series"
+    }
+
+    // If we have unplayed count information
+    if (unwatchedCount != null) {
+        return when {
+            // Only show "Rewatch" if unplayedCount is 0 AND series has episodes
+            // This ensures we don't show "Rewatch" for series that haven't been started
+            unwatchedCount == 0 && totalCount > 0 -> "Rewatch Series"
+            // Show "Start Watching" only if all episodes are unwatched AND nothing has been watched
+            unwatchedCount == totalCount && totalCount > 0 && playedPercentage == 0.0 -> "Start Watching Episode 1"
+            unwatchedCount > 0 -> "Watch Next Episode"
+            else -> "Browse Series" // Fallback for series with 0 episodes
+        }
+    }
+
+    // Fallback when we don't have user data: assume unwatched if series has episodes
+    return if (totalCount > 0) {
+        "Start Watching Episode 1"
+    } else {
+        // Series with no episodes - just show a generic watch label
+        "Browse Series"
+    }
+}
+
 @Composable
 private fun SeriesDetailsHeader(
     series: BaseItemDto,
@@ -493,11 +527,26 @@ private fun SeriesDetailsHeader(
                     text = overview,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                    maxLines = 6,
+                    maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3,
                 )
             }
+        }
+
+        // Watch Next Episode Button
+        Spacer(modifier = Modifier.height(16.dp))
+        ExpressiveFilledButton(
+            onClick = { onSeriesClick(series.id.toString()) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = getWatchButtonText(series))
         }
     }
 }
@@ -852,79 +901,62 @@ private fun PersonCard(
     getImageUrl: (java.util.UUID, String?) -> String?,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    Column(
         modifier = modifier.width(100.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+        // Profile Image with background
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.size(100.dp),
         ) {
-            // Actor photo or initials
             if (person.primaryImageTag != null) {
                 JellyfinAsyncImage(
                     model = getImageUrl(person.id, person.primaryImageTag),
                     contentDescription = person.name,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape),
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    requestSize = rememberCoilSize(60.dp),
+                    requestSize = rememberCoilSize(100.dp),
                 )
             } else {
                 Box(
-                    modifier = Modifier
-                        .size(60.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                            CircleShape,
-                        ),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = person.name?.take(2)?.uppercase() ?: "??",
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
+        }
 
+        // Actor Name
+        Text(
+            text = person.name ?: stringResource(id = R.string.unknown),
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+        )
+
+        // Role/Character - with fallback to type for crew
+        val roleText = person.role ?: person.type?.name?.takeIf { it.isNotBlank() }
+        roleText?.let { text ->
             Text(
-                text = person.name ?: stringResource(id = R.string.unknown),
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Medium,
+                text = text,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
             )
-
-            // Show role for actors or type for crew - more compact display
-            val displayText = when {
-                !person.role.isNullOrBlank() -> {
-                    // Truncate long character names with ellipsis for better fit
-                    val role = person.role ?: ""
-                    if (role.length > 20) "${role.take(17)}..." else role
-                }
-                person.type.name.isNotBlank() -> person.type.name
-                else -> null
-            }
-
-            displayText?.let { text ->
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
         }
     }
 }
