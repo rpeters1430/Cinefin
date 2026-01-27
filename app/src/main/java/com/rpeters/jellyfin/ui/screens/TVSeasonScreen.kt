@@ -356,10 +356,19 @@ private fun getWatchButtonText(series: BaseItemDto, nextEpisode: BaseItemDto?): 
         return "Browse Series"
     }
 
-    // Check if not started - don't rely solely on childCount which may be null
-    val hasNotStarted = unwatchedCount > 0 &&
-        (series.userData?.playCount ?: 0) == 0 &&
-        playedPercentage == 0.0
+    // Check if not started - use multiple indicators since childCount may be null
+    // Priority: 1) unplayedItemCount, 2) playCount, 3) playedPercentage
+    val hasNotStarted = if (series.userData?.unplayedItemCount != null) {
+        // Most reliable: unplayedItemCount matches actual episodes
+        val totalEpisodes = series.userData?.unplayedItemCount!! + (series.userData?.playCount ?: 0)
+        totalEpisodes > 0 && series.userData?.playCount == 0 && playedPercentage == 0.0
+    } else {
+        // Fallback: use unwatchedCount (which may be 0 if childCount is null)
+        // But also check playCount and playedPercentage
+        (unwatchedCount > 0 || nextEpisode != null) &&
+            (series.userData?.playCount ?: 0) == 0 &&
+            playedPercentage == 0.0
+    }
     if (hasNotStarted) {
         return "Start Watching Series"
     }
