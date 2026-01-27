@@ -10,6 +10,30 @@ android {
     namespace = "com.rpeters.jellyfin"
     compileSdk = libs.versions.sdk.get().toInt()
 
+    // Signing configuration for release builds
+    // Credentials are read from environment variables or gradle.properties
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+                ?: findProperty("ANDROID_KEYSTORE_PATH") as String?
+            val keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                ?: findProperty("ANDROID_KEYSTORE_PASSWORD") as String?
+            val keyAliasValue = System.getenv("ANDROID_KEY_ALIAS")
+                ?: findProperty("ANDROID_KEY_ALIAS") as String?
+            val keyPasswordValue = System.getenv("ANDROID_KEY_PASSWORD")
+                ?: findProperty("ANDROID_KEY_PASSWORD") as String?
+
+            if (keystorePath != null && keystorePassword != null &&
+                keyAliasValue != null && keyPasswordValue != null
+            ) {
+                storeFile = file(keystorePath)
+                storePassword = keystorePassword
+                keyAlias = keyAliasValue
+                keyPassword = keyPasswordValue
+            }
+        }
+    }
+
     defaultConfig {
         testInstrumentationRunnerArguments += mapOf(
             "clearPackageData" to "true",
@@ -38,6 +62,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // Use release signing config if credentials are available
+            signingConfig = signingConfigs.findByName("release")?.takeIf {
+                it.storeFile?.exists() == true
+            } ?: signingConfigs.getByName("debug")
         }
     }
 

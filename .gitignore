@@ -66,6 +66,8 @@ out/
 # Signing files
 *.jks
 *.keystore
+keystore-base64.txt
+signing.properties.template
 
 # Logs
 *.log
