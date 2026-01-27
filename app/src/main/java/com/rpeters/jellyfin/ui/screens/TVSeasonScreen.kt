@@ -332,6 +332,26 @@ private fun TVSeasonContent(
     }
 }
 
+/**
+ * Helper function to determine the watch button text based on series watch status
+ */
+private fun getWatchButtonText(series: BaseItemDto): String {
+    val isFullyWatched = series.userData?.played == true || (series.userData?.unplayedItemCount ?: 0) == 0
+    
+    return if (isFullyWatched) {
+        "Rewatch Series"
+    } else {
+        val unwatchedCount = series.userData?.unplayedItemCount ?: series.childCount ?: 0
+        val totalCount = series.childCount ?: 0
+        
+        if (unwatchedCount == totalCount) {
+            "Start Watching Episode 1"
+        } else {
+            "Watch Next Episode"
+        }
+    }
+}
+
 @Composable
 private fun SeriesDetailsHeader(
     series: BaseItemDto,
@@ -511,18 +531,7 @@ private fun SeriesDetailsHeader(
                 modifier = Modifier.size(20.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = if (series.userData?.played == true || (series.userData?.unplayedItemCount ?: 0) == 0) {
-                    "Rewatch Series"
-                } else {
-                    val unwatchedCount = series.userData?.unplayedItemCount ?: series.childCount ?: 0
-                    if (unwatchedCount == (series.childCount ?: 0)) {
-                        "Start Watching Episode 1"
-                    } else {
-                        "Watch Next Episode"
-                    }
-                },
-            )
+            Text(text = getWatchButtonText(series))
         }
     }
 }
@@ -922,10 +931,11 @@ private fun PersonCard(
             textAlign = TextAlign.Center,
         )
 
-        // Role/Character - simplified
-        person.role?.let { role ->
+        // Role/Character - with fallback to type for crew
+        val roleText = person.role ?: person.type.name.takeIf { it.isNotBlank() }
+        roleText?.let { text ->
             Text(
-                text = role,
+                text = text,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
