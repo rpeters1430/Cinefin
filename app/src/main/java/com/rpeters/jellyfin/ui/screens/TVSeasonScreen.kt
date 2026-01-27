@@ -337,13 +337,13 @@ private fun TVSeasonContent(
  */
 private fun getWatchButtonText(series: BaseItemDto): String {
     val isFullyWatched = series.userData?.played == true || (series.userData?.unplayedItemCount ?: 0) == 0
-    
+
     return if (isFullyWatched) {
         "Rewatch Series"
     } else {
         val unwatchedCount = series.userData?.unplayedItemCount ?: series.childCount ?: 0
         val totalCount = series.childCount ?: 0
-        
+
         if (unwatchedCount == totalCount) {
             "Start Watching Episode 1"
         } else {
