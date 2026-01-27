@@ -35,6 +35,13 @@ class TVSeasonViewModel @Inject constructor(
     private val _state = MutableStateFlow(TVSeasonState())
     val state: StateFlow<TVSeasonState> = _state.asStateFlow()
 
+    /**
+     * Loads a series' details, its seasons, and similar series, computes the next unwatched episode, and updates the ViewModel state.
+     *
+     * The function updates the state flags while loading, sets `seriesDetails`, `seasons`, `similarSeries`, and `nextEpisode`, and populates `errorMessage` on failure. If no seasons or episodes are available it sets an appropriate error message. Failures to load similar series are treated as non-critical and do not override other errors.
+     *
+     * @param seriesId The identifier of the series to load.
+     */
     fun loadSeriesData(seriesId: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null)
@@ -116,6 +123,10 @@ class TVSeasonViewModel @Inject constructor(
         _state.value = _state.value.copy(errorMessage = null)
     }
 
+    /**
+     * Reloads data for the currently selected series, if one is present.
+     *
+     * Does nothing when no series is selected. */
     fun refresh() {
         val seriesId = _state.value.seriesDetails?.id?.toString()
         if (seriesId != null) {
@@ -123,6 +134,13 @@ class TVSeasonViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Finds the next unwatched episode for the given series by scanning its seasons in order.
+     *
+     * @param series The series metadata (used to determine if there are episodes and whether the series is completely watched).
+     * @param seasons The seasons to search; seasons are processed ordered by `indexNumber` ascending then by `name`.
+     * @return The next unwatched episode as a `BaseItemDto`, or `null` if none is found or the series has no unwatched episodes.
+     */
     private suspend fun findNextUnwatchedEpisode(
         series: BaseItemDto,
         seasons: List<BaseItemDto>,

@@ -82,6 +82,22 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
 import java.util.Locale
 
+/**
+ * Displays the seasons screen for a TV series and manages its loading, error, empty, and content states.
+ *
+ * The composable drives data loading for the given `seriesId`, observes UI state, and renders the appropriate
+ * screen (loading, error, empty, or content). It also provides an overlaid back button and a refresh control.
+ *
+ * @param seriesId The identifier of the TV series to load and display.
+ * @param onBackClick Callback invoked when the back control is pressed.
+ * @param getImageUrl Function that returns a poster/image URL for a given item.
+ * @param getBackdropUrl Function that returns a backdrop URL for a given item.
+ * @param getLogoUrl Optional function that returns a logo URL for a given item; defaults to null.
+ * @param onSeasonClick Callback invoked with a season ID when a season item is selected.
+ * @param onSeriesClick Callback invoked with a series ID when a related series is selected.
+ * @param onPlayEpisode Callback invoked with an episode item to start playback of the next episode.
+ * @param modifier Modifier applied to the root container.
+ */
 @Composable
 fun TVSeasonScreen(
     seriesId: String,
@@ -214,6 +230,23 @@ fun TVSeasonScreen(
     }
 }
 
+/**
+ * Renders the main content of the TV season screen: series header, seasons list (or placeholder),
+ * cast & crew, and a "More Like This" recommendations row.
+ *
+ * Displays a full-bleed series header when series details are available, a scrollable list of seasons
+ * (or a centered "no seasons available" message), filtered cast and crew rows when present, and a
+ * recommendations section shown while similar-series data is loading or when recommendations exist.
+ *
+ * @param state Current screen state containing series details, seasons, people, similar series and loading flags.
+ * @param getImageUrl Function that returns a poster/image URL for a given item.
+ * @param getBackdropUrl Function that returns a backdrop URL for a given item.
+ * @param getLogoUrl Function that returns a logo URL for a given item.
+ * @param onSeasonClick Callback invoked with a season id when a season row is clicked.
+ * @param onSeriesClick Callback invoked with a series id when a recommended series is clicked.
+ * @param onPlayEpisode Callback invoked with the next episode item to start playback when the user taps the watch button.
+ * @param modifier Optional Compose modifier applied to the root LazyColumn.
+ */
 @Composable
 private fun TVSeasonContent(
     state: TVSeasonState,
@@ -339,7 +372,17 @@ private fun TVSeasonContent(
 }
 
 /**
- * Helper function to determine the watch button text based on series watch status
+ * Determine the watch-button label for a series based on its episode counts and progress.
+ *
+ * Possible returned labels:
+ * - `"Browse Series"` when the series has no episodes.
+ * - `"Rewatch Series"` when every episode is marked as watched.
+ * - `"Start Watching Series"` when no episodes have been started and all are unwatched.
+ * - `"Watch Episode X Next"` for continuing progress, where `X` is the next episode number.
+ *
+ * @param series The series metadata and user progress used to determine the label.
+ * @param nextEpisode Optional next episode suggestion; when provided its `indexNumber` is used for the "Watch Episode X Next" label.
+ * @return The computed button text describing the next watch action for the series.
  */
 private fun getWatchButtonText(series: BaseItemDto, nextEpisode: BaseItemDto?): String {
     val totalCount = series.childCount ?: 0
@@ -364,6 +407,21 @@ private fun getWatchButtonText(series: BaseItemDto, nextEpisode: BaseItemDto?): 
     return "Watch Episode $nextEpisodeNumber Next"
 }
 
+/**
+ * Renders the series hero and header section including backdrop/logo, title, metadata, overview, and a watch-next button.
+ *
+ * Displays a full-bleed hero image or a fallback placeholder, presents series name, ratings, year/season info, episode count,
+ * and overview text when available. Shows a primary action button whose label is derived from the series and `nextEpisode`; pressing
+ * the button invokes `onPlayEpisode` with the provided `nextEpisode` when enabled.
+ *
+ * @param series The series data to display.
+ * @param getImageUrl Callback that returns the poster/image URL for a given item.
+ * @param getBackdropUrl Callback that returns the backdrop URL for a given item.
+ * @param getLogoUrl Callback that returns the logo URL for a given item.
+ * @param nextEpisode The next episode item to play; used to determine the watch button label and enabled state.
+ * @param onPlayEpisode Callback invoked with `nextEpisode` when the watch button is pressed.
+ * @param modifier Optional modifier for the root composable.
+ */
 @Composable
 private fun SeriesDetailsHeader(
     series: BaseItemDto,

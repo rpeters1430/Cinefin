@@ -31,6 +31,12 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 /**
  * Media browsing navigation (movies, TV, music, books, home videos).
  */
+/**
+ * Registers media-related navigation destinations on this NavGraphBuilder for movies, TV (shows, seasons, episodes), music, books, home videos, now-playing and audio queue, and miscellaneous library screens.
+ *
+ * @param navController The NavHostController used to perform navigation actions.
+ * @param mainViewModel The MainAppViewModel supplying app state and helpers required by the screens.
+ */
 fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
     navController: NavHostController,
     mainViewModel: MainAppViewModel,
