@@ -357,7 +357,8 @@ private fun getWatchButtonText(series: BaseItemDto): String {
     return if (totalCount > 0) {
         "Start Watching Episode 1"
     } else {
-        "Watch Next Episode"
+        // Series with no episodes - just show a generic watch label
+        "Browse Series"
     }
 }
 
@@ -941,7 +942,7 @@ private fun PersonCard(
         )
 
         // Role/Character - with fallback to type for crew
-        val roleText = person.role ?: person.type.name.takeIf { it.isNotBlank() }
+        val roleText = person.role ?: person.type?.name?.takeIf { it.isNotBlank() }
         roleText?.let { text ->
             Text(
                 text = text,
