@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.utils.isCompletelyWatched
+import com.rpeters.jellyfin.utils.isWatched
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +20,7 @@ data class TVSeasonState(
     val seriesDetails: BaseItemDto? = null,
     val seasons: List<BaseItemDto> = emptyList(),
     val similarSeries: List<BaseItemDto> = emptyList(),
+    val nextEpisode: BaseItemDto? = null,
     val isLoading: Boolean = false,
     val isSimilarSeriesLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -40,6 +43,7 @@ class TVSeasonViewModel @Inject constructor(
             var seasons = _state.value.seasons
             var similarSeries = _state.value.similarSeries
             var errorMessage: String? = null
+            var nextEpisode: BaseItemDto? = null
 
             // Load series details
             when (val seriesResult = repository.getSeriesDetails(seriesId)) {
@@ -73,6 +77,10 @@ class TVSeasonViewModel @Inject constructor(
                 }
             }
 
+            nextEpisode = seriesDetails?.let { details ->
+                findNextUnwatchedEpisode(details, seasons)
+            }
+
             // Load similar series
             _state.value = _state.value.copy(isSimilarSeriesLoading = true)
             when (val similarResult = mediaRepository.getSimilarSeries(seriesId)) {
@@ -97,6 +105,7 @@ class TVSeasonViewModel @Inject constructor(
                 seriesDetails = seriesDetails,
                 seasons = seasons,
                 similarSeries = similarSeries,
+                nextEpisode = nextEpisode,
                 isLoading = false,
                 errorMessage = errorMessage,
             )
@@ -112,5 +121,44 @@ class TVSeasonViewModel @Inject constructor(
         if (seriesId != null) {
             loadSeriesData(seriesId)
         }
+    }
+
+    private suspend fun findNextUnwatchedEpisode(
+        series: BaseItemDto,
+        seasons: List<BaseItemDto>,
+    ): BaseItemDto? {
+        if (series.childCount == null || series.childCount == 0) {
+            return null
+        }
+        if (series.isCompletelyWatched()) {
+            return null
+        }
+
+        val sortedSeasons = seasons.sortedWith(
+            compareBy<BaseItemDto> { it.indexNumber ?: Int.MAX_VALUE }
+                .thenBy { it.name.orEmpty() },
+        )
+
+        for (season in sortedSeasons) {
+            val seasonId = season.id?.toString() ?: continue
+            when (val episodesResult = mediaRepository.getEpisodesForSeason(seasonId)) {
+                is ApiResult.Success -> {
+                    val nextEpisode = episodesResult.data
+                        .sortedWith(compareBy<BaseItemDto> { it.indexNumber ?: Int.MAX_VALUE })
+                        .firstOrNull { !it.isWatched() }
+                    if (nextEpisode != null) {
+                        return nextEpisode
+                    }
+                }
+                is ApiResult.Error -> {
+                    // Skip seasons we fail to load
+                }
+                is ApiResult.Loading -> {
+                    // No-op
+                }
+            }
+        }
+
+        return null
     }
 }
