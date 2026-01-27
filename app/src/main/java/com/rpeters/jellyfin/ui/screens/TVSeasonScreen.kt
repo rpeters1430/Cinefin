@@ -359,9 +359,11 @@ private fun getWatchButtonText(series: BaseItemDto, nextEpisode: BaseItemDto?): 
         return "Start Watching Series"
     }
 
-    val nextEpisodeNumber = nextEpisode?.indexNumber
-        ?: (totalCount - unwatchedCount + 1).coerceAtLeast(1)
-    return "Watch Episode $nextEpisodeNumber Next"
+    return if (nextEpisode?.indexNumber != null) {
+        "Watch Episode ${nextEpisode.indexNumber} Next"
+    } else {
+        "Continue Watching Series"
+    }
 }
 
 @Composable
