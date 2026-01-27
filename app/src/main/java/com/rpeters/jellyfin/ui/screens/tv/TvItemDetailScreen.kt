@@ -33,6 +33,7 @@ import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.UserPreferencesViewModel
+import com.rpeters.jellyfin.utils.normalizeOfficialRating
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import java.util.Locale
@@ -128,7 +129,7 @@ fun TvItemDetailScreen(
                 val durationMs = ((item?.runTimeTicks ?: 0L) / 10_000L)
                 val durationText = if (durationMs > 0) formatDuration(durationMs) else null
                 val community = item?.communityRating?.let { String.format(Locale.ROOT, "%.1f★", it) }
-                val official = item?.officialRating
+                val official = item?.officialRating?.let { normalizeOfficialRating(it) }
                 val progressPct = item?.userData?.playedPercentage?.let { p ->
                     if (p > 0.0) "${p.toInt()}% watched" else null
                 }

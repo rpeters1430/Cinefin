@@ -78,6 +78,7 @@ import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import com.rpeters.jellyfin.utils.getUnwatchedEpisodeCount
 import com.rpeters.jellyfin.utils.isCompletelyWatched
+import com.rpeters.jellyfin.utils.normalizeOfficialRating
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
 import java.util.Locale
@@ -478,13 +479,14 @@ private fun SeriesDetailsHeader(
 
             // Official Rating Badge (if available)
             series.officialRating?.let { rating ->
+                val normalizedRating = normalizeOfficialRating(rating) ?: return@let
                 Surface(
                     shape = RoundedCornerShape(6.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 ) {
                     Text(
-                        text = rating,
+                        text = normalizedRating,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
