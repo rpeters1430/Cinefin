@@ -58,6 +58,12 @@ class TVSeasonViewModel @Inject constructor(
             when (val seasonsResult = mediaRepository.getSeasonsForSeries(seriesId)) {
                 is ApiResult.Success -> {
                     seasons = seasonsResult.data
+
+                    // Validate that the series has content only if no previous errors
+                    // If no seasons exist AND the series has no child count (episodes), show error
+                    if (errorMessage == null && seasons.isEmpty() && (seriesDetails?.childCount ?: 0) == 0) {
+                        errorMessage = "This TV show has no seasons or episodes available"
+                    }
                 }
                 is ApiResult.Error -> {
                     errorMessage = errorMessage ?: "Failed to load seasons: ${seasonsResult.message}"
