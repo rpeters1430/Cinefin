@@ -82,7 +82,7 @@ fun normalizeOfficialRating(rawRating: String?): String? {
     val numericMatch = Regex("^-?(\\d{1,2})\\+?$").matchEntire(stripped)
     if (numericMatch != null) {
         val number = numericMatch.groupValues[1]
-        return "${number}+"
+        return "$number+"
     }
 
     return stripped.ifBlank { null }
