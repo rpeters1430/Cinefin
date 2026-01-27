@@ -21,9 +21,9 @@ import com.rpeters.jellyfin.ui.screens.NowPlayingScreen
 import com.rpeters.jellyfin.ui.screens.TVEpisodesScreen
 import com.rpeters.jellyfin.ui.screens.TVSeasonScreen
 import com.rpeters.jellyfin.ui.screens.TVShowsScreen
+import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
-import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemKind
