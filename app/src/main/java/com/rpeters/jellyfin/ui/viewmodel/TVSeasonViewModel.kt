@@ -132,13 +132,8 @@ class TVSeasonViewModel @Inject constructor(
         series: BaseItemDto,
         seasons: List<BaseItemDto>,
     ): BaseItemDto? {
-        // Early exit if series has no episodes
-        if (series.childCount == null || series.childCount == 0) {
-            return null
-        }
-        // Early exit if series is completely watched
         if (series.isCompletelyWatched()) {
-            return null
+            return findFirstEpisode(seasons)
         }
 
         val sortedSeasons = seasons.sortedWith(
@@ -150,23 +145,7 @@ class TVSeasonViewModel @Inject constructor(
             val seasonId = season.id?.toString() ?: continue
 
             // Check cache first to avoid redundant API calls
-            val episodes = episodesCache[seasonId] ?: run {
-                when (val episodesResult = mediaRepository.getEpisodesForSeason(seasonId)) {
-                    is ApiResult.Success -> {
-                        // Cache the episodes for future lookups
-                        episodesCache[seasonId] = episodesResult.data
-                        episodesResult.data
-                    }
-                    is ApiResult.Error -> {
-                        // Skip seasons we fail to load
-                        continue
-                    }
-                    is ApiResult.Loading -> {
-                        // Should not happen in practice
-                        continue
-                    }
-                }
-            }
+            val episodes = getEpisodesForSeason(seasonId) ?: continue
 
             val nextEpisode = episodes
                 .sortedWith(compareBy<BaseItemDto> { it.indexNumber ?: Int.MAX_VALUE })
@@ -177,5 +156,43 @@ class TVSeasonViewModel @Inject constructor(
         }
 
         return null
+    }
+
+    private suspend fun findFirstEpisode(seasons: List<BaseItemDto>): BaseItemDto? {
+        val sortedSeasons = seasons.sortedWith(
+            compareBy<BaseItemDto> { it.indexNumber ?: Int.MAX_VALUE }
+                .thenBy { it.name.orEmpty() },
+        )
+
+        for (season in sortedSeasons) {
+            val seasonId = season.id?.toString() ?: continue
+            val episodes = getEpisodesForSeason(seasonId) ?: continue
+            val firstEpisode = episodes
+                .sortedWith(compareBy<BaseItemDto> { it.indexNumber ?: Int.MAX_VALUE })
+                .firstOrNull()
+            if (firstEpisode != null) {
+                return firstEpisode
+            }
+        }
+
+        return null
+    }
+
+    private suspend fun getEpisodesForSeason(seasonId: String): List<BaseItemDto>? {
+        return episodesCache[seasonId] ?: run {
+            when (val episodesResult = mediaRepository.getEpisodesForSeason(seasonId)) {
+                is ApiResult.Success -> {
+                    // Cache the episodes for future lookups
+                    episodesCache[seasonId] = episodesResult.data
+                    episodesResult.data
+                }
+                is ApiResult.Error -> {
+                    null
+                }
+                is ApiResult.Loading -> {
+                    null
+                }
+            }
+        }
     }
 }
