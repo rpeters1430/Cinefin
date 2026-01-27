@@ -107,6 +107,8 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                     }
                 } catch (e: CancellationException) {
                     throw e
+                } catch (e: Exception) {
+                    SecureLogger.e("NavGraph", "Failed to play episode: ${episodeItem.name}", e)
                 }
             },
         )

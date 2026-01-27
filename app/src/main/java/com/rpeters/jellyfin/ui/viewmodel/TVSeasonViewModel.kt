@@ -35,8 +35,13 @@ class TVSeasonViewModel @Inject constructor(
     private val _state = MutableStateFlow(TVSeasonState())
     val state: StateFlow<TVSeasonState> = _state.asStateFlow()
 
+    // Cache for episodes by season ID to avoid redundant API calls
+    private val episodesCache = mutableMapOf<String, List<BaseItemDto>>()
+
     fun loadSeriesData(seriesId: String) {
         viewModelScope.launch {
+            // Clear cache when loading new series data to ensure fresh data
+            episodesCache.clear()
             _state.value = _state.value.copy(isLoading = true, errorMessage = null)
 
             var seriesDetails = _state.value.seriesDetails
@@ -127,9 +132,11 @@ class TVSeasonViewModel @Inject constructor(
         series: BaseItemDto,
         seasons: List<BaseItemDto>,
     ): BaseItemDto? {
+        // Early exit if series has no episodes
         if (series.childCount == null || series.childCount == 0) {
             return null
         }
+        // Early exit if series is completely watched
         if (series.isCompletelyWatched()) {
             return null
         }
@@ -141,21 +148,31 @@ class TVSeasonViewModel @Inject constructor(
 
         for (season in sortedSeasons) {
             val seasonId = season.id?.toString() ?: continue
-            when (val episodesResult = mediaRepository.getEpisodesForSeason(seasonId)) {
-                is ApiResult.Success -> {
-                    val nextEpisode = episodesResult.data
-                        .sortedWith(compareBy<BaseItemDto> { it.indexNumber ?: Int.MAX_VALUE })
-                        .firstOrNull { !it.isWatched() }
-                    if (nextEpisode != null) {
-                        return nextEpisode
+            
+            // Check cache first to avoid redundant API calls
+            val episodes = episodesCache[seasonId] ?: run {
+                when (val episodesResult = mediaRepository.getEpisodesForSeason(seasonId)) {
+                    is ApiResult.Success -> {
+                        // Cache the episodes for future lookups
+                        episodesCache[seasonId] = episodesResult.data
+                        episodesResult.data
+                    }
+                    is ApiResult.Error -> {
+                        // Skip seasons we fail to load
+                        continue
+                    }
+                    is ApiResult.Loading -> {
+                        // Should not happen in practice
+                        continue
                     }
                 }
-                is ApiResult.Error -> {
-                    // Skip seasons we fail to load
-                }
-                is ApiResult.Loading -> {
-                    // No-op
-                }
+            }
+            
+            val nextEpisode = episodes
+                .sortedWith(compareBy<BaseItemDto> { it.indexNumber ?: Int.MAX_VALUE })
+                .firstOrNull { !it.isWatched() }
+            if (nextEpisode != null) {
+                return nextEpisode
             }
         }
 
