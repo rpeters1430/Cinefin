@@ -148,7 +148,7 @@ class TVSeasonViewModel @Inject constructor(
 
         for (season in sortedSeasons) {
             val seasonId = season.id?.toString() ?: continue
-            
+
             // Check cache first to avoid redundant API calls
             val episodes = episodesCache[seasonId] ?: run {
                 when (val episodesResult = mediaRepository.getEpisodesForSeason(seasonId)) {
@@ -167,7 +167,7 @@ class TVSeasonViewModel @Inject constructor(
                     }
                 }
             }
-            
+
             val nextEpisode = episodes
                 .sortedWith(compareBy<BaseItemDto> { it.indexNumber ?: Int.MAX_VALUE })
                 .firstOrNull { !it.isWatched() }
