@@ -76,7 +76,7 @@ fun ExpressiveHeroCarousel(
     val screenWidth = configuration.screenWidthDp.dp
     // Calculate item width to show one item with slight peek of next item
     val itemWidth = remember(screenWidth, horizontalPadding) {
-        screenWidth - (horizontalPadding * 2) + (pageSpacing * 2)
+        screenWidth - (horizontalPadding * 2)
     }
 
     val carouselState = rememberCarouselState { items.size }
@@ -227,6 +227,7 @@ private fun ExpressiveHeroCard(
 
             // ✅ Performance: Use drawWithCache for gradient to avoid recomposition
             val scrimColor = MaterialTheme.colorScheme.scrim
+            val overlayTextColor = MaterialTheme.colorScheme.onScrim
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -255,7 +256,7 @@ private fun ExpressiveHeroCard(
                     text = item.title,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = overlayTextColor,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -264,7 +265,7 @@ private fun ExpressiveHeroCard(
                     Text(
                         text = item.subtitle,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                        color = overlayTextColor.copy(alpha = 0.9f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 4.dp),
