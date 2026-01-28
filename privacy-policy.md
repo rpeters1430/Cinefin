@@ -1,36 +1,38 @@
-Privacy Policy for Jellyfin Android (Unofficial Client)
+Privacy Policy for Jellyfin Ryan
+
+(Unofficial Jellyfin Android Client)
 
 Last updated: January 2026
 
-This Privacy Policy describes how information is collected, used, and shared when you use the Jellyfin Android application (“the App”).
+This Privacy Policy explains how information is collected, used, and handled when you use Jellyfin Ryan (“the App”).
 
 1. Information We Collect
 
-The App itself does not collect or store personal information such as names, email addresses, or payment details.
+The App does not collect personal information such as names, email addresses, payment details, or account credentials.
 
-However, the App may collect limited technical information for stability and performance purposes:
+The App does collect limited anonymous technical and usage data to improve stability and performance, including:
 
-Crash reports (via Firebase Crashlytics)
+Crash reports
 
-Performance metrics (via Firebase Performance Monitoring)
+Performance metrics
 
-Device information such as Android version, device model, and app version
+Basic app interaction data
 
-Anonymous error logs related to app functionality
+Device information (such as Android version, device model, and app version)
 
-This information is collected automatically and is not used to personally identify users.
+This data cannot be used to personally identify users.
 
 2. Media and Server Data
 
-The App connects to a user-provided Jellyfin server to access media content.
+The App connects only to a user-provided Jellyfin server.
 
-Server URLs, authentication tokens, and user IDs are stored locally on the device only
+Server URLs, authentication tokens, and user IDs are stored locally on the device
 
-These credentials are never transmitted to the app developer
+This data is never transmitted to the app developer
 
-All media streaming and account data flows directly between your device and your Jellyfin server
+All media playback and account activity occurs directly between the user’s device and their Jellyfin server
 
-The developer does not operate or control any Jellyfin servers.
+The developer does not operate, manage, or have access to any Jellyfin servers.
 
 3. How Information Is Used
 
@@ -42,35 +44,41 @@ Diagnose crashes and technical issues
 
 Ensure compatibility across devices and Android versions
 
-No data is sold, shared for advertising, or used for tracking users across apps.
+The App does not:
+
+Sell user data
+
+Use data for advertising
+
+Track users across apps or services
 
 4. Third-Party Services
 
-The App uses the following third-party services:
+The App uses Google Firebase services, including:
 
-Google Firebase
+Firebase Crashlytics (crash reporting)
 
-Crashlytics
+Firebase Performance Monitoring (performance diagnostics)
 
-Performance Monitoring
+Firebase Analytics (anonymous app usage analytics)
 
-These services may collect anonymous usage data in accordance with Google’s Privacy Policy:
+These services may collect anonymous diagnostic and usage data in accordance with Google’s Privacy Policy:
 https://policies.google.com/privacy
 
 5. Data Retention
 
-Crash and performance data are retained only as long as necessary for diagnostics
+Crash, performance, and analytics data are retained only as long as necessary for diagnostics and improvement
 
-Locally stored server credentials remain on the device until the user clears app data or uninstalls the app
+Locally stored server credentials remain on the device until the user clears app data or uninstalls the App
 
 6. Children’s Privacy
 
-The App does not knowingly collect personal information from children under 13.
+The App does not knowingly collect personal information from children under the age of 13.
 
 7. Changes to This Policy
 
-This Privacy Policy may be updated from time to time. Changes will be reflected by updating the “Last updated” date.
+This Privacy Policy may be updated from time to time. Updates will be reflected by changing the “Last updated” date at the top of this page.
 
 8. Contact
 
-If you have questions about this Privacy Policy, you may contact the developer via the app’s GitHub repository.
+Questions about this Privacy Policy can be directed to the developer via the project’s GitHub repository.
