@@ -93,6 +93,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             onBackClick = { navController.popBackStack() },
             onManagePinsClick = { navController.navigate(Screen.PinSettings.route) },
             onSubtitleSettingsClick = { navController.navigate(Screen.SubtitleSettings.route) },
+            onPrivacyPolicyClick = { navController.navigate(Screen.PrivacyPolicy.route) },
         )
     }
 
@@ -104,6 +105,12 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
 
     composable(Screen.SubtitleSettings.route) {
         SubtitleSettingsScreen(
+            onNavigateBack = { navController.popBackStack() },
+        )
+    }
+
+    composable(Screen.PrivacyPolicy.route) {
+        com.rpeters.jellyfin.ui.screens.settings.PrivacyPolicyScreen(
             onNavigateBack = { navController.popBackStack() },
         )
     }
