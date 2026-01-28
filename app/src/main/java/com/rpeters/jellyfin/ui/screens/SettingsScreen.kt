@@ -117,6 +117,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     onManagePinsClick: () -> Unit = {},
     onSubtitleSettingsClick: () -> Unit = {},
+    onPrivacyPolicyClick: () -> Unit = {},
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
     credentialSecurityPreferencesViewModel: CredentialSecurityPreferencesViewModel = hiltViewModel(),
 ) {
@@ -180,6 +181,15 @@ fun SettingsScreen(
                     subtitle = stringResource(id = R.string.settings_subtitles_description),
                     leadingIcon = Icons.Default.ClosedCaption,
                     onClick = onSubtitleSettingsClick,
+                )
+            }
+
+            item {
+                ExpressiveMediaListItem(
+                    title = stringResource(id = R.string.privacy_policy_title),
+                    subtitle = stringResource(id = R.string.privacy_policy_description),
+                    leadingIcon = Icons.Default.Settings,
+                    onClick = onPrivacyPolicyClick,
                 )
             }
 

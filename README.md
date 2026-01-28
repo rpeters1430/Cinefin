@@ -285,6 +285,16 @@ Examples: `feat: add movie detail screen`, `fix: prevent crash on empty library`
 - Min SDK 26, Target/Compile SDK 36.
 - Keep dependency versions centralized in `gradle/libs.versions.toml`.
 
+## 🔐 Privacy Policy
+
+This app respects your privacy and data security:
+- **No personal data collection** - We don't collect names, emails, or payment information
+- **Local-only credentials** - Server URLs and authentication tokens are stored locally on your device only
+- **Direct server connection** - All media streaming flows directly between your device and your Jellyfin server
+- **Limited analytics** - Only crash reports and performance metrics (via Firebase) for app stability
+
+For detailed information, see our [Privacy Policy](privacy-policy.md).
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
