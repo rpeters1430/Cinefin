@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -53,60 +55,32 @@ private val settingRecommendations = listOf(
     SettingRecommendation(
         titleRes = R.string.settings_appearance_title,
         descriptionRes = R.string.settings_appearance_description,
-        options = listOf(
-            R.string.settings_appearance_theme,
-            R.string.settings_appearance_dynamic_color,
-            R.string.settings_appearance_language,
-            R.string.settings_appearance_layout,
-        ),
+        options = SettingsRecommendationOptions.appearance,
     ),
     SettingRecommendation(
         titleRes = R.string.settings_playback_title,
         descriptionRes = R.string.settings_playback_description,
-        options = listOf(
-            R.string.settings_playback_quality,
-            R.string.settings_playback_subtitles,
-            R.string.settings_playback_autoplay,
-            R.string.settings_playback_skip_intro,
-        ),
+        options = SettingsRecommendationOptions.playback,
     ),
     SettingRecommendation(
         titleRes = R.string.settings_downloads_title,
         descriptionRes = R.string.settings_downloads_description,
-        options = listOf(
-            R.string.settings_downloads_quality,
-            R.string.settings_downloads_location,
-            R.string.settings_downloads_wifi_only,
-            R.string.settings_downloads_cleanup,
-        ),
+        options = SettingsRecommendationOptions.downloads,
     ),
     SettingRecommendation(
         titleRes = R.string.settings_notifications_title,
         descriptionRes = R.string.settings_notifications_description,
-        options = listOf(
-            R.string.settings_notifications_library,
-            R.string.settings_notifications_downloads,
-            R.string.settings_notifications_playback,
-        ),
+        options = SettingsRecommendationOptions.notifications,
     ),
     SettingRecommendation(
         titleRes = R.string.settings_privacy_title,
         descriptionRes = R.string.settings_privacy_description,
-        options = listOf(
-            R.string.settings_privacy_biometric,
-            R.string.settings_privacy_cache,
-            R.string.settings_privacy_diagnostics,
-            R.string.settings_privacy_sensitive,
-        ),
+        options = SettingsRecommendationOptions.privacy,
     ),
     SettingRecommendation(
         titleRes = R.string.settings_accessibility_title,
         descriptionRes = R.string.settings_accessibility_description,
-        options = listOf(
-            R.string.settings_accessibility_text,
-            R.string.settings_accessibility_motion,
-            R.string.settings_accessibility_haptics,
-        ),
+        options = SettingsRecommendationOptions.accessibility,
     ),
 )
 
@@ -130,32 +104,46 @@ fun SettingsScreen(
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
     val credentialSecurityPrefs by credentialSecurityPreferencesViewModel.preferences.collectAsStateWithLifecycle()
     val isCredentialSecurityUpdating by credentialSecurityPreferencesViewModel.isUpdating.collectAsStateWithLifecycle()
-    val recommendationOptionActions = mapOf(
-        R.string.settings_appearance_theme to onAppearanceSettingsClick,
-        R.string.settings_appearance_dynamic_color to onAppearanceSettingsClick,
-        R.string.settings_appearance_language to onAppearanceSettingsClick,
-        R.string.settings_appearance_layout to onAppearanceSettingsClick,
-        R.string.settings_playback_quality to onPlaybackSettingsClick,
-        R.string.settings_playback_subtitles to onPlaybackSettingsClick,
-        R.string.settings_playback_autoplay to onPlaybackSettingsClick,
-        R.string.settings_playback_skip_intro to onPlaybackSettingsClick,
-        R.string.settings_downloads_quality to onDownloadsSettingsClick,
-        R.string.settings_downloads_location to onDownloadsSettingsClick,
-        R.string.settings_downloads_wifi_only to onDownloadsSettingsClick,
-        R.string.settings_downloads_cleanup to onDownloadsSettingsClick,
-        R.string.settings_notifications_library to onNotificationsSettingsClick,
-        R.string.settings_notifications_downloads to onNotificationsSettingsClick,
-        R.string.settings_notifications_playback to onNotificationsSettingsClick,
-        R.string.settings_privacy_biometric to onPrivacySettingsClick,
-        R.string.settings_privacy_cache to onPrivacySettingsClick,
-        R.string.settings_privacy_diagnostics to onPrivacySettingsClick,
-        R.string.settings_privacy_sensitive to onPrivacySettingsClick,
-        R.string.settings_accessibility_text to onAccessibilitySettingsClick,
-        R.string.settings_accessibility_motion to onAccessibilitySettingsClick,
-        R.string.settings_accessibility_haptics to onAccessibilitySettingsClick,
-    )
+    val recommendationOptionActions = remember(
+        onAppearanceSettingsClick,
+        onPlaybackSettingsClick,
+        onDownloadsSettingsClick,
+        onNotificationsSettingsClick,
+        onPrivacySettingsClick,
+        onAccessibilitySettingsClick,
+    ) {
+        mapOf(
+            R.string.settings_appearance_theme to onAppearanceSettingsClick,
+            R.string.settings_appearance_dynamic_color to onAppearanceSettingsClick,
+            R.string.settings_appearance_language to onAppearanceSettingsClick,
+            R.string.settings_appearance_layout to onAppearanceSettingsClick,
+            R.string.settings_playback_quality to onPlaybackSettingsClick,
+            R.string.settings_playback_subtitles to onPlaybackSettingsClick,
+            R.string.settings_playback_autoplay to onPlaybackSettingsClick,
+            R.string.settings_playback_skip_intro to onPlaybackSettingsClick,
+            R.string.settings_downloads_quality to onDownloadsSettingsClick,
+            R.string.settings_downloads_location to onDownloadsSettingsClick,
+            R.string.settings_downloads_wifi_only to onDownloadsSettingsClick,
+            R.string.settings_downloads_cleanup to onDownloadsSettingsClick,
+            R.string.settings_notifications_library to onNotificationsSettingsClick,
+            R.string.settings_notifications_downloads to onNotificationsSettingsClick,
+            R.string.settings_notifications_playback to onNotificationsSettingsClick,
+            R.string.settings_privacy_biometric to onPrivacySettingsClick,
+            R.string.settings_privacy_cache to onPrivacySettingsClick,
+            R.string.settings_privacy_diagnostics to onPrivacySettingsClick,
+            R.string.settings_privacy_sensitive to onPrivacySettingsClick,
+            R.string.settings_accessibility_text to onAccessibilitySettingsClick,
+            R.string.settings_accessibility_motion to onAccessibilitySettingsClick,
+            R.string.settings_accessibility_haptics to onAccessibilitySettingsClick,
+        )
+    }
     val onRecommendationOptionClick: (Int) -> Unit = { optionRes ->
-        recommendationOptionActions[optionRes]?.invoke()
+        val action = recommendationOptionActions[optionRes]
+        if (action == null) {
+            Log.w(TAG, "Unhandled settings recommendation option: $optionRes")
+        } else {
+            action()
+        }
     }
 
     Scaffold(
@@ -402,3 +390,5 @@ private fun SettingsRecommendationCard(
         }
     }
 }
+
+private const val TAG = "SettingsScreen"

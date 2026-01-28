@@ -13,6 +13,7 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.screens.FavoritesScreen
 import com.rpeters.jellyfin.ui.screens.ProfileScreen
 import com.rpeters.jellyfin.ui.screens.SearchScreen
+import com.rpeters.jellyfin.ui.screens.SettingsRecommendationOptions
 import com.rpeters.jellyfin.ui.screens.SettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.AppearanceSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.PinningSettingsScreen
@@ -116,12 +117,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
         SettingsSectionScreen(
             titleRes = R.string.settings_playback_title,
             descriptionRes = R.string.settings_playback_description,
-            optionRes = listOf(
-                R.string.settings_playback_quality,
-                R.string.settings_playback_subtitles,
-                R.string.settings_playback_autoplay,
-                R.string.settings_playback_skip_intro,
-            ),
+            optionRes = SettingsRecommendationOptions.playback,
             onNavigateBack = { navController.popBackStack() },
         )
     }
@@ -130,12 +126,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
         SettingsSectionScreen(
             titleRes = R.string.settings_downloads_title,
             descriptionRes = R.string.settings_downloads_description,
-            optionRes = listOf(
-                R.string.settings_downloads_quality,
-                R.string.settings_downloads_location,
-                R.string.settings_downloads_wifi_only,
-                R.string.settings_downloads_cleanup,
-            ),
+            optionRes = SettingsRecommendationOptions.downloads,
             onNavigateBack = { navController.popBackStack() },
         )
     }
@@ -144,11 +135,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
         SettingsSectionScreen(
             titleRes = R.string.settings_notifications_title,
             descriptionRes = R.string.settings_notifications_description,
-            optionRes = listOf(
-                R.string.settings_notifications_library,
-                R.string.settings_notifications_downloads,
-                R.string.settings_notifications_playback,
-            ),
+            optionRes = SettingsRecommendationOptions.notifications,
             onNavigateBack = { navController.popBackStack() },
         )
     }
@@ -157,12 +144,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
         SettingsSectionScreen(
             titleRes = R.string.settings_privacy_title,
             descriptionRes = R.string.settings_privacy_description,
-            optionRes = listOf(
-                R.string.settings_privacy_biometric,
-                R.string.settings_privacy_cache,
-                R.string.settings_privacy_diagnostics,
-                R.string.settings_privacy_sensitive,
-            ),
+            optionRes = SettingsRecommendationOptions.privacy,
             onNavigateBack = { navController.popBackStack() },
         )
     }
@@ -171,11 +153,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
         SettingsSectionScreen(
             titleRes = R.string.settings_accessibility_title,
             descriptionRes = R.string.settings_accessibility_description,
-            optionRes = listOf(
-                R.string.settings_accessibility_text,
-                R.string.settings_accessibility_motion,
-                R.string.settings_accessibility_haptics,
-            ),
+            optionRes = SettingsRecommendationOptions.accessibility,
             onNavigateBack = { navController.popBackStack() },
         )
     }

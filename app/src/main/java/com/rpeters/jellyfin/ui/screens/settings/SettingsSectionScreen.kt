@@ -29,6 +29,7 @@ fun SettingsSectionScreen(
     @StringRes descriptionRes: Int,
     optionRes: List<Int>,
     onNavigateBack: () -> Unit,
+    onOptionClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -70,6 +71,7 @@ fun SettingsSectionScreen(
                     ExpressiveMediaListItem(
                         title = stringResource(option),
                         leadingIcon = Icons.Default.Settings,
+                        onClick = { onOptionClick(option) },
                     )
                 }
             }
