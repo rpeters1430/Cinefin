@@ -4,6 +4,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.dagger.hilt.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.google.gms.google.services)
+    alias(libs.plugins.google.firebase.crashlytics)
+    alias(libs.plugins.google.firebase.perf)
 }
 
 android {
@@ -18,8 +21,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26 // Android 8.0+ (was 31) - Broader device compatibility
         targetSdk = 35 // Use stable SDK 35 for runtime, keep compileSdk at 36
-        versionCode = 14
-        versionName = "13.1"
+        versionCode = 16
+        versionName = "13.3"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -164,6 +167,12 @@ dependencies {
     implementation(libs.androidx.media3.session)
     implementation(libs.jellyfin.media3.ffmpeg.decoder)
     implementation(libs.google.cast.framework)
+
+    // Firebase (Using BoM)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.perf)
 
     // Hilt for dependency injection
     implementation(libs.dagger.hilt.android)
