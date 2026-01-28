@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -30,8 +32,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
@@ -49,6 +55,7 @@ fun ProfileScreen(
     showBackButton: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
+    val uriHandler = LocalUriHandler.current
     Scaffold(
         topBar = {
             TopAppBar(
@@ -159,7 +166,15 @@ fun ProfileScreen(
 
                     currentServer?.let { server ->
                         ProfileInfoRow("Server Name", server.name)
-                        ProfileInfoRow("Server URL", server.url)
+                        ProfileInfoRow(
+                            label = "Server URL",
+                            value = server.url,
+                            onValueClick = if (server.url.startsWith("http")) {
+                                { uriHandler.openUri(server.url) }
+                            } else {
+                                null
+                            },
+                        )
                         ProfileInfoRow("User ID", server.userId ?: stringResource(id = R.string.unknown))
                     }
                 }
@@ -223,22 +238,50 @@ private fun ProfileInfoRow(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
+    onValueClick: (() -> Unit)? = null,
 ) {
-    Row(
+    val clipboardManager = LocalClipboardManager.current
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (onValueClick != null) {
+                            Modifier.clickable(onClick = onValueClick)
+                        } else {
+                            Modifier
+                        },
+                    ),
+            )
+            IconButton(
+                onClick = { clipboardManager.setText(AnnotatedString(value)) },
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = stringResource(id = R.string.copy_value),
+                )
+            }
+        }
     }
 }
