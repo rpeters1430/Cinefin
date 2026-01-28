@@ -1053,7 +1053,7 @@ class MainAppViewModel @Inject constructor(
         streamRepository.getImageUrl(item.id.toString(), "Primary", null)
 
     fun getUserAvatarUrl(userId: String?, imageTag: String?): String? {
-        if (userId.isNullOrBlank() || imageTag.isNullOrBlank()) {
+        if (userId.isNullOrBlank()) {
             return null
         }
         return streamRepository.getUserImageUrl(userId, imageTag)
