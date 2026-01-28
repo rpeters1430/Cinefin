@@ -381,6 +381,24 @@ class JellyfinStreamRepository @Inject constructor(
     }
 
     /**
+     * Get avatar image URL for a user
+     */
+    fun getUserImageUrl(userId: String, tag: String? = null): String? {
+        return try {
+            val server = authRepository.getCurrentServer() ?: return null
+            if (server.accessToken.isNullOrBlank() || server.url.isNullOrBlank()) {
+                Log.w("JellyfinStreamRepository", "getUserImageUrl: Server not available or missing credentials")
+                return null
+            }
+
+            val tagParam = tag?.let { "&tag=$it" } ?: ""
+            "${server.url}/Users/$userId/Images/Primary?maxHeight=$DEFAULT_IMAGE_MAX_HEIGHT&maxWidth=$DEFAULT_IMAGE_MAX_WIDTH$tagParam"
+        } catch (e: CancellationException) {
+            throw e
+        }
+    }
+
+    /**
      * Get series image URL for an item (uses series poster for episodes)
      */
     fun getSeriesImageUrl(item: BaseItemDto): String? {

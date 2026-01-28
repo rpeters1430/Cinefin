@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.data.repository
 
 import com.rpeters.jellyfin.data.cache.JellyfinCache
+import com.rpeters.jellyfin.data.model.CurrentUserDetails
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.BaseJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ErrorType
@@ -35,6 +36,17 @@ class JellyfinUserRepository @Inject constructor(
     suspend fun logout() {
         authRepository.logout()
     }
+
+    suspend fun getCurrentUser(): ApiResult<CurrentUserDetails> =
+        withServerClient("getCurrentUser") { server, client ->
+            val user = client.userApi.getCurrentUser().content
+            CurrentUserDetails(
+                name = user.name?.takeIf { it.isNotBlank() } ?: server.username.orEmpty(),
+                primaryImageTag = user.primaryImageTag,
+                lastLoginDate = user.lastLoginDate,
+                isAdministrator = user.policy?.isAdministrator == true,
+            )
+        }
 
     suspend fun toggleFavorite(itemId: String, isFavorite: Boolean): ApiResult<Boolean> =
         withServerClient("toggleFavorite") { server, client ->

@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -33,20 +35,26 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.JellyfinServer
-import com.rpeters.jellyfin.data.ServerInfo
+import com.rpeters.jellyfin.data.model.CurrentUserDetails
 import com.rpeters.jellyfin.ui.components.MiniPlayer
+import com.rpeters.jellyfin.ui.image.AvatarImage
 
 @OptInAppExperimentalApis
 @Composable
 fun ProfileScreen(
     currentServer: JellyfinServer?,
-    serverInfo: ServerInfo?,
+    currentUser: CurrentUserDetails?,
+    userAvatarUrl: String?,
     onLogout: () -> Unit,
     onSettingsClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
@@ -54,6 +62,7 @@ fun ProfileScreen(
     showBackButton: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
+    val uriHandler = LocalUriHandler.current
     Scaffold(
         topBar = {
             TopAppBar(
@@ -83,6 +92,8 @@ fun ProfileScreen(
         },
         modifier = modifier,
     ) { paddingValues ->
+        val displayName = currentUser?.name?.takeIf(String::isNotBlank) ?: stringResource(R.string.default_username)
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -102,12 +113,21 @@ fun ProfileScreen(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AccountBox,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
+                    if (userAvatarUrl != null) {
+                        AvatarImage(
+                            imageUrl = userAvatarUrl,
+                            userName = displayName,
+                            modifier = Modifier.size(64.dp),
+                            size = 64.dp,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AccountBox,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -122,7 +142,7 @@ fun ProfileScreen(
                     )
 
                     Text(
-                        text = "Jellyfin User",
+                        text = displayName,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -171,7 +191,15 @@ fun ProfileScreen(
 
                     currentServer?.let { server ->
                         ProfileInfoRow("Server Name", server.name)
-                        ProfileInfoRow("Server URL", server.url)
+                        ProfileInfoRow(
+                            label = "Server URL",
+                            value = server.url,
+                            onValueClick = if (server.url.startsWith("http")) {
+                                { uriHandler.openUri(server.url) }
+                            } else {
+                                null
+                            },
+                        )
                         ProfileInfoRow("User ID", server.userId ?: stringResource(id = R.string.unknown))
                     }
                 }
@@ -326,22 +354,50 @@ private fun ProfileInfoRow(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
+    onValueClick: (() -> Unit)? = null,
 ) {
-    Row(
+    val clipboardManager = LocalClipboardManager.current
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (onValueClick != null) {
+                            Modifier.clickable(onClick = onValueClick)
+                        } else {
+                            Modifier
+                        },
+                    ),
+            )
+            IconButton(
+                onClick = { clipboardManager.setText(AnnotatedString(value)) },
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = stringResource(id = R.string.copy_value),
+                )
+            }
+        }
     }
 }
