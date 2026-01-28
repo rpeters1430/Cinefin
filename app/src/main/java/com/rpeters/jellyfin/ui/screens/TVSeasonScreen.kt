@@ -76,7 +76,6 @@ import com.rpeters.jellyfin.ui.theme.MotionTokens
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import com.rpeters.jellyfin.utils.getItemKey
-import com.rpeters.jellyfin.utils.getUnwatchedEpisodeCount
 import com.rpeters.jellyfin.utils.isCompletelyWatched
 import com.rpeters.jellyfin.utils.normalizeOfficialRating
 import org.jellyfin.sdk.model.api.BaseItemDto
