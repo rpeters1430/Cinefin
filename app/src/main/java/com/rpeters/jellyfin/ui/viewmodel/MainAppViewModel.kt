@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.ServerInfo
 import com.rpeters.jellyfin.data.common.DispatcherProvider
 import com.rpeters.jellyfin.data.model.CurrentUserDetails
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
@@ -146,6 +147,9 @@ class MainAppViewModel @Inject constructor(
     val currentServer = repository.currentServer
     val isConnected = repository.isConnected
 
+    private val _serverInfo = MutableStateFlow<ApiResult<ServerInfo>?>(null)
+    val serverInfo: StateFlow<ApiResult<ServerInfo>?> = _serverInfo.asStateFlow()
+
     @VisibleForTesting
     internal fun setAppStateForTest(state: MainAppState) {
         _appState.value = state
@@ -165,6 +169,18 @@ class MainAppViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             }
+        }
+    }
+
+    fun loadServerInfo() {
+        viewModelScope.launch {
+            if (!ensureValidToken()) {
+                _serverInfo.value = ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+                return@launch
+            }
+
+            _serverInfo.value = ApiResult.Loading()
+            _serverInfo.value = repository.getServerInfo()
         }
     }
 
