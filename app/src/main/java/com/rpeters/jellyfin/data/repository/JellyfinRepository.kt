@@ -9,8 +9,8 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.JellyfinServer
-import com.rpeters.jellyfin.data.ServerInfo
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.ServerInfo
 import com.rpeters.jellyfin.data.model.JellyfinDeviceProfile
 import com.rpeters.jellyfin.data.model.QuickConnectResult
 import com.rpeters.jellyfin.data.model.QuickConnectState
