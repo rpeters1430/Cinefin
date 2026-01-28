@@ -191,23 +191,31 @@ class JellyfinRepository @Inject constructor(
         withServerClient("getServerInfo") { _, client ->
             val info = client.systemApi.getSystemInfo().content
             ServerInfo(
-                id = info.id,
-                name = info.serverName,
-                version = info.version,
-                operatingSystem = info.operatingSystem,
-                localAddress = info.localAddress,
-                productName = info.productName,
+                id = info.id ?: "",
+                name = info.serverName ?: "Jellyfin Server",
+                version = info.version ?: "Unknown",
+                operatingSystem = info.operatingSystem ?: "",
+                localAddress = info.localAddress ?: "",
+                productName = info.productName ?: "Jellyfin",
                 startupWizardCompleted = info.startupWizardCompleted,
             )
         }
 
     suspend fun authenticateUser(
-        serverUrl: String,
-        username: String,
-        password: String,
+        serverUrl: String?,
+        username: String?,
+        password: String?,
     ): ApiResult<AuthenticationResult> {
-        // Delegate to auth repository
-        return authRepository.authenticateUser(serverUrl, username, password)
+        val safeServerUrl = serverUrl ?: return ApiResult.Error("Server URL is required", errorType = ErrorType.AUTHENTICATION)
+        val safeUsername = username ?: return ApiResult.Error("Username is required", errorType = ErrorType.AUTHENTICATION)
+        val safePassword = password ?: return ApiResult.Error("Password is required", errorType = ErrorType.AUTHENTICATION)
+
+        // Delegate to auth repository, ensuring non-null values
+        return authRepository.authenticateUser(
+            serverUrl = safeServerUrl,
+            username = safeUsername,
+            password = safePassword
+        )
     }
 
     suspend fun initiateQuickConnect(serverUrl: String): ApiResult<QuickConnectResult> =

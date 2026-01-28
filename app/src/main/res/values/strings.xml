@@ -1,6 +1,7 @@
 <resources>
     <!-- App Name -->
     <string name="app_name">Jellyfin Ryan</string>
+    <string name="default_username">User</string>
     
     <!-- Navigation -->
     <string name="navigate_up">Navigate up</string>

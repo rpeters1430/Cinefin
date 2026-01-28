@@ -49,10 +49,13 @@ import com.rpeters.jellyfin.data.model.CurrentUserDetails
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.image.AvatarImage
 
+import com.rpeters.jellyfin.data.ServerInfo
+
 @OptInAppExperimentalApis
 @Composable
 fun ProfileScreen(
     currentServer: JellyfinServer?,
+    serverInfo: ServerInfo?,
     currentUser: CurrentUserDetails?,
     userAvatarUrl: String?,
     onLogout: () -> Unit,
@@ -150,8 +153,8 @@ fun ProfileScreen(
             ServerStatusCard(
                 isConnected = currentServer?.isConnected == true,
                 version = currentServer?.version,
-                operatingSystem = null, // TODO: Add ServerInfo to ProfileScreen params
-                productName = null, // TODO: Add ServerInfo to ProfileScreen params
+                operatingSystem = serverInfo?.operatingSystem,
+                productName = serverInfo?.productName,
             )
 
             // Server Information

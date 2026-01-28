@@ -80,13 +80,19 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             lifecycle = lifecycleOwner.lifecycle,
             minActiveState = Lifecycle.State.STARTED,
         )
+        val serverInfoResult by viewModel.serverInfo.collectAsStateWithLifecycle(
+            lifecycle = lifecycleOwner.lifecycle,
+            minActiveState = Lifecycle.State.STARTED,
+        )
 
         LaunchedEffect(Unit) {
             viewModel.loadCurrentUser()
+            viewModel.loadServerInfo()
         }
 
         ProfileScreen(
             currentServer = currentServer,
+            serverInfo = (serverInfoResult as? com.rpeters.jellyfin.data.repository.common.ApiResult.Success)?.data,
             currentUser = appState.currentUser,
             userAvatarUrl = viewModel.getUserAvatarUrl(
                 currentServer?.userId,

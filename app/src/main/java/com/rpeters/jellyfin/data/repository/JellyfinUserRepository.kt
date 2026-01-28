@@ -43,7 +43,7 @@ class JellyfinUserRepository @Inject constructor(
             CurrentUserDetails(
                 name = user.name?.takeIf { it.isNotBlank() } ?: server.username.orEmpty(),
                 primaryImageTag = user.primaryImageTag,
-                lastLoginDate = user.lastLoginDate,
+                lastLoginDate = user.lastLoginDate?.toString(),
                 isAdministrator = user.policy?.isAdministrator == true,
             )
         }
