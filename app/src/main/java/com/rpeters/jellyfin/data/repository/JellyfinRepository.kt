@@ -10,6 +10,7 @@ import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.ServerInfo
 import com.rpeters.jellyfin.data.model.JellyfinDeviceProfile
 import com.rpeters.jellyfin.data.model.QuickConnectResult
 import com.rpeters.jellyfin.data.model.QuickConnectState
@@ -31,6 +32,7 @@ import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.mediaInfoApi
+import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.userApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.UUID
@@ -184,6 +186,20 @@ class JellyfinRepository @Inject constructor(
 
     suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> =
         authRepository.testServerConnection(serverUrl)
+
+    suspend fun getServerInfo(): ApiResult<ServerInfo> =
+        withServerClient("getServerInfo") { _, client ->
+            val info = client.systemApi.getSystemInfo().content
+            ServerInfo(
+                id = info.id,
+                name = info.serverName,
+                version = info.version,
+                operatingSystem = info.operatingSystem,
+                localAddress = info.localAddress,
+                productName = info.productName,
+                startupWizardCompleted = info.startupWizardCompleted,
+            )
+        }
 
     suspend fun authenticateUser(
         serverUrl: String,
