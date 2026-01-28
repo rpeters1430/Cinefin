@@ -288,7 +288,7 @@ private fun ServerStatusCard(
                     label = {
                         Text(
                             text = stringResource(
-                                id = R.string.server_status_version,
+                                id = R.string.version,
                                 version ?: unknown,
                             ),
                         )
