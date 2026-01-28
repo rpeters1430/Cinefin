@@ -1,5 +1,7 @@
 package com.rpeters.jellyfin.ui.screens
 
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,12 +40,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.JellyfinServer
@@ -51,6 +55,8 @@ import com.rpeters.jellyfin.data.ServerInfo
 import com.rpeters.jellyfin.data.model.CurrentUserDetails
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.image.AvatarImage
+import java.text.DateFormat
+import java.util.Date
 
 @OptInAppExperimentalApis
 @Composable
@@ -66,6 +72,7 @@ fun ProfileScreen(
     showBackButton: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     Scaffold(
         topBar = {
@@ -94,9 +101,25 @@ fun ProfileScreen(
         },
         modifier = modifier,
     ) { paddingValues ->
+        val unknownLabel = stringResource(id = R.string.unknown)
         val displayName = currentUser?.name?.takeIf(String::isNotBlank) ?: stringResource(R.string.default_username)
         val serverVersion = serverInfo?.version ?: currentServer?.version ?: stringResource(id = R.string.unknown)
         val serverName = currentServer?.name ?: stringResource(id = R.string.unknown)
+        val appVersion = BuildConfig.VERSION_NAME.ifBlank { unknownLabel }
+        val appUpdatedDate = remember { 
+            runCatching {
+                val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    context.packageManager.getPackageInfo(
+                        context.packageName,
+                        PackageManager.PackageInfoFlags.of(0),
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.packageManager.getPackageInfo(context.packageName, 0)
+                }
+                DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(packageInfo.lastUpdateTime))
+            }.getOrElse { unknownLabel }
+        }
         val scrollState = rememberScrollState()
 
         Column(
@@ -146,6 +169,25 @@ fun ProfileScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        stringResource(id = R.string.app_version_label),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        appVersion,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = stringResource(id = R.string.app_updated_label, appUpdatedDate),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
                         text = displayName,

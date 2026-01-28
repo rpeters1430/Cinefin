@@ -69,6 +69,8 @@
     
     <!-- Profile -->
     <string name="version">Version</string>
+    <string name="app_version_label">App version</string>
+    <string name="app_updated_label">Updated %1$s</string>
     <string name="unknown">Unknown</string>
     <string name="server">Server</string>
     <string name="server_name_label">Server Name</string>
