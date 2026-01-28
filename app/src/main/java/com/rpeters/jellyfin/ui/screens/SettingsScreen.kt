@@ -220,7 +220,7 @@ private fun LibraryManagementCard(
     SettingsSectionContainer(modifier = modifier.fillMaxWidth()) {
         Text(
             text = stringResource(id = R.string.settings_library_management_title),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
         ExpressiveSwitchListItem(
