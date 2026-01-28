@@ -214,7 +214,7 @@ class JellyfinRepository @Inject constructor(
         return authRepository.authenticateUser(
             serverUrl = safeServerUrl,
             username = safeUsername,
-            password = safePassword
+            password = safePassword,
         )
     }
 
