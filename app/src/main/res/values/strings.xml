@@ -69,7 +69,8 @@
     <!-- Profile -->
     <string name="version">Version</string>
     <string name="unknown">Unknown</string>
-    <string name="server">Server: %1$s</string>
+    <string name="server">Server</string>
+    <string name="default_username">Jellyfin User</string>
     
     <!-- Buttons -->
     <string name="sign_out">Sign Out</string>
