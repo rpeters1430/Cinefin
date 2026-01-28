@@ -8,6 +8,7 @@ import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.common.DispatcherProvider
+import com.rpeters.jellyfin.data.model.CurrentUserDetails
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
@@ -70,6 +71,7 @@ data class MainAppState(
 
     // User data
     val favorites: List<BaseItemDto> = emptyList(),
+    val currentUser: CurrentUserDetails? = null,
 
     // Pagination (legacy)
     val isLoadingMore: Boolean = false,
@@ -240,13 +242,26 @@ class MainAppViewModel @Inject constructor(
                         async { loadRecentlyAddedByTypes(forceRefresh = forceRefresh) }
                     val continueWatchingDeferred =
                         async { mediaRepository.getContinueWatching(forceRefresh = forceRefresh) }
+                    val currentUserDeferred =
+                        async { userRepository.getCurrentUser() }
 
-                    awaitAll(librariesDeferred, recentDeferred, recentByTypesDeferred, continueWatchingDeferred)
+                    awaitAll(
+                        librariesDeferred,
+                        recentDeferred,
+                        recentByTypesDeferred,
+                        continueWatchingDeferred,
+                        currentUserDeferred,
+                    )
 
                     val librariesResult = librariesDeferred.getCompleted()
                     val recentResult = recentDeferred.getCompleted()
                     val recentlyAddedByTypes = recentByTypesDeferred.getCompleted()
                     val continueWatchingResult = continueWatchingDeferred.getCompleted()
+                    val currentUserResult = currentUserDeferred.getCompleted()
+                    val resolvedCurrentUser = when (currentUserResult) {
+                        is ApiResult.Success -> currentUserResult.data
+                        else -> _appState.value.currentUser
+                    }
 
                     SecureLogger.v("MainAppViewModel-Initial", "📦 API calls completed:")
                     SecureLogger.v(
@@ -286,6 +301,7 @@ class MainAppViewModel @Inject constructor(
                                 recentlyAdded = recentlyAdded,
                                 recentlyAddedByTypes = recentlyAddedByTypes,
                                 continueWatching = continueWatching,
+                                currentUser = resolvedCurrentUser,
                                 isLoading = false,
                             )
 
@@ -299,6 +315,7 @@ class MainAppViewModel @Inject constructor(
                             _appState.value = _appState.value.copy(
                                 isLoading = false,
                                 errorMessage = "Failed to load libraries: ${librariesResult.message}",
+                                currentUser = resolvedCurrentUser,
                             )
                         }
 
@@ -328,6 +345,26 @@ class MainAppViewModel @Inject constructor(
 
                 is ApiResult.Loading -> {
                     // Handle loading state
+                }
+            }
+        }
+    }
+
+    fun loadCurrentUser() {
+        viewModelScope.launch {
+            when (val result = userRepository.getCurrentUser()) {
+                is ApiResult.Success -> {
+                    _appState.value = _appState.value.copy(currentUser = result.data)
+                }
+
+                is ApiResult.Error -> {
+                    _appState.value = _appState.value.copy(
+                        errorMessage = "Failed to load user profile: ${result.message}",
+                    )
+                }
+
+                is ApiResult.Loading -> {
+                    // No-op
                 }
             }
         }
@@ -1014,6 +1051,13 @@ class MainAppViewModel @Inject constructor(
     // Streaming operations (direct repository calls)
     fun getImageUrl(item: BaseItemDto): String? =
         streamRepository.getImageUrl(item.id.toString(), "Primary", null)
+
+    fun getUserAvatarUrl(userId: String?, imageTag: String?): String? {
+        if (userId.isNullOrBlank()) {
+            return null
+        }
+        return streamRepository.getUserImageUrl(userId, imageTag)
+    }
 
     fun getBackdropUrl(item: BaseItemDto): String? =
         streamRepository.getBackdropUrl(item)
