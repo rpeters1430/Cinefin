@@ -419,4 +419,14 @@
     <string name="pinning_mismatch_error">Certificate pin mismatch for %1$s</string>
     <string name="pinning_expired_error">Stored certificate pin expired for %1$s</string>
     <string name="pinning_no_pins_available">No certificate pins are available to trust.</string>
+
+    <!-- Privacy Policy -->
+    <string name="privacy_policy_title">Privacy Policy</string>
+    <string name="privacy_policy_description">View our privacy policy and understand how we handle your data</string>
+    <string name="privacy_policy_view">View Privacy Policy</string>
+    <string name="privacy_policy_last_updated">Last updated: January 2026</string>
+    <string name="privacy_policy_loading">Loading privacy policy…</string>
+    <string name="about_app">About</string>
+    <string name="about_app_description">App information and legal</string>
+    <string name="open_in_browser">Open in browser</string>
 </resources>

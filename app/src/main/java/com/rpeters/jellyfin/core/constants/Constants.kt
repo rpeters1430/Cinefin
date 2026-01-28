@@ -84,4 +84,10 @@ object Constants {
         const val RESUME_THRESHOLD_PERCENT = 5.0 // Resume if < 5% watched
         const val WATCHED_THRESHOLD_PERCENT = 90.0 // Mark watched if > 90% watched
     }
+
+    // App Information
+    object AppInfo {
+        const val PRIVACY_POLICY_URL = "https://github.com/rpeters1430/JellyfinAndroid/blob/main/privacy-policy.md"
+        const val GITHUB_REPO_URL = "https://github.com/rpeters1430/JellyfinAndroid"
+    }
 }
