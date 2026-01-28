@@ -18,8 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -191,6 +189,10 @@ fun SettingsScreen(
             }
 
             item {
+                PinningManagementCard(onManagePinsClick = onManagePinsClick)
+            }
+
+            item {
                 SettingsHeader(
                     titleStyle = MaterialTheme.typography.headlineSmall,
                 )
@@ -301,32 +303,42 @@ private fun PinningManagementCard(
     onManagePinsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    SettingsSectionContainer(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(id = R.string.settings_pinning_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = stringResource(id = R.string.settings_pinning_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Button(
+            onClick = onManagePinsClick,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(text = stringResource(id = R.string.settings_pinning_manage))
+        }
+    }
+}
+
+@Composable
+private fun SettingsSectionContainer(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 4.dp,
+        shape = MaterialTheme.shapes.large,
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = stringResource(id = R.string.settings_pinning_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = stringResource(id = R.string.settings_pinning_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Button(
-                onClick = onManagePinsClick,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(text = stringResource(id = R.string.settings_pinning_manage))
-            }
-        }
+            content = content,
+        )
     }
 }
 
