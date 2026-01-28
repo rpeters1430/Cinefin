@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.screens
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,8 +17,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -170,6 +169,10 @@ fun SettingsScreen(
             }
 
             item {
+                PinningManagementCard(onManagePinsClick = onManagePinsClick)
+            }
+
+            item {
                 SettingsHeader(
                     titleStyle = MaterialTheme.typography.headlineSmall,
                 )
@@ -214,29 +217,19 @@ private fun LibraryManagementCard(
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 4.dp,
-        shape = MaterialTheme.shapes.large,
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = stringResource(id = R.string.settings_library_management_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            ExpressiveSwitchListItem(
-                title = stringResource(id = R.string.settings_library_management_toggle),
-                subtitle = stringResource(id = R.string.settings_library_management_description),
-                checked = enabled,
-                onCheckedChange = onToggle,
-                leadingIcon = Icons.Default.Settings,
-            )
-        }
+    SettingsSectionContainer(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(id = R.string.settings_library_management_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+        ExpressiveSwitchListItem(
+            title = stringResource(id = R.string.settings_library_management_toggle),
+            subtitle = stringResource(id = R.string.settings_library_management_description),
+            checked = enabled,
+            onCheckedChange = onToggle,
+            leadingIcon = Icons.Default.Settings,
+        )
     }
 }
 
@@ -247,46 +240,37 @@ private fun CredentialSecurityCard(
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+    SettingsSectionContainer(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(id = R.string.settings_credential_security_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = stringResource(id = R.string.settings_credential_security_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(id = R.string.settings_credential_security_tradeoff),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = stringResource(id = R.string.settings_credential_security_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                text = stringResource(id = R.string.settings_credential_security_toggle),
+                style = MaterialTheme.typography.bodyLarge,
             )
-            Text(
-                text = stringResource(id = R.string.settings_credential_security_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Switch(
+                checked = enabled,
+                onCheckedChange = onToggle,
+                enabled = !updating,
             )
-            Text(
-                text = stringResource(id = R.string.settings_credential_security_tradeoff),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = stringResource(id = R.string.settings_credential_security_toggle),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Switch(
-                    checked = enabled,
-                    onCheckedChange = onToggle,
-                    enabled = !updating,
-                )
-            }
         }
     }
 }
@@ -296,32 +280,42 @@ private fun PinningManagementCard(
     onManagePinsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    SettingsSectionContainer(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(id = R.string.settings_pinning_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = stringResource(id = R.string.settings_pinning_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Button(
+            onClick = onManagePinsClick,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(text = stringResource(id = R.string.settings_pinning_manage))
+        }
+    }
+}
+
+@Composable
+private fun SettingsSectionContainer(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 4.dp,
+        shape = MaterialTheme.shapes.large,
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = stringResource(id = R.string.settings_pinning_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = stringResource(id = R.string.settings_pinning_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Button(
-                onClick = onManagePinsClick,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(text = stringResource(id = R.string.settings_pinning_manage))
-            }
-        }
+            content = content,
+        )
     }
 }
 
