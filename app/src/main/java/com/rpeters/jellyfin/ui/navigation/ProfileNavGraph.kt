@@ -72,9 +72,22 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             lifecycle = lifecycleOwner.lifecycle,
             initialValue = null,
         )
+        val appState by viewModel.appState.collectAsStateWithLifecycle(
+            lifecycle = lifecycleOwner.lifecycle,
+            minActiveState = Lifecycle.State.STARTED,
+        )
+
+        LaunchedEffect(Unit) {
+            viewModel.loadCurrentUser()
+        }
 
         ProfileScreen(
             currentServer = currentServer,
+            currentUser = appState.currentUser,
+            userAvatarUrl = viewModel.getUserAvatarUrl(
+                currentServer?.userId,
+                appState.currentUser?.primaryImageTag,
+            ),
             onLogout = {
                 viewModel.logout()
                 onLogout()

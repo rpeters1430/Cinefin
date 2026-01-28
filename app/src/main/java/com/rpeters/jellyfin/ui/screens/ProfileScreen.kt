@@ -36,12 +36,16 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.JellyfinServer
+import com.rpeters.jellyfin.data.model.CurrentUserDetails
 import com.rpeters.jellyfin.ui.components.MiniPlayer
+import com.rpeters.jellyfin.ui.image.AvatarImage
 
 @OptInAppExperimentalApis
 @Composable
 fun ProfileScreen(
     currentServer: JellyfinServer?,
+    currentUser: CurrentUserDetails?,
+    userAvatarUrl: String?,
     onLogout: () -> Unit,
     onSettingsClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
@@ -78,6 +82,8 @@ fun ProfileScreen(
         },
         modifier = modifier,
     ) { paddingValues ->
+        val displayName = currentUser?.name?.ifBlank { "Jellyfin User" } ?: "Jellyfin User"
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -97,12 +103,21 @@ fun ProfileScreen(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AccountBox,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
+                    if (userAvatarUrl != null) {
+                        AvatarImage(
+                            imageUrl = userAvatarUrl,
+                            userName = displayName,
+                            modifier = Modifier.size(64.dp),
+                            size = 64.dp,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AccountBox,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -117,7 +132,7 @@ fun ProfileScreen(
                     )
 
                     Text(
-                        text = "Jellyfin User",
+                        text = displayName,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
