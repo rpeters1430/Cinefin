@@ -145,8 +145,8 @@ class MainAppViewModel @Inject constructor(
     val currentServer = repository.currentServer
     val isConnected = repository.isConnected
 
-    private val _serverInfo = MutableStateFlow<ServerInfo?>(null)
-    val serverInfo: StateFlow<ServerInfo?> = _serverInfo.asStateFlow()
+    private val _serverInfo = MutableStateFlow<ApiResult<ServerInfo>?>(null)
+    val serverInfo: StateFlow<ApiResult<ServerInfo>?> = _serverInfo.asStateFlow()
 
     @VisibleForTesting
     internal fun setAppStateForTest(state: MainAppState) {
