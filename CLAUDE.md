@@ -22,25 +22,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Testing
 ```bash
 # Run unit tests (JVM-based)
-./gradlew testDebugUnitTest
+./gradlew testDebugUnitTest          # Linux/macOS
+./gradlew.bat testDebugUnitTest      # Windows
 
 # Run instrumentation tests (requires device/emulator)
-./gradlew connectedAndroidTest
+./gradlew connectedAndroidTest       # Linux/macOS
+./gradlew.bat connectedAndroidTest   # Windows
 
 # Run both test types (used in CI)
-./gradlew ciTest
+./gradlew ciTest                     # Linux/macOS
+./gradlew.bat ciTest                 # Windows
 
 # Run a single test class
-./gradlew testDebugUnitTest --tests "com.rpeters.jellyfin.ClassName"
+./gradlew testDebugUnitTest --tests "com.rpeters.jellyfin.ClassName"         # Linux/macOS
+./gradlew.bat testDebugUnitTest --tests "com.rpeters.jellyfin.ClassName"     # Windows
 ```
 
 ### Code Quality
 ```bash
 # Run Android Lint
-./gradlew lintDebug
+./gradlew lintDebug                  # Linux/macOS
+./gradlew.bat lintDebug              # Windows
 
 # Generate JaCoCo coverage report (HTML/XML in app/build/reports)
-./gradlew jacocoTestReport
+./gradlew jacocoTestReport           # Linux/macOS
+./gradlew.bat jacocoTestReport       # Windows
 ```
 
 ### Environment Setup (CI/Codex/Web Environments)
@@ -160,6 +166,16 @@ Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<Jellyf
 - Dependency versions: Centralized in `gradle/libs.versions.toml`
 - **Release builds**: ProGuard/R8 enabled with shrinking and minification (`proguard-rules.pro`)
 - **Network security**: Custom configuration in `app/src/main/res/xml/network_security_config.xml`
+- **Firebase Integration**: Crashlytics and Performance Monitoring enabled (Google Services plugin)
+
+### Release Signing Configuration
+Release builds require signing credentials configured via Gradle properties or environment variables:
+- `JELLYFIN_KEYSTORE_FILE` - Path to keystore file (defaults to `jellyfin-release.keystore`)
+- `JELLYFIN_KEYSTORE_PASSWORD` - Keystore password
+- `JELLYFIN_KEY_ALIAS` - Key alias (defaults to `jellyfin-release`)
+- `JELLYFIN_KEY_PASSWORD` - Key password
+
+Set in `gradle.properties` (local dev) or CI environment variables.
 
 ### State Management Pattern
 ViewModels expose UI state via StateFlow:
@@ -277,10 +293,11 @@ Refer to CURRENT_STATUS.md for detailed feature status and ROADMAP.md for roadma
 ## Debugging & Troubleshooting
 
 ### Common Build Issues
-- **"SDK location not found"**: Run `scripts/gen-local-properties.sh` (or `.ps1` on Windows) to generate `local.properties`
+- **"SDK location not found"**: Run `scripts/gen-local-properties.sh` (Linux/macOS) or `scripts/gen-local-properties.ps1` (Windows) to generate `local.properties`
 - **Gradle sync failures**: Ensure JDK 21 is configured, check `JAVA_HOME` environment variable
-- **Windows builds**: Always use `./gradlew.bat` or `gradlew.bat` instead of `./gradlew`
+- **Windows builds**: Always use `./gradlew.bat` or `gradlew.bat` instead of `./gradlew` in all commands
 - **Missing SDK**: Run `./setup.sh` (Linux/macOS) to install Android SDK and accept licenses
+- **Release signing errors**: Ensure signing credentials are configured in `gradle.properties` or environment variables
 
 ### Logging & Debugging
 - Enable verbose logging: `SecureLogger.enableVerboseLogging = true` (default is false to reduce spam)

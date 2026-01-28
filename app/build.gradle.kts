@@ -21,8 +21,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26 // Android 8.0+ (was 31) - Broader device compatibility
         targetSdk = 35 // Use stable SDK 35 for runtime, keep compileSdk at 36
-        versionCode = 16
-        versionName = "13.3"
+        versionCode = 17
+        versionName = "13.4"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 

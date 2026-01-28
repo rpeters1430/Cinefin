@@ -227,7 +227,8 @@ private fun ExpressiveHeroCard(
 
             // ✅ Performance: Use drawWithCache for gradient to avoid recomposition
             val scrimColor = MaterialTheme.colorScheme.scrim
-            val overlayTextColor = MaterialTheme.colorScheme.onSurface
+            // Use white text over dark scrim gradient (Material Design pattern for media overlays)
+            val overlayTextColor = Color.White
             Box(
                 modifier = Modifier
                     .fillMaxSize()

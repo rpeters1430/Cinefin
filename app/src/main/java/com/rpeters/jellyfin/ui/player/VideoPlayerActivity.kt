@@ -124,9 +124,10 @@ class VideoPlayerActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
 
         try {
-            // Set up full screen and landscape orientation
+            // Set up full screen mode and allow sensor-based orientation
             setupFullScreenMode()
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            // Start in landscape but allow rotation to portrait during playback
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
 
             // Keep screen on during playback
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -315,17 +316,11 @@ class VideoPlayerActivity : FragmentActivity() {
 
     /**
      * Update screen orientation based on cast state.
-     * When casting, allow portrait orientation since video is on Cast device.
-     * When not casting, lock to landscape for optimal viewing.
+     * Allows sensor-based rotation in both casting and local playback modes.
      */
     private fun updateOrientation(isCasting: Boolean) {
-        requestedOrientation = if (isCasting) {
-            // Allow sensor-based rotation when casting
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR
-        } else {
-            // Lock to landscape when playing locally
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        }
+        // Allow sensor-based rotation for both casting and local playback
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
     }
 
     private fun enterPictureInPictureModeCustom() {

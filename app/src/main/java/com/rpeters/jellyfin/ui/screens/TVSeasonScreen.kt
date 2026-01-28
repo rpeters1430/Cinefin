@@ -343,32 +343,26 @@ private fun TVSeasonContent(
  * Helper function to determine the watch button text based on series watch status
  */
 private fun getWatchButtonText(series: BaseItemDto, nextEpisode: BaseItemDto?): String {
-    val playedPercentage = series.userData?.playedPercentage ?: 0.0
-    val unwatchedCount = series.getUnwatchedEpisodeCount()
-
-    // If completely watched, show "Rewatch Series"
-    if (series.isCompletelyWatched()) {
+    // If completely watched (and we have an episode to rewatch), show "Rewatch Series"
+    if (series.isCompletelyWatched() && nextEpisode != null) {
         return "Rewatch Series"
     }
 
     // If no next episode is available, show "Browse Series"
+    // This happens when we genuinely have no episodes to play
     if (nextEpisode == null) {
         return "Browse Series"
     }
 
-    // Check if not started - use reliable indicators since childCount may be null
-    // If unplayedItemCount exists, use it to calculate total episodes; otherwise rely on unwatchedCount
-    val hasNotStarted = if (series.userData?.unplayedItemCount != null) {
-        // Most reliable: unplayedItemCount is set by server
-        val totalEpisodes = (series.userData?.unplayedItemCount ?: 0) + (series.userData?.playCount ?: 0)
-        totalEpisodes > 0 && series.userData?.playCount == 0 && playedPercentage == 0.0
-    } else {
-        // Fallback: use unwatchedCount (which may be 0 if childCount is null)
-        unwatchedCount > 0 &&
-            (series.userData?.playCount ?: 0) == 0 &&
-            playedPercentage == 0.0
-    }
-    if (hasNotStarted) {
+    // Check if user has started watching by checking:
+    // 1. playedPercentage > 0 (any episode progress)
+    // 2. OR if nextEpisode is not S1E1 (watching beyond first episode)
+    val playedPercentage = series.userData?.playedPercentage ?: 0.0
+    val isFirstEpisode = nextEpisode.parentIndexNumber == 1 && nextEpisode.indexNumber == 1
+    val hasStartedWatching = playedPercentage > 0.0 || !isFirstEpisode
+
+    // If not started, show "Start Watching Series"
+    if (!hasStartedWatching) {
         return "Start Watching Series"
     }
 

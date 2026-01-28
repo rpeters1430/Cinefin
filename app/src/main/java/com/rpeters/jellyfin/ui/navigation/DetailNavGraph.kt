@@ -264,15 +264,20 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
 
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by mainViewModel.appState.collectAsStateWithLifecycle(
-            lifecycle = lifecycleOwner.lifecycle,
+            initialValue = mainViewModel.appState.value,
+            lifecycleOwner = lifecycleOwner,
             minActiveState = androidx.lifecycle.Lifecycle.State.STARTED,
         )
         val currentServer by mainViewModel.currentServer.collectAsStateWithLifecycle(
-            lifecycle = lifecycleOwner.lifecycle,
+            initialValue = null,
+            lifecycleOwner = lifecycleOwner,
         )
 
         val movie = appState.allItems.find { it.id.toString() == movieId }
-        val detailState by detailViewModel.state.collectAsStateWithLifecycle(lifecycle = lifecycleOwner.lifecycle)
+        val detailState by detailViewModel.state.collectAsStateWithLifecycle(
+            initialValue = detailViewModel.state.value,
+            lifecycleOwner = lifecycleOwner,
+        )
 
         LaunchedEffect(movieId, movie) {
             if (movie == null && detailState.movie == null && !detailState.isLoading) {
@@ -364,11 +369,13 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<TVEpisodeDetailViewModel>()
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by mainViewModel.appState.collectAsStateWithLifecycle(
-            lifecycle = lifecycleOwner.lifecycle,
+            initialValue = mainViewModel.appState.value,
+            lifecycleOwner = lifecycleOwner,
             minActiveState = androidx.lifecycle.Lifecycle.State.STARTED,
         )
         val detailState by viewModel.state.collectAsStateWithLifecycle(
-            lifecycle = lifecycleOwner.lifecycle,
+            initialValue = viewModel.state.value,
+            lifecycleOwner = lifecycleOwner,
         )
 
         val episode = appState.allItems.find { it.id.toString() == episodeId }

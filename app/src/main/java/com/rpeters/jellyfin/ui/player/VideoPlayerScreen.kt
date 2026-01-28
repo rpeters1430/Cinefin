@@ -1644,7 +1644,8 @@ private fun rememberVideoPlayerColors(): VideoPlayerColors {
     return remember(scheme) {
         VideoPlayerColors(
             background = Color.Black,
-            overlayContent = scheme.onSurface,
+            // Use white text over dark scrim (Material Design pattern for video overlays)
+            overlayContent = Color.White,
             overlayScrim = scheme.scrim.copy(alpha = 0.75f),
             gradientStops = listOf(
                 scheme.surfaceContainerHighest.copy(alpha = 0.96f),

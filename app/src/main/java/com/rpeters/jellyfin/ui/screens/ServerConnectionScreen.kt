@@ -49,7 +49,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -265,27 +267,32 @@ private fun LoginHeaderCard(
         modifier = modifier,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .padding(horizontal = 20.dp, vertical = 24.dp)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // App logo - using launcher foreground icon
             Icon(
-                imageVector = Icons.Default.VpnKey,
-                contentDescription = stringResource(id = R.string.sign_in),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(40.dp),
+                painter = painterResource(id = R.drawable.ic_launcher_fg),
+                contentDescription = stringResource(id = R.string.app_name),
+                tint = Color.Unspecified, // Don't tint - preserve original colors
+                modifier = Modifier.size(80.dp),
             )
             Text(
                 text = stringResource(id = R.string.app_name),
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
             Text(
                 text = stringResource(id = R.string.sign_in_to_server),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
