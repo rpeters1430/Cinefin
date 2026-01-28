@@ -172,12 +172,13 @@ class MainAppViewModel @Inject constructor(
 
     fun loadServerInfo() {
         viewModelScope.launch {
-            if (!ensureValidToken()) return@launch
-
-            when (val result = repository.getServerInfo()) {
-                is ApiResult.Success -> _serverInfo.value = result.data
-                is ApiResult.Error -> _serverInfo.value = null
+            if (!ensureValidToken()) {
+                _serverInfo.value = ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+                return@launch
             }
+
+            _serverInfo.value = ApiResult.Loading()
+            _serverInfo.value = repository.getServerInfo()
         }
     }
 
