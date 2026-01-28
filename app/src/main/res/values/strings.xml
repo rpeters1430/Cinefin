@@ -70,7 +70,7 @@
     <!-- Profile -->
     <string name="version">Version</string>
     <string name="unknown">Unknown</string>
-    <string name="server">Server: %1$s</string>
+    <string name="server">Server</string>
     <string name="server_name_label">Server Name</string>
     <string name="user_id_label">User ID</string>
     <string name="server_status">Server status</string>
