@@ -7,6 +7,8 @@
 
 This Privacy Policy describes how Jellyfin Ryan ("the App", "we", "us", or "our") collects, uses, shares, and protects information when you use our Android application. By using the App, you agree to the collection and use of information in accordance with this policy.
 
+**Application Scope:** This Privacy Policy applies to the Jellyfin Ryan application distributed on Google Play. Jellyfin Ryan is an unofficial, third-party Jellyfin Android client and is not affiliated with or endorsed by the Jellyfin project.
+
 ## 1. Overview
 
 Jellyfin Ryan is an unofficial third-party client for Jellyfin media servers. The App operates as a bridge between your device and your personal Jellyfin server. We are committed to protecting your privacy and being transparent about our data practices.
