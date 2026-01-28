@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "220943708056",
+    "project_id": "jellyfin-ryan",
+    "storage_bucket": "jellyfin-ryan.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:220943708056:android:24153ecf3e0187956245ed",
+        "android_client_info": {
+          "package_name": "com.rpeters.jellyfin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOL0kazRJ6E0rvzKf9jfCjq60jjLPyPyk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
