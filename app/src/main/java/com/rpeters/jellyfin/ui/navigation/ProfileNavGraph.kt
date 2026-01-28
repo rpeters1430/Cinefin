@@ -72,9 +72,20 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             lifecycle = lifecycleOwner.lifecycle,
             initialValue = null,
         )
+        val serverInfo by viewModel.serverInfo.collectAsStateWithLifecycle(
+            lifecycle = lifecycleOwner.lifecycle,
+            initialValue = null,
+        )
+
+        LaunchedEffect(currentServer?.id) {
+            if (currentServer != null) {
+                viewModel.loadServerInfo()
+            }
+        }
 
         ProfileScreen(
             currentServer = currentServer,
+            serverInfo = serverInfo,
             onLogout = {
                 viewModel.logout()
                 onLogout()
