@@ -82,7 +82,7 @@ fun ProfileScreen(
         },
         modifier = modifier,
     ) { paddingValues ->
-        val displayName = currentUser?.name?.ifBlank { "Jellyfin User" } ?: "Jellyfin User"
+        val displayName = currentUser?.name?.takeIf(String::isNotBlank) ?: stringResource(R.string.default_username)
 
         Column(
             modifier = Modifier
