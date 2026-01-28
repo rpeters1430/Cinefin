@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.screens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +19,8 @@ import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -146,6 +149,13 @@ fun ProfileScreen(
                 }
             }
 
+            ServerStatusCard(
+                isConnected = currentServer?.isConnected == true,
+                version = serverInfo?.version ?: currentServer?.version,
+                operatingSystem = serverInfo?.operatingSystem,
+                productName = serverInfo?.productName,
+            )
+
             // Server Information
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -243,6 +253,97 @@ fun ProfileScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Logout")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ServerStatusCard(
+    isConnected: Boolean,
+    version: String?,
+    operatingSystem: String?,
+    productName: String?,
+    modifier: Modifier = Modifier,
+) {
+    val connectionLabel = if (isConnected) {
+        stringResource(id = R.string.server_status_connected)
+    } else {
+        stringResource(id = R.string.server_status_disconnected)
+    }
+    val statusContainerColor = if (isConnected) {
+        MaterialTheme.colorScheme.tertiaryContainer
+    } else {
+        MaterialTheme.colorScheme.errorContainer
+    }
+    val statusLabelColor = if (isConnected) {
+        MaterialTheme.colorScheme.onTertiaryContainer
+    } else {
+        MaterialTheme.colorScheme.onErrorContainer
+    }
+    val unknown = stringResource(id = R.string.unknown)
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(id = R.string.server_status),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                AssistChip(
+                    onClick = {},
+                    label = { Text(text = connectionLabel) },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = statusContainerColor,
+                        labelColor = statusLabelColor,
+                    ),
+                    border = null,
+                )
+                AssistChip(
+                    onClick = {},
+                    label = {
+                        Text(
+                            text = stringResource(
+                                id = R.string.version,
+                                version ?: unknown,
+                            ),
+                        )
+                    },
+                )
+                AssistChip(
+                    onClick = {},
+                    label = {
+                        Text(
+                            text = stringResource(
+                                id = R.string.server_status_os,
+                                operatingSystem ?: unknown,
+                            ),
+                        )
+                    },
+                )
+                AssistChip(
+                    onClick = {},
+                    label = {
+                        Text(
+                            text = stringResource(
+                                id = R.string.server_status_product,
+                                productName ?: unknown,
+                            ),
+                        )
+                    },
+                )
             }
         }
     }
