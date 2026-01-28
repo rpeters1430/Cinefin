@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.ServerInfo
 import com.rpeters.jellyfin.data.common.DispatcherProvider
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
@@ -144,6 +145,9 @@ class MainAppViewModel @Inject constructor(
     val currentServer = repository.currentServer
     val isConnected = repository.isConnected
 
+    private val _serverInfo = MutableStateFlow<ServerInfo?>(null)
+    val serverInfo: StateFlow<ServerInfo?> = _serverInfo.asStateFlow()
+
     @VisibleForTesting
     internal fun setAppStateForTest(state: MainAppState) {
         _appState.value = state
@@ -162,6 +166,17 @@ class MainAppViewModel @Inject constructor(
                 return@withContext authRepository.reAuthenticate()
             } catch (e: CancellationException) {
                 throw e
+            }
+        }
+    }
+
+    fun loadServerInfo() {
+        viewModelScope.launch {
+            if (!ensureValidToken()) return@launch
+
+            when (val result = repository.getServerInfo()) {
+                is ApiResult.Success -> _serverInfo.value = result.data
+                is ApiResult.Error -> _serverInfo.value = null
             }
         }
     }
