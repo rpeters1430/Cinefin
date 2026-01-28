@@ -18,10 +18,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -367,6 +370,7 @@ private fun SettingsRecommendationCard(
                 ExpressiveMediaListItem(
                     title = stringResource(id = optionRes),
                     leadingIcon = Icons.Default.Settings,
+                    onClick = { onOptionClick(optionRes) },
                 )
             }
         }
@@ -387,30 +391,8 @@ private fun SettingsSectionCard(
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = stringResource(id = recommendation.titleRes),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = stringResource(id = recommendation.descriptionRes),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                recommendation.options.forEach { optionRes ->
-                    ExpressiveMediaListItem(
-                        title = stringResource(id = optionRes),
-                        leadingIcon = Icons.Default.Settings,
-                        onClick = { onOptionClick(optionRes) },
-                    )
-                }
-            }
-        }
+            content = content,
+        )
     }
 }
 

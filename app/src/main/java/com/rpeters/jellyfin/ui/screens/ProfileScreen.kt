@@ -75,8 +75,6 @@ fun ProfileScreen(
                                 contentDescription = stringResource(id = R.string.navigate_up),
                             )
                         }
-                    } else {
-                        null
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -151,9 +149,9 @@ fun ProfileScreen(
 
             ServerStatusCard(
                 isConnected = currentServer?.isConnected == true,
-                version = serverInfo?.version ?: currentServer?.version,
-                operatingSystem = serverInfo?.operatingSystem,
-                productName = serverInfo?.productName,
+                version = currentServer?.version,
+                operatingSystem = null, // TODO: Add ServerInfo to ProfileScreen params
+                productName = null, // TODO: Add ServerInfo to ProfileScreen params
             )
 
             // Server Information
@@ -190,9 +188,9 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     currentServer?.let { server ->
-                        ProfileInfoRow("Server Name", server.name)
+                        ProfileInfoRow(stringResource(id = R.string.server_name_label), server.name)
                         ProfileInfoRow(
-                            label = "Server URL",
+                            label = stringResource(id = R.string.server_url_label),
                             value = server.url,
                             onValueClick = if (server.url.startsWith("http")) {
                                 { uriHandler.openUri(server.url) }
@@ -200,7 +198,7 @@ fun ProfileScreen(
                                 null
                             },
                         )
-                        ProfileInfoRow("User ID", server.userId ?: stringResource(id = R.string.unknown))
+                        ProfileInfoRow(stringResource(id = R.string.user_id_label), server.userId ?: stringResource(id = R.string.unknown))
                     }
                 }
             }
@@ -252,7 +250,7 @@ fun ProfileScreen(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Logout")
+                Text(stringResource(id = R.string.sign_out))
             }
         }
     }
@@ -316,7 +314,7 @@ private fun ServerStatusCard(
                     label = {
                         Text(
                             text = stringResource(
-                                id = R.string.version,
+                                id = R.string.server_status_version,
                                 version ?: unknown,
                             ),
                         )
