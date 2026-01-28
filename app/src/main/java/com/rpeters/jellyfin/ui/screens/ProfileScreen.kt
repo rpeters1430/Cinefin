@@ -47,11 +47,10 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.JellyfinServer
+import com.rpeters.jellyfin.data.ServerInfo
 import com.rpeters.jellyfin.data.model.CurrentUserDetails
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.image.AvatarImage
-
-import com.rpeters.jellyfin.data.ServerInfo
 
 @OptInAppExperimentalApis
 @Composable
