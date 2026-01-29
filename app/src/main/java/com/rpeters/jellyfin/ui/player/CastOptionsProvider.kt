@@ -13,7 +13,7 @@ class CastOptionsProvider : OptionsProvider {
     companion object {
         // Jellyfin / Default Cast Receiver ID - can be customized via future settings
         // Made public so UI components (e.g., MediaRouteButton selector) can reuse it
-        const val DEFAULT_CAST_RECEIVER_APP_ID: String = "CC1AD845" // Default Media Receiver
+        const val DEFAULT_CAST_RECEIVER_APP_ID: String = "479C02BF" // Jellyfin Stable
 
         @JvmStatic
         fun getReceiverApplicationId(): String = DEFAULT_CAST_RECEIVER_APP_ID
