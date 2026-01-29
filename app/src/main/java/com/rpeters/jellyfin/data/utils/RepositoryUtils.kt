@@ -27,8 +27,7 @@ object RepositoryUtils {
     internal fun isAuthenticationRelatedError(message: String): Boolean {
         return message.contains("authenticated", ignoreCase = true) ||
             message.contains("authentication", ignoreCase = true) ||
-            message.contains("token", ignoreCase = true) ||
-            message.contains("authenticated server", ignoreCase = true)
+            message.contains("token", ignoreCase = true)
     }
 
     /**
