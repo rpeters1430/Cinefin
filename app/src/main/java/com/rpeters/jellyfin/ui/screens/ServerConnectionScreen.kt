@@ -159,6 +159,7 @@ fun ServerConnectionScreen(
                     savedServerUrl = savedServerUrl,
                     savedUsername = savedUsername,
                     isConnecting = connectionState.isConnecting,
+                    isBiometricAuthEnabled = isBiometricAuthEnabled,
                     isBiometricAuthAvailable = isBiometricAuthAvailable,
                     onAutoLogin = onAutoLogin,
                     onBiometricLogin = onBiometricLogin,
@@ -302,6 +303,7 @@ private fun AutoLoginCard(
     savedServerUrl: String,
     savedUsername: String,
     isConnecting: Boolean,
+    isBiometricAuthEnabled: Boolean,
     isBiometricAuthAvailable: Boolean,
     onAutoLogin: () -> Unit,
     onBiometricLogin: () -> Unit,
@@ -337,21 +339,28 @@ private fun AutoLoginCard(
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 textAlign = TextAlign.Center,
             )
-            FilledTonalButton(
-                onClick = onAutoLogin,
-                enabled = !isConnecting,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(id = R.string.auto_login))
-            }
-
-            if (isBiometricAuthAvailable) {
-                OutlinedButton(
+            if (isBiometricAuthEnabled && isBiometricAuthAvailable) {
+                FilledTonalButton(
                     onClick = onBiometricLogin,
                     enabled = !isConnecting,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(stringResource(id = R.string.login_with_biometric))
+                }
+                OutlinedButton(
+                    onClick = onAutoLogin,
+                    enabled = !isConnecting,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(id = R.string.auto_login))
+                }
+            } else {
+                FilledTonalButton(
+                    onClick = onAutoLogin,
+                    enabled = !isConnecting,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(id = R.string.auto_login))
                 }
             }
         }

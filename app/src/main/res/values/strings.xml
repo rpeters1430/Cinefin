@@ -372,6 +372,10 @@
     <string name="settings_privacy_cache">Image/cache size limits with one-tap clear option.</string>
     <string name="settings_privacy_diagnostics">Crash/analytics opt-in with clear data visibility.</string>
     <string name="settings_privacy_sensitive">Hide sensitive content titles in notifications and recents.</string>
+    <string name="settings_privacy_biometric_title">Biometric login</string>
+    <string name="settings_privacy_biometric_toggle">Use biometric login for saved credentials</string>
+    <string name="settings_privacy_biometric_description">Prompt for fingerprint or face authentication before auto-login.</string>
+    <string name="settings_privacy_biometric_unavailable">Biometric authentication is not available on this device.</string>
     <string name="settings_credential_security_title">Protect saved credentials</string>
     <string name="settings_credential_security_description">Encrypt saved passwords with a device-bound key.</string>
     <string name="settings_credential_security_tradeoff">Requiring your screen lock or biometrics keeps credentials safer, but you may need to re-authenticate after a short idle period for auto sign-ins.</string>

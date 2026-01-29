@@ -30,6 +30,11 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
             lifecycle = lifecycleOwner.lifecycle,
             minActiveState = Lifecycle.State.STARTED,
         )
+        val activity = context as? FragmentActivity
+        val autoPrompted = androidx.compose.runtime.saveable.rememberSaveable(
+            connectionState.savedServerUrl,
+            connectionState.savedUsername,
+        ) { androidx.compose.runtime.mutableStateOf(false) }
 
         // Navigate to Home when successfully connected
         LaunchedEffect(connectionState.isConnected) {
@@ -38,6 +43,25 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
                     popUpTo(Screen.ServerConnection.route) { inclusive = true }
                 }
             }
+        }
+        LaunchedEffect(
+            connectionState.isBiometricAuthEnabled,
+            connectionState.isBiometricAuthAvailable,
+            connectionState.hasSavedPassword,
+            connectionState.rememberLogin,
+            connectionState.isConnecting,
+            connectionState.isConnected,
+            connectionState.savedServerUrl,
+            connectionState.savedUsername,
+        ) {
+            if (autoPrompted.value) return@LaunchedEffect
+            if (activity == null) return@LaunchedEffect
+            if (!connectionState.isBiometricAuthEnabled || !connectionState.isBiometricAuthAvailable) return@LaunchedEffect
+            if (!connectionState.rememberLogin || !connectionState.hasSavedPassword) return@LaunchedEffect
+            if (connectionState.savedServerUrl.isBlank() || connectionState.savedUsername.isBlank()) return@LaunchedEffect
+            if (connectionState.isConnecting || connectionState.isConnected) return@LaunchedEffect
+            autoPrompted.value = true
+            viewModel.autoLoginWithBiometric(activity)
         }
 
         ServerConnectionScreen(

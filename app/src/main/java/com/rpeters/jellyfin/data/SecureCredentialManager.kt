@@ -491,11 +491,21 @@ class SecureCredentialManager @Inject constructor(
             logDebug { "getPassword: Found password with new key" }
         }
 
-        val result = encryptedPassword?.let { decrypt(it) }
+        val result = try {
+            encryptedPassword?.let { decrypt(it) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            SecureLogger.w(TAG, "getPassword: Decryption failed", e)
+            null
+        }
         if (result != null) {
             logDebug { "🟢 getPassword: SUCCESS - Password retrieved and decrypted (length: ${result.length})" }
         } else {
-            SecureLogger.e(TAG, "🔴 getPassword: FAILED - Password is NULL (encryptedPassword was ${if (encryptedPassword != null) "found but decrypt failed" else "not found in DataStore"})")
+            SecureLogger.e(
+                TAG,
+                "🔴 getPassword: FAILED - Password is NULL (encryptedPassword was ${if (encryptedPassword != null) "found but decrypt failed" else "not found in DataStore"})",
+            )
         }
         return result
     }
@@ -517,6 +527,17 @@ class SecureCredentialManager @Inject constructor(
             prefs.remove(stringPreferencesKey(keys.legacyNormalizedKey))
             prefs.remove(longPreferencesKey("${keys.legacyNormalizedKey}_timestamp"))
         }
+    }
+
+    suspend fun hasSavedPassword(serverUrl: String, username: String): Boolean {
+        val keys = generateKeys(serverUrl, username)
+        val preferences = secureCredentialsDataStore.data.first()
+        val candidates = listOf(keys.newKey, keys.legacyNormalizedKey, keys.legacyRawKey)
+        val hasPassword = candidates.any { key ->
+            preferences[stringPreferencesKey(key)] != null
+        }
+        logDebug { "hasSavedPassword: serverUrl='$serverUrl', username='$username', result=$hasPassword" }
+        return hasPassword
     }
 
     suspend fun clearAllPasswords() {

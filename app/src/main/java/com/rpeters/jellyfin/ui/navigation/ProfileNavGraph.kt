@@ -17,6 +17,7 @@ import com.rpeters.jellyfin.ui.screens.SettingsRecommendationOptions
 import com.rpeters.jellyfin.ui.screens.SettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.AppearanceSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.PinningSettingsScreen
+import com.rpeters.jellyfin.ui.screens.settings.PrivacySettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.SettingsSectionScreen
 import com.rpeters.jellyfin.ui.screens.settings.SubtitleSettingsScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -160,10 +161,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
     }
 
     composable(Screen.PrivacySettings.route) {
-        SettingsSectionScreen(
-            titleRes = R.string.settings_privacy_title,
-            descriptionRes = R.string.settings_privacy_description,
-            optionRes = SettingsRecommendationOptions.privacy,
+        PrivacySettingsScreen(
             onNavigateBack = { navController.popBackStack() },
         )
     }
