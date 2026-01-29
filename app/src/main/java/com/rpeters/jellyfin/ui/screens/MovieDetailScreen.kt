@@ -663,7 +663,7 @@ private fun ExternalRatingBadge(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(6.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         modifier = modifier,
