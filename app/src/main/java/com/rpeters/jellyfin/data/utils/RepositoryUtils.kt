@@ -67,9 +67,9 @@ object RepositoryUtils {
                 val message = e.message ?: ""
                 when {
                     message.contains("authenticated", ignoreCase = true) ||
-                    message.contains("authentication", ignoreCase = true) ||
-                    message.contains("token", ignoreCase = true) ||
-                    message.contains("server", ignoreCase = true) -> ErrorType.AUTHENTICATION
+                        message.contains("authentication", ignoreCase = true) ||
+                        message.contains("token", ignoreCase = true) ||
+                        message.contains("server", ignoreCase = true) -> ErrorType.AUTHENTICATION
                     else -> ErrorType.UNKNOWN
                 }
             }

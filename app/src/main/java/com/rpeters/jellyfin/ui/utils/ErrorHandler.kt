@@ -94,8 +94,8 @@ object ErrorHandler {
                 val message = e.message ?: ""
                 when {
                     message.contains("authenticated", ignoreCase = true) ||
-                    message.contains("authentication", ignoreCase = true) ||
-                    message.contains("token", ignoreCase = true) -> ProcessedError(
+                        message.contains("authentication", ignoreCase = true) ||
+                        message.contains("token", ignoreCase = true) -> ProcessedError(
                         userMessage = "Please log in to access this content.",
                         errorType = ErrorType.AUTHENTICATION,
                         isRetryable = false,
