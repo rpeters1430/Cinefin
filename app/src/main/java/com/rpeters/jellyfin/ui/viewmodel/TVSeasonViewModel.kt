@@ -19,9 +19,12 @@ import javax.inject.Inject
 data class TVSeasonState(
     val seriesDetails: BaseItemDto? = null,
     val seasons: List<BaseItemDto> = emptyList(),
+    val episodesBySeasonId: Map<String, List<BaseItemDto>> = emptyMap(),
     val similarSeries: List<BaseItemDto> = emptyList(),
     val nextEpisode: BaseItemDto? = null,
     val isLoading: Boolean = false,
+    val loadingSeasonIds: Set<String> = emptySet(),
+    val seasonEpisodeErrors: Map<String, String> = emptyMap(),
     val isSimilarSeriesLoading: Boolean = false,
     val errorMessage: String? = null,
 )
@@ -42,7 +45,13 @@ class TVSeasonViewModel @Inject constructor(
         viewModelScope.launch {
             // Clear cache when loading new series data to ensure fresh data
             episodesCache.clear()
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+            _state.value = _state.value.copy(
+                isLoading = true,
+                errorMessage = null,
+                episodesBySeasonId = emptyMap(),
+                loadingSeasonIds = emptySet(),
+                seasonEpisodeErrors = emptyMap(),
+            )
 
             var seriesDetails = _state.value.seriesDetails
             var seasons = _state.value.seasons
@@ -125,6 +134,53 @@ class TVSeasonViewModel @Inject constructor(
         val seriesId = _state.value.seriesDetails?.id?.toString()
         if (seriesId != null) {
             loadSeriesData(seriesId)
+        }
+    }
+
+    fun loadSeasonEpisodes(seasonId: String) {
+        if (seasonId.isBlank()) {
+            return
+        }
+
+        val cachedEpisodes = episodesCache[seasonId]
+        if (cachedEpisodes != null) {
+            _state.value = _state.value.copy(
+                episodesBySeasonId = _state.value.episodesBySeasonId + (seasonId to cachedEpisodes),
+            )
+            return
+        }
+
+        if (seasonId in _state.value.loadingSeasonIds) {
+            return
+        }
+
+        _state.value = _state.value.copy(
+            loadingSeasonIds = _state.value.loadingSeasonIds + seasonId,
+            seasonEpisodeErrors = _state.value.seasonEpisodeErrors - seasonId,
+        )
+
+        viewModelScope.launch {
+            when (val episodesResult = mediaRepository.getEpisodesForSeason(seasonId)) {
+                is ApiResult.Success -> {
+                    episodesCache[seasonId] = episodesResult.data
+                    _state.value = _state.value.copy(
+                        episodesBySeasonId = _state.value.episodesBySeasonId + (seasonId to episodesResult.data),
+                        loadingSeasonIds = _state.value.loadingSeasonIds - seasonId,
+                    )
+                }
+                is ApiResult.Error -> {
+                    _state.value = _state.value.copy(
+                        loadingSeasonIds = _state.value.loadingSeasonIds - seasonId,
+                        seasonEpisodeErrors = _state.value.seasonEpisodeErrors +
+                            (seasonId to "Failed to load episodes: ${episodesResult.message}"),
+                    )
+                }
+                is ApiResult.Loading -> {
+                    _state.value = _state.value.copy(
+                        loadingSeasonIds = _state.value.loadingSeasonIds - seasonId,
+                    )
+                }
+            }
         }
     }
 
