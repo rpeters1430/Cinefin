@@ -122,7 +122,7 @@ class SecureCredentialManager @Inject constructor(
      */
     private suspend fun getOrCreateSecretKey(forceNew: Boolean = false): SecretKey = withContext(Dispatchers.IO) {
         val stableAlias = getKeyAlias()
-        
+
         // Find any existing legacy keys (timestamped or buggy)
         // This is crucial for migrating users who have keys generated with the old rotation logic
         var existingKeyAlias: String? = null
@@ -150,7 +150,7 @@ class SecureCredentialManager @Inject constructor(
             while (cleanupAliases.hasMoreElements()) {
                 val alias = cleanupAliases.nextElement()
                 if (alias.startsWith(Constants.Security.KEY_ALIAS)) {
-                    try { keyStore.deleteEntry(alias) } catch (e: Exception) { 
+                    try { keyStore.deleteEntry(alias) } catch (e: Exception) {
                         Log.w(TAG, "Failed to delete old key: $alias", e)
                     }
                 }
