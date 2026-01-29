@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.player
 
 import android.content.Context
+import android.util.Log
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -40,7 +41,6 @@ import java.util.Locale
 import java.util.concurrent.Executors
 import javax.inject.Inject
 import javax.inject.Singleton
-import android.util.Log
 import com.google.android.gms.cast.MediaMetadata as CastMediaMetadata
 
 @UnstableApi
@@ -92,7 +92,8 @@ class CastManager @Inject constructor(
                 when (status.playerState) {
                     MediaStatus.PLAYER_STATE_PLAYING,
                     MediaStatus.PLAYER_STATE_PAUSED,
-                    MediaStatus.PLAYER_STATE_BUFFERING -> {
+                    MediaStatus.PLAYER_STATE_BUFFERING,
+                    -> {
                         if (BuildConfig.DEBUG) {
                             SecureLogger.d("CastManager", "Media ready (state=${status.playerState}), seeking to pending position: ${pendingSeekPosition}ms")
                         }
@@ -484,28 +485,28 @@ class CastManager @Inject constructor(
 
         return when {
             // Bulletproof HLS detection: check extension, format, or manifest markers
-            lowered.contains(".m3u8") || 
-            lowered.contains("format=m3u8") || 
-            lowered.contains("manifest=m3u8") ||
-            lowered.contains("master.m3u8") ->
+            lowered.contains(".m3u8") ||
+                lowered.contains("format=m3u8") ||
+                lowered.contains("manifest=m3u8") ||
+                lowered.contains("master.m3u8") ->
                 "application/x-mpegURL" to streamType
-                
+
             // Bulletproof DASH detection: check extension or format
             lowered.contains(".mpd") || lowered.contains("format=mpd") ->
                 "application/dash+xml" to streamType
-                
+
             // Handle MP4/other containers
             lowered.contains(".mp4") ->
                 "video/mp4" to streamType
-                
+
             // Fallback for other transcoded/stream endpoints
             isStreamEndpoint || isTranscoded -> {
                 val contentType = containerParam ?: "video/mp4"
                 // Check if the container param implies HLS
                 if (contentType == "application/x-mpegURL" || contentType == "application/vnd.apple.mpegurl") {
-                     "application/x-mpegURL" to streamType
+                    "application/x-mpegURL" to streamType
                 } else {
-                     contentType to streamType
+                    contentType to streamType
                 }
             }
             else ->
@@ -601,7 +602,7 @@ class CastManager @Inject constructor(
                 }
                 // Add authentication token to URL for Cast receiver
                 val mediaUrl = addAuthTokenToUrl(sourceUrl)
-                
+
                 // Determine if content is Live (TV or indeterminate duration)
                 val isLive = item.type == BaseItemKind.TV_CHANNEL || (item.runTimeTicks ?: 0L) <= 0L
                 val (contentType, streamType) = guessCastTypes(mediaUrl, useTranscoded, isLive)
@@ -651,13 +652,13 @@ class CastManager @Inject constructor(
                     "CastManager",
                     "Cast load: url=$mediaUrl contentType=$contentType streamType=$streamType hls=$useHls transcoded=$useTranscoded startMs=$startPositionMs",
                 )
-                
+
                 // Set pending seek position for the callback to handle when ready
                 pendingSeekPosition = if (startPositionMs > 0) startPositionMs else -1L
 
                 castSession.remoteMediaClient?.load(request)?.setResultCallback { result ->
                     val status = result.status
-                    Log.i("CastManager", "Cast load result: status=${status} statusCode=${status.statusCode}")
+                    Log.i("CastManager", "Cast load result: status=$status statusCode=${status.statusCode}")
 
                     if (status.isSuccess) {
                         // Check receiver state for debugging
@@ -672,7 +673,8 @@ class CastManager @Inject constructor(
                             when (playerState) {
                                 MediaStatus.PLAYER_STATE_PLAYING,
                                 MediaStatus.PLAYER_STATE_PAUSED,
-                                MediaStatus.PLAYER_STATE_BUFFERING -> {
+                                MediaStatus.PLAYER_STATE_BUFFERING,
+                                -> {
                                     if (BuildConfig.DEBUG) {
                                         Log.i("CastManager", "Performing post-load seek to ${pendingSeekPosition}ms")
                                     }
@@ -1051,13 +1053,13 @@ class CastManager @Inject constructor(
                 if (imageType == ImageType.PRIMARY && item.type == BaseItemKind.EPISODE) {
                     streamRepository.getSeriesImageUrl(item)
                 } else {
-                val tag = item.imageTags?.get(imageType)
-                    ?: if (imageType == ImageType.PRIMARY) {
-                        item.imageTags?.get(ImageType.PRIMARY)
-                    } else {
-                        null
-                    }
-                streamRepository.getImageUrl(itemId, imageType.toRequestType(), tag)
+                    val tag = item.imageTags?.get(imageType)
+                        ?: if (imageType == ImageType.PRIMARY) {
+                            item.imageTags?.get(ImageType.PRIMARY)
+                        } else {
+                            null
+                        }
+                    streamRepository.getImageUrl(itemId, imageType.toRequestType(), tag)
                 }
             }
         }
