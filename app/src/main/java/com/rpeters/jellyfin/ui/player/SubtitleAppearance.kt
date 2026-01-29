@@ -4,13 +4,13 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.util.TypedValue
 import androidx.annotation.OptIn
+import androidx.core.graphics.toColorInt
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
 import com.rpeters.jellyfin.data.preferences.SubtitleBackground
 import com.rpeters.jellyfin.data.preferences.SubtitleFont
-import androidx.core.graphics.toColorInt
 
 @OptIn(UnstableApi::class)
 internal fun applySubtitleAppearance(

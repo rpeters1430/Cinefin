@@ -30,7 +30,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.core.constants.Constants
 
 @OptInAppExperimentalApis
 @Composable
