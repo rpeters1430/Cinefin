@@ -24,6 +24,7 @@ import com.rpeters.jellyfin.ui.components.ConnectionState
 import com.rpeters.jellyfin.ui.components.PinningAlertReason
 import com.rpeters.jellyfin.ui.components.PinningAlertState
 import com.rpeters.jellyfin.utils.ServerUrlValidator
+import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -79,7 +80,7 @@ class ServerConnectionViewModel @Inject constructor(
             val savedServerUrl = preferences[PreferencesKeys.SERVER_URL] ?: ""
             val savedUsername = preferences[PreferencesKeys.USERNAME] ?: ""
             val rememberPreference = preferences[PreferencesKeys.REMEMBER_LOGIN]
-            var rememberLogin = rememberPreference ?: false
+            var rememberLogin = rememberPreference ?: true
             val biometricPreference = preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED]
             val isBiometricAuthEnabled = biometricPreference ?: false
             val requireStrongBiometric = preferences[PreferencesKeys.BIOMETRIC_REQUIRE_STRONG] ?: false
@@ -94,7 +95,7 @@ class ServerConnectionViewModel @Inject constructor(
 
             // If credentials exist but the toggle was never persisted, opt the user back in
             // This handles migration for existing users who expect "Remember Login" to be on
-            if (hasSavedPassword && rememberPreference == null) {
+            if (rememberPreference == null) {
                 updateRememberLoginPreference(true)
                 rememberLogin = true
             }
@@ -113,17 +114,14 @@ class ServerConnectionViewModel @Inject constructor(
 
             // Auto-login if we have saved credentials and remember login is enabled
             if (rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank() && hasSavedPassword) {
-                android.util.Log.d("ServerConnectionVM", "Auto-login conditions met. Biometric enabled: $isBiometricAuthEnabled, Biometric available: ${biometricCapability.isAvailable}")
                 val autoLoginKey = "$savedServerUrl|$savedUsername"
                 if (!shouldAutoLoginNow(autoLoginKey)) {
-                    android.util.Log.d("ServerConnectionVM", "Auto-login debounced for key: $autoLoginKey")
                     return@launch
                 }
 
                 // We don't auto-login if biometric auth is enabled, user needs to trigger it manually
                 // However, if biometric is enabled but not available on this device, disable it and auto-login
                 if (isBiometricAuthEnabled && !biometricCapability.isAvailable) {
-                    android.util.Log.d("ServerConnectionVM", "Biometric auth was enabled but is no longer available - disabling it")
                     // Biometric auth was enabled but is no longer available - disable it
                     context.dataStore.edit { preferences ->
                         preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED] = false
@@ -133,22 +131,15 @@ class ServerConnectionViewModel @Inject constructor(
                 }
 
                 if (!isBiometricAuthEnabled || !biometricCapability.isAvailable) {
-                    android.util.Log.d("ServerConnectionVM", "🔵 AUTO-LOGIN: Attempting to retrieve password for serverUrl='$savedServerUrl', username='$savedUsername'")
                     val savedPassword = secureCredentialManager.getPassword(savedServerUrl, savedUsername)
                     if (savedPassword != null) {
-                        android.util.Log.d("ServerConnectionVM", "🟢 AUTO-LOGIN: Password retrieved successfully (length: ${savedPassword.length})")
-                        android.util.Log.d("ServerConnectionVM", "Attempting auto-login for user: $savedUsername")
+                        SecureLogger.d("ServerConnectionVM", "Auto-login: saved credentials present, attempting connection")
                         // Auto-login with saved credentials
                         connectToServer(savedServerUrl, savedUsername, savedPassword, isAutoLogin = true)
                     } else {
-                        android.util.Log.e("ServerConnectionVM", "🔴 AUTO-LOGIN FAILED: saved password is NULL despite hasSavedPassword=$hasSavedPassword")
-                        android.util.Log.e("ServerConnectionVM", "🔴 AUTO-LOGIN FAILED: serverUrl='$savedServerUrl', username='$savedUsername'")
+                        SecureLogger.w("ServerConnectionVM", "Auto-login failed: saved password could not be retrieved")
                     }
-                } else {
-                    android.util.Log.d("ServerConnectionVM", "Auto-login skipped: biometric auth is enabled and available")
                 }
-            } else {
-                android.util.Log.d("ServerConnectionVM", "Auto-login skipped - rememberLogin:$rememberLogin, hasUrl:${savedServerUrl.isNotBlank()}, hasUsername:${savedUsername.isNotBlank()}, hasPassword:$hasSavedPassword")
             }
         }
 
@@ -230,6 +221,9 @@ class ServerConnectionViewModel @Inject constructor(
                             if (_connectionState.value.rememberLogin) {
                                 saveCredentials(normalizedServerUrl, username, password)
                             } else {
+                                // Best-effort cleanup: older versions could have persisted credentials
+                                // even when the user opted out of "Remember Login".
+                                secureCredentialManager.clearPassword(normalizedServerUrl, username)
                                 clearSavedCredentials()
                             }
 
@@ -404,30 +398,19 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     private suspend fun saveCredentials(serverUrl: String, username: String, password: String) {
-        android.util.Log.d("ServerConnectionVM", "🔵 saveCredentials: CALLED with serverUrl='$serverUrl', username='$username'")
         // CRITICAL: Normalize the URL using the same function that SecureCredentialManager uses
         // to ensure consistent key generation for password encryption/decryption
         val normalizedUrl = com.rpeters.jellyfin.utils.normalizeServerUrl(serverUrl)
-        android.util.Log.d("ServerConnectionVM", "saveCredentials: Normalized URL: '$normalizedUrl'")
-
-        android.util.Log.d("ServerConnectionVM", "saveCredentials: Saving URL and username to DataStore...")
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SERVER_URL] = normalizedUrl
             preferences[PreferencesKeys.USERNAME] = username
         }
-        android.util.Log.d("ServerConnectionVM", "saveCredentials: URL and username saved to DataStore ✅")
-
-        android.util.Log.d("ServerConnectionVM", "saveCredentials: Calling secureCredentialManager.savePassword()...")
         secureCredentialManager.savePassword(normalizedUrl, username, password)
-        android.util.Log.d("ServerConnectionVM", "saveCredentials: secureCredentialManager.savePassword() COMPLETED ✅")
-
-        android.util.Log.d("ServerConnectionVM", "Saved credentials with normalized URL: $normalizedUrl (original: $serverUrl)")
         _connectionState.value = _connectionState.value.copy(
             savedServerUrl = normalizedUrl,
             savedUsername = username,
             hasSavedPassword = true,
         )
-        android.util.Log.d("ServerConnectionVM", "🟢 saveCredentials: FINISHED - hasSavedPassword=true")
     }
 
     private suspend fun clearSavedCredentials() {

@@ -5,6 +5,7 @@ import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -145,6 +146,19 @@ class JellyfinAuthRepositoryTest {
         assertNotNull(currentServer)
         assertEquals(SERVER_URL, currentServer?.url)
         assertEquals("QuickConnectUser", currentServer?.username)
+    }
+
+    @Test
+    fun `authenticateUser does not persist credentials implicitly`() = runTest {
+        val authResult = buildAuthResult(accessToken = "token-abc", username = "User")
+        coEvery { userApi.authenticateUserByName(any()) } returns sdkResponse(authResult)
+
+        val result = repository.authenticateUser(SERVER_URL, "User", "password")
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals("token-abc", repository.token())
+        assertEquals("token-abc", repository.currentServer.value?.accessToken)
+        coVerify(exactly = 0) { credentialManager.savePassword(any(), any(), any()) }
     }
 
     @Test
