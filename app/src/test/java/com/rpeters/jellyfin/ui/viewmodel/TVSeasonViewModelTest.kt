@@ -18,6 +18,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -332,7 +333,12 @@ class TVSeasonViewModelTest {
         childCount = childCount,
         userData = if (completelyWatched) {
             org.jellyfin.sdk.model.api.UserItemDataDto(
+                playbackPositionTicks = 0,
+                playCount = 0,
+                isFavorite = false,
                 played = true,
+                key = "key",
+                itemId = UUID.randomUUID(),
                 playedPercentage = 100.0,
                 unplayedItemCount = 0,
             )
@@ -359,7 +365,12 @@ class TVSeasonViewModelTest {
         indexNumber = indexNumber,
         userData = if (watched) {
             org.jellyfin.sdk.model.api.UserItemDataDto(
+                playbackPositionTicks = 0,
+                playCount = 0,
+                isFavorite = false,
                 played = true,
+                key = "key",
+                itemId = UUID.randomUUID(),
                 playedPercentage = 100.0,
             )
         } else {

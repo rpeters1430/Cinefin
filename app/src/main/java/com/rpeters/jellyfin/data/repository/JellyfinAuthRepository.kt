@@ -100,7 +100,7 @@ class JellyfinAuthRepository @Inject constructor(
     ): ApiResult<AuthenticationResult> {
         _isAuthenticating.update { true }
         try {
-            Log.d(TAG, "authenticateUser: Attempting authentication for user '$username'")
+            Log.d(TAG, "authenticateUser: Attempting authentication")
             val normalizedServerUrl = normalizeServerUrl(serverUrl)
 
             val client = createApiClient(serverUrl)
@@ -112,14 +112,13 @@ class JellyfinAuthRepository @Inject constructor(
             )
 
             val authResult = response.content
-            Log.d(TAG, "authenticateUser: Authentication successful for user '$username'")
+            Log.d(TAG, "authenticateUser: Authentication successful")
 
             persistAuthenticationState(
                 serverUrl = serverUrl,
                 normalizedServerUrl = normalizedServerUrl,
                 authResult = authResult,
                 usernameHint = username,
-                password = password,
             )
 
             return ApiResult.Success(authResult)
@@ -250,7 +249,6 @@ class JellyfinAuthRepository @Inject constructor(
         normalizedServerUrl: String = normalizeServerUrl(serverUrl),
         authResult: AuthenticationResult,
         usernameHint: String? = null,
-        password: String? = null,
     ) {
         val resolvedUsername = usernameHint ?: authResult.user?.name
         val server = JellyfinServer(
@@ -268,15 +266,6 @@ class JellyfinAuthRepository @Inject constructor(
         _currentServer.update { server }
         _isConnected.update { true }
         saveNewToken(authResult.accessToken)
-
-        if (!password.isNullOrEmpty() && !resolvedUsername.isNullOrEmpty()) {
-            try {
-                secureCredentialManager.savePassword(serverUrl, resolvedUsername, password)
-                Log.d(TAG, "persistAuthenticationState: Saved credentials for user '$resolvedUsername'")
-            } catch (e: IOException) {
-                Log.w(TAG, "persistAuthenticationState: I/O error saving credentials", e)
-            }
-        }
     }
 
     suspend fun initiateQuickConnect(serverUrl: String): ApiResult<QuickConnectResult> {

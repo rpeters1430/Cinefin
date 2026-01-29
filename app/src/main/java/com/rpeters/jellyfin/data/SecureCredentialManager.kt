@@ -228,10 +228,7 @@ class SecureCredentialManager @Inject constructor(
         )
             .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            // CRITICAL: Allow caller-provided IV for decryption on Android API 36+
-            // Without this, decryption with stored IV fails with:
-            // "InvalidAlgorithmParameterException: Caller-provided IV not permitted"
-            .setRandomizedEncryptionRequired(false)
+            .setKeySize(256)
             .setUserAuthenticationRequired(requireUserAuthentication)
             .apply {
                 if (requireUserAuthentication) {
@@ -338,7 +335,6 @@ class SecureCredentialManager @Inject constructor(
 
         logDebug { "savePassword: Saving password for user='$username', serverUrl='$serverUrl'" }
         logDebug { "savePassword: Generated key='${keys.newKey}'" }
-        logDebug { "savePassword: Encrypted password length: ${encryptedPassword.length}" }
 
         try {
             logDebug { "savePassword: 🔵 ENTERING NonCancellable block - password save cannot be cancelled from here" }
@@ -448,10 +444,6 @@ class SecureCredentialManager @Inject constructor(
 
         val preferences = secureCredentialsDataStore.data.first()
         logDebug { "getPassword: DataStore contains ${preferences.asMap().size} entries" }
-        // Log all DataStore keys for debugging (excluding actual password values)
-        preferences.asMap().keys.forEach { key ->
-            logDebug { "getPassword: DataStore key found: ${key.name}" }
-        }
         var encryptedPassword = preferences[stringPreferencesKey(keys.newKey)]
 
         if (encryptedPassword == null) {
@@ -500,7 +492,7 @@ class SecureCredentialManager @Inject constructor(
             null
         }
         if (result != null) {
-            logDebug { "🟢 getPassword: SUCCESS - Password retrieved and decrypted (length: ${result.length})" }
+            logDebug { "🟢 getPassword: SUCCESS - Password retrieved and decrypted" }
         } else {
             SecureLogger.e(
                 TAG,
