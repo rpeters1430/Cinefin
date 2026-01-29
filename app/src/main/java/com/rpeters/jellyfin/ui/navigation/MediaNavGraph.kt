@@ -82,12 +82,15 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             getImageUrl = { item -> viewModel.getImageUrl(item) },
             getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
             getLogoUrl = { item -> viewModel.getLogoUrl(item) },
-            onSeasonClick = { seasonId ->
-                navController.navigate(Screen.TVEpisodes.createRoute(seasonId))
-            },
             onSeriesClick = { targetSeriesId ->
                 navController.navigate(Screen.TVSeasons.createRoute(targetSeriesId)) {
                     launchSingleTop = true
+                }
+            },
+            onEpisodeClick = { episode ->
+                episode.id?.let { episodeId ->
+                    viewModel.addOrUpdateItem(episode)
+                    navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
                 }
             },
             onPlayEpisode = { episodeItem ->
