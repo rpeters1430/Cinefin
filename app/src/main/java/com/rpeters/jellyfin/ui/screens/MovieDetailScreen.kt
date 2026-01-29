@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,8 +33,12 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Movie
+import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.RateReview
 import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -79,12 +84,12 @@ import com.rpeters.jellyfin.ui.theme.Quality1440
 import com.rpeters.jellyfin.ui.theme.Quality4K
 import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
-import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.utils.normalizeOfficialRating
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
+import java.util.Locale
 import kotlin.math.roundToInt
 
 private val GENRE_BADGE_MAX_WIDTH = 100.dp
@@ -182,28 +187,17 @@ fun MovieDetailScreen(
                         )
 
                         // Metadata Row (Rating, Year, Runtime)
-                        Row(
+                        FlowRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-                            verticalAlignment = Alignment.CenterVertically,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            // Rating with star icon
-                            movie.communityRating?.let { rating ->
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Star,
-                                        contentDescription = null,
-                                        tint = RatingGold,
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                    Text(
-                                        text = "${(rating * 10).roundToInt()}%",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onBackground,
+                            val ratingBadges = remember(movie) { buildRatingBadges(movie) }
+                            if (ratingBadges.isNotEmpty()) {
+                                ratingBadges.forEach { rating ->
+                                    ExternalRatingBadge(
+                                        source = rating.source,
+                                        value = rating.value,
                                     )
                                 }
                             }
@@ -214,7 +208,7 @@ fun MovieDetailScreen(
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
                                     color = MaterialTheme.colorScheme.surfaceVariant,
-                                    border = androidx.compose.foundation.BorderStroke(
+                                    border = BorderStroke(
                                         1.dp,
                                         MaterialTheme.colorScheme.outline,
                                     ),
@@ -610,6 +604,90 @@ fun MovieDetailScreen(
                 }
             },
         )
+    }
+}
+
+private enum class RatingSource(
+    val icon: ImageVector,
+    val contentDescription: String,
+) {
+    Community(Icons.Outlined.People, "Community rating"),
+    Critics(Icons.Outlined.RateReview, "Critic rating"),
+    ImdbLink(Icons.Outlined.Movie, "IMDb link available"),
+    TmdbLink(Icons.Outlined.Public, "TMDB link available"),
+}
+
+private data class ExternalRating(
+    val source: RatingSource,
+    val value: String? = null,
+)
+
+private fun buildRatingBadges(movie: BaseItemDto): List<ExternalRating> {
+    val providerKeys = movie.providerIds?.keys?.map { it.lowercase(Locale.ROOT) }?.toSet().orEmpty()
+    val hasImdb = "imdb" in providerKeys
+    val hasTmdb = "tmdb" in providerKeys
+    val badges = mutableListOf<ExternalRating>()
+
+    movie.communityRating?.takeIf { it > 0f }?.let { rating ->
+        badges.add(
+            ExternalRating(
+                source = RatingSource.Community,
+                value = String.format(Locale.ROOT, "%.1f", rating),
+            ),
+        )
+    }
+
+    movie.criticRating?.takeIf { it > 0f }?.let { rating ->
+        badges.add(
+            ExternalRating(
+                source = RatingSource.Critics,
+                value = "${rating.roundToInt()}%",
+            ),
+        )
+    }
+
+    if (hasTmdb) {
+        badges.add(ExternalRating(source = RatingSource.TmdbLink))
+    }
+    if (hasImdb) {
+        badges.add(ExternalRating(source = RatingSource.ImdbLink))
+    }
+
+    return badges
+}
+
+@Composable
+private fun ExternalRatingBadge(
+    source: RatingSource,
+    value: String?,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        modifier = modifier,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+        ) {
+            Icon(
+                imageVector = source.icon,
+                contentDescription = source.contentDescription,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            if (value != null) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 
