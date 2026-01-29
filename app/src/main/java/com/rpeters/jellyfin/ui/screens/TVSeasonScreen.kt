@@ -4,6 +4,7 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -31,6 +33,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
@@ -45,6 +49,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,8 +95,8 @@ fun TVSeasonScreen(
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     getLogoUrl: (BaseItemDto) -> String? = { null },
-    onSeasonClick: (String) -> Unit,
     onSeriesClick: (String) -> Unit,
+    onEpisodeClick: (BaseItemDto) -> Unit,
     onPlayEpisode: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -154,8 +160,9 @@ fun TVSeasonScreen(
                         getImageUrl = getImageUrl,
                         getBackdropUrl = getBackdropUrl,
                         getLogoUrl = getLogoUrl,
-                        onSeasonClick = onSeasonClick,
                         onSeriesClick = onSeriesClick,
+                        onSeasonExpand = viewModel::loadSeasonEpisodes,
+                        onEpisodeClick = onEpisodeClick,
                         onPlayEpisode = onPlayEpisode,
                     )
                 }
@@ -220,11 +227,14 @@ private fun TVSeasonContent(
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     getLogoUrl: (BaseItemDto) -> String?,
-    onSeasonClick: (String) -> Unit,
     onSeriesClick: (String) -> Unit,
+    onSeasonExpand: (String) -> Unit,
+    onEpisodeClick: (BaseItemDto) -> Unit,
     onPlayEpisode: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var expandedSeasonId by rememberSaveable { mutableStateOf<String?>(null) }
+
     LazyColumn(
         modifier = modifier,
     ) {
@@ -258,12 +268,45 @@ private fun TVSeasonContent(
                 key = { it.getItemKey().ifEmpty { it.name ?: it.toString() } },
                 contentType = { "season_item" },
             ) { season ->
+                val seasonId = season.id?.toString()
+                val isExpanded = seasonId != null && expandedSeasonId == seasonId
+                val seasonEpisodes = seasonId?.let { state.episodesBySeasonId[it].orEmpty() }.orEmpty()
+                val isLoadingEpisodes = seasonId != null && seasonId in state.loadingSeasonIds
+                val seasonErrorMessage = seasonId?.let { state.seasonEpisodeErrors[it] }
                 ExpressiveSeasonListItem(
                     season = season,
                     getImageUrl = getImageUrl,
-                    onClick = { onSeasonClick(it) },
+                    onClick = {
+                        if (seasonId != null) {
+                            if (isExpanded) {
+                                expandedSeasonId = null
+                            } else {
+                                expandedSeasonId = seasonId
+                                onSeasonExpand(seasonId)
+                            }
+                        }
+                    },
+                    trailingContent = {
+                        Icon(
+                            imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                 )
+                AnimatedVisibility(visible = isExpanded) {
+                    SeasonEpisodeDropdown(
+                        episodes = seasonEpisodes,
+                        isLoading = isLoadingEpisodes,
+                        errorMessage = seasonErrorMessage,
+                        getImageUrl = getImageUrl,
+                        onEpisodeClick = onEpisodeClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                    )
+                }
             }
         } else {
             item {
@@ -567,6 +610,7 @@ private fun ExpressiveSeasonListItem(
     season: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
     onClick: (String) -> Unit,
+    trailingContent: @Composable (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val seasonName = season.name ?: stringResource(R.string.unknown)
@@ -703,26 +747,165 @@ private fun ExpressiveSeasonListItem(
             }
         },
         trailingContent = {
-            season.communityRating?.let { rating ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                season.communityRating?.let { rating ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = stringResource(id = R.string.rating),
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Text(
+                            text = String.format(Locale.ROOT, "%.1f", rating),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                trailingContent?.invoke()
+            }
+        },
+        onClick = { season.id?.toString()?.let { onClick(it) } },
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun SeasonEpisodeDropdown(
+    episodes: List<BaseItemDto>,
+    isLoading: Boolean,
+    errorMessage: String?,
+    getImageUrl: (BaseItemDto) -> String?,
+    onEpisodeClick: (BaseItemDto) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(16.dp))
+            .padding(vertical = 8.dp),
+    ) {
+        when {
+            isLoading -> {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.Center,
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = stringResource(id = R.string.rating),
-                        tint = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Text(
-                        text = String.format(Locale.ROOT, "%.1f", rating),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    CircularWavyProgressIndicator(
+                        modifier = Modifier.size(28.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                        amplitude = 0.1f,
+                        wavelength = 18.dp,
+                        waveSpeed = 10.dp,
                     )
                 }
             }
+            !errorMessage.isNullOrBlank() -> {
+                Text(
+                    text = errorMessage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+            episodes.isEmpty() -> {
+                Text(
+                    text = stringResource(id = R.string.no_episodes_found),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 320.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp),
+                ) {
+                    items(
+                        items = episodes,
+                        key = { it.getItemKey().ifEmpty { it.name ?: it.toString() } },
+                        contentType = { "episode_item" },
+                    ) { episode ->
+                        EpisodeDropdownItem(
+                            episode = episode,
+                            getImageUrl = getImageUrl,
+                            onEpisodeClick = onEpisodeClick,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EpisodeDropdownItem(
+    episode: BaseItemDto,
+    getImageUrl: (BaseItemDto) -> String?,
+    onEpisodeClick: (BaseItemDto) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val title = episode.name ?: stringResource(R.string.unknown)
+    val overline = buildString {
+        val seasonNumber = episode.parentIndexNumber
+        val episodeNumber = episode.indexNumber
+        if (seasonNumber != null && episodeNumber != null) {
+            append("S$seasonNumber • E$episodeNumber")
+        } else if (episodeNumber != null) {
+            append("Episode $episodeNumber")
+        }
+    }.takeIf { it.isNotBlank() }
+
+    ExpressiveMediaListItem(
+        title = title,
+        subtitle = episode.overview?.takeIf { it.isNotBlank() },
+        overline = overline,
+        leadingContent = {
+            Box(
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(68.dp)
+                    .clip(RoundedCornerShape(10.dp)),
+            ) {
+                val imageUrl = getImageUrl(episode)
+                if (!imageUrl.isNullOrBlank()) {
+                    JellyfinAsyncImage(
+                        model = imageUrl,
+                        contentDescription = title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        requestSize = rememberCoilSize(width = 360, height = 204),
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Tv,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                }
+            }
         },
-        onClick = { onClick(season.id.toString()) },
+        onClick = { onEpisodeClick(episode) },
         modifier = modifier,
     )
 }
