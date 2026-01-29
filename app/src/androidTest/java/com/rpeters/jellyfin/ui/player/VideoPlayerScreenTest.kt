@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.media3.common.Format
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -126,6 +127,7 @@ class VideoPlayerScreenTest {
             JellyfinAndroidTheme {
                 VideoPlayerScreen(
                     playerState = state,
+                    subtitleAppearance = SubtitleAppearancePreferences.DEFAULT,
                     onPlayPause = {},
                     onSeek = {},
                     onQualityChange = {},
@@ -135,6 +137,7 @@ class VideoPlayerScreenTest {
                     onCastPause = {},
                     onCastResume = {},
                     onCastStop = {},
+                    onCastDisconnect = {},
                     onCastSeek = {},
                     onCastVolumeChange = {},
                     onSubtitlesClick = {},

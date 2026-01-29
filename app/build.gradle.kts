@@ -19,19 +19,16 @@ android {
             "useTestStorageService" to "true",
         )
         applicationId = "com.rpeters.jellyfin"
-        minSdk = 26 // Android 8.0+ (was 31) - Broader device compatibility
-        targetSdk = 35 // Use stable SDK 35 for runtime, keep compileSdk at 36
+        minSdk = 26
+        targetSdk = 35
         versionCode = 21
         versionName = "13.8"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
-
-        // Test configuration
     }
 
     signingConfigs {
         create("release") {
-            // Prefer Gradle properties for local dev, fall back to env vars for CI/CD.
             val keystorePath = (findProperty("JELLYFIN_KEYSTORE_FILE") as String?)
                 ?: System.getenv("JELLYFIN_KEYSTORE_FILE")
                 ?: "jellyfin-release.keystore"
@@ -69,6 +66,7 @@ android {
     }
 
     kotlin {
+        jvmToolchain(21)
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
             freeCompilerArgs.addAll(
@@ -90,13 +88,12 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
-            isReturnDefaultValues = true // Enable default values for Android framework classes like Log
+            isReturnDefaultValues = true
         }
     }
 
     packaging {
         resources {
-            // Exclude duplicate OSGI manifest files from okhttp and jspecify
             excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
         }
     }
@@ -110,13 +107,13 @@ dependencies {
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.activity.compose)
 
-    // Compose BOM - This manages all Compose library versions
+    // Compose BOM
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
 
-    // Material 3 - Latest Alpha Versions
+    // Material 3
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.material3.adaptive.navigation.suite)
@@ -130,17 +127,15 @@ dependencies {
     // Navigation
     implementation(libs.androidx.navigation.compose)
 
-    // DataStore for preferences
+    // DataStore
     implementation(libs.androidx.datastore.preferences)
 
-    // Security for encrypted storage
+    // Security
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.biometric)
 
     // Jellyfin SDK
     implementation(libs.jellyfin.sdk)
-
-    // SLF4J Android Implementation for Jellyfin SDK logging
     implementation(libs.slf4j.android)
 
     // Networking
@@ -157,10 +152,10 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
 
-    // Media3 for video playback
+    // Media3
     implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.exoplayer.hls) // HLS playback (master.m3u8)
-    implementation(libs.androidx.media3.exoplayer.dash) // DASH playback (stream.mpd)
+    implementation(libs.androidx.media3.exoplayer.hls)
+    implementation(libs.androidx.media3.exoplayer.dash)
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.common)
     implementation(libs.androidx.media3.cast)
@@ -168,16 +163,16 @@ dependencies {
     implementation(libs.jellyfin.media3.ffmpeg.decoder)
     implementation(libs.google.cast.framework)
 
-    // Firebase (Using BoM)
+    // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.perf)
 
-    // Hilt for dependency injection
+    // Hilt
     implementation(libs.dagger.hilt.android)
     ksp(libs.dagger.hilt.compiler)
-    ksp(libs.kotlinx.metadata.jvm) // Fix for Hilt metadata version error
+    ksp(libs.kotlinx.metadata.jvm)
     implementation(libs.androidx.hilt.navigation.compose)
 
     // Android TV Compose
@@ -200,10 +195,7 @@ dependencies {
     kspTest("com.google.dagger:hilt-compiler:${libs.versions.hilt.get()}")
     kspTest(libs.kotlinx.metadata.jvm)
 
-    // Turbine for testing StateFlow
     testImplementation(libs.turbine)
-
-    // MockWebServer for network testing
     testImplementation(libs.mockwebserver)
 
     // Instrumentation Testing
@@ -219,7 +211,6 @@ dependencies {
     androidTestImplementation(libs.robolectric)
     androidTestImplementation(libs.kotlinx.coroutines.test)
 
-    // Hilt instrumentation testing
     androidTestImplementation(libs.dagger.hilt.android.testing)
     kspAndroidTest("com.google.dagger:hilt-compiler:${libs.versions.hilt.get()}")
     kspAndroidTest(libs.kotlinx.metadata.jvm)
@@ -232,7 +223,6 @@ dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
 
-// Test coverage configuration
 tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn("testDebugUnitTest", "createDebugCoverageReport")
 
@@ -269,5 +259,4 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     )
 }
 
-// Ensure jacoco agent is applied for coverage
 apply(plugin = "jacoco")

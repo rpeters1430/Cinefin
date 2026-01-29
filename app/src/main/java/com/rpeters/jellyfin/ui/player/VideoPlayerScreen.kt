@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -122,6 +123,7 @@ fun VideoPlayerScreen(
     onCastPause: () -> Unit,
     onCastResume: () -> Unit,
     onCastStop: () -> Unit,
+    onCastDisconnect: () -> Unit,
     onCastSeek: (Long) -> Unit,
     onCastVolumeChange: (Float) -> Unit,
     onSubtitlesClick: () -> Unit,
@@ -270,10 +272,13 @@ fun VideoPlayerScreen(
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(playerColors.background)
+    val baseModifier = modifier
+        .fillMaxSize()
+        .background(playerColors.background)
+    val gestureModifier = if (playerState.isCastConnected) {
+        Modifier
+    } else {
+        Modifier
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = { offset ->
@@ -401,10 +406,25 @@ fun VideoPlayerScreen(
                         }
                     }
                 }
-            },
+            }
+    }
+
+    Box(
+        modifier = baseModifier.then(gestureModifier),
     ) {
-        // Video Player View
-        AndroidView(
+        if (playerState.isCastConnected) {
+            CastRemoteScreen(
+                playerState = playerState,
+                onPauseCast = onCastPause,
+                onResumeCast = onCastResume,
+                onStopCast = onCastStop,
+                onSeekCast = onCastSeek,
+                onDisconnectCast = onCastDisconnect,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            // Video Player View
+            AndroidView(
             factory = { context ->
                 PlayerView(context).apply {
                     useController = false // We'll use custom controls
@@ -455,28 +475,6 @@ fun VideoPlayerScreen(
         }
 
         // Loading indicator - removed duplicate (now only shows in play button)
-
-        // Error message
-        playerState.error?.let { error ->
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                    ),
-                    modifier = Modifier.padding(16.dp),
-                ) {
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            }
-        }
 
         // Gesture Feedback Overlay
         AnimatedVisibility(
@@ -666,22 +664,28 @@ fun VideoPlayerScreen(
             )
         }
 
-        AnimatedVisibility(
-            visible = playerState.isCastConnected,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(16.dp),
-        ) {
-            CastNowPlayingOverlay(
-                playerState = playerState,
-                onPauseCast = onCastPause,
-                onResumeCast = onCastResume,
-                onStopCast = onCastStop,
-                onSeekCast = onCastSeek,
-                onVolumeChange = onCastVolumeChange,
-            )
+        }
+
+        // Error message
+        playerState.error?.let { error ->
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
+                    modifier = Modifier.padding(16.dp),
+                ) {
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
         }
 
         // Audio Track Selection Dialog
@@ -832,6 +836,238 @@ fun VideoPlayerScreen(
                     }
                 },
             )
+        }
+    }
+}
+
+@Composable
+private fun CastRemoteScreen(
+    playerState: VideoPlayerState,
+    onPauseCast: () -> Unit,
+    onResumeCast: () -> Unit,
+    onStopCast: () -> Unit,
+    onSeekCast: (Long) -> Unit,
+    onDisconnectCast: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val artwork = playerState.castBackdropUrl ?: playerState.castPosterUrl
+    val playerColors = rememberVideoPlayerColors()
+    val deviceName = playerState.castDeviceName ?: "Cast device"
+
+    Box(
+        modifier = modifier
+            .background(playerColors.background)
+            .testTag(VideoPlayerTestTags.CastOverlay),
+    ) {
+        if (!artwork.isNullOrBlank()) {
+            JellyfinAsyncImage(
+                model = artwork,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                alpha = 0.25f,
+                requestSize = rememberScreenWidthHeight(360.dp),
+            )
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            playerColors.gradientStops,
+                        ),
+                    ),
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 20.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CastConnected,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp),
+                )
+                Column(modifier = Modifier.padding(start = 12.dp)) {
+                    Text(
+                        text = "Playing on $deviceName",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = playerColors.overlayContent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = playerState.itemName.ifBlank { "Casting" },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = playerColors.overlayContent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                IconButton(
+                    onClick = onDisconnectCast,
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = playerColors.overlayScrim,
+                        contentColor = playerColors.overlayContent,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Disconnect cast",
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (!playerState.castPosterUrl.isNullOrBlank()) {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = playerColors.overlayScrim,
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth(0.65f)
+                                .heightIn(max = 320.dp),
+                        ) {
+                            JellyfinAsyncImage(
+                                model = playerState.castPosterUrl,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(2f / 3f),
+                                contentScale = ContentScale.Crop,
+                                requestSize = rememberScreenWidthHeight(320.dp),
+                            )
+                        }
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Movie,
+                            contentDescription = null,
+                            tint = playerColors.overlayContent.copy(alpha = 0.7f),
+                            modifier = Modifier.size(72.dp),
+                        )
+                    }
+
+                    if (!playerState.castOverview.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = playerState.castOverview ?: "",
+                            color = playerColors.overlayContent.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                        )
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                val duration = playerState.castDuration
+                val position = playerState.castPosition
+                if (duration > 0L) {
+                    Text(
+                        text = "${formatDuration(position)} / ${formatDuration(duration)}",
+                        color = playerColors.overlayContent.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    )
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    FilledIconButton(
+                        onClick = {
+                            val seekBack = (position - 10_000).coerceAtLeast(0L)
+                            onSeekCast(seekBack)
+                        },
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = playerColors.overlayScrim,
+                            contentColor = playerColors.overlayContent,
+                        ),
+                        modifier = Modifier.size(56.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FastRewind,
+                            contentDescription = "Rewind 10 seconds",
+                        )
+                    }
+
+                    FilledIconButton(
+                        onClick = if (playerState.isCastPlaying) onPauseCast else onResumeCast,
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
+                        modifier = Modifier.size(72.dp),
+                    ) {
+                        Icon(
+                            imageVector = if (playerState.isCastPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = if (playerState.isCastPlaying) "Pause" else "Play",
+                            modifier = Modifier.size(32.dp),
+                        )
+                    }
+
+                    FilledIconButton(
+                        onClick = {
+                            val seekForward = if (duration > 0L) {
+                                (position + 10_000).coerceAtMost(duration)
+                            } else {
+                                position + 10_000
+                            }
+                            onSeekCast(seekForward)
+                        },
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = playerColors.overlayScrim,
+                            contentColor = playerColors.overlayContent,
+                        ),
+                        modifier = Modifier.size(56.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FastForward,
+                            contentDescription = "Forward 10 seconds",
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                FilledIconButton(
+                    onClick = onStopCast,
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = playerColors.overlayScrim,
+                        contentColor = playerColors.overlayContent,
+                    ),
+                    modifier = Modifier.size(56.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Stop,
+                        contentDescription = "Stop casting",
+                    )
+                }
+            }
         }
     }
 }

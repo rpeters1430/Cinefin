@@ -210,6 +210,7 @@ class VideoPlayerActivity : FragmentActivity() {
                             onCastPause = playerViewModel::pauseCastPlayback,
                             onCastResume = playerViewModel::resumeCastPlayback,
                             onCastStop = playerViewModel::stopCastPlayback,
+                            onCastDisconnect = playerViewModel::disconnectCast,
                             onCastSeek = playerViewModel::seekCastPlayback,
                             onCastVolumeChange = playerViewModel::setCastVolume,
                             onSubtitlesClick = playerViewModel::showSubtitleDialog,

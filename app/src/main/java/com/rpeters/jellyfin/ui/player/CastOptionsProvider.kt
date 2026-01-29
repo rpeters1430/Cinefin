@@ -28,7 +28,7 @@ class CastOptionsProvider : OptionsProvider {
         // Build Cast media options
         val mediaOptions = CastMediaOptions.Builder()
             .setNotificationOptions(notificationOptions)
-            .setExpandedControllerActivityClassName(VideoPlayerActivity::class.java.name)
+            // .setExpandedControllerActivityClassName(VideoPlayerActivity::class.java.name)
             .build()
 
         // Build and return Cast options

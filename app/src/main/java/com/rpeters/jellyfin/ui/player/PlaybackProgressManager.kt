@@ -171,14 +171,16 @@ class PlaybackProgressManager @Inject constructor(
         }
     }
 
-    suspend fun stopTracking() {
+    suspend fun stopTracking(reportStop: Boolean = true) {
         progressSyncJob?.cancel()
 
         // Final progress report
         val progress = _playbackProgress.value
         if (progress.itemId.isNotEmpty()) {
             reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
-            reportPlaybackStop(progress.positionMs, progress.durationMs)
+            if (reportStop) {
+                reportPlaybackStop(progress.positionMs, progress.durationMs)
+            }
         }
 
         currentItemId = ""

@@ -145,8 +145,6 @@ class VideoPlayerViewModel @Inject constructor(
         kotlinx.coroutines.runBlocking {
             releasePlayer()
         }
-        // Release CastManager listeners to prevent memory leaks
-        castManager.release()
         SecureLogger.d("VideoPlayer", "ViewModel cleared - resources released")
     }
 
@@ -392,8 +390,10 @@ class VideoPlayerViewModel @Inject constructor(
 
                 // Update cast state with poster and backdrop if connected
                 if (lastCastState?.isConnected == true && !hasSentCastLoad) {
+                    val posterUrl = currentItemMetadata?.let { repository.getSeriesImageUrl(it) }
+                        ?: repository.getImageUrl(itemId)
                     _playerState.value = _playerState.value.copy(
-                        castPosterUrl = repository.getImageUrl(itemId),
+                        castPosterUrl = posterUrl,
                         castBackdropUrl = currentItemMetadata?.let { repository.getBackdropUrl(it) },
                         castOverview = currentItemMetadata?.overview,
                     )
@@ -581,8 +581,10 @@ class VideoPlayerViewModel @Inject constructor(
                     }
 
                     if (lastCastState?.isConnected == true && !hasSentCastLoad) {
+                        val posterUrl = currentItemMetadata?.let { repository.getSeriesImageUrl(it) }
+                            ?: repository.getImageUrl(itemId)
                         _playerState.value = _playerState.value.copy(
-                            castPosterUrl = repository.getImageUrl(itemId),
+                            castPosterUrl = posterUrl,
                             castBackdropUrl = currentItemMetadata?.let { repository.getBackdropUrl(it) },
                             castOverview = currentItemMetadata?.overview,
                         )
@@ -700,19 +702,18 @@ class VideoPlayerViewModel @Inject constructor(
                     val language = stream.language ?: "und"
                     val displayTitle = stream.displayTitle ?: stream.title ?: language.uppercase()
 
-                    // Map codec to MIME type
-                    val mimeType = when (codec) {
-                        "srt", "subrip" -> MimeTypes.APPLICATION_SUBRIP
-                        "vtt", "webvtt" -> MimeTypes.TEXT_VTT
-                        "ass", "ssa" -> MimeTypes.TEXT_SSA
-                        "ttml" -> MimeTypes.APPLICATION_TTML
-                        else -> null
+                    // Map codec to MIME type - Convert all text formats to VTT for Cast compatibility
+                    // Jellyfin server handles on-the-fly conversion to VTT for these formats
+                    val (mimeType, extension) = when (codec) {
+                        "srt", "subrip", "vtt", "webvtt", "ass", "ssa", "ttml" -> 
+                            MimeTypes.TEXT_VTT to "vtt"
+                        else -> null to null
                     }
 
-                    if (mimeType != null) {
+                    if (mimeType != null && extension != null) {
                         // Build subtitle URL with authentication
                         // Note: Using query parameter for auth because Cast receiver may not support custom headers
-                        val subtitleUrl = "$serverUrl/Videos/$itemId/${mediaSource.id}/Subtitles/${stream.index}/Stream.$codec?api_key=$accessToken"
+                        val subtitleUrl = "$serverUrl/Videos/$itemId/${mediaSource.id}/Subtitles/${stream.index}/Stream.$extension?api_key=$accessToken"
 
                         subtitleSpecs.add(
                             com.rpeters.jellyfin.ui.player.SubtitleSpec(
@@ -724,7 +725,7 @@ class VideoPlayerViewModel @Inject constructor(
                             ),
                         )
 
-                        SecureLogger.d("VideoPlayer", "Added subtitle spec: $displayTitle ($language) - $codec")
+                        SecureLogger.d("VideoPlayer", "Added subtitle spec: $displayTitle ($language) - $codec -> $extension")
                     }
                 }
 
@@ -755,35 +756,50 @@ class VideoPlayerViewModel @Inject constructor(
         )
 
         if (castState.isConnected && previous?.isConnected != true && !hasSentCastLoad) {
+            // Capture state before release on Main thread
+            val (position, isPlaying) = withContext(Dispatchers.Main) {
+                (exoPlayer?.currentPosition ?: _playerState.value.currentPosition) to (exoPlayer?.isPlaying == true)
+            }
+            if (isPlaying) {
+                wasPlayingBeforeCast = true
+            }
+
+            // HARD STOP: Release player completely when casting starts
+            // This prevents "ownership" conflicts where Media3 keeps the session alive
+            // We pass reportStop=false so we don't tell the server we stopped (handoff)
+            releasePlayer(reportStop = false)
+
+            val posterUrl = currentItemMetadata?.let { repository.getSeriesImageUrl(it) }
+                ?: currentItemId?.let { repository.getImageUrl(it) }
             _playerState.value = _playerState.value.copy(
-                castPosterUrl = currentItemId?.let { repository.getImageUrl(it) },
+                castPosterUrl = posterUrl,
                 castBackdropUrl = currentItemMetadata?.let { repository.getBackdropUrl(it) },
                 castOverview = currentItemMetadata?.overview,
             )
-            if (startCastingIfReady()) {
+            if (startCastingIfReady(position)) {
                 hasSentCastLoad = true
             }
         }
 
         if (previous?.isConnected == true && !castState.isConnected) {
             hasSentCastLoad = false
-            if (wasPlayingBeforeCast) {
-                withContext(Dispatchers.Main) {
-                    exoPlayer?.play()
+            val resumePosition = castState.currentPosition
+            val itemId = currentItemId
+            val itemName = currentItemName
+            
+            if (itemId != null && itemName != null) {
+                viewModelScope.launch {
+                    initializePlayer(itemId, itemName, resumePosition)
                 }
             }
+            
             wasPlayingBeforeCast = false
         }
 
         if (castState.isCasting && previous?.isCasting != true) {
-            withContext(Dispatchers.Main) {
-                exoPlayer?.let { player ->
-                    if (!wasPlayingBeforeCast && player.isPlaying) {
-                        wasPlayingBeforeCast = true
-                    }
-                    player.pause()
-                }
-            }
+            // Ensure player is released if we entered casting state
+            releasePlayer(reportStop = false)
+            wasPlayingBeforeCast = false
             // Start tracking cast position
             startCastPositionUpdates()
         }
@@ -795,25 +811,26 @@ class VideoPlayerViewModel @Inject constructor(
         }
     }
 
-    private suspend fun startCastingIfReady(): Boolean {
+    private suspend fun startCastingIfReady(startPosition: Long? = null): Boolean {
         val mediaItem = currentMediaItem ?: return false
         val metadata = currentItemMetadata ?: return false
         val subtitles = currentSubtitleSpecs
 
-        // Get current playback position before pausing
-        val currentPosition = withContext(Dispatchers.Main) {
+        // Get current playback position
+        val position = startPosition ?: withContext(Dispatchers.Main) {
             exoPlayer?.let { player ->
-                val position = player.currentPosition
+                val pos = player.currentPosition
                 if (!wasPlayingBeforeCast && player.isPlaying) {
                     wasPlayingBeforeCast = true
                 }
                 player.pause()
-                position
+                pos
             } ?: 0L
         }
 
         // Start casting from current position
-        castManager.startCasting(mediaItem, metadata, subtitles, currentPosition)
+        // Default to no subtitles for now to simplify troubleshooting
+        castManager.startCasting(mediaItem, metadata, emptyList(), position)
         return true
     }
 
@@ -900,35 +917,39 @@ class VideoPlayerViewModel @Inject constructor(
         castPositionJob = null
     }
 
-    suspend fun releasePlayer() {
-        SecureLogger.d("VideoPlayer", "Releasing player")
+    suspend fun releasePlayer(reportStop: Boolean = true) {
+        if (exoPlayer == null) return
+        
+        SecureLogger.d("VideoPlayer", "Releasing player (reportStop=$reportStop)")
         stopPositionUpdates()
 
         // Stop tracking synchronously to ensure stop playback is reported before player is released
         try {
-            playbackProgressManager.stopTracking()
+            playbackProgressManager.stopTracking(reportStop = reportStop)
         } catch (e: Exception) {
             SecureLogger.e("VideoPlayer", "Error stopping playback tracking: ${e.message}")
         }
 
-        exoPlayer?.let { p ->
-            try {
-                p.removeListener(playerListener)
-                // Stop playback to flush decoders before releasing
-                p.stop()
-                // Clear all video outputs to properly detach surfaces and prevent black screen issues
-                // This is critical for proper cleanup with HEVC/high-resolution content
-                p.clearVideoSurface()
-            } catch (_: Exception) {
+        withContext(Dispatchers.Main) {
+            exoPlayer?.let { p ->
+                try {
+                    p.removeListener(playerListener)
+                    // Stop playback to flush decoders before releasing
+                    p.stop()
+                    // Clear all video outputs to properly detach surfaces and prevent black screen issues
+                    // This is critical for proper cleanup with HEVC/high-resolution content
+                    p.clearVideoSurface()
+                } catch (_: Exception) {
+                }
+                try {
+                    p.release()
+                } catch (_: Exception) {
+                }
             }
-            try {
-                p.release()
-            } catch (_: Exception) {
-            }
+            exoPlayer = null
+            trackSelector = null
+            playbackSessionId = null
         }
-        exoPlayer = null
-        trackSelector = null
-        playbackSessionId = null
     }
 
     private fun startPositionUpdates() {
