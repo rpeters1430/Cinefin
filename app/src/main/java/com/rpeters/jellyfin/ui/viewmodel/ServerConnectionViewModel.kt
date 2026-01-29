@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -25,7 +26,6 @@ import com.rpeters.jellyfin.ui.components.PinningAlertState
 import com.rpeters.jellyfin.utils.ServerUrlValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import android.os.SystemClock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -205,7 +205,6 @@ class ServerConnectionViewModel @Inject constructor(
         )
 
         viewModelScope.launch {
-
             // First test server connection with enhanced feedback (IO dispatcher)
             val serverResult = withContext(Dispatchers.IO) {
                 repository.testServerConnection(normalizedServerUrl)
