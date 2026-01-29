@@ -104,6 +104,23 @@ open class BaseJellyfinRepository @Inject constructor(
     }
 
     /**
+     * Converts an exception to an ApiResult.Error with appropriate error type and message.
+     */
+    private fun <T> handleRepositoryException(e: Exception, operationName: String): ApiResult.Error<T> {
+        val errorType = RepositoryUtils.getErrorType(e)
+        Logger.w(LogCategory.NETWORK, javaClass.simpleName, "$operationName failed: ${e.message}", e)
+
+        // Provide specific default message based on error type
+        val defaultMessage = when {
+            errorType == ErrorType.AUTHENTICATION -> "Authentication required"
+            e is IllegalStateException -> "Invalid application state"
+            else -> "Operation failed"
+        }
+
+        return ApiResult.Error(e.message ?: defaultMessage, e, errorType)
+    }
+
+    /**
      * ✅ NEW: Wraps a client-based operation returning [ApiResult].
      * Uses the new TokenProvider approach to eliminate stale token issues.
      */
@@ -116,6 +133,8 @@ open class BaseJellyfinRepository @Inject constructor(
             ApiResult.Success(result)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: Exception) {
+            handleRepositoryException(e, operationName)
         }
 
     /**
@@ -157,6 +176,8 @@ open class BaseJellyfinRepository @Inject constructor(
             ApiResult.Success(result)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: Exception) {
+            handleRepositoryException(e, operationName)
         }
     }
 
@@ -176,6 +197,8 @@ open class BaseJellyfinRepository @Inject constructor(
                 ApiResult.Success(result)
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: Exception) {
+                handleRepositoryException(e, operationName)
             }
         }
     }
@@ -197,6 +220,8 @@ open class BaseJellyfinRepository @Inject constructor(
                 ApiResult.Success(result)
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: Exception) {
+                handleRepositoryException(e, operationName)
             }
         }
     }
