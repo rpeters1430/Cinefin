@@ -15,6 +15,8 @@ import com.google.android.gms.tasks.Task
 import com.rpeters.jellyfin.data.preferences.CastPreferencesRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
+import io.mockk.capture
+import io.mockk.captureNullable
 import io.mockk.clearMocks
 import io.mockk.coVerify
 import io.mockk.every
@@ -347,6 +349,103 @@ class CastManagerTest {
         verify { remoteMediaClient.load(any<com.google.android.gms.cast.MediaLoadRequestData>()) }
         assertTrue(castManager.castState.value.isCasting)
         assertTrue(castManager.castState.value.isRemotePlaying)
+    }
+
+    @Test
+    fun `startCasting prefers progressive MP4 over adaptive streams for Cast`() = runTest {
+        // Arrange
+        val item = createTestItem(name = "Test Movie")
+        val mediaItem = MediaItem.Builder()
+            .setUri("https://server.com/video.mp4")
+            .build()
+
+        val mockServer = mockk<com.rpeters.jellyfin.data.JellyfinServer>(relaxed = true)
+        every { mockServer.accessToken } returns "test-token-123"
+        every { authRepository.getCurrentServer() } returns mockServer
+
+        every { sessionManager.currentCastSession } returns castSession
+        every { castSession.isConnected } returns true
+        every { castSession.remoteMediaClient } returns remoteMediaClient
+
+        val requestSlot = slot<MediaLoadRequestData>()
+        every { remoteMediaClient.load(capture(requestSlot)) } returns mockk(relaxed = true)
+
+        every {
+            streamRepository.getTranscodedStreamUrl(
+                itemId = any(),
+                maxBitrate = any(),
+                maxWidth = any(),
+                maxHeight = any(),
+                videoCodec = any(),
+                audioCodec = any(),
+                container = any(),
+                mediaSourceId = any(),
+                playSessionId = any(),
+                allowAudioStreamCopy = any(),
+            )
+        } returns "https://server.com/master.m3u8"
+        every { streamRepository.getDirectStreamUrl(any(), any()) } returns "https://server.com/stream.mp4"
+        every { streamRepository.getBackdropUrl(any<BaseItemDto>()) } returns "https://server.com/backdrop.jpg"
+        every { streamRepository.getImageUrl(any<String>(), any(), any()) } returns "https://server.com/poster.jpg"
+
+        castManager.initialize()
+        advanceUntilIdle()
+
+        // Act
+        castManager.startCasting(mediaItem, item)
+
+        // Assert
+        verify { remoteMediaClient.load(any<com.google.android.gms.cast.MediaLoadRequestData>()) }
+        val contentId = requestSlot.captured.mediaInfo?.contentId
+        assertTrue("Cast should use progressive MP4 stream", contentId?.contains("stream.mp4") == true)
+        assertFalse("Cast should avoid adaptive playlist", contentId?.contains("m3u8") == true)
+    }
+
+    @Test
+    fun `startCasting handles missing playSessionId gracefully`() = runTest {
+        // Arrange
+        val item = createTestItem(name = "Test Movie")
+        val mediaItem = MediaItem.Builder()
+            .setUri("https://server.com/video.mp4")
+            .build()
+
+        val mockServer = mockk<com.rpeters.jellyfin.data.JellyfinServer>(relaxed = true)
+        every { mockServer.accessToken } returns "test-token-123"
+        every { authRepository.getCurrentServer() } returns mockServer
+
+        every { sessionManager.currentCastSession } returns castSession
+        every { castSession.isConnected } returns true
+        every { castSession.remoteMediaClient } returns remoteMediaClient
+        every { remoteMediaClient.load(any<com.google.android.gms.cast.MediaLoadRequestData>()) } returns mockk(relaxed = true)
+        every { streamRepository.getBackdropUrl(any<BaseItemDto>()) } returns "https://server.com/backdrop.jpg"
+        every { streamRepository.getImageUrl(any<String>(), any(), any()) } returns "https://server.com/poster.jpg"
+
+        val playSessionSlot = slot<String?>()
+        val audioCopySlot = slot<Boolean>()
+        every {
+            streamRepository.getTranscodedStreamUrl(
+                itemId = any(),
+                maxBitrate = any(),
+                maxWidth = any(),
+                maxHeight = any(),
+                videoCodec = any(),
+                audioCodec = any(),
+                container = any(),
+                mediaSourceId = any(),
+                playSessionId = captureNullable(playSessionSlot),
+                allowAudioStreamCopy = capture(audioCopySlot),
+            )
+        } returns "https://server.com/stream.mp4"
+
+        castManager.initialize()
+        advanceUntilIdle()
+
+        // Act
+        castManager.startCasting(mediaItem, item)
+
+        // Assert
+        assertNull(playSessionSlot.captured)
+        assertFalse(audioCopySlot.captured)
     }
 
     @Test
