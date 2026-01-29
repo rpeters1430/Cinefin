@@ -116,6 +116,16 @@ open class BaseJellyfinRepository @Inject constructor(
             ApiResult.Success(result)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: IllegalStateException) {
+            // Handle authentication errors gracefully (e.g., no authenticated server)
+            val errorType = RepositoryUtils.getErrorType(e)
+            Logger.w(LogCategory.NETWORK, javaClass.simpleName, "$operationName failed: ${e.message}", e)
+            ApiResult.Error(e.message ?: "Authentication required", e, errorType)
+        } catch (e: Exception) {
+            // Handle other exceptions gracefully
+            val errorType = RepositoryUtils.getErrorType(e)
+            Logger.w(LogCategory.NETWORK, javaClass.simpleName, "$operationName failed: ${e.message}", e)
+            ApiResult.Error(e.message ?: "Operation failed", e, errorType)
         }
 
     /**
@@ -157,6 +167,16 @@ open class BaseJellyfinRepository @Inject constructor(
             ApiResult.Success(result)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: IllegalStateException) {
+            // Handle authentication errors gracefully (e.g., no authenticated server)
+            val errorType = RepositoryUtils.getErrorType(e)
+            Logger.w(LogCategory.NETWORK, javaClass.simpleName, "$operationName failed: ${e.message}", e)
+            ApiResult.Error(e.message ?: "Authentication required", e, errorType)
+        } catch (e: Exception) {
+            // Handle other exceptions gracefully
+            val errorType = RepositoryUtils.getErrorType(e)
+            Logger.w(LogCategory.NETWORK, javaClass.simpleName, "$operationName failed: ${e.message}", e)
+            ApiResult.Error(e.message ?: "Operation failed", e, errorType)
         }
     }
 
@@ -176,6 +196,16 @@ open class BaseJellyfinRepository @Inject constructor(
                 ApiResult.Success(result)
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: IllegalStateException) {
+                // Handle authentication errors gracefully (e.g., no authenticated server)
+                val errorType = RepositoryUtils.getErrorType(e)
+                Logger.w(LogCategory.NETWORK, javaClass.simpleName, "$operationName failed: ${e.message}", e)
+                ApiResult.Error(e.message ?: "Authentication required", e, errorType)
+            } catch (e: Exception) {
+                // Handle other exceptions gracefully
+                val errorType = RepositoryUtils.getErrorType(e)
+                Logger.w(LogCategory.NETWORK, javaClass.simpleName, "$operationName failed: ${e.message}", e)
+                ApiResult.Error(e.message ?: "Operation failed", e, errorType)
             }
         }
     }
@@ -197,6 +227,16 @@ open class BaseJellyfinRepository @Inject constructor(
                 ApiResult.Success(result)
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: IllegalStateException) {
+                // Handle authentication errors gracefully (e.g., no authenticated server)
+                val errorType = RepositoryUtils.getErrorType(e)
+                Logger.w(LogCategory.NETWORK, javaClass.simpleName, "$operationName failed: ${e.message}", e)
+                ApiResult.Error(e.message ?: "Authentication required", e, errorType)
+            } catch (e: Exception) {
+                // Handle other exceptions gracefully
+                val errorType = RepositoryUtils.getErrorType(e)
+                Logger.w(LogCategory.NETWORK, javaClass.simpleName, "$operationName failed: ${e.message}", e)
+                ApiResult.Error(e.message ?: "Operation failed", e, errorType)
             }
         }
     }

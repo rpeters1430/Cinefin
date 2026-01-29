@@ -63,6 +63,17 @@ object RepositoryUtils {
             is java.net.SocketTimeoutException,
             -> ErrorType.NETWORK
 
+            is IllegalStateException -> {
+                val message = e.message ?: ""
+                when {
+                    message.contains("authenticated", ignoreCase = true) ||
+                    message.contains("authentication", ignoreCase = true) ||
+                    message.contains("token", ignoreCase = true) ||
+                    message.contains("server", ignoreCase = true) -> ErrorType.AUTHENTICATION
+                    else -> ErrorType.UNKNOWN
+                }
+            }
+
             is HttpException -> when (e.code()) {
                 400 -> ErrorType.BAD_REQUEST
                 401 -> ErrorType.UNAUTHORIZED

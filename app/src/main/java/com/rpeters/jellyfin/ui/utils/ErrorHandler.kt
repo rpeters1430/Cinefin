@@ -90,6 +90,32 @@ object ErrorHandler {
                 suggestedAction = "Check your input and try again",
             )
 
+            is IllegalStateException -> {
+                val message = e.message ?: ""
+                when {
+                    message.contains("authenticated", ignoreCase = true) ||
+                    message.contains("authentication", ignoreCase = true) ||
+                    message.contains("token", ignoreCase = true) -> ProcessedError(
+                        userMessage = "Please log in to access this content.",
+                        errorType = ErrorType.AUTHENTICATION,
+                        isRetryable = false,
+                        suggestedAction = "Log in with your Jellyfin credentials",
+                    )
+                    message.contains("server", ignoreCase = true) -> ProcessedError(
+                        userMessage = "Server connection required. Please connect to a server.",
+                        errorType = ErrorType.AUTHENTICATION,
+                        isRetryable = false,
+                        suggestedAction = "Connect to your Jellyfin server",
+                    )
+                    else -> ProcessedError(
+                        userMessage = "Application state error: ${e.message}",
+                        errorType = ErrorType.UNKNOWN,
+                        isRetryable = false,
+                        suggestedAction = "Restart the app and try again",
+                    )
+                }
+            }
+
             is OutOfMemoryError -> ProcessedError(
                 userMessage = "Not enough memory to complete this operation.",
                 errorType = ErrorType.UNKNOWN,
