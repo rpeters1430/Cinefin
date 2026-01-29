@@ -11,11 +11,11 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -425,245 +425,244 @@ fun VideoPlayerScreen(
         } else {
             // Video Player View
             AndroidView(
-            factory = { context ->
-                PlayerView(context).apply {
-                    useController = false // We'll use custom controls
-                    setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
-                    // Keep surface alive during lifecycle changes to prevent black screen
-                    keepScreenOn = true
-                }
-            },
-            update = { playerView ->
-                // Set player and configuration
-                if (playerView.player != exoPlayer) {
-                    playerView.player = exoPlayer
-                    // Force surface recreation and layout to ensure proper attachment
-                    // This is critical for high-resolution HEVC content
-                    playerView.post {
-                        playerView.invalidate()
-                        playerView.requestLayout()
-                    }
-                }
-                playerView.resizeMode = playerState.selectedAspectRatio.resizeMode
-                applySubtitleAppearance(playerView, subtitleAppearance)
-            },
-            modifier = Modifier
-                .fillMaxSize()
-                .onGloballyPositioned { coordinates ->
-                    val bounds = coordinates.boundsInWindow()
-                    val rect = android.graphics.Rect(
-                        bounds.left.roundToInt(),
-                        bounds.top.roundToInt(),
-                        bounds.right.roundToInt(),
-                        bounds.bottom.roundToInt(),
-                    )
-                    if (rect.width() > 0 && rect.height() > 0 && rect != lastPlayerViewBounds) {
-                        lastPlayerViewBounds = rect
-                        onPlayerViewBoundsChanged(rect)
+                factory = { context ->
+                    PlayerView(context).apply {
+                        useController = false // We'll use custom controls
+                        setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
+                        // Keep surface alive during lifecycle changes to prevent black screen
+                        keepScreenOn = true
                     }
                 },
-        )
+                update = { playerView ->
+                    // Set player and configuration
+                    if (playerView.player != exoPlayer) {
+                        playerView.player = exoPlayer
+                        // Force surface recreation and layout to ensure proper attachment
+                        // This is critical for high-resolution HEVC content
+                        playerView.post {
+                            playerView.invalidate()
+                            playerView.requestLayout()
+                        }
+                    }
+                    playerView.resizeMode = playerState.selectedAspectRatio.resizeMode
+                    applySubtitleAppearance(playerView, subtitleAppearance)
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onGloballyPositioned { coordinates ->
+                        val bounds = coordinates.boundsInWindow()
+                        val rect = android.graphics.Rect(
+                            bounds.left.roundToInt(),
+                            bounds.top.roundToInt(),
+                            bounds.right.roundToInt(),
+                            bounds.bottom.roundToInt(),
+                        )
+                        if (rect.width() > 0 && rect.height() > 0 && rect != lastPlayerViewBounds) {
+                            lastPlayerViewBounds = rect
+                            onPlayerViewBoundsChanged(rect)
+                        }
+                    },
+            )
 
-        // Ensure the PlayerView detaches cleanly to avoid setOutputSurface errors
-        DisposableEffect(Unit) {
-            onDispose {
-                // The AndroidView manages lifecycle, but explicitly clear association
-                // to avoid surface detachment warnings during rapid teardown.
-                // We cannot reference the composited playerView instance here,
-                // but releasing ExoPlayer clears the surface; this hook remains for clarity.
+            // Ensure the PlayerView detaches cleanly to avoid setOutputSurface errors
+            DisposableEffect(Unit) {
+                onDispose {
+                    // The AndroidView manages lifecycle, but explicitly clear association
+                    // to avoid surface detachment warnings during rapid teardown.
+                    // We cannot reference the composited playerView instance here,
+                    // but releasing ExoPlayer clears the surface; this hook remains for clarity.
+                }
             }
-        }
 
-        // Loading indicator - removed duplicate (now only shows in play button)
+            // Loading indicator - removed duplicate (now only shows in play button)
 
-        // Gesture Feedback Overlay
-        AnimatedVisibility(
-            visible = showSeekFeedback,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.Center),
-        ) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = playerColors.overlayScrim,
-                ),
-                shape = CircleShape,
-                modifier = Modifier.size(100.dp),
+            // Gesture Feedback Overlay
+            AnimatedVisibility(
+                visible = showSeekFeedback,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier.align(Alignment.Center),
             ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = playerColors.overlayScrim,
+                    ),
+                    shape = CircleShape,
+                    modifier = Modifier.size(100.dp),
                 ) {
-                    Icon(
-                        imageVector = seekFeedbackIcon,
-                        contentDescription = null,
-                        tint = playerColors.overlayContent,
-                        modifier = Modifier.size(36.dp),
-                    )
-                    Text(
-                        text = seekFeedbackText,
-                        color = playerColors.overlayContent,
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
-            }
-        }
-
-        // Skip Intro/Outro buttons
-        val showSkipIntro =
-            remember(playerState.introStartMs, playerState.introEndMs, currentPosMs) {
-                val s = playerState.introStartMs
-                val e = playerState.introEndMs
-                s != null && e != null && currentPosMs in s..e
-            }
-        val showSkipOutro = remember(playerState.outroStartMs, currentPosMs) {
-            val s = playerState.outroStartMs
-            s != null && currentPosMs >= s
-        }
-
-        if (showSkipIntro) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp),
-            ) {
-                Surface(color = playerColors.overlayScrim, shape = CircleShape) {
-                    Text(
-                        text = "Skip Intro",
-                        color = playerColors.overlayContent,
-                        modifier = Modifier
-                            .clickable {
-                                val target = playerState.introEndMs ?: (currentPosMs + 10_000)
-                                onSeek(target)
-                            }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
-                }
-            }
-        }
-        if (showSkipOutro) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 64.dp, end = 16.dp),
-            ) {
-                Surface(color = playerColors.overlayScrim, shape = CircleShape) {
-                    Text(
-                        text = "Skip Credits",
-                        color = playerColors.overlayContent,
-                        modifier = Modifier
-                            .clickable {
-                                val target =
-                                    playerState.outroEndMs ?: (exoPlayer?.duration ?: currentPosMs)
-                                onSeek(target)
-                            }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
-                }
-            }
-        }
-
-        // Next Episode Countdown Overlay
-        AnimatedVisibility(
-            visible = playerState.showNextEpisodeCountdown,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.BottomCenter),
-        ) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = playerColors.overlayScrim,
-                ),
-                shape = MaterialTheme.shapes.large,
-                modifier = Modifier
-                    .padding(bottom = 80.dp)
-                    .fillMaxWidth(0.9f),
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = "Next Episode",
-                        color = playerColors.overlayContent,
-                        style = MaterialTheme.typography.headlineSmall,
-                    )
-                    playerState.nextEpisode?.let { nextEp ->
-                        Spacer(modifier = Modifier.height(8.dp))
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(
+                            imageVector = seekFeedbackIcon,
+                            contentDescription = null,
+                            tint = playerColors.overlayContent,
+                            modifier = Modifier.size(36.dp),
+                        )
                         Text(
-                            text = nextEp.name ?: "Episode ${nextEp.indexNumber}",
+                            text = seekFeedbackText,
                             color = playerColors.overlayContent,
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.padding(top = 4.dp),
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Starting in ${playerState.nextEpisodeCountdown}...",
-                        color = playerColors.overlayContent.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
+                }
+            }
+
+            // Skip Intro/Outro buttons
+            val showSkipIntro =
+                remember(playerState.introStartMs, playerState.introEndMs, currentPosMs) {
+                    val s = playerState.introStartMs
+                    val e = playerState.introEndMs
+                    s != null && e != null && currentPosMs in s..e
+                }
+            val showSkipOutro = remember(playerState.outroStartMs, currentPosMs) {
+                val s = playerState.outroStartMs
+                s != null && currentPosMs >= s
+            }
+
+            if (showSkipIntro) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp),
+                ) {
+                    Surface(color = playerColors.overlayScrim, shape = CircleShape) {
+                        Text(
+                            text = "Skip Intro",
+                            color = playerColors.overlayContent,
+                            modifier = Modifier
+                                .clickable {
+                                    val target = playerState.introEndMs ?: (currentPosMs + 10_000)
+                                    onSeek(target)
+                                }
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
+                }
+            }
+            if (showSkipOutro) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 64.dp, end = 16.dp),
+                ) {
+                    Surface(color = playerColors.overlayScrim, shape = CircleShape) {
+                        Text(
+                            text = "Skip Credits",
+                            color = playerColors.overlayContent,
+                            modifier = Modifier
+                                .clickable {
+                                    val target =
+                                        playerState.outroEndMs ?: (exoPlayer?.duration ?: currentPosMs)
+                                    onSeek(target)
+                                }
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
+                }
+            }
+
+            // Next Episode Countdown Overlay
+            AnimatedVisibility(
+                visible = playerState.showNextEpisodeCountdown,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier.align(Alignment.BottomCenter),
+            ) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = playerColors.overlayScrim,
+                    ),
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier
+                        .padding(bottom = 80.dp)
+                        .fillMaxWidth(0.9f),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        TextButton(
-                            onClick = {
-                                onCancelNextEpisode()
-                                onClose()
-                            },
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = playerColors.overlayContent,
-                            ),
-                        ) {
-                            Text("Close")
+                        Text(
+                            text = "Next Episode",
+                            color = playerColors.overlayContent,
+                            style = MaterialTheme.typography.headlineSmall,
+                        )
+                        playerState.nextEpisode?.let { nextEp ->
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = nextEp.name ?: "Episode ${nextEp.indexNumber}",
+                                color = playerColors.overlayContent,
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
                         }
-                        Button(
-                            onClick = onPlayNextEpisode,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                            ),
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Starting in ${playerState.nextEpisodeCountdown}...",
+                            color = playerColors.overlayContent.copy(alpha = 0.7f),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
                         ) {
-                            Text("Play Now")
+                            TextButton(
+                                onClick = {
+                                    onCancelNextEpisode()
+                                    onClose()
+                                },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = playerColors.overlayContent,
+                                ),
+                            ) {
+                                Text("Close")
+                            }
+                            Button(
+                                onClick = onPlayNextEpisode,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                ),
+                            ) {
+                                Text("Play Now")
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // Video Controls Overlay
-        AnimatedVisibility(
-            visible = controlsVisible,
-            enter = fadeIn(),
-            exit = fadeOut(),
-        ) {
-            VideoControlsOverlay(
-                playerState = playerState,
-                onPlayPause = onPlayPause,
-                onSeek = onSeek,
-                onQualityChange = onQualityChange,
-                onPlaybackSpeedChange = onPlaybackSpeedChange,
-                onAspectRatioChange = onAspectRatioChange,
-                onCastClick = onCastClick,
-                onAudioTracksClick = { showAudioDialog = true },
-                onSubtitlesClick = { showSubtitleDialog = true },
-                onPictureInPictureClick = onPictureInPictureClick,
-                onOrientationToggle = onOrientationToggle,
-                onClose = onClose,
-                showQualityMenu = showQualityMenu,
-                onShowQualityMenu = { showQualityMenu = it },
-                showAspectRatioMenu = showAspectRatioMenu,
-                onShowAspectRatioMenu = { showAspectRatioMenu = it },
-                showSpeedMenu = showSpeedMenu,
-                onShowSpeedMenu = { showSpeedMenu = it },
-                supportsPip = supportsPip,
-                playerColors = playerColors,
-                showCastButton = isCastAvailable,
-            )
-        }
-
+            // Video Controls Overlay
+            AnimatedVisibility(
+                visible = controlsVisible,
+                enter = fadeIn(),
+                exit = fadeOut(),
+            ) {
+                VideoControlsOverlay(
+                    playerState = playerState,
+                    onPlayPause = onPlayPause,
+                    onSeek = onSeek,
+                    onQualityChange = onQualityChange,
+                    onPlaybackSpeedChange = onPlaybackSpeedChange,
+                    onAspectRatioChange = onAspectRatioChange,
+                    onCastClick = onCastClick,
+                    onAudioTracksClick = { showAudioDialog = true },
+                    onSubtitlesClick = { showSubtitleDialog = true },
+                    onPictureInPictureClick = onPictureInPictureClick,
+                    onOrientationToggle = onOrientationToggle,
+                    onClose = onClose,
+                    showQualityMenu = showQualityMenu,
+                    onShowQualityMenu = { showQualityMenu = it },
+                    showAspectRatioMenu = showAspectRatioMenu,
+                    onShowAspectRatioMenu = { showAspectRatioMenu = it },
+                    showSpeedMenu = showSpeedMenu,
+                    onShowSpeedMenu = { showSpeedMenu = it },
+                    supportsPip = supportsPip,
+                    playerColors = playerColors,
+                    showCastButton = isCastAvailable,
+                )
+            }
         }
 
         // Error message

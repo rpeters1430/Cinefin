@@ -705,7 +705,7 @@ class VideoPlayerViewModel @Inject constructor(
                     // Map codec to MIME type - Convert all text formats to VTT for Cast compatibility
                     // Jellyfin server handles on-the-fly conversion to VTT for these formats
                     val (mimeType, extension) = when (codec) {
-                        "srt", "subrip", "vtt", "webvtt", "ass", "ssa", "ttml" -> 
+                        "srt", "subrip", "vtt", "webvtt", "ass", "ssa", "ttml" ->
                             MimeTypes.TEXT_VTT to "vtt"
                         else -> null to null
                     }
@@ -786,13 +786,13 @@ class VideoPlayerViewModel @Inject constructor(
             val resumePosition = castState.currentPosition
             val itemId = currentItemId
             val itemName = currentItemName
-            
+
             if (itemId != null && itemName != null) {
                 viewModelScope.launch {
                     initializePlayer(itemId, itemName, resumePosition)
                 }
             }
-            
+
             wasPlayingBeforeCast = false
         }
 
@@ -919,7 +919,7 @@ class VideoPlayerViewModel @Inject constructor(
 
     suspend fun releasePlayer(reportStop: Boolean = true) {
         if (exoPlayer == null) return
-        
+
         SecureLogger.d("VideoPlayer", "Releasing player (reportStop=$reportStop)")
         stopPositionUpdates()
 
