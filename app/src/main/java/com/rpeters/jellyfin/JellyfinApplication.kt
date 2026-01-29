@@ -1,10 +1,13 @@
 package com.rpeters.jellyfin
 
 import android.app.Application
+import android.os.SystemClock
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
+import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
+import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.ui.surface.ModernSurfaceCoordinator
 import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.NetworkOptimizer
@@ -31,11 +34,17 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
     @Inject
     lateinit var modernSurfaceCoordinator: ModernSurfaceCoordinator
 
+    @Inject
+    lateinit var authRepository: JellyfinAuthRepository
+
     private val applicationJob = SupervisorJob()
     private val applicationScope = CoroutineScope(applicationJob + Dispatchers.Default)
+    private val authRecoveryLock = Any()
+    private var lastAuthRecoveryAttemptMs = 0L
 
     companion object {
         private const val TAG = "JellyfinApplication"
+        private const val AUTH_RECOVERY_COOLDOWN_MS = 30_000L
     }
 
     override fun onCreate() {
@@ -112,6 +121,11 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
     private fun setupUncaughtExceptionHandler() {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, exception ->
+            if (isAuth401Exception(exception)) {
+                SecureLogger.w(TAG, "Suppressed fatal 401 auth exception on thread ${thread.name}", exception)
+                scheduleAuthRecovery()
+                return@setDefaultUncaughtExceptionHandler
+            }
             SecureLogger.e(TAG, "Uncaught exception in thread ${thread.name}", exception)
             cleanupResources()
             defaultHandler?.uncaughtException(thread, exception)
@@ -129,6 +143,41 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
             applicationJob.cancel()
         } catch (e: CancellationException) {
             throw e
+        }
+    }
+
+    private fun isAuth401Exception(exception: Throwable): Boolean {
+        var current: Throwable? = exception
+        while (current != null) {
+            if (current is CancellationException) return false
+            if (current is Exception && RepositoryUtils.is401Error(current)) return true
+            current = current.cause
+        }
+        return false
+    }
+
+    private fun scheduleAuthRecovery() {
+        if (!::authRepository.isInitialized) return
+        val now = SystemClock.elapsedRealtime()
+        synchronized(authRecoveryLock) {
+            if (now - lastAuthRecoveryAttemptMs < AUTH_RECOVERY_COOLDOWN_MS) return
+            lastAuthRecoveryAttemptMs = now
+        }
+
+        applicationScope.launch(Dispatchers.IO) {
+            try {
+                SecureLogger.w(TAG, "Global 401 handler: forcing re-authentication")
+                val success = authRepository.forceReAuthenticate()
+                if (success) {
+                    SecureLogger.i(TAG, "Global 401 handler: re-authentication successful")
+                } else {
+                    SecureLogger.w(TAG, "Global 401 handler: re-authentication failed")
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SecureLogger.e(TAG, "Global 401 handler: re-authentication threw", e)
+            }
         }
     }
 

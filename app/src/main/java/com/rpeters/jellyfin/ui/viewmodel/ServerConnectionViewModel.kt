@@ -25,6 +25,7 @@ import com.rpeters.jellyfin.ui.components.PinningAlertState
 import com.rpeters.jellyfin.utils.ServerUrlValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import android.os.SystemClock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -64,6 +65,13 @@ class ServerConnectionViewModel @Inject constructor(
     private var quickConnectPollingJob: Job? = null
     private var lastAttempt: ConnectionAttempt? = null
 
+    companion object {
+        private const val AUTO_LOGIN_DEBOUNCE_MS = 2_000L
+        private var lastAutoLoginKey: String? = null
+        private var lastAutoLoginAttemptMs: Long = 0L
+        private val autoLoginLock = Any()
+    }
+
     init {
         // Load saved credentials and remember login state
         viewModelScope.launch {
@@ -79,7 +87,7 @@ class ServerConnectionViewModel @Inject constructor(
 
             // ✅ FIX: Handle suspend function calls properly
             val hasSavedPassword = if (savedServerUrl.isNotBlank() && savedUsername.isNotBlank()) {
-                secureCredentialManager.getPassword(savedServerUrl, savedUsername) != null
+                secureCredentialManager.hasSavedPassword(savedServerUrl, savedUsername)
             } else {
                 false
             }
@@ -106,6 +114,11 @@ class ServerConnectionViewModel @Inject constructor(
             // Auto-login if we have saved credentials and remember login is enabled
             if (rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank() && hasSavedPassword) {
                 android.util.Log.d("ServerConnectionVM", "Auto-login conditions met. Biometric enabled: $isBiometricAuthEnabled, Biometric available: ${biometricCapability.isAvailable}")
+                val autoLoginKey = "$savedServerUrl|$savedUsername"
+                if (!shouldAutoLoginNow(autoLoginKey)) {
+                    android.util.Log.d("ServerConnectionVM", "Auto-login debounced for key: $autoLoginKey")
+                    return@launch
+                }
 
                 // We don't auto-login if biometric auth is enabled, user needs to trigger it manually
                 // However, if biometric is enabled but not available on this device, disable it and auto-login
@@ -177,20 +190,21 @@ class ServerConnectionViewModel @Inject constructor(
             return
         }
 
+        lastAttempt = ConnectionAttempt(
+            serverUrl = normalizedServerUrl,
+            username = username,
+            password = password,
+            isAutoLogin = isAutoLogin,
+        )
+        _connectionState.value = _connectionState.value.copy(
+            isConnecting = true,
+            errorMessage = null,
+            connectionPhase = ConnectionPhase.Testing,
+            currentUrl = serverUrl,
+            pinningAlert = null,
+        )
+
         viewModelScope.launch {
-            lastAttempt = ConnectionAttempt(
-                serverUrl = normalizedServerUrl,
-                username = username,
-                password = password,
-                isAutoLogin = isAutoLogin,
-            )
-            _connectionState.value = _connectionState.value.copy(
-                isConnecting = true,
-                errorMessage = null,
-                connectionPhase = ConnectionPhase.Testing,
-                currentUrl = serverUrl,
-                pinningAlert = null,
-            )
 
             // First test server connection with enhanced feedback (IO dispatcher)
             val serverResult = withContext(Dispatchers.IO) {
@@ -460,6 +474,13 @@ class ServerConnectionViewModel @Inject constructor(
                 preferences[PreferencesKeys.BIOMETRIC_REQUIRE_STRONG] = requireStrongBiometric
             }
             updateBiometricCapabilityState(requireStrongBiometric = requireStrongBiometric)
+            try {
+                secureCredentialManager.applyCredentialAuthenticationRequirement(requireStrongBiometric)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("ServerConnectionVM", "Failed to update credential auth requirement", e)
+            }
         }
     }
 
@@ -771,6 +792,18 @@ class ServerConnectionViewModel @Inject constructor(
         super.onCleared()
         // Cancel any ongoing quick connect polling when ViewModel is destroyed
         quickConnectPollingJob?.cancel()
+    }
+
+    private fun shouldAutoLoginNow(key: String): Boolean {
+        val now = SystemClock.elapsedRealtime()
+        synchronized(autoLoginLock) {
+            if (lastAutoLoginKey == key && now - lastAutoLoginAttemptMs < AUTO_LOGIN_DEBOUNCE_MS) {
+                return false
+            }
+            lastAutoLoginKey = key
+            lastAutoLoginAttemptMs = now
+            return true
+        }
     }
 }
 
