@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.repository.common.ErrorType
+import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.utils.AppResources
 import retrofit2.HttpException
 import java.net.ConnectException
@@ -92,22 +93,15 @@ object ErrorHandler {
 
             is IllegalStateException -> {
                 val message = e.message ?: ""
-                when {
-                    message.contains("authenticated", ignoreCase = true) ||
-                        message.contains("authentication", ignoreCase = true) ||
-                        message.contains("token", ignoreCase = true) -> ProcessedError(
+                if (RepositoryUtils.isAuthenticationRelatedError(message)) {
+                    ProcessedError(
                         userMessage = "Please log in to access this content.",
                         errorType = ErrorType.AUTHENTICATION,
                         isRetryable = false,
                         suggestedAction = "Log in with your Jellyfin credentials",
                     )
-                    message.contains("server", ignoreCase = true) -> ProcessedError(
-                        userMessage = "Server connection required. Please connect to a server.",
-                        errorType = ErrorType.AUTHENTICATION,
-                        isRetryable = false,
-                        suggestedAction = "Connect to your Jellyfin server",
-                    )
-                    else -> ProcessedError(
+                } else {
+                    ProcessedError(
                         userMessage = "Application state error: ${e.message}",
                         errorType = ErrorType.UNKNOWN,
                         isRetryable = false,
