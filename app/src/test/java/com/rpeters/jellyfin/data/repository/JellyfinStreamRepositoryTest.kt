@@ -114,7 +114,7 @@ class JellyfinStreamRepositoryTest {
     }
 
     @Test
-    fun `getTranscodedStreamUrl returns correct HLS URL with parameters`() {
+    fun `getTranscodedStreamUrl returns progressive URL with parameters`() {
         // Given
         val itemId = UUID.randomUUID().toString()
         every { authRepository.getCurrentServer() } returns testServer
@@ -134,13 +134,36 @@ class JellyfinStreamRepositoryTest {
         assertNotNull("Transcoded URL should not be null", result)
         assertTrue("URL should contain server URL", result!!.contains(testServer.url))
         assertTrue("URL should contain item ID", result.contains(itemId))
-        assertTrue("URL should be HLS stream", result.contains("master.m3u8"))
+        assertTrue("URL should target progressive stream endpoint", result.contains("/Videos/$itemId/stream"))
         assertTrue("URL should contain maxBitrate", result.contains("MaxStreamingBitrate=8000000"))
         assertTrue("URL should contain maxWidth", result.contains("MaxWidth=1920"))
         assertTrue("URL should contain maxHeight", result.contains("MaxHeight=1080"))
         assertTrue("URL should contain video codec", result.contains("VideoCodec=h264"))
         assertTrue("URL should contain audio codec", result.contains("AudioCodec=aac"))
         assertTrue("URL should contain container", result.contains("Container=mp4"))
+    }
+
+    @Test
+    fun `getTranscodedStreamUrl with allowAudioStreamCopy false includes correct parameters`() {
+        // Given
+        val itemId = UUID.randomUUID().toString()
+        every { authRepository.getCurrentServer() } returns testServer
+
+        // When
+        val result = streamRepository.getTranscodedStreamUrl(
+            itemId = itemId,
+            maxBitrate = 8000000,
+            maxWidth = 1920,
+            maxHeight = 1080,
+            videoCodec = "h264",
+            audioCodec = "aac",
+            container = "mp4",
+            allowAudioStreamCopy = false,
+        )
+
+        // Then
+        assertNotNull("Transcoded URL should not be null", result)
+        assertTrue("URL should contain AllowAudioStreamCopy=false", result!!.contains("AllowAudioStreamCopy=false"))
     }
 
     @Test

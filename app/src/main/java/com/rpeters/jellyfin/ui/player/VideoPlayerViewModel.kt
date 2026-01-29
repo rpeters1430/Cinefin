@@ -831,12 +831,11 @@ class VideoPlayerViewModel @Inject constructor(
             } ?: 0L
         }
 
-        // Start casting from current position
-        // Default to no subtitles for now to simplify troubleshooting
+        // Start casting from current position, including available subtitles when provided.
         castManager.startCasting(
             mediaItem = mediaItem,
             item = metadata,
-            sideLoadedSubs = emptyList(),
+            sideLoadedSubs = subtitles,
             startPositionMs = position,
             playSessionId = playbackSessionId,
             mediaSourceId = currentMediaSourceId,
