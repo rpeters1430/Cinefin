@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.repository.common.ErrorType
+import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.utils.AppResources
 import retrofit2.HttpException
 import java.net.ConnectException
@@ -89,6 +90,25 @@ object ErrorHandler {
                 isRetryable = false,
                 suggestedAction = "Check your input and try again",
             )
+
+            is IllegalStateException -> {
+                val message = e.message ?: ""
+                if (RepositoryUtils.isAuthenticationRelatedError(message)) {
+                    ProcessedError(
+                        userMessage = "Please log in to access this content.",
+                        errorType = ErrorType.AUTHENTICATION,
+                        isRetryable = false,
+                        suggestedAction = "Log in with your Jellyfin credentials",
+                    )
+                } else {
+                    ProcessedError(
+                        userMessage = "Application state error: $message",
+                        errorType = ErrorType.UNKNOWN,
+                        isRetryable = false,
+                        suggestedAction = "Restart the app and try again",
+                    )
+                }
+            }
 
             is OutOfMemoryError -> ProcessedError(
                 userMessage = "Not enough memory to complete this operation.",

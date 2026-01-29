@@ -21,6 +21,16 @@ object RepositoryUtils {
     private const val TAG = "RepositoryUtils"
 
     /**
+     * Checks if an error message is authentication-related.
+     * Used for determining if an IllegalStateException should be mapped to AUTHENTICATION error type.
+     */
+    internal fun isAuthenticationRelatedError(message: String): Boolean {
+        return message.contains("authenticated", ignoreCase = true) ||
+            message.contains("authentication", ignoreCase = true) ||
+            message.contains("token", ignoreCase = true)
+    }
+
+    /**
      * Extracts HTTP status code from InvalidStatusException using multiple patterns
      */
     fun extractStatusCode(e: InvalidStatusException): Int? {
@@ -62,6 +72,15 @@ object RepositoryUtils {
             is java.net.ConnectException,
             is java.net.SocketTimeoutException,
             -> ErrorType.NETWORK
+
+            is IllegalStateException -> {
+                val message = e.message ?: ""
+                if (isAuthenticationRelatedError(message)) {
+                    ErrorType.AUTHENTICATION
+                } else {
+                    ErrorType.UNKNOWN
+                }
+            }
 
             is HttpException -> when (e.code()) {
                 400 -> ErrorType.BAD_REQUEST
