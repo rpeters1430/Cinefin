@@ -78,6 +78,10 @@ class RepositoryUtilsTest {
                 certificateDetails = emptyList(),
             ),
         )
+        val authIllegalState = RepositoryUtils.getErrorType(IllegalStateException("No authenticated server available"))
+        val tokenIllegalState = RepositoryUtils.getErrorType(IllegalStateException("Authentication token is missing"))
+        val serverIllegalState = RepositoryUtils.getErrorType(IllegalStateException("Server is not available"))
+        val genericIllegalState = RepositoryUtils.getErrorType(IllegalStateException("Some other error"))
         val unknown = RepositoryUtils.getErrorType(IllegalArgumentException("oops"))
 
         assertEquals(ErrorType.NETWORK, network)
@@ -86,6 +90,10 @@ class RepositoryUtilsTest {
         assertEquals(ErrorType.SERVER_ERROR, http)
         assertEquals(ErrorType.UNAUTHORIZED, invalidStatus)
         assertEquals(ErrorType.PINNING, pinning)
+        assertEquals(ErrorType.AUTHENTICATION, authIllegalState)
+        assertEquals(ErrorType.AUTHENTICATION, tokenIllegalState)
+        assertEquals(ErrorType.AUTHENTICATION, serverIllegalState)
+        assertEquals(ErrorType.UNKNOWN, genericIllegalState)
         assertEquals(ErrorType.UNKNOWN, unknown)
     }
 
