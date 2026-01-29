@@ -102,7 +102,7 @@ object ErrorHandler {
                     )
                 } else {
                     ProcessedError(
-                        userMessage = "Application state error: ${e.message}",
+                        userMessage = "Application state error: $message",
                         errorType = ErrorType.UNKNOWN,
                         isRetryable = false,
                         suggestedAction = "Restart the app and try again",
