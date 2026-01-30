@@ -460,8 +460,6 @@ class ServerConnectionViewModel @Inject constructor(
                 secureCredentialManager.applyCredentialAuthenticationRequirement(requireStrongBiometric)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                android.util.Log.e("ServerConnectionVM", "Failed to update credential auth requirement", e)
             }
         }
     }

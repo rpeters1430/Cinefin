@@ -133,8 +133,6 @@ open class BaseJellyfinRepository @Inject constructor(
             ApiResult.Success(result)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            handleRepositoryException(e, operationName)
         }
 
     /**
@@ -176,8 +174,6 @@ open class BaseJellyfinRepository @Inject constructor(
             ApiResult.Success(result)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            handleRepositoryException(e, operationName)
         }
     }
 
@@ -197,8 +193,6 @@ open class BaseJellyfinRepository @Inject constructor(
                 ApiResult.Success(result)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                handleRepositoryException(e, operationName)
             }
         }
     }
@@ -220,8 +214,6 @@ open class BaseJellyfinRepository @Inject constructor(
                 ApiResult.Success(result)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                handleRepositoryException(e, operationName)
             }
         }
     }

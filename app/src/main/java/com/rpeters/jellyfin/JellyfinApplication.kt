@@ -175,8 +175,6 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                SecureLogger.e(TAG, "Global 401 handler: re-authentication threw", e)
             }
         }
     }
