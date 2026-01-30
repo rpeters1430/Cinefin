@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.MediaInfo
@@ -35,6 +34,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
@@ -95,7 +95,7 @@ class CastManager @Inject constructor(
                     MediaStatus.PLAYER_STATE_PLAYING,
                     MediaStatus.PLAYER_STATE_PAUSED,
                     MediaStatus.PLAYER_STATE_BUFFERING,
-                    -> {
+                        -> {
                         if (BuildConfig.DEBUG) {
                             SecureLogger.d("CastManager", "Media ready (state=${status.playerState}), seeking to pending position: ${pendingSeekPosition}ms")
                         }
@@ -460,59 +460,6 @@ class CastManager @Inject constructor(
         }
     }
 
-    /**
-     * Infer proper content type from URL for Cast receiver compatibility
-     */
-    private fun inferContentType(uri: String): String = when {
-        uri.endsWith(".m3u8", ignoreCase = true) -> "application/x-mpegURL" // HLS
-        uri.endsWith(".mpd", ignoreCase = true) -> "application/dash+xml" // DASH
-        else -> "video/mp4" // default
-    }
-
-    private fun guessCastTypes(url: String, isTranscoded: Boolean, isLive: Boolean): Pair<String, Int> {
-        val lowered = url.lowercase(Locale.ROOT)
-        val isStreamEndpoint = lowered.contains("/stream") || lowered.contains("stream?")
-        val containerParam = when {
-            lowered.contains("container=hls") -> "application/x-mpegURL"
-            lowered.contains("container=mp4") -> "video/mp4"
-            lowered.contains("container=mov") -> "video/mp4"
-            lowered.contains("container=webm") -> "video/webm"
-            lowered.contains("container=ts") -> "video/mp2t"
-            else -> null
-        }
-
-        // Determine Stream Type:
-        // Use LIVE only for actual Live TV (no fixed duration).
-        // For VOD (even HLS/Transcoded), use BUFFERED to enable seeking and proper duration handling.
-        val streamType = if (isLive) MediaInfo.STREAM_TYPE_LIVE else MediaInfo.STREAM_TYPE_BUFFERED
-
-        return when {
-            // Bulletproof HLS detection: check extension, format, or manifest markers
-            lowered.contains(".m3u8") ||
-                lowered.contains("format=m3u8") ||
-                lowered.contains("manifest=m3u8") ||
-                lowered.contains("master.m3u8") ->
-                "application/x-mpegURL" to streamType
-
-            // Bulletproof DASH detection: check extension or format
-            lowered.contains(".mpd") || lowered.contains("format=mpd") ->
-                "application/dash+xml" to streamType
-
-            // Handle MP4/other containers
-            lowered.contains(".mp4") ->
-                "video/mp4" to streamType
-
-            // Fallback for other transcoded/stream endpoints
-            isStreamEndpoint || isTranscoded -> {
-                val contentType = containerParam ?: "video/mp4"
-                // Check if the container param implies HLS
-                contentType to streamType
-            }
-            else ->
-                "video/mp4" to streamType
-        }
-    }
-
     private data class CastPlaybackData(
         val url: String,
         val mimeType: String,
@@ -524,26 +471,36 @@ class CastManager @Inject constructor(
      * The server will decide whether to direct play or transcode based on the Cast device capabilities.
      */
     private suspend fun resolveCastPlaybackData(itemId: String): CastPlaybackData? {
-        return try {
-            // Detect if Cast receiver is a SHIELD/Android TV (more capable) or basic Chromecast
-            val castDevice = castContext?.sessionManager?.currentCastSession?.castDevice
-            val deviceModel = castDevice?.modelName?.lowercase(Locale.ROOT) ?: ""
-            val deviceName = castDevice?.friendlyName?.lowercase(Locale.ROOT) ?: ""
+        // FIX: Thread-Safe Snapshot of Device Info
+        // We MUST access Cast SDK on Main thread, then move back to IO for network
+        val deviceInfo = withContext(Dispatchers.Main) {
+            val session = castContext?.sessionManager?.currentCastSession
+            val device = session?.castDevice
+            if (device != null) {
+                Pair(device.modelName ?: "", device.friendlyName ?: "")
+            } else null
+        }
 
-            val isShieldOrAndroidTV = deviceModel.contains("shield") ||
-                deviceName.contains("shield") ||
-                deviceModel.contains("android tv") ||
-                deviceModel.contains("chromecast with google tv")
+        return try {
+            val (modelName, friendlyName) = deviceInfo ?: Pair("", "")
+
+            val lowerModel = modelName.lowercase(Locale.ROOT)
+            val lowerName = friendlyName.lowercase(Locale.ROOT)
+
+            // Detect SHIELD or Android TV to allow Direct Play
+            val isShieldOrAndroidTV = lowerModel.contains("shield") ||
+                    lowerName.contains("shield") ||
+                    lowerModel.contains("android tv") ||
+                    lowerModel.contains("chromecast with google tv")
 
             if (BuildConfig.DEBUG) {
                 SecureLogger.d(
                     "CastManager",
-                    "Cast device: model='${castDevice?.modelName}' name='${castDevice?.friendlyName}' " +
-                        "isShield=$isShieldOrAndroidTV",
+                    "Cast device: model='$modelName' name='$friendlyName' isShield=$isShieldOrAndroidTV"
                 )
             }
 
-            // Get playback info with device-specific profile
+            // Get playback info from Jellyfin (This network call runs on IO thread)
             val playbackInfo = repository.getCastPlaybackInfo(itemId, isShieldOrAndroidTV)
             val mediaSource = playbackInfo.mediaSources.firstOrNull()
 
@@ -552,44 +509,41 @@ class CastManager @Inject constructor(
                 return null
             }
 
-            // Get server URL for building full stream URL
+            // Get server URL
             val serverUrl = authRepository.getCurrentServer()?.url
             if (serverUrl.isNullOrBlank()) {
                 SecureLogger.e("CastManager", "No server URL available")
                 return null
             }
 
-            // Build the stream URL - prefer transcoding URL if available
+            // FIX: Force Stream URL for Direct Play
+            // Never use mediaSource.path directly as it is a local file path which SHIELD cannot reach
             val streamPath = when {
                 !mediaSource.transcodingUrl.isNullOrBlank() -> mediaSource.transcodingUrl!!
-                !mediaSource.path.isNullOrBlank() -> mediaSource.path!!
-                else -> {
-                    SecureLogger.e("CastManager", "No stream URL available in media source")
-                    return null
-                }
+                // If direct play, build the static stream endpoint manually
+                else -> "Videos/$itemId/stream?static=true"
             }
 
             // Build full URL
             val fullUrl = buildServerUrl(serverUrl, streamPath)
 
-            // Determine MIME type from the ACTUAL stream format, not the original container
-            // If transcoding, detect format from URL; otherwise use container type
+            // FIX: Override MIME type for compatibility
             val mimeType = if (!mediaSource.transcodingUrl.isNullOrBlank()) {
                 // Transcoding - detect format from URL
                 when {
                     streamPath.contains("master.m3u8", ignoreCase = true) ||
-                        streamPath.contains(".m3u8", ignoreCase = true) -> "application/x-mpegURL" // HLS
-                    streamPath.contains(".mpd", ignoreCase = true) -> "application/dash+xml" // DASH
-                    streamPath.endsWith(".ts", ignoreCase = true) -> "video/mp2t" // MPEG-TS
-                    else -> "application/x-mpegURL" // Default to HLS for transcoding
+                            streamPath.contains(".m3u8", ignoreCase = true) -> "application/x-mpegURL"
+                    streamPath.contains(".mpd", ignoreCase = true) -> "application/dash+xml"
+                    streamPath.endsWith(".ts", ignoreCase = true) -> "video/mp2t"
+                    else -> "application/x-mpegURL"
                 }
             } else {
-                // Direct play - use original container type
+                // Direct play - Force 'video/mp4' for MKV to prevent Cast SDK rejection
                 when (mediaSource.container?.lowercase(Locale.ROOT)) {
                     "ts", "m3u8", "hls" -> "application/x-mpegURL"
                     "mp4", "m4v" -> "video/mp4"
                     "webm" -> "video/webm"
-                    "mkv" -> "video/x-matroska"
+                    "mkv" -> "video/mp4" // Override: Treat MKV as MP4 for Cast SDK
                     else -> "video/mp4"
                 }
             }
@@ -597,8 +551,7 @@ class CastManager @Inject constructor(
             if (BuildConfig.DEBUG) {
                 SecureLogger.d(
                     "CastManager",
-                    "Cast playback resolved: container=${mediaSource.container} mimeType=$mimeType " +
-                        "supportsTranscoding=${mediaSource.supportsTranscoding}",
+                    "Cast playback resolved: container=${mediaSource.container} mimeType=$mimeType supportsTranscoding=${mediaSource.supportsTranscoding}"
                 )
             }
 
@@ -621,17 +574,6 @@ class CastManager @Inject constructor(
         return "$cleanServerUrl/$cleanPath"
     }
 
-    private fun String?.isAdaptiveStream(): Boolean {
-        val lowered = this?.lowercase(Locale.ROOT) ?: return false
-        return lowered.contains(".m3u8") ||
-            lowered.contains("format=m3u8") ||
-            lowered.contains("manifest=m3u8") ||
-            lowered.contains("master.m3u8") ||
-            lowered.contains("container=hls") ||
-            lowered.contains(".mpd") ||
-            lowered.contains("format=mpd")
-    }
-
     /**
      * Append access token to URL for Cast receiver authentication.
      * Chromecast receivers cannot use custom headers, so we need to include
@@ -641,6 +583,11 @@ class CastManager @Inject constructor(
         val accessToken = authRepository.getCurrentServer()?.accessToken
         if (accessToken.isNullOrBlank()) {
             SecureLogger.w("CastManager", "addAuthTokenToUrl: No access token available")
+            return url
+        }
+
+        // FIX: Check if api_key already exists to avoid duplication
+        if (url.contains("api_key=")) {
             return url
         }
 
@@ -670,7 +617,7 @@ class CastManager @Inject constructor(
             androidx.media3.common.MimeTypes.APPLICATION_SUBRIP -> com.google.android.gms.cast.MediaTrack.SUBTYPE_SUBTITLES
             androidx.media3.common.MimeTypes.TEXT_SSA,
             androidx.media3.common.MimeTypes.APPLICATION_TTML,
-            -> com.google.android.gms.cast.MediaTrack.SUBTYPE_CAPTIONS
+                -> com.google.android.gms.cast.MediaTrack.SUBTYPE_CAPTIONS
             else -> com.google.android.gms.cast.MediaTrack.SUBTYPE_UNKNOWN
         }
         builder.setSubtype(subtype)
@@ -689,24 +636,10 @@ class CastManager @Inject constructor(
             val castSession = castContext?.sessionManager?.currentCastSession
             if (castSession?.isConnected == true) {
                 // Ensure callback is registered for seek-after-load pattern
-                // Unregister first to avoid duplicates, then register
                 val remoteClient = castSession.remoteMediaClient
                 if (remoteClient != null) {
                     remoteClient.unregisterCallback(remoteMediaClientCallback)
                     remoteClient.registerCallback(remoteMediaClientCallback)
-                    if (BuildConfig.DEBUG) {
-                        SecureLogger.d("CastManager", "Registered remote media client callback")
-                    }
-                }
-
-                // Get server connection info
-                val currentServer = authRepository.getCurrentServer()
-                if (currentServer == null) {
-                    SecureLogger.e("CastManager", "No server connection available for Cast")
-                    _castState.update { state ->
-                        state.copy(error = "No server connection")
-                    }
-                    return
                 }
 
                 val itemId = item.id.toString()
@@ -715,9 +648,9 @@ class CastManager @Inject constructor(
                 managerScope.launch {
                     val startTime = System.currentTimeMillis()
 
-                    // Get playback data from Jellyfin using Chromecast device profile
-                    // Run on IO dispatcher to avoid blocking main thread during player cleanup
-                    val playbackData = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                    // Get playback data from Jellyfin
+                    // Run on IO dispatcher to avoid blocking main thread
+                    val playbackData = withContext(Dispatchers.IO) {
                         resolveCastPlaybackData(itemId)
                     }
 
@@ -771,12 +704,9 @@ class CastManager @Inject constructor(
                         .setMediaTracks(tracks)
                         .build()
 
-                    // Set pending seek position if we need to resume from a specific time
+                    // Set pending seek position
                     if (startPositionMs > 0L) {
                         pendingSeekPosition = startPositionMs
-                        if (BuildConfig.DEBUG) {
-                            SecureLogger.d("CastManager", "Will seek to $startPositionMs ms after media loads")
-                        }
                     } else {
                         pendingSeekPosition = -1L
                     }
@@ -800,23 +730,18 @@ class CastManager @Inject constructor(
                         Log.i("CastManager", "Cast load result: status=$status statusCode=${status.statusCode} (load took ${loadTime}ms, total ${totalTime}ms)")
 
                         if (status.isSuccess) {
-                            // Check receiver state for debugging
                             val rmc = castSession.remoteMediaClient
                             val mediaStatus = rmc?.mediaStatus
-                            val idleReason = mediaStatus?.idleReason
                             val playerState = mediaStatus?.playerState
-                            Log.i("CastManager", "Cast status after load: playerState=$playerState idleReason=$idleReason streamType=${mediaStatus?.mediaInfo?.streamType}")
+                            Log.i("CastManager", "Cast status after load: playerState=$playerState")
 
-                            // If we have a pending seek and media is already in a ready state, seek immediately
+                            // If we have a pending seek and media is ready, seek immediately
                             if (pendingSeekPosition > 0L && mediaStatus != null) {
                                 when (playerState) {
                                     MediaStatus.PLAYER_STATE_PLAYING,
                                     MediaStatus.PLAYER_STATE_PAUSED,
                                     MediaStatus.PLAYER_STATE_BUFFERING,
-                                    -> {
-                                        if (BuildConfig.DEBUG) {
-                                            Log.i("CastManager", "Performing post-load seek to ${pendingSeekPosition}ms")
-                                        }
+                                        -> {
                                         val seekOptions = MediaSeekOptions.Builder()
                                             .setPosition(pendingSeekPosition)
                                             .setResumeState(MediaSeekOptions.RESUME_STATE_PLAY)
@@ -835,21 +760,10 @@ class CastManager @Inject constructor(
                         }
                     }
 
-                    if (BuildConfig.DEBUG) {
-                        SecureLogger.d(
-                            "CastManager",
-                            "Started casting: ${item.name} with ${tracks.size} subtitle tracks",
-                        )
-                        SecureLogger.d(
-                            "CastManager",
-                            "Cast details: mimeType=${playbackData.mimeType} streamType=$streamType",
-                        )
-                    }
-
                     _castState.update { state ->
                         state.copy(isCasting = true, isRemotePlaying = true, error = null)
                     }
-                } // End of managerScope.launch
+                }
             } else {
                 SecureLogger.w("CastManager", "No active Cast session")
                 _castState.update { state ->
@@ -863,30 +777,21 @@ class CastManager @Inject constructor(
 
     /**
      * Loads a non-playing preview (artwork + metadata) for the given item onto the Cast device.
-     * Shows the largest available image (backdrop preferred over poster) without starting playback.
      */
     fun loadPreview(item: BaseItemDto, imageUrl: String?, backdropUrl: String?) {
         try {
             val castSession = castContext?.sessionManager?.currentCastSession
             if (castSession?.isConnected != true) {
-                if (BuildConfig.DEBUG) {
-                    SecureLogger.d("CastManager", "loadPreview: No active Cast session")
-                }
                 return
             }
 
-            // Add authentication to image URLs for Cast receiver
             val primaryImage = imageUrl?.let { addAuthTokenToUrl(it) }
             val backdropImage = backdropUrl?.let { addAuthTokenToUrl(it) }
             val largestImageUrl = backdropImage ?: primaryImage
             if (largestImageUrl.isNullOrBlank()) {
-                if (BuildConfig.DEBUG) {
-                    SecureLogger.d("CastManager", "loadPreview: No image available for preview")
-                }
                 return
             }
 
-            // Derive a basic content type from extension (default to image/jpeg)
             val lowered = largestImageUrl.lowercase()
             val contentType = when {
                 lowered.endsWith(".png") -> "image/png"
@@ -897,11 +802,9 @@ class CastManager @Inject constructor(
 
             val metadata = CastMediaMetadata(CastMediaMetadata.MEDIA_TYPE_MOVIE).apply {
                 putString(CastMediaMetadata.KEY_TITLE, item.name ?: "")
-                // Prefer shorter subtitle: Year + Runtime or Series/Episode info if TV
                 val subtitle = buildString {
                     item.productionYear?.let { append(it) }
                     val runtime = item.runTimeTicks?.let { ticks ->
-                        // Ticks to minutes (10,000,000 ticks per second)
                         val totalSeconds = ticks / 10_000_000
                         val minutes = totalSeconds / 60
                         if (minutes > 0) "${minutes}m" else null
@@ -910,16 +813,10 @@ class CastManager @Inject constructor(
                         if (isNotEmpty()) append(" · ")
                         append(runtime)
                     }
-                    if (isEmpty()) {
-                        // Fallback to overview first sentence
-                        item.overview?.split('.')?.firstOrNull()?.take(80)?.let { append(it.trim()) }
-                    }
                 }
                 if (subtitle.isNotBlank()) {
                     putString(CastMediaMetadata.KEY_SUBTITLE, subtitle)
                 }
-
-                // Attach images (backdrop first for better display)
                 backdropImage?.let { addImage(WebImage(it.toUri())) }
                 primaryImage?.let { addImage(WebImage(it.toUri())) }
             }
@@ -932,14 +829,10 @@ class CastManager @Inject constructor(
 
             val request = MediaLoadRequestData.Builder()
                 .setMediaInfo(mediaInfo)
-                .setAutoplay(false) // preview only
+                .setAutoplay(false)
                 .build()
 
             castSession.remoteMediaClient?.load(request)
-
-            if (BuildConfig.DEBUG) {
-                SecureLogger.d("CastManager", "loadPreview: Sent preview for ${item.name}")
-            }
 
             _castState.update { state ->
                 state.copy(isCasting = true, isRemotePlaying = false, error = null)
@@ -952,9 +845,6 @@ class CastManager @Inject constructor(
     fun stopCasting() {
         try {
             castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.stop()
-            if (BuildConfig.DEBUG) {
-                SecureLogger.d("CastManager", "Stopped casting")
-            }
             _castState.update { state ->
                 state.copy(isRemotePlaying = false, isCasting = false, error = null)
             }
@@ -963,26 +853,14 @@ class CastManager @Inject constructor(
         }
     }
 
-    /**
-     * Disconnect from the current Cast session entirely.
-     * This stops media playback AND ends the session, which will dismiss the notification.
-     * Use this when the user wants to completely disconnect from the Cast device.
-     */
     fun disconnectCastSession() {
         try {
             val sessionManager = castContext?.sessionManager
             val currentSession = sessionManager?.currentCastSession
 
             if (currentSession != null) {
-                // Stop media first
                 currentSession.remoteMediaClient?.stop()
-
-                // Then end the session - this will dismiss the notification
                 sessionManager.endCurrentSession(true)
-
-                if (BuildConfig.DEBUG) {
-                    SecureLogger.d("CastManager", "Disconnected cast session")
-                }
             }
 
             _castState.update { state ->
@@ -995,7 +873,6 @@ class CastManager @Inject constructor(
                 )
             }
 
-            // Clear persisted session
             managerScope.launch {
                 castPreferencesRepository.clearLastCastSession()
             }
@@ -1026,10 +903,6 @@ class CastManager @Inject constructor(
         }
     }
 
-    /**
-     * Seek to a specific position during cast playback.
-     * @param positionMs The position to seek to in milliseconds.
-     */
     fun seekTo(positionMs: Long) {
         try {
             val remoteClient = castContext?.sessionManager?.currentCastSession?.remoteMediaClient
@@ -1041,19 +914,12 @@ class CastManager @Inject constructor(
                 _castState.update { state ->
                     state.copy(currentPosition = positionMs, error = null)
                 }
-                if (BuildConfig.DEBUG) {
-                    SecureLogger.d("CastManager", "Seeking to: ${positionMs}ms")
-                }
             }
         } catch (e: CancellationException) {
             throw e
         }
     }
 
-    /**
-     * Set the cast device volume.
-     * @param volume Volume level from 0.0 (mute) to 1.0 (max).
-     */
     fun setVolume(volume: Float) {
         try {
             val castSession = castContext?.sessionManager?.currentCastSession
@@ -1062,19 +928,12 @@ class CastManager @Inject constructor(
                 _castState.update { state ->
                     state.copy(volume = volume.coerceIn(0f, 1f), error = null)
                 }
-                if (BuildConfig.DEBUG) {
-                    SecureLogger.d("CastManager", "Volume set to: $volume")
-                }
             }
         } catch (e: CancellationException) {
             throw e
         }
     }
 
-    /**
-     * Get the current cast device volume.
-     * @return Volume level from 0.0 to 1.0, or 1.0 if not connected.
-     */
     fun getVolume(): Float {
         return try {
             castContext?.sessionManager?.currentCastSession?.volume?.toFloat() ?: 1.0f
@@ -1083,10 +942,6 @@ class CastManager @Inject constructor(
         }
     }
 
-    /**
-     * Get the current playback position on the cast device.
-     * @return Position in milliseconds, or 0 if not available.
-     */
     fun getCurrentPosition(): Long {
         return try {
             castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.approximateStreamPosition ?: 0L
@@ -1095,10 +950,6 @@ class CastManager @Inject constructor(
         }
     }
 
-    /**
-     * Get the duration of the current media on the cast device.
-     * @return Duration in milliseconds, or 0 if not available.
-     */
     fun getDuration(): Long {
         return try {
             castContext?.sessionManager?.currentCastSession?.remoteMediaClient?.mediaInfo?.streamDuration ?: 0L
@@ -1107,10 +958,6 @@ class CastManager @Inject constructor(
         }
     }
 
-    /**
-     * Update the cast state with current position and duration.
-     * Call this periodically to keep the UI in sync.
-     */
     fun updatePlaybackState() {
         val position = getCurrentPosition()
         val duration = getDuration()
@@ -1131,8 +978,6 @@ class CastManager @Inject constructor(
         try {
             initializationDeferred?.cancel()
             initializationDeferred = null
-
-            // Cancel the manager scope to clean up all coroutines
             managerScope.coroutineContext[kotlinx.coroutines.Job]?.cancel()
 
             castContext?.sessionManager?.removeSessionManagerListener(sessionManagerListener, CastSession::class.java)
@@ -1172,10 +1017,7 @@ class CastManager @Inject constructor(
         if (url.isNullOrBlank()) {
             return
         }
-
-        // Add authentication to image URL for Cast receiver
         val authenticatedUrl = addAuthTokenToUrl(url)
-
         runCatching {
             addImage(WebImage(authenticatedUrl.toUri()))
         }.onFailure { throwable ->
@@ -1208,13 +1050,8 @@ class CastManager @Inject constructor(
         }
 
         if (url.isNullOrBlank()) {
-            SecureLogger.w(
-                "CastManager",
-                "buildImageUrl: Unable to resolve ${imageType.name.lowercase(Locale.ROOT)} image for item $itemId",
-            )
             return null
         }
-
         return url
     }
 
