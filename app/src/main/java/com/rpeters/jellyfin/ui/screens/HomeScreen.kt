@@ -874,17 +874,17 @@ private fun ContinueWatchingCard(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                if (item.type == BaseItemKind.EPISODE) {
-                    Text(
-                        text = buildString {
-                            item.seriesName?.let { append(it) }
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                // Reserve a consistent second text line to avoid LazyRow height "jumping"
+                // when episode cards (which show series name) scroll into view.
+                val seriesName = if (item.type == BaseItemKind.EPISODE) item.seriesName.orEmpty() else ""
+                Text(
+                    text = seriesName,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    minLines = 1,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
 
                 Text(
                     text = "${watchedPercentage.roundToInt()}% watched",
@@ -924,6 +924,7 @@ private fun PosterRowSection(
                 cardWidth = cardWidth,
                 showTitle = true,
                 showMetadata = true,
+                titleMinLines = 2,
             )
         }
     }

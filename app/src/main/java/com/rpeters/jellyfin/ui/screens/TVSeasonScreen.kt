@@ -1166,6 +1166,7 @@ private fun MoreLikeThisSection(
                         getImageUrl = getImageUrl,
                         onClick = { onSeriesClick(show.id.toString()) },
                         showMetadata = false,
+                        titleMinLines = 2,
                         cardWidth = 140.dp,
                     )
                 }

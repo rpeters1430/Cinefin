@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -311,6 +312,7 @@ fun PosterMediaCard(
     enhancedPlaybackUtils: com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils? = null,
     showTitle: Boolean = true,
     showMetadata: Boolean = true,
+    titleMinLines: Int = 1,
     cardWidth: Dp? = null, // Made optional - null means fill available width
 ) {
     val contentTypeColor = getContentTypeColor(item.type.toString())
@@ -474,6 +476,7 @@ fun PosterMediaCard(
                         MaterialText(
                             text = item.name ?: stringResource(R.string.unknown),
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                            minLines = titleMinLines,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -487,6 +490,7 @@ fun PosterMediaCard(
 
                     if (showMetadata) {
                         Row(
+                            modifier = Modifier.heightIn(min = 24.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -697,6 +701,7 @@ fun RecentlyAddedCard(
                 MaterialText(
                     text = item.name ?: stringResource(R.string.unknown),
                     style = MaterialTheme.typography.bodyMedium,
+                    minLines = 2,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -708,6 +713,7 @@ fun RecentlyAddedCard(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Row(
+                    modifier = Modifier.heightIn(min = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

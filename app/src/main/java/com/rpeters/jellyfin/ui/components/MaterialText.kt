@@ -23,6 +23,7 @@ fun MaterialText(
     modifier: Modifier = Modifier,
     style: TextStyle = MaterialTheme.typography.bodyMedium,
     color: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified,
+    minLines: Int = 1,
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Clip,
     autoSize: Boolean = false,
@@ -35,6 +36,7 @@ fun MaterialText(
             modifier = modifier,
             style = style,
             color = color,
+            minLines = minLines,
             maxLines = maxLines,
             overflow = overflow,
         )
@@ -53,6 +55,7 @@ fun MaterialText(
             text,
             constraints.maxWidth,
             style,
+            minLines,
             maxLines,
             minFontSize,
             resolvedMaxFontSize,
@@ -88,6 +91,7 @@ fun MaterialText(
             text = text,
             style = style.copy(fontSize = targetFontSize),
             color = color,
+            minLines = minLines,
             maxLines = maxLines,
             overflow = overflow,
         )
