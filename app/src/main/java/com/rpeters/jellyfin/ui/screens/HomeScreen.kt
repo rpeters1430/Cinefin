@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -39,8 +38,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -64,10 +61,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
@@ -173,15 +168,15 @@ fun HomeScreen(
                         icon = Icons.Default.Refresh,
                         contentDescription = "Refresh",
                         onClick = onRefresh,
-                        isLoading = appState.isLoading
+                        isLoading = appState.isLoading,
                     )
                     ExpressiveTopAppBarAction(
                         icon = Icons.Default.Settings,
                         contentDescription = stringResource(id = R.string.settings),
                         onClick = onSettingsClick,
-                        tint = MaterialTheme.colorScheme.tertiary
+                        tint = MaterialTheme.colorScheme.tertiary,
                     )
-                }
+                },
             )
         },
         bottomBar = {
@@ -192,7 +187,7 @@ fun HomeScreen(
                 onClick = onSearchClick,
                 shape = MaterialTheme.shapes.large,
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
@@ -206,8 +201,8 @@ fun HomeScreen(
                 colors = listOf(
                     MaterialTheme.colorScheme.surface,
                     MaterialTheme.colorScheme.surfaceContainerLow,
-                )
-            )
+                ),
+            ),
         ),
     ) { paddingValues ->
         // Performance monitoring
@@ -329,7 +324,7 @@ fun HomeContent(
             )
         }
     }
-    
+
     // Consolidate all derived state computations into a single derivedStateOf for better performance
     val contentLists by remember(
         appState.allItems,
@@ -528,7 +523,7 @@ fun HomeContent(
                     }
                 }
             }
-            
+
             // Add extra space at the bottom for MiniPlayer
             item { Spacer(modifier = Modifier.height(80.dp)) }
         }
@@ -787,7 +782,7 @@ private fun ContinueWatchingSection(
         Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier.padding(horizontal = 16.dp),
         ) {
             Text(
                 text = "Continue Watching",
@@ -838,8 +833,8 @@ private fun ContinueWatchingCard(
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
     ) {
         Column(
             modifier = Modifier.combinedClickable(
@@ -895,7 +890,7 @@ private fun ContinueWatchingCard(
                     text = "${watchedPercentage.roundToInt()}% watched",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
         }
@@ -1023,7 +1018,7 @@ private fun HomeSectionTitle(title: String, modifier: Modifier = Modifier) {
     Surface(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Text(
             text = title,

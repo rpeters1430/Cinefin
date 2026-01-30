@@ -255,7 +255,7 @@ fun ServerConnectionScreen(
                         wavelength = 20.dp,
                         waveSpeed = 10.dp,
                         color = MaterialTheme.colorScheme.onPrimary,
-                        trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)
+                        trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
@@ -367,10 +367,10 @@ private fun AutoLoginCard(
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
             )
-            
+
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 if (isBiometricAuthEnabled && isBiometricAuthAvailable) {
                     ExpressiveTonalButton(
@@ -384,7 +384,7 @@ private fun AutoLoginCard(
                         Text(stringResource(id = R.string.login_with_biometric))
                     }
                 }
-                
+
                 ExpressiveTonalButton(
                     onClick = onAutoLogin,
                     enabled = !isConnecting,
@@ -480,7 +480,7 @@ private fun LoginFormCard(
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 stringResource(id = R.string.remember_login),
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyLarge,
             )
         }
     }
@@ -503,12 +503,12 @@ private fun SavedCredentialsHintCard(
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Icon(
                 Icons.Default.Info,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
             )
             Text(
                 text = stringResource(id = R.string.saved_credentials_hint),
@@ -833,9 +833,9 @@ fun QuickConnectScreen(
                 title = stringResource(id = R.string.quick_connect_title),
                 navigationIcon = {
                     ExpressiveBackNavigationIcon(onClick = onCancel)
-                }
+                },
             )
-        }
+        },
     ) { innerPadding ->
         Column(
             modifier = modifier
@@ -982,7 +982,7 @@ fun QuickConnectScreen(
             // Buttons
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 ExpressiveFilledButton(
                     onClick = {
@@ -996,14 +996,14 @@ fun QuickConnectScreen(
                     if (connectionState.isConnecting) {
                         ExpressiveWavyCircularLoading(
                             modifier = Modifier.size(28.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = MaterialTheme.colorScheme.onPrimary,
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(stringResource(id = R.string.quick_connect_connecting))
                     } else if (isPolling) {
                         ExpressiveWavyCircularLoading(
                             modifier = Modifier.size(28.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = MaterialTheme.colorScheme.onPrimary,
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(stringResource(id = R.string.quick_connect_waiting))
