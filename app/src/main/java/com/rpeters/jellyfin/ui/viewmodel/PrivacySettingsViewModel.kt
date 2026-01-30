@@ -103,7 +103,7 @@ class PrivacySettingsViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            }  finally {
+            } finally {
                 _state.update { it.copy(isUpdatingCredentialSecurity = false) }
             }
         }
