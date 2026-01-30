@@ -1,6 +1,6 @@
 # Jellyfin Android - Roadmap
 
-**Last Updated**: January 23, 2026
+**Last Updated**: January 30, 2026
 
 > **Quick Links**: [Feature Status](CURRENT_STATUS.md) | [Known Issues](KNOWN_ISSUES.md) | [Upgrade Path](UPGRADE_PATH.md)
 
@@ -14,7 +14,7 @@ A clear, actionable improvement plan for the Jellyfin Android client.
 - Server connection & authentication (multi-server, auto-login)
 - Secure credential storage (Android Keystore, AES-256-GCM encryption)
 - Certificate pinning (TOFU model)
-- Video playback (ExoPlayer/Media3, HLS/DASH, FFmpeg decoder)
+- Video playback (ExoPlayer/Media3, HLS/DASH, FFmpeg decoder, adaptive track selection)
 - Library browsing (Movies, TV Shows, Music)
 - Material 3 Expressive UI with dark/light/AMOLED themes
 - Resume playback, favorites, search
@@ -33,7 +33,6 @@ A clear, actionable improvement plan for the Jellyfin Android client.
 ### Not Implemented
 - Live TV & DVR
 - Sync Play (watch together)
-- Background audio service
 - Home screen widgets
 - Multi-profile support
 
@@ -183,7 +182,7 @@ Target: 70%+ for ViewModels and Repositories
 > **Note**: For detailed bug tracking with workarounds, see [KNOWN_ISSUES.md](KNOWN_ISSUES.md)
 
 ### Material 3 Components
-- **Carousel**: Using custom implementation (official M3 Carousel disabled)
+- **Carousel**: Using official Material 3 carousel API via `HorizontalUncontainedCarousel`
 - **Pull-to-Refresh**: Using experimental APIs
 
 ### Platform Support

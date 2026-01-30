@@ -283,11 +283,11 @@ CircularWavyProgressIndicator(
 
 ## Dependencies Used
 
-- ✅ Material 3 v1.5.0-alpha12 (Expressive components)
+- ✅ Material 3 v1.5.0-alpha13 (Expressive components)
 - ✅ Material 3 Carousel (official component)
 - ✅ Material 3 Segmented Button (3-way toggle)
 - ✅ Material 3 Wavy Progress Indicator
-- ✅ Compose BOM 2026.01.00
+- ✅ Compose BOM 2026.01.01
 
 ---
 

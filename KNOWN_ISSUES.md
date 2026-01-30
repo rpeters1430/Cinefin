@@ -20,36 +20,6 @@ This document tracks user-facing bugs, workarounds, and fix status. For technica
 
 ## 🟡 MEDIUM PRIORITY Issues (Functionality Gaps)
 
-### #4: Auto Quality Selection Not Implemented
-
-**Impact**: Users must manually select video quality
-**Affected Users**: All users during video playback
-**File**: `app/src/main/java/com/rpeters/jellyfin/ui/player/VideoPlayerScreen.kt:1311`
-
-**Details**:
-- Quality menu shows "Auto" option but it's not functional
-- Clicking "Auto" does nothing (TODO comment in code)
-- Users must manually switch quality based on network conditions
-- No adaptive bitrate streaming based on bandwidth
-
-**Workaround**:
-- Manually select quality from video player menu
-- Use lower quality on slow networks to avoid buffering
-- Use higher quality on fast WiFi for best experience
-
-**Fix Status**: 🔜 Planned - [IMPROVEMENT_PLAN Priority 6](docs/IMPROVEMENT_PLAN.md)
-**Target**: Phase 2 - Performance & UX
-
-**Code Location**:
-```kotlin
-// VideoPlayerScreen.kt:1311 - TODO comment
-Text("Auto") {
-    // TODO: Implement auto quality selection
-}
-```
-
----
-
 ### #5: Authentication Interceptor Blocks OkHttp Threads
 
 **Impact**: Slow token refresh, potential network timeouts
@@ -222,6 +192,11 @@ private fun backoff(attempt: Int) {
 **Status**: Implemented with countdown UI and automatic continuation
 **Commit**: `8463e8bd` - "feat: implement auto-play next episode feature with countdown and UI updates"
 
+### Auto Quality Selection (✅ Fixed Jan 2026)
+**Status**: "Auto" now clears track overrides to enable ExoPlayer adaptive selection when multiple video tracks are available
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/player/VideoPlayerViewModel.kt:1026-1068`
+**Details**: Selecting Auto clears video track overrides and keeps `selectedQuality` null to reflect adaptive playback
+
 ### Offline Download Hanging (✅ Fixed Jan 2026)
 **Status**: Fixed by replacing `collect` with `first()` and adding timeout
 **File**: `app/src/main/java/com/rpeters/jellyfin/data/offline/OfflineDownloadManager.kt:207`
@@ -267,10 +242,10 @@ private fun backoff(attempt: Int) {
 |----------|-------|--------|
 | 🔴 Critical | 0 | None identified |
 | 🟠 High | 0 | All fixed in Jan 2026 |
-| 🟡 Medium | 4 | In progress or planned |
+| 🟡 Medium | 3 | In progress or planned |
 | 🟢 Low | 3 | Planned for Phase 2-3 |
-| ✅ Resolved | 7 | Fixed in Jan 2026 |
-| **Total Active** | **7** | - |
+| ✅ Resolved | 8 | Fixed in Jan 2026 |
+| **Total Active** | **6** | - |
 
 ---
 
@@ -328,7 +303,7 @@ private fun backoff(attempt: Int) {
 We welcome contributions to fix these issues! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ### High-Impact Fixes Needed
-1. **Auto quality selection** (#4) - Medium priority, feature implementation
+1. **Auth refresh retry/backoff** (#5) - Medium priority, avoid blocking OkHttp threads
 2. **Music background playback** (#6) - Already in progress, help welcome
 
 ### Good First Issues

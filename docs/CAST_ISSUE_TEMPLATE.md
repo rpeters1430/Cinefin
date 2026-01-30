@@ -137,7 +137,7 @@ Data Layer
 - Kotlin 2.3.0+
 - Google Cast Framework 22.2.0+
 - AndroidX Media3 1.9.1+
-- Jetpack Compose BOM 2026.01.00
+- Jetpack Compose BOM 2026.01.01
 - Hilt 2.59
 
 ## Questions?

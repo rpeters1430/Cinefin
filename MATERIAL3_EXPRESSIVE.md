@@ -4,7 +4,7 @@ This document describes the Material 3 Expressive components and theming feature
 
 ## Overview
 
-The Jellyfin Android app uses **Material 3 1.5.0-alpha11**, which includes the latest Material 3 Expressive design system features. Material 3 Expressive is an expansion of Material Design 3 that provides:
+The Jellyfin Android app uses **Material 3 1.5.0-alpha13**, which includes the latest Material 3 Expressive design system features. Material 3 Expressive is an expansion of Material Design 3 that provides:
 
 - Enhanced visual hierarchy and expressiveness
 - Research-backed updates to theming, components, motion, and typography
@@ -13,10 +13,10 @@ The Jellyfin Android app uses **Material 3 1.5.0-alpha11**, which includes the l
 
 ## Current Dependencies
 
-- **Material 3**: `androidx.compose.material3:material3:1.5.0-alpha11`
-- **Compose BOM**: `2025.12.01`
-- **Material 3 Adaptive Navigation Suite**: `1.5.0-alpha11`
-- **Material 3 Adaptive**: `1.3.0-alpha05`
+- **Material 3**: `androidx.compose.material3:material3:1.5.0-alpha13`
+- **Compose BOM**: `2026.01.01`
+- **Material 3 Adaptive Navigation Suite**: `1.5.0-alpha13`
+- **Material 3 Adaptive**: `1.3.0-alpha07`
 
 ## Theming System
 
@@ -388,6 +388,7 @@ If you have existing Material 3 components and want to migrate to Expressive var
 
 ## Version History
 
+- **1.5.0-alpha13** (January 2026): Current project version
 - **1.5.0-alpha11** (December 2025): Expressive list items, multi-aspect carousels, enhanced SearchBar
 - **1.5.0-alpha09** (November 2025): Expressive menu items (toggleable, selectable, groups)
 - **1.4.0** (Stable): Core Material 3 components
@@ -396,7 +397,7 @@ If you have existing Material 3 components and want to migrate to Expressive var
 ## Future Enhancements
 
 Potential features to implement as they become available in future Material 3 releases:
-- Material 3 Expressive Carousel official API (currently using custom implementation)
+- Material 3 carousel enhancements and new expressive variants as APIs stabilize
 - Enhanced search experiences with ExpandedFullScreenContainedSearchBar
 - Multi-aspect carousel layouts with lazy grids
 - Additional expressive component variants
@@ -404,6 +405,6 @@ Potential features to implement as they become available in future Material 3 re
 
 ---
 
-**Last Updated**: December 2025
-**Material 3 Version**: 1.5.0-alpha11
-**Compose BOM**: 2025.12.01
+**Last Updated**: January 30, 2026
+**Material 3 Version**: 1.5.0-alpha13
+**Compose BOM**: 2026.01.01

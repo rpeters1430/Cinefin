@@ -42,7 +42,7 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 
 ### **Core Technologies**
 - **Language:** Kotlin 2.3.0
-- **UI Framework:** Jetpack Compose (2026.01.00 BOM)
+- **UI Framework:** Jetpack Compose (2026.01.01 BOM)
 - **Architecture:** MVVM + Repository Pattern
 - **Dependency Injection:** Hilt 2.59
 - **Async Programming:** Kotlin Coroutines 1.10.2
@@ -50,14 +50,14 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 ### **Networking & API**
 - **Jellyfin SDK:** 1.8.6 (Official Jellyfin Kotlin SDK)
 - **HTTP Client:** Retrofit 3.0.0 + OkHttp 5.3.2 (official Kotlinx Serialization converter)
-- **Serialization:** Kotlinx Serialization 1.9.0
+- **Serialization:** Kotlinx Serialization 1.10.0
 - **Image Loading:** Coil 3.3.0 with Compose integration
 
 ### **Media & UI**
-- **Media Playback:** ExoPlayer (Media3 1.9.0) with Jellyfin FFmpeg decoder
+- **Media Playback:** ExoPlayer (Media3 1.9.1) with Jellyfin FFmpeg decoder
 - **Material Design:** Material 3 Expressive (alpha)
-- **Navigation:** Navigation Compose 2.9.6
-- **Data Storage:** DataStore Preferences 1.2.0-alpha02
+- **Navigation:** Navigation Compose 2.9.7
+- **Data Storage:** DataStore Preferences 1.3.0-alpha05
 
 ## 📱 Requirements
 
@@ -72,7 +72,7 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 - Android Studio Iguana or later
 - JDK 21
 - **Compile SDK:** 36
-- **Target SDK:** 36
+- **Target SDK:** 35
 
 ### Building the Project
 

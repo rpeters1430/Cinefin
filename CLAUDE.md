@@ -73,11 +73,11 @@ scripts/gen-local-properties.ps1  # PowerShell (Windows)
 
 ### High-Level Architecture
 This is a modern Android client for Jellyfin media servers built with:
-- **UI**: Jetpack Compose (BOM 2026.01.00) with Material 3 design system
+- **UI**: Jetpack Compose (BOM 2026.01.01) with Material 3 design system
 - **Architecture**: MVVM pattern with Repository pattern for data access
 - **DI**: Hilt 2.59 for dependency injection throughout the app
 - **Async**: Kotlin Coroutines 1.10.2 with StateFlow for reactive UI updates
-- **Media Playback**: ExoPlayer (Media3 1.9.0) with Jellyfin FFmpeg decoder
+- **Media Playback**: ExoPlayer (Media3 1.9.1) with Jellyfin FFmpeg decoder
 - **Networking**: Retrofit 3.0.0 + OkHttp 5.3.2 + Jellyfin SDK 1.8.6
 - **Image Loading**: Coil 3.3.0 with custom performance optimizations
 - **Security**: Android Keystore encryption, dynamic certificate pinning with TOFU model
@@ -250,7 +250,7 @@ val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 ## Material 3 Design System
 
 ### Current Implementation
-- Using Material 3 alpha versions (1.5.0-alpha12)
+- Using Material 3 alpha versions (1.5.0-alpha13)
 - **Material 3 Expressive Components** enabled with official carousel implementation
 - **Official Material 3 Carousel** (androidx.compose.material3:material3-carousel) for hero content
   - `HorizontalUncontainedCarousel` for hero carousel with auto-scrolling (15 second intervals)

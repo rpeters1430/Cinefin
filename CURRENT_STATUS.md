@@ -1,6 +1,6 @@
 # Jellyfin Android - Current Status
 
-**Last Updated**: January 23, 2026
+**Last Updated**: January 30, 2026
 
 This document provides a comprehensive snapshot of what works RIGHT NOW in the Jellyfin Android client. For planned features and improvements, see [ROADMAP.md](ROADMAP.md). For known bugs and workarounds, see [KNOWN_ISSUES.md](KNOWN_ISSUES.md). For dependency upgrade strategy, see [UPGRADE_PATH.md](UPGRADE_PATH.md).
 
@@ -85,17 +85,17 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 | Component | Version | Status |
 |-----------|---------|--------|
 | **Kotlin** | 2.3.0 | ✅ Stable |
-| **Compose BOM** | 2026.01.00 | ✅ Latest |
-| **Material 3** | 1.5.0-alpha12 | ⚠️ Alpha (intentional for Expressive) |
+| **Compose BOM** | 2026.01.01 | ✅ Latest |
+| **Material 3** | 1.5.0-alpha13 | ⚠️ Alpha (intentional for Expressive) |
 | **Hilt** | 2.59 | ✅ Stable |
 | **Coroutines** | 1.10.2 | ✅ Stable |
 | **Retrofit** | 3.0.0 | ✅ Stable |
 | **OkHttp** | 5.3.2 | ✅ Stable |
 | **Coil** | 3.3.0 | ✅ Stable |
-| **Media3** | 1.9.0 | ✅ Stable |
+| **Media3** | 1.9.1 | ✅ Stable |
 | **Jellyfin SDK** | 1.8.6 | ✅ Stable |
-| **Navigation** | 2.9.6 | ✅ Stable |
-| **Paging** | 3.4.0-rc01 | ⚠️ RC (can upgrade to 3.4.0) |
+| **Navigation** | 2.9.7 | ✅ Stable |
+| **Paging** | 3.4.0 | ✅ Stable |
 
 **See**: [UPGRADE_PATH.md](UPGRADE_PATH.md) for full dependency upgrade strategy.
 
@@ -122,7 +122,7 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 ## Known Limitations
 
 ### Material 3 Components
-- **Carousel**: Using custom implementation (official M3 Carousel dependency disabled in `gradle/libs.versions.toml`)
+- **Carousel**: Using official Material 3 carousel API (HorizontalUncontainedCarousel) wrapped by `ExpressiveHeroCarousel`
 - **Alpha Dependencies**: Intentionally using Material 3 alpha versions for Expressive components
 - **Migration Path**: Will update when Material 3 Expressive reaches stable (see [UPGRADE_PATH.md](UPGRADE_PATH.md))
 
@@ -146,6 +146,8 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 - ✅ Offline download hanging bug fixed (Jan 2026)
 - ✅ Download ID mismatch resolved (Jan 2026)
 - ✅ Chromecast enhancements: seek bar, volume control, position tracking (Jan 2026)
+- ✅ Auto quality selection now uses adaptive track selection in the player (Jan 2026)
+- ✅ Cache initialization/thread-safety improvements in JellyfinCache (Jan 2026)
 
 ### Active Development
 - 🔄 Music background playback (in progress - [ROADMAP §1.1](ROADMAP.md))
@@ -156,7 +158,7 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 - 🎯 Test coverage target: 70%+ for ViewModels and Repositories
 - 🎯 Refactoring large composables (ongoing - [ROADMAP §3.1](ROADMAP.md))
 - 🎯 Fixing build warnings (planned - [ROADMAP §3.2](ROADMAP.md))
-- 🎯 Cache initialization improvements (planned - [KNOWN_ISSUES #1](KNOWN_ISSUES.md))
+- 🎯 Auth refresh retry improvements (planned - [KNOWN_ISSUES #5](KNOWN_ISSUES.md))
 
 ---
 
