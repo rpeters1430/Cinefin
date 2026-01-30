@@ -21,8 +21,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26
         targetSdk = 35
-        versionCode = 23
-        versionName = "13.91"
+        versionCode = 24
+        versionName = "13.92"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
     }
@@ -56,6 +56,11 @@ android {
                 "proguard-rules.pro",
             )
             signingConfig = signingConfigs.getByName("release")
+
+            // Enable native debug symbols for better crash reporting in Play Console
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
     }
 

@@ -48,7 +48,8 @@
       "Bash(powershell:*)",
       "Bash(adb devices:*)",
       "Bash(adb shell:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": [],
     "ask": [],

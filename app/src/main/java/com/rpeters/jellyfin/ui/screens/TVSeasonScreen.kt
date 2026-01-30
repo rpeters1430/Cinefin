@@ -5,8 +5,12 @@ package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -55,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -83,6 +88,7 @@ import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import com.rpeters.jellyfin.utils.isCompletelyWatched
+import com.rpeters.jellyfin.utils.isWatched
 import com.rpeters.jellyfin.utils.normalizeOfficialRating
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemPerson
@@ -273,6 +279,14 @@ private fun TVSeasonContent(
                 val seasonEpisodes = seasonId?.let { state.episodesBySeasonId[it].orEmpty() }.orEmpty()
                 val isLoadingEpisodes = seasonId != null && seasonId in state.loadingSeasonIds
                 val seasonErrorMessage = seasonId?.let { state.seasonEpisodeErrors[it] }
+
+                // Animate chevron rotation with Material 3 Expressive motion
+                val chevronRotation by animateFloatAsState(
+                    targetValue = if (isExpanded) 180f else 0f,
+                    animationSpec = MotionTokens.fabMenuExpand,
+                    label = "chevron_rotation",
+                )
+
                 ExpressiveSeasonListItem(
                     season = season,
                     getImageUrl = getImageUrl,
@@ -287,15 +301,34 @@ private fun TVSeasonContent(
                         }
                     },
                     trailingContent = {
+                        // Smoothly rotating chevron with Material 3 Expressive motion
                         Icon(
-                            imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                            contentDescription = null,
+                            imageVector = Icons.Default.ExpandMore,
+                            contentDescription = if (isExpanded) "Collapse season" else "Expand season",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.rotate(chevronRotation),
                         )
                     },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                 )
-                AnimatedVisibility(visible = isExpanded) {
+                // Material 3 Expressive dropdown animation with proper motion tokens
+                AnimatedVisibility(
+                    visible = isExpanded,
+                    enter = expandVertically(
+                        animationSpec = tween(
+                            durationMillis = MotionTokens.DurationMedium1,
+                            easing = MotionTokens.EmphasizedEasing,
+                        ),
+                        expandFrom = Alignment.Top,
+                    ) + fadeIn(MotionTokens.expressiveEnter),
+                    exit = shrinkVertically(
+                        animationSpec = tween(
+                            durationMillis = MotionTokens.DurationShort4,
+                            easing = MotionTokens.AccelerateEasing,
+                        ),
+                        shrinkTowards = Alignment.Top,
+                    ) + fadeOut(MotionTokens.expressiveExit),
+                ) {
                     SeasonEpisodeDropdown(
                         episodes = seasonEpisodes,
                         isLoading = isLoadingEpisodes,
@@ -901,6 +934,37 @@ private fun EpisodeDropdownItem(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(28.dp),
                         )
+                    }
+                }
+
+                // Material 3 Expressive watched indicator badge
+                if (episode.isWatched()) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp),
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shadowElevation = 2.dp,
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = stringResource(id = R.string.filter_watched),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(12.dp),
+                            )
+                            Text(
+                                text = stringResource(id = R.string.filter_watched),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
                     }
                 }
             }

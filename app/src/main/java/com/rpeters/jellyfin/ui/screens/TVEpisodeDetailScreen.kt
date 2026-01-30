@@ -1,9 +1,13 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -11,15 +15,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -28,6 +35,7 @@ import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.HighQuality
@@ -54,10 +62,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -87,6 +97,7 @@ import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.utils.isWatched
 import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -100,11 +111,14 @@ fun TVEpisodeDetailScreen(
     seriesInfo: BaseItemDto? = null,
     previousEpisode: BaseItemDto? = null,
     nextEpisode: BaseItemDto? = null,
+    seasonEpisodes: List<BaseItemDto> = emptyList(),
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     onBackClick: () -> Unit,
     onPreviousEpisodeClick: (String) -> Unit = {},
     onNextEpisodeClick: (String) -> Unit = {},
+    onEpisodeClick: (BaseItemDto) -> Unit = {},
+    onViewSeriesClick: () -> Unit = {},
     onPlayClick: (BaseItemDto) -> Unit = {},
     onDownloadClick: (BaseItemDto) -> Unit = {},
     onDeleteClick: (BaseItemDto) -> Unit = {},
@@ -206,21 +220,17 @@ fun TVEpisodeDetailScreen(
                             )
                         }
 
-                        // Next/Previous Episode Navigation
-                        if (previousEpisode != null || nextEpisode != null) {
-                            item {
-                                EpisodeNavigationButtons(
-                                    previousEpisode = previousEpisode,
-                                    nextEpisode = nextEpisode,
-                                    onPreviousClick = {
-                                        previousEpisode?.id?.let { onPreviousEpisodeClick(it.toString()) }
-                                    },
-                                    onNextClick = {
-                                        nextEpisode?.id?.let { onNextEpisodeClick(it.toString()) }
-                                    },
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                )
-                            }
+                        // Episode List Navigation with Dropdown
+                        item {
+                            ExpressiveEpisodeListNavigation(
+                                currentEpisode = episode,
+                                seasonEpisodes = seasonEpisodes,
+                                seriesInfo = seriesInfo,
+                                getImageUrl = getImageUrl,
+                                onEpisodeClick = onEpisodeClick,
+                                onViewSeriesClick = onViewSeriesClick,
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
                         }
 
                         // Episode Details
@@ -357,6 +367,37 @@ private fun ExpressiveEpisodeHero(
                     ),
                 ),
         )
+
+        // Material 3 Expressive watched indicator badge
+        if (episode.isWatched()) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f),
+                shadowElevation = 4.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = stringResource(id = R.string.filter_watched),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Text(
+                        text = stringResource(id = R.string.filter_watched),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
 
         // Episode information overlay with enhanced typography
         Column(
@@ -1208,17 +1249,27 @@ private fun ExpressiveSeriesInfo(
 }
 
 @Composable
-private fun EpisodeNavigationButtons(
-    previousEpisode: BaseItemDto?,
-    nextEpisode: BaseItemDto?,
-    onPreviousClick: () -> Unit,
-    onNextClick: () -> Unit,
+private fun ExpressiveEpisodeListNavigation(
+    currentEpisode: BaseItemDto,
+    seasonEpisodes: List<BaseItemDto>,
+    seriesInfo: BaseItemDto?,
+    getImageUrl: (BaseItemDto) -> String?,
+    onEpisodeClick: (BaseItemDto) -> Unit,
+    onViewSeriesClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var isExpanded by rememberSaveable { mutableStateOf(false) }
+
     val navScale by animateFloatAsState(
         targetValue = 1.0f,
         animationSpec = MotionTokens.expressiveEnter,
-        label = "nav_buttons_scale",
+        label = "nav_scale",
+    )
+
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = MotionTokens.fabMenuExpand,
+        label = "chevron_rotation",
     )
 
     ElevatedCard(
@@ -1236,82 +1287,262 @@ private fun EpisodeNavigationButtons(
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = "Episode Navigation",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-
+            // Header with episode count
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Previous Episode Button
-                if (previousEpisode != null) {
-                    FilledTonalButton(
-                        onClick = onPreviousClick,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = "Episode Navigation",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    if (seasonEpisodes.isNotEmpty()) {
+                        Text(
+                            text = "${seasonEpisodes.size} episodes in season",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column(
-                            horizontalAlignment = Alignment.Start,
-                        ) {
-                            Text(
-                                text = "Previous",
-                                fontWeight = FontWeight.Medium,
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                            Text(
-                                text = "EP ${previousEpisode.indexNumber ?: "?"}",
-                                fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
                     }
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
                 }
 
-                // Next Episode Button
-                if (nextEpisode != null) {
-                    FilledTonalButton(
-                        onClick = onNextClick,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.End,
-                        ) {
-                            Text(
-                                text = "Next",
-                                fontWeight = FontWeight.Medium,
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                            Text(
-                                text = "EP ${nextEpisode.indexNumber ?: "?"}",
-                                fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
+                // Expand/Collapse Button
+                if (seasonEpisodes.isNotEmpty()) {
+                    IconButton(onClick = { isExpanded = !isExpanded }) {
                         Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
+                            imageVector = Icons.Default.ExpandMore,
+                            contentDescription = if (isExpanded) "Collapse episode list" else "Expand episode list",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.rotate(chevronRotation),
                         )
                     }
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
                 }
+            }
+
+            // View Series Button
+            OutlinedButton(
+                onClick = onViewSeriesClick,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Tv,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = seriesInfo?.name?.let { "View $it" } ?: "View Series",
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+
+            // Expandable Episode List with Material 3 Expressive animation
+            AnimatedVisibility(
+                visible = isExpanded && seasonEpisodes.isNotEmpty(),
+                enter = expandVertically(
+                    animationSpec = tween(
+                        durationMillis = MotionTokens.DurationMedium1,
+                        easing = MotionTokens.EmphasizedEasing,
+                    ),
+                    expandFrom = Alignment.Top,
+                ) + fadeIn(MotionTokens.expressiveEnter),
+                exit = shrinkVertically(
+                    animationSpec = tween(
+                        durationMillis = MotionTokens.DurationShort4,
+                        easing = MotionTokens.AccelerateEasing,
+                    ),
+                    shrinkTowards = Alignment.Top,
+                ) + fadeOut(MotionTokens.expressiveExit),
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                ) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 400.dp),
+                            contentPadding = PaddingValues(vertical = 8.dp),
+                        ) {
+                            items(
+                                items = seasonEpisodes.sortedBy { it.indexNumber ?: 0 },
+                                key = { it.id.toString() },
+                            ) { episode ->
+                                EpisodeListItem(
+                                    episode = episode,
+                                    isCurrentEpisode = episode.id == currentEpisode.id,
+                                    getImageUrl = getImageUrl,
+                                    onEpisodeClick = onEpisodeClick,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EpisodeListItem(
+    episode: BaseItemDto,
+    isCurrentEpisode: Boolean,
+    getImageUrl: (BaseItemDto) -> String?,
+    onEpisodeClick: (BaseItemDto) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val backgroundColor = if (isCurrentEpisode) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        Color.Transparent
+    }
+
+    Surface(
+        onClick = { if (!isCurrentEpisode) onEpisodeClick(episode) },
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        color = backgroundColor,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Episode Thumbnail
+            Box(
+                modifier = Modifier
+                    .width(100.dp)
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+            ) {
+                val imageUrl = getImageUrl(episode)
+                if (!imageUrl.isNullOrBlank()) {
+                    SubcomposeAsyncImage(
+                        model = imageUrl,
+                        contentDescription = episode.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Tv,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
+
+                // Watched indicator
+                if (episode.isWatched()) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "Watched",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier
+                                .size(16.dp)
+                                .padding(2.dp),
+                        )
+                    }
+                }
+
+                // Current episode indicator
+                if (isCurrentEpisode) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(4.dp),
+                        shape = RoundedCornerShape(4.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                    ) {
+                        Text(
+                            text = "NOW",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        )
+                    }
+                }
+            }
+
+            // Episode Info
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = episode.indexNumber?.let { "Episode $it" } ?: "Episode",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (isCurrentEpisode) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = episode.name ?: "Unknown",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (isCurrentEpisode) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = if (isCurrentEpisode) FontWeight.SemiBold else FontWeight.Normal,
+                )
+                episode.runTimeTicks?.let { ticks ->
+                    val minutes = (ticks / 10_000_000L) / 60
+                    Text(
+                        text = "$minutes min",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isCurrentEpisode) {
+                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
+            }
+
+            // Play icon for non-current episodes
+            if (!isCurrentEpisode) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Play episode",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                )
             }
         }
     }

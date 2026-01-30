@@ -11,9 +11,14 @@ import com.google.android.gms.cast.framework.media.NotificationOptions
 class CastOptionsProvider : OptionsProvider {
 
     companion object {
-        // Jellyfin / Default Cast Receiver ID - can be customized via future settings
-        // Made public so UI components (e.g., MediaRouteButton selector) can reuse it
-        const val DEFAULT_CAST_RECEIVER_APP_ID: String = "479C02BF" // Jellyfin Stable
+        // Official Jellyfin Cast Receiver IDs:
+        // - F007D354: Jellyfin Stable Receiver (production use)
+        // - 6F511C87: Jellyfin Unstable/Beta Receiver (testing)
+        // - CC1AD845: Google Default Media Receiver (fallback)
+        //
+        // Using Google Default Media Receiver for simplicity and compatibility
+        // Sends direct stream URLs with auth tokens instead of custom protocol
+        const val DEFAULT_CAST_RECEIVER_APP_ID: String = "CC1AD845" // Google Default Media Receiver
 
         @JvmStatic
         fun getReceiverApplicationId(): String = DEFAULT_CAST_RECEIVER_APP_ID

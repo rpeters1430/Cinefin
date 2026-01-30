@@ -20,6 +20,7 @@ data class TVEpisodeDetailState(
     val seriesInfo: BaseItemDto? = null,
     val previousEpisode: BaseItemDto? = null,
     val nextEpisode: BaseItemDto? = null,
+    val seasonEpisodes: List<BaseItemDto> = emptyList(),
     val playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     val isLoading: Boolean = false,
 )
@@ -100,6 +101,12 @@ class TVEpisodeDetailViewModel @Inject constructor(
                     _state.value = _state.value.copy(
                         previousEpisode = previous,
                         nextEpisode = next,
+                        seasonEpisodes = episodes,
+                    )
+                } else {
+                    // Still store all episodes even if we can't find previous/next
+                    _state.value = _state.value.copy(
+                        seasonEpisodes = episodes,
                     )
                 }
             }

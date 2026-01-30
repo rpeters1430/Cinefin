@@ -1,6 +1,8 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.annotation.OptIn
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,22 +56,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.ui.components.CarouselItem
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
 import com.rpeters.jellyfin.ui.components.ExpressiveHeroCarousel
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarAction
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBarRefreshAction
 import com.rpeters.jellyfin.ui.components.MediaCard
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
 import com.rpeters.jellyfin.ui.components.MiniPlayer
@@ -91,6 +102,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import kotlin.math.roundToInt
 
+@OptIn(UnstableApi::class)
 @OptInAppExperimentalApis
 @Composable
 fun HomeScreen(
@@ -149,26 +161,54 @@ fun HomeScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
-            HomeTopBar(
-                currentServer = currentServer,
-                showBackButton = showBackButton,
-                onBackClick = onBackClick,
-                onRefresh = onRefresh,
-                onSettingsClick = onSettingsClick,
+            ExpressiveTopAppBar(
+                title = currentServer?.name ?: stringResource(id = R.string.app_name),
+                navigationIcon = {
+                    if (showBackButton) {
+                        ExpressiveBackNavigationIcon(onClick = onBackClick)
+                    }
+                },
+                actions = {
+                    ExpressiveTopAppBarRefreshAction(
+                        icon = Icons.Default.Refresh,
+                        contentDescription = "Refresh",
+                        onClick = onRefresh,
+                        isLoading = appState.isLoading
+                    )
+                    ExpressiveTopAppBarAction(
+                        icon = Icons.Default.Settings,
+                        contentDescription = stringResource(id = R.string.settings),
+                        onClick = onSettingsClick,
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
+                }
             )
         },
         bottomBar = {
             MiniPlayer(onExpandClick = onNowPlayingClick)
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onSearchClick) {
+            FloatingActionButton(
+                onClick = onSearchClick,
+                shape = MaterialTheme.shapes.large,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            ) {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = stringResource(id = R.string.search),
                 )
             }
         },
-        modifier = modifier,
+        containerColor = Color.Transparent, // Let gradient show through
+        modifier = modifier.background(
+            Brush.verticalGradient(
+                colors = listOf(
+                    MaterialTheme.colorScheme.surface,
+                    MaterialTheme.colorScheme.surfaceContainerLow,
+                )
+            )
+        ),
     ) { paddingValues ->
         // Performance monitoring
         PerformanceMetricsTracker(
@@ -176,11 +216,7 @@ fun HomeScreen(
             intervalMs = 30000, // 30 seconds
         )
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-        ) {
+        Box(modifier = Modifier.padding(paddingValues)) {
             HomeContent(
                 appState = appState,
                 currentServer = currentServer,
@@ -269,78 +305,6 @@ private fun BaseItemDto.toCarouselItem(
 
 @OptInAppExperimentalApis
 @Composable
-private fun HomeTopBar(
-    currentServer: JellyfinServer?,
-    showBackButton: Boolean,
-    onBackClick: () -> Unit,
-    onRefresh: () -> Unit,
-    onSettingsClick: () -> Unit,
-) {
-    TopAppBar(
-        title = {
-            Text(
-                text = currentServer?.name ?: stringResource(id = R.string.app_name),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        },
-        navigationIcon = {
-            if (showBackButton) {
-                Surface(
-                    onClick = onBackClick,
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(40.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(id = R.string.navigate_up),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(8.dp),
-                    )
-                }
-            }
-        },
-        actions = {
-            Surface(
-                onClick = onRefresh,
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(40.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = "Refresh",
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.padding(8.dp),
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Surface(
-                onClick = onSettingsClick,
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.tertiaryContainer,
-                modifier = Modifier.size(40.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = stringResource(id = R.string.settings),
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                    modifier = Modifier.padding(8.dp),
-                )
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-    )
-}
-
-@OptInAppExperimentalApis
-@Composable
 fun HomeContent(
     appState: MainAppState,
     currentServer: JellyfinServer?,
@@ -363,14 +327,9 @@ fun HomeContent(
                 "Received state - Libraries: ${appState.libraries.size}, " +
                     "RecentlyAddedByTypes: ${appState.recentlyAddedByTypes.mapValues { it.value.size }}",
             )
-            appState.libraries.forEachIndexed { index, library ->
-                SecureLogger.d(
-                    "HomeScreen",
-                    "Library $index: ${library.name} (${library.collectionType})",
-                )
-            }
         }
     }
+    
     // Consolidate all derived state computations into a single derivedStateOf for better performance
     val contentLists by remember(
         appState.allItems,
@@ -408,8 +367,6 @@ fun HomeContent(
 
     val rowSections = remember(contentLists) {
         listOf(
-            // Next Up - Next unwatched episodes (currently showing recent episodes as placeholder)
-            // TODO: Implement true "Next Up" functionality that shows next unwatched episode per series
             HomeRowSectionConfig(
                 key = HomeSectionKeys.NEXT_UP,
                 contentType = HomeSectionContentTypes.POSTER_ROW,
@@ -434,7 +391,6 @@ fun HomeContent(
                 rowKind = HomeRowKind.POSTER,
                 imageSelector = HomeImageSelector.DEFAULT,
             ),
-            // Recently Added in Stuff (home videos, etc.) - Uses horizontal cards
             HomeRowSectionConfig(
                 key = HomeSectionKeys.RECENT_STUFF,
                 contentType = HomeSectionContentTypes.MEDIA_ROW,
@@ -461,8 +417,6 @@ fun HomeContent(
             }
     }
 
-    // ✅ Performance: Move expensive computations outside PullToRefreshBox
-    // This prevents recreation on every scroll/refresh
     val imageProviders = remember(getImageUrl, getSeriesImageUrl, getBackdropUrl) {
         mapOf<HomeImageSelector, (BaseItemDto) -> String?>(
             HomeImageSelector.DEFAULT to getImageUrl,
@@ -475,14 +429,9 @@ fun HomeContent(
         )
     }
 
-    // ✅ Performance: Pre-cache string resources outside lazy content
     val unknownText = stringResource(id = R.string.unknown)
-    val continueWatchingTitle = "Continue Watching"
-
-    // ✅ Performance: Stabilize callbacks to prevent recomposition
     val stableOnItemClick = remember(onItemClick) { onItemClick }
     val stableOnItemLongPress = remember(onItemLongPress) { onItemLongPress }
-    val stableOnLibraryClick = remember(onLibraryClick) { onLibraryClick }
 
     val listState = rememberLazyListState()
 
@@ -495,12 +444,10 @@ fun HomeContent(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(layoutConfig.sectionSpacing),
-            // ✅ Performance: Reduce overdraw by limiting prefetch
             userScrollEnabled = true,
         ) {
             if (contentLists.featuredItems.isNotEmpty()) {
                 item(key = "featured", contentType = "carousel") {
-                    // ✅ Performance: Use pre-cached unknownText from outside LazyColumn
                     val featured = remember(contentLists.featuredItems, unknownText) {
                         contentLists.featuredItems.map {
                             it.toCarouselItem(
@@ -541,7 +488,7 @@ fun HomeContent(
                 }
             }
 
-            // Media row sections (Next Up, Movies, Shows, Stuff)
+            // Media row sections
             rowSections.forEach { section ->
                 item(key = section.key, contentType = section.contentType) {
                     val imageProvider = imageProviders.getValue(section.imageSelector)
@@ -581,6 +528,9 @@ fun HomeContent(
                     }
                 }
             }
+            
+            // Add extra space at the bottom for MiniPlayer
+            item { Spacer(modifier = Modifier.height(80.dp)) }
         }
     }
 }
@@ -599,10 +549,6 @@ private data class HomeLayoutConfig(
     val mediaCardWidth: Dp,
 )
 
-/**
- * Holds precomputed home screen content lists to minimize recompositions.
- * Using a single data class instead of multiple derivedStateOf calls improves performance.
- */
 @Stable
 private data class HomeContentLists(
     val continueWatching: List<BaseItemDto>,
@@ -660,28 +606,28 @@ private fun rememberHomeLayoutConfig(): HomeLayoutConfig {
         if (isCompactWidth) {
             HomeLayoutConfig(
                 sectionSpacing = 16.dp,
-                heroHeight = 380.dp,
+                heroHeight = 400.dp,
                 heroHorizontalPadding = 12.dp,
-                heroPageSpacing = 6.dp,
+                heroPageSpacing = 8.dp,
                 featuredItemsLimit = 6,
                 rowItemLimit = 12,
                 continueWatchingLimit = 6,
-                continueWatchingCardWidth = if (isUltraCompact) 138.dp else 150.dp,
+                continueWatchingCardWidth = if (isUltraCompact) 138.dp else 160.dp,
                 posterCardWidth = if (isUltraCompact) 132.dp else 144.dp,
-                mediaCardWidth = 240.dp,
+                mediaCardWidth = 260.dp,
             )
         } else {
             HomeLayoutConfig(
                 sectionSpacing = 24.dp,
-                heroHeight = 440.dp,
+                heroHeight = 480.dp,
                 heroHorizontalPadding = 16.dp,
-                heroPageSpacing = 8.dp,
+                heroPageSpacing = 12.dp,
                 featuredItemsLimit = 10,
                 rowItemLimit = 15,
                 continueWatchingLimit = 8,
-                continueWatchingCardWidth = 160.dp,
-                posterCardWidth = 150.dp,
-                mediaCardWidth = 280.dp,
+                continueWatchingCardWidth = 180.dp,
+                posterCardWidth = 160.dp,
+                mediaCardWidth = 300.dp,
             )
         }
     }
@@ -782,7 +728,6 @@ fun SearchResultsContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     rowItems.forEach { item ->
-                        // Use poster cards for movies and TV shows, regular cards for others
                         if (item.type == BaseItemKind.MOVIE || item.type == BaseItemKind.SERIES) {
                             PosterMediaCard(
                                 item = item,
@@ -808,7 +753,6 @@ fun SearchResultsContent(
     }
 }
 
-// Helper function to get continue watching items
 private fun getContinueWatchingItems(appState: MainAppState, maxItems: Int = 8): List<BaseItemDto> {
     val sourceItems = if (appState.continueWatching.isNotEmpty()) {
         appState.continueWatching
@@ -837,29 +781,28 @@ private fun ContinueWatchingSection(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.padding(horizontal = 16.dp),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // Section Header
         Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+            modifier = Modifier.padding(horizontal = 16.dp)
         ) {
             Text(
                 text = "Continue Watching",
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             )
         }
 
-        // Horizontal scrolling list of continue watching items
         val rowState = rememberLazyListState()
         LazyRow(
             state = rowState,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
         ) {
             items(
                 items = items,
@@ -892,7 +835,11 @@ private fun ContinueWatchingCard(
 
     ElevatedCard(
         modifier = modifier.width(cardWidth),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        )
     ) {
         Column(
             modifier = Modifier.combinedClickable(
@@ -908,7 +855,7 @@ private fun ContinueWatchingCard(
                     size = ImageSize.POSTER,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(240.dp),
+                        .height(220.dp),
                 )
 
                 WatchProgressBar(
@@ -926,21 +873,16 @@ private fun ContinueWatchingCard(
             ) {
                 Text(
                     text = item.name ?: stringResource(id = R.string.unknown),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
 
                 if (item.type == BaseItemKind.EPISODE) {
                     Text(
                         text = buildString {
-                            item.seriesName?.let { append("$it • ") }
-                            item.parentIndexNumber?.let { season ->
-                                item.indexNumber?.let { episode ->
-                                    append("S${season}E$episode")
-                                }
-                            }
+                            item.seriesName?.let { append(it) }
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -953,6 +895,7 @@ private fun ContinueWatchingCard(
                     text = "${watchedPercentage.roundToInt()}% watched",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -1056,7 +999,7 @@ private fun HomeRowSection(
     title: String,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
-    horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(12.dp),
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(16.dp),
     content: LazyListScope.() -> Unit,
 ) {
     Column(
@@ -1077,11 +1020,17 @@ private fun HomeRowSection(
 
 @Composable
 private fun HomeSectionTitle(title: String, modifier: Modifier = Modifier) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.headlineSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-    )
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+        )
+    }
 }

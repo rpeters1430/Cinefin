@@ -41,16 +41,25 @@ class TVSeasonViewModel @Inject constructor(
     // Cache for episodes by season ID to avoid redundant API calls
     private val episodesCache = mutableMapOf<String, List<BaseItemDto>>()
 
+    // Track the current series ID to avoid clearing cache on re-entry
+    private var currentSeriesId: String? = null
+
     fun loadSeriesData(seriesId: String) {
         viewModelScope.launch {
-            // Clear cache when loading new series data to ensure fresh data
-            episodesCache.clear()
+            // Only clear cache and episodes if we're loading a different series
+            // This preserves the episode dropdown state when navigating back
+            val isNewSeries = currentSeriesId != seriesId
+            if (isNewSeries) {
+                episodesCache.clear()
+                currentSeriesId = seriesId
+            }
+
             _state.value = _state.value.copy(
                 isLoading = true,
                 errorMessage = null,
-                episodesBySeasonId = emptyMap(),
-                loadingSeasonIds = emptySet(),
-                seasonEpisodeErrors = emptyMap(),
+                episodesBySeasonId = if (isNewSeries) emptyMap() else _state.value.episodesBySeasonId,
+                loadingSeasonIds = if (isNewSeries) emptySet() else _state.value.loadingSeasonIds,
+                seasonEpisodeErrors = if (isNewSeries) emptyMap() else _state.value.seasonEpisodeErrors,
             )
 
             var seriesDetails = _state.value.seriesDetails

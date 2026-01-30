@@ -20,19 +20,19 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -58,10 +58,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ConnectionPhase
 import com.rpeters.jellyfin.ui.components.ConnectionState
+import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
+import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
+import com.rpeters.jellyfin.ui.components.ExpressiveOutlinedButton
+import com.rpeters.jellyfin.ui.components.ExpressiveTonalButton
+import com.rpeters.jellyfin.ui.components.ExpressiveTopAppBar
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyCircularLoading
 import com.rpeters.jellyfin.ui.components.PinningAlertReason
 import com.rpeters.jellyfin.ui.components.PinningAlertState
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
@@ -73,7 +80,7 @@ import java.util.Date
 fun ServerConnectionScreen(
     onConnect: (String, String, String) -> Unit = { _, _, _ -> },
     onQuickConnect: () -> Unit = {},
-    connectionState: ConnectionState = ConnectionState(), // Use enhanced connection state
+    connectionState: ConnectionState = ConnectionState(),
     savedServerUrl: String = "",
     savedUsername: String = "",
     rememberLogin: Boolean = true,
@@ -129,7 +136,7 @@ fun ServerConnectionScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
                         MaterialTheme.colorScheme.surface,
                         MaterialTheme.colorScheme.surface,
                     ),
@@ -139,13 +146,13 @@ fun ServerConnectionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 24.dp)
+                .padding(horizontal = 24.dp, vertical = 24.dp)
                 .imePadding()
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             LoginHeaderCard(modifier = Modifier.fillMaxWidth())
 
@@ -166,19 +173,28 @@ fun ServerConnectionScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                // Divider
+                // Expressive Divider
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    HorizontalDivider(modifier = Modifier.weight(1f))
+                    HorizontalDivider(
+                        modifier = Modifier.weight(1f),
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    )
                     Text(
                         text = stringResource(id = R.string.login_or_divider),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 16.dp),
                     )
-                    HorizontalDivider(modifier = Modifier.weight(1f))
+                    HorizontalDivider(
+                        modifier = Modifier.weight(1f),
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    )
                 }
             }
 
@@ -223,34 +239,53 @@ fun ServerConnectionScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Connect button
-            Button(
+            // Connect button - Expressive
+            ExpressiveFilledButton(
                 onClick = submitIfValid,
                 enabled = canSubmit && !connectionState.isConnecting,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.large,
             ) {
                 if (connectionState.isConnecting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
+                    ExpressiveWavyCircularLoading(
+                        modifier = Modifier.size(28.dp),
+                        amplitude = 0.12f,
+                        wavelength = 20.dp,
+                        waveSpeed = 10.dp,
                         color = MaterialTheme.colorScheme.onPrimary,
+                        trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(id = R.string.connecting))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        stringResource(id = R.string.connecting),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
                 } else {
-                    Text(stringResource(id = R.string.connect))
+                    Text(
+                        stringResource(id = R.string.connect),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
                 }
             }
 
-            // Quick Connect button
-            OutlinedButton(
+            // Quick Connect button - Expressive
+            ExpressiveOutlinedButton(
                 onClick = onQuickConnect,
                 enabled = !connectionState.isConnecting,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.large,
             ) {
-                Text(stringResource(id = R.string.quick_connect_title))
+                Text(
+                    stringResource(id = R.string.quick_connect_title),
+                    style = MaterialTheme.typography.titleMedium,
+                )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 }
@@ -259,45 +294,37 @@ fun ServerConnectionScreen(
 private fun LoginHeaderCard(
     modifier: Modifier = Modifier,
 ) {
-    ElevatedCard(
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
-        modifier = modifier,
+    Column(
+        modifier = modifier.padding(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(
-            modifier = Modifier
-                .padding(horizontal = 20.dp, vertical = 24.dp)
-                .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            // App logo - using launcher foreground icon
-            Icon(
-                painter = painterResource(id = R.drawable.ic_launcher_fg),
-                contentDescription = stringResource(id = R.string.app_name),
-                tint = Color.Unspecified, // Don't tint - preserve original colors
-                modifier = Modifier.size(80.dp),
-            )
-            Text(
-                text = stringResource(id = R.string.app_name),
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Text(
-                text = stringResource(id = R.string.sign_in_to_server),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+        // App logo - using launcher foreground icon
+        Icon(
+            painter = painterResource(id = R.drawable.ic_launcher_fg),
+            contentDescription = stringResource(id = R.string.app_name),
+            tint = Color.Unspecified, // Don't tint - preserve original colors
+            modifier = Modifier.size(100.dp),
+        )
+        Text(
+            text = stringResource(id = R.string.app_name),
+            style = MaterialTheme.typography.displayMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            text = stringResource(id = R.string.sign_in_to_server),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
+@OptInAppExperimentalApis
 @Composable
 private fun AutoLoginCard(
     savedServerUrl: String,
@@ -311,21 +338,22 @@ private fun AutoLoginCard(
 ) {
     ElevatedCard(
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
         ),
         elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 6.dp,
+            defaultElevation = 0.dp,
         ),
+        shape = MaterialTheme.shapes.extraLarge,
         modifier = modifier,
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
                 text = stringResource(id = R.string.welcome_back),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
@@ -335,30 +363,33 @@ private fun AutoLoginCard(
                     savedServerUrl,
                     savedUsername,
                 ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
             )
-            if (isBiometricAuthEnabled && isBiometricAuthAvailable) {
-                FilledTonalButton(
-                    onClick = onBiometricLogin,
-                    enabled = !isConnecting,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(id = R.string.login_with_biometric))
+            
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (isBiometricAuthEnabled && isBiometricAuthAvailable) {
+                    ExpressiveTonalButton(
+                        onClick = onBiometricLogin,
+                        enabled = !isConnecting,
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = MaterialTheme.shapes.large,
+                    ) {
+                        Icon(Icons.Default.Security, contentDescription = null)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(stringResource(id = R.string.login_with_biometric))
+                    }
                 }
-                OutlinedButton(
+                
+                ExpressiveTonalButton(
                     onClick = onAutoLogin,
                     enabled = !isConnecting,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(id = R.string.auto_login))
-                }
-            } else {
-                FilledTonalButton(
-                    onClick = onAutoLogin,
-                    enabled = !isConnecting,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = MaterialTheme.shapes.large,
                 ) {
                     Text(stringResource(id = R.string.auto_login))
                 }
@@ -382,73 +413,75 @@ private fun LoginFormCard(
     onPasswordSubmit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    ElevatedCard(
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
+    Column(
         modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+        OutlinedTextField(
+            value = serverUrl,
+            onValueChange = onServerUrlChange,
+            label = { Text(stringResource(id = R.string.server_url_label)) },
+            placeholder = { Text(stringResource(id = R.string.server_url_placeholder)) },
+            leadingIcon = { Icon(Icons.Default.Storage, contentDescription = null) },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Uri,
+                imeAction = ImeAction.Next,
+            ),
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester),
+            enabled = !isConnecting,
+            shape = MaterialTheme.shapes.large,
+        )
+
+        OutlinedTextField(
+            value = username,
+            onValueChange = onUsernameChange,
+            label = { Text(stringResource(id = R.string.username_label)) },
+            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next,
+            ),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isConnecting,
+            shape = MaterialTheme.shapes.large,
+        )
+
+        OutlinedSecureTextField(
+            state = passwordState,
+            label = { Text(stringResource(id = R.string.password_label)) },
+            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done,
+            ),
+            onKeyboardAction = { performDefaultAction ->
+                onPasswordSubmit()
+                performDefaultAction()
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isConnecting,
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            OutlinedTextField(
-                value = serverUrl,
-                onValueChange = onServerUrlChange,
-                label = { Text(stringResource(id = R.string.server_url_label)) },
-                placeholder = { Text(stringResource(id = R.string.server_url_placeholder)) },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Uri,
-                    imeAction = ImeAction.Next,
-                ),
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester),
+            Switch(
+                checked = rememberLogin,
+                onCheckedChange = onRememberLoginChange,
                 enabled = !isConnecting,
             )
-
-            OutlinedTextField(
-                value = username,
-                onValueChange = onUsernameChange,
-                label = { Text(stringResource(id = R.string.username_label)) },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Next,
-                ),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isConnecting,
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                stringResource(id = R.string.remember_login),
+                style = MaterialTheme.typography.bodyLarge
             )
-
-            OutlinedSecureTextField(
-                state = passwordState,
-                label = { Text(stringResource(id = R.string.password_label)) },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done,
-                ),
-                onKeyboardAction = { performDefaultAction ->
-                    onPasswordSubmit()
-                    performDefaultAction()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isConnecting,
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Switch(
-                    checked = rememberLogin,
-                    onCheckedChange = onRememberLoginChange,
-                    enabled = !isConnecting,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(id = R.string.remember_login))
-            }
         }
     }
 }
@@ -459,20 +492,30 @@ private fun SavedCredentialsHintCard(
 ) {
     ElevatedCard(
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
         ),
         elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 4.dp,
+            defaultElevation = 0.dp,
         ),
+        shape = MaterialTheme.shapes.large,
         modifier = modifier,
     ) {
-        Text(
-            text = stringResource(id = R.string.saved_credentials_hint),
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(12.dp),
-            textAlign = TextAlign.Center,
-        )
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                Icons.Default.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+            Text(
+                text = stringResource(id = R.string.saved_credentials_hint),
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
     }
 }
 
@@ -486,8 +529,9 @@ private fun ConnectionErrorCard(
             containerColor = MaterialTheme.colorScheme.errorContainer,
         ),
         elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 6.dp,
+            defaultElevation = 2.dp,
         ),
+        shape = MaterialTheme.shapes.large,
         modifier = modifier,
     ) {
         Text(
@@ -631,8 +675,9 @@ private fun BiometricSecurityNotice(
                 containerColor = MaterialTheme.colorScheme.errorContainer,
             ),
             elevation = CardDefaults.elevatedCardElevation(
-                defaultElevation = 4.dp,
+                defaultElevation = 0.dp,
             ),
+            shape = MaterialTheme.shapes.large,
             modifier = modifier.fillMaxWidth(),
         ) {
             Row(
@@ -667,16 +712,17 @@ private fun BiometricSecurityNotice(
     if (requireStrongBiometric || isUsingWeakBiometric) {
         ElevatedCard(
             colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
             ),
             elevation = CardDefaults.elevatedCardElevation(
-                defaultElevation = 4.dp,
+                defaultElevation = 0.dp,
             ),
+            shape = MaterialTheme.shapes.extraLarge,
             modifier = modifier.fillMaxWidth(),
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -686,16 +732,16 @@ private fun BiometricSecurityNotice(
                         imageVector = Icons.Default.Security,
                         contentDescription = stringResource(id = R.string.biometric_security_settings_title),
                         tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(28.dp),
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(id = R.string.biometric_security_settings_title),
-                            style = MaterialTheme.typography.titleSmall,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = stringResource(id = R.string.biometric_security_settings_description),
                             style = MaterialTheme.typography.bodySmall,
@@ -712,11 +758,11 @@ private fun BiometricSecurityNotice(
                         checked = requireStrongBiometric,
                         onCheckedChange = { onRequireStrongBiometricChange(it) },
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(
                             text = stringResource(id = R.string.biometric_require_strong),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                         Text(
@@ -781,199 +827,212 @@ fun QuickConnectScreen(
     val isPolling = connectionState.isQuickConnectPolling
     val status = connectionState.quickConnectStatus
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Header
-        Text(
-            text = stringResource(id = R.string.quick_connect_title),
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary,
-            textAlign = TextAlign.Center,
-        )
-
-        Text(
-            text = stringResource(id = R.string.quick_connect_instruction),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Server URL input
-        OutlinedTextField(
-            value = serverUrl,
-            onValueChange = {
-                serverUrl = it
-                onServerUrlChange(it)
-            },
-            label = { Text(stringResource(id = R.string.quick_connect_server_url_label)) },
-            placeholder = { Text(stringResource(id = R.string.quick_connect_server_url_placeholder)) },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Uri,
-                imeAction = ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    keyboardController?.hide()
-                    if (serverUrl.isNotBlank()) {
-                        onConnect()
-                    }
-                },
-            ),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !connectionState.isConnecting && !isPolling,
-        )
-
-        // Status message
-        if (status.isNotBlank()) {
-            ElevatedCard(
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = if (isPolling) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.secondaryContainer
-                    },
-                ),
-                elevation = CardDefaults.elevatedCardElevation(
-                    defaultElevation = if (isPolling) 6.dp else 4.dp,
-                ),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = status,
-                    color = if (isPolling) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSecondaryContainer
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(16.dp),
-                    textAlign = TextAlign.Center,
-                )
-            }
+    Scaffold(
+        topBar = {
+            ExpressiveTopAppBar(
+                title = stringResource(id = R.string.quick_connect_title),
+                navigationIcon = {
+                    ExpressiveBackNavigationIcon(onClick = onCancel)
+                }
+            )
         }
+    ) { innerPadding ->
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(28.dp),
+        ) {
+            Text(
+                text = stringResource(id = R.string.quick_connect_instruction),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
 
-        // Quick Connect Code display
-        if (code.isNotBlank()) {
-            ElevatedCard(
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Server URL input
+            OutlinedTextField(
+                value = serverUrl,
+                onValueChange = {
+                    serverUrl = it
+                    onServerUrlChange(it)
+                },
+                label = { Text(stringResource(id = R.string.quick_connect_server_url_label)) },
+                placeholder = { Text(stringResource(id = R.string.quick_connect_server_url_placeholder)) },
+                leadingIcon = { Icon(Icons.Default.Storage, contentDescription = null) },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Uri,
+                    imeAction = ImeAction.Done,
                 ),
-                elevation = CardDefaults.elevatedCardElevation(
-                    defaultElevation = 8.dp,
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        keyboardController?.hide()
+                        if (serverUrl.isNotBlank()) {
+                            onConnect()
+                        }
+                    },
                 ),
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                enabled = !connectionState.isConnecting && !isPolling,
+                shape = MaterialTheme.shapes.large,
+            )
+
+            // Status message
+            if (status.isNotBlank()) {
+                ElevatedCard(
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = if (isPolling) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        },
+                    ),
+                    elevation = CardDefaults.elevatedCardElevation(
+                        defaultElevation = 0.dp,
+                    ),
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        text = stringResource(id = R.string.quick_connect_code_label),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = code,
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                        textAlign = TextAlign.Center,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(id = R.string.quick_connect_enter_code_instruction),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        text = status,
+                        color = if (isPolling) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(20.dp),
                         textAlign = TextAlign.Center,
                     )
                 }
             }
-        }
 
-        // Error message
-        if (connectionState.errorMessage != null) {
-            ElevatedCard(
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                ),
-                elevation = CardDefaults.elevatedCardElevation(
-                    defaultElevation = 6.dp,
-                ),
+            // Quick Connect Code display
+            if (code.isNotBlank()) {
+                ElevatedCard(
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    ),
+                    elevation = CardDefaults.elevatedCardElevation(
+                        defaultElevation = 0.dp,
+                    ),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.quick_connect_code_label),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = code,
+                            style = MaterialTheme.typography.displayLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            textAlign = TextAlign.Center,
+                            letterSpacing = 8.sp,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = stringResource(id = R.string.quick_connect_enter_code_instruction),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            }
+
+            // Error message
+            if (connectionState.errorMessage != null) {
+                ElevatedCard(
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
+                    elevation = CardDefaults.elevatedCardElevation(
+                        defaultElevation = 2.dp,
+                    ),
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = connectionState.errorMessage,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Buttons
+            Column(
                 modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = connectionState.errorMessage,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(16.dp),
-                )
+                ExpressiveFilledButton(
+                    onClick = {
+                        keyboardController?.hide()
+                        onConnect()
+                    },
+                    enabled = !connectionState.isConnecting && !isPolling && serverUrl.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = MaterialTheme.shapes.large,
+                ) {
+                    if (connectionState.isConnecting) {
+                        ExpressiveWavyCircularLoading(
+                            modifier = Modifier.size(28.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(stringResource(id = R.string.quick_connect_connecting))
+                    } else if (isPolling) {
+                        ExpressiveWavyCircularLoading(
+                            modifier = Modifier.size(28.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(stringResource(id = R.string.quick_connect_waiting))
+                    } else {
+                        Text(stringResource(id = R.string.quick_connect_get_code))
+                    }
+                }
+
+                ExpressiveOutlinedButton(
+                    onClick = onCancel,
+                    enabled = !connectionState.isConnecting,
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = MaterialTheme.shapes.large,
+                ) {
+                    Text(stringResource(id = R.string.cancel))
+                }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Help text
+            Text(
+                text = stringResource(id = R.string.quick_connect_help),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 24.dp),
+            )
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Get Code button
-        Button(
-            onClick = {
-                keyboardController?.hide()
-                onConnect()
-            },
-            enabled = !connectionState.isConnecting && !isPolling && serverUrl.isNotBlank(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-        ) {
-            if (connectionState.isConnecting) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(id = R.string.quick_connect_connecting))
-            } else if (isPolling) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(id = R.string.quick_connect_waiting))
-            } else {
-                Text(stringResource(id = R.string.quick_connect_get_code))
-            }
-        }
-
-        // Cancel button
-        OutlinedButton(
-            onClick = onCancel,
-            enabled = !connectionState.isConnecting,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-        ) {
-            Text(stringResource(id = R.string.cancel))
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Help text
-        Text(
-            text = stringResource(id = R.string.quick_connect_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
     }
 }
 

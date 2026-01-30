@@ -36,6 +36,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Run a single test class
 ./gradlew testDebugUnitTest --tests "com.rpeters.jellyfin.ClassName"         # Linux/macOS
 ./gradlew.bat testDebugUnitTest --tests "com.rpeters.jellyfin.ClassName"     # Windows
+
+# Run a specific test method
+./gradlew testDebugUnitTest --tests "com.rpeters.jellyfin.ClassName.methodName"
 ```
 
 ### Code Quality
@@ -136,6 +139,20 @@ Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<Jellyf
 - **AudioService** (ui/player/audio/AudioService.kt): Background audio playback with Media3 session
 - **PlaybackProgressManager**: Tracks and reports playback position to server
 
+### Google Cast / Chromecast Integration
+- **CastManager** (ui/player/CastManager.kt): Manages all Cast functionality
+  - Session management with auto-reconnect support
+  - Media loading with authentication token injection
+  - Subtitle track support
+  - Preview loading (artwork + metadata without playback)
+- **CastOptionsProvider** (ui/player/CastOptionsProvider.kt): Cast configuration
+  - **Current receiver**: `CC1AD845` (Google Default Media Receiver)
+  - **Why not Jellyfin's official receiver?** The Jellyfin Cast receivers (`F007D354` stable, `6F511C87` unstable) require implementing the full Jellyfin Cast protocol with custom data payloads containing server info, authentication, and media source selection. This app uses a simplified URL-based approach - sending HLS transcoded stream URLs with auth tokens as query parameters - which works reliably with Google's Default Media Receiver without requiring custom protocol implementation.
+  - Source: https://github.com/jellyfin/jellyfin-chromecast
+- **Cast preferences**: Stored via CastPreferencesRepository for auto-reconnect
+- **Authentication**: Access tokens appended as query parameters (`api_key=`) for Cast receiver
+- **Stream optimization**: Prefers HLS transcoding (`container=hls`) for maximum compatibility with adaptive streaming fallback
+
 ### Image Loading & Performance
 - Custom `ImageLoadingOptimizer` (ui/image/OptimizedImageLoader.kt) configures Coil based on device performance
 - **DevicePerformanceProfile** detects device tier (LOW/MEDIUM/HIGH/FLAGSHIP) to adjust:
@@ -153,20 +170,54 @@ Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<Jellyf
 - Test naming convention: `functionName_scenario_expectedResult`
 
 #### Important Testing Patterns
-- **Dispatcher Testing**: Use `StandardTestDispatcher` with `advanceUntilIdle()` for ViewModel tests
-- **Mocking Flows**: Use `coEvery` for Flow properties (e.g., `repository.currentServer`)
+- **Dispatcher Testing**: Use `StandardTestDispatcher` (NOT `UnconfinedTestDispatcher`) with `advanceUntilIdle()` for ViewModel tests
+  ```kotlin
+  private val testDispatcher = StandardTestDispatcher()
+
+  @Test
+  fun test() = runTest(testDispatcher) {
+      viewModel.someAction()
+      advanceUntilIdle()  // CRITICAL: Must call to execute pending coroutines
+      // Now assert
+  }
+  ```
+- **Mocking Flows**: Use `coEvery` (NOT `every`) for Flow properties to avoid MockKException
+  ```kotlin
+  // CORRECT:
+  coEvery { repository.currentServer } returns MutableStateFlow(null)
+
+  // WRONG:
+  every { repository.currentServer } returns flowOf(null)  // Causes MockKException
+  ```
 - **Default Parameters**: Use `any()` matchers when mocking repository methods with default parameters
-- See TESTING_GUIDE.md for detailed dispatcher and StateFlow testing patterns
+  ```kotlin
+  coEvery {
+      repository.getLibraryItems(
+          parentId = "123",
+          itemTypes = "Movie",
+          startIndex = any(),  // Use any() for default parameters
+          limit = any(),
+          collectionType = "movies"
+      )
+  } returns ApiResult.Success(items)
+  ```
+- **Common Pitfalls**:
+  - Forgetting `advanceUntilIdle()` - coroutines won't execute
+  - Using `every` instead of `coEvery` for Flows - causes inline function errors
+  - Using `runBlocking { delay() }` instead of `advanceUntilIdle()` - unreliable
+- See docs/TESTING_GUIDE.md for complete ViewModel testing examples and detailed patterns
 
 ### Key Constants & Configuration
 - Centralized constants in `core/constants/Constants.kt`
 - SDK versions: compileSdk 36, targetSdk 35, minSdk 26 (Android 8.0+)
 - Java version: 21 with core library desugaring enabled
-- Kotlin version: 2.3.0 with KSP 2.3.4
+- Kotlin version: 2.3.0 with KSP 2.3.0
 - Dependency versions: Centralized in `gradle/libs.versions.toml`
 - **Release builds**: ProGuard/R8 enabled with shrinking and minification (`proguard-rules.pro`)
+- **Native debug symbols**: FULL debug symbols enabled for Play Console crash reporting
 - **Network security**: Custom configuration in `app/src/main/res/xml/network_security_config.xml`
 - **Firebase Integration**: Crashlytics and Performance Monitoring enabled (Google Services plugin)
+- **Test coverage**: Enabled for both unit and instrumentation tests in debug builds
 
 ### Release Signing Configuration
 Release builds require signing credentials configured via Gradle properties or environment variables:
@@ -302,8 +353,19 @@ Refer to CURRENT_STATUS.md for detailed feature status and ROADMAP.md for roadma
 ### Logging & Debugging
 - Enable verbose logging: `SecureLogger.enableVerboseLogging = true` (default is false to reduce spam)
 - Logcat filtering: Use tag `Jellyfin` or specific component tags
-- Debug builds include LeakCanary for memory leak detection
+  ```bash
+  # Capture logcat from connected device
+  adb logcat -v time > latest_logcat
+
+  # Filter for Jellyfin logs only
+  adb logcat -v time | grep Jellyfin
+
+  # Clear logcat before testing
+  adb logcat -c
+  ```
+- Debug builds include LeakCanary 2.14 for memory leak detection
 - Network traffic: Check `NetworkOptimizer` for StrictMode configuration
+- Main thread monitoring: `MainThreadMonitor` tracks main thread impact in debug builds
 
 ### Testing Issues
 - **Flow mocking failures**: Use `coEvery` instead of `every` for Flow properties

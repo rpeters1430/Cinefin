@@ -1166,6 +1166,87 @@ class JellyfinRepository @Inject constructor(
     }
 
     /**
+     * Get playback info specifically for Chromecast/Cast devices.
+     * Uses device-specific profiles based on the Cast receiver's capabilities.
+     * @param itemId The item ID to get playback info for
+     * @param isShieldOrAndroidTV Whether the Cast receiver is a SHIELD/Android TV (more capable)
+     */
+    suspend fun getCastPlaybackInfo(itemId: String, isShieldOrAndroidTV: Boolean = false): PlaybackInfoResponse {
+        val server = authRepository.getCurrentServer()
+            ?: throw IllegalStateException("No authenticated server available")
+        val client = sessionManager.getClientForUrl(server.url)
+
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+            ?: throw IllegalStateException("Invalid user UUID: ${server.userId}")
+        val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull()
+            ?: throw IllegalArgumentException("Invalid item UUID: $itemId")
+
+        // Use device-specific profile based on Cast receiver capabilities
+        val deviceProfile = if (isShieldOrAndroidTV) {
+            JellyfinDeviceProfile.createShieldCastDeviceProfile()
+        } else {
+            JellyfinDeviceProfile.createChromecastDeviceProfile()
+        }
+        Log.d("JellyfinRepository", "Cast: Using ${if (isShieldOrAndroidTV) "SHIELD" else "Chromecast"} device profile")
+
+        // Limit bitrate for Cast to 20 Mbps
+        val maxBitrate = 20_000_000
+
+        // For SHIELD/Android TV, allow direct play for faster startup
+        // For basic Chromecast, force transcoding for compatibility
+        val allowDirectPlay = isShieldOrAndroidTV
+
+        val playbackInfoDto = PlaybackInfoDto(
+            userId = userUuid,
+            maxStreamingBitrate = maxBitrate,
+            startTimeTicks = null,
+            audioStreamIndex = null,
+            subtitleStreamIndex = null,
+            maxAudioChannels = null,
+            mediaSourceId = null,
+            liveStreamId = null,
+            deviceProfile = deviceProfile,
+            enableDirectPlay = allowDirectPlay, // Allow for SHIELD, disable for basic Chromecast
+            enableDirectStream = allowDirectPlay, // Allow for SHIELD, disable for basic Chromecast
+            enableTranscoding = true, // Always allow transcoding as fallback
+            allowVideoStreamCopy = allowDirectPlay, // Allow for SHIELD for faster startup
+            allowAudioStreamCopy = allowDirectPlay, // Allow for SHIELD for faster startup
+            autoOpenLiveStream = null,
+        )
+
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                "JellyfinRepository",
+                "Cast PlaybackInfo request for item $itemId: maxBitrate=${maxBitrate / 1_000_000}Mbps",
+            )
+        }
+
+        val response = withIo {
+            client.mediaInfoApi.getPostedPlaybackInfo(
+                itemId = itemUuid,
+                data = playbackInfoDto,
+            ).content
+        }
+
+        if (BuildConfig.DEBUG) {
+            Log.d("JellyfinRepository", "Cast PlaybackInfo response:")
+            Log.d("JellyfinRepository", "  PlaySessionId: ${response.playSessionId}")
+            Log.d("JellyfinRepository", "  MediaSources: ${response.mediaSources.size}")
+
+            response.mediaSources.forEachIndexed { index, mediaSource ->
+                Log.d("JellyfinRepository", "  Cast MediaSource[$index]:")
+                Log.d("JellyfinRepository", "    Container: ${mediaSource.container}")
+                Log.d("JellyfinRepository", "    SupportsTranscoding: ${mediaSource.supportsTranscoding}")
+                mediaSource.transcodingUrl?.let { url ->
+                    Log.d("JellyfinRepository", "    TranscodingUrl: $url")
+                }
+            }
+        }
+
+        return response
+    }
+
+    /**
      * Get maximum streaming bitrate based on current network quality.
      * This provides a realistic bitrate limit for the server to use when making transcoding decisions.
      * Returns higher values for better networks to allow direct play or high-quality transcoding.

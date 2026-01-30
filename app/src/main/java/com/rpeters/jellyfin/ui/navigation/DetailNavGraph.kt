@@ -408,6 +408,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     seriesInfo = detailState.seriesInfo ?: series,
                     previousEpisode = detailState.previousEpisode,
                     nextEpisode = detailState.nextEpisode,
+                    seasonEpisodes = detailState.seasonEpisodes,
                     getImageUrl = { mainViewModel.getImageUrl(it) },
                     getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
                     onBackClick = { navController.popBackStack() },
@@ -419,6 +420,19 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     onNextEpisodeClick = { nextEpisodeId ->
                         navController.navigate(Screen.TVEpisodeDetail.createRoute(nextEpisodeId)) {
                             popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
+                        }
+                    },
+                    onEpisodeClick = { episodeItem ->
+                        navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeItem.id.toString())) {
+                            popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
+                        }
+                    },
+                    onViewSeriesClick = {
+                        val seriesId = series?.id ?: detailState.seriesInfo?.id
+                        seriesId?.let { id ->
+                            navController.navigate(Screen.TVSeasons.createRoute(id.toString())) {
+                                popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
+                            }
                         }
                     },
                     onPlayClick = { episodeItem ->
