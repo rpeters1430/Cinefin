@@ -38,9 +38,7 @@ import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @androidx.media3.common.util.UnstableApi
@@ -53,6 +51,7 @@ class VideoPlayerActivity : FragmentActivity() {
     private var currentItemName: String = ""
     private var pipSourceRect: Rect? = null
     private var isHdrModeEnabled = false
+    private var isPlayerReleased = false
 
     @Inject
     lateinit var deviceCapabilities: DeviceCapabilities
@@ -252,14 +251,14 @@ class VideoPlayerActivity : FragmentActivity() {
             return
         }
 
-        // Use NonCancellable to ensure stop playback is reported before finishing
-        lifecycleScope.launch {
-            withContext(NonCancellable) {
-                playerViewModel.releasePlayer()
-            }
-            @Suppress("DEPRECATION")
-            super.onBackPressed()
+        // Release player immediately without blocking navigation.
+        // Network progress reporting is handled asynchronously by PlaybackProgressManager.
+        if (!isPlayerReleased) {
+            isPlayerReleased = true
+            playerViewModel.releasePlayerImmediate()
         }
+        @Suppress("DEPRECATION")
+        super.onBackPressed()
     }
 
     override fun onResume() {
@@ -288,11 +287,11 @@ class VideoPlayerActivity : FragmentActivity() {
             SecureLogger.w("VideoPlayerActivity", "Error unregistering receiver: ${e.message}")
         }
 
-        // Use NonCancellable to ensure stop playback is reported before activity is destroyed
-        lifecycleScope.launch {
-            withContext(NonCancellable) {
-                playerViewModel.releasePlayer()
-            }
+        // Release player if not already released (e.g., from onBackPressed).
+        // Uses non-blocking release to avoid ANR during activity destruction.
+        if (!isPlayerReleased) {
+            isPlayerReleased = true
+            playerViewModel.releasePlayerImmediate()
         }
     }
 
