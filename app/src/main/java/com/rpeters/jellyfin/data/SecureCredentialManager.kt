@@ -487,9 +487,6 @@ class SecureCredentialManager @Inject constructor(
             encryptedPassword?.let { decrypt(it) }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.w(TAG, "getPassword: Decryption failed", e)
-            null
         }
         if (result != null) {
             logDebug { "🟢 getPassword: SUCCESS - Password retrieved and decrypted" }

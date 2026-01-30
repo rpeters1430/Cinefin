@@ -150,8 +150,6 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Success(result)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            handleExceptionSafely(e, "$operationName failed")
         }
 
     // ✅ PHASE 4: Simplified error handling using centralized utilities
@@ -381,8 +379,6 @@ class JellyfinRepository @Inject constructor(
             ApiResult.Success(items)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            handleExceptionSafely(e, "Failed to load recently added items")
         }
     }
 
@@ -485,11 +481,6 @@ class JellyfinRepository @Inject constructor(
                     Log.d("JellyfinRepository", "$operationName: Operation cancelled on attempt ${attempt + 1}")
                 }
                 throw e
-            } catch (e: Exception) {
-                Log.w("JellyfinRepository", "$operationName: Exception on attempt ${attempt + 1}: ${e.message}")
-                if (attempt >= maxRetries) {
-                    return handleExceptionSafely(e, "$operationName failed")
-                }
             }
         }
 

@@ -103,9 +103,7 @@ class PrivacySettingsViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                _state.update { it.copy(errorMessage = e.message ?: "Failed to update credential security") }
-            } finally {
+            }  finally {
                 _state.update { it.copy(isUpdatingCredentialSecurity = false) }
             }
         }
