@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -68,6 +69,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -77,6 +82,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.SubcomposeAsyncImage
@@ -1360,6 +1366,19 @@ private fun ExpressiveEpisodeListNavigation(
                     shrinkTowards = Alignment.Top,
                 ) + fadeOut(MotionTokens.expressiveExit),
             ) {
+                val listState = rememberLazyListState()
+                val nestedScrollConnection = remember {
+                    object : NestedScrollConnection {
+                        override fun onPostScroll(
+                            consumed: Offset,
+                            available: Offset,
+                            source: NestedScrollSource,
+                        ): Offset = available
+
+                        override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity =
+                            available
+                    }
+                }
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1373,7 +1392,9 @@ private fun ExpressiveEpisodeListNavigation(
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(max = 400.dp),
+                                .heightIn(max = 400.dp)
+                                .nestedScroll(nestedScrollConnection),
+                            state = listState,
                             contentPadding = PaddingValues(vertical = 8.dp),
                         ) {
                             items(
