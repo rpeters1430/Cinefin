@@ -194,6 +194,24 @@ class PlaybackProgressManager @Inject constructor(
         }
     }
 
+    /**
+     * Non-blocking version of stopTracking for use during cleanup.
+     * Uses the manager's own coroutine scope to report stop asynchronously,
+     * avoiding blocking the calling (main) thread with network calls.
+     */
+    fun stopTrackingAsync(reportStop: Boolean = true) {
+        progressSyncJob?.cancel()
+        managerScope.launch {
+            try {
+                stopTracking(reportStop)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e("PlaybackProgressManager", "Error in async stop tracking: ${e.message}")
+            }
+        }
+    }
+
     override fun onPause(owner: LifecycleOwner) {
         super.onPause(owner)
         // Report current progress when app is paused using managed scope

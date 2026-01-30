@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.util.Locale
 import javax.inject.Inject
@@ -141,10 +142,9 @@ class VideoPlayerViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        // Release player resources - use runBlocking since viewModelScope is already cancelled
-        kotlinx.coroutines.runBlocking {
-            releasePlayer()
-        }
+        // Release player immediately without blocking the main thread.
+        // Network progress reporting is handled asynchronously by PlaybackProgressManager.
+        releasePlayerImmediate()
         SecureLogger.d("VideoPlayer", "ViewModel cleared - resources released")
     }
 
@@ -926,15 +926,54 @@ class VideoPlayerViewModel @Inject constructor(
         castPositionJob = null
     }
 
+    /**
+     * Release player resources immediately without blocking.
+     * ExoPlayer is released synchronously on the calling thread (must be main thread).
+     * Network progress reporting is delegated asynchronously to PlaybackProgressManager.
+     * Use this for cleanup scenarios (onCleared, onBackPressed, onDestroy) to avoid
+     * blocking the main thread with network calls.
+     */
+    fun releasePlayerImmediate(reportStop: Boolean = true) {
+        if (exoPlayer == null) return
+
+        SecureLogger.d("VideoPlayer", "Releasing player immediately (reportStop=$reportStop)")
+        stopPositionUpdates()
+        countdownJob?.cancel()
+        countdownJob = null
+        stopCastPositionUpdates()
+
+        // Release ExoPlayer synchronously - safe because cleanup runs on main thread
+        exoPlayer?.let { p ->
+            try {
+                p.removeListener(playerListener)
+                p.stop()
+                p.clearVideoSurface()
+            } catch (_: Exception) {
+            }
+            try {
+                p.release()
+            } catch (_: Exception) {
+            }
+        }
+        exoPlayer = null
+        trackSelector = null
+        playbackSessionId = null
+
+        // Fire-and-forget: report playback stop asynchronously without blocking
+        playbackProgressManager.stopTrackingAsync(reportStop)
+    }
+
     suspend fun releasePlayer(reportStop: Boolean = true) {
         if (exoPlayer == null) return
 
         SecureLogger.d("VideoPlayer", "Releasing player (reportStop=$reportStop)")
         stopPositionUpdates()
 
-        // Stop tracking synchronously to ensure stop playback is reported before player is released
+        // Stop tracking with timeout to prevent blocking indefinitely on slow networks
         try {
-            playbackProgressManager.stopTracking(reportStop = reportStop)
+            withTimeoutOrNull(5_000L) {
+                playbackProgressManager.stopTracking(reportStop = reportStop)
+            } ?: SecureLogger.w("VideoPlayer", "Playback stop reporting timed out, continuing cleanup")
         } catch (e: Exception) {
             SecureLogger.e("VideoPlayer", "Error stopping playback tracking: ${e.message}")
         }
@@ -943,10 +982,7 @@ class VideoPlayerViewModel @Inject constructor(
             exoPlayer?.let { p ->
                 try {
                     p.removeListener(playerListener)
-                    // Stop playback to flush decoders before releasing
                     p.stop()
-                    // Clear all video outputs to properly detach surfaces and prevent black screen issues
-                    // This is critical for proper cleanup with HEVC/high-resolution content
                     p.clearVideoSurface()
                 } catch (_: Exception) {
                 }
