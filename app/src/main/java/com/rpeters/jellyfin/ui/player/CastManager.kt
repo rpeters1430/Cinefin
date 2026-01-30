@@ -95,7 +95,7 @@ class CastManager @Inject constructor(
                     MediaStatus.PLAYER_STATE_PLAYING,
                     MediaStatus.PLAYER_STATE_PAUSED,
                     MediaStatus.PLAYER_STATE_BUFFERING,
-                        -> {
+                    -> {
                         if (BuildConfig.DEBUG) {
                             SecureLogger.d("CastManager", "Media ready (state=${status.playerState}), seeking to pending position: ${pendingSeekPosition}ms")
                         }
@@ -478,7 +478,9 @@ class CastManager @Inject constructor(
             val device = session?.castDevice
             if (device != null) {
                 Pair(device.modelName ?: "", device.friendlyName ?: "")
-            } else null
+            } else {
+                null
+            }
         }
 
         return try {
@@ -489,14 +491,14 @@ class CastManager @Inject constructor(
 
             // Detect SHIELD or Android TV to allow Direct Play
             val isShieldOrAndroidTV = lowerModel.contains("shield") ||
-                    lowerName.contains("shield") ||
-                    lowerModel.contains("android tv") ||
-                    lowerModel.contains("chromecast with google tv")
+                lowerName.contains("shield") ||
+                lowerModel.contains("android tv") ||
+                lowerModel.contains("chromecast with google tv")
 
             if (BuildConfig.DEBUG) {
                 SecureLogger.d(
                     "CastManager",
-                    "Cast device: model='$modelName' name='$friendlyName' isShield=$isShieldOrAndroidTV"
+                    "Cast device: model='$modelName' name='$friendlyName' isShield=$isShieldOrAndroidTV",
                 )
             }
 
@@ -532,7 +534,7 @@ class CastManager @Inject constructor(
                 // Transcoding - detect format from URL
                 when {
                     streamPath.contains("master.m3u8", ignoreCase = true) ||
-                            streamPath.contains(".m3u8", ignoreCase = true) -> "application/x-mpegURL"
+                        streamPath.contains(".m3u8", ignoreCase = true) -> "application/x-mpegURL"
                     streamPath.contains(".mpd", ignoreCase = true) -> "application/dash+xml"
                     streamPath.endsWith(".ts", ignoreCase = true) -> "video/mp2t"
                     else -> "application/x-mpegURL"
@@ -551,7 +553,7 @@ class CastManager @Inject constructor(
             if (BuildConfig.DEBUG) {
                 SecureLogger.d(
                     "CastManager",
-                    "Cast playback resolved: container=${mediaSource.container} mimeType=$mimeType supportsTranscoding=${mediaSource.supportsTranscoding}"
+                    "Cast playback resolved: container=${mediaSource.container} mimeType=$mimeType supportsTranscoding=${mediaSource.supportsTranscoding}",
                 )
             }
 
@@ -617,7 +619,7 @@ class CastManager @Inject constructor(
             androidx.media3.common.MimeTypes.APPLICATION_SUBRIP -> com.google.android.gms.cast.MediaTrack.SUBTYPE_SUBTITLES
             androidx.media3.common.MimeTypes.TEXT_SSA,
             androidx.media3.common.MimeTypes.APPLICATION_TTML,
-                -> com.google.android.gms.cast.MediaTrack.SUBTYPE_CAPTIONS
+            -> com.google.android.gms.cast.MediaTrack.SUBTYPE_CAPTIONS
             else -> com.google.android.gms.cast.MediaTrack.SUBTYPE_UNKNOWN
         }
         builder.setSubtype(subtype)
@@ -741,7 +743,7 @@ class CastManager @Inject constructor(
                                     MediaStatus.PLAYER_STATE_PLAYING,
                                     MediaStatus.PLAYER_STATE_PAUSED,
                                     MediaStatus.PLAYER_STATE_BUFFERING,
-                                        -> {
+                                    -> {
                                         val seekOptions = MediaSeekOptions.Builder()
                                             .setPosition(pendingSeekPosition)
                                             .setResumeState(MediaSeekOptions.RESUME_STATE_PLAY)
