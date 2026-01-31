@@ -14,9 +14,8 @@ import com.google.android.gms.tasks.OnSuccessListener
 import com.google.android.gms.tasks.Task
 import com.rpeters.jellyfin.data.preferences.CastPreferencesRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
+import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
-import io.mockk.capture
-import io.mockk.captureNullable
 import io.mockk.clearMocks
 import io.mockk.coVerify
 import io.mockk.every
@@ -27,7 +26,7 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -52,6 +51,7 @@ class CastManagerTest {
     private val streamRepository: JellyfinStreamRepository = mockk(relaxed = true)
     private val castPreferencesRepository: CastPreferencesRepository = mockk(relaxed = true)
     private val authRepository: JellyfinAuthRepository = mockk(relaxed = true)
+    private val repository: JellyfinRepository = mockk(relaxed = true)
     private val castContext: CastContext = mockk(relaxed = true)
     private val sessionManager: SessionManager = mockk(relaxed = true)
     private val castSession: CastSession = mockk(relaxed = true)
@@ -59,7 +59,7 @@ class CastManagerTest {
     private val castContextTask: Task<CastContext> = mockk(relaxed = true)
 
     private lateinit var castManager: CastManager
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     // Capture the success listener to trigger it manually in tests
     private var capturedSuccessListener: OnSuccessListener<CastContext>? = null
@@ -86,7 +86,7 @@ class CastManagerTest {
         every { castContext.sessionManager } returns sessionManager
         every { sessionManager.currentCastSession } returns null
 
-        castManager = CastManager(context, streamRepository, castPreferencesRepository, authRepository)
+        castManager = CastManager(context, streamRepository, castPreferencesRepository, authRepository, repository)
     }
 
     @After
@@ -163,7 +163,7 @@ class CastManagerTest {
 
         // Get the session listener that was registered
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(listenerSlot.capture(), any()) }
 
         // Act
         listenerSlot.captured.onSessionStarted(castSession, "session123")
@@ -181,7 +181,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(listenerSlot.capture(), any()) }
 
         // Start a session first
         every { castSession.castDevice?.friendlyName } returns "TV"
@@ -209,7 +209,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(listenerSlot.capture(), any()) }
 
         // Act
         listenerSlot.captured.onSessionResumed(castSession, false)
@@ -227,7 +227,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(listenerSlot.capture(), any()) }
 
         // Start session first
         every { castSession.castDevice?.friendlyName } returns "TV"
@@ -256,7 +256,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(listenerSlot.capture(), any()) }
 
         // Act
         listenerSlot.captured.onSessionStarted(castSession, "session123")
@@ -368,7 +368,7 @@ class CastManagerTest {
         every { castSession.remoteMediaClient } returns remoteMediaClient
 
         val requestSlot = slot<MediaLoadRequestData>()
-        every { remoteMediaClient.load(capture(requestSlot)) } returns mockk(relaxed = true)
+        every { remoteMediaClient.load(requestSlot.capture()) } returns mockk(relaxed = true)
 
         every {
             streamRepository.getTranscodedStreamUrl(
@@ -432,8 +432,8 @@ class CastManagerTest {
                 audioCodec = any(),
                 container = any(),
                 mediaSourceId = any(),
-                playSessionId = captureNullable(playSessionSlot),
-                allowAudioStreamCopy = capture(audioCopySlot),
+                playSessionId = playSessionSlot.captureNullable(),
+                allowAudioStreamCopy = audioCopySlot.capture(),
             )
         } returns "https://server.com/stream.mp4"
 
@@ -538,7 +538,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(listenerSlot.capture(), any()) }
 
         // Act
         listenerSlot.captured.onSessionStarted(castSession, sessionId)
@@ -555,7 +555,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(listenerSlot.capture(), any()) }
 
         // Act
         listenerSlot.captured.onSessionEnded(castSession, 0)
@@ -576,7 +576,7 @@ class CastManagerTest {
         advanceUntilIdle()
 
         val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(listenerSlot.capture(), any()) }
 
         // Act
         listenerSlot.captured.onSessionResumed(castSession, false)
