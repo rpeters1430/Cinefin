@@ -686,7 +686,7 @@ private fun TabletHomeLayout(
             }
         }
 
-        // Recently Added Movies Grid
+        // Recently Added Movies Row
         if (contentLists.recentMovies.isNotEmpty()) {
             item(key = "recent_movies_header", contentType = "section_header") {
                 Text(
@@ -696,18 +696,15 @@ private fun TabletHomeLayout(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
-            item(key = "recent_movies_grid", contentType = "grid") {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(gridColumns),
-                    modifier = Modifier
-                        .height((200.dp * ((contentLists.recentMovies.size.coerceAtMost(gridColumns * 2) + gridColumns - 1) / gridColumns)))
-                        .padding(horizontal = 16.dp),
+            item(key = "recent_movies_row", contentType = "row") {
+                val rowState = rememberLazyListState()
+                LazyRow(
+                    state = rowState,
+                    contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    userScrollEnabled = false,
                 ) {
                     items(
-                        items = contentLists.recentMovies.take(gridColumns * 2),
+                        items = contentLists.recentMovies,
                         key = { it.getItemKey() },
                     ) { item ->
                         PosterMediaCard(
@@ -715,13 +712,14 @@ private fun TabletHomeLayout(
                             getImageUrl = getImageUrl,
                             onClick = onItemClick,
                             onLongPress = onItemLongPress,
+                            cardWidth = layoutConfig.posterCardWidth,
                         )
                     }
                 }
             }
         }
 
-        // Recently Added TV Shows Grid
+        // Recently Added TV Shows Row
         if (contentLists.recentTVShows.isNotEmpty()) {
             item(key = "recent_tv_header", contentType = "section_header") {
                 Text(
@@ -731,18 +729,15 @@ private fun TabletHomeLayout(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
-            item(key = "recent_tv_grid", contentType = "grid") {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(gridColumns),
-                    modifier = Modifier
-                        .height((200.dp * ((contentLists.recentTVShows.size.coerceAtMost(gridColumns * 2) + gridColumns - 1) / gridColumns)))
-                        .padding(horizontal = 16.dp),
+            item(key = "recent_tv_row", contentType = "row") {
+                val rowState = rememberLazyListState()
+                LazyRow(
+                    state = rowState,
+                    contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    userScrollEnabled = false,
                 ) {
                     items(
-                        items = contentLists.recentTVShows.take(gridColumns * 2),
+                        items = contentLists.recentTVShows,
                         key = { it.getItemKey() },
                     ) { item ->
                         PosterMediaCard(
@@ -750,13 +745,14 @@ private fun TabletHomeLayout(
                             getImageUrl = getImageUrl,
                             onClick = onItemClick,
                             onLongPress = onItemLongPress,
+                            cardWidth = layoutConfig.posterCardWidth,
                         )
                     }
                 }
             }
         }
 
-        // Recently Added Videos (Horizontal cards)
+        // Recently Added Videos (Horizontal cards row)
         if (contentLists.recentVideos.isNotEmpty()) {
             item(key = "recent_videos_header", contentType = "section_header") {
                 Text(
@@ -766,18 +762,15 @@ private fun TabletHomeLayout(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
-            item(key = "recent_videos_grid", contentType = "grid") {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2), // 2 columns for horizontal cards
-                    modifier = Modifier
-                        .height((140.dp * ((contentLists.recentVideos.size.coerceAtMost(4) + 1) / 2)))
-                        .padding(horizontal = 16.dp),
+            item(key = "recent_videos_row", contentType = "row") {
+                val rowState = rememberLazyListState()
+                LazyRow(
+                    state = rowState,
+                    contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    userScrollEnabled = false,
                 ) {
                     items(
-                        items = contentLists.recentVideos.take(4),
+                        items = contentLists.recentVideos,
                         key = { it.getItemKey() },
                     ) { item ->
                         MediaCard(
@@ -785,6 +778,7 @@ private fun TabletHomeLayout(
                             getImageUrl = { getBackdropUrl(it) ?: getImageUrl(it) },
                             onClick = onItemClick,
                             onLongPress = onItemLongPress,
+                            cardWidth = layoutConfig.mediaCardWidth,
                         )
                     }
                 }
