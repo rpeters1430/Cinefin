@@ -66,6 +66,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
+import android.app.Activity
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
@@ -312,6 +318,11 @@ fun HomeContent(
     onLibraryClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    // Calculate window size class for adaptive layout
+    val context = LocalContext.current
+    val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
+    val isTablet = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
+
     val layoutConfig = rememberHomeLayoutConfig()
 
     // ✅ DEBUG: Log received state for UI troubleshooting
@@ -435,12 +446,27 @@ fun HomeContent(
         onRefresh = onRefresh,
         modifier = modifier,
     ) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(layoutConfig.sectionSpacing),
-            userScrollEnabled = true,
-        ) {
+        if (isTablet) {
+            // Tablet layout: Use grids for better space utilization
+            TabletHomeLayout(
+                contentLists = contentLists,
+                layoutConfig = layoutConfig,
+                windowSizeClass = windowSizeClass,
+                getImageUrl = getImageUrl,
+                getBackdropUrl = getBackdropUrl,
+                getSeriesImageUrl = getSeriesImageUrl,
+                onItemClick = stableOnItemClick,
+                onItemLongPress = stableOnItemLongPress,
+                unknownText = unknownText,
+            )
+        } else {
+            // Phone layout: Use carousel-based vertical scrolling
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(layoutConfig.sectionSpacing),
+                userScrollEnabled = true,
+            ) {
             if (contentLists.featuredItems.isNotEmpty()) {
                 item(key = "featured", contentType = "carousel") {
                     val featured = remember(contentLists.featuredItems, unknownText) {
@@ -524,9 +550,249 @@ fun HomeContent(
                 }
             }
 
-            // Add extra space at the bottom for MiniPlayer
-            item { Spacer(modifier = Modifier.height(80.dp)) }
+                // Add extra space at the bottom for MiniPlayer
+                item { Spacer(modifier = Modifier.height(80.dp)) }
+            }
         }
+    }
+}
+
+/**
+ * Tablet-optimized home layout using grids for better space utilization.
+ */
+@OptInAppExperimentalApis
+@Composable
+private fun TabletHomeLayout(
+    contentLists: HomeContentLists,
+    layoutConfig: HomeLayoutConfig,
+    windowSizeClass: androidx.compose.material3.windowsizeclass.WindowSizeClass,
+    getImageUrl: (BaseItemDto) -> String?,
+    getBackdropUrl: (BaseItemDto) -> String?,
+    getSeriesImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    onItemLongPress: (BaseItemDto) -> Unit,
+    unknownText: String,
+) {
+    // Calculate grid columns based on window size
+    val gridColumns = when (windowSizeClass.widthSizeClass) {
+        WindowWidthSizeClass.Medium -> 3 // 600-840dp: 3 columns
+        else -> 4 // > 840dp: 4 columns
+    }
+
+    val listState = rememberLazyListState()
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(layoutConfig.sectionSpacing),
+    ) {
+        // Hero Carousel
+        if (contentLists.featuredItems.isNotEmpty()) {
+            item(key = "featured", contentType = "carousel") {
+                val featured = remember(contentLists.featuredItems, unknownText) {
+                    contentLists.featuredItems.map {
+                        it.toCarouselItem(
+                            titleOverride = it.name ?: unknownText,
+                            subtitleOverride = itemSubtitle(it),
+                            imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it)
+                                ?: getImageUrl(it) ?: "",
+                        )
+                    }
+                }
+                ExpressiveHeroCarousel(
+                    items = featured,
+                    onItemClick = { selected ->
+                        contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
+                            ?.let(onItemClick)
+                    },
+                    onPlayClick = { selected ->
+                        contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
+                            ?.let(onItemClick)
+                    },
+                    heroHeight = layoutConfig.heroHeight,
+                    horizontalPadding = layoutConfig.heroHorizontalPadding,
+                    pageSpacing = layoutConfig.heroPageSpacing,
+                )
+            }
+        }
+
+        // Continue Watching Grid
+        if (contentLists.continueWatching.isNotEmpty()) {
+            item(key = "continue_watching_header", contentType = "section_header") {
+                Text(
+                    text = "Continue Watching",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+            item(key = "continue_watching_grid", contentType = "grid") {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(gridColumns),
+                    modifier = Modifier
+                        .height((200.dp * ((contentLists.continueWatching.size + gridColumns - 1) / gridColumns)))
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    userScrollEnabled = false,
+                ) {
+                    items(
+                        items = contentLists.continueWatching,
+                        key = { it.getItemKey() },
+                    ) { item ->
+                        PosterMediaCard(
+                            item = item,
+                            getImageUrl = { getSeriesImageUrl(it) ?: getImageUrl(it) },
+                            onClick = onItemClick,
+                            onLongPress = onItemLongPress,
+                        )
+                    }
+                }
+            }
+        }
+
+        // Next Up Grid
+        if (contentLists.recentEpisodes.isNotEmpty()) {
+            item(key = "next_up_header", contentType = "section_header") {
+                Text(
+                    text = stringResource(id = R.string.home_next_up),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+            item(key = "next_up_grid", contentType = "grid") {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(gridColumns),
+                    modifier = Modifier
+                        .height((200.dp * ((contentLists.recentEpisodes.size.coerceAtMost(gridColumns * 2) + gridColumns - 1) / gridColumns)))
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    userScrollEnabled = false,
+                ) {
+                    items(
+                        items = contentLists.recentEpisodes.take(gridColumns * 2),
+                        key = { it.getItemKey() },
+                    ) { item ->
+                        PosterMediaCard(
+                            item = item,
+                            getImageUrl = { getSeriesImageUrl(it) ?: getImageUrl(it) },
+                            onClick = onItemClick,
+                            onLongPress = onItemLongPress,
+                        )
+                    }
+                }
+            }
+        }
+
+        // Recently Added Movies Grid
+        if (contentLists.recentMovies.isNotEmpty()) {
+            item(key = "recent_movies_header", contentType = "section_header") {
+                Text(
+                    text = stringResource(id = R.string.home_recently_added_movies),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+            item(key = "recent_movies_grid", contentType = "grid") {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(gridColumns),
+                    modifier = Modifier
+                        .height((200.dp * ((contentLists.recentMovies.size.coerceAtMost(gridColumns * 2) + gridColumns - 1) / gridColumns)))
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    userScrollEnabled = false,
+                ) {
+                    items(
+                        items = contentLists.recentMovies.take(gridColumns * 2),
+                        key = { it.getItemKey() },
+                    ) { item ->
+                        PosterMediaCard(
+                            item = item,
+                            getImageUrl = getImageUrl,
+                            onClick = onItemClick,
+                            onLongPress = onItemLongPress,
+                        )
+                    }
+                }
+            }
+        }
+
+        // Recently Added TV Shows Grid
+        if (contentLists.recentTVShows.isNotEmpty()) {
+            item(key = "recent_tv_header", contentType = "section_header") {
+                Text(
+                    text = stringResource(id = R.string.home_recently_added_tv_shows),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+            item(key = "recent_tv_grid", contentType = "grid") {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(gridColumns),
+                    modifier = Modifier
+                        .height((200.dp * ((contentLists.recentTVShows.size.coerceAtMost(gridColumns * 2) + gridColumns - 1) / gridColumns)))
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    userScrollEnabled = false,
+                ) {
+                    items(
+                        items = contentLists.recentTVShows.take(gridColumns * 2),
+                        key = { it.getItemKey() },
+                    ) { item ->
+                        PosterMediaCard(
+                            item = item,
+                            getImageUrl = getImageUrl,
+                            onClick = onItemClick,
+                            onLongPress = onItemLongPress,
+                        )
+                    }
+                }
+            }
+        }
+
+        // Recently Added Videos (Horizontal cards)
+        if (contentLists.recentVideos.isNotEmpty()) {
+            item(key = "recent_videos_header", contentType = "section_header") {
+                Text(
+                    text = stringResource(id = R.string.home_recently_added_stuff),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+            item(key = "recent_videos_grid", contentType = "grid") {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2), // 2 columns for horizontal cards
+                    modifier = Modifier
+                        .height((140.dp * ((contentLists.recentVideos.size.coerceAtMost(4) + 1) / 2)))
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    userScrollEnabled = false,
+                ) {
+                    items(
+                        items = contentLists.recentVideos.take(4),
+                        key = { it.getItemKey() },
+                    ) { item ->
+                        MediaCard(
+                            item = item,
+                            getImageUrl = { getBackdropUrl(it) ?: getImageUrl(it) },
+                            onClick = onItemClick,
+                            onLongPress = onItemLongPress,
+                        )
+                    }
+                }
+            }
+        }
+
+        // Add extra space at the bottom for MiniPlayer
+        item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 }
 
