@@ -8,26 +8,25 @@ import com.google.android.gms.cast.MediaStatus
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManager
+import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
 import com.google.android.gms.tasks.OnFailureListener
 import com.google.android.gms.tasks.OnSuccessListener
 import com.google.android.gms.tasks.Task
 import com.rpeters.jellyfin.data.preferences.CastPreferencesRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
+import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
-import io.mockk.capture
-import io.mockk.captureNullable
 import io.mockk.clearMocks
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -52,14 +51,17 @@ class CastManagerTest {
     private val streamRepository: JellyfinStreamRepository = mockk(relaxed = true)
     private val castPreferencesRepository: CastPreferencesRepository = mockk(relaxed = true)
     private val authRepository: JellyfinAuthRepository = mockk(relaxed = true)
+    private val repository: JellyfinRepository = mockk(relaxed = true)
     private val castContext: CastContext = mockk(relaxed = true)
     private val sessionManager: SessionManager = mockk(relaxed = true)
     private val castSession: CastSession = mockk(relaxed = true)
     private val remoteMediaClient: RemoteMediaClient = mockk(relaxed = true)
     private val castContextTask: Task<CastContext> = mockk(relaxed = true)
 
+    private var sessionListener: SessionManagerListener<CastSession>? = null
+
     private lateinit var castManager: CastManager
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     // Capture the success listener to trigger it manually in tests
     private var capturedSuccessListener: OnSuccessListener<CastContext>? = null
@@ -85,8 +87,11 @@ class CastManagerTest {
 
         every { castContext.sessionManager } returns sessionManager
         every { sessionManager.currentCastSession } returns null
+        every { sessionManager.addSessionManagerListener<CastSession>(any(), any()) } answers {
+            sessionListener = firstArg()
+        }
 
-        castManager = CastManager(context, streamRepository, castPreferencesRepository, authRepository)
+        castManager = CastManager(context, streamRepository, castPreferencesRepository, authRepository, repository)
     }
 
     @After
@@ -161,12 +166,11 @@ class CastManagerTest {
         castManager.initialize()
         advanceUntilIdle()
 
-        // Get the session listener that was registered
-        val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(any(), any()) }
+        val listener = requireNotNull(sessionListener) { "Expected SessionManagerListener to be captured during setUp()" }
 
         // Act
-        listenerSlot.captured.onSessionStarted(castSession, "session123")
+        listener.onSessionStarted(castSession, "session123")
 
         // Assert
         assertTrue(castManager.castState.value.isConnected)
@@ -180,16 +184,16 @@ class CastManagerTest {
         castManager.initialize()
         advanceUntilIdle()
 
-        val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(any(), any()) }
+        val listener = requireNotNull(sessionListener) { "Expected SessionManagerListener to be captured during setUp()" }
 
         // Start a session first
         every { castSession.castDevice?.friendlyName } returns "TV"
         every { castSession.remoteMediaClient?.mediaStatus?.playerState } returns MediaStatus.PLAYER_STATE_IDLE
-        listenerSlot.captured.onSessionStarted(castSession, "session123")
+        listener.onSessionStarted(castSession, "session123")
 
         // Act - End the session
-        listenerSlot.captured.onSessionEnded(castSession, 0)
+        listener.onSessionEnded(castSession, 0)
 
         // Assert
         assertFalse(castManager.castState.value.isConnected)
@@ -208,11 +212,11 @@ class CastManagerTest {
         castManager.initialize()
         advanceUntilIdle()
 
-        val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(any(), any()) }
+        val listener = requireNotNull(sessionListener) { "Expected SessionManagerListener to be captured during setUp()" }
 
         // Act
-        listenerSlot.captured.onSessionResumed(castSession, false)
+        listener.onSessionResumed(castSession, false)
 
         // Assert
         assertTrue(castManager.castState.value.isConnected)
@@ -226,16 +230,16 @@ class CastManagerTest {
         castManager.initialize()
         advanceUntilIdle()
 
-        val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(any(), any()) }
+        val listener = requireNotNull(sessionListener) { "Expected SessionManagerListener to be captured during setUp()" }
 
         // Start session first
         every { castSession.castDevice?.friendlyName } returns "TV"
         every { castSession.remoteMediaClient?.mediaStatus?.playerState } returns MediaStatus.PLAYER_STATE_PLAYING
-        listenerSlot.captured.onSessionStarted(castSession, "session123")
+        listener.onSessionStarted(castSession, "session123")
 
         // Act - Suspend the session
-        listenerSlot.captured.onSessionSuspended(castSession, 0)
+        listener.onSessionSuspended(castSession, 0)
 
         // Assert
         assertFalse(castManager.castState.value.isCasting)
@@ -255,11 +259,11 @@ class CastManagerTest {
         castManager.initialize()
         advanceUntilIdle()
 
-        val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(any(), any()) }
+        val listener = requireNotNull(sessionListener) { "Expected SessionManagerListener to be captured during setUp()" }
 
         // Act
-        listenerSlot.captured.onSessionStarted(castSession, "session123")
+        listener.onSessionStarted(castSession, "session123")
 
         // Assert
         assertTrue(castManager.castState.value.isRemotePlaying)
@@ -367,8 +371,11 @@ class CastManagerTest {
         every { castSession.isConnected } returns true
         every { castSession.remoteMediaClient } returns remoteMediaClient
 
-        val requestSlot = slot<MediaLoadRequestData>()
-        every { remoteMediaClient.load(capture(requestSlot)) } returns mockk(relaxed = true)
+        var capturedRequest: MediaLoadRequestData? = null
+        every { remoteMediaClient.load(any<MediaLoadRequestData>()) } answers {
+            capturedRequest = firstArg()
+            mockk(relaxed = true)
+        }
 
         every {
             streamRepository.getTranscodedStreamUrl(
@@ -396,7 +403,7 @@ class CastManagerTest {
 
         // Assert
         verify { remoteMediaClient.load(any<com.google.android.gms.cast.MediaLoadRequestData>()) }
-        val contentId = requestSlot.captured.mediaInfo?.contentId
+        val contentId = capturedRequest?.mediaInfo?.contentId
         assertTrue("Cast should use progressive MP4 stream", contentId?.contains("stream.mp4") == true)
         assertFalse("Cast should avoid adaptive playlist", contentId?.contains("m3u8") == true)
     }
@@ -419,9 +426,6 @@ class CastManagerTest {
         every { remoteMediaClient.load(any<com.google.android.gms.cast.MediaLoadRequestData>()) } returns mockk(relaxed = true)
         every { streamRepository.getBackdropUrl(any<BaseItemDto>()) } returns "https://server.com/backdrop.jpg"
         every { streamRepository.getImageUrl(any<String>(), any(), any()) } returns "https://server.com/poster.jpg"
-
-        val playSessionSlot = slot<String?>()
-        val audioCopySlot = slot<Boolean>()
         every {
             streamRepository.getTranscodedStreamUrl(
                 itemId = any(),
@@ -432,8 +436,8 @@ class CastManagerTest {
                 audioCodec = any(),
                 container = any(),
                 mediaSourceId = any(),
-                playSessionId = captureNullable(playSessionSlot),
-                allowAudioStreamCopy = capture(audioCopySlot),
+                playSessionId = any(),
+                allowAudioStreamCopy = any(),
             )
         } returns "https://server.com/stream.mp4"
 
@@ -444,8 +448,20 @@ class CastManagerTest {
         castManager.startCasting(mediaItem, item)
 
         // Assert
-        assertNull(playSessionSlot.captured)
-        assertFalse(audioCopySlot.captured)
+        verify {
+            streamRepository.getTranscodedStreamUrl(
+                itemId = any(),
+                maxBitrate = any(),
+                maxWidth = any(),
+                maxHeight = any(),
+                videoCodec = any(),
+                audioCodec = any(),
+                container = any(),
+                mediaSourceId = any(),
+                playSessionId = null,
+                allowAudioStreamCopy = false,
+            )
+        }
     }
 
     @Test
@@ -537,11 +553,11 @@ class CastManagerTest {
         castManager.initialize()
         advanceUntilIdle()
 
-        val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(any(), any()) }
+        val listener = requireNotNull(sessionListener) { "Expected SessionManagerListener to be captured during setUp()" }
 
         // Act
-        listenerSlot.captured.onSessionStarted(castSession, sessionId)
+        listener.onSessionStarted(castSession, sessionId)
         advanceUntilIdle()
 
         // Assert
@@ -554,11 +570,11 @@ class CastManagerTest {
         castManager.initialize()
         advanceUntilIdle()
 
-        val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(any(), any()) }
+        val listener = requireNotNull(sessionListener) { "Expected SessionManagerListener to be captured during setUp()" }
 
         // Act
-        listenerSlot.captured.onSessionEnded(castSession, 0)
+        listener.onSessionEnded(castSession, 0)
         advanceUntilIdle()
 
         // Assert
@@ -575,11 +591,11 @@ class CastManagerTest {
         castManager.initialize()
         advanceUntilIdle()
 
-        val listenerSlot = slot<com.google.android.gms.cast.framework.SessionManagerListener<CastSession>>()
-        verify { sessionManager.addSessionManagerListener<CastSession>(capture(listenerSlot), any()) }
+        verify { sessionManager.addSessionManagerListener<CastSession>(any(), any()) }
+        val listener = requireNotNull(sessionListener) { "Expected SessionManagerListener to be captured during setUp()" }
 
         // Act
-        listenerSlot.captured.onSessionResumed(castSession, false)
+        listener.onSessionResumed(castSession, false)
         advanceUntilIdle()
 
         // Assert

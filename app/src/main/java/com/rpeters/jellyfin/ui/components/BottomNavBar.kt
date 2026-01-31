@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -32,6 +33,9 @@ fun BottomNavBar(
     if (shouldShowBottomNav(currentDestination)) {
         Box(
             modifier = Modifier
+                // Ensure the bar is always above screen content for hit-testing.
+                // Some screens can otherwise render scroll/pull-to-refresh layers that overlap and intercept taps.
+                .zIndex(1f)
                 .padding(16.dp)
                 .shadow(
                     elevation = 3.dp,

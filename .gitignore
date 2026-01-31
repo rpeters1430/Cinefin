@@ -97,4 +97,5 @@ Desktop.ini
 
 # Kotlin
 *.kt.class
+.kotlin/
 .aider*
