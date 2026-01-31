@@ -3,6 +3,9 @@ package com.rpeters.jellyfin.ui
 import android.app.Activity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MenuOpen
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -124,12 +127,22 @@ fun JellyfinApp(
         val navBackStackEntry = navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry.value?.destination
 
-        // Determine navigation type based on window width
+        val isCompactWidth = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
+        var isNavExpanded by rememberSaveable(windowSizeClass.widthSizeClass) {
+            mutableStateOf(windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded)
+        }
+
+        // Determine navigation type based on window width and user expansion toggle
         val navigationType = when (windowSizeClass.widthSizeClass) {
             WindowWidthSizeClass.Compact -> NavigationSuiteType.NavigationBar // Bottom bar for phones
-            WindowWidthSizeClass.Medium -> NavigationSuiteType.NavigationRail // Side rail for medium tablets
-            else -> NavigationSuiteType.NavigationDrawer // Drawer for large tablets
+            else -> if (isNavExpanded) {
+                NavigationSuiteType.NavigationDrawer // Expanded drawer for tablets
+            } else {
+                NavigationSuiteType.NavigationRail // Collapsed rail for tablets
+            }
         }
+        val showNavLabels = navigationType != NavigationSuiteType.NavigationRail
+        val showNavToggle = !isCompactWidth
 
         // Only show navigation on main screens
         val shouldShowNavigation = shouldShowNavigation(currentDestination)
@@ -138,6 +151,23 @@ fun JellyfinApp(
             // Adaptive navigation scaffold for main screens
             NavigationSuiteScaffold(
                 navigationSuiteItems = {
+                    if (showNavToggle) {
+                        item(
+                            selected = false,
+                            onClick = { isNavExpanded = !isNavExpanded },
+                            icon = {
+                                Icon(
+                                    imageVector = if (isNavExpanded) Icons.Filled.MenuOpen else Icons.Filled.Menu,
+                                    contentDescription = if (isNavExpanded) "Collapse navigation" else "Expand navigation",
+                                )
+                            },
+                            label = if (showNavLabels) {
+                                { Text(if (isNavExpanded) "Collapse" else "Expand") }
+                            } else {
+                                null
+                            },
+                        )
+                    }
                     BottomNavItem.bottomNavItems.forEach { item ->
                         item(
                             selected = currentDestination?.hierarchy?.any {
@@ -158,7 +188,11 @@ fun JellyfinApp(
                                     contentDescription = item.title,
                                 )
                             },
-                            label = { Text(item.title) },
+                            label = if (showNavLabels) {
+                                { Text(item.title) }
+                            } else {
+                                null
+                            },
                         )
                     }
                 },
