@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import android.app.Activity
 import androidx.annotation.OptIn
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -19,6 +20,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -40,6 +44,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,12 +72,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import android.app.Activity
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
@@ -467,88 +467,88 @@ fun HomeContent(
                 verticalArrangement = Arrangement.spacedBy(layoutConfig.sectionSpacing),
                 userScrollEnabled = true,
             ) {
-            if (contentLists.featuredItems.isNotEmpty()) {
-                item(key = "featured", contentType = "carousel") {
-                    val featured = remember(contentLists.featuredItems, unknownText) {
-                        contentLists.featuredItems.map {
-                            it.toCarouselItem(
-                                titleOverride = it.name ?: unknownText,
-                                subtitleOverride = itemSubtitle(it),
-                                imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it)
-                                    ?: getImageUrl(it) ?: "",
-                            )
+                if (contentLists.featuredItems.isNotEmpty()) {
+                    item(key = "featured", contentType = "carousel") {
+                        val featured = remember(contentLists.featuredItems, unknownText) {
+                            contentLists.featuredItems.map {
+                                it.toCarouselItem(
+                                    titleOverride = it.name ?: unknownText,
+                                    subtitleOverride = itemSubtitle(it),
+                                    imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it)
+                                        ?: getImageUrl(it) ?: "",
+                                )
+                            }
                         }
-                    }
-                    ExpressiveHeroCarousel(
-                        items = featured,
-                        onItemClick = { selected ->
-                            contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
-                                ?.let(stableOnItemClick)
-                        },
-                        onPlayClick = { selected ->
-                            contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
-                                ?.let(stableOnItemClick)
-                        },
-                        heroHeight = layoutConfig.heroHeight,
-                        horizontalPadding = layoutConfig.heroHorizontalPadding,
-                        pageSpacing = layoutConfig.heroPageSpacing,
-                    )
-                }
-            }
-
-            // Continue Watching Section
-            if (contentLists.continueWatching.isNotEmpty()) {
-                item(key = "continue_watching", contentType = "continueWatching") {
-                    ContinueWatchingSection(
-                        items = contentLists.continueWatching,
-                        getImageUrl = getImageUrl,
-                        onItemClick = stableOnItemClick,
-                        onItemLongPress = stableOnItemLongPress,
-                        cardWidth = layoutConfig.continueWatchingCardWidth,
-                    )
-                }
-            }
-
-            // Media row sections
-            rowSections.forEach { section ->
-                item(key = section.key, contentType = section.contentType) {
-                    val imageProvider = imageProviders.getValue(section.imageSelector)
-                    val title = stringResource(id = section.titleRes)
-
-                    when (section.rowKind) {
-                        HomeRowKind.POSTER -> {
-                            PosterRowSection(
-                                title = title,
-                                items = section.items,
-                                getImageUrl = imageProvider,
-                                onItemClick = stableOnItemClick,
-                                onItemLongPress = stableOnItemLongPress,
-                                cardWidth = layoutConfig.posterCardWidth,
-                            )
-                        }
-                        HomeRowKind.SQUARE -> {
-                            SquareRowSection(
-                                title = title,
-                                items = section.items,
-                                getImageUrl = imageProvider,
-                                onItemClick = stableOnItemClick,
-                                onItemLongPress = stableOnItemLongPress,
-                                cardWidth = layoutConfig.mediaCardWidth,
-                            )
-                        }
-                        HomeRowKind.MEDIA -> {
-                            MediaRowSection(
-                                title = title,
-                                items = section.items,
-                                getImageUrl = imageProvider,
-                                onItemClick = stableOnItemClick,
-                                onItemLongPress = stableOnItemLongPress,
-                                cardWidth = layoutConfig.mediaCardWidth,
-                            )
-                        }
+                        ExpressiveHeroCarousel(
+                            items = featured,
+                            onItemClick = { selected ->
+                                contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
+                                    ?.let(stableOnItemClick)
+                            },
+                            onPlayClick = { selected ->
+                                contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
+                                    ?.let(stableOnItemClick)
+                            },
+                            heroHeight = layoutConfig.heroHeight,
+                            horizontalPadding = layoutConfig.heroHorizontalPadding,
+                            pageSpacing = layoutConfig.heroPageSpacing,
+                        )
                     }
                 }
-            }
+
+                // Continue Watching Section
+                if (contentLists.continueWatching.isNotEmpty()) {
+                    item(key = "continue_watching", contentType = "continueWatching") {
+                        ContinueWatchingSection(
+                            items = contentLists.continueWatching,
+                            getImageUrl = getImageUrl,
+                            onItemClick = stableOnItemClick,
+                            onItemLongPress = stableOnItemLongPress,
+                            cardWidth = layoutConfig.continueWatchingCardWidth,
+                        )
+                    }
+                }
+
+                // Media row sections
+                rowSections.forEach { section ->
+                    item(key = section.key, contentType = section.contentType) {
+                        val imageProvider = imageProviders.getValue(section.imageSelector)
+                        val title = stringResource(id = section.titleRes)
+
+                        when (section.rowKind) {
+                            HomeRowKind.POSTER -> {
+                                PosterRowSection(
+                                    title = title,
+                                    items = section.items,
+                                    getImageUrl = imageProvider,
+                                    onItemClick = stableOnItemClick,
+                                    onItemLongPress = stableOnItemLongPress,
+                                    cardWidth = layoutConfig.posterCardWidth,
+                                )
+                            }
+                            HomeRowKind.SQUARE -> {
+                                SquareRowSection(
+                                    title = title,
+                                    items = section.items,
+                                    getImageUrl = imageProvider,
+                                    onItemClick = stableOnItemClick,
+                                    onItemLongPress = stableOnItemLongPress,
+                                    cardWidth = layoutConfig.mediaCardWidth,
+                                )
+                            }
+                            HomeRowKind.MEDIA -> {
+                                MediaRowSection(
+                                    title = title,
+                                    items = section.items,
+                                    getImageUrl = imageProvider,
+                                    onItemClick = stableOnItemClick,
+                                    onItemLongPress = stableOnItemLongPress,
+                                    cardWidth = layoutConfig.mediaCardWidth,
+                                )
+                            }
+                        }
+                    }
+                }
 
                 // Add extra space at the bottom for MiniPlayer
                 item { Spacer(modifier = Modifier.height(80.dp)) }
