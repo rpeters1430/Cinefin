@@ -7,7 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.junit.Assert.assertEquals
@@ -34,13 +34,12 @@ class JellyfinCacheTest {
     val tempFolder = TemporaryFolder()
 
     private lateinit var mockContext: Context
-    private lateinit var testDispatcher: StandardTestDispatcher
+    private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var applicationScope: CoroutineScope
     private lateinit var cache: JellyfinCache
 
     @Before
     fun setup() {
-        testDispatcher = StandardTestDispatcher()
         applicationScope = CoroutineScope(testDispatcher)
 
         // Mock context with real temp directory
