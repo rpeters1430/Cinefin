@@ -21,7 +21,7 @@ data class AiMessage(
     val id: Long = System.currentTimeMillis(),
     val content: String,
     val isUser: Boolean,
-    val recommendedItems: List<BaseItemDto> = emptyList()
+    val recommendedItems: List<BaseItemDto> = emptyList(),
 )
 
 data class AiAssistantState(
@@ -32,14 +32,14 @@ data class AiAssistantState(
     val isDownloadingNano: Boolean = false,
     val downloadProgress: String? = null,
     val canRetryDownload: Boolean = false,
-    val errorCode: Int? = null  // GenAI error code for specific handling
+    val errorCode: Int? = null, // GenAI error code for specific handling
 )
 
 @HiltViewModel
 class AiAssistantViewModel @Inject constructor(
     private val generativeAiRepository: GenerativeAiRepository,
     private val jellyfinRepository: JellyfinRepository,
-    private val backendStateHolder: AiBackendStateHolder
+    private val backendStateHolder: AiBackendStateHolder,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AiAssistantState())
@@ -49,11 +49,11 @@ class AiAssistantViewModel @Inject constructor(
         // Add welcome message
         val welcomeMessage = AiMessage(
             content = "Hello! I'm your Jellyfin AI Assistant. Ask me to find movies, recommend something based on your mood, or just chat about your library!",
-            isUser = false
+            isUser = false,
         )
         _uiState.value = _uiState.value.copy(
             messages = listOf(welcomeMessage),
-            isOnDeviceAI = generativeAiRepository.isUsingOnDeviceAI()
+            isOnDeviceAI = generativeAiRepository.isUsingOnDeviceAI(),
         )
 
         viewModelScope.launch {
@@ -65,7 +65,7 @@ class AiAssistantViewModel @Inject constructor(
                         isDownloadingNano = state.isDownloading,
                         downloadProgress = state.downloadBytesProgress,
                         canRetryDownload = state.canRetryDownload,
-                        errorCode = state.errorCode
+                        errorCode = state.errorCode,
                     )
                 }
             }
@@ -78,7 +78,7 @@ class AiAssistantViewModel @Inject constructor(
         val userMessage = AiMessage(content = query, isUser = true)
         _uiState.value = _uiState.value.copy(
             messages = _uiState.value.messages + userMessage,
-            isLoading = true
+            isLoading = true,
         )
 
         viewModelScope.launch {
@@ -110,27 +110,26 @@ class AiAssistantViewModel @Inject constructor(
                 val aiMessage = AiMessage(
                     content = chatResponse,
                     isUser = false,
-                    recommendedItems = searchResults.take(10)
+                    recommendedItems = searchResults.take(10),
                 )
 
                 _uiState.value = _uiState.value.copy(
                     messages = _uiState.value.messages + aiMessage,
-                    isLoading = false
+                    isLoading = false,
                 )
-
             } catch (e: Exception) {
                 val errorMessage = AiMessage(
                     content = "Sorry, I encountered an error: ${e.message}",
-                    isUser = false
+                    isUser = false,
                 )
                 _uiState.value = _uiState.value.copy(
                     messages = _uiState.value.messages + errorMessage,
-                    isLoading = false
+                    isLoading = false,
                 )
             }
         }
     }
-    
+
     fun getImageUrl(item: BaseItemDto): String? = jellyfinRepository.getImageUrl(item.id.toString())
 
     fun retryNanoDownload() {
