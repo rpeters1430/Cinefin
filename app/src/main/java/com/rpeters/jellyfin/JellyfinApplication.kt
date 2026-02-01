@@ -117,13 +117,13 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
             // Debug mode: Try to use debug provider (requires firebase-appcheck-debug dependency)
             try {
                 val debugProviderClass = Class.forName(
-                    "com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory"
+                    "com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory",
                 )
                 val getInstance = debugProviderClass.getMethod("getInstance")
                 val debugProvider = getInstance.invoke(null)
 
                 firebaseAppCheck.installAppCheckProviderFactory(
-                    debugProvider as com.google.firebase.appcheck.AppCheckProviderFactory
+                    debugProvider as com.google.firebase.appcheck.AppCheckProviderFactory,
                 )
                 SecureLogger.i(TAG, "Firebase App Check initialized with DEBUG provider")
                 SecureLogger.i(TAG, "Check logcat for 'DebugAppCheckProvider' to find your debug token")
