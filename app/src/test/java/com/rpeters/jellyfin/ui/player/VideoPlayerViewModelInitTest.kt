@@ -15,7 +15,10 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -128,8 +131,8 @@ class VideoPlayerViewModelInitTest {
         assertNotNull(playerState)
 
         // Default state should not be casting
-        assert(!playerState.isCasting) { "Should not be casting initially" }
-        assert(!playerState.isCastConnected) { "Should not be connected to Cast initially" }
+        assertFalse("Should not be casting initially", playerState.isCasting)
+        assertFalse("Should not be connected to Cast initially", playerState.isCastConnected)
     }
 
     @Test
@@ -158,8 +161,8 @@ class VideoPlayerViewModelInitTest {
 
         // Then - Player state should reflect the update
         val playerState = viewModel.playerState.value
-        assert(playerState.isCastAvailable) { "Cast should be available" }
-        assert(playerState.isCastConnected) { "Cast should be connected" }
-        assert(playerState.castDeviceName == "New Cast Device") { "Device name should match" }
+        assertTrue("Cast should be available", playerState.isCastAvailable)
+        assertTrue("Cast should be connected", playerState.isCastConnected)
+        assertEquals("Device name should match", "New Cast Device", playerState.castDeviceName)
     }
 }
