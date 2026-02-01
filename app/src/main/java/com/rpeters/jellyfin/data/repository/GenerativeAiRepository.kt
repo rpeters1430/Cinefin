@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.data.repository
 
+import android.util.Log
 import com.rpeters.jellyfin.data.ai.AiBackendStateHolder
 import com.rpeters.jellyfin.data.ai.AiTextModel
 import com.rpeters.jellyfin.di.AiModule
@@ -8,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
-import android.util.Log
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -27,7 +27,7 @@ import javax.inject.Singleton
 class GenerativeAiRepository @Inject constructor(
     @Named("primary-model") private val primaryModel: AiTextModel,
     @Named("pro-model") private val proModel: AiTextModel,
-    private val backendStateHolder: AiBackendStateHolder
+    private val backendStateHolder: AiBackendStateHolder,
 ) {
     private fun logModelUsage(operation: String, usesPrimaryModel: Boolean) {
         val backend = if (usesPrimaryModel) {
@@ -127,7 +127,7 @@ class GenerativeAiRepository @Inject constructor(
      */
     suspend fun generateRecommendations(
         recentItems: List<BaseItemDto>,
-        userPreferences: String? = null
+        userPreferences: String? = null,
     ): String = withContext(Dispatchers.IO) {
         logModelUsage("generateRecommendations", usesPrimaryModel = true)
         val itemDescriptions = recentItems.take(10).joinToString("\n") { item ->
@@ -229,5 +229,5 @@ class GenerativeAiRepository @Inject constructor(
         // This is a placeholder for when you implement multimodal features
         TODO("Implement bitmap loading from URI")
     }
-    */
+     */
 }

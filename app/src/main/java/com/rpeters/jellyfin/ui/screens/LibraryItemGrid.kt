@@ -96,11 +96,17 @@ fun CarouselSection(
         HorizontalMultiBrowseCarousel(
             state = carouselState,
             modifier = Modifier.height(
-                if (isTablet) LibraryScreenDefaults.TabletCarouselHeight
-                else LibraryScreenDefaults.CarouselHeight
+                if (isTablet) {
+                    LibraryScreenDefaults.TabletCarouselHeight
+                } else {
+                    LibraryScreenDefaults.CarouselHeight
+                },
             ),
-            preferredItemWidth = if (isTablet) LibraryScreenDefaults.TabletCarouselPreferredItemWidth
-                else LibraryScreenDefaults.CarouselPreferredItemWidth,
+            preferredItemWidth = if (isTablet) {
+                LibraryScreenDefaults.TabletCarouselPreferredItemWidth
+            } else {
+                LibraryScreenDefaults.CarouselPreferredItemWidth
+            },
             itemSpacing = LibraryScreenDefaults.CarouselItemSpacing,
             contentPadding = PaddingValues(horizontal = LibraryScreenDefaults.ContentPadding),
         ) { index ->

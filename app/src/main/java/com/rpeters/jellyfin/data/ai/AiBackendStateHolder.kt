@@ -11,7 +11,7 @@ data class AiBackendState(
     val isDownloading: Boolean = false,
     val downloadBytesProgress: String? = null,
     val canRetryDownload: Boolean = false,
-    val errorCode: Int? = null // Stores GenAI error code for specific handling
+    val errorCode: Int? = null, // Stores GenAI error code for specific handling
 )
 
 @Singleton
@@ -25,7 +25,7 @@ class AiBackendStateHolder @Inject constructor() {
         isDownloading: Boolean = false,
         downloadBytesProgress: String? = null,
         canRetryDownload: Boolean = false,
-        errorCode: Int? = null
+        errorCode: Int? = null,
     ) {
         _state.value = AiBackendState(
             isUsingNano = isUsingNano,
@@ -33,7 +33,7 @@ class AiBackendStateHolder @Inject constructor() {
             isDownloading = isDownloading,
             downloadBytesProgress = downloadBytesProgress,
             canRetryDownload = canRetryDownload,
-            errorCode = errorCode
+            errorCode = errorCode,
         )
     }
 }

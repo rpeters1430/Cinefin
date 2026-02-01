@@ -31,7 +31,7 @@ android {
         buildConfigField(
             "String",
             "GOOGLE_AI_API_KEY",
-            "\"${project.findProperty("GOOGLE_AI_API_KEY") ?: System.getenv("GOOGLE_AI_API_KEY") ?: ""}\""
+            "\"${project.findProperty("GOOGLE_AI_API_KEY") ?: System.getenv("GOOGLE_AI_API_KEY") ?: ""}\"",
         )
     }
 

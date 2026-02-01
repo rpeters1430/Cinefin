@@ -183,7 +183,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                         }
                     }
                 }
-            }
+            },
         )
     }
 }

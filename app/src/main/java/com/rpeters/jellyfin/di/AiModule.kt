@@ -9,7 +9,6 @@ import com.google.mlkit.genai.common.DownloadStatus
 import com.google.mlkit.genai.common.FeatureStatus
 import com.google.mlkit.genai.common.GenAiException
 import com.google.mlkit.genai.prompt.Generation
-import com.google.mlkit.genai.prompt.GenerativeModel as MlKitGenerativeModel
 import com.rpeters.jellyfin.data.ai.AiBackendStateHolder
 import com.rpeters.jellyfin.data.ai.AiTextModel
 import dagger.Module
@@ -23,10 +22,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import javax.inject.Named
 import javax.inject.Singleton
+import com.google.mlkit.genai.prompt.GenerativeModel as MlKitGenerativeModel
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -37,6 +36,7 @@ object AiModule {
 
     @Volatile
     private var nanoClientInstance: MlKitGenerativeModel? = null
+
     @Volatile
     private var stateHolderInstance: AiBackendStateHolder? = null
 
@@ -47,7 +47,7 @@ object AiModule {
         val isAvailable: Boolean,
         val statusMessage: String,
         val canRetry: Boolean,
-        val errorCode: Int? = null
+        val errorCode: Int? = null,
     )
 
     /**
@@ -74,7 +74,7 @@ object AiModule {
                 isUsingNano = result.isAvailable,
                 nanoStatus = result.statusMessage,
                 canRetryDownload = result.canRetry,
-                errorCode = result.errorCode
+                errorCode = result.errorCode,
             )
             if (!result.isAvailable) {
                 Log.d("AiModule", "Gemini Nano unavailable, using cloud API: ${result.statusMessage}")
@@ -85,7 +85,7 @@ object AiModule {
             nano = nano,
             cloud = cloud,
             stateHolder = stateHolder,
-            nanoClient = nanoClient
+            nanoClient = nanoClient,
         )
     }
 
@@ -101,14 +101,14 @@ object AiModule {
                 holder.update(
                     isUsingNano = false,
                     nanoStatus = "Retrying...",
-                    canRetryDownload = false
+                    canRetryDownload = false,
                 )
                 val result = checkNanoAvailability(client, holder)
                 holder.update(
                     isUsingNano = result.isAvailable,
                     nanoStatus = result.statusMessage,
                     canRetryDownload = result.canRetry,
-                    errorCode = result.errorCode
+                    errorCode = result.errorCode,
                 )
             }
         }
@@ -125,14 +125,14 @@ object AiModule {
         // or via google-services.json for cloud models
         return FirebaseAiTextModel(
             Firebase.ai.generativeModel(
-            modelName = "gemini-2.5-flash",
-            generationConfig = generationConfig {
-                temperature = 0.8f
-                topK = 40
-                topP = 0.95f
-                maxOutputTokens = 4096
-            }
-        )
+                modelName = "gemini-2.5-flash",
+                generationConfig = generationConfig {
+                    temperature = 0.8f
+                    topK = 40
+                    topP = 0.95f
+                    maxOutputTokens = 4096
+                },
+            ),
         )
     }
 
@@ -150,7 +150,7 @@ object AiModule {
                 topK = 40
                 topP = 0.95f
                 maxOutputTokens = 2048
-            }
+            },
         )
     }
 
@@ -159,7 +159,7 @@ object AiModule {
      */
     private suspend fun checkNanoAvailability(
         model: MlKitGenerativeModel,
-        stateHolder: AiBackendStateHolder
+        stateHolder: AiBackendStateHolder,
     ): NanoAvailabilityResult {
         return withContext(Dispatchers.IO) {
             try {
@@ -205,7 +205,7 @@ object AiModule {
                     isAvailable = false,
                     statusMessage = "Initializing (restart may help)",
                     canRetry = true,
-                    errorCode = 606
+                    errorCode = 606,
                 )
             }
             601 -> {
@@ -215,7 +215,7 @@ object AiModule {
                     isAvailable = false,
                     statusMessage = "AI busy - using cloud",
                     canRetry = true,
-                    errorCode = 601
+                    errorCode = 601,
                 )
             }
             603 -> {
@@ -225,7 +225,7 @@ object AiModule {
                     isAvailable = false,
                     statusMessage = "Must be in foreground",
                     canRetry = false,
-                    errorCode = 603
+                    errorCode = 603,
                 )
             }
             605 -> {
@@ -235,7 +235,7 @@ object AiModule {
                     isAvailable = false,
                     statusMessage = "Download failed",
                     canRetry = true,
-                    errorCode = 605
+                    errorCode = 605,
                 )
             }
             else -> {
@@ -244,7 +244,7 @@ object AiModule {
                     isAvailable = false,
                     statusMessage = "Error: $errorCode",
                     canRetry = true,
-                    errorCode = errorCode
+                    errorCode = errorCode,
                 )
             }
         }
@@ -262,7 +262,7 @@ object AiModule {
                                 nanoStatus = "Download started",
                                 isDownloading = true,
                                 downloadBytesProgress = "Starting...",
-                                canRetryDownload = false
+                                canRetryDownload = false,
                             )
                         }
                         is DownloadStatus.DownloadProgress -> {
@@ -272,7 +272,7 @@ object AiModule {
                                 nanoStatus = "Downloading on-device AI model",
                                 isDownloading = true,
                                 downloadBytesProgress = "%.1f MB downloaded".format(downloadedMB),
-                                canRetryDownload = false
+                                canRetryDownload = false,
                             )
                         }
                         DownloadStatus.DownloadCompleted -> {
@@ -282,7 +282,7 @@ object AiModule {
                                 nanoStatus = "Ready - using on-device AI",
                                 isDownloading = false,
                                 downloadBytesProgress = null,
-                                canRetryDownload = false
+                                canRetryDownload = false,
                             )
                             Log.i("AiModule", "Gemini Nano download completed successfully")
                         }
@@ -294,7 +294,7 @@ object AiModule {
                                 nanoStatus = "Download failed",
                                 isDownloading = false,
                                 downloadBytesProgress = null,
-                                canRetryDownload = true
+                                canRetryDownload = true,
                             )
                             Log.e("AiModule", "Gemini Nano download failed: $errorMsg", status.e)
                         }
@@ -307,7 +307,7 @@ object AiModule {
                     nanoStatus = "Download error",
                     isDownloading = false,
                     downloadBytesProgress = null,
-                    canRetryDownload = true
+                    canRetryDownload = true,
                 )
                 Log.e("AiModule", "Exception during Nano download", e)
             }
@@ -315,7 +315,7 @@ object AiModule {
     }
 
     private class FirebaseAiTextModel(
-        private val model: GenerativeModel
+        private val model: GenerativeModel,
     ) : AiTextModel {
         override suspend fun generateText(prompt: String): String {
             return model.generateContent(prompt).text ?: ""
@@ -329,7 +329,7 @@ object AiModule {
 
     private class MlKitNanoTextModel(
         private val model: MlKitGenerativeModel,
-        private val stateHolder: AiBackendStateHolder
+        private val stateHolder: AiBackendStateHolder,
     ) : AiTextModel {
         override suspend fun generateText(prompt: String): String {
             return try {
@@ -340,7 +340,7 @@ object AiModule {
                 stateHolder.update(
                     isUsingNano = false,
                     nanoStatus = "Error during generation",
-                    canRetryDownload = false
+                    canRetryDownload = false,
                 )
                 ""
             }
@@ -356,7 +356,7 @@ object AiModule {
         private val nano: MlKitNanoTextModel,
         private val cloud: AiTextModel,
         private val stateHolder: AiBackendStateHolder,
-        private val nanoClient: MlKitGenerativeModel
+        private val nanoClient: MlKitGenerativeModel,
     ) : AiTextModel {
         override suspend fun generateText(prompt: String): String {
             val state = stateHolder.state.value
@@ -367,7 +367,7 @@ object AiModule {
                     isUsingNano = result.isAvailable,
                     nanoStatus = result.statusMessage,
                     canRetryDownload = result.canRetry,
-                    errorCode = result.errorCode
+                    errorCode = result.errorCode,
                 )
                 if (!result.isAvailable) {
                     return cloud.generateText(prompt)

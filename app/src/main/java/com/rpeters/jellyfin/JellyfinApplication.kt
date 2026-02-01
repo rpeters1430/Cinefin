@@ -4,6 +4,9 @@ import android.app.Application
 import android.os.SystemClock
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
@@ -12,9 +15,6 @@ import com.rpeters.jellyfin.ui.surface.ModernSurfaceCoordinator
 import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.NetworkOptimizer
 import com.rpeters.jellyfin.utils.SecureLogger
-import com.google.firebase.appcheck.FirebaseAppCheck
-import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
-import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -117,14 +117,14 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
         if (BuildConfig.DEBUG) {
             // Debug mode: Use debug provider and log the debug token
             firebaseAppCheck.installAppCheckProviderFactory(
-                DebugAppCheckProviderFactory.getInstance()
+                DebugAppCheckProviderFactory.getInstance(),
             )
             SecureLogger.i(TAG, "Firebase App Check initialized with DEBUG provider")
             SecureLogger.i(TAG, "Check logcat for 'DebugAppCheckProvider' to find your debug token")
         } else {
             // Release mode: Use Play Integrity
             firebaseAppCheck.installAppCheckProviderFactory(
-                PlayIntegrityAppCheckProviderFactory.getInstance()
+                PlayIntegrityAppCheckProviderFactory.getInstance(),
             )
             SecureLogger.i(TAG, "Firebase App Check initialized with Play Integrity")
         }
