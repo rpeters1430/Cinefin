@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import android.app.Activity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,6 +29,7 @@ import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.constants.Constants
+import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
@@ -61,8 +65,14 @@ fun SearchScreen(
     getImageUrl: (BaseItemDto) -> String?,
     onBackClick: () -> Unit = {},
     onNowPlayingClick: () -> Unit = {},
+    onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    // Calculate adaptive layout config
+    val context = LocalContext.current
+    val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
+    val adaptiveConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
+
     var searchQuery by remember { mutableStateOf("") }
     var isFilterExpanded by remember { mutableStateOf(false) }
     var selectedContentTypes by remember {
@@ -341,6 +351,7 @@ fun SearchScreen(
                 isSearching = appState.isSearching,
                 errorMessage = appState.errorMessage,
                 getImageUrl = getImageUrl,
+                onItemClick = onItemClick,
                 modifier = Modifier.fillMaxSize(),
             )
         }

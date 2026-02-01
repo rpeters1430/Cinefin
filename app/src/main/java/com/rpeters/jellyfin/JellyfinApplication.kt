@@ -12,6 +12,9 @@ import com.rpeters.jellyfin.ui.surface.ModernSurfaceCoordinator
 import com.rpeters.jellyfin.utils.AppResources
 import com.rpeters.jellyfin.utils.NetworkOptimizer
 import com.rpeters.jellyfin.utils.SecureLogger
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -58,6 +61,9 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
         // Set to true to enable detailed debug logging (codec detection, playback decisions, etc.)
         SecureLogger.enableVerboseLogging = BuildConfig.DEBUG && false // Disabled by default even in debug
 
+        // Initialize Firebase App Check (debug mode for testing without Play Store)
+        initializeAppCheck()
+
         // Configure performance optimizations first
         initializePerformanceOptimizations()
 
@@ -97,6 +103,30 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
             }
         } catch (e: CancellationException) {
             throw e
+        }
+    }
+
+    /**
+     * Initializes Firebase App Check
+     * - Debug builds: Uses DebugAppCheckProviderFactory (prints debug token to logcat)
+     * - Release builds: Uses Play Integrity API
+     */
+    private fun initializeAppCheck() {
+        val firebaseAppCheck = FirebaseAppCheck.getInstance()
+
+        if (BuildConfig.DEBUG) {
+            // Debug mode: Use debug provider and log the debug token
+            firebaseAppCheck.installAppCheckProviderFactory(
+                DebugAppCheckProviderFactory.getInstance()
+            )
+            SecureLogger.i(TAG, "Firebase App Check initialized with DEBUG provider")
+            SecureLogger.i(TAG, "Check logcat for 'DebugAppCheckProvider' to find your debug token")
+        } else {
+            // Release mode: Use Play Integrity
+            firebaseAppCheck.installAppCheckProviderFactory(
+                PlayIntegrityAppCheckProviderFactory.getInstance()
+            )
+            SecureLogger.i(TAG, "Firebase App Check initialized with Play Integrity")
         }
     }
 

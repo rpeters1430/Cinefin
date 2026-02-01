@@ -34,6 +34,7 @@ sealed class Screen(val route: String) {
             "stuff/$libraryId/$collectionType"
     }
     object Search : Screen("search")
+    object AiAssistant : Screen("ai_assistant")
     object Favorites : Screen("favorites")
     object Profile : Screen("profile")
     object Settings : Screen("settings")

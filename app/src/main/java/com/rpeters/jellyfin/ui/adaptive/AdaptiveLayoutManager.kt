@@ -153,6 +153,111 @@ data class AdaptiveLayoutConfig(
      */
     val shouldShowDualPane: Boolean
         get() = detailPaneVisibility == DetailPaneVisibility.DUAL_PANE
+
+    /**
+     * Section spacing between major content sections
+     */
+    val sectionSpacing: Dp
+        get() = spacing
+
+    /**
+     * Hero carousel height
+     */
+    val heroHeight: Dp
+        get() = when {
+            isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 540.dp else 480.dp
+            isTablet || isFoldable -> if (isLandscapeFirst) 520.dp else 480.dp
+            else -> 400.dp
+        }
+
+    /**
+     * Hero carousel horizontal padding
+     */
+    val heroHorizontalPadding: Dp
+        get() = when {
+            isTV -> 32.dp
+            isTablet || isFoldable -> 16.dp
+            windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact -> 12.dp
+            else -> 16.dp
+        }
+
+    /**
+     * Space between hero carousel pages
+     */
+    val heroPageSpacing: Dp
+        get() = when {
+            isTV -> 16.dp
+            isTablet || isFoldable -> 12.dp
+            else -> 8.dp
+        }
+
+    /**
+     * Featured items limit for hero carousel
+     */
+    val featuredItemsLimit: Int
+        get() = when {
+            isTV -> 12
+            isTablet || isFoldable -> 10
+            else -> 6
+        }
+
+    /**
+     * Row item limit for horizontal scrolling rows
+     */
+    val rowItemLimit: Int
+        get() = when {
+            isTV -> 20
+            isTablet || isFoldable -> 15
+            else -> 12
+        }
+
+    /**
+     * Continue watching section item limit
+     */
+    val continueWatchingLimit: Int
+        get() = when {
+            isTV -> 12
+            isTablet || isFoldable -> 8
+            else -> 6
+        }
+
+    /**
+     * Continue watching card width
+     */
+    val continueWatchingCardWidth: Dp
+        get() = when {
+            isTV -> 240.dp
+            isTablet || isFoldable -> if (isLandscapeFirst) 200.dp else 180.dp
+            windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact -> {
+                // Check for ultra-compact phones
+                if (carouselItemWidth < 150.dp) 138.dp else 160.dp
+            }
+            else -> 180.dp
+        }
+
+    /**
+     * Poster card width for vertical poster cards
+     */
+    val posterCardWidth: Dp
+        get() = when {
+            isTV -> 220.dp
+            isTablet || isFoldable -> if (isLandscapeFirst) 180.dp else 160.dp
+            windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact -> {
+                // Check for ultra-compact phones
+                if (carouselItemWidth < 150.dp) 132.dp else 144.dp
+            }
+            else -> 160.dp
+        }
+
+    /**
+     * Media card width for horizontal backdrop cards
+     */
+    val mediaCardWidth: Dp
+        get() = when {
+            isTV -> 360.dp
+            isTablet || isFoldable -> if (isLandscapeFirst) 320.dp else 300.dp
+            else -> 260.dp
+        }
 }
 
 /**

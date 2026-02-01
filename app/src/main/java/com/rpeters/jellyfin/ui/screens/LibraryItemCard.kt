@@ -55,8 +55,21 @@ fun LibraryItemCard(
     onItemLongPress: ((BaseItemDto) -> Unit)? = null,
     onMoreClick: ((BaseItemDto) -> Unit)? = null,
     isCompact: Boolean,
+    isTablet: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    // Use adaptive card dimensions
+    val cardWidth = when {
+        isCompact && isTablet -> LibraryScreenDefaults.TabletCompactCardWidth
+        isCompact -> LibraryScreenDefaults.CompactCardWidth
+        else -> null
+    }
+    val cardImageHeight = when {
+        isCompact && isTablet -> LibraryScreenDefaults.TabletCompactCardImageHeight
+        isCompact -> LibraryScreenDefaults.CompactCardImageHeight
+        else -> LibraryScreenDefaults.CompactCardImageHeight
+    }
+
     val cardModifier = modifier
         .fillMaxWidth()
         .combinedClickable(
@@ -70,7 +83,7 @@ fun LibraryItemCard(
             },
             onLongClick = { onItemLongPress?.invoke(item) },
         )
-        .then(if (isCompact) Modifier.width(LibraryScreenDefaults.CompactCardWidth) else Modifier)
+        .then(if (cardWidth != null) Modifier.width(cardWidth) else Modifier)
 
     Card(
         modifier = cardModifier,
@@ -90,7 +103,7 @@ fun LibraryItemCard(
                             ShimmerBox(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(LibraryScreenDefaults.CompactCardImageHeight),
+                                    .height(cardImageHeight),
                                 shape = androidx.compose.foundation.shape.RoundedCornerShape(
                                     topStart = LibraryScreenDefaults.CardCornerRadius,
                                     topEnd = LibraryScreenDefaults.CardCornerRadius,
@@ -101,7 +114,7 @@ fun LibraryItemCard(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(LibraryScreenDefaults.CompactCardImageHeight)
+                                    .height(cardImageHeight)
                                     .clip(
                                         androidx.compose.foundation.shape.RoundedCornerShape(
                                             topStart = LibraryScreenDefaults.CardCornerRadius,
@@ -118,10 +131,10 @@ fun LibraryItemCard(
                                 )
                             }
                         },
-                        contentScale = ContentScale.Crop,
+                        contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(LibraryScreenDefaults.CompactCardImageHeight)
+                            .height(cardImageHeight)
                             .clip(
                                 androidx.compose.foundation.shape.RoundedCornerShape(
                                     topStart = LibraryScreenDefaults.CardCornerRadius,
@@ -236,7 +249,7 @@ fun LibraryItemCard(
                                 )
                             }
                         },
-                        contentScale = ContentScale.Crop,
+                        contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .width(LibraryScreenDefaults.ListCardImageWidth)
                             .height(LibraryScreenDefaults.ListCardImageHeight)

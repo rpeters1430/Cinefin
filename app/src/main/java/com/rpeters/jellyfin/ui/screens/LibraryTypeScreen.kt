@@ -2,6 +2,7 @@
 
 package com.rpeters.jellyfin.ui.screens
 
+import android.app.Activity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +43,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -59,6 +61,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
 import com.rpeters.jellyfin.ui.components.shimmer
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
@@ -93,6 +96,10 @@ fun LibraryTypeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    // Calculate adaptive layout config for responsive sizing
+    val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
+    val adaptiveConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
     var selectedItem by remember { mutableStateOf<BaseItemDto?>(null) }
     var showManageSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -253,6 +260,7 @@ fun LibraryTypeScreen(
                             onItemClick = onItemClick,
                             onTVShowClick = onTVShowClick,
                             onItemLongPress = handleItemLongPress,
+                            isTablet = adaptiveConfig.isTablet,
                         )
                     }
                 }
@@ -464,6 +472,7 @@ private fun CarouselContent(
     onItemClick: (BaseItemDto) -> Unit,
     onTVShowClick: ((String) -> Unit)?,
     onItemLongPress: (BaseItemDto) -> Unit,
+    isTablet: Boolean = false,
 ) {
     val categories = remember(items) { organizeItemsForCarousel(items, libraryType) }
     LazyColumn(
@@ -487,6 +496,7 @@ private fun CarouselContent(
                 onItemClick = onItemClick,
                 onTVShowClick = onTVShowClick,
                 onItemLongPress = onItemLongPress,
+                isTablet = isTablet,
             )
         }
     }

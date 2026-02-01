@@ -44,6 +44,39 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             getImageUrl = { item -> viewModel.getImageUrl(item) },
             onBackClick = { navController.popBackStack() },
             onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+            onItemClick = { item ->
+                when (item.type) {
+                    org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
+                        item.id.let { movieId ->
+                            navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                        }
+                    }
+
+                    org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
+                        item.id.let { videoId ->
+                            navController.navigate(Screen.HomeVideoDetail.createRoute(videoId.toString()))
+                        }
+                    }
+
+                    org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+                        item.id.let { seriesId ->
+                            navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
+                        }
+                    }
+
+                    org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
+                        item.id.let { episodeId ->
+                            navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                        }
+                    }
+
+                    else -> {
+                        item.id.let { genericId ->
+                            navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
+                        }
+                    }
+                }
+            },
         )
     }
 

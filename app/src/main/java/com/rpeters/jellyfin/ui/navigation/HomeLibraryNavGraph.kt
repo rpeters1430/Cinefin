@@ -63,6 +63,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             },
             onClearSearch = { viewModel.clearSearch() },
             onSearchClick = { navController.navigate(Screen.Search.route) },
+            onAiAssistantClick = { navController.navigate(Screen.AiAssistant.route) },
             getImageUrl = { item -> viewModel.getImageUrl(item) },
             getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
             getSeriesImageUrl = { item -> viewModel.getSeriesImageUrl(item) },
@@ -158,6 +159,31 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             onSearchClick = { navController.navigate(Screen.Search.route) },
             onSettingsClick = { navController.navigate(Screen.Profile.route) },
             onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+        )
+    }
+
+    composable(Screen.AiAssistant.route) {
+        com.rpeters.jellyfin.ui.screens.AiAssistantScreen(
+            onBackClick = { navController.popBackStack() },
+            onItemClick = { item ->
+                when (item.type) {
+                    org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
+                        item.id.let { movieId ->
+                            navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                        }
+                    }
+                    org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+                        item.id.let { seriesId ->
+                            navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
+                        }
+                    }
+                    else -> {
+                        item.id.let { genericId ->
+                            navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
+                        }
+                    }
+                }
+            }
         )
     }
 }

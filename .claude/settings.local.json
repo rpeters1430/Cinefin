@@ -49,7 +49,8 @@
       "Bash(adb devices:*)",
       "Bash(adb shell:*)",
       "Bash(chmod:*)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(cmd.exe /c gradlew.bat assembleDebug)"
     ],
     "deny": [],
     "ask": [],

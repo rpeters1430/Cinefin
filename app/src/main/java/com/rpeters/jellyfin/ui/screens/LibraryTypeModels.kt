@@ -32,13 +32,21 @@ object LibraryScreenDefaults {
 
     // Carousel constants
     const val CarouselItemsPerSection = 10
-    val CarouselHeight = 280.dp
+    val CarouselHeight = 320.dp // Increased from 280.dp for better poster visibility
     val CarouselPreferredItemWidth = 200.dp
     val CarouselItemSpacing = 8.dp
 
+    // Tablet carousel constants (larger screens)
+    val TabletCarouselHeight = 400.dp
+    val TabletCarouselPreferredItemWidth = 240.dp
+
     // Card dimensions
-    val CompactCardImageHeight = 240.dp
+    val CompactCardImageHeight = 270.dp // Increased from 240.dp to match 2:3 aspect ratio better
     val CompactCardWidth = 180.dp
+
+    // Tablet card dimensions
+    val TabletCompactCardImageHeight = 320.dp
+    val TabletCompactCardWidth = 220.dp
     val CompactCardPadding = 12.dp
     val ListCardImageWidth = 100.dp
     val ListCardImageHeight = 140.dp

@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -35,6 +36,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -76,6 +78,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.data.JellyfinServer
+import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveBackNavigationIcon
 import com.rpeters.jellyfin.ui.components.ExpressiveHeroCarousel
@@ -113,6 +116,7 @@ fun HomeScreen(
     onSearch: (String) -> Unit,
     onClearSearch: () -> Unit,
     onSearchClick: () -> Unit = {},
+    onAiAssistantClick: () -> Unit = {},
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
@@ -189,16 +193,29 @@ fun HomeScreen(
             MiniPlayer(onExpandClick = onNowPlayingClick)
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onSearchClick,
-                shape = MaterialTheme.shapes.large,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = stringResource(id = R.string.search),
-                )
+            Column(horizontalAlignment = Alignment.End) {
+                SmallFloatingActionButton(
+                    onClick = onAiAssistantClick,
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = "AI Assistant"
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                FloatingActionButton(
+                    onClick = onSearchClick,
+                    shape = MaterialTheme.shapes.large,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = stringResource(id = R.string.search),
+                    )
+                }
             }
         },
         containerColor = Color.Transparent, // Let gradient show through
@@ -321,9 +338,8 @@ fun HomeContent(
     // Calculate window size class for adaptive layout
     val context = LocalContext.current
     val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
-    val isTablet = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
-
-    val layoutConfig = rememberHomeLayoutConfig()
+    val adaptiveConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
+    val isTablet = adaptiveConfig.isTablet
 
     // ✅ DEBUG: Log received state for UI troubleshooting
     LaunchedEffect(appState.libraries.size, appState.recentlyAddedByTypes.size) {
@@ -341,23 +357,23 @@ fun HomeContent(
         appState.allItems,
         appState.continueWatching,
         appState.recentlyAddedByTypes,
-        layoutConfig.continueWatchingLimit,
-        layoutConfig.rowItemLimit,
-        layoutConfig.featuredItemsLimit,
+        adaptiveConfig.continueWatchingLimit,
+        adaptiveConfig.rowItemLimit,
+        adaptiveConfig.featuredItemsLimit,
     ) {
         derivedStateOf {
-            val continueWatching = getContinueWatchingItems(appState, layoutConfig.continueWatchingLimit)
+            val continueWatching = getContinueWatchingItems(appState, adaptiveConfig.continueWatchingLimit)
             val movies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]
-                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
+                ?.take(adaptiveConfig.rowItemLimit) ?: emptyList()
             val tvShows = appState.recentlyAddedByTypes[BaseItemKind.SERIES.name]
-                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
+                ?.take(adaptiveConfig.rowItemLimit) ?: emptyList()
             val episodes = appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]
-                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
+                ?.take(adaptiveConfig.rowItemLimit) ?: emptyList()
             val music = appState.recentlyAddedByTypes[BaseItemKind.AUDIO.name]
-                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
+                ?.take(adaptiveConfig.rowItemLimit) ?: emptyList()
             val videos = appState.recentlyAddedByTypes[BaseItemKind.VIDEO.name]
-                ?.take(layoutConfig.rowItemLimit) ?: emptyList()
-            val featured = (movies + tvShows).take(layoutConfig.featuredItemsLimit)
+                ?.take(adaptiveConfig.rowItemLimit) ?: emptyList()
+            val featured = (movies + tvShows).take(adaptiveConfig.featuredItemsLimit)
 
             HomeContentLists(
                 continueWatching = continueWatching,
@@ -450,8 +466,7 @@ fun HomeContent(
             // Tablet layout: Use grids for better space utilization
             TabletHomeLayout(
                 contentLists = contentLists,
-                layoutConfig = layoutConfig,
-                windowSizeClass = windowSizeClass,
+                adaptiveConfig = adaptiveConfig,
                 getImageUrl = getImageUrl,
                 getBackdropUrl = getBackdropUrl,
                 getSeriesImageUrl = getSeriesImageUrl,
@@ -464,7 +479,7 @@ fun HomeContent(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(layoutConfig.sectionSpacing),
+                verticalArrangement = Arrangement.spacedBy(adaptiveConfig.sectionSpacing),
                 userScrollEnabled = true,
             ) {
                 if (contentLists.featuredItems.isNotEmpty()) {
@@ -489,9 +504,9 @@ fun HomeContent(
                                 contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
                                     ?.let(stableOnItemClick)
                             },
-                            heroHeight = layoutConfig.heroHeight,
-                            horizontalPadding = layoutConfig.heroHorizontalPadding,
-                            pageSpacing = layoutConfig.heroPageSpacing,
+                            heroHeight = adaptiveConfig.heroHeight,
+                            horizontalPadding = adaptiveConfig.heroHorizontalPadding,
+                            pageSpacing = adaptiveConfig.heroPageSpacing,
                         )
                     }
                 }
@@ -504,7 +519,7 @@ fun HomeContent(
                             getImageUrl = getImageUrl,
                             onItemClick = stableOnItemClick,
                             onItemLongPress = stableOnItemLongPress,
-                            cardWidth = layoutConfig.continueWatchingCardWidth,
+                            cardWidth = adaptiveConfig.continueWatchingCardWidth,
                         )
                     }
                 }
@@ -523,7 +538,7 @@ fun HomeContent(
                                     getImageUrl = imageProvider,
                                     onItemClick = stableOnItemClick,
                                     onItemLongPress = stableOnItemLongPress,
-                                    cardWidth = layoutConfig.posterCardWidth,
+                                    cardWidth = adaptiveConfig.posterCardWidth,
                                 )
                             }
                             HomeRowKind.SQUARE -> {
@@ -533,7 +548,7 @@ fun HomeContent(
                                     getImageUrl = imageProvider,
                                     onItemClick = stableOnItemClick,
                                     onItemLongPress = stableOnItemLongPress,
-                                    cardWidth = layoutConfig.mediaCardWidth,
+                                    cardWidth = adaptiveConfig.mediaCardWidth,
                                 )
                             }
                             HomeRowKind.MEDIA -> {
@@ -543,7 +558,7 @@ fun HomeContent(
                                     getImageUrl = imageProvider,
                                     onItemClick = stableOnItemClick,
                                     onItemLongPress = stableOnItemLongPress,
-                                    cardWidth = layoutConfig.mediaCardWidth,
+                                    cardWidth = adaptiveConfig.mediaCardWidth,
                                 )
                             }
                         }
@@ -564,8 +579,7 @@ fun HomeContent(
 @Composable
 private fun TabletHomeLayout(
     contentLists: HomeContentLists,
-    layoutConfig: HomeLayoutConfig,
-    windowSizeClass: androidx.compose.material3.windowsizeclass.WindowSizeClass,
+    adaptiveConfig: com.rpeters.jellyfin.ui.adaptive.AdaptiveLayoutConfig,
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
     getSeriesImageUrl: (BaseItemDto) -> String?,
@@ -573,18 +587,15 @@ private fun TabletHomeLayout(
     onItemLongPress: (BaseItemDto) -> Unit,
     unknownText: String,
 ) {
-    // Calculate grid columns based on window size
-    val gridColumns = when (windowSizeClass.widthSizeClass) {
-        WindowWidthSizeClass.Medium -> 3 // 600-840dp: 3 columns
-        else -> 4 // > 840dp: 4 columns
-    }
+    // Use adaptive grid columns that considers window size, orientation, and posture
+    val gridColumns = adaptiveConfig.gridColumns
 
     val listState = rememberLazyListState()
 
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(layoutConfig.sectionSpacing),
+        verticalArrangement = Arrangement.spacedBy(adaptiveConfig.sectionSpacing),
     ) {
         // Hero Carousel
         if (contentLists.featuredItems.isNotEmpty()) {
@@ -609,9 +620,9 @@ private fun TabletHomeLayout(
                         contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
                             ?.let(onItemClick)
                     },
-                    heroHeight = layoutConfig.heroHeight,
-                    horizontalPadding = layoutConfig.heroHorizontalPadding,
-                    pageSpacing = layoutConfig.heroPageSpacing,
+                    heroHeight = adaptiveConfig.heroHeight,
+                    horizontalPadding = adaptiveConfig.heroHorizontalPadding,
+                    pageSpacing = adaptiveConfig.heroPageSpacing,
                 )
             }
         }
@@ -712,7 +723,7 @@ private fun TabletHomeLayout(
                             getImageUrl = getImageUrl,
                             onClick = onItemClick,
                             onLongPress = onItemLongPress,
-                            cardWidth = layoutConfig.posterCardWidth,
+                            cardWidth = adaptiveConfig.posterCardWidth,
                         )
                     }
                 }
@@ -745,7 +756,7 @@ private fun TabletHomeLayout(
                             getImageUrl = getImageUrl,
                             onClick = onItemClick,
                             onLongPress = onItemLongPress,
-                            cardWidth = layoutConfig.posterCardWidth,
+                            cardWidth = adaptiveConfig.posterCardWidth,
                         )
                     }
                 }
@@ -778,7 +789,7 @@ private fun TabletHomeLayout(
                             getImageUrl = { getBackdropUrl(it) ?: getImageUrl(it) },
                             onClick = onItemClick,
                             onLongPress = onItemLongPress,
-                            cardWidth = layoutConfig.mediaCardWidth,
+                            cardWidth = adaptiveConfig.mediaCardWidth,
                         )
                     }
                 }
@@ -789,20 +800,6 @@ private fun TabletHomeLayout(
         item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 }
-
-@Immutable
-private data class HomeLayoutConfig(
-    val sectionSpacing: Dp,
-    val heroHeight: Dp,
-    val heroHorizontalPadding: Dp,
-    val heroPageSpacing: Dp,
-    val featuredItemsLimit: Int,
-    val rowItemLimit: Int,
-    val continueWatchingLimit: Int,
-    val continueWatchingCardWidth: Dp,
-    val posterCardWidth: Dp,
-    val mediaCardWidth: Dp,
-)
 
 @Stable
 private data class HomeContentLists(
@@ -851,49 +848,12 @@ private enum class HomeImageSelector {
 }
 
 @Composable
-private fun rememberHomeLayoutConfig(): HomeLayoutConfig {
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp
-    val isCompactWidth = screenWidth < 600
-    val isUltraCompact = screenWidth < 380
-
-    return remember(screenWidth) {
-        if (isCompactWidth) {
-            HomeLayoutConfig(
-                sectionSpacing = 16.dp,
-                heroHeight = 400.dp,
-                heroHorizontalPadding = 12.dp,
-                heroPageSpacing = 8.dp,
-                featuredItemsLimit = 6,
-                rowItemLimit = 12,
-                continueWatchingLimit = 6,
-                continueWatchingCardWidth = if (isUltraCompact) 138.dp else 160.dp,
-                posterCardWidth = if (isUltraCompact) 132.dp else 144.dp,
-                mediaCardWidth = 260.dp,
-            )
-        } else {
-            HomeLayoutConfig(
-                sectionSpacing = 24.dp,
-                heroHeight = 480.dp,
-                heroHorizontalPadding = 16.dp,
-                heroPageSpacing = 12.dp,
-                featuredItemsLimit = 10,
-                rowItemLimit = 15,
-                continueWatchingLimit = 8,
-                continueWatchingCardWidth = 180.dp,
-                posterCardWidth = 160.dp,
-                mediaCardWidth = 300.dp,
-            )
-        }
-    }
-}
-
-@Composable
 fun SearchResultsContent(
     searchResults: List<BaseItemDto>,
     isSearching: Boolean,
     errorMessage: String?,
     getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -990,12 +950,14 @@ fun SearchResultsContent(
                                 modifier = Modifier.weight(1f),
                                 showTitle = true,
                                 showMetadata = true,
+                                onClick = onItemClick,
                             )
                         } else {
                             MediaCard(
                                 item = item,
                                 getImageUrl = getImageUrl,
                                 modifier = Modifier.weight(1f),
+                                onClick = onItemClick,
                             )
                         }
                     }

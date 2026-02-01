@@ -1,0 +1,19 @@
+# This file is gitignored - safe for API keys and secrets
+# Copy this to gradle.properties and add your actual values
+
+# Google AI API Key (required for cloud Gemini fallback)
+# Get your key from: https://aistudio.google.com/apikey
+GOOGLE_AI_API_KEY=your-api-key-here
+
+# Gradle JVM settings (optional optimizations)
+org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m
+org.gradle.parallel=true
+org.gradle.caching=true
+org.gradle.configureondemand=true
+
+# Kotlin code style (optional)
+kotlin.code.style=official
+
+# AndroidX (required)
+android.useAndroidX=true
+android.enableJetifier=true

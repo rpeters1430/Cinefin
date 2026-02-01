@@ -80,6 +80,7 @@ fun CarouselSection(
     onItemClick: (BaseItemDto) -> Unit = {},
     onTVShowClick: ((String) -> Unit)? = null,
     onItemLongPress: ((BaseItemDto) -> Unit)? = null,
+    isTablet: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -94,8 +95,12 @@ fun CarouselSection(
 
         HorizontalMultiBrowseCarousel(
             state = carouselState,
-            modifier = Modifier.height(LibraryScreenDefaults.CarouselHeight),
-            preferredItemWidth = LibraryScreenDefaults.CarouselPreferredItemWidth,
+            modifier = Modifier.height(
+                if (isTablet) LibraryScreenDefaults.TabletCarouselHeight
+                else LibraryScreenDefaults.CarouselHeight
+            ),
+            preferredItemWidth = if (isTablet) LibraryScreenDefaults.TabletCarouselPreferredItemWidth
+                else LibraryScreenDefaults.CarouselPreferredItemWidth,
             itemSpacing = LibraryScreenDefaults.CarouselItemSpacing,
             contentPadding = PaddingValues(horizontal = LibraryScreenDefaults.ContentPadding),
         ) { index ->
@@ -107,6 +112,7 @@ fun CarouselSection(
                 onTVShowClick = onTVShowClick,
                 onItemLongPress = onItemLongPress,
                 isCompact = true,
+                isTablet = isTablet,
             )
         }
     }

@@ -25,6 +25,14 @@ android {
         versionName = "13.95"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
+
+        // Google AI API key for Gemini cloud fallback
+        // Reads from (in order): gradle.properties, local.properties, or environment variable
+        buildConfigField(
+            "String",
+            "GOOGLE_AI_API_KEY",
+            "\"${project.findProperty("GOOGLE_AI_API_KEY") ?: System.getenv("GOOGLE_AI_API_KEY") ?: ""}\""
+        )
     }
 
     signingConfigs {
@@ -173,6 +181,11 @@ dependencies {
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.perf)
+    implementation(libs.firebase.appcheck)
+    debugImplementation(libs.firebase.appcheck.debug)
+    implementation(libs.firebase.appcheck.playintegrity)
+    implementation(libs.firebase.ai) // Unified SDK with Gemini Nano + Google AI support
+    implementation(libs.google.mlkit.genai.prompt) // ML Kit GenAI Prompt API (on-device Gemini Nano)
 
     // Hilt
     implementation(libs.dagger.hilt.android)
