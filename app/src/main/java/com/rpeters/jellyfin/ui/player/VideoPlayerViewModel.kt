@@ -131,8 +131,8 @@ class VideoPlayerViewModel @Inject constructor(
     private val enhancedPlaybackManager: com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager,
 ) : ViewModel() {
 
-    // Initialize state flows before init block to prevent race condition
-    // where castManager.castState could emit before _playerState was initialized
+    // Initialize state flows before init block to prevent race condition where
+    // the init block's coroutine could call handleCastState() before _playerState is initialized
     private val _playerState = MutableStateFlow(VideoPlayerState())
     val playerState: StateFlow<VideoPlayerState> = _playerState.asStateFlow()
     val playbackProgress: StateFlow<PlaybackProgress> = playbackProgressManager.playbackProgress
