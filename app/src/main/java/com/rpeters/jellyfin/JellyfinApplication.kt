@@ -5,7 +5,6 @@ import android.os.SystemClock
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import com.google.firebase.appcheck.FirebaseAppCheck
-import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.rpeters.jellyfin.core.Logger
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
@@ -108,19 +107,39 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
 
     /**
      * Initializes Firebase App Check
-     * - Debug builds: Uses DebugAppCheckProviderFactory (prints debug token to logcat)
+     * - Debug builds: Tries to use DebugAppCheckProviderFactory, falls back to Play Integrity
      * - Release builds: Uses Play Integrity API
      */
     private fun initializeAppCheck() {
         val firebaseAppCheck = FirebaseAppCheck.getInstance()
 
         if (BuildConfig.DEBUG) {
-            // Debug mode: Use debug provider and log the debug token
-            firebaseAppCheck.installAppCheckProviderFactory(
-                DebugAppCheckProviderFactory.getInstance(),
-            )
-            SecureLogger.i(TAG, "Firebase App Check initialized with DEBUG provider")
-            SecureLogger.i(TAG, "Check logcat for 'DebugAppCheckProvider' to find your debug token")
+            // Debug mode: Try to use debug provider (requires firebase-appcheck-debug dependency)
+            try {
+                val debugProviderClass = Class.forName(
+                    "com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory"
+                )
+                val getInstance = debugProviderClass.getMethod("getInstance")
+                val debugProvider = getInstance.invoke(null)
+
+                firebaseAppCheck.installAppCheckProviderFactory(
+                    debugProvider as com.google.firebase.appcheck.AppCheckProviderFactory
+                )
+                SecureLogger.i(TAG, "Firebase App Check initialized with DEBUG provider")
+                SecureLogger.i(TAG, "Check logcat for 'DebugAppCheckProvider' to find your debug token")
+            } catch (e: ClassNotFoundException) {
+                // Debug provider not available, use Play Integrity
+                firebaseAppCheck.installAppCheckProviderFactory(
+                    PlayIntegrityAppCheckProviderFactory.getInstance(),
+                )
+                SecureLogger.i(TAG, "Firebase App Check initialized with Play Integrity (debug build, debug provider not available)")
+            } catch (e: Exception) {
+                // Any other error, fall back to Play Integrity
+                firebaseAppCheck.installAppCheckProviderFactory(
+                    PlayIntegrityAppCheckProviderFactory.getInstance(),
+                )
+                SecureLogger.w(TAG, "Failed to initialize debug App Check provider, using Play Integrity: ${e.message}")
+            }
         } else {
             // Release mode: Use Play Integrity
             firebaseAppCheck.installAppCheckProviderFactory(

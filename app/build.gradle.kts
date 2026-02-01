@@ -19,10 +19,10 @@ android {
             "useTestStorageService" to "true",
         )
         applicationId = "com.rpeters.jellyfin"
-        minSdk = 26
+        minSdk = 31
         targetSdk = 35
-        versionCode = 27
-        versionName = "13.95"
+        versionCode = 28
+        versionName = "13.96"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 

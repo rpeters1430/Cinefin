@@ -54,6 +54,19 @@
 -dontwarn okhttp3.internal.platform.ConscryptPlatform
 -dontwarn org.conscrypt.ConscryptHostnameVerifier
 
+# OkHttp 5.x rules - keep internal classes used by Retrofit/SSE
+-keep class okhttp3.internal.** { *; }
+-dontwarn okhttp3.internal.**
+
+# Keep OkHttp SSE (Server-Sent Events) support
+-keep class okhttp3.sse.** { *; }
+-dontwarn okhttp3.sse.**
+
+# Keep OkHttp core classes
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+-dontwarn okhttp3.**
+
 # ================================
 # JELLYFIN SDK
 # ================================
@@ -126,6 +139,28 @@
 -keep class com.google.android.gms.cast.** { *; }
 -keep class com.google.android.gms.cast.framework.** { *; }
 -dontwarn com.google.android.gms.cast.**
+
+# ================================
+# FIREBASE & GOOGLE ML KIT
+# ================================
+# Keep Firebase App Check
+-keep class com.google.firebase.appcheck.** { *; }
+-keep interface com.google.firebase.appcheck.** { *; }
+-dontwarn com.google.firebase.appcheck.**
+
+# Keep Firebase AI (Generative AI)
+-keep class com.google.firebase.ai.** { *; }
+-keep interface com.google.firebase.ai.** { *; }
+-dontwarn com.google.firebase.ai.**
+
+# Keep ML Kit GenAI (Gemini Nano on-device)
+-keep class com.google.mlkit.genai.** { *; }
+-keep interface com.google.mlkit.genai.** { *; }
+-dontwarn com.google.mlkit.genai.**
+
+# Keep Google Play Services ML Kit
+-keep class com.google.android.gms.internal.mlkit_genai_prompt.** { *; }
+-dontwarn com.google.android.gms.internal.mlkit_genai_prompt.**
 
 # ================================
 # COIL IMAGE LOADING

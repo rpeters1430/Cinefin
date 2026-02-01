@@ -104,8 +104,7 @@ fun AiAssistantScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surfaceContainer)
-                    .padding(16.dp)
-                    .imePadding(), // Handle keyboard
+                    .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 OutlinedTextField(
