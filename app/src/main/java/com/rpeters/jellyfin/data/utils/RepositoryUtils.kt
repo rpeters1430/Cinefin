@@ -137,13 +137,13 @@ object RepositoryUtils {
         while (current != null) {
             val className = current.javaClass.name
             val message = current.message ?: ""
-            
+
             // Check for GaiException by class name
             if (className.contains("GaiException")) {
                 SecureLogger.w(TAG, "DNS resolution error detected: GaiException - $message")
                 return true
             }
-            
+
             // Check for specific DNS error messages
             if (message.contains("EAI_NODATA", ignoreCase = true) ||
                 message.contains("EAI_NONAME", ignoreCase = true) ||
@@ -153,7 +153,7 @@ object RepositoryUtils {
                 SecureLogger.w(TAG, "DNS resolution error detected in message: $message")
                 return true
             }
-            
+
             current = current.cause
         }
         return false
