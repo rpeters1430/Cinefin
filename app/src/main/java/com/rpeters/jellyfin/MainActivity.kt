@@ -118,8 +118,6 @@ class MainActivity : FragmentActivity() {
             // initializes the font system during setContent(). The crash will still happen,
             // but at least we're logging it clearly for debugging.
             // The real fix requires Compose library update or device-specific workarounds.
-        } catch (e: Exception) {
-            SecureLogger.w(TAG, "Error checking fontWeightAdjustment field: ${e.message}")
         }
     }
 

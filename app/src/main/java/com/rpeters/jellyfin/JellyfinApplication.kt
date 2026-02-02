@@ -139,12 +139,6 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
                     PlayIntegrityAppCheckProviderFactory.getInstance(),
                 )
                 SecureLogger.i(TAG, "Firebase App Check initialized with Play Integrity (debug build, debug provider not available)")
-            } catch (e: Exception) {
-                // Any other error, fall back to Play Integrity
-                firebaseAppCheck.installAppCheckProviderFactory(
-                    PlayIntegrityAppCheckProviderFactory.getInstance(),
-                )
-                SecureLogger.w(TAG, "Failed to initialize debug App Check provider, using Play Integrity: ${e.message}")
             }
         } else {
             // Release mode: Use Play Integrity
@@ -183,8 +177,6 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
                 SecureLogger.i(TAG, "AI backend initialized: ${if (isOnDevice) "On-Device (Nano)" else "Cloud (API)"}")
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                SecureLogger.w(TAG, "AI initialization failed (non-fatal): ${e.message}")
             }
         }
     }

@@ -180,9 +180,6 @@ object AiModule {
             } catch (e: GenAiException) {
                 Log.e("AiModule", "Nano availability check failed", e)
                 handleGenAiException(e)
-            } catch (e: Exception) {
-                Log.e("AiModule", "Unexpected error checking Nano availability", e)
-                NanoAvailabilityResult(false, "Error: ${e.message}", true)
             }
         }
     }

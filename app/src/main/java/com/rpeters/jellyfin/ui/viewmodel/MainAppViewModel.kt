@@ -1335,11 +1335,6 @@ class MainAppViewModel @Inject constructor(
                 )
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                _appState.value = _appState.value.copy(
-                    viewingMood = null,
-                    isLoadingViewingMood = false,
-                )
             }
         }
     }
