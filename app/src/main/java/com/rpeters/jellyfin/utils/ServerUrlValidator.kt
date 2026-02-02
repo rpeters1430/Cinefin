@@ -412,15 +412,15 @@ object ServerUrlValidator {
         if (isValidIPv4Address(host)) {
             return true
         }
-        
+
         // Check IPv6 (with or without brackets)
         if (isValidIPv6Address(host)) {
             return true
         }
-        
+
         return false
     }
-    
+
     /**
      * Validates if a string is a valid IPv4 address.
      */
@@ -433,27 +433,27 @@ object ServerUrlValidator {
         // Validate octet ranges (0-255)
         return parts.all { it in 0..255 }
     }
-    
+
     /**
      * Validates if a string is a valid IPv6 address.
      * Supports both bracketed [::1] and unbracketed ::1 formats.
      */
     private fun isValidIPv6Address(host: String): Boolean {
         val cleanHost = host.trim().removeSurrounding("[", "]")
-        
+
         // Basic IPv6 validation (simplified)
         // A full IPv6 validation is complex, this covers common cases
         val ipv6Pattern = """^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$""".toRegex()
         val compressedPattern = """^::([0-9a-fA-F]{0,4}:?)*[0-9a-fA-F]{0,4}$""".toRegex()
         val compressedEndPattern = """^([0-9a-fA-F]{0,4}:)+:$""".toRegex()
-        
-        return ipv6Pattern.matches(cleanHost) || 
-               compressedPattern.matches(cleanHost) ||
-               compressedEndPattern.matches(cleanHost) ||
-               cleanHost == "::" || // Shorthand for all zeros
-               cleanHost == "::1"   // localhost
+
+        return ipv6Pattern.matches(cleanHost) ||
+            compressedPattern.matches(cleanHost) ||
+            compressedEndPattern.matches(cleanHost) ||
+            cleanHost == "::" || // Shorthand for all zeros
+            cleanHost == "::1" // localhost
     }
-    
+
     /**
      * Checks if a server address looks like an IP address (not a hostname).
      * Useful for providing guidance to users about using IP addresses vs hostnames.
@@ -465,7 +465,7 @@ object ServerUrlValidator {
             } else {
                 URI("http://$serverUrl")
             }
-            
+
             val host = uri.host ?: return false
             isValidIPv4Address(host) || isValidIPv6Address(host)
         } catch (e: Exception) {
