@@ -19,7 +19,7 @@ android {
             "useTestStorageService" to "true",
         )
         applicationId = "com.rpeters.jellyfin"
-        minSdk = 31
+        minSdk = 26
         targetSdk = 35
         versionCode = 30
         versionName = "13.98"
@@ -65,10 +65,7 @@ android {
             )
             signingConfig = signingConfigs.getByName("release")
 
-            // Enable native debug symbols for better crash reporting in Play Console
-            ndk {
-                debugSymbolLevel = "FULL"
-            }
+            ndk.debugSymbolLevel = "FULL"
         }
     }
 
@@ -87,6 +84,8 @@ android {
                     "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
                     "-opt-in=androidx.compose.material3.ExperimentalMaterial3ExpressiveApi",
                     "-opt-in=androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi",
+                    "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+                    "-opt-in=androidx.compose.foundation.layout.ExperimentalLayoutApi",
                     "-Xannotation-default-target=param-property",
                 ),
             )
@@ -115,6 +114,7 @@ android {
             useLegacyPackaging = false
         }
     }
+    ndkVersion = "29.0.14206865"
 }
 
 dependencies {
@@ -130,13 +130,6 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
-
-    // Force specific Compose UI Text version with fontWeightAdjustment fix
-    // This overrides the BOM version to ensure compatibility with devices
-    // that don't have Configuration.fontWeightAdjustment field
-    implementation("androidx.compose.ui:ui-text:1.7.6") {
-        because("Fixes NoSuchFieldError: fontWeightAdjustment on some API 31+ devices")
-    }
 
     // Material 3
     implementation(libs.androidx.material3)
@@ -253,6 +246,20 @@ dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
 
+// Force all core Compose artifacts to 1.7.6 to prevent "Franken-Compose" crashes on API 30
+// This ensures ui, foundation, and animation are all in sync.
+configurations.all {
+    resolutionStrategy.eachDependency {
+        val group = requested.group
+        if (group == "androidx.compose.ui" || 
+            group == "androidx.compose.foundation" || 
+            group == "androidx.compose.animation") {
+            useVersion("1.7.6")
+            because("Force consistent core Compose version to fix NoSuchFieldError on API 30")
+        }
+    }
+}
+
 tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn("testDebugUnitTest", "createDebugCoverageReport")
 
@@ -290,27 +297,3 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 }
 
 apply(plugin = "jacoco")
-
-// Task to create native debug symbols archive for Play Console
-// This creates a zip file containing .so files with debug symbols
-// Upload this to Play Console: Release > App bundle explorer > Downloads > Native debug symbols
-tasks.register<Zip>("packageNativeSymbols") {
-    dependsOn("bundleRelease")
-
-    description = "Package native debug symbols for Google Play Console upload"
-    group = "publishing"
-
-    archiveFileName.set("native-debug-symbols.zip")
-    destinationDirectory.set(layout.buildDirectory.dir("outputs/native-debug-symbols"))
-
-    // Include all .so files from the merged native libs (correct path with mergeReleaseNativeLibs)
-    from(layout.buildDirectory.dir("intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib")) {
-        include("**/*.so")
-    }
-
-    doLast {
-        println("✓ Native symbols packaged at: ${archiveFile.get().asFile.absolutePath}")
-        println("  Upload this file to Play Console:")
-        println("  → Release > App bundle explorer > Downloads > Upload debug symbols")
-    }
-}
