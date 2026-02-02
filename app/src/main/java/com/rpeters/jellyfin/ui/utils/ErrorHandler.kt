@@ -21,7 +21,7 @@ import javax.net.ssl.SSLException
 object ErrorHandler {
 
     private const val TAG = "ErrorHandler"
-    
+
     // Standard DNS error messages for consistency
     private const val DNS_ERROR_SHORT = "Could not find an IP address for the server. Please check the server address for typos, or ensure the server's DNS records are correctly configured."
     private const val DNS_ERROR_SUGGESTION = "Verify server address or try using an IP address (e.g., 192.168.1.100) instead of a hostname"
