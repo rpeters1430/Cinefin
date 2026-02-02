@@ -3,14 +3,12 @@ package com.rpeters.jellyfin.data.repository
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.rpeters.jellyfin.BuildConfig
-import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.model.QuickConnectResult
 import com.rpeters.jellyfin.data.model.QuickConnectState
 import com.rpeters.jellyfin.data.network.TokenProvider
 import com.rpeters.jellyfin.data.repository.common.ApiResult
-import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.normalizeServerUrl
@@ -131,7 +129,7 @@ class JellyfinAuthRepository @Inject constructor(
             Log.e(TAG, "authenticateUser: Server returned error status", e)
             val errorType = RepositoryUtils.getErrorType(e)
             return ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
-        }  finally {
+        } finally {
             _isAuthenticating.update { false }
         }
     }
