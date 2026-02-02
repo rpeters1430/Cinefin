@@ -51,10 +51,6 @@ class NetworkStateInterceptor(
             }
             Log.e(TAG, message, e)
             throw IOException(message, e)
-        } catch (e: IOException) {
-            // Log other IO exceptions with network context
-            Log.e(TAG, "IO error on $networkType: ${e.message}", e)
-            throw e
         }
     }
 }

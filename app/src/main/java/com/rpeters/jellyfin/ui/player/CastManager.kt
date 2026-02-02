@@ -564,9 +564,6 @@ class CastManager @Inject constructor(
             )
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            SecureLogger.e("CastManager", "Failed to resolve Cast playback data", e)
-            null
         }
     }
 

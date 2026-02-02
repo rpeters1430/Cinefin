@@ -119,11 +119,6 @@ class MovieDetailViewModel @Inject constructor(
                 )
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    aiSummary = "Unable to generate summary",
-                    isLoadingAiSummary = false,
-                )
             }
         }
     }
