@@ -86,6 +86,29 @@ class EnhancedPlaybackManager @Inject constructor(
     }
 
     /**
+     * Force transcoding for an item, bypassing direct play checks.
+     * Used as a fallback when Direct Play fails at runtime (e.g., audio codec
+     * reports supported but actually fails during decoding).
+     */
+    suspend fun getTranscodingPlaybackUrl(item: BaseItemDto): PlaybackResult {
+        return withContext(Dispatchers.IO) {
+            try {
+                val itemId = item.id.toString()
+                SecureLogger.d(TAG, "Forcing transcoding for: ${item.name} (fallback from Direct Play failure)")
+
+                val playbackInfo = getPlaybackInfo(itemId)
+                if (playbackInfo == null) {
+                    return@withContext PlaybackResult.Error("Failed to get playback info for transcoding fallback")
+                }
+
+                getOptimalTranscodingUrl(item, playbackInfo)
+            } catch (e: CancellationException) {
+                throw e
+            }
+        }
+    }
+
+    /**
      * Use server playback decision (PlaybackInfo) to select direct play vs transcoding.
      */
     private fun getServerDirectedPlaybackUrl(
@@ -202,12 +225,13 @@ class EnhancedPlaybackManager @Inject constructor(
             }
         }
 
-        // Check audio codec support
+        // Check audio codec support with actual channel count
         val audioStream = mediaSource.mediaStreams.findDefaultAudioStream()
         if (audioStream != null) {
             val audioCodec = audioStream.codec
-            if (!deviceCapabilities.canPlayAudioCodec(audioCodec)) {
-                SecureLogger.v(TAG, "Audio codec '$audioCodec' not supported for Direct Play")
+            val audioChannels = audioStream.channels ?: 2
+            if (!deviceCapabilities.canPlayAudioCodec(audioCodec, audioChannels)) {
+                SecureLogger.v(TAG, "Audio codec '$audioCodec' ($audioChannels ch) not supported for Direct Play")
                 return false
             }
         }
