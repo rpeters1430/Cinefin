@@ -242,7 +242,8 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
         var current: Throwable? = exception
         while (current != null) {
             if (current is NoSuchFieldError &&
-                current.message?.contains("fontWeightAdjustment") == true) {
+                current.message?.contains("fontWeightAdjustment") == true
+            ) {
                 return true
             }
             current = current.cause

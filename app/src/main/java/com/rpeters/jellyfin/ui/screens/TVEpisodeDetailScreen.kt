@@ -838,7 +838,7 @@ private fun ExpressiveSubtitleRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-         Surface(
+        Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.secondaryContainer,
             modifier = Modifier.size(24.dp),
@@ -850,14 +850,14 @@ private fun ExpressiveSubtitleRow(
                 modifier = Modifier.size(16.dp).padding(4.dp),
             )
         }
-        
+
         Box {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.clickable { expanded = true }
+                modifier = Modifier.clickable { expanded = true },
             ) {
-                 Column(
+                Column(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     Text(
@@ -877,7 +877,7 @@ private fun ExpressiveSubtitleRow(
                 }
                 Icon(Icons.Default.ExpandMore, contentDescription = null, modifier = Modifier.size(16.dp))
             }
-            
+
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 // None option
                 DropdownMenuItem(
@@ -885,20 +885,20 @@ private fun ExpressiveSubtitleRow(
                     onClick = {
                         onSubtitleSelect(null)
                         expanded = false
-                    }
+                    },
                 )
 
                 subtitles.forEach { stream ->
                     DropdownMenuItem(
                         text = {
-                             val lang = stream.language?.uppercase(java.util.Locale.ROOT) ?: "UNK"
-                             val title = stream.title ?: stream.displayTitle
-                             Text(if (title != null && title != lang) "$lang - $title" else lang)
+                            val lang = stream.language?.uppercase(java.util.Locale.ROOT) ?: "UNK"
+                            val title = stream.title ?: stream.displayTitle
+                            Text(if (title != null && title != lang) "$lang - $title" else lang)
                         },
                         onClick = {
                             onSubtitleSelect(stream.index)
                             expanded = false
-                        }
+                        },
                     )
                 }
             }
