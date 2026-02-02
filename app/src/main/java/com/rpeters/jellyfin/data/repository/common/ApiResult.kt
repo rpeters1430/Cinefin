@@ -20,6 +20,7 @@ sealed class ApiResult<out T> {
  */
 enum class ErrorType {
     NETWORK,
+    DNS_RESOLUTION, // Hostname resolution failures (EAI_NODATA, EAI_NONAME, etc.)
     AUTHENTICATION,
     SERVER_ERROR,
     NOT_FOUND,

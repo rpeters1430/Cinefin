@@ -73,13 +73,24 @@ class JellyfinAuthRepository @Inject constructor(
 
     suspend fun testServerConnection(serverUrl: String): ApiResult<PublicSystemInfo> {
         return try {
+            Log.d(TAG, "testServerConnection: Attempting to connect to server: ${serverUrl.substringBefore("?")}")
             val client = createApiClient(serverUrl)
             val response = client.systemApi.getPublicSystemInfo()
+            Log.d(TAG, "testServerConnection: Successfully connected to server")
             ApiResult.Success(response.content)
         } catch (e: InvalidStatusException) {
             Log.e(TAG, "Server returned error status: $serverUrl", e)
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Server error: ${e.message}", e, errorType)
+        } catch (e: IOException) {
+            Log.e(TAG, "I/O error while testing server connection: ${serverUrl.substringBefore("?")}", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            val message = if (errorType == ErrorType.DNS_RESOLUTION) {
+                "Could not resolve server hostname. Please check the server address for typos, or try using an IP address (e.g., 192.168.1.100)"
+            } else {
+                "Network error: ${e.message}"
+            }
+            ApiResult.Error(message, e, errorType)
         }
     }
 
@@ -100,7 +111,7 @@ class JellyfinAuthRepository @Inject constructor(
     ): ApiResult<AuthenticationResult> {
         _isAuthenticating.update { true }
         try {
-            Log.d(TAG, "authenticateUser: Attempting authentication")
+            Log.d(TAG, "authenticateUser: Attempting authentication to ${serverUrl.substringBefore("?")}")
             val normalizedServerUrl = normalizeServerUrl(serverUrl)
 
             val client = createApiClient(serverUrl)
@@ -126,6 +137,15 @@ class JellyfinAuthRepository @Inject constructor(
             Log.e(TAG, "authenticateUser: Server returned error status", e)
             val errorType = RepositoryUtils.getErrorType(e)
             return ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
+        } catch (e: IOException) {
+            Log.e(TAG, "authenticateUser: I/O error during authentication to ${serverUrl.substringBefore("?")}", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            val message = if (errorType == ErrorType.DNS_RESOLUTION) {
+                "Could not resolve server hostname. Please check the server address for typos, or try using an IP address (e.g., 192.168.1.100)"
+            } else {
+                "Network error during authentication: ${e.message}"
+            }
+            return ApiResult.Error(message, e, errorType)
         } finally {
             _isAuthenticating.update { false }
         }

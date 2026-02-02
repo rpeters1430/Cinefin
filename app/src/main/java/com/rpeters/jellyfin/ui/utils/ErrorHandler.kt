@@ -37,12 +37,22 @@ object ErrorHandler {
     ): ProcessedError {
         Log.e(TAG, "$operation failed", e)
 
+        // Check for DNS resolution errors (including GaiException)
+        if (isDnsResolutionError(e)) {
+            return ProcessedError(
+                userMessage = getDnsErrorMessage(e),
+                errorType = ErrorType.DNS_RESOLUTION,
+                isRetryable = true,
+                suggestedAction = "Check server address for typos or try using an IP address instead",
+            )
+        }
+
         return when (e) {
             is UnknownHostException -> ProcessedError(
-                userMessage = "Unable to connect to server. Please check your internet connection.",
-                errorType = ErrorType.NETWORK,
+                userMessage = "Could not find an IP address for the server. Please check the server address for typos, or ensure the server's DNS records are correctly configured.",
+                errorType = ErrorType.DNS_RESOLUTION,
                 isRetryable = true,
-                suggestedAction = "Check internet connection and server URL",
+                suggestedAction = "Verify server address or try using an IP address (e.g., 192.168.1.100) instead of a hostname",
             )
 
             is ConnectException -> ProcessedError(
@@ -202,6 +212,7 @@ object ErrorHandler {
     fun getRetryDelay(errorType: ErrorType, attemptNumber: Int): Long {
         val baseDelay = when (errorType) {
             ErrorType.NETWORK -> 1000L // 1 second for network errors
+            ErrorType.DNS_RESOLUTION -> 2000L // 2 seconds for DNS errors (may need DNS cache refresh)
             ErrorType.SERVER_ERROR -> 2000L // 2 seconds for server errors
             ErrorType.AUTHENTICATION -> 5000L // 5 seconds for auth errors
             ErrorType.UNKNOWN -> 1500L // 1.5 seconds for unknown errors
@@ -232,6 +243,7 @@ object ErrorHandler {
 
         return when (errorType) {
             ErrorType.NETWORK -> true
+            ErrorType.DNS_RESOLUTION -> true // DNS errors might be transient
             ErrorType.SERVER_ERROR -> true
             ErrorType.UNKNOWN -> attemptNumber < 2 // Only retry once for unknown errors
             ErrorType.AUTHENTICATION -> false // Don't auto-retry auth errors
@@ -243,6 +255,63 @@ object ErrorHandler {
             ErrorType.TIMEOUT -> true // Retry timeout errors
             ErrorType.VALIDATION -> false // Don't retry validation errors
             ErrorType.PINNING -> false // Don't retry certificate pinning errors - requires user action
+        }
+    }
+
+    /**
+     * Checks if an exception is related to DNS resolution failure.
+     * Handles android.system.GaiException which can be thrown by OkHttp's DNS resolver.
+     */
+    private fun isDnsResolutionError(e: Throwable): Boolean {
+        var current: Throwable? = e
+        while (current != null) {
+            val className = current.javaClass.name
+            val message = current.message ?: ""
+            
+            // Check for GaiException by class name
+            if (className.contains("GaiException")) {
+                return true
+            }
+            
+            // Check for specific DNS error messages
+            if (message.contains("EAI_NODATA", ignoreCase = true) ||
+                message.contains("EAI_NONAME", ignoreCase = true) ||
+                message.contains("No address associated with hostname", ignoreCase = true) ||
+                message.contains("Unable to resolve host", ignoreCase = true)
+            ) {
+                return true
+            }
+            
+            current = current.cause
+        }
+        return false
+    }
+
+    /**
+     * Generates a user-friendly error message for DNS resolution failures.
+     * Provides specific guidance based on the type of DNS error.
+     */
+    private fun getDnsErrorMessage(e: Throwable): String {
+        val message = e.message ?: ""
+        
+        return when {
+            message.contains("EAI_NODATA", ignoreCase = true) -> {
+                "Could not find an IP address for the server hostname. " +
+                "The hostname exists but has no DNS records. " +
+                "Please verify the server address or try using an IP address directly " +
+                "(e.g., 192.168.1.100)."
+            }
+            message.contains("EAI_NONAME", ignoreCase = true) -> {
+                "The server hostname does not exist. " +
+                "Please check for typos in the server address. " +
+                "You can also try using an IP address directly instead."
+            }
+            else -> {
+                "Could not resolve server hostname. " +
+                "Please check your server address for typos, " +
+                "verify your DNS settings, or try using an IP address directly " +
+                "(e.g., 192.168.1.100 or [fe80::1] for IPv6)."
+            }
         }
     }
 
