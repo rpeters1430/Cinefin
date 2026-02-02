@@ -122,20 +122,21 @@ class ServerConnectionViewModel @Inject constructor(
                     _connectionState.value = _connectionState.value.copy(
                         errorMessage = "No internet connection. Please check your network and try again.",
                     )
-                    
+
                     // Observe network connectivity and retry auto-login when online
                     viewModelScope.launch {
                         connectivityChecker.observeNetworkConnectivity()
                             .collect { isOnline ->
-                                if (isOnline && _connectionState.value.rememberLogin && 
-                                    !_connectionState.value.isConnected && 
-                                    !_connectionState.value.isConnecting) {
+                                if (isOnline && _connectionState.value.rememberLogin &&
+                                    !_connectionState.value.isConnected &&
+                                    !_connectionState.value.isConnecting
+                                ) {
                                     SecureLogger.i("ServerConnectionVM", "Network restored, retrying auto-login")
                                     // Retry auto-login now that network is available
                                     val currentState = _connectionState.value
                                     if (currentState.hasSavedPassword) {
                                         val savedPassword = secureCredentialManager.getPassword(
-                                            currentState.savedServerUrl, 
+                                            currentState.savedServerUrl,
                                             currentState.savedUsername,
                                         )
                                         if (savedPassword != null) {
@@ -152,7 +153,7 @@ class ServerConnectionViewModel @Inject constructor(
                     }
                     return@launch
                 }
-                
+
                 val autoLoginKey = "$savedServerUrl|$savedUsername"
                 if (!shouldAutoLoginNow(autoLoginKey)) {
                     return@launch

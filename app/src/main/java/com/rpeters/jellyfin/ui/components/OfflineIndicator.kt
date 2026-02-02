@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * Offline indicator banner that appears at the top when network is unavailable.
- * 
+ *
  * Shows a persistent banner with an icon and message informing the user
  * that they're offline and features may be limited.
  */
