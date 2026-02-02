@@ -182,12 +182,12 @@ class RetryStrategy @Inject constructor() {
         while (current != null) {
             val className = current.javaClass.name
             val message = current.message ?: ""
-            
+
             // Check for GaiException by class name
             if (className.contains("GaiException")) {
                 return true
             }
-            
+
             // Check for specific DNS error messages
             if (message.contains("EAI_NODATA", ignoreCase = true) ||
                 message.contains("EAI_NONAME", ignoreCase = true) ||
@@ -196,7 +196,7 @@ class RetryStrategy @Inject constructor() {
             ) {
                 return true
             }
-            
+
             current = current.cause
         }
         return false
