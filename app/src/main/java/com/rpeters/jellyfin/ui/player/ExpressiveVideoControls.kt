@@ -25,16 +25,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Hd
 import androidx.compose.material.icons.filled.HighQuality
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.AspectRatio
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -206,7 +206,7 @@ private fun ExpressiveTopControls(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        
+
                         // Transcoding Information Display
                         if (playerState.isTranscoding || playerState.isDirectPlaying) {
                             val (icon, color, text) = when {
@@ -399,7 +399,7 @@ private fun ExpressiveBottomControls(
                                 contentDescription = "Aspect Ratio",
                                 onClick = { showAspectRatioMenu = true },
                             )
-                            
+
                             DropdownMenu(
                                 expanded = showAspectRatioMenu,
                                 onDismissRequest = { showAspectRatioMenu = false },
@@ -415,7 +415,7 @@ private fun ExpressiveBottomControls(
                                             if (mode == playerState.selectedAspectRatio) {
                                                 Icon(Icons.Default.Check, contentDescription = null)
                                             }
-                                        }
+                                        },
                                     )
                                 }
                             }
@@ -429,7 +429,7 @@ private fun ExpressiveBottomControls(
                                 contentDescription = "Playback Speed",
                                 onClick = { showSpeedMenu = true },
                             )
-                            
+
                             DropdownMenu(
                                 expanded = showSpeedMenu,
                                 onDismissRequest = { showSpeedMenu = false },
@@ -445,7 +445,7 @@ private fun ExpressiveBottomControls(
                                             if (speed == playerState.playbackSpeed) {
                                                 Icon(Icons.Default.Check, contentDescription = null)
                                             }
-                                        }
+                                        },
                                     )
                                 }
                             }

@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -90,18 +89,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.core.net.toUri
 import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaCard
 import com.rpeters.jellyfin.ui.components.HeroImageWithLogo
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.ShimmerBox
-import kotlinx.coroutines.launch
 import com.rpeters.jellyfin.ui.theme.JellyfinBlue80
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
 import com.rpeters.jellyfin.ui.theme.Quality1440
@@ -115,7 +112,6 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
 import kotlin.math.roundToInt
-import androidx.core.net.toUri
 
 private val GENRE_BADGE_MAX_WIDTH = 100.dp
 
@@ -1304,7 +1300,7 @@ private fun ExpressiveSubtitleRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-         Surface(
+        Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.secondaryContainer,
             modifier = Modifier.size(40.dp),
@@ -1316,14 +1312,14 @@ private fun ExpressiveSubtitleRow(
                 modifier = Modifier.padding(10.dp),
             )
         }
-        
+
         Box {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.clickable { expanded = true }
+                modifier = Modifier.clickable { expanded = true },
             ) {
-                 Column(
+                Column(
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     Text(
@@ -1343,7 +1339,7 @@ private fun ExpressiveSubtitleRow(
                 }
                 Icon(Icons.Rounded.ExpandMore, contentDescription = null, modifier = Modifier.size(16.dp))
             }
-            
+
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 // None option
                 DropdownMenuItem(
@@ -1351,20 +1347,20 @@ private fun ExpressiveSubtitleRow(
                     onClick = {
                         onSubtitleSelect(null)
                         expanded = false
-                    }
+                    },
                 )
 
                 subtitles.forEach { stream ->
                     DropdownMenuItem(
                         text = {
-                             val lang = stream.language?.uppercase(java.util.Locale.ROOT) ?: "UNK"
-                             val title = stream.title ?: stream.displayTitle
-                             Text(if (title != null && title != lang) "$lang - $title" else lang)
+                            val lang = stream.language?.uppercase(java.util.Locale.ROOT) ?: "UNK"
+                            val title = stream.title ?: stream.displayTitle
+                            Text(if (title != null && title != lang) "$lang - $title" else lang)
                         },
                         onClick = {
                             onSubtitleSelect(stream.index)
                             expanded = false
-                        }
+                        },
                     )
                 }
             }
