@@ -93,15 +93,15 @@ class EnhancedPlaybackManager @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val itemId = item.id.toString()
-                
+
                 SecureLogger.d(TAG, "Forcing transcoding for: ${item.name} (${item.type})")
-                
+
                 // Get playback info from server
                 val playbackInfo = getPlaybackInfo(itemId)
                 if (playbackInfo == null) {
                     return@withContext PlaybackResult.Error("Failed to get playback info")
                 }
-                
+
                 // Use optimal transcoding URL method but ensure we get transcoding
                 return@withContext getOptimalTranscodingUrl(item, playbackInfo)
             } catch (e: CancellationException) {

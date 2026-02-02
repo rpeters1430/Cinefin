@@ -221,14 +221,14 @@ class VideoPlayerViewModel @Inject constructor(
 
         override fun onPlayerError(error: PlaybackException) {
             SecureLogger.e("VideoPlayer", "Error: ${error.message}", error)
-            
+
             // Check if this is an audio codec error that we can retry with transcoding
             val errorMsg = error.message ?: ""
             val isAudioCodecError = errorMsg.contains("MediaCodecAudioRenderer", ignoreCase = true) ||
-                    errorMsg.contains("audio/eac3", ignoreCase = true) ||
-                    errorMsg.contains("audio/ac3", ignoreCase = true) ||
-                    errorMsg.contains("audio codec", ignoreCase = true)
-            
+                errorMsg.contains("audio/eac3", ignoreCase = true) ||
+                errorMsg.contains("audio/ac3", ignoreCase = true) ||
+                errorMsg.contains("audio codec", ignoreCase = true)
+
             // Only retry once, and only if we haven't already retried for this item
             if (isAudioCodecError && !isRetryingWithTranscoding && currentItemId != null) {
                 SecureLogger.w("VideoPlayer", "Audio codec error detected, retrying with transcoding...")
@@ -236,12 +236,12 @@ class VideoPlayerViewModel @Inject constructor(
                     error = "Audio codec incompatible, switching to transcoding...",
                     isLoading = true,
                 )
-                
+
                 isRetryingWithTranscoding = true
                 val itemId = currentItemId!!
                 val itemName = currentItemName ?: "Unknown"
                 val currentPosition = exoPlayer?.currentPosition ?: 0L
-                
+
                 // Retry with forced transcoding in a coroutine
                 viewModelScope.launch {
                     try {
@@ -1005,7 +1005,7 @@ class VideoPlayerViewModel @Inject constructor(
      */
     private suspend fun retryWithTranscoding(itemId: String, itemName: String, startPosition: Long) {
         SecureLogger.d("VideoPlayer", "Retrying with forced transcoding for item: $itemId")
-        
+
         // Release the current failing player
         withContext(Dispatchers.Main) {
             exoPlayer?.let { p ->
@@ -1021,7 +1021,7 @@ class VideoPlayerViewModel @Inject constructor(
             exoPlayer = null
             trackSelector = null
         }
-        
+
         // Get the item metadata
         val metadata = currentItemMetadata ?: repository.getItem(itemId)
         if (metadata == null) {
@@ -1033,17 +1033,17 @@ class VideoPlayerViewModel @Inject constructor(
             isRetryingWithTranscoding = false
             return
         }
-        
+
         // Force transcoding with audio codec conversion
         val playbackResult = enhancedPlaybackManager.getTranscodingUrl(metadata)
-        
+
         when (playbackResult) {
             is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> {
                 SecureLogger.d("VideoPlayer", "Retry transcoding URL: ${playbackResult.url}")
-                
+
                 val streamUrl = playbackResult.url
                 val sessionId = playbackResult.playSessionId ?: java.util.UUID.randomUUID().toString()
-                
+
                 // Update state to show transcoding
                 _playerState.value = _playerState.value.copy(
                     isDirectPlaying = false,
@@ -1054,16 +1054,16 @@ class VideoPlayerViewModel @Inject constructor(
                     error = null,
                     isLoading = true,
                 )
-                
+
                 playbackSessionId = sessionId
                 playbackProgressManager.startTracking(itemId, viewModelScope, sessionId)
-                
+
                 withContext(Dispatchers.Main) {
                     // Create new ExoPlayer with same configuration
                     val renderersFactory = DefaultRenderersFactory(context)
                         .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
                         .setEnableDecoderFallback(true)
-                    
+
                     val token = repository.getCurrentServer()?.accessToken
                     val httpFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
                         .apply {
@@ -1075,7 +1075,7 @@ class VideoPlayerViewModel @Inject constructor(
                         androidx.media3.datasource.DefaultDataSource.Factory(context, httpFactory)
                     val mediaSourceFactory =
                         androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
-                    
+
                     trackSelector = DefaultTrackSelector(context).apply {
                         setParameters(
                             buildUponParameters()
@@ -1084,7 +1084,7 @@ class VideoPlayerViewModel @Inject constructor(
                                 .build(),
                         )
                     }
-                    
+
                     exoPlayer = ExoPlayer.Builder(context)
                         .setSeekBackIncrementMs(10_000)
                         .setSeekForwardIncrementMs(10_000)
@@ -1093,31 +1093,31 @@ class VideoPlayerViewModel @Inject constructor(
                         .setTrackSelector(trackSelector!!)
                         .setVideoScalingMode(androidx.media3.common.C.VIDEO_SCALING_MODE_SCALE_TO_FIT)
                         .build()
-                    
+
                     exoPlayer?.addListener(playerListener)
-                    
+
                     // Create media item for transcoded HLS stream
                     val mediaItem = MediaItem.Builder()
                         .setUri(streamUrl)
                         .setMimeType(MimeTypes.APPLICATION_M3U8) // Transcoded streams are typically HLS
                         .build()
-                    
+
                     currentMediaItem = mediaItem
                     lastStreamUrl = streamUrl
-                    
+
                     exoPlayer?.setMediaItem(mediaItem)
                     exoPlayer?.prepare()
-                    
+
                     // Seek to the position where playback failed
                     if (startPosition > 0) {
                         exoPlayer?.seekTo(startPosition)
                     }
-                    
+
                     exoPlayer?.play()
-                    
+
                     SecureLogger.d("VideoPlayer", "Retry with transcoding started successfully")
                 }
-                
+
                 isRetryingWithTranscoding = false
             }
             is com.rpeters.jellyfin.data.playback.PlaybackResult.Error -> {
