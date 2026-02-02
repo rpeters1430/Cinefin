@@ -24,6 +24,7 @@ enum class JellyfinErrorType(val code: String) {
     CONNECTION_TIMEOUT("NETWORK_002"),
     SSL_ERROR("NETWORK_003"),
     UNKNOWN_HOST("NETWORK_004"),
+    DNS_RESOLUTION("NETWORK_005"), // DNS hostname resolution failures
 
     // Server errors
     SERVER_UNAVAILABLE("SERVER_001"),
@@ -56,8 +57,11 @@ enum class JellyfinErrorType(val code: String) {
      */
     fun toErrorType(): com.rpeters.jellyfin.data.repository.common.ErrorType {
         return when (this) {
-            NETWORK_UNREACHABLE, CONNECTION_TIMEOUT, UNKNOWN_HOST, SSL_ERROR ->
+            NETWORK_UNREACHABLE, CONNECTION_TIMEOUT, SSL_ERROR ->
                 com.rpeters.jellyfin.data.repository.common.ErrorType.NETWORK
+
+            UNKNOWN_HOST, DNS_RESOLUTION ->
+                com.rpeters.jellyfin.data.repository.common.ErrorType.DNS_RESOLUTION
 
             UNAUTHORIZED, SESSION_EXPIRED, INVALID_CREDENTIALS ->
                 com.rpeters.jellyfin.data.repository.common.ErrorType.UNAUTHORIZED
@@ -118,9 +122,9 @@ object ErrorHandler {
 
             is UnknownHostException -> {
                 JellyfinError(
-                    type = JellyfinErrorType.UNKNOWN_HOST,
+                    type = JellyfinErrorType.DNS_RESOLUTION,
                     message = "Unable to resolve host: ${exception.message}",
-                    userMessage = "Unable to connect to server. Please check your network connection.",
+                    userMessage = "Could not find an IP address for the server. Please check the server address for typos, or try using an IP address directly (e.g., 192.168.1.100).",
                     cause = exception,
                     context = context,
                 )
@@ -270,6 +274,7 @@ object ErrorHandler {
             JellyfinErrorType.NETWORK_UNREACHABLE,
             JellyfinErrorType.CONNECTION_TIMEOUT,
             JellyfinErrorType.UNKNOWN_HOST,
+            JellyfinErrorType.DNS_RESOLUTION,
             -> {
                 Log.w(TAG, "[${error.type.code}] ${error.message} $contextInfo", error.cause)
             }
@@ -303,6 +308,7 @@ object ErrorHandler {
             JellyfinErrorType.SERVER_UNAVAILABLE,
             JellyfinErrorType.SERVER_TIMEOUT,
             JellyfinErrorType.UNKNOWN_HOST,
+            JellyfinErrorType.DNS_RESOLUTION,
             -> true
 
             JellyfinErrorType.OPERATION_CANCELLED,
@@ -325,8 +331,11 @@ object ErrorHandler {
         return when (error.type) {
             JellyfinErrorType.NETWORK_UNREACHABLE,
             JellyfinErrorType.CONNECTION_TIMEOUT,
-            JellyfinErrorType.UNKNOWN_HOST,
             -> "Connection Error"
+
+            JellyfinErrorType.UNKNOWN_HOST,
+            JellyfinErrorType.DNS_RESOLUTION,
+            -> "DNS Resolution Error"
 
             JellyfinErrorType.SSL_ERROR -> "Security Error"
 

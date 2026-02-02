@@ -90,4 +90,9 @@ object Constants {
         const val PRIVACY_POLICY_URL = "https://github.com/rpeters1430/JellyfinAndroid/blob/main/privacy-policy.md"
         const val GITHUB_REPO_URL = "https://github.com/rpeters1430/JellyfinAndroid"
     }
+
+    // Error Messages
+    object ErrorMessages {
+        const val DNS_RESOLUTION_ERROR = "Could not resolve server hostname. Please check the server address for typos, or try using an IP address (e.g., 192.168.1.100)"
+    }
 }

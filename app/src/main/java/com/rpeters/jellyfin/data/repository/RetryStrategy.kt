@@ -86,11 +86,17 @@ class RetryStrategy @Inject constructor() {
             }
             is UnknownHostException -> {
                 logDebug("Not retrying DNS failure: ${exception.message}")
-                false // Don't retry DNS failures
+                false // Don't retry DNS failures - user needs to fix the hostname
             }
             is IOException -> {
-                logDebug("Retrying I/O exception (attempt $attempt)")
-                true // Retry other I/O errors
+                // Check if this is a wrapped DNS error (GaiException)
+                if (isDnsError(exception)) {
+                    logDebug("Not retrying DNS failure (GaiException): ${exception.message}")
+                    false // Don't retry DNS failures
+                } else {
+                    logDebug("Retrying I/O exception (attempt $attempt)")
+                    true // Retry other I/O errors
+                }
             }
             else -> {
                 logDebug("Not retrying unknown error type: ${exception.javaClass.simpleName}")
@@ -165,5 +171,34 @@ class RetryStrategy @Inject constructor() {
         if (BuildConfig.DEBUG) {
             Log.d(TAG, message)
         }
+    }
+
+    /**
+     * Checks if an IOException is actually a DNS resolution error (GaiException).
+     * This handles cases where android.system.GaiException is wrapped in IOException.
+     */
+    private fun isDnsError(exception: IOException): Boolean {
+        var current: Throwable? = exception
+        while (current != null) {
+            val className = current.javaClass.name
+            val message = current.message ?: ""
+
+            // Check for GaiException by class name
+            if (className.contains("GaiException")) {
+                return true
+            }
+
+            // Check for specific DNS error messages
+            if (message.contains("EAI_NODATA", ignoreCase = true) ||
+                message.contains("EAI_NONAME", ignoreCase = true) ||
+                message.contains("No address associated with hostname", ignoreCase = true) ||
+                message.contains("Unable to resolve host", ignoreCase = true)
+            ) {
+                return true
+            }
+
+            current = current.cause
+        }
+        return false
     }
 }

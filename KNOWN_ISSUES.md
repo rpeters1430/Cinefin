@@ -236,6 +236,55 @@ private fun backoff(attempt: Int) {
 
 ---
 
+## 📘 Common Connection Issues & Troubleshooting
+
+### DNS Resolution Failures
+
+**Symptoms**:
+- Error message: "Could not find an IP address for the server hostname"
+- Error message: "Could not resolve server hostname"
+- Connection fails when using a hostname (e.g., `jellyfin.myserver.com`)
+
+**Root Causes**:
+- `android.system.GaiException: EAI_NODATA` - Hostname exists but has no DNS records
+- `android.system.GaiException: EAI_NONAME` - Hostname does not exist
+- DNS server misconfiguration or connectivity issues
+- Typo in server hostname
+- Expired or missing DNS records
+
+**Troubleshooting Steps**:
+
+1. **Verify hostname spelling**: Double-check the server address for typos, extra spaces, or incorrect characters.
+
+2. **Try using an IP address directly**:
+   - IPv4 example: `http://192.168.1.100:8096`
+   - IPv6 example: `http://[fe80::1]:8096`
+   - If connecting via IP works, the issue is DNS-related.
+
+3. **Check DNS configuration**:
+   - Test DNS resolution on another device (computer, phone)
+   - Use `nslookup` or `dig` to verify DNS records exist
+   - Verify your device's DNS settings in network configuration
+
+4. **Network-specific solutions**:
+   - **Local network**: Use IP address instead of hostname
+   - **Remote access**: Ensure DNS records are properly configured with your domain registrar
+   - **Reverse proxy**: Verify reverse proxy DNS points to correct server
+
+5. **Alternative connection methods**:
+   - Use Jellyfin Quick Connect if DNS is unreliable
+   - Configure a static IP on your Jellyfin server
+   - Use a Dynamic DNS service (e.g., DuckDNS, No-IP) for remote access
+
+**For Server Administrators**:
+- Verify DNS A/AAAA records exist for your hostname
+- Check DNS propagation (may take up to 48 hours)
+- Ensure internal DNS (if used) has correct entries
+- Test external DNS resolution from multiple providers
+- Consider using a more reliable DNS provider
+
+---
+
 ## Issue Summary
 
 | Priority | Count | Status |

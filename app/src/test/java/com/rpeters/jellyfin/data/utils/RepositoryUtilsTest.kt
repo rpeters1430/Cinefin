@@ -65,7 +65,7 @@ class RepositoryUtilsTest {
 
     @Test
     fun `getErrorType maps common exception types`() {
-        val network = RepositoryUtils.getErrorType(UnknownHostException("no network"))
+        val dnsUnknownHost = RepositoryUtils.getErrorType(UnknownHostException("no network"))
         val timeout = RepositoryUtils.getErrorType(SocketTimeoutException("timeout"))
         val cancelled = RepositoryUtils.getErrorType(CancellationException("cancelled"))
         val http = RepositoryUtils.getErrorType(httpException(500))
@@ -83,7 +83,7 @@ class RepositoryUtilsTest {
         val genericIllegalState = RepositoryUtils.getErrorType(IllegalStateException("Some other error"))
         val unknown = RepositoryUtils.getErrorType(IllegalArgumentException("oops"))
 
-        assertEquals(ErrorType.NETWORK, network)
+        assertEquals(ErrorType.DNS_RESOLUTION, dnsUnknownHost)
         assertEquals(ErrorType.NETWORK, timeout)
         assertEquals(ErrorType.OPERATION_CANCELLED, cancelled)
         assertEquals(ErrorType.SERVER_ERROR, http)
@@ -93,6 +93,33 @@ class RepositoryUtilsTest {
         assertEquals(ErrorType.AUTHENTICATION, tokenIllegalState)
         assertEquals(ErrorType.UNKNOWN, genericIllegalState)
         assertEquals(ErrorType.UNKNOWN, unknown)
+    }
+
+    @Test
+    fun `getErrorType detects DNS errors from GaiException messages`() {
+        // Simulate GaiException wrapped in IOException
+        val eaiNoData = java.io.IOException("android.system.GaiException: EAI_NODATA (No address associated with hostname)")
+        val eaiNoName = java.io.IOException("android.system.GaiException: EAI_NONAME (Name or service not known)")
+        val unableToResolve = java.io.IOException("Unable to resolve host \"example.com\": No address associated with hostname")
+
+        val errorType1 = RepositoryUtils.getErrorType(eaiNoData)
+        val errorType2 = RepositoryUtils.getErrorType(eaiNoName)
+        val errorType3 = RepositoryUtils.getErrorType(unableToResolve)
+
+        assertEquals(ErrorType.DNS_RESOLUTION, errorType1)
+        assertEquals(ErrorType.DNS_RESOLUTION, errorType2)
+        assertEquals(ErrorType.DNS_RESOLUTION, errorType3)
+    }
+
+    @Test
+    fun `getErrorType detects nested DNS errors`() {
+        // Simulate nested exception with GaiException cause
+        val cause = RuntimeException("android.system.GaiException: EAI_NODATA")
+        val wrapper = java.io.IOException("Connection failed", cause)
+
+        val errorType = RepositoryUtils.getErrorType(wrapper)
+
+        assertEquals(ErrorType.DNS_RESOLUTION, errorType)
     }
 
     @Test

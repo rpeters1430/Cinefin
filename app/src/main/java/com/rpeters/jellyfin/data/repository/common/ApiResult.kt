@@ -17,9 +17,14 @@ sealed class ApiResult<out T> {
 /**
  * Basic error categories that repository calls may surface.
  * Kept minimal for test friendliness.
+ *
+ * DNS_RESOLUTION: Specific to hostname resolution failures (DNS errors like EAI_NODATA, EAI_NONAME).
+ * This allows the UI to provide specific guidance to users, such as suggesting they use an IP address
+ * directly or check their DNS configuration. See KNOWN_ISSUES.md for troubleshooting guidance.
  */
 enum class ErrorType {
     NETWORK,
+    DNS_RESOLUTION, // Hostname resolution failures (EAI_NODATA, EAI_NONAME, etc.)
     AUTHENTICATION,
     SERVER_ERROR,
     NOT_FOUND,

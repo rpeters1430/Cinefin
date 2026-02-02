@@ -60,6 +60,11 @@ object RepositoryUtils {
      * Determines error type from various exception types
      */
     fun getErrorType(e: Throwable): ErrorType {
+        // Check for DNS resolution errors first (including nested GaiException)
+        if (isDnsResolutionError(e)) {
+            return ErrorType.DNS_RESOLUTION
+        }
+
         return when (e) {
             is java.util.concurrent.CancellationException,
             is kotlinx.coroutines.CancellationException,
@@ -69,6 +74,8 @@ object RepositoryUtils {
             -> ErrorType.PINNING
 
             is java.net.UnknownHostException,
+            -> ErrorType.DNS_RESOLUTION
+
             is java.net.ConnectException,
             is java.net.SocketTimeoutException,
             -> ErrorType.NETWORK
@@ -117,6 +124,39 @@ object RepositoryUtils {
                 ErrorType.UNKNOWN
             }
         }
+    }
+
+    /**
+     * Checks if an exception is related to DNS resolution failure.
+     * Handles android.system.GaiException which can be thrown by OkHttp's DNS resolver.
+     */
+    private fun isDnsResolutionError(e: Throwable): Boolean {
+        // Check the exception class name to avoid direct import of android.system.GaiException
+        // This is necessary because GaiException is not available in all Android versions
+        var current: Throwable? = e
+        while (current != null) {
+            val className = current.javaClass.name
+            val message = current.message ?: ""
+
+            // Check for GaiException by class name
+            if (className.contains("GaiException")) {
+                SecureLogger.w(TAG, "DNS resolution error detected: GaiException - $message")
+                return true
+            }
+
+            // Check for specific DNS error messages
+            if (message.contains("EAI_NODATA", ignoreCase = true) ||
+                message.contains("EAI_NONAME", ignoreCase = true) ||
+                message.contains("No address associated with hostname", ignoreCase = true) ||
+                message.contains("Unable to resolve host", ignoreCase = true)
+            ) {
+                SecureLogger.w(TAG, "DNS resolution error detected in message: $message")
+                return true
+            }
+
+            current = current.cause
+        }
+        return false
     }
 
     /**

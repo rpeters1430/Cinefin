@@ -408,6 +408,23 @@ object ServerUrlValidator {
      * Validates if a string is a valid IPv4 address.
      */
     private fun isValidIPAddress(host: String): Boolean {
+        // Check IPv4
+        if (isValidIPv4Address(host)) {
+            return true
+        }
+
+        // Check IPv6 (with or without brackets)
+        if (isValidIPv6Address(host)) {
+            return true
+        }
+
+        return false
+    }
+
+    /**
+     * Validates if a string is a valid IPv4 address.
+     */
+    private fun isValidIPv4Address(host: String): Boolean {
         val ipPattern = """^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$""".toRegex()
         val match = ipPattern.find(host) ?: return false
 
@@ -415,5 +432,47 @@ object ServerUrlValidator {
 
         // Validate octet ranges (0-255)
         return parts.all { it in 0..255 }
+    }
+
+    /**
+     * Validates if a string is a valid IPv6 address.
+     * Supports both bracketed [::1] and unbracketed ::1 formats.
+     * Note: This is a simplified validation covering common IPv6 cases.
+     */
+    private fun isValidIPv6Address(host: String): Boolean {
+        val cleanHost = host.trim().removeSurrounding("[", "]")
+
+        // Basic IPv6 validation (simplified - covers common cases)
+        // Full IPv6 has 8 groups, but :: can compress consecutive zeros
+        val ipv6Pattern = """^([0-9a-fA-F]{0,4}:){7}[0-9a-fA-F]{0,4}$""".toRegex() // Full 8 groups
+        val compressedPattern = """^::([0-9a-fA-F]{0,4}:?)*[0-9a-fA-F]{0,4}$""".toRegex() // Starts with ::
+        val compressedEndPattern = """^([0-9a-fA-F]{0,4}:)+::$""".toRegex() // Ends with ::
+        val compressedMiddlePattern = """^([0-9a-fA-F]{0,4}:)+::([0-9a-fA-F]{0,4}:?)*[0-9a-fA-F]{0,4}$""".toRegex() // :: in middle
+
+        return ipv6Pattern.matches(cleanHost) ||
+            compressedPattern.matches(cleanHost) ||
+            compressedEndPattern.matches(cleanHost) ||
+            compressedMiddlePattern.matches(cleanHost) ||
+            cleanHost == "::" || // Shorthand for all zeros
+            cleanHost == "::1" // localhost
+    }
+
+    /**
+     * Checks if a server address looks like an IP address (not a hostname).
+     * Useful for providing guidance to users about using IP addresses vs hostnames.
+     */
+    fun looksLikeIPAddress(serverUrl: String): Boolean {
+        return try {
+            val uri = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
+                URI(serverUrl)
+            } else {
+                URI("http://$serverUrl")
+            }
+
+            val host = uri.host ?: return false
+            isValidIPv4Address(host) || isValidIPv6Address(host)
+        } catch (e: Exception) {
+            false
+        }
     }
 }
