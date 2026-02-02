@@ -42,7 +42,7 @@ object ErrorHandler {
             return ProcessedError(
                 userMessage = getDnsErrorMessage(e),
                 errorType = ErrorType.DNS_RESOLUTION,
-                isRetryable = true,
+                isRetryable = false, // DNS errors require user action (fix hostname or use IP)
                 suggestedAction = "Check server address for typos or try using an IP address instead",
             )
         }
@@ -51,7 +51,7 @@ object ErrorHandler {
             is UnknownHostException -> ProcessedError(
                 userMessage = "Could not find an IP address for the server. Please check the server address for typos, or ensure the server's DNS records are correctly configured.",
                 errorType = ErrorType.DNS_RESOLUTION,
-                isRetryable = true,
+                isRetryable = false, // DNS errors require user action (fix hostname or use IP)
                 suggestedAction = "Verify server address or try using an IP address (e.g., 192.168.1.100) instead of a hostname",
             )
 
@@ -243,7 +243,7 @@ object ErrorHandler {
 
         return when (errorType) {
             ErrorType.NETWORK -> true
-            ErrorType.DNS_RESOLUTION -> true // DNS errors might be transient
+            ErrorType.DNS_RESOLUTION -> false // DNS errors require user action (fix hostname or use IP)
             ErrorType.SERVER_ERROR -> true
             ErrorType.UNKNOWN -> attemptNumber < 2 // Only retry once for unknown errors
             ErrorType.AUTHENTICATION -> false // Don't auto-retry auth errors

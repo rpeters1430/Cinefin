@@ -437,19 +437,22 @@ object ServerUrlValidator {
     /**
      * Validates if a string is a valid IPv6 address.
      * Supports both bracketed [::1] and unbracketed ::1 formats.
+     * Note: This is a simplified validation covering common IPv6 cases.
      */
     private fun isValidIPv6Address(host: String): Boolean {
         val cleanHost = host.trim().removeSurrounding("[", "]")
 
-        // Basic IPv6 validation (simplified)
-        // A full IPv6 validation is complex, this covers common cases
-        val ipv6Pattern = """^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$""".toRegex()
-        val compressedPattern = """^::([0-9a-fA-F]{0,4}:?)*[0-9a-fA-F]{0,4}$""".toRegex()
-        val compressedEndPattern = """^([0-9a-fA-F]{0,4}:)+:$""".toRegex()
+        // Basic IPv6 validation (simplified - covers common cases)
+        // Full IPv6 has 8 groups, but :: can compress consecutive zeros
+        val ipv6Pattern = """^([0-9a-fA-F]{0,4}:){7}[0-9a-fA-F]{0,4}$""".toRegex() // Full 8 groups
+        val compressedPattern = """^::([0-9a-fA-F]{0,4}:?)*[0-9a-fA-F]{0,4}$""".toRegex() // Starts with ::
+        val compressedEndPattern = """^([0-9a-fA-F]{0,4}:)+::$""".toRegex() // Ends with ::
+        val compressedMiddlePattern = """^([0-9a-fA-F]{0,4}:)+::([0-9a-fA-F]{0,4}:?)*[0-9a-fA-F]{0,4}$""".toRegex() // :: in middle
 
         return ipv6Pattern.matches(cleanHost) ||
             compressedPattern.matches(cleanHost) ||
             compressedEndPattern.matches(cleanHost) ||
+            compressedMiddlePattern.matches(cleanHost) ||
             cleanHost == "::" || // Shorthand for all zeros
             cleanHost == "::1" // localhost
     }
