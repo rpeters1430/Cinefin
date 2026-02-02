@@ -206,8 +206,6 @@ class PlaybackProgressManager @Inject constructor(
                 stopTracking(reportStop)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
-                Log.e("PlaybackProgressManager", "Error in async stop tracking: ${e.message}")
             }
         }
     }

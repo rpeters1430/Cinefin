@@ -85,15 +85,6 @@ class JellyfinAuthRepository @Inject constructor(
             Log.e(TAG, "Server returned error status", e)
             val errorType = RepositoryUtils.getErrorType(e)
             ApiResult.Error("Server error: ${e.message}", e, errorType)
-        } catch (e: IOException) {
-            Log.e(TAG, "I/O error while testing server connection", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            val message = if (errorType == ErrorType.DNS_RESOLUTION) {
-                Constants.ErrorMessages.DNS_RESOLUTION_ERROR
-            } else {
-                "Network error: ${e.message}"
-            }
-            ApiResult.Error(message, e, errorType)
         }
     }
 
@@ -140,16 +131,7 @@ class JellyfinAuthRepository @Inject constructor(
             Log.e(TAG, "authenticateUser: Server returned error status", e)
             val errorType = RepositoryUtils.getErrorType(e)
             return ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
-        } catch (e: IOException) {
-            Log.e(TAG, "authenticateUser: I/O error during authentication", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            val message = if (errorType == ErrorType.DNS_RESOLUTION) {
-                Constants.ErrorMessages.DNS_RESOLUTION_ERROR
-            } else {
-                "Network error during authentication: ${e.message}"
-            }
-            return ApiResult.Error(message, e, errorType)
-        } finally {
+        }  finally {
             _isAuthenticating.update { false }
         }
     }
