@@ -251,9 +251,10 @@ dependencies {
 configurations.all {
     resolutionStrategy.eachDependency {
         val group = requested.group
-        if (group == "androidx.compose.ui" || 
-            group == "androidx.compose.foundation" || 
-            group == "androidx.compose.animation") {
+        if (group == "androidx.compose.ui" ||
+            group == "androidx.compose.foundation" ||
+            group == "androidx.compose.animation"
+        ) {
             useVersion("1.7.6")
             because("Force consistent core Compose version to fix NoSuchFieldError on API 30")
         }
