@@ -134,7 +134,7 @@ dependencies {
     // Force specific Compose UI Text version with fontWeightAdjustment fix
     // This overrides the BOM version to ensure compatibility with devices
     // that don't have Configuration.fontWeightAdjustment field
-    implementation("androidx.compose.ui:ui-text:1.7.6") {
+    implementation("androidx.compose.ui:ui-text:1.11.0-alpha04") {
         because("Fixes NoSuchFieldError: fontWeightAdjustment on some API 31+ devices")
     }
 
