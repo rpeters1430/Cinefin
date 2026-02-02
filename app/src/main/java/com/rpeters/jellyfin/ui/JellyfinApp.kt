@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui
 
 import android.app.Activity
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -30,6 +31,8 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.rpeters.jellyfin.network.ConnectivityChecker
+import com.rpeters.jellyfin.ui.components.OfflineIndicatorBanner
 import com.rpeters.jellyfin.ui.navigation.BottomNavItem
 import com.rpeters.jellyfin.ui.navigation.JellyfinNavGraph
 import com.rpeters.jellyfin.ui.navigation.Screen
@@ -37,6 +40,20 @@ import com.rpeters.jellyfin.ui.shortcuts.DynamicShortcutManager
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
 import com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel
+import com.rpeters.jellyfin.utils.SecureLogger
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+
+/**
+ * Entry point to access ConnectivityChecker from Compose without ViewModel.
+ */
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface ConnectivityCheckerEntryPoint {
+    fun connectivityChecker(): ConnectivityChecker
+}
 
 /**
  * Root composable for the phone experience.
@@ -64,6 +81,23 @@ fun JellyfinApp(
         val consumeShortcut by rememberUpdatedState(onShortcutConsumed)
         val context = LocalContext.current
         val applicationContext = remember(context) { context.applicationContext }
+
+        // Get ConnectivityChecker from Hilt to monitor network state
+        val connectivityChecker = remember(applicationContext) {
+            EntryPointAccessors.fromApplication(
+                applicationContext,
+                ConnectivityCheckerEntryPoint::class.java,
+            ).connectivityChecker()
+        }
+
+        // Monitor network connectivity at app level
+        val isOnline by connectivityChecker.observeNetworkConnectivity()
+            .collectAsStateWithLifecycle(initialValue = connectivityChecker.isOnline())
+
+        // Log network state changes
+        LaunchedEffect(isOnline) {
+            SecureLogger.i("JellyfinApp", "Network state changed: ${if (isOnline) "ONLINE" else "OFFLINE"}")
+        }
 
         // Determine start destination based on authentication state
         // If user has saved credentials and remember login is enabled, start at Home
@@ -199,44 +233,56 @@ fun JellyfinApp(
                 layoutType = navigationType,
                 modifier = Modifier.fillMaxSize(),
             ) {
-                JellyfinNavGraph(
-                    navController = navController,
-                    startDestination = startDestination,
-                    modifier = Modifier.fillMaxSize(),
-                    onLogout = {
-                        DynamicShortcutManager.updateContinueWatchingShortcuts(
-                            applicationContext,
-                            emptyList(),
-                        )
-                        if (pendingShortcutDestination != null) {
-                            pendingShortcutDestination = null
-                            consumeShortcut()
-                        }
-                        onLogout()
-                    },
-                )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Show offline indicator when not connected
+                    OfflineIndicatorBanner(isVisible = !isOnline)
+
+                    // Main navigation content
+                    JellyfinNavGraph(
+                        navController = navController,
+                        startDestination = startDestination,
+                        modifier = Modifier.fillMaxSize(),
+                        onLogout = {
+                            DynamicShortcutManager.updateContinueWatchingShortcuts(
+                                applicationContext,
+                                emptyList(),
+                            )
+                            if (pendingShortcutDestination != null) {
+                                pendingShortcutDestination = null
+                                consumeShortcut()
+                            }
+                            onLogout()
+                        },
+                    )
+                }
             }
         } else {
             // No navigation for auth and detail screens
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
             ) { innerPadding ->
-                JellyfinNavGraph(
-                    navController = navController,
-                    startDestination = startDestination,
-                    modifier = Modifier.padding(innerPadding),
-                    onLogout = {
-                        DynamicShortcutManager.updateContinueWatchingShortcuts(
-                            applicationContext,
-                            emptyList(),
-                        )
-                        if (pendingShortcutDestination != null) {
-                            pendingShortcutDestination = null
-                            consumeShortcut()
-                        }
-                        onLogout()
-                    },
-                )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Show offline indicator when not connected
+                    OfflineIndicatorBanner(isVisible = !isOnline)
+
+                    // Main navigation content
+                    JellyfinNavGraph(
+                        navController = navController,
+                        startDestination = startDestination,
+                        modifier = Modifier.padding(innerPadding),
+                        onLogout = {
+                            DynamicShortcutManager.updateContinueWatchingShortcuts(
+                                applicationContext,
+                                emptyList(),
+                            )
+                            if (pendingShortcutDestination != null) {
+                                pendingShortcutDestination = null
+                                consumeShortcut()
+                            }
+                            onLogout()
+                        },
+                    )
+                }
             }
         }
     }

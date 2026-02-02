@@ -13,6 +13,7 @@ import com.rpeters.jellyfin.network.CachePolicyInterceptor
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.network.DeviceIdentityProvider
 import com.rpeters.jellyfin.network.JellyfinAuthInterceptor
+import com.rpeters.jellyfin.network.NetworkStateInterceptor
 import com.rpeters.jellyfin.utils.DevicePerformanceProfile
 import com.rpeters.jellyfin.utils.ImageLoadingOptimizer
 import com.rpeters.jellyfin.utils.withStrictModeTagger
@@ -21,8 +22,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
+import okhttp3.TlsVersion
 import okhttp3.logging.HttpLoggingInterceptor
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.createJellyfin
@@ -50,29 +53,48 @@ object NetworkModule {
         val cacheDir = File(context.cacheDir, "http_cache")
         val cache = okhttp3.Cache(cacheDir, 150L * 1024 * 1024) // 150 MB
 
+        // Configure modern TLS versions and cipher suites to prevent connection aborts
+        // during TLS handshake. This addresses issues where client and server cannot
+        // agree on TLS version or cipher suite.
+        val modernTls = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+            .tlsVersions(TlsVersion.TLS_1_3, TlsVersion.TLS_1_2)
+            .build()
+
+        // Fallback for older servers that may not support TLS 1.3
+        val compatibleTls = ConnectionSpec.Builder(ConnectionSpec.COMPATIBLE_TLS)
+            .tlsVersions(TlsVersion.TLS_1_2, TlsVersion.TLS_1_1)
+            .build()
+
         val builder = OkHttpClient.Builder()
             .withStrictModeTagger()
             .cache(cache)
+            // Add network state monitoring first to catch connectivity issues early
+            .addInterceptor(NetworkStateInterceptor(connectivityChecker))
             .addInterceptor(authInterceptor)
             .authenticator(authInterceptor)
             .addInterceptor(CachePolicyInterceptor(connectivityChecker))
             // SECURITY: Add certificate pinning
             .sslSocketFactory(sslSocketFactory, pinningTrustManager)
             .hostnameVerifier(hostnameVerifier)
+            // Configure TLS versions to avoid handshake failures
+            .connectionSpecs(listOf(modernTls, compatibleTls, ConnectionSpec.CLEARTEXT))
 
         if (BuildConfig.DEBUG) {
             builder.addInterceptor(
                 HttpLoggingInterceptor().apply {
-                    level = HttpLoggingInterceptor.Level.BASIC
+                    // Use HEADERS level in debug to capture TLS handshake details
+                    level = HttpLoggingInterceptor.Level.HEADERS
                 },
             )
         }
 
         return builder
             .connectionPool(okhttp3.ConnectionPool(5, 10, TimeUnit.MINUTES))
-            .connectTimeout(8, TimeUnit.SECONDS)
-            .readTimeout(25, TimeUnit.SECONDS)
-            .writeTimeout(12, TimeUnit.SECONDS)
+            // Increase connect timeout to handle slower/unstable networks
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
+            // Enable automatic retry on connection failures (including SocketException)
             .retryOnConnectionFailure(true)
             .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .build()

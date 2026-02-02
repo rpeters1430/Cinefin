@@ -8,6 +8,7 @@ import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import com.rpeters.jellyfin.utils.AppResources
 import retrofit2.HttpException
 import java.net.ConnectException
+import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLException
@@ -52,6 +53,25 @@ object ErrorHandler {
                 suggestedAction = "Verify server URL and network connectivity",
             )
 
+            is SocketException -> {
+                // Handle "Software caused connection abort" and similar network issues
+                val isConnectionAbort = e.message?.contains("connection abort", ignoreCase = true) == true
+                ProcessedError(
+                    userMessage = if (isConnectionAbort) {
+                        "Network connection was interrupted. This may be due to switching between WiFi and mobile data, or an unstable connection."
+                    } else {
+                        "Network error occurred: ${e.message ?: "Connection failed"}. Please check your connection."
+                    },
+                    errorType = ErrorType.NETWORK,
+                    isRetryable = true,
+                    suggestedAction = if (isConnectionAbort) {
+                        "Ensure stable network connection and try again"
+                    } else {
+                        "Check network stability and retry"
+                    },
+                )
+            }
+
             is SocketTimeoutException -> ProcessedError(
                 userMessage = "Request timed out. The server may be overloaded.",
                 errorType = ErrorType.NETWORK,
@@ -59,12 +79,30 @@ object ErrorHandler {
                 suggestedAction = "Try again in a few moments",
             )
 
-            is SSLException -> ProcessedError(
-                userMessage = "Secure connection failed. Please check your server's SSL configuration.",
-                errorType = ErrorType.NETWORK,
-                isRetryable = false,
-                suggestedAction = "Contact administrator about SSL certificate",
-            )
+            is SSLException -> {
+                // Distinguish between different SSL/TLS errors
+                val message = e.message ?: ""
+                when {
+                    message.contains("handshake", ignoreCase = true) -> ProcessedError(
+                        userMessage = "SSL/TLS handshake failed. The server's security configuration may be incompatible.",
+                        errorType = ErrorType.NETWORK,
+                        isRetryable = true,
+                        suggestedAction = "Contact administrator about TLS configuration, or try again",
+                    )
+                    message.contains("certificate", ignoreCase = true) -> ProcessedError(
+                        userMessage = "SSL certificate validation failed. Please check your server's SSL certificate.",
+                        errorType = ErrorType.NETWORK,
+                        isRetryable = false,
+                        suggestedAction = "Contact administrator about SSL certificate",
+                    )
+                    else -> ProcessedError(
+                        userMessage = "Secure connection failed: $message",
+                        errorType = ErrorType.NETWORK,
+                        isRetryable = false,
+                        suggestedAction = "Contact administrator about SSL configuration",
+                    )
+                }
+            }
 
             is HttpException -> processHttpException(e)
 

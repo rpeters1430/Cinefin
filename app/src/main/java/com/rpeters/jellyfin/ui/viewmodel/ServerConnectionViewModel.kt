@@ -19,6 +19,7 @@ import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.security.CertificatePinningManager
 import com.rpeters.jellyfin.data.security.PinningValidationException
+import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.ui.components.ConnectionPhase
 import com.rpeters.jellyfin.ui.components.ConnectionState
 import com.rpeters.jellyfin.ui.components.PinningAlertReason
@@ -57,6 +58,7 @@ class ServerConnectionViewModel @Inject constructor(
     private val repository: JellyfinRepository,
     private val secureCredentialManager: SecureCredentialManager,
     private val certificatePinningManager: CertificatePinningManager,
+    private val connectivityChecker: ConnectivityChecker,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -114,6 +116,44 @@ class ServerConnectionViewModel @Inject constructor(
 
             // Auto-login if we have saved credentials and remember login is enabled
             if (rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank() && hasSavedPassword) {
+                // Check network connectivity before attempting auto-login
+                if (!connectivityChecker.isOnline()) {
+                    SecureLogger.w("ServerConnectionVM", "Auto-login skipped: no internet connection")
+                    _connectionState.value = _connectionState.value.copy(
+                        errorMessage = "No internet connection. Please check your network and try again.",
+                    )
+
+                    // Observe network connectivity and retry auto-login when online
+                    viewModelScope.launch {
+                        connectivityChecker.observeNetworkConnectivity()
+                            .collect { isOnline ->
+                                if (isOnline && _connectionState.value.rememberLogin &&
+                                    !_connectionState.value.isConnected &&
+                                    !_connectionState.value.isConnecting
+                                ) {
+                                    SecureLogger.i("ServerConnectionVM", "Network restored, retrying auto-login")
+                                    // Retry auto-login now that network is available
+                                    val currentState = _connectionState.value
+                                    if (currentState.hasSavedPassword) {
+                                        val savedPassword = secureCredentialManager.getPassword(
+                                            currentState.savedServerUrl,
+                                            currentState.savedUsername,
+                                        )
+                                        if (savedPassword != null) {
+                                            connectToServer(
+                                                currentState.savedServerUrl,
+                                                currentState.savedUsername,
+                                                savedPassword,
+                                                isAutoLogin = true,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                    }
+                    return@launch
+                }
+
                 val autoLoginKey = "$savedServerUrl|$savedUsername"
                 if (!shouldAutoLoginNow(autoLoginKey)) {
                     return@launch
