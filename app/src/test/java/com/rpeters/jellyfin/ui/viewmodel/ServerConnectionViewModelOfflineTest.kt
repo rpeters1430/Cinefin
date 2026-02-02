@@ -6,12 +6,10 @@ import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.security.CertificatePinningManager
 import com.rpeters.jellyfin.network.ConnectivityChecker
-import com.rpeters.jellyfin.ui.components.ConnectionState
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +18,6 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -53,8 +50,8 @@ class ServerConnectionViewModelOfflineTest {
 
         // Setup default mocks
         coEvery { repository.isConnected } returns flowOf(false)
-        coEvery { secureCredentialManager.getBiometricCapability(any()) } returns 
-            mockk { 
+        coEvery { secureCredentialManager.getBiometricCapability(any()) } returns
+            mockk {
                 every { isAvailable } returns false
                 every { isWeakOnly } returns false
             }
@@ -65,14 +62,14 @@ class ServerConnectionViewModelOfflineTest {
         // Given: Device is offline with saved credentials
         every { connectivityChecker.isOnline() } returns false
         coEvery { connectivityChecker.observeNetworkConnectivity() } returns flowOf(false)
-        
+
         setupDataStoreWithCredentials(
             serverUrl = "https://server.com",
             username = "testuser",
             rememberLogin = true,
         )
-        coEvery { 
-            secureCredentialManager.hasSavedPassword("https://server.com", "testuser") 
+        coEvery {
+            secureCredentialManager.hasSavedPassword("https://server.com", "testuser")
         } returns true
 
         // When: ViewModel initializes
@@ -90,10 +87,10 @@ class ServerConnectionViewModelOfflineTest {
         assertFalse("Should not be connected", state.isConnected)
         assertFalse("Should not be connecting", state.isConnecting)
         assertTrue("Should have error message", state.errorMessage?.contains("No internet connection") == true)
-        
+
         // Verify no password was retrieved (auto-login skipped)
-        coVerify(exactly = 0) { 
-            secureCredentialManager.getPassword("https://server.com", "testuser") 
+        coVerify(exactly = 0) {
+            secureCredentialManager.getPassword("https://server.com", "testuser")
         }
     }
 
@@ -103,17 +100,17 @@ class ServerConnectionViewModelOfflineTest {
         val networkState = MutableStateFlow(false)
         every { connectivityChecker.isOnline() } returns false
         coEvery { connectivityChecker.observeNetworkConnectivity() } returns networkState
-        
+
         setupDataStoreWithCredentials(
             serverUrl = "https://server.com",
             username = "testuser",
             rememberLogin = true,
         )
-        coEvery { 
-            secureCredentialManager.hasSavedPassword("https://server.com", "testuser") 
+        coEvery {
+            secureCredentialManager.hasSavedPassword("https://server.com", "testuser")
         } returns true
-        coEvery { 
-            secureCredentialManager.getPassword("https://server.com", "testuser") 
+        coEvery {
+            secureCredentialManager.getPassword("https://server.com", "testuser")
         } returns "password123"
 
         // When: ViewModel initializes while offline
@@ -138,8 +135,8 @@ class ServerConnectionViewModelOfflineTest {
         state = viewModel.connectionState.value
         // Note: connectToServer would be called but we're not testing the full flow here
         // We verify the password was retrieved for retry
-        coVerify(atLeast = 1) { 
-            secureCredentialManager.getPassword("https://server.com", "testuser") 
+        coVerify(atLeast = 1) {
+            secureCredentialManager.getPassword("https://server.com", "testuser")
         }
     }
 
@@ -148,17 +145,17 @@ class ServerConnectionViewModelOfflineTest {
         // Given: Device is online with saved credentials
         every { connectivityChecker.isOnline() } returns true
         coEvery { connectivityChecker.observeNetworkConnectivity() } returns flowOf(true)
-        
+
         setupDataStoreWithCredentials(
             serverUrl = "https://server.com",
             username = "testuser",
             rememberLogin = true,
         )
-        coEvery { 
-            secureCredentialManager.hasSavedPassword("https://server.com", "testuser") 
+        coEvery {
+            secureCredentialManager.hasSavedPassword("https://server.com", "testuser")
         } returns true
-        coEvery { 
-            secureCredentialManager.getPassword("https://server.com", "testuser") 
+        coEvery {
+            secureCredentialManager.getPassword("https://server.com", "testuser")
         } returns "password123"
 
         // When: ViewModel initializes
@@ -172,8 +169,8 @@ class ServerConnectionViewModelOfflineTest {
         advanceUntilIdle()
 
         // Then: Should attempt auto-login
-        coVerify(atLeast = 1) { 
-            secureCredentialManager.getPassword("https://server.com", "testuser") 
+        coVerify(atLeast = 1) {
+            secureCredentialManager.getPassword("https://server.com", "testuser")
         }
     }
 
