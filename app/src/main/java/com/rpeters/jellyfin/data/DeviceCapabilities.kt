@@ -91,12 +91,20 @@ class DeviceCapabilities @Inject constructor(
      * Check if audio codec is supported
      */
     fun canPlayAudioCodec(codec: String?): Boolean {
+        return canPlayAudioCodec(codec, channels = 2)
+    }
+
+    /**
+     * Check if audio codec is supported with the given channel count.
+     * Many devices report EAC3/AC3/DTS support for stereo but fail on surround (5.1/7.1).
+     */
+    fun canPlayAudioCodec(codec: String?, channels: Int): Boolean {
         if (codec.isNullOrBlank()) return true // Video-only content
 
         val normalizedCodec = normalizeAudioCodec(codec.lowercase())
         if (!SUPPORTED_AUDIO_CODECS.contains(normalizedCodec)) return false
 
-        return isCodecSupported(normalizedCodec, false)
+        return isAudioCodecSupported(normalizedCodec, channels)
     }
 
     /**
@@ -301,6 +309,32 @@ class DeviceCapabilities @Inject constructor(
             "ac-3" -> "ac3"
             "e-ac-3" -> "eac3"
             else -> codec
+        }
+    }
+
+    /**
+     * Check if an audio codec is supported with the given channel count.
+     * This is more accurate than [isCodecSupported] for audio because many devices
+     * report support for surround codecs (EAC3, AC3, DTS) at stereo but fail at 5.1/7.1.
+     */
+    private fun isAudioCodecSupported(codec: String, channels: Int): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            try {
+                val mimeType = codecToMimeType(codec, false) ?: return false
+                val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
+                val format = android.media.MediaFormat.createAudioFormat(mimeType, 48_000, channels)
+                val decoderName = codecList.findDecoderForFormat(format)
+                if (decoderName == null) {
+                    SecureLogger.d(TAG, "No decoder found for $codec with $channels channels")
+                }
+                decoderName != null
+            } catch (e: Exception) {
+                SecureLogger.w(TAG, "Failed to check audio codec support for $codec ($channels ch)", e)
+                false
+            }
+        } else {
+            val codecs = getSupportedAudioCodecs()
+            codecs.contains(codec.lowercase())
         }
     }
 

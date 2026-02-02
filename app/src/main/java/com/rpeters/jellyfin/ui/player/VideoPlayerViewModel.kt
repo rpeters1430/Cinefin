@@ -173,6 +173,7 @@ class VideoPlayerViewModel @Inject constructor(
     private var playbackSessionId: String? = null
     private var countdownJob: kotlinx.coroutines.Job? = null
     private var requestedSubtitleIndex: Int? = null
+    private var hasAttemptedTranscodingFallback: Boolean = false
 
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -219,6 +220,31 @@ class VideoPlayerViewModel @Inject constructor(
 
         override fun onPlayerError(error: PlaybackException) {
             SecureLogger.e("VideoPlayer", "Error: ${error.message}", error)
+
+            // If Direct Play failed and we haven't tried transcoding yet, fall back automatically
+            if (_playerState.value.isDirectPlaying && !hasAttemptedTranscodingFallback) {
+                val errorMsg = error.message ?: ""
+                val isAudioRendererError = errorMsg.contains("AudioRenderer", ignoreCase = true) ||
+                    errorMsg.contains("audio/eac3", ignoreCase = true) ||
+                    errorMsg.contains("audio/ac3", ignoreCase = true) ||
+                    errorMsg.contains("audio/dts", ignoreCase = true) ||
+                    errorMsg.contains("MediaCodecAudioRenderer", ignoreCase = true)
+                val isRendererError = error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED ||
+                    error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED ||
+                    isAudioRendererError
+
+                if (isRendererError) {
+                    SecureLogger.d("VideoPlayer", "Direct Play failed with renderer error, falling back to transcoding")
+                    _playerState.value = _playerState.value.copy(
+                        error = null,
+                        isLoading = true,
+                    )
+                    hasAttemptedTranscodingFallback = true
+                    viewModelScope.launch { retryWithTranscoding() }
+                    return
+                }
+            }
+
             _playerState.value = _playerState.value.copy(
                 error = "Playback error: ${error.message}",
                 isLoading = false,
@@ -386,6 +412,7 @@ class VideoPlayerViewModel @Inject constructor(
         hasSentCastLoad = false
         wasPlayingBeforeCast = false
         requestedSubtitleIndex = subtitleIndex
+        hasAttemptedTranscodingFallback = false
 
         // Note: We'll set the sessionId from PlaybackResult later to use server's playSessionId
         playbackSessionId = null
@@ -645,6 +672,152 @@ class VideoPlayerViewModel @Inject constructor(
                     isLoading = false,
                 )
             }
+        }
+    }
+
+    /**
+     * Retry playback using forced transcoding after a Direct Play failure.
+     * Releases the current player, requests a transcoded stream URL, and re-initializes.
+     */
+    private suspend fun retryWithTranscoding() {
+        val metadata = currentItemMetadata
+        if (metadata == null) {
+            _playerState.value = _playerState.value.copy(
+                error = "Cannot retry playback: missing item metadata",
+                isLoading = false,
+            )
+            return
+        }
+
+        try {
+            // Capture current position before releasing the player
+            val currentPosition = withContext(Dispatchers.Main) {
+                exoPlayer?.currentPosition ?: 0L
+            }
+
+            // Release the failed player
+            withContext(Dispatchers.Main) {
+                exoPlayer?.let { p ->
+                    try {
+                        p.removeListener(playerListener)
+                        p.stop()
+                        p.clearVideoSurface()
+                        p.release()
+                    } catch (_: Exception) {}
+                }
+                exoPlayer = null
+                trackSelector = null
+            }
+
+            // Get forced transcoding URL
+            val playbackResult = enhancedPlaybackManager.getTranscodingPlaybackUrl(metadata)
+
+            val streamUrl: String
+            val mimeType: String?
+            val sessionId: String
+
+            when (playbackResult) {
+                is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> {
+                    SecureLogger.d("VideoPlayer", "Transcoding fallback: ${playbackResult.targetResolution} ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec}")
+                    streamUrl = playbackResult.url
+                    sessionId = playbackResult.playSessionId ?: java.util.UUID.randomUUID().toString()
+
+                    val lowerUrl = streamUrl.lowercase(Locale.ROOT)
+                    mimeType = when {
+                        lowerUrl.contains(".m3u8") || lowerUrl.contains("master.m3u8") -> MimeTypes.APPLICATION_M3U8
+                        lowerUrl.contains(".mpd") -> MimeTypes.APPLICATION_MPD
+                        else -> null
+                    }
+
+                    _playerState.value = _playerState.value.copy(
+                        isDirectPlaying = false,
+                        isDirectStreaming = false,
+                        isTranscoding = true,
+                        transcodingReason = "Fallback: Direct Play audio codec not supported",
+                        playbackMethod = "Transcoding",
+                    )
+                }
+                is com.rpeters.jellyfin.data.playback.PlaybackResult.DirectPlay -> {
+                    // Shouldn't happen with forced transcoding, but handle gracefully
+                    streamUrl = playbackResult.url
+                    sessionId = playbackResult.playSessionId ?: java.util.UUID.randomUUID().toString()
+                    mimeType = null
+                }
+                is com.rpeters.jellyfin.data.playback.PlaybackResult.Error -> {
+                    _playerState.value = _playerState.value.copy(
+                        error = "Transcoding fallback failed: ${playbackResult.message}",
+                        isLoading = false,
+                    )
+                    return
+                }
+            }
+
+            playbackSessionId = sessionId
+            playbackProgressManager.startTracking(metadata.id.toString(), viewModelScope, sessionId)
+
+            withContext(Dispatchers.Main) {
+                val renderersFactory = DefaultRenderersFactory(context)
+                    .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+                    .setEnableDecoderFallback(true)
+
+                val token = repository.getCurrentServer()?.accessToken
+                val httpFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
+                    .apply {
+                        if (!token.isNullOrBlank()) {
+                            setDefaultRequestProperties(mapOf("X-Emby-Token" to token))
+                        }
+                    }
+                val dataSourceFactory =
+                    androidx.media3.datasource.DefaultDataSource.Factory(context, httpFactory)
+                val mediaSourceFactory =
+                    androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
+
+                trackSelector = DefaultTrackSelector(context).apply {
+                    setParameters(
+                        buildUponParameters()
+                            .setAllowVideoMixedMimeTypeAdaptiveness(true)
+                            .setAllowVideoNonSeamlessAdaptiveness(true)
+                            .build(),
+                    )
+                }
+
+                exoPlayer = ExoPlayer.Builder(context)
+                    .setSeekBackIncrementMs(10_000)
+                    .setSeekForwardIncrementMs(10_000)
+                    .setMediaSourceFactory(mediaSourceFactory)
+                    .setRenderersFactory(renderersFactory)
+                    .setTrackSelector(trackSelector!!)
+                    .setVideoScalingMode(androidx.media3.common.C.VIDEO_SCALING_MODE_SCALE_TO_FIT)
+                    .build()
+
+                exoPlayer?.addListener(playerListener)
+
+                val mediaItem = if (mimeType != null) {
+                    MediaItem.Builder()
+                        .setUri(streamUrl)
+                        .setMimeType(mimeType)
+                        .build()
+                } else {
+                    MediaItem.fromUri(streamUrl)
+                }
+                currentMediaItem = mediaItem
+
+                exoPlayer?.setMediaItem(mediaItem)
+                exoPlayer?.prepare()
+                exoPlayer?.play()
+
+                if (currentPosition > 0) {
+                    exoPlayer?.seekTo(currentPosition)
+                }
+
+                SecureLogger.d("VideoPlayer", "Transcoding fallback player prepared successfully")
+            }
+        } catch (e: Exception) {
+            SecureLogger.e("VideoPlayer", "Transcoding fallback failed: ${e.message}", e)
+            _playerState.value = _playerState.value.copy(
+                error = "Playback failed: ${e.message}",
+                isLoading = false,
+            )
         }
     }
 
