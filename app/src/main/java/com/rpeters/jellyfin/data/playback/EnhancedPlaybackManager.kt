@@ -293,32 +293,52 @@ class EnhancedPlaybackManager @Inject constructor(
         val networkQuality = getNetworkQuality()
         val deviceCaps = deviceCapabilities.getDirectPlayCapabilities()
 
+        // Get source video resolution and codec to prevent upscaling and unnecessary transcoding
+        val sourceVideoStream = transcodingSource?.mediaStreams?.findDefaultVideoStream()
+        val sourceWidth = sourceVideoStream?.width ?: 1920
+        val sourceHeight = sourceVideoStream?.height ?: 1080
+        val sourceVideoCodec = sourceVideoStream?.codec?.lowercase() ?: "h264"
+
         val transcodingParams = when (networkQuality) {
             NetworkQuality.HIGH -> TranscodingParams(
                 maxBitrate = 20_000_000, // 20 Mbps
-                maxWidth = if (deviceCaps.supports4K) 3840 else 1920,
-                maxHeight = if (deviceCaps.supports4K) 2160 else 1080,
-                videoCodec = getBestVideoCodec(deviceCaps.supportedVideoCodecs),
+                // Never upscale: cap at source resolution
+                maxWidth = minOf(if (deviceCaps.supports4K) 3840 else 1920, sourceWidth),
+                maxHeight = minOf(if (deviceCaps.supports4K) 2160 else 1080, sourceHeight),
+                // Use source codec for Direct Stream - only transcode if source codec not supported
+                videoCodec = if (deviceCaps.supportedVideoCodecs.contains(sourceVideoCodec)) sourceVideoCodec else getBestVideoCodec(deviceCaps.supportedVideoCodecs),
                 audioCodec = getBestAudioCodec(deviceCaps.supportedAudioCodecs),
                 container = "mp4",
             )
             NetworkQuality.MEDIUM -> TranscodingParams(
                 maxBitrate = 8_000_000, // 8 Mbps
-                maxWidth = 1920,
-                maxHeight = 1080,
-                videoCodec = "h264", // Most compatible
+                // Never upscale: cap at source resolution
+                maxWidth = minOf(1920, sourceWidth),
+                maxHeight = minOf(1080, sourceHeight),
+                // Use source codec for Direct Stream if supported, fallback to h264
+                videoCodec = if (deviceCaps.supportedVideoCodecs.contains(sourceVideoCodec)) sourceVideoCodec else "h264",
                 audioCodec = "aac",
                 container = "mp4",
             )
             NetworkQuality.LOW, NetworkQuality.UNKNOWN -> TranscodingParams(
                 maxBitrate = 3_000_000, // 3 Mbps
-                maxWidth = 1280,
-                maxHeight = 720,
-                videoCodec = "h264",
+                // Never upscale: cap at source resolution
+                maxWidth = minOf(1280, sourceWidth),
+                maxHeight = minOf(720, sourceHeight),
+                // Use source codec for Direct Stream if supported, fallback to h264
+                videoCodec = if (deviceCaps.supportedVideoCodecs.contains(sourceVideoCodec)) sourceVideoCodec else "h264",
                 audioCodec = "aac",
                 container = "mp4",
             )
         }
+
+        SecureLogger.d(
+            TAG,
+            "Transcoding params: source=${sourceWidth}x${sourceHeight}, " +
+                "target=${transcodingParams.maxWidth}x${transcodingParams.maxHeight}, " +
+                "bitrate=${transcodingParams.maxBitrate / 1_000_000}Mbps, " +
+                "networkQuality=$networkQuality",
+        )
 
         // Note: We no longer use server-provided transcoding URL as it may be incomplete.
         // Instead, we always build a proper transcoding URL with all required parameters.

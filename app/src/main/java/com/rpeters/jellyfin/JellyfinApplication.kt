@@ -61,7 +61,7 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
 
         // Configure logging verbosity - disable verbose logging in production to reduce log spam
         // Set to true to enable detailed debug logging (codec detection, playback decisions, etc.)
-        SecureLogger.enableVerboseLogging = BuildConfig.DEBUG && false // Disabled by default even in debug
+        SecureLogger.enableVerboseLogging = BuildConfig.DEBUG && true // Enabled for debugging transcoding issues
 
         // Initialize Firebase App Check (debug mode for testing without Play Store)
         initializeAppCheck()

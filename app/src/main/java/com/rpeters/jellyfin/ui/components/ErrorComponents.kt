@@ -275,6 +275,7 @@ fun ErrorSnackbar(
 
 private fun getErrorIcon(errorType: ErrorType) = when (errorType) {
     ErrorType.NETWORK -> Icons.Default.Warning
+    ErrorType.DNS_RESOLUTION -> Icons.Default.Warning
     ErrorType.AUTHENTICATION -> Icons.Default.Error
     ErrorType.UNAUTHORIZED -> Icons.Default.Error
     ErrorType.FORBIDDEN -> Icons.Default.Error
@@ -290,6 +291,7 @@ private fun getErrorIcon(errorType: ErrorType) = when (errorType) {
 
 private fun getErrorTitle(errorType: ErrorType) = when (errorType) {
     ErrorType.NETWORK -> "Connection Problem"
+    ErrorType.DNS_RESOLUTION -> "Cannot Resolve Hostname"
     ErrorType.AUTHENTICATION -> "Authentication Failed"
     ErrorType.UNAUTHORIZED -> "Unauthorized Access"
     ErrorType.FORBIDDEN -> "Access Denied"

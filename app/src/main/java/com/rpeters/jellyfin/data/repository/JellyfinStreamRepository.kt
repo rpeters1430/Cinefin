@@ -160,7 +160,7 @@ class JellyfinStreamRepository @Inject constructor(
 
         // Advanced transcoding parameters
         params.add("BreakOnNonKeyFrames=true")
-        params.add("AllowVideoStreamCopy=false") // Force re-encoding for compatibility
+        params.add("AllowVideoStreamCopy=true") // Allow Direct Stream - keep video quality, only transcode audio if needed
         params.add("AllowAudioStreamCopy=true") // Allow audio copy if compatible
         params.add("PlaySessionId=${UUID.randomUUID()}")
 
@@ -233,8 +233,8 @@ class JellyfinStreamRepository @Inject constructor(
             params.add("Container=$container")
             params.add("TranscodingMaxAudioChannels=$DEFAULT_MAX_AUDIO_CHANNELS")
             params.add("BreakOnNonKeyFrames=true")
-            // Force video transcoding for compatibility, optionally allow audio stream copy.
-            params.add("AllowVideoStreamCopy=false")
+            // Allow Direct Stream - keep video quality, only transcode audio if needed
+            params.add("AllowVideoStreamCopy=true")
             params.add("AllowAudioStreamCopy=$allowAudioStreamCopy")
             // Add playback identifiers when available so the server can apply session-specific settings.
             mediaSourceId?.let { params.add("MediaSourceId=$it") }
