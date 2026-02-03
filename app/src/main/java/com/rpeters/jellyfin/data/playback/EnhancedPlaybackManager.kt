@@ -334,7 +334,7 @@ class EnhancedPlaybackManager @Inject constructor(
 
         SecureLogger.d(
             TAG,
-            "Transcoding params: source=${sourceWidth}x${sourceHeight}, " +
+            "Transcoding params: source=${sourceWidth}x$sourceHeight, " +
                 "target=${transcodingParams.maxWidth}x${transcodingParams.maxHeight}, " +
                 "bitrate=${transcodingParams.maxBitrate / 1_000_000}Mbps, " +
                 "networkQuality=$networkQuality",
