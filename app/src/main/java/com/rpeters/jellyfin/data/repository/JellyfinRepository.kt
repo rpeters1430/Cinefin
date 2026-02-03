@@ -28,7 +28,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.client.exception.InvalidStatusException
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.mediaInfoApi
@@ -489,7 +488,7 @@ class JellyfinRepository @Inject constructor(
             } catch (e: Exception) {
                 if (attempt < maxRetries) {
                     if (BuildConfig.DEBUG) {
-                         Log.w("JellyfinRepository", "$operationName: Exception caught, retrying: ${e.message}")
+                        Log.w("JellyfinRepository", "$operationName: Exception caught, retrying: ${e.message}")
                     }
                     kotlinx.coroutines.delay(500L * (attempt + 1))
                     continue
