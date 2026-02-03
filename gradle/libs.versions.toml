@@ -1,7 +1,7 @@
 [versions]
 agp = "9.0.0"
 desugar_jdk_libs = "2.1.5"
-hiltAndroidTestingVersion = "2.59"
+hiltAndroidTestingVersion = "2.59.1"
 kotlin = "2.3.0"
 ksp = "2.3.5"
 coreKtx = "1.18.0-alpha01"
