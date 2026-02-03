@@ -414,14 +414,6 @@ class JellyfinRepository @Inject constructor(
                     Log.d("JellyfinRepository", "Operation was cancelled, not retrying")
                 }
                 throw e
-            } catch (e: Exception) {
-                lastException = e
-                if (BuildConfig.DEBUG) {
-                    Log.w("JellyfinRepository", "Operation failed (attempt ${attempt + 1}/${maxRetries + 1}): ${e.message}")
-                }
-                if (attempt < maxRetries) {
-                    kotlinx.coroutines.delay(500L * (attempt + 1))
-                }
             }
         }
 
@@ -485,15 +477,6 @@ class JellyfinRepository @Inject constructor(
                     Log.d("JellyfinRepository", "$operationName: Operation cancelled on attempt ${attempt + 1}")
                 }
                 throw e
-            } catch (e: Exception) {
-                if (attempt < maxRetries) {
-                    if (BuildConfig.DEBUG) {
-                        Log.w("JellyfinRepository", "$operationName: Exception caught, retrying: ${e.message}")
-                    }
-                    kotlinx.coroutines.delay(500L * (attempt + 1))
-                    continue
-                }
-                return handleExceptionSafely(e, operationName)
             }
         }
 

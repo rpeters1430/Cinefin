@@ -306,11 +306,6 @@ class JellyfinAuthRepository @Inject constructor(
                     ApiResult.Error("Failed to check Quick Connect state: ${e.message}", e, errorType)
                 }
             }
-        } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
-            Log.e(TAG, "getQuickConnectState: Error", e)
-            val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("Failed to check Quick Connect state: ${e.message}", e, errorType)
         }
     }
     suspend fun authenticateWithQuickConnect(
