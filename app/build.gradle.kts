@@ -191,6 +191,8 @@ dependencies {
     implementation(libs.firebase.appcheck.playintegrity)
     implementation(libs.firebase.ai) // Unified SDK with Gemini Nano + Google AI support
     implementation(libs.google.mlkit.genai.prompt) // ML Kit GenAI Prompt API (on-device Gemini Nano)
+    implementation("com.google.firebase:firebase-config")
+    implementation("com.google.firebase:firebase-analytics")
 
     // Hilt
     implementation(libs.dagger.hilt.android)
