@@ -34,12 +34,14 @@ class MovieDetailViewModel @Inject constructor(
     private val mediaRepository: JellyfinMediaRepository,
     private val enhancedPlaybackUtils: EnhancedPlaybackUtils,
     private val generativeAiRepository: GenerativeAiRepository,
+    private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MovieDetailState())
     val state: StateFlow<MovieDetailState> = _state.asStateFlow()
 
     fun loadMovieDetails(movieId: String) {
+        analytics.logUiEvent("MovieDetail", "view_movie")
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null, playbackAnalysis = null)
             when (val result = repository.getMovieDetails(movieId)) {

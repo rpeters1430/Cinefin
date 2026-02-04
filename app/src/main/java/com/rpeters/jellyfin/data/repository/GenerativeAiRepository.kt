@@ -28,18 +28,40 @@ class GenerativeAiRepository @Inject constructor(
     @Named("primary-model") private val primaryModel: AiTextModel,
     @Named("pro-model") private val proModel: AiTextModel,
     private val backendStateHolder: AiBackendStateHolder,
+    private val remoteConfig: RemoteConfigRepository,
+    private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
 ) {
-    private fun logModelUsage(operation: String, usesPrimaryModel: Boolean) {
-        val backend = if (usesPrimaryModel) {
-            if (backendStateHolder.state.value.isUsingNano) {
-                "on-device (Gemini Nano)"
-            } else {
-                "cloud (Gemini API)"
-            }
+    private fun getBackendName(usesPrimaryModel: Boolean): String {
+        return if (usesPrimaryModel) {
+            if (backendStateHolder.state.value.isUsingNano) "nano" else "cloud"
         } else {
-            "cloud (Gemini API)"
+            "pro_cloud"
         }
+    }
+
+    private fun logModelUsage(operation: String, usesPrimaryModel: Boolean) {
+        val backend = getBackendName(usesPrimaryModel)
         Log.d("GenerativeAi", "AI request [$operation] using $backend")
+    }
+
+    private fun isAiEnabled(): Boolean {
+        // Default to true if config is missing
+        val enabled = try {
+            remoteConfig.getBoolean("enable_ai_features")
+        } catch (e: Exception) {
+            true
+        }
+        if (!enabled) Log.d("GenerativeAi", "AI features are disabled via Remote Config")
+        return enabled
+    }
+
+    private fun getPrimaryModel(): AiTextModel {
+        return if (remoteConfig.getBoolean("ai_force_pro_model")) {
+            Log.v("GenerativeAi", "Using Pro model as primary (Turbo Mode)")
+            proModel
+        } else {
+            primaryModel
+        }
     }
 
     /**
@@ -47,19 +69,29 @@ class GenerativeAiRepository @Inject constructor(
      * Uses the primary model (Nano if available, cloud otherwise)
      */
     suspend fun generateResponse(prompt: String): String = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext "AI features are currently disabled."
         logModelUsage("generateResponse", usesPrimaryModel = true)
-        val concisePrompt = """
+        
+        val systemPrompt = remoteConfig.getString("ai_chat_system_prompt").takeIf { it.isNotBlank() }
+            ?: """
             You are Jellyfin AI Assistant.
             Answer the user's request clearly and briefly (max 120 words).
             If recommending media, suggest at most 5 titles.
+            """.trimIndent()
+
+        val fullPrompt = """
+            $systemPrompt
             
             User request: $prompt
         """.trimIndent()
 
         try {
-            val response = primaryModel.generateText(concisePrompt)
+            val response = getPrimaryModel().generateText(fullPrompt)
+            val success = response.isNotBlank()
+            analytics.logAiEvent("chat", success, getBackendName(true))
             response.ifBlank { "No response generated." }
         } catch (e: Exception) {
+            analytics.logAiEvent("chat", false, getBackendName(true))
             val message = e.message.orEmpty()
             if (message.contains("MAX_TOKENS", ignoreCase = true)) {
                 "I hit a response length limit. Try asking for a shorter answer, like: \"5 movies like Ballerina\"."
@@ -74,8 +106,13 @@ class GenerativeAiRepository @Inject constructor(
      * Uses the primary model (Nano if available, cloud otherwise)
      */
     fun generateResponseStream(prompt: String): Flow<String> {
+        if (!isAiEnabled()) {
+            return kotlinx.coroutines.flow.flowOf("AI features are currently disabled.")
+        }
         logModelUsage("generateResponseStream", usesPrimaryModel = true)
-        return primaryModel.generateTextStream(prompt)
+        // Note: Tracking success for streams is more complex, logging initiation for now
+        analytics.logAiEvent("chat_stream", true, getBackendName(true))
+        return getPrimaryModel().generateTextStream(prompt)
             .flowOn(Dispatchers.IO)
     }
 
@@ -84,10 +121,15 @@ class GenerativeAiRepository @Inject constructor(
      * Uses the primary model (Nano if available, cloud otherwise)
      */
     suspend fun analyzeViewingHabits(recentItems: List<BaseItemDto>): String = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext "AI analysis disabled."
         if (recentItems.isEmpty()) return@withContext "No viewing history available to analyze."
         logModelUsage("analyzeViewingHabits", usesPrimaryModel = true)
 
-        val itemDescriptions = recentItems.take(10).joinToString("\n") { item ->
+        val contextSize = remoteConfig.getLong("ai_history_context_size").toInt().coerceAtLeast(1)
+        // Fallback to 10 if config is 0 (which is default for missing numbers)
+        val finalContextSize = if (contextSize == 0) 10 else contextSize
+
+        val itemDescriptions = recentItems.take(finalContextSize).joinToString("\n") { item ->
             "- ${item.name} (${item.type})"
         }
 
@@ -99,9 +141,12 @@ class GenerativeAiRepository @Inject constructor(
         """.trimIndent()
 
         try {
-            val response = primaryModel.generateText(prompt)
+            val response = getPrimaryModel().generateText(prompt)
+            val success = response.isNotBlank()
+            analytics.logAiEvent("mood_analysis", success, getBackendName(true))
             response.ifBlank { "Enjoying the library!" }
         } catch (e: Exception) {
+            analytics.logAiEvent("mood_analysis", false, getBackendName(true))
             "Enjoying the library!"
         }
     }
@@ -111,23 +156,50 @@ class GenerativeAiRepository @Inject constructor(
      * Uses the primary model (Nano if available, cloud otherwise)
      */
     suspend fun generateSummary(title: String, overview: String): String = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext overview
         if (overview.isBlank()) return@withContext "No overview available."
         logModelUsage("generateSummary", usesPrimaryModel = true)
 
-        val prompt = """
+        val template = remoteConfig.getString("ai_summary_prompt_template").takeIf { it.isNotBlank() }
+            ?: """
             Rewrite this into a fresh, spoiler-free summary in exactly 2 short sentences (max 55 words total).
             Do not copy phrases directly from the overview.
 
-            Title: $title
-            Overview: $overview
+            Title: %s
+            Overview: %s
 
             Focus on the core premise only. Do not reveal twists or endings.
-        """.trimIndent()
+            """.trimIndent()
+
+        // Handle simple string formatting if the user includes %s placeholders, otherwise append
+        val prompt = if (template.contains("%s")) {
+            try {
+                template.format(title, overview)
+            } catch (e: Exception) {
+                // Fallback if formatting fails (e.g. mismatch count)
+                """
+                $template
+                
+                Title: $title
+                Overview: $overview
+                """.trimIndent()
+            }
+        } else {
+            """
+            $template
+            
+            Title: $title
+            Overview: $overview
+            """.trimIndent()
+        }
 
         try {
-            val response = primaryModel.generateText(prompt)
+            val response = getPrimaryModel().generateText(prompt)
+            val success = response.isNotBlank()
+            analytics.logAiEvent("summary", success, getBackendName(true))
             response.ifBlank { "Unable to generate summary." }
         } catch (e: Exception) {
+            analytics.logAiEvent("summary", false, getBackendName(true))
             "Unable to generate summary right now."
         }
     }
@@ -138,9 +210,14 @@ class GenerativeAiRepository @Inject constructor(
      * Uses the Pro model for better instruction following.
      */
     suspend fun smartSearchQuery(userQuery: String): List<String> = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext listOf(userQuery)
         logModelUsage("smartSearchQuery", usesPrimaryModel = false)
+        
+        val keywordLimit = remoteConfig.getLong("ai_search_keyword_limit").toInt()
+        val finalLimit = if (keywordLimit <= 0) 5 else keywordLimit
+
         val prompt = """
-            Translate the following user request into a simple list of 3-5 specific keywords that would work well in a standard media server search engine.
+            Translate the following user request into a simple list of 3-$finalLimit specific keywords that would work well in a standard media server search engine.
             Ignore filler words. Focus on titles, genres, or key terms.
 
             User Request: "$userQuery"
@@ -150,7 +227,11 @@ class GenerativeAiRepository @Inject constructor(
 
         try {
             // Using Pro model for better instruction following on JSON format
-            val text = proModel.generateText(prompt).ifBlank { return@withContext listOf(userQuery) }
+            val text = proModel.generateText(prompt)
+            val success = text.isNotBlank()
+            analytics.logAiEvent("smart_search", success, getBackendName(false))
+            
+            if (text.isBlank()) return@withContext listOf(userQuery)
 
             // Simple cleanup to extract the array if the model adds markdown code blocks
             val jsonString = text.replace("```json", "").replace("```", "").trim()
@@ -159,10 +240,11 @@ class GenerativeAiRepository @Inject constructor(
                 .map { it.trim().trim('"') }
                 .filter { it.isNotBlank() }
                 .distinct()
-                .take(5)
+                .take(finalLimit)
 
             if (keywords.isEmpty()) listOf(userQuery) else keywords
         } catch (e: Exception) {
+            analytics.logAiEvent("smart_search", false, getBackendName(false))
             listOf(userQuery)
         }
     }
@@ -175,8 +257,16 @@ class GenerativeAiRepository @Inject constructor(
         recentItems: List<BaseItemDto>,
         userPreferences: String? = null,
     ): String = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext "AI recommendations disabled."
         logModelUsage("generateRecommendations", usesPrimaryModel = true)
-        val itemDescriptions = recentItems.take(10).joinToString("\n") { item ->
+        
+        val contextSize = remoteConfig.getLong("ai_history_context_size").toInt().coerceAtLeast(1)
+        val finalContextSize = if (contextSize == 0) 10 else contextSize
+        
+        val recCount = remoteConfig.getLong("ai_recommendation_count").toInt().coerceAtLeast(1)
+        val finalRecCount = if (recCount == 0) 5 else recCount
+
+        val itemDescriptions = recentItems.take(finalContextSize).joinToString("\n") { item ->
             "- ${item.name} (${item.type})"
         }
 
@@ -185,14 +275,17 @@ class GenerativeAiRepository @Inject constructor(
             if (userPreferences != null) {
                 append(" and preferences: $userPreferences")
             }
-            append(", suggest 3-5 specific titles they might enjoy. Be concise.\n\n")
+            append(", suggest $finalRecCount specific titles they might enjoy. Be concise.\n\n")
             append("Viewing History:\n$itemDescriptions")
         }
 
         try {
-            val response = primaryModel.generateText(prompt)
+            val response = getPrimaryModel().generateText(prompt)
+            val success = response.isNotBlank()
+            analytics.logAiEvent("recommendations", success, getBackendName(true))
             response.ifBlank { "No recommendations available." }
         } catch (e: Exception) {
+            analytics.logAiEvent("recommendations", false, getBackendName(true))
             "Unable to generate recommendations at this time."
         }
     }

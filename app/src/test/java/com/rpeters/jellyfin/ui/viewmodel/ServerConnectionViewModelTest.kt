@@ -48,6 +48,7 @@ class ServerConnectionViewModelTest {
     private lateinit var repository: JellyfinRepository
     private lateinit var secureCredentialManager: SecureCredentialManager
     private lateinit var certificatePinningManager: CertificatePinningManager
+    private lateinit var connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker
     private lateinit var context: Context
 
     @Before
@@ -56,6 +57,7 @@ class ServerConnectionViewModelTest {
         repository = mockk(relaxed = true)
         secureCredentialManager = mockk(relaxed = true)
         certificatePinningManager = mockk(relaxed = true)
+        connectivityChecker = mockk(relaxed = true)
 
         every { repository.isConnected } returns MutableStateFlow(false)
         val strongCapability = BiometricCapability(
@@ -104,6 +106,7 @@ class ServerConnectionViewModelTest {
                 repository,
                 secureCredentialManager,
                 certificatePinningManager,
+                connectivityChecker,
                 context,
             )
 
@@ -138,6 +141,7 @@ class ServerConnectionViewModelTest {
             repository,
             secureCredentialManager,
             certificatePinningManager,
+            connectivityChecker,
             context,
         )
 
@@ -167,6 +171,7 @@ class ServerConnectionViewModelTest {
             repository,
             secureCredentialManager,
             certificatePinningManager,
+            connectivityChecker,
             context,
         )
 
@@ -209,6 +214,7 @@ class ServerConnectionViewModelTest {
                 repository,
                 secureCredentialManager,
                 certificatePinningManager,
+                connectivityChecker,
                 context,
             )
 
@@ -251,6 +257,7 @@ class ServerConnectionViewModelTest {
             repository,
             secureCredentialManager,
             certificatePinningManager,
+            connectivityChecker,
             context,
         )
 

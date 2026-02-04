@@ -28,8 +28,10 @@ class MovieDetailViewModelTest {
     private val repository: JellyfinRepository = mockk()
     private val mediaRepository: JellyfinMediaRepository = mockk()
     private val playbackUtils: EnhancedPlaybackUtils = mockk()
+    private val generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository = mockk(relaxed = true)
+    private val analyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper = mockk(relaxed = true)
     private val dispatcher = StandardTestDispatcher()
-    private val viewModel by lazy { MovieDetailViewModel(repository, mediaRepository, playbackUtils) }
+    private val viewModel by lazy { MovieDetailViewModel(repository, mediaRepository, playbackUtils, generativeAiRepository, analyticsHelper) }
 
     @Before
     fun setup() {

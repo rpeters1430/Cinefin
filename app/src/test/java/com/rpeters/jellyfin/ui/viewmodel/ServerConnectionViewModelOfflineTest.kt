@@ -1,7 +1,6 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
 import android.content.Context
-import androidx.datastore.preferences.core.PreferencesKeys
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.security.CertificatePinningManager

@@ -42,6 +42,9 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
     @Inject
     lateinit var generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 
+    @Inject
+    lateinit var remoteConfigRepository: com.rpeters.jellyfin.data.repository.RemoteConfigRepository
+
     private val applicationJob = SupervisorJob()
     private val applicationScope = CoroutineScope(applicationJob + Dispatchers.Default)
     private val authRecoveryLock = Any()
@@ -66,6 +69,9 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
         // Initialize Firebase App Check (debug mode for testing without Play Store)
         initializeAppCheck()
 
+        // Fetch latest remote configuration early
+        initializeRemoteConfig()
+
         // Configure performance optimizations first
         initializePerformanceOptimizations()
 
@@ -76,6 +82,22 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
 
         setupUncaughtExceptionHandler()
         SecureLogger.i(TAG, "Application started")
+    }
+
+    private fun initializeRemoteConfig() {
+        applicationScope.launch {
+            try {
+                SecureLogger.i(TAG, "Fetching latest remote configuration...")
+                val updated = remoteConfigRepository.fetchAndActivate()
+                if (updated) {
+                    SecureLogger.i(TAG, "Remote Config activated successfully")
+                } else {
+                    SecureLogger.w(TAG, "Remote Config fetch failed or no updates available")
+                }
+            } catch (e: CancellationException) {
+                throw e
+            }
+        }
     }
 
     override fun onTerminate() {

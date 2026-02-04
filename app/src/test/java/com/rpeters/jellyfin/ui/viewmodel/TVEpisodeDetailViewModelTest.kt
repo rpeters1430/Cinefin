@@ -27,8 +27,10 @@ import java.util.UUID
 class TVEpisodeDetailViewModelTest {
     private val mediaRepository: JellyfinMediaRepository = mockk()
     private val enhancedPlaybackUtils: EnhancedPlaybackUtils = mockk()
+    private val generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository = mockk(relaxed = true)
+    private val analyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper = mockk(relaxed = true)
     private val dispatcher = StandardTestDispatcher()
-    private val viewModel by lazy { TVEpisodeDetailViewModel(mediaRepository, enhancedPlaybackUtils) }
+    private val viewModel by lazy { TVEpisodeDetailViewModel(mediaRepository, enhancedPlaybackUtils, generativeAiRepository, analyticsHelper) }
 
     @Before
     fun setup() {

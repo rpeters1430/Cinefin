@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Accessibility
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Notifications
@@ -60,6 +61,7 @@ fun SettingsScreen(
     onNotificationsSettingsClick: () -> Unit = {},
     onPrivacySettingsClick: () -> Unit = {},
     onAccessibilitySettingsClick: () -> Unit = {},
+    onTranscodingDiagnosticsClick: () -> Unit = {},
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
 ) {
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
@@ -78,6 +80,7 @@ fun SettingsScreen(
         onNotificationsSettingsClick = onNotificationsSettingsClick,
         onPrivacySettingsClick = onPrivacySettingsClick,
         onAccessibilitySettingsClick = onAccessibilitySettingsClick,
+        onTranscodingDiagnosticsClick = onTranscodingDiagnosticsClick,
     )
 }
 
@@ -97,6 +100,7 @@ private fun SettingsScreenContent(
     onNotificationsSettingsClick: () -> Unit = {},
     onPrivacySettingsClick: () -> Unit = {},
     onAccessibilitySettingsClick: () -> Unit = {},
+    onTranscodingDiagnosticsClick: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -159,6 +163,15 @@ private fun SettingsScreenContent(
                     subtitle = stringResource(id = R.string.settings_playback_description),
                     leadingIcon = Icons.Default.PlayCircle,
                     onClick = onPlaybackSettingsClick,
+                )
+            }
+
+            item {
+                ExpressiveMediaListItem(
+                    title = "Transcoding Diagnostics",
+                    subtitle = "Analyze which videos need transcoding and why",
+                    leadingIcon = Icons.Default.BugReport,
+                    onClick = onTranscodingDiagnosticsClick,
                 )
             }
 

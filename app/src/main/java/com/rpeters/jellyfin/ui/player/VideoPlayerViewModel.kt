@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
+import androidx.mediarouter.media.MediaRouter
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -129,6 +130,7 @@ class VideoPlayerViewModel @Inject constructor(
     private val castManager: CastManager,
     private val playbackProgressManager: PlaybackProgressManager,
     private val enhancedPlaybackManager: com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager,
+    private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
 ) : ViewModel() {
 
     // Initialize state flows before init block to prevent race condition where
@@ -137,6 +139,33 @@ class VideoPlayerViewModel @Inject constructor(
     val playerState: StateFlow<VideoPlayerState> = _playerState.asStateFlow()
     val playbackProgress: StateFlow<PlaybackProgress> = playbackProgressManager.playbackProgress
 
+    // MediaRouter callback to detect audio route changes
+    private val mediaRouterCallback = object : MediaRouter.Callback() {
+        override fun onRouteSelected(router: MediaRouter, route: MediaRouter.RouteInfo) {
+            SecureLogger.d("VideoPlayer", "Media route selected: ${route.name}")
+        }
+
+        override fun onRouteUnselected(router: MediaRouter, route: MediaRouter.RouteInfo, reason: Int) {
+            SecureLogger.d("VideoPlayer", "Media route unselected: ${route.name}, reason: $reason")
+            // Save position when route changes as codec may flush
+            val currentPos = exoPlayer?.currentPosition ?: 0L
+            if (currentPos > 0 && exoPlayer?.isPlaying == true) {
+                savedPositionBeforeFlush = currentPos
+                SecureLogger.d("VideoPlayer", "Saved position due to route change: ${currentPos}ms")
+            }
+        }
+
+        override fun onRouteChanged(router: MediaRouter, route: MediaRouter.RouteInfo) {
+            SecureLogger.d("VideoPlayer", "Media route changed: ${route.name}")
+            // Save position when route changes
+            val currentPos = exoPlayer?.currentPosition ?: 0L
+            if (currentPos > 0 && exoPlayer?.isPlaying == true) {
+                savedPositionBeforeFlush = currentPos
+                SecureLogger.d("VideoPlayer", "Saved position due to route change: ${currentPos}ms")
+            }
+        }
+    }
+
     init {
         castManager.initialize()
         viewModelScope.launch {
@@ -144,10 +173,33 @@ class VideoPlayerViewModel @Inject constructor(
                 handleCastState(castState)
             }
         }
+
+        // Register MediaRouter callback to detect audio route changes
+        try {
+            val mediaRouter = MediaRouter.getInstance(context)
+            val selector = androidx.mediarouter.media.MediaRouteSelector.Builder()
+                .addControlCategory(androidx.mediarouter.media.MediaControlIntent.CATEGORY_LIVE_AUDIO)
+                .addControlCategory(androidx.mediarouter.media.MediaControlIntent.CATEGORY_LIVE_VIDEO)
+                .build()
+            mediaRouter.addCallback(selector, mediaRouterCallback, MediaRouter.CALLBACK_FLAG_UNFILTERED_EVENTS)
+            SecureLogger.d("VideoPlayer", "MediaRouter callback registered")
+        } catch (e: Exception) {
+            SecureLogger.e("VideoPlayer", "Failed to register MediaRouter callback: ${e.message}", e)
+        }
     }
 
     override fun onCleared() {
         super.onCleared()
+
+        // Unregister MediaRouter callback
+        try {
+            val mediaRouter = MediaRouter.getInstance(context)
+            mediaRouter.removeCallback(mediaRouterCallback)
+            SecureLogger.d("VideoPlayer", "MediaRouter callback unregistered")
+        } catch (e: Exception) {
+            SecureLogger.e("VideoPlayer", "Failed to unregister MediaRouter callback: ${e.message}", e)
+        }
+
         // Release player immediately without blocking the main thread.
         // Network progress reporting is handled asynchronously by PlaybackProgressManager.
         releasePlayerImmediate()
@@ -175,6 +227,15 @@ class VideoPlayerViewModel @Inject constructor(
     private var requestedSubtitleIndex: Int? = null
     private var hasAttemptedTranscodingFallback: Boolean = false
 
+    // Position preservation for codec flushes and route changes
+    private var savedPositionBeforeFlush: Long? = null
+    private var previousPlaybackState: Int = Player.STATE_IDLE
+    private var wasBufferingBeforeReady: Boolean = false
+    private var positionRestoreAttempts: Int = 0
+    private var lastRestoreAttemptTime: Long = 0L
+    private val maxRestoreAttempts = 3
+    private val restoreAttemptCooldownMs = 2000L // 2 seconds between attempts
+
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
             val stateString = when (playbackState) {
@@ -185,6 +246,52 @@ class VideoPlayerViewModel @Inject constructor(
                 else -> "UNKNOWN($playbackState)"
             }
             SecureLogger.d("VideoPlayer", "State: $stateString, isPlaying: ${exoPlayer?.isPlaying}")
+
+            // Save position when entering buffering state (potential codec flush ahead)
+            if (playbackState == Player.STATE_BUFFERING && previousPlaybackState == Player.STATE_READY) {
+                val currentPos = exoPlayer?.currentPosition ?: 0L
+                if (currentPos > 0) {
+                    savedPositionBeforeFlush = currentPos
+                    wasBufferingBeforeReady = true
+                    SecureLogger.d("VideoPlayer", "Saved position before potential flush: ${currentPos}ms")
+                }
+            }
+
+            // Restore position when recovering from buffering (after codec flush/route change)
+            if (playbackState == Player.STATE_READY && wasBufferingBeforeReady) {
+                val currentPos = exoPlayer?.currentPosition ?: 0L
+                val savedPos = savedPositionBeforeFlush
+                val currentTime = System.currentTimeMillis()
+
+                // If current position reset to near-zero, restore saved position
+                if (savedPos != null && savedPos > 5000 && currentPos < 5000) {
+                    // Check retry limits to prevent infinite loop on HLS streams that don't support seeking
+                    val timeSinceLastAttempt = currentTime - lastRestoreAttemptTime
+                    val canAttemptRestore = positionRestoreAttempts < maxRestoreAttempts &&
+                                          timeSinceLastAttempt > restoreAttemptCooldownMs
+
+                    if (canAttemptRestore) {
+                        positionRestoreAttempts++
+                        lastRestoreAttemptTime = currentTime
+                        SecureLogger.d("VideoPlayer", "Detected position reset (was ${savedPos}ms, now ${currentPos}ms) - restoring position (attempt $positionRestoreAttempts/$maxRestoreAttempts)")
+                        exoPlayer?.seekTo(savedPos)
+                        _playerState.value = _playerState.value.copy(currentPosition = savedPos)
+                    } else {
+                        SecureLogger.w("VideoPlayer", "Position reset detected but restore limit reached (attempts: $positionRestoreAttempts, cooldown: ${timeSinceLastAttempt}ms < ${restoreAttemptCooldownMs}ms) - aborting to prevent infinite loop")
+                        // Reset counters to allow future attempts on different issues
+                        positionRestoreAttempts = 0
+                        lastRestoreAttemptTime = 0L
+                    }
+                } else if (savedPos != null && currentPos >= 5000) {
+                    // Position preserved correctly - reset retry counters
+                    SecureLogger.d("VideoPlayer", "Position preserved correctly (saved: ${savedPos}ms, current: ${currentPos}ms)")
+                    positionRestoreAttempts = 0
+                    lastRestoreAttemptTime = 0L
+                }
+
+                wasBufferingBeforeReady = false
+                savedPositionBeforeFlush = null
+            }
 
             // Only update duration if ExoPlayer has a valid duration (> 0)
             // HLS/transcoded streams may initially return C.TIME_UNSET (negative value)
@@ -209,6 +316,9 @@ class VideoPlayerViewModel @Inject constructor(
             } else if (playbackState == Player.STATE_ENDED) {
                 handlePlaybackEnded()
             }
+
+            // Track previous state for next callback
+            previousPlaybackState = playbackState
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -220,6 +330,13 @@ class VideoPlayerViewModel @Inject constructor(
 
         override fun onPlayerError(error: PlaybackException) {
             SecureLogger.e("VideoPlayer", "Error: ${error.message}", error)
+
+            // Save current position before handling error
+            val currentPos = exoPlayer?.currentPosition ?: 0L
+            if (currentPos > 0) {
+                savedPositionBeforeFlush = currentPos
+                SecureLogger.d("VideoPlayer", "Saved position before error handling: ${currentPos}ms")
+            }
 
             // If Direct Play failed and we haven't tried transcoding yet, fall back automatically
             if (_playerState.value.isDirectPlaying && !hasAttemptedTranscodingFallback) {
@@ -411,6 +528,13 @@ class VideoPlayerViewModel @Inject constructor(
         currentMediaSourceId = null
         hasSentCastLoad = false
         wasPlayingBeforeCast = false
+
+        // Reset position restoration counters for new playback
+        savedPositionBeforeFlush = null
+        previousPlaybackState = Player.STATE_IDLE
+        wasBufferingBeforeReady = false
+        positionRestoreAttempts = 0
+        lastRestoreAttemptTime = 0L
         requestedSubtitleIndex = subtitleIndex
         hasAttemptedTranscodingFallback = false
 
@@ -485,6 +609,13 @@ class VideoPlayerViewModel @Inject constructor(
                         Log.d("VideoPlayer", directPlayMsg) // Direct log bypass SecureLogger
                         streamUrl = playbackResult.url
                         sessionId = playbackResult.playSessionId ?: java.util.UUID.randomUUID().toString()
+                        
+                        analytics.logPlaybackEvent(
+                            method = "Direct Play",
+                            container = playbackResult.container,
+                            resolution = "Original"
+                        )
+
                         // Infer MIME type from container for direct play
                         mimeType = when (playbackResult.container.lowercase(Locale.ROOT)) {
                             "mp4", "m4v" -> MimeTypes.VIDEO_MP4
@@ -509,6 +640,12 @@ class VideoPlayerViewModel @Inject constructor(
                         Log.d("VideoPlayer", transcodingMsg) // Direct log bypass SecureLogger
                         streamUrl = playbackResult.url
                         sessionId = playbackResult.playSessionId ?: java.util.UUID.randomUUID().toString()
+
+                        analytics.logPlaybackEvent(
+                            method = "Transcoding",
+                            container = "HLS/DASH",
+                            resolution = playbackResult.targetResolution
+                        )
 
                         // Detect MIME type from URL - Jellyfin often uses HLS for transcoding
                         val lowerUrl = streamUrl.lowercase(Locale.ROOT)
@@ -806,9 +943,19 @@ class VideoPlayerViewModel @Inject constructor(
                 exoPlayer?.prepare()
                 exoPlayer?.play()
 
-                if (currentPosition > 0) {
-                    exoPlayer?.seekTo(currentPosition)
+                // Use saved position if available (more recent), otherwise use captured position
+                val positionToRestore = maxOf(
+                    currentPosition,
+                    savedPositionBeforeFlush ?: 0L
+                )
+
+                if (positionToRestore > 0) {
+                    exoPlayer?.seekTo(positionToRestore)
+                    SecureLogger.d("VideoPlayer", "Restored position after transcoding fallback: ${positionToRestore}ms")
                 }
+
+                // Clear saved position after successful restore
+                savedPositionBeforeFlush = null
 
                 SecureLogger.d("VideoPlayer", "Transcoding fallback player prepared successfully")
             }
@@ -1045,6 +1192,7 @@ class VideoPlayerViewModel @Inject constructor(
         }
 
         // Start casting from current position, including available subtitles when provided.
+        analytics.logCastEvent(lastCastState?.deviceName ?: "Unknown Device")
         castManager.startCasting(
             mediaItem = mediaItem,
             item = metadata,
@@ -1148,6 +1296,13 @@ class VideoPlayerViewModel @Inject constructor(
      */
     fun releasePlayerImmediate(reportStop: Boolean = true) {
         if (exoPlayer == null) return
+
+        // Save current position before releasing player
+        val currentPos = exoPlayer?.currentPosition ?: 0L
+        if (currentPos > 0) {
+            savedPositionBeforeFlush = currentPos
+            SecureLogger.d("VideoPlayer", "Saved position before player release: ${currentPos}ms")
+        }
 
         SecureLogger.d("VideoPlayer", "Releasing player immediately (reportStop=$reportStop)")
         stopPositionUpdates()
