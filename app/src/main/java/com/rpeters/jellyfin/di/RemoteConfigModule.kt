@@ -35,7 +35,7 @@ object RemoteConfigModule {
     @Provides
     @Singleton
     fun provideRemoteConfigRepository(
-        remoteConfig: FirebaseRemoteConfig
+        remoteConfig: FirebaseRemoteConfig,
     ): RemoteConfigRepository {
         return FirebaseRemoteConfigRepository(remoteConfig)
     }
