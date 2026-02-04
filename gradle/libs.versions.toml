@@ -60,7 +60,9 @@ androidx-rules = { module = "androidx.test:rules", version.ref = "rules" }
 androidx-test-services = { module = "androidx.test.services:test-services", version.ref = "testServices" }
 dagger-hilt-android-testing = { module = "com.google.dagger:hilt-android-testing", version.ref = "hiltAndroidTestingVersion" }
 desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
+firebase-config = { module = "com.google.firebase:firebase-config" }
 google-firebase-ai = { module = "com.google.firebase:firebase-ai" }
+google-firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

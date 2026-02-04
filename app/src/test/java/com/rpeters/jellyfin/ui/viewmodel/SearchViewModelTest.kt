@@ -29,14 +29,20 @@ class SearchViewModelTest {
     @MockK
     private lateinit var searchRepository: JellyfinSearchRepository
 
+    @MockK
+    private lateinit var generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository
+
+    @MockK
+    private lateinit var analyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper
+
     private lateinit var viewModel: SearchViewModel
     private val dispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setup() {
-        MockKAnnotations.init(this)
+        MockKAnnotations.init(this, relaxUnitFun = true)
         Dispatchers.setMain(dispatcher)
-        viewModel = SearchViewModel(searchRepository)
+        viewModel = SearchViewModel(searchRepository, generativeAiRepository, analyticsHelper)
     }
 
     @After

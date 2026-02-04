@@ -33,12 +33,14 @@ class TVEpisodeDetailViewModel @Inject constructor(
     private val mediaRepository: JellyfinMediaRepository,
     private val enhancedPlaybackUtils: EnhancedPlaybackUtils,
     private val generativeAiRepository: GenerativeAiRepository,
+    private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TVEpisodeDetailState())
     val state: StateFlow<TVEpisodeDetailState> = _state.asStateFlow()
 
     fun loadEpisodeDetails(episode: BaseItemDto, seriesInfo: BaseItemDto? = null) {
+        analytics.logUiEvent("TVEpisodeDetail", "view_episode")
         viewModelScope.launch {
             _state.value = _state.value.copy(
                 episode = episode,

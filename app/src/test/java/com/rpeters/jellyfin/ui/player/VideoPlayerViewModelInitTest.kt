@@ -39,6 +39,7 @@ class VideoPlayerViewModelInitTest {
     private lateinit var mockCastManager: CastManager
     private lateinit var mockPlaybackProgressManager: PlaybackProgressManager
     private lateinit var mockEnhancedPlaybackManager: EnhancedPlaybackManager
+    private lateinit var mockAnalyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper
     private lateinit var castStateFlow: MutableStateFlow<CastState>
     private lateinit var playbackProgressFlow: MutableStateFlow<PlaybackProgress>
 
@@ -51,6 +52,7 @@ class VideoPlayerViewModelInitTest {
         mockCastManager = mockk(relaxed = true)
         mockPlaybackProgressManager = mockk(relaxed = true)
         mockEnhancedPlaybackManager = mockk(relaxed = true)
+        mockAnalyticsHelper = mockk(relaxed = true)
 
         // Create flows that CastManager and PlaybackProgressManager will expose
         castStateFlow = MutableStateFlow(CastState())
@@ -58,7 +60,6 @@ class VideoPlayerViewModelInitTest {
             PlaybackProgress(
                 itemId = "",
                 positionMs = 0L,
-                isPlaying = false,
             ),
         )
 
@@ -95,6 +96,7 @@ class VideoPlayerViewModelInitTest {
             castManager = mockCastManager,
             playbackProgressManager = mockPlaybackProgressManager,
             enhancedPlaybackManager = mockEnhancedPlaybackManager,
+            analytics = mockAnalyticsHelper,
         )
 
         // Allow coroutines to process
@@ -121,6 +123,7 @@ class VideoPlayerViewModelInitTest {
             castManager = mockCastManager,
             playbackProgressManager = mockPlaybackProgressManager,
             enhancedPlaybackManager = mockEnhancedPlaybackManager,
+            analytics = mockAnalyticsHelper,
         )
 
         advanceUntilIdle()
@@ -144,6 +147,7 @@ class VideoPlayerViewModelInitTest {
             castManager = mockCastManager,
             playbackProgressManager = mockPlaybackProgressManager,
             enhancedPlaybackManager = mockEnhancedPlaybackManager,
+            analytics = mockAnalyticsHelper,
         )
 
         advanceUntilIdle()

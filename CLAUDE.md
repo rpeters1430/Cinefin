@@ -102,6 +102,8 @@ All data access goes through repositories that wrap the Jellyfin SDK:
 - **JellyfinStreamRepository**: Streaming URLs and playback info
 - **JellyfinSearchRepository**: Search functionality
 - **JellyfinUserRepository**: User preferences and settings
+- **GenerativeAiRepository**: AI-powered features (summaries, recommendations, smart search)
+- **RemoteConfigRepository**: Firebase Remote Config for feature flags and A/B testing
 
 Repositories use the `ApiResult<T>` sealed class pattern for error handling:
 ```kotlin
@@ -117,6 +119,8 @@ Hilt modules are organized in `di/` directory:
 - **Phase4Module**: Provides repositories and managers
 - **AudioModule**: Provides audio playback services
 - **DispatcherModule**: Provides coroutine dispatchers (Main, IO, Default)
+- **AiModule**: Provides AI models with smart Nano/Cloud fallback
+- **RemoteConfigModule**: Provides Firebase Remote Config instance
 
 Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<JellyfinAuthRepository>` in interceptors)
 
@@ -228,6 +232,14 @@ Release builds require signing credentials configured via Gradle properties or e
 
 Set in `gradle.properties` (local dev) or CI environment variables.
 
+### API Keys & Configuration Files
+- **Google AI API Key**: `GOOGLE_AI_API_KEY` in `gradle.properties` or environment variable
+  - Required for cloud-based AI features (Gemini API fallback)
+  - Optional if only using on-device Gemini Nano
+- **Firebase**: Requires `google-services.json` in `app/` directory
+  - Download from Firebase Console (project settings)
+  - Used for Crashlytics, Analytics, Remote Config, App Check
+
 ### State Management Pattern
 ViewModels expose UI state via StateFlow:
 ```kotlin
@@ -246,6 +258,48 @@ val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 - Enable verbose logging: `SecureLogger.enableVerboseLogging = true`
 - **ErrorHandler** for user-facing error messages
 - **Logger** (core/Logger.kt) with file logging support
+- **AnalyticsHelper** (utils/AnalyticsHelper.kt): Privacy-safe Firebase Analytics wrapper
+
+### Generative AI Features
+The app includes AI-powered features using Google's Gemini models with automatic fallback:
+- **Architecture**: Smart backend selection (on-device Nano → cloud API)
+  - **Gemini Nano**: On-device AI for privacy and speed (when available)
+  - **Gemini 2.5 Flash**: Cloud API fallback for all devices
+  - Automatic download and status tracking for Nano model
+- **GenerativeAiRepository** (data/repository/GenerativeAiRepository.kt): Central AI functionality
+  - `generateResponse()`: Chat with AI assistant
+  - `generateSummary()`: TL;DR summaries of movie/show overviews
+  - `analyzeViewingHabits()`: Mood analysis from watch history
+  - `generateRecommendations()`: Personalized content suggestions
+  - `smartSearchQuery()`: Natural language to search keywords
+- **AiModule** (di/AiModule.kt): Configures AI models and handles Nano availability
+  - Provides `@Named("primary-model")`: Nano with cloud fallback
+  - Provides `@Named("pro-model")`: Gemini 2.5 Flash for complex reasoning
+  - Background download tracking with progress updates
+  - Error handling for 606 (config not ready), 601 (quota), 605 (download failed)
+- **Remote Config Integration**: Feature flags and prompt customization
+  - `enable_ai_features`: Toggle AI features on/off remotely
+  - `ai_force_pro_model`: Force cloud model (Turbo Mode)
+  - `ai_primary_model_name`, `ai_pro_model_name`: Customize model versions
+  - `ai_chat_system_prompt`, `ai_summary_prompt_template`: Customize prompts
+  - `ai_history_context_size`, `ai_recommendation_count`: Tune behavior
+- **API Key Configuration**: Google AI API key for cloud fallback
+  - Set in `gradle.properties` as `GOOGLE_AI_API_KEY=your_key_here`
+  - Or via environment variable `GOOGLE_AI_API_KEY`
+  - Falls back to empty string if not provided (on-device only)
+
+### Firebase Integration
+- **Firebase Crashlytics**: Crash reporting for production debugging
+- **Firebase Performance Monitoring**: Track app performance metrics
+- **Firebase App Check**: Protect backend from abuse (Play Integrity + debug provider)
+- **Firebase Remote Config**: Feature flags, A/B testing, prompt customization
+  - **RemoteConfigRepository**: Interface for feature flags
+  - Default fetch interval: 12 hours (configurable)
+  - Use for gradual rollouts and emergency kill switches
+- **Firebase Analytics**: Privacy-safe usage analytics via AnalyticsHelper
+  - No PII collection (media titles scrubbed)
+  - Tracks AI usage, playback methods, cast sessions, UI interactions
+- **Configuration**: Requires `google-services.json` in `app/` directory
 
 ## Material 3 Design System
 
@@ -314,14 +368,16 @@ Example: `feat: add movie detail screen`, `fix: prevent crash on empty library`
 - **Root Compose phone app**: `ui/JellyfinApp.kt`
 - **Root Compose TV app**: `ui/tv/TvJellyfinApp.kt`
 - **Main home screen**: `ui/screens/HomeScreen.kt` (large file ~40KB with carousel)
-- **Hilt modules**: `di/` directory
-- **Repositories**: `data/repository/`
+- **Hilt modules**: `di/` directory (NetworkModule, Phase4Module, AiModule, RemoteConfigModule, etc.)
+- **Repositories**: `data/repository/` (includes GenerativeAiRepository, RemoteConfigRepository)
+- **AI infrastructure**: `data/ai/` (AiBackendStateHolder, AiTextModel interface)
 - **ViewModels**: `ui/viewmodel/`
 - **Reusable components**: `ui/components/`
 - **Navigation**: `ui/navigation/`
 - **Theme**: `ui/theme/`
 - **Network layer**: `network/` directory
-- **Utilities**: `utils/` directory
+- **Utilities**: `utils/` directory (includes AnalyticsHelper, SecureLogger)
+- **Firebase config**: `app/google-services.json` (not in version control)
 
 ## Known Limitations
 
@@ -349,6 +405,8 @@ Refer to CURRENT_STATUS.md for detailed feature status and ROADMAP.md for roadma
 - **Windows builds**: Always use `./gradlew.bat` or `gradlew.bat` instead of `./gradlew` in all commands
 - **Missing SDK**: Run `./setup.sh` (Linux/macOS) to install Android SDK and accept licenses
 - **Release signing errors**: Ensure signing credentials are configured in `gradle.properties` or environment variables
+- **Firebase/Google Services plugin errors**: Ensure `google-services.json` exists in `app/` directory
+- **AI features not working**: Set `GOOGLE_AI_API_KEY` in `gradle.properties` for cloud fallback
 
 ### Logging & Debugging
 - Enable verbose logging: `SecureLogger.enableVerboseLogging = true` (default is false to reduce spam)
@@ -360,12 +418,19 @@ Refer to CURRENT_STATUS.md for detailed feature status and ROADMAP.md for roadma
   # Filter for Jellyfin logs only
   adb logcat -v time | grep Jellyfin
 
+  # Filter for AI-related logs
+  adb logcat -v time | grep -E "GenerativeAi|AiModule"
+
   # Clear logcat before testing
   adb logcat -c
   ```
 - Debug builds include LeakCanary 2.14 for memory leak detection
 - Network traffic: Check `NetworkOptimizer` for StrictMode configuration
 - Main thread monitoring: `MainThreadMonitor` tracks main thread impact in debug builds
+- **Firebase Debugging**:
+  - Crashlytics: View crash reports in Firebase Console
+  - Remote Config: Use debug mode to fetch configs immediately (not cached)
+  - Analytics: Enable debug logging with `adb shell setprop log.tag.FA VERBOSE`
 
 ### Testing Issues
 - **Flow mocking failures**: Use `coEvery` instead of `every` for Flow properties

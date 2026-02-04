@@ -123,6 +123,7 @@ class MainAppViewModel @Inject constructor(
     @UnstableApi private val castManager: CastManager,
     private val dispatchers: DispatcherProvider,
     private val generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository,
+    private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
 ) : ViewModel() {
     companion object {
         // Pagination constants
@@ -227,6 +228,10 @@ class MainAppViewModel @Inject constructor(
     fun loadInitialData(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             if (!ensureValidToken()) return@launch
+
+            if (forceRefresh) {
+                analytics.logUiEvent("Home", "refresh_data")
+            }
 
             // Prevent concurrent executions that cause frame drops
             val currentState = _appState.value
@@ -394,6 +399,7 @@ class MainAppViewModel @Inject constructor(
 
     fun search(query: String) {
         viewModelScope.launch {
+            analytics.logUiEvent("Search", "perform_search")
             _appState.value = _appState.value.copy(
                 searchQuery = query,
                 isSearching = true,
@@ -600,6 +606,7 @@ class MainAppViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
+            analytics.logUiEvent("Account", "logout")
             userRepository.logout()
             credentialManager.clearCredentials()
         }

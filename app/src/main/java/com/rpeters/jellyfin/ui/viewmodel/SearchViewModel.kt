@@ -52,6 +52,7 @@ data class SearchAiState(
 class SearchViewModel @Inject constructor(
     private val searchRepository: JellyfinSearchRepository,
     private val generativeAiRepository: GenerativeAiRepository,
+    private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
 ) : ViewModel() {
 
     private val _searchState = MutableStateFlow(SearchState())
@@ -128,6 +129,8 @@ class SearchViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Performing search for: $query")
             }
+            
+            analytics.logUiEvent("Search", "perform_search")
 
             _searchState.value = _searchState.value.copy(
                 isSearching = true,
@@ -175,6 +178,7 @@ class SearchViewModel @Inject constructor(
      */
     fun clearSearch() {
         searchJob?.cancel()
+        analytics.logUiEvent("Search", "clear_search")
 
         _searchState.value = _searchState.value.copy(
             searchQuery = "",
@@ -201,6 +205,7 @@ class SearchViewModel @Inject constructor(
             currentTypes.add(contentType)
         }
 
+        analytics.logUiEvent("Search", "toggle_filter_${contentType.name}")
         _searchState.value = _searchState.value.copy(selectedContentTypes = currentTypes)
 
         // Re-search if we have a query

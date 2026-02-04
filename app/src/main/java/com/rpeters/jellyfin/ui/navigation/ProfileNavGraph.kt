@@ -15,6 +15,7 @@ import com.rpeters.jellyfin.ui.screens.ProfileScreen
 import com.rpeters.jellyfin.ui.screens.SearchScreen
 import com.rpeters.jellyfin.ui.screens.SettingsRecommendationOptions
 import com.rpeters.jellyfin.ui.screens.SettingsScreen
+import com.rpeters.jellyfin.ui.screens.TranscodingDiagnosticsScreen
 import com.rpeters.jellyfin.ui.screens.settings.AppearanceSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.PinningSettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.PrivacySettingsScreen
@@ -157,6 +158,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             onNotificationsSettingsClick = { navController.navigate(Screen.NotificationsSettings.route) },
             onPrivacySettingsClick = { navController.navigate(Screen.PrivacySettings.route) },
             onAccessibilitySettingsClick = { navController.navigate(Screen.AccessibilitySettings.route) },
+            onTranscodingDiagnosticsClick = { navController.navigate(Screen.TranscodingDiagnostics.route) },
         )
     }
 
@@ -216,6 +218,12 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
 
     composable(Screen.SubtitleSettings.route) {
         SubtitleSettingsScreen(
+            onNavigateBack = { navController.popBackStack() },
+        )
+    }
+
+    composable(Screen.TranscodingDiagnostics.route) {
+        TranscodingDiagnosticsScreen(
             onNavigateBack = { navController.popBackStack() },
         )
     }

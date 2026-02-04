@@ -11,6 +11,7 @@ import com.google.mlkit.genai.common.GenAiException
 import com.google.mlkit.genai.prompt.Generation
 import com.rpeters.jellyfin.data.ai.AiBackendStateHolder
 import com.rpeters.jellyfin.data.ai.AiTextModel
+import com.rpeters.jellyfin.data.repository.RemoteConfigRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -58,9 +59,15 @@ object AiModule {
     @Provides
     @Singleton
     @Named("primary-model")
-    fun providePrimaryModel(stateHolder: AiBackendStateHolder): AiTextModel {
+    fun providePrimaryModel(
+        stateHolder: AiBackendStateHolder,
+        remoteConfig: RemoteConfigRepository
+    ): AiTextModel {
+        val modelName = remoteConfig.getString("ai_primary_model_name").takeIf { it.isNotBlank() } 
+            ?: "gemini-2.5-flash"
+            
         val nanoClient = createNanoClient()
-        val cloud = FirebaseAiTextModel(createCloudFlashModel())
+        val cloud = FirebaseAiTextModel(createCloudModel(modelName, temperature = 0.7f, maxTokens = 2048))
         val nano = MlKitNanoTextModel(nanoClient, stateHolder)
 
         // Store instances for retry functionality
@@ -77,7 +84,7 @@ object AiModule {
                 errorCode = result.errorCode,
             )
             if (!result.isAvailable) {
-                Log.d("AiModule", "Gemini Nano unavailable, using cloud API: ${result.statusMessage}")
+                Log.d("AiModule", "Gemini Nano unavailable, using cloud API ($modelName): ${result.statusMessage}")
             }
         }
 
@@ -120,19 +127,16 @@ object AiModule {
     @Provides
     @Singleton
     @Named("pro-model")
-    fun provideProModel(): AiTextModel {
-        // Note: API key should be configured in Firebase project settings
-        // or via google-services.json for cloud models
+    fun provideProModel(remoteConfig: RemoteConfigRepository): AiTextModel {
+        val modelName = remoteConfig.getString("ai_pro_model_name").takeIf { it.isNotBlank() } 
+            ?: "gemini-2.5-flash"
+
         return FirebaseAiTextModel(
-            Firebase.ai.generativeModel(
-                modelName = "gemini-2.5-flash",
-                generationConfig = generationConfig {
-                    temperature = 0.8f
-                    topK = 40
-                    topP = 0.95f
-                    maxOutputTokens = 4096
-                },
-            ),
+            createCloudModel(
+                modelName = modelName,
+                temperature = 0.8f,
+                maxTokens = 4096
+            )
         )
     }
 
@@ -140,16 +144,18 @@ object AiModule {
         return Generation.getClient()
     }
 
-    private fun createCloudFlashModel(): GenerativeModel {
-        // Note: API key should be configured in Firebase project settings
-        // or via google-services.json for cloud models
+    private fun createCloudModel(
+        modelName: String,
+        temperature: Float,
+        maxTokens: Int
+    ): GenerativeModel {
         return Firebase.ai.generativeModel(
-            modelName = "gemini-2.5-flash",
+            modelName = modelName,
             generationConfig = generationConfig {
-                temperature = 0.7f
+                this.temperature = temperature
                 topK = 40
                 topP = 0.95f
-                maxOutputTokens = 2048
+                maxOutputTokens = maxTokens
             },
         )
     }

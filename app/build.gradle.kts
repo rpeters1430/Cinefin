@@ -21,8 +21,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26
         targetSdk = 35
-        versionCode = 32
-        versionName = "14.00"
+        versionCode = 34
+        versionName = "14.02"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -191,8 +191,8 @@ dependencies {
     implementation(libs.firebase.appcheck.playintegrity)
     implementation(libs.firebase.ai) // Unified SDK with Gemini Nano + Google AI support
     implementation(libs.google.mlkit.genai.prompt) // ML Kit GenAI Prompt API (on-device Gemini Nano)
-    implementation("com.google.firebase:firebase-config")
-    implementation("com.google.firebase:firebase-analytics")
+    implementation(libs.firebase.config)
+    implementation(libs.google.firebase.analytics)
 
     // Hilt
     implementation(libs.dagger.hilt.android)

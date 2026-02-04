@@ -82,6 +82,12 @@ class MainAppViewModelLibraryLoadTest {
     private lateinit var castManager: CastManager
 
     @MockK
+    private lateinit var generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository
+
+    @MockK
+    private lateinit var analyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper
+
+    @MockK
     private lateinit var context: Context
 
     private lateinit var viewModel: MainAppViewModel
@@ -127,6 +133,8 @@ class MainAppViewModelLibraryLoadTest {
             credentialManager = credentialManager,
             castManager = castManager,
             dispatchers = testDispatchers,
+            generativeAiRepository = generativeAiRepository,
+            analytics = analyticsHelper,
         )
     }
 
