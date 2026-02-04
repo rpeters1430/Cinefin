@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
-import androidx.mediarouter.media.MediaRouter
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -14,6 +13,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.mediarouter.media.MediaRouter
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -268,7 +268,7 @@ class VideoPlayerViewModel @Inject constructor(
                     // Check retry limits to prevent infinite loop on HLS streams that don't support seeking
                     val timeSinceLastAttempt = currentTime - lastRestoreAttemptTime
                     val canAttemptRestore = positionRestoreAttempts < maxRestoreAttempts &&
-                                          timeSinceLastAttempt > restoreAttemptCooldownMs
+                        timeSinceLastAttempt > restoreAttemptCooldownMs
 
                     if (canAttemptRestore) {
                         positionRestoreAttempts++
@@ -609,11 +609,11 @@ class VideoPlayerViewModel @Inject constructor(
                         Log.d("VideoPlayer", directPlayMsg) // Direct log bypass SecureLogger
                         streamUrl = playbackResult.url
                         sessionId = playbackResult.playSessionId ?: java.util.UUID.randomUUID().toString()
-                        
+
                         analytics.logPlaybackEvent(
                             method = "Direct Play",
                             container = playbackResult.container,
-                            resolution = "Original"
+                            resolution = "Original",
                         )
 
                         // Infer MIME type from container for direct play
@@ -644,7 +644,7 @@ class VideoPlayerViewModel @Inject constructor(
                         analytics.logPlaybackEvent(
                             method = "Transcoding",
                             container = "HLS/DASH",
-                            resolution = playbackResult.targetResolution
+                            resolution = playbackResult.targetResolution,
                         )
 
                         // Detect MIME type from URL - Jellyfin often uses HLS for transcoding
@@ -946,7 +946,7 @@ class VideoPlayerViewModel @Inject constructor(
                 // Use saved position if available (more recent), otherwise use captured position
                 val positionToRestore = maxOf(
                     currentPosition,
-                    savedPositionBeforeFlush ?: 0L
+                    savedPositionBeforeFlush ?: 0L,
                 )
 
                 if (positionToRestore > 0) {

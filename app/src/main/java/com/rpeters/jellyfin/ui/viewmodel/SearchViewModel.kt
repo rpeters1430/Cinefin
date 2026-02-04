@@ -129,7 +129,7 @@ class SearchViewModel @Inject constructor(
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Performing search for: $query")
             }
-            
+
             analytics.logUiEvent("Search", "perform_search")
 
             _searchState.value = _searchState.value.copy(
