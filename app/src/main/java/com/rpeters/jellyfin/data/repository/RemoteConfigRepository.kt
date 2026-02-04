@@ -17,7 +17,7 @@ interface RemoteConfigRepository {
 
 @Singleton
 class FirebaseRemoteConfigRepository @Inject constructor(
-    private val remoteConfig: FirebaseRemoteConfig
+    private val remoteConfig: FirebaseRemoteConfig,
 ) : RemoteConfigRepository {
 
     override suspend fun fetchAndActivate(): Boolean {

@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
-import android.media.MediaCodecInfo
 import android.media.MediaCodecList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,7 +18,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TranscodingDiagnosticsViewModel @Inject constructor(
-    private val jellyfinRepository: JellyfinRepository
+    private val jellyfinRepository: JellyfinRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
@@ -39,7 +38,7 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
         val container: String,
         val resolution: String,
         val needsTranscoding: Boolean,
-        val transcodingReasons: List<String>
+        val transcodingReasons: List<String>,
     )
 
     fun loadLibraryVideos() {
@@ -49,12 +48,12 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
             // Get all movie and episode items
             val movieResult = jellyfinRepository.getLibraryItems(
                 itemTypes = "Movie",
-                limit = 500
+                limit = 500,
             )
 
             val episodeResult = jellyfinRepository.getLibraryItems(
                 itemTypes = "Episode",
-                limit = 500
+                limit = 500,
             )
 
             val allVideos = mutableListOf<BaseItemDto>()
@@ -89,7 +88,7 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
                 analyzeVideo(item)
             }.sortedWith(
                 compareByDescending<VideoAnalysis> { it.needsTranscoding }
-                    .thenBy { it.name }
+                    .thenBy { it.name },
             )
 
             _uiState.value = UiState.Success(analyses)
@@ -148,7 +147,7 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
             container = container,
             resolution = resolution,
             needsTranscoding = reasons.isNotEmpty(),
-            transcodingReasons = reasons
+            transcodingReasons = reasons,
         )
     }
 
@@ -158,19 +157,20 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
 
         return when {
             height == null || width == null -> "Unknown"
-            height >= 2160 -> "4K (${width}x${height})"
-            height >= 1440 -> "1440p (${width}x${height})"
-            height >= 1080 -> "1080p (${width}x${height})"
-            height >= 720 -> "720p (${width}x${height})"
-            else -> "${width}x${height}"
+            height >= 2160 -> "4K (${width}x$height)"
+            height >= 1440 -> "1440p (${width}x$height)"
+            height >= 1080 -> "1080p (${width}x$height)"
+            height >= 720 -> "720p (${width}x$height)"
+            else -> "${width}x$height"
         }
     }
 
     private fun isVideoCodecSupported(codec: String): Boolean {
         // Check if codec is hardware accelerated on this device
         val supportedCodecs = listOf(
-            "H264", "AVC",  // H.264 - widely supported
-            "MPEG4"         // MPEG-4 Part 2
+            "H264",
+            "AVC", // H.264 - widely supported
+            "MPEG4", // MPEG-4 Part 2
         )
 
         // Check if any supported codec matches
@@ -181,7 +181,7 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
         // Check for H.265/HEVC, VP9, AV1 hardware support
         return when {
             codec.contains("HEVC", ignoreCase = true) ||
-            codec.contains("H265", ignoreCase = true) ->
+                codec.contains("H265", ignoreCase = true) ->
                 isCodecHardwareAccelerated("video/hevc")
 
             codec.contains("VP9", ignoreCase = true) ->
@@ -198,17 +198,21 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
         // AAC is universally supported and preferred
         if (codec.contains("AAC", ignoreCase = true) ||
             codec.contains("MP3", ignoreCase = true) ||
-            codec.contains("OPUS", ignoreCase = true)) {
+            codec.contains("OPUS", ignoreCase = true)
+        ) {
             return true
         }
 
         // These typically need transcoding to AAC
         val needsTranscoding = listOf(
-            "AC3", "EAC3", "E-AC-3",  // Dolby Digital
-            "DTS", "DTS-HD",           // DTS
-            "TRUEHD",                  // Dolby TrueHD
-            "FLAC",                    // Lossless
-            "PCM"                      // Uncompressed
+            "AC3",
+            "EAC3",
+            "E-AC-3", // Dolby Digital
+            "DTS",
+            "DTS-HD", // DTS
+            "TRUEHD", // Dolby TrueHD
+            "FLAC", // Lossless
+            "PCM", // Uncompressed
         )
 
         return !needsTranscoding.any { codec.contains(it, ignoreCase = true) }
@@ -217,10 +221,13 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
     private fun isContainerSupported(container: String): Boolean {
         // Containers that work well with ExoPlayer without remuxing
         val supportedContainers = listOf(
-            "MP4", "M4V",              // MPEG-4
-            "TS", "M2TS",              // MPEG-TS
-            "3GP", "3G2",              // Mobile formats
-            "WEBM"                     // WebM
+            "MP4",
+            "M4V", // MPEG-4
+            "TS",
+            "M2TS", // MPEG-TS
+            "3GP",
+            "3G2", // Mobile formats
+            "WEBM", // WebM
         )
 
         return supportedContainers.any { container.contains(it, ignoreCase = true) }
@@ -234,7 +241,7 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
             // Check if any decoder supports this mime type
             codecInfos.any { codecInfo ->
                 !codecInfo.isEncoder &&
-                codecInfo.supportedTypes.any { it.equals(mimeType, ignoreCase = true) }
+                    codecInfo.supportedTypes.any { it.equals(mimeType, ignoreCase = true) }
             }
         } catch (e: Exception) {
             SecureLogger.e("TranscodingDiagnostics", "Error checking codec support: ${e.message}")

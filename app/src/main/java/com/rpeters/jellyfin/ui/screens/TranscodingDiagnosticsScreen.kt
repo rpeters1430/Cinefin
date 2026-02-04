@@ -19,7 +19,7 @@ import com.rpeters.jellyfin.ui.viewmodel.TranscodingDiagnosticsViewModel
 @Composable
 fun TranscodingDiagnosticsScreen(
     onNavigateBack: () -> Unit,
-    viewModel: TranscodingDiagnosticsViewModel = hiltViewModel()
+    viewModel: TranscodingDiagnosticsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -35,9 +35,9 @@ fun TranscodingDiagnosticsScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
-                }
+                },
             )
-        }
+        },
     ) { paddingValues ->
         when (val state = uiState) {
             is TranscodingDiagnosticsViewModel.UiState.Loading -> {
@@ -45,7 +45,7 @@ fun TranscodingDiagnosticsScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
                 }
@@ -56,7 +56,7 @@ fun TranscodingDiagnosticsScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                         .padding(16.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Text(state.message, style = MaterialTheme.typography.bodyLarge)
                 }
@@ -67,14 +67,14 @@ fun TranscodingDiagnosticsScreen(
                         .fillMaxSize()
                         .padding(paddingValues),
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     // Summary card
                     item {
                         SummaryCard(
                             totalVideos = state.videos.size,
                             directPlayCount = state.videos.count { !it.needsTranscoding },
-                            transcodingCount = state.videos.count { it.needsTranscoding }
+                            transcodingCount = state.videos.count { it.needsTranscoding },
                         )
                     }
 
@@ -97,28 +97,28 @@ fun TranscodingDiagnosticsScreen(
 private fun SummaryCard(
     totalVideos: Int,
     directPlayCount: Int,
-    transcodingCount: Int
+    transcodingCount: Int,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+        ),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 "Library Summary",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
                     Text("Total Videos:", style = MaterialTheme.typography.bodyMedium)
@@ -140,14 +140,14 @@ private fun LegendCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text("Test Scenarios:", style = MaterialTheme.typography.labelLarge)
             Text("• Video Codec: H.264 ✓ | H.265/VP9/AV1 ✗", style = MaterialTheme.typography.bodySmall)
@@ -162,42 +162,44 @@ private fun VideoAnalysisCard(video: TranscodingDiagnosticsViewModel.VideoAnalys
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (video.needsTranscoding)
+            containerColor = if (video.needsTranscoding) {
                 MaterialTheme.colorScheme.errorContainer
-            else
+            } else {
                 MaterialTheme.colorScheme.tertiaryContainer
-        )
+            },
+        ),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             // Title and playback method
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     video.name,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 Surface(
-                    color = if (video.needsTranscoding)
+                    color = if (video.needsTranscoding) {
                         MaterialTheme.colorScheme.error
-                    else
-                        MaterialTheme.colorScheme.tertiary,
-                    shape = MaterialTheme.shapes.small
+                    } else {
+                        MaterialTheme.colorScheme.tertiary
+                    },
+                    shape = MaterialTheme.shapes.small,
                 ) {
                     Text(
                         if (video.needsTranscoding) "TRANSCODE" else "DIRECT PLAY",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onError
+                        color = MaterialTheme.colorScheme.onError,
                     )
                 }
             }
@@ -205,7 +207,7 @@ private fun VideoAnalysisCard(video: TranscodingDiagnosticsViewModel.VideoAnalys
             // Technical specs
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Video:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
@@ -230,11 +232,11 @@ private fun VideoAnalysisCard(video: TranscodingDiagnosticsViewModel.VideoAnalys
                     "Why transcoding needed:",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
                 )
                 video.transcodingReasons.forEach { reason ->
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Text("•", style = MaterialTheme.typography.bodySmall)
                         Text(reason, style = MaterialTheme.typography.bodySmall)
