@@ -61,11 +61,11 @@ object AiModule {
     @Named("primary-model")
     fun providePrimaryModel(
         stateHolder: AiBackendStateHolder,
-        remoteConfig: RemoteConfigRepository
+        remoteConfig: RemoteConfigRepository,
     ): AiTextModel {
-        val modelName = remoteConfig.getString("ai_primary_model_name").takeIf { it.isNotBlank() } 
+        val modelName = remoteConfig.getString("ai_primary_model_name").takeIf { it.isNotBlank() }
             ?: "gemini-2.5-flash"
-            
+
         val nanoClient = createNanoClient()
         val cloud = FirebaseAiTextModel(createCloudModel(modelName, temperature = 0.7f, maxTokens = 2048))
         val nano = MlKitNanoTextModel(nanoClient, stateHolder)
@@ -128,15 +128,15 @@ object AiModule {
     @Singleton
     @Named("pro-model")
     fun provideProModel(remoteConfig: RemoteConfigRepository): AiTextModel {
-        val modelName = remoteConfig.getString("ai_pro_model_name").takeIf { it.isNotBlank() } 
+        val modelName = remoteConfig.getString("ai_pro_model_name").takeIf { it.isNotBlank() }
             ?: "gemini-2.5-flash"
 
         return FirebaseAiTextModel(
             createCloudModel(
                 modelName = modelName,
                 temperature = 0.8f,
-                maxTokens = 4096
-            )
+                maxTokens = 4096,
+            ),
         )
     }
 
@@ -147,7 +147,7 @@ object AiModule {
     private fun createCloudModel(
         modelName: String,
         temperature: Float,
-        maxTokens: Int
+        maxTokens: Int,
     ): GenerativeModel {
         return Firebase.ai.generativeModel(
             modelName = modelName,

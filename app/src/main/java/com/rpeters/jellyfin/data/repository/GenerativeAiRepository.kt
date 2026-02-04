@@ -71,7 +71,7 @@ class GenerativeAiRepository @Inject constructor(
     suspend fun generateResponse(prompt: String): String = withContext(Dispatchers.IO) {
         if (!isAiEnabled()) return@withContext "AI features are currently disabled."
         logModelUsage("generateResponse", usesPrimaryModel = true)
-        
+
         val systemPrompt = remoteConfig.getString("ai_chat_system_prompt").takeIf { it.isNotBlank() }
             ?: """
             You are Jellyfin AI Assistant.
@@ -212,7 +212,7 @@ class GenerativeAiRepository @Inject constructor(
     suspend fun smartSearchQuery(userQuery: String): List<String> = withContext(Dispatchers.IO) {
         if (!isAiEnabled()) return@withContext listOf(userQuery)
         logModelUsage("smartSearchQuery", usesPrimaryModel = false)
-        
+
         val keywordLimit = remoteConfig.getLong("ai_search_keyword_limit").toInt()
         val finalLimit = if (keywordLimit <= 0) 5 else keywordLimit
 
@@ -230,7 +230,7 @@ class GenerativeAiRepository @Inject constructor(
             val text = proModel.generateText(prompt)
             val success = text.isNotBlank()
             analytics.logAiEvent("smart_search", success, getBackendName(false))
-            
+
             if (text.isBlank()) return@withContext listOf(userQuery)
 
             // Simple cleanup to extract the array if the model adds markdown code blocks
@@ -259,10 +259,10 @@ class GenerativeAiRepository @Inject constructor(
     ): String = withContext(Dispatchers.IO) {
         if (!isAiEnabled()) return@withContext "AI recommendations disabled."
         logModelUsage("generateRecommendations", usesPrimaryModel = true)
-        
+
         val contextSize = remoteConfig.getLong("ai_history_context_size").toInt().coerceAtLeast(1)
         val finalContextSize = if (contextSize == 0) 10 else contextSize
-        
+
         val recCount = remoteConfig.getLong("ai_recommendation_count").toInt().coerceAtLeast(1)
         val finalRecCount = if (recCount == 0) 5 else recCount
 
