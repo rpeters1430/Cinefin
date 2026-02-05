@@ -88,6 +88,16 @@ class CastManager @Inject constructor(
             val client = castContext?.sessionManager?.currentCastSession?.remoteMediaClient ?: return
             val status = client.mediaStatus ?: return
 
+            if (status.playerState == MediaStatus.PLAYER_STATE_IDLE &&
+                status.idleReason == MediaStatus.IDLE_REASON_ERROR
+            ) {
+                val errorMessage = buildCastAuthErrorMessage(status)
+                SecureLogger.e("CastManager", "Cast playback failed: $errorMessage")
+                _castState.update { state ->
+                    state.copy(error = errorMessage)
+                }
+            }
+
             if (pendingSeekPosition > 0L) {
                 // Wait for BUFFERING, PLAYING or PAUSED state to ensure media is ready
                 // BUFFERING state indicates the receiver has started loading the media
@@ -571,6 +581,13 @@ class CastManager @Inject constructor(
         val cleanServerUrl = serverUrl.trimEnd('/')
         val cleanPath = path.trimStart('/')
         return "$cleanServerUrl/$cleanPath"
+    }
+
+    private fun buildCastAuthErrorMessage(status: MediaStatus): String {
+        val errorInfo = status.mediaError?.let { " (${it.type})" } ?: ""
+        return "Cast playback failed$errorInfo. " +
+            "If your Jellyfin server requires authentication, casting needs a local proxy or " +
+            "an unauthenticated stream endpoint."
     }
 
     /**
