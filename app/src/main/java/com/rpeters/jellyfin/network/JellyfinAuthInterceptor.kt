@@ -113,6 +113,9 @@ class JellyfinAuthInterceptor @Inject constructor(
             .header(HEADER_USER_AGENT, USER_AGENT)
 
         builder.header(HEADER_AUTHORIZATION, buildAuthorizationHeader(token))
+        if (!token.isNullOrBlank()) {
+            builder.header(HEADER_MEDIA_BROWSER_AUTHORIZATION, buildMediaBrowserAuthorization(token))
+        }
 
         if (!token.isNullOrBlank() && !isAuthenticationRequest(request)) {
             builder.header(HEADER_TOKEN, token)
@@ -143,6 +146,10 @@ class JellyfinAuthInterceptor @Inject constructor(
                 append("\"")
             }
         }
+    }
+
+    private fun buildMediaBrowserAuthorization(token: String): String {
+        return "MediaBrowser Token=\"$token\""
     }
 
     private fun shouldRetry(response: Response): Boolean {
@@ -196,6 +203,7 @@ class JellyfinAuthInterceptor @Inject constructor(
         private const val TAG = "JellyfinAuthInterceptor"
         private const val HEADER_TOKEN = "X-Emby-Token"
         private const val HEADER_AUTHORIZATION = "X-Emby-Authorization"
+        private const val HEADER_MEDIA_BROWSER_AUTHORIZATION = "Authorization"
         private const val HEADER_CONNECTION = "Connection"
         private const val HEADER_ACCEPT_ENCODING = "Accept-Encoding"
         private const val HEADER_USER_AGENT = "User-Agent"

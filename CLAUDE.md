@@ -154,7 +154,7 @@ Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<Jellyf
   - **Why not Jellyfin's official receiver?** The Jellyfin Cast receivers (`F007D354` stable, `6F511C87` unstable) require implementing the full Jellyfin Cast protocol with custom data payloads containing server info, authentication, and media source selection. This app uses a simplified URL-based approach - sending HLS transcoded stream URLs with auth tokens as query parameters - which works reliably with Google's Default Media Receiver without requiring custom protocol implementation.
   - Source: https://github.com/jellyfin/jellyfin-chromecast
 - **Cast preferences**: Stored via CastPreferencesRepository for auto-reconnect
-- **Authentication**: Access tokens appended as query parameters (`api_key=`) for Cast receiver
+- **Authentication**: Cast URLs no longer include tokens; casting protected media requires a local proxy or unauthenticated endpoint
 - **Stream optimization**: Prefers HLS transcoding (`container=hls`) for maximum compatibility with adaptive streaming fallback
 
 ### Image Loading & Performance
