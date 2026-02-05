@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.screens
 
 import android.app.Activity
+import com.rpeters.jellyfin.ui.screens.home.SearchResultsContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues

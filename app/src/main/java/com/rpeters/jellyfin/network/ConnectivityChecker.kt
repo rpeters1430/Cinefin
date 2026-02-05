@@ -58,6 +58,45 @@ class ConnectivityChecker @Inject constructor(
     }
 
     /**
+     * Check if the current connection is metered.
+     */
+    fun isMetered(): Boolean {
+        val network = connectivityManager.activeNetwork ?: return false
+        val caps = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+    }
+
+    /**
+     * Get estimated downstream bandwidth in Kbps.
+     */
+    fun getEstimatedBandwidth(): Int {
+        val network = connectivityManager.activeNetwork ?: return -1
+        val caps = connectivityManager.getNetworkCapabilities(network) ?: return -1
+        return caps.linkDownstreamBandwidthKbps
+    }
+
+    /**
+     * Get a network quality assessment based on type and meteredness.
+     */
+    fun getNetworkQuality(): ConnectivityQuality {
+        val type = getNetworkType()
+        val metered = isMetered()
+        val bandwidth = getEstimatedBandwidth()
+
+        return when {
+            type == NetworkType.ETHERNET -> ConnectivityQuality.EXCELLENT
+            type == NetworkType.WIFI && !metered -> {
+                if (bandwidth > 50000) ConnectivityQuality.EXCELLENT else ConnectivityQuality.GOOD
+            }
+            type == NetworkType.WIFI && metered -> ConnectivityQuality.FAIR
+            type == NetworkType.CELLULAR -> {
+                if (bandwidth > 20000) ConnectivityQuality.GOOD else ConnectivityQuality.FAIR
+            }
+            else -> ConnectivityQuality.POOR
+        }
+    }
+
+    /**
      * Observe network connectivity changes in real-time.
      * Emits true when connected, false when disconnected.
      */
@@ -135,6 +174,16 @@ class ConnectivityChecker @Inject constructor(
             connectivityManager.unregisterNetworkCallback(callback)
         }
     }.distinctUntilChanged()
+}
+
+/**
+ * Enum representing network quality assessment.
+ */
+enum class ConnectivityQuality {
+    EXCELLENT,
+    GOOD,
+    FAIR,
+    POOR,
 }
 
 /**

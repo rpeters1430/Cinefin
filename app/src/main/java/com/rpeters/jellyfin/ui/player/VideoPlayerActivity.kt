@@ -235,6 +235,8 @@ class VideoPlayerActivity : FragmentActivity() {
                             onPlayNextEpisode = playerViewModel::playNextEpisode,
                             onCancelNextEpisode = playerViewModel::cancelNextEpisodeCountdown,
                             onPlayerViewBoundsChanged = { pipSourceRect = it },
+                            onAcceptQualityRecommendation = playerViewModel::acceptQualityRecommendation,
+                            onDismissQualityRecommendation = playerViewModel::dismissQualityRecommendation,
                             exoPlayer = playerViewModel.exoPlayer,
                             supportsPip = isPipSupported(),
                         )

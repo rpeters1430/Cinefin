@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.viewmodel
 import android.media.MediaCodecList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -19,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class TranscodingDiagnosticsViewModel @Inject constructor(
     private val jellyfinRepository: JellyfinRepository,
+    private val deviceCapabilities: DeviceCapabilities,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
@@ -99,55 +101,36 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
         val name = item.name ?: "Unknown"
         val id = item.id.toString()
 
-        // Get media streams
-        val videoStream = item.mediaSources?.firstOrNull()?.mediaStreams?.find {
-            it.type == MediaStreamType.VIDEO
-        }
+        val mediaSource = item.mediaSources?.firstOrNull()
+        val videoStream = mediaSource?.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
+        val audioStream = mediaSource?.mediaStreams?.find { it.type == MediaStreamType.AUDIO }
 
-        val audioStream = item.mediaSources?.firstOrNull()?.mediaStreams?.find {
-            it.type == MediaStreamType.AUDIO
-        }
+        val container = mediaSource?.container
+        val videoCodec = videoStream?.codec
+        val audioCodec = audioStream?.codec
+        val width = videoStream?.width ?: 0
+        val height = videoStream?.height ?: 0
+        val bitrate = mediaSource?.bitrate ?: 0
 
-        val container = item.mediaSources?.firstOrNull()?.container?.uppercase() ?: "UNKNOWN"
-
-        // Extract codec info
-        val videoCodec = videoStream?.codec?.uppercase() ?: "UNKNOWN"
-        val audioCodec = audioStream?.codec?.uppercase() ?: "UNKNOWN"
-        val resolution = buildResolutionString(videoStream)
-
-        // Analyze if transcoding is needed
-        val reasons = mutableListOf<String>()
-
-        // Check video codec support
-        if (!isVideoCodecSupported(videoCodec)) {
-            reasons.add("Video codec '$videoCodec' not hardware supported")
-        }
-
-        // Check audio codec support
-        if (!isAudioCodecSupported(audioCodec)) {
-            reasons.add("Audio codec '$audioCodec' needs transcoding to AAC")
-        }
-
-        // Check container format
-        if (!isContainerSupported(container)) {
-            reasons.add("Container '$container' requires remuxing to MP4/TS")
-        }
-
-        // Check bitrate (if very high)
-        val videoBitrate = videoStream?.bitRate
-        if (videoBitrate != null && videoBitrate > 80_000_000) { // > 80 Mbps
-            reasons.add("Very high bitrate (${videoBitrate / 1_000_000}Mbps) may need transcoding")
-        }
+        // Use the central DeviceCapabilities for analysis
+        val analysis = deviceCapabilities.analyzeDirectPlayCompatibility(
+            container = container,
+            videoCodec = videoCodec,
+            audioCodec = audioCodec,
+            width = width,
+            height = height,
+            bitrate = bitrate
+        )
 
         return VideoAnalysis(
             id = id,
             name = name,
-            videoCodec = videoCodec,
-            audioCodec = audioCodec,
-            container = container,
-            resolution = resolution,
-            needsTranscoding = reasons.isNotEmpty(),
-            transcodingReasons = reasons,
+            videoCodec = videoCodec?.uppercase() ?: "UNKNOWN",
+            audioCodec = audioCodec?.uppercase() ?: "UNKNOWN",
+            container = container?.uppercase() ?: "UNKNOWN",
+            resolution = buildResolutionString(videoStream),
+            needsTranscoding = !analysis.canDirectPlay,
+            transcodingReasons = analysis.issues,
         )
     }
 
@@ -162,90 +145,6 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
             height >= 1080 -> "1080p (${width}x$height)"
             height >= 720 -> "720p (${width}x$height)"
             else -> "${width}x$height"
-        }
-    }
-
-    private fun isVideoCodecSupported(codec: String): Boolean {
-        // Check if codec is hardware accelerated on this device
-        val supportedCodecs = listOf(
-            "H264",
-            "AVC", // H.264 - widely supported
-            "MPEG4", // MPEG-4 Part 2
-        )
-
-        // Check if any supported codec matches
-        if (supportedCodecs.any { codec.contains(it, ignoreCase = true) }) {
-            return true
-        }
-
-        // Check for H.265/HEVC, VP9, AV1 hardware support
-        return when {
-            codec.contains("HEVC", ignoreCase = true) ||
-                codec.contains("H265", ignoreCase = true) ->
-                isCodecHardwareAccelerated("video/hevc")
-
-            codec.contains("VP9", ignoreCase = true) ->
-                isCodecHardwareAccelerated("video/x-vnd.on2.vp9")
-
-            codec.contains("AV1", ignoreCase = true) ->
-                isCodecHardwareAccelerated("video/av01")
-
-            else -> false
-        }
-    }
-
-    private fun isAudioCodecSupported(codec: String): Boolean {
-        // AAC is universally supported and preferred
-        if (codec.contains("AAC", ignoreCase = true) ||
-            codec.contains("MP3", ignoreCase = true) ||
-            codec.contains("OPUS", ignoreCase = true)
-        ) {
-            return true
-        }
-
-        // These typically need transcoding to AAC
-        val needsTranscoding = listOf(
-            "AC3",
-            "EAC3",
-            "E-AC-3", // Dolby Digital
-            "DTS",
-            "DTS-HD", // DTS
-            "TRUEHD", // Dolby TrueHD
-            "FLAC", // Lossless
-            "PCM", // Uncompressed
-        )
-
-        return !needsTranscoding.any { codec.contains(it, ignoreCase = true) }
-    }
-
-    private fun isContainerSupported(container: String): Boolean {
-        // Containers that work well with ExoPlayer without remuxing
-        val supportedContainers = listOf(
-            "MP4",
-            "M4V", // MPEG-4
-            "TS",
-            "M2TS", // MPEG-TS
-            "3GP",
-            "3G2", // Mobile formats
-            "WEBM", // WebM
-        )
-
-        return supportedContainers.any { container.contains(it, ignoreCase = true) }
-    }
-
-    private fun isCodecHardwareAccelerated(mimeType: String): Boolean {
-        return try {
-            val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
-            val codecInfos = codecList.codecInfos
-
-            // Check if any decoder supports this mime type
-            codecInfos.any { codecInfo ->
-                !codecInfo.isEncoder &&
-                    codecInfo.supportedTypes.any { it.equals(mimeType, ignoreCase = true) }
-            }
-        } catch (e: Exception) {
-            SecureLogger.e("TranscodingDiagnostics", "Error checking codec support: ${e.message}")
-            false
         }
     }
 }

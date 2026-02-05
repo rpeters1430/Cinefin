@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.jellyfin.sdk.model.api.PlayMethod
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -46,6 +47,8 @@ class PlaybackProgressManager @Inject constructor(
     private var lastReportedPosition: Long = 0L
     private var lastStateUpdateTime: Long = 0L
     private var sessionId: String = ""
+    private var mediaSourceId: String? = null
+    private var playMethod: PlayMethod = PlayMethod.DIRECT_PLAY
     private var hasReportedStart: Boolean = false
 
     companion object {
@@ -59,10 +62,14 @@ class PlaybackProgressManager @Inject constructor(
         itemId: String,
         scope: CoroutineScope,
         sessionId: String = java.util.UUID.randomUUID().toString(),
+        mediaSourceId: String? = null,
+        playMethod: PlayMethod = PlayMethod.DIRECT_PLAY,
     ) {
         // Don't store the scope - prevents memory leak
         this.currentItemId = itemId
         this.sessionId = sessionId
+        this.mediaSourceId = mediaSourceId
+        this.playMethod = playMethod
         this.hasReportedStart = false
         this.lastReportedPosition = 0L
 
@@ -77,7 +84,7 @@ class PlaybackProgressManager @Inject constructor(
         startProgressSync(scope)
 
         if (BuildConfig.DEBUG) {
-            Log.d("PlaybackProgressManager", "Started tracking for item: $itemId")
+            Log.d("PlaybackProgressManager", "Started tracking for item: $itemId [Method: $playMethod, Source: $mediaSourceId]")
         }
     }
 
@@ -257,15 +264,17 @@ class PlaybackProgressManager @Inject constructor(
         if (currentItemId.isEmpty()) return
         try {
             val ticks = positionMs.toTicks()
-            when (
-                val result = userRepository.reportPlaybackProgress(
-                    itemId = currentItemId,
-                    sessionId = sessionId,
-                    positionTicks = ticks,
-                    isPaused = false,
-                    canSeek = durationMs > 0,
-                )
-            ) {
+            val result = userRepository.reportPlaybackProgress(
+                itemId = currentItemId,
+                sessionId = sessionId,
+                positionTicks = ticks,
+                mediaSourceId = mediaSourceId,
+                playMethod = playMethod,
+                isPaused = false,
+                canSeek = durationMs > 0,
+            )
+
+            when (result) {
                 is ApiResult.Success -> {
                     _playbackProgress.update {
                         it.copy(
@@ -275,20 +284,30 @@ class PlaybackProgressManager @Inject constructor(
                     if (BuildConfig.DEBUG) {
                         Log.d(
                             "PlaybackProgressManager",
-                            "Reported progress at ${positionMs}ms for $currentItemId",
+                            "Reported progress at ${positionMs}ms for $currentItemId [Method: $playMethod]",
                         )
                     }
                 }
                 is ApiResult.Error -> {
                     Log.e(
                         "PlaybackProgressManager",
-                        "Failed to report progress: ${result.message}",
+                        "Failed to report progress: ${result.message} (Type: ${result.errorType})",
                     )
+                    
+                    // If server returns 404 or Unauthorized, the session might have timed out
+                    // Re-report start to establish a new session
+                    if (result.errorType == com.rpeters.jellyfin.data.repository.common.ErrorType.NOT_FOUND ||
+                        result.errorType == com.rpeters.jellyfin.data.repository.common.ErrorType.UNAUTHORIZED) {
+                        Log.w("PlaybackProgressManager", "Session $sessionId timed out or not found, re-reporting start")
+                        reportPlaybackStart(positionMs, durationMs)
+                    }
                 }
                 else -> Unit
             }
         } catch (e: CancellationException) {
             throw e
+        } catch (e: Exception) {
+            Log.e("PlaybackProgressManager", "Unexpected error reporting progress: ${e.message}")
         }
     }
 
@@ -300,6 +319,8 @@ class PlaybackProgressManager @Inject constructor(
                 itemId = currentItemId,
                 sessionId = sessionId,
                 positionTicks = ticks,
+                mediaSourceId = mediaSourceId,
+                playMethod = playMethod,
                 isPaused = false,
                 canSeek = durationMs > 0,
             )
@@ -309,7 +330,7 @@ class PlaybackProgressManager @Inject constructor(
                     "Failed to report playback start: ${result.message}",
                 )
             } else if (BuildConfig.DEBUG) {
-                Log.d("PlaybackProgressManager", "Reported playback start for: $currentItemId")
+                Log.d("PlaybackProgressManager", "Reported playback start for: $currentItemId [Method: $playMethod]")
             }
         } catch (e: CancellationException) {
             throw e
@@ -324,6 +345,7 @@ class PlaybackProgressManager @Inject constructor(
                 itemId = currentItemId,
                 sessionId = sessionId,
                 positionTicks = ticks,
+                mediaSourceId = mediaSourceId,
                 failed = false,
             )
             if (result is ApiResult.Error) {

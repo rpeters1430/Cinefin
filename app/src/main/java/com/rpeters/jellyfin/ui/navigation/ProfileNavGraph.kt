@@ -169,11 +169,8 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
     }
 
     composable(Screen.PlaybackSettings.route) {
-        SettingsSectionScreen(
-            titleRes = R.string.settings_playback_title,
-            descriptionRes = R.string.settings_playback_description,
-            optionRes = SettingsRecommendationOptions.playback,
-            onNavigateBack = { navController.popBackStack() },
+        com.rpeters.jellyfin.ui.screens.settings.PlaybackSettingsScreen(
+            onBackClick = { navController.popBackStack() },
         )
     }
 

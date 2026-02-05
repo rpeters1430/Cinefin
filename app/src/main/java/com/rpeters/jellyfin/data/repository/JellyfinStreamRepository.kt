@@ -2,6 +2,8 @@ package com.rpeters.jellyfin.data.repository
 
 import android.util.Log
 import com.rpeters.jellyfin.data.DeviceCapabilities
+import com.rpeters.jellyfin.network.ConnectivityChecker
+import com.rpeters.jellyfin.network.ConnectivityQuality
 import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -18,6 +20,7 @@ import javax.inject.Singleton
 class JellyfinStreamRepository @Inject constructor(
     private val authRepository: JellyfinAuthRepository,
     private val deviceCapabilities: DeviceCapabilities,
+    private val connectivityChecker: ConnectivityChecker,
 ) {
     companion object {
         // Stream quality constants
@@ -199,6 +202,9 @@ class JellyfinStreamRepository @Inject constructor(
         container: String = DEFAULT_CONTAINER,
         mediaSourceId: String? = null,
         playSessionId: String? = null,
+        audioStreamIndex: Int? = null,
+        subtitleStreamIndex: Int? = null,
+        maxAudioChannels: Int = DEFAULT_MAX_AUDIO_CHANNELS,
         allowAudioStreamCopy: Boolean = true,
     ): String? {
         val server = authRepository.getCurrentServer() ?: return null
@@ -231,11 +237,16 @@ class JellyfinStreamRepository @Inject constructor(
             params.add("VideoCodec=$videoCodec")
             params.add("AudioCodec=$audioCodec")
             params.add("Container=$container")
-            params.add("TranscodingMaxAudioChannels=$DEFAULT_MAX_AUDIO_CHANNELS")
+            params.add("TranscodingMaxAudioChannels=$maxAudioChannels")
             params.add("BreakOnNonKeyFrames=true")
             // Allow Direct Stream - keep video quality, only transcode audio if needed
             params.add("AllowVideoStreamCopy=true")
             params.add("AllowAudioStreamCopy=$allowAudioStreamCopy")
+            
+            // Add stream indices for multilingual content
+            audioStreamIndex?.let { params.add("AudioStreamIndex=$it") }
+            subtitleStreamIndex?.let { params.add("SubtitleStreamIndex=$it") }
+            
             // Add playback identifiers when available so the server can apply session-specific settings.
             mediaSourceId?.let { params.add("MediaSourceId=$it") }
             playSessionId?.let { params.add("PlaySessionId=$it") }
@@ -470,15 +481,8 @@ class JellyfinStreamRepository @Inject constructor(
     /**
      * Assess current network quality for adaptive streaming
      */
-    private fun assessNetworkQuality(): NetworkQuality {
-        // Use the same network detection as JellyfinRepository for consistency
-        return try {
-            // We need to inject Context properly, but for now use a more reasonable default
-            // Most modern devices on WiFi should get HIGH quality
-            NetworkQuality.HIGH // Assume good network by default for better quality
-        } catch (e: CancellationException) {
-            throw e
-        }
+    private fun assessNetworkQuality(): ConnectivityQuality {
+        return connectivityChecker.getNetworkQuality()
     }
 
     /**
@@ -532,7 +536,7 @@ class JellyfinStreamRepository @Inject constructor(
      * Get adaptive quality parameters based on network and device capabilities
      */
     private fun getAdaptiveQualityParams(
-        networkQuality: NetworkQuality,
+        networkQuality: ConnectivityQuality,
         capabilities: com.rpeters.jellyfin.data.DirectPlayCapabilities,
     ): AdaptiveQualityParams {
         val deviceMaxBitrate = capabilities.maxBitrate
@@ -540,27 +544,36 @@ class JellyfinStreamRepository @Inject constructor(
         val deviceMaxHeight = capabilities.maxResolution.second
 
         return when (networkQuality) {
-            NetworkQuality.HIGH -> {
+            ConnectivityQuality.EXCELLENT -> {
                 AdaptiveQualityParams(
-                    maxBitrate = minOf(deviceMaxBitrate, 40_000_000), // 40 Mbps max for high quality
+                    maxBitrate = minOf(deviceMaxBitrate, 120_000_000), // 120 Mbps for excellent
                     maxWidth = minOf(deviceMaxWidth, 3840), // Cap at 4K
                     maxHeight = minOf(deviceMaxHeight, 2160), // Cap at 4K
+                    maxFramerate = 60,
+                    maxAudioChannels = 8, // 7.1 surround
+                )
+            }
+            ConnectivityQuality.GOOD -> {
+                AdaptiveQualityParams(
+                    maxBitrate = minOf(deviceMaxBitrate, 40_000_000), // 40 Mbps for good
+                    maxWidth = minOf(deviceMaxWidth, 1920), // Cap at 1080p
+                    maxHeight = minOf(deviceMaxHeight, 1080), // Cap at 1080p
                     maxFramerate = 60,
                     maxAudioChannels = 6, // 5.1 surround
                 )
             }
-            NetworkQuality.MEDIUM -> {
+            ConnectivityQuality.FAIR -> {
                 AdaptiveQualityParams(
-                    maxBitrate = minOf(deviceMaxBitrate, 20_000_000), // 20 Mbps max for medium quality
+                    maxBitrate = minOf(deviceMaxBitrate, 15_000_000), // 15 Mbps for fair
                     maxWidth = minOf(deviceMaxWidth, 1920), // Cap at 1080p
                     maxHeight = minOf(deviceMaxHeight, 1080), // Cap at 1080p
                     maxFramerate = 30,
                     maxAudioChannels = 2, // Stereo
                 )
             }
-            NetworkQuality.LOW -> {
+            ConnectivityQuality.POOR -> {
                 AdaptiveQualityParams(
-                    maxBitrate = minOf(deviceMaxBitrate, 8_000_000), // 8 Mbps max for low quality
+                    maxBitrate = minOf(deviceMaxBitrate, 5_000_000), // 5 Mbps for poor
                     maxWidth = minOf(deviceMaxWidth, 1280), // Cap at 720p
                     maxHeight = minOf(deviceMaxHeight, 720), // Cap at 720p
                     maxFramerate = 30,
@@ -569,13 +582,6 @@ class JellyfinStreamRepository @Inject constructor(
             }
         }
     }
-}
-
-/**
- * Network quality assessment
- */
-enum class NetworkQuality {
-    HIGH, MEDIUM, LOW
 }
 
 /**

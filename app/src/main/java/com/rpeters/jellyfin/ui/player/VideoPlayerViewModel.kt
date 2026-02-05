@@ -120,6 +120,8 @@ data class VideoPlayerState(
     val showNextEpisodeCountdown: Boolean = false,
     val nextEpisodeCountdown: Int = 0, // seconds remaining
     val hasEnded: Boolean = false,
+    // Adaptive bitrate quality recommendation
+    val qualityRecommendation: com.rpeters.jellyfin.data.playback.QualityRecommendation? = null,
 )
 
 @UnstableApi
@@ -130,6 +132,7 @@ class VideoPlayerViewModel @Inject constructor(
     private val castManager: CastManager,
     private val playbackProgressManager: PlaybackProgressManager,
     private val enhancedPlaybackManager: com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager,
+    private val adaptiveBitrateMonitor: com.rpeters.jellyfin.data.playback.AdaptiveBitrateMonitor,
     private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
 ) : ViewModel() {
 
@@ -174,6 +177,15 @@ class VideoPlayerViewModel @Inject constructor(
             }
         }
 
+        // Collect adaptive bitrate recommendations
+        viewModelScope.launch {
+            adaptiveBitrateMonitor.qualityRecommendation.collect { recommendation ->
+                _playerState.value = _playerState.value.copy(
+                    qualityRecommendation = recommendation
+                )
+            }
+        }
+
         // Register MediaRouter callback to detect audio route changes
         try {
             val mediaRouter = MediaRouter.getInstance(context)
@@ -190,6 +202,9 @@ class VideoPlayerViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+
+        // Stop adaptive bitrate monitoring
+        adaptiveBitrateMonitor.stopMonitoring()
 
         // Unregister MediaRouter callback
         try {
@@ -313,6 +328,19 @@ class VideoPlayerViewModel @Inject constructor(
 
             if (playbackState == Player.STATE_READY) {
                 startPositionUpdates()
+                // Start adaptive bitrate monitoring
+                val player = exoPlayer
+                if (player != null) {
+                    val currentQuality = _playerState.value.transcodingReason?.let {
+                        com.rpeters.jellyfin.data.preferences.TranscodingQuality.AUTO
+                    } ?: com.rpeters.jellyfin.data.preferences.TranscodingQuality.MAXIMUM
+                    adaptiveBitrateMonitor.startMonitoring(
+                        exoPlayer = player,
+                        scope = viewModelScope,
+                        currentQuality = currentQuality,
+                        isTranscoding = _playerState.value.isTranscoding
+                    )
+                }
             } else if (playbackState == Player.STATE_ENDED) {
                 handlePlaybackEnded()
             }
@@ -329,7 +357,7 @@ class VideoPlayerViewModel @Inject constructor(
         }
 
         override fun onPlayerError(error: PlaybackException) {
-            SecureLogger.e("VideoPlayer", "Error: ${error.message}", error)
+            SecureLogger.e("VideoPlayer", "Error: ${error.message} (Code: ${error.errorCode})", error)
 
             // Save current position before handling error
             val currentPos = exoPlayer?.currentPosition ?: 0L
@@ -338,20 +366,25 @@ class VideoPlayerViewModel @Inject constructor(
                 SecureLogger.d("VideoPlayer", "Saved position before error handling: ${currentPos}ms")
             }
 
-            // If Direct Play failed and we haven't tried transcoding yet, fall back automatically
+            // Fallback logic for Direct Play failures
             if (_playerState.value.isDirectPlaying && !hasAttemptedTranscodingFallback) {
-                val errorMsg = error.message ?: ""
-                val isAudioRendererError = errorMsg.contains("AudioRenderer", ignoreCase = true) ||
-                    errorMsg.contains("audio/eac3", ignoreCase = true) ||
-                    errorMsg.contains("audio/ac3", ignoreCase = true) ||
-                    errorMsg.contains("audio/dts", ignoreCase = true) ||
-                    errorMsg.contains("MediaCodecAudioRenderer", ignoreCase = true)
-                val isRendererError = error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED ||
-                    error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED ||
-                    isAudioRendererError
+                val shouldFallback = when (error.errorCode) {
+                    PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
+                    PlaybackException.ERROR_CODE_DECODING_FAILED,
+                    PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES,
+                    PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
+                    PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED -> true
+                    
+                    // Also check for common audio renderer issues that might not have specific codes
+                    else -> {
+                        val errorMsg = error.message ?: ""
+                        errorMsg.contains("AudioRenderer", ignoreCase = true) ||
+                        errorMsg.contains("MediaCodecAudioRenderer", ignoreCase = true)
+                    }
+                }
 
-                if (isRendererError) {
-                    SecureLogger.d("VideoPlayer", "Direct Play failed with renderer error, falling back to transcoding")
+                if (shouldFallback) {
+                    SecureLogger.d("VideoPlayer", "Direct Play failed with renderer error (${error.errorCode}), falling back to transcoding")
                     _playerState.value = _playerState.value.copy(
                         error = null,
                         isLoading = true,
@@ -498,8 +531,8 @@ class VideoPlayerViewModel @Inject constructor(
         repository.getPlaybackInfo(itemId)
     }
 
-    suspend fun initializePlayer(itemId: String, itemName: String, startPosition: Long, subtitleIndex: Int? = null) {
-        SecureLogger.d("VideoPlayer", "Initializing player for: $itemName, requestedSubtitle: $subtitleIndex")
+    suspend fun initializePlayer(itemId: String, itemName: String, startPosition: Long, subtitleIndex: Int? = null, audioIndex: Int? = null) {
+        SecureLogger.d("VideoPlayer", "Initializing player for: $itemName, requestedSubtitle: $subtitleIndex, requestedAudio: $audioIndex")
 
         // If player already exists for the same item, just seek to position instead of recreating
         if (exoPlayer != null && currentItemId == itemId) {
@@ -595,7 +628,9 @@ class VideoPlayerViewModel @Inject constructor(
 
                 // Use EnhancedPlaybackManager for intelligent playback URL selection
                 val playbackResult = enhancedPlaybackManager.getOptimalPlaybackUrl(
-                    currentItemMetadata ?: throw Exception("Failed to load item metadata"),
+                    item = currentItemMetadata ?: throw Exception("Failed to load item metadata"),
+                    audioStreamIndex = audioIndex,
+                    subtitleStreamIndex = subtitleIndex
                 )
 
                 val streamUrl: String
@@ -681,7 +716,18 @@ class VideoPlayerViewModel @Inject constructor(
 
                 // Set the session ID and start tracking with it
                 playbackSessionId = sessionId
-                playbackProgressManager.startTracking(itemId, viewModelScope, sessionId)
+                val playMethod = when (playbackResult) {
+                    is com.rpeters.jellyfin.data.playback.PlaybackResult.DirectPlay -> org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY
+                    is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> org.jellyfin.sdk.model.api.PlayMethod.TRANSCODE
+                    else -> org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY
+                }
+                playbackProgressManager.startTracking(
+                    itemId = itemId,
+                    scope = viewModelScope,
+                    sessionId = sessionId,
+                    mediaSourceId = currentMediaSourceId,
+                    playMethod = playMethod
+                )
 
                 if (streamUrl.isNullOrEmpty()) {
                     throw Exception("No stream URL available from playback manager")
@@ -847,7 +893,11 @@ class VideoPlayerViewModel @Inject constructor(
             }
 
             // Get forced transcoding URL
-            val playbackResult = enhancedPlaybackManager.getTranscodingPlaybackUrl(metadata)
+            val playbackResult = enhancedPlaybackManager.getTranscodingPlaybackUrl(
+                item = metadata,
+                audioStreamIndex = _playerState.value.selectedAudioTrack?.format?.id?.toIntOrNull(),
+                subtitleStreamIndex = _playerState.value.selectedSubtitleTrack?.format?.id?.toIntOrNull()
+            )
 
             val streamUrl: String
             val mimeType: String?
@@ -890,7 +940,18 @@ class VideoPlayerViewModel @Inject constructor(
             }
 
             playbackSessionId = sessionId
-            playbackProgressManager.startTracking(metadata.id.toString(), viewModelScope, sessionId)
+            val playMethod = when (playbackResult) {
+                is com.rpeters.jellyfin.data.playback.PlaybackResult.DirectPlay -> org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY
+                is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> org.jellyfin.sdk.model.api.PlayMethod.TRANSCODE
+                else -> org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY
+            }
+            playbackProgressManager.startTracking(
+                itemId = metadata.id.toString(),
+                scope = viewModelScope,
+                sessionId = sessionId,
+                mediaSourceId = currentMediaSourceId,
+                playMethod = playMethod
+            )
 
             withContext(Dispatchers.Main) {
                 val renderersFactory = DefaultRenderersFactory(context)
@@ -1052,21 +1113,18 @@ class VideoPlayerViewModel @Inject constructor(
             val subtitleSpecs = mutableListOf<com.rpeters.jellyfin.ui.player.SubtitleSpec>()
             val itemId = item.id.toString()
             val serverUrl = repository.getCurrentServer()?.url ?: return emptyList()
-            val accessToken = repository.getCurrentServer()?.accessToken ?: return emptyList()
 
             val mediaSource = playbackInfo.mediaSources.firstOrNull() ?: return emptyList()
 
             // Extract subtitle streams
             mediaSource.mediaStreams
                 ?.filter { stream -> stream.type == org.jellyfin.sdk.model.api.MediaStreamType.SUBTITLE }
-                ?.filter { stream -> !stream.isExternal } // Only include embedded subtitles
                 ?.forEach { stream ->
                     val codec = stream.codec?.lowercase() ?: return@forEach
                     val language = stream.language ?: "und"
                     val displayTitle = stream.displayTitle ?: stream.title ?: language.uppercase()
 
-                    // Map codec to MIME type - Convert all text formats to VTT for Cast compatibility
-                    // Jellyfin server handles on-the-fly conversion to VTT for these formats
+                    // Map codec to MIME type - Convert all text formats to VTT for compatibility
                     val (mimeType, extension) = when (codec) {
                         "srt", "subrip", "vtt", "webvtt", "ass", "ssa", "ttml" ->
                             MimeTypes.TEXT_VTT to "vtt"
@@ -1074,9 +1132,13 @@ class VideoPlayerViewModel @Inject constructor(
                     }
 
                     if (mimeType != null && extension != null) {
-                        // Build subtitle URL with authentication
-                        // Note: Using query parameter for auth because Cast receiver may not support custom headers
-                        val subtitleUrl = "$serverUrl/Videos/$itemId/${mediaSource.id}/Subtitles/${stream.index}/Stream.$extension?api_key=$accessToken"
+                        // Build subtitle URL WITHOUT api_key in query params
+                        // AuthInterceptor will handle authentication via headers for these server requests
+                        val subtitleUrl = if (stream.isExternal && !stream.deliveryUrl.isNullOrBlank()) {
+                            buildServerUrl(serverUrl, stream.deliveryUrl!!)
+                        } else {
+                            "$serverUrl/Videos/$itemId/${mediaSource.id}/Subtitles/${stream.index}/Stream.$extension"
+                        }
 
                         subtitleSpecs.add(
                             com.rpeters.jellyfin.ui.player.SubtitleSpec(
@@ -1084,11 +1146,11 @@ class VideoPlayerViewModel @Inject constructor(
                                 mimeType = mimeType,
                                 language = language,
                                 label = displayTitle,
-                                isForced = false,
+                                isForced = stream.isForced == true,
                             ),
                         )
 
-                        SecureLogger.d("VideoPlayer", "Added subtitle spec: $displayTitle ($language) - $codec -> $extension")
+                        SecureLogger.d("VideoPlayer", "Added subtitle spec: $displayTitle ($language) - $codec -> $extension [External: ${stream.isExternal}]")
                     }
                 }
 
@@ -1097,6 +1159,15 @@ class VideoPlayerViewModel @Inject constructor(
             SecureLogger.e("VideoPlayer", "Failed to extract subtitle specs", e)
             emptyList()
         }
+    }
+
+    private fun buildServerUrl(serverUrl: String, path: String): String {
+        if (path.startsWith("http://") || path.startsWith("https://")) {
+            return path
+        }
+        val normalizedServer = serverUrl.removeSuffix("/")
+        val normalizedPath = if (path.startsWith("/")) path else "/$path"
+        return normalizedServer + normalizedPath
     }
 
     private suspend fun handleCastState(castState: CastState) {
@@ -1607,6 +1678,27 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun selectAudioTrack(track: TrackInfo) {
         val player = exoPlayer ?: return
+        
+        // If we are transcoding, we need to ask the server to transcode the new track
+        if (_playerState.value.isTranscoding) {
+            val audioIndex = track.format.id?.toIntOrNull()
+            if (audioIndex != null) {
+                SecureLogger.d("VideoPlayer", "Audio track change during transcoding - rebuilding URL for index $audioIndex")
+                viewModelScope.launch {
+                    val currentPos = player.currentPosition
+                    releasePlayer()
+                    initializePlayer(
+                        itemId = currentItemId ?: return@launch,
+                        itemName = currentItemName ?: "",
+                        startPosition = currentPos,
+                        audioIndex = audioIndex,
+                        subtitleIndex = _playerState.value.selectedSubtitleTrack?.format?.id?.toIntOrNull()
+                    )
+                }
+                return
+            }
+        }
+
         val params = player.trackSelectionParameters
         val group = player.currentTracks.groups.getOrNull(track.groupIndex) ?: return
         val override = androidx.media3.common.TrackSelectionOverride(
@@ -1624,6 +1716,27 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun selectSubtitleTrack(track: TrackInfo?) {
         val player = exoPlayer ?: return
+
+        // If we are transcoding and need server-side subtitles, rebuild URL
+        // (This is a simplified check, ideally we'd know if the subtitle requires transcoding)
+        if (_playerState.value.isTranscoding && track != null) {
+            val subIndex = track.format.id?.toIntOrNull()
+            if (subIndex != null) {
+                SecureLogger.d("VideoPlayer", "Subtitle track change during transcoding - rebuilding URL for index $subIndex")
+                viewModelScope.launch {
+                    val currentPos = player.currentPosition
+                    releasePlayer()
+                    initializePlayer(
+                        itemId = currentItemId ?: return@launch,
+                        itemName = currentItemName ?: "",
+                        startPosition = currentPos,
+                        subtitleIndex = subIndex
+                    )
+                }
+                return
+            }
+        }
+
         val params = player.trackSelectionParameters
         val builder = params.buildUpon()
             .clearOverridesOfType(androidx.media3.common.C.TRACK_TYPE_TEXT)
@@ -1780,5 +1893,59 @@ class VideoPlayerViewModel @Inject constructor(
                 startPosition = 0L,
             )
         }
+    }
+
+    /**
+     * Accept the adaptive bitrate quality recommendation and switch to the recommended quality.
+     * This will restart playback at the current position with a lower quality transcoding.
+     */
+    fun acceptQualityRecommendation() {
+        val recommendation = _playerState.value.qualityRecommendation ?: return
+
+        SecureLogger.d(
+            "VideoPlayer",
+            "Accepting quality recommendation: ${recommendation.recommendedQuality} (${recommendation.reason})"
+        )
+
+        analytics.logUiEvent("video_player", "quality_recommendation_accepted")
+
+        // Save current position
+        val currentPosition = exoPlayer?.currentPosition ?: 0L
+        val currentItemId = _playerState.value.itemId
+        val currentItemName = _playerState.value.itemName
+
+        // Clear recommendation
+        adaptiveBitrateMonitor.clearRecommendation()
+
+        // Restart playback with new quality
+        viewModelScope.launch {
+            releasePlayer(reportStop = false)
+            // TODO: Need to set quality preference before reinitializing
+            // For now, the EnhancedPlaybackManager will use the new network quality
+            kotlinx.coroutines.delay(500) // Brief delay for cleanup
+            initializePlayer(
+                itemId = currentItemId,
+                itemName = currentItemName,
+                startPosition = currentPosition,
+            )
+        }
+    }
+
+    /**
+     * Dismiss the quality recommendation without taking action.
+     */
+    fun dismissQualityRecommendation() {
+        val recommendation = _playerState.value.qualityRecommendation
+        if (recommendation != null) {
+            SecureLogger.d(
+                "VideoPlayer",
+                "Dismissing quality recommendation: ${recommendation.recommendedQuality} (${recommendation.reason})"
+            )
+
+            analytics.logUiEvent("video_player", "quality_recommendation_dismissed")
+        }
+
+        adaptiveBitrateMonitor.clearRecommendation()
+        adaptiveBitrateMonitor.resetBufferingTracking()
     }
 }

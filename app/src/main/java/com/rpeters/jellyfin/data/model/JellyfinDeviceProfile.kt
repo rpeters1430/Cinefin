@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.data.model
 
 import android.util.Log
+import com.rpeters.jellyfin.data.DirectPlayCapabilities
 import org.jellyfin.sdk.model.api.*
 
 /**
@@ -9,8 +10,143 @@ import org.jellyfin.sdk.model.api.*
  */
 object JellyfinDeviceProfile {
 
-    fun createAndroidDeviceProfile(): DeviceProfile {
-        return createAndroidDeviceProfile(maxWidth = 1920, maxHeight = 1080)
+    /**
+     * Creates a dynamic Android device profile based on detected hardware capabilities.
+     */
+    fun createAndroidDeviceProfile(capabilities: DirectPlayCapabilities): DeviceProfile {
+        val maxWidth = capabilities.maxResolution.first
+        val maxHeight = capabilities.maxResolution.second
+        
+        Log.d("JellyfinDeviceProfile", "Creating dynamic device profile for ${capabilities.supportedVideoCodecs.size} video and ${capabilities.supportedAudioCodecs.size} audio codecs")
+
+        // 1. Map detected audio codecs to a comma-separated string for DirectPlayProfiles
+        // We include common software-decodable codecs too as they are "safe" for this client
+        val supportedAudioCodecs = capabilities.supportedAudioCodecs.toMutableSet()
+        supportedAudioCodecs.addAll(listOf("aac", "mp3", "flac", "vorbis", "opus", "pcm", "alac"))
+        val audioCodecsStr = supportedAudioCodecs.joinToString(",")
+
+        // 2. Map detected video codecs
+        val videoCodecsStr = capabilities.supportedVideoCodecs.joinToString(",")
+
+        // 3. Define Subtitle Profiles
+        val subtitleProfiles = listOf(
+            SubtitleProfile(format = "srt", method = SubtitleDeliveryMethod.EXTERNAL),
+            SubtitleProfile(format = "vtt", method = SubtitleDeliveryMethod.EXTERNAL),
+            SubtitleProfile(format = "ass", method = SubtitleDeliveryMethod.EXTERNAL),
+            SubtitleProfile(format = "ssa", method = SubtitleDeliveryMethod.EXTERNAL),
+        )
+
+        // 4. Generate Direct Play Profiles for each supported container
+        val directPlayProfiles = capabilities.supportedContainers.map { container ->
+            DirectPlayProfile(
+                container = container,
+                type = DlnaProfileType.VIDEO,
+                videoCodec = videoCodecsStr,
+                audioCodec = audioCodecsStr
+            )
+        } + listOf(
+            // Add explicit audio-only direct play profiles
+            DirectPlayProfile(container = "flac", type = DlnaProfileType.AUDIO, audioCodec = "flac", videoCodec = ""),
+            DirectPlayProfile(container = "mp3", type = DlnaProfileType.AUDIO, audioCodec = "mp3", videoCodec = ""),
+            DirectPlayProfile(container = "ogg", type = DlnaProfileType.AUDIO, audioCodec = "vorbis,opus", videoCodec = ""),
+            DirectPlayProfile(container = "m4a", type = DlnaProfileType.AUDIO, audioCodec = "aac", videoCodec = "")
+        )
+
+        // 5. Generate Codec Profiles with resolution constraints
+        val codecProfiles = mutableListOf<CodecProfile>()
+
+        // Add Video Codec Profiles for detected codecs
+        capabilities.supportedVideoCodecs.forEach { codec ->
+            val conditions = mutableListOf<ProfileCondition>(
+                ProfileCondition(
+                    condition = ProfileConditionType.LESS_THAN_EQUAL,
+                    property = ProfileConditionValue.WIDTH,
+                    value = "$maxWidth",
+                    isRequired = false
+                ),
+                ProfileCondition(
+                    condition = ProfileConditionType.LESS_THAN_EQUAL,
+                    property = ProfileConditionValue.HEIGHT,
+                    value = "$maxHeight",
+                    isRequired = false
+                )
+            )
+
+            // For HEVC/H.265, explicitly declare 10-bit support to enable direct play of Main10 content
+            // Most modern Android devices with hardware HEVC support can decode 10-bit
+            if (codec == "h265" || codec == "hevc") {
+                conditions.add(
+                    ProfileCondition(
+                        condition = ProfileConditionType.LESS_THAN_EQUAL,
+                        property = ProfileConditionValue.VIDEO_BIT_DEPTH,
+                        value = "10",  // Support up to 10-bit color depth
+                        isRequired = false
+                    )
+                )
+            }
+
+            codecProfiles.add(
+                CodecProfile(
+                    type = CodecType.VIDEO,
+                    codec = codec,
+                    applyConditions = emptyList<ProfileCondition>(),
+                    conditions = conditions
+                )
+            )
+        }
+
+        return DeviceProfile(
+            name = "Jellyfin Android Client (Dynamic)",
+            maxStreamingBitrate = capabilities.maxBitrate,
+            maxStaticBitrate = capabilities.maxBitrate,
+            musicStreamingTranscodingBitrate = 192_000,
+            directPlayProfiles = directPlayProfiles,
+            subtitleProfiles = subtitleProfiles,
+            codecProfiles = codecProfiles,
+            containerProfiles = capabilities.supportedContainers.map {
+                ContainerProfile(type = DlnaProfileType.VIDEO, container = it, conditions = emptyList())
+            },
+            transcodingProfiles = listOf(
+                // Preferred: HEVC/h265 if supported
+                if (capabilities.supportedVideoCodecs.contains("h265") || capabilities.supportedVideoCodecs.contains("hevc")) {
+                    TranscodingProfile(
+                        container = "mp4",
+                        type = DlnaProfileType.VIDEO,
+                        videoCodec = "h265,hevc",
+                        audioCodec = "aac,opus",
+                        protocol = MediaStreamProtocol.HTTP,
+                        context = EncodingContext.STREAMING,
+                        conditions = listOf(
+                            ProfileCondition(ProfileConditionType.LESS_THAN_EQUAL, ProfileConditionValue.WIDTH, "$maxWidth", isRequired = false),
+                            ProfileCondition(ProfileConditionType.LESS_THAN_EQUAL, ProfileConditionValue.HEIGHT, "$maxHeight", isRequired = false)
+                        )
+                    )
+                } else null,
+                // Fallback: h264
+                TranscodingProfile(
+                    container = "mp4",
+                    type = DlnaProfileType.VIDEO,
+                    videoCodec = "h264",
+                    audioCodec = "aac,opus",
+                    protocol = MediaStreamProtocol.HLS,
+                    context = EncodingContext.STREAMING,
+                    conditions = listOf(
+                        ProfileCondition(ProfileConditionType.LESS_THAN_EQUAL, ProfileConditionValue.WIDTH, "$maxWidth", isRequired = false),
+                        ProfileCondition(ProfileConditionType.LESS_THAN_EQUAL, ProfileConditionValue.HEIGHT, "$maxHeight", isRequired = false)
+                    )
+                ),
+                // Audio fallback
+                TranscodingProfile(
+                    container = "mp3",
+                    type = DlnaProfileType.AUDIO,
+                    audioCodec = "mp3",
+                    protocol = MediaStreamProtocol.HTTP,
+                    context = EncodingContext.STREAMING,
+                    videoCodec = "",
+                    conditions = emptyList<ProfileCondition>()
+                )
+            ).filterNotNull()
+        )
     }
 
     /**
@@ -37,19 +173,19 @@ object JellyfinDeviceProfile {
                 container = "mkv",
                 type = DlnaProfileType.VIDEO,
                 videoCodec = "h264,h265,hevc,vp9,av1",
-                audioCodec = shieldAudioCodecs,
+                audioCodec = shieldAudioCodecs
             ),
             DirectPlayProfile(
                 container = "mp4,m4v",
                 type = DlnaProfileType.VIDEO,
                 videoCodec = "h264,h265,hevc,vp9,av1",
-                audioCodec = shieldAudioCodecs,
+                audioCodec = shieldAudioCodecs
             ),
             DirectPlayProfile(
                 container = "webm",
                 type = DlnaProfileType.VIDEO,
                 videoCodec = "vp8,vp9,av1",
-                audioCodec = shieldAudioCodecs,
+                audioCodec = shieldAudioCodecs
             ),
         )
 
@@ -93,14 +229,14 @@ object JellyfinDeviceProfile {
                 ContainerProfile(
                     type = DlnaProfileType.VIDEO,
                     container = "mkv,mp4,m4v,webm,ts",
-                    conditions = emptyList(),
+                    conditions = emptyList()
                 ),
             ),
             codecProfiles = listOf(
                 CodecProfile(
                     type = CodecType.VIDEO,
                     codec = "h264,h265,hevc,vp9,av1",
-                    applyConditions = emptyList(),
+                    applyConditions = emptyList<ProfileCondition>(),
                     conditions = listOf(
                         ProfileCondition(
                             condition = ProfileConditionType.LESS_THAN_EQUAL,
@@ -123,11 +259,7 @@ object JellyfinDeviceProfile {
 
     /**
      * Creates a device profile for Google Chromecast/Cast devices.
-     * Chromecast is very restrictive - only supports:
-     * - H.264 video (no HEVC, VP9, or AV1)
-     * - AAC or AC3 audio (no DTS, FLAC, or other advanced codecs)
-     * - HLS or MP4 containers
-     * This profile ensures Jellyfin will transcode incompatible files.
+     * Chromecast is very restrictive.
      */
     fun createChromecastDeviceProfile(): DeviceProfile {
         Log.d("JellyfinDeviceProfile", "Creating Chromecast device profile")
@@ -147,7 +279,7 @@ object JellyfinDeviceProfile {
                 container = "mp4,m4v",
                 type = DlnaProfileType.VIDEO,
                 videoCodec = "h264", // Only H.264!
-                audioCodec = chromecastAudioCodecs,
+                audioCodec = chromecastAudioCodecs
             ),
         )
 
@@ -190,8 +322,8 @@ object JellyfinDeviceProfile {
             containerProfiles = listOf(
                 ContainerProfile(
                     type = DlnaProfileType.VIDEO,
-                    container = "mp4,m4v,ts", // HLS segments are .ts files
-                    conditions = emptyList(),
+                    container = "mp4,m4v,ts",
+                    conditions = emptyList()
                 ),
             ),
             codecProfiles = listOf(
@@ -199,7 +331,7 @@ object JellyfinDeviceProfile {
                 CodecProfile(
                     type = CodecType.VIDEO,
                     codec = "h264",
-                    applyConditions = emptyList(),
+                    applyConditions = emptyList<ProfileCondition>(),
                     conditions = listOf(
                         ProfileCondition(
                             condition = ProfileConditionType.LESS_THAN_EQUAL,
@@ -221,315 +353,71 @@ object JellyfinDeviceProfile {
     }
 
     fun createAndroidDeviceProfile(maxWidth: Int = 1920, maxHeight: Int = 1080): DeviceProfile {
-        Log.d("JellyfinDeviceProfile", "Creating device profile with maxWidth=$maxWidth, maxHeight=$maxHeight")
-
-        // 1. Define the "Permissive Audio" list
-        // We list commonly software-decodable audio codecs to reduce unnecessary transcoding.
-        // This tells the server: "Don't transcode just because the audio is FLAC or OPUS."
+        Log.d("JellyfinDeviceProfile", "Creating static device profile with maxWidth=$maxWidth, maxHeight=$maxHeight")
+        
         val permissiveAudioCodecs = "aac,mp3,ac3,eac3,flac,vorbis,opus,pcm,alac"
-
-        // 2. Define the "Subtitle Fix"
-        // "External" means: "Send me the subtitle file separately. I will render it."
-        // Without this, the server burns the text into the video (Transcoding).
-        val mySubtitleProfiles = listOf(
+        val subtitleProfiles = listOf(
             SubtitleProfile(format = "srt", method = SubtitleDeliveryMethod.EXTERNAL),
             SubtitleProfile(format = "vtt", method = SubtitleDeliveryMethod.EXTERNAL),
-            SubtitleProfile(format = "ass", method = SubtitleDeliveryMethod.EXTERNAL), // ExoPlayer handles basic ASS/SSA
-            SubtitleProfile(format = "ssa", method = SubtitleDeliveryMethod.EXTERNAL),
+            SubtitleProfile(format = "ass", method = SubtitleDeliveryMethod.EXTERNAL),
+            SubtitleProfile(format = "ssa", method = SubtitleDeliveryMethod.EXTERNAL)
         )
-
-        // 3. Enhanced direct play profiles with better codec support
-        val myDirectPlayProfiles = listOf(
-            DirectPlayProfile(
-                container = "mkv",
-                type = DlnaProfileType.VIDEO,
-                videoCodec = "h264,h265,hevc,vp9,av1", // Include modern codecs
-                audioCodec = permissiveAudioCodecs,
-            ),
-            DirectPlayProfile(
-                container = "mp4,m4v",
-                type = DlnaProfileType.VIDEO,
-                videoCodec = "h264,h265,hevc,vp9,av1", // Include modern codecs
-                audioCodec = permissiveAudioCodecs,
-            ),
-            DirectPlayProfile(
-                container = "webm",
-                type = DlnaProfileType.VIDEO,
-                videoCodec = "vp8,vp9,av1",
-                audioCodec = permissiveAudioCodecs,
-            ),
-            DirectPlayProfile(
-                container = "avi",
-                type = DlnaProfileType.VIDEO,
-                videoCodec = "h264,xvid,divx",
-                audioCodec = permissiveAudioCodecs,
-            ),
-            DirectPlayProfile(
-                container = "mov",
-                type = DlnaProfileType.VIDEO,
-                videoCodec = "h264",
-                audioCodec = permissiveAudioCodecs,
-            ),
-
-            // Audio-only containers
-            DirectPlayProfile(
-                container = "flac",
-                type = DlnaProfileType.AUDIO,
-                audioCodec = "flac",
-            ),
-            DirectPlayProfile(
-                container = "mp3",
-                type = DlnaProfileType.AUDIO,
-                audioCodec = "mp3",
-            ),
-            DirectPlayProfile(
-                container = "ogg",
-                type = DlnaProfileType.AUDIO,
-                audioCodec = "vorbis,opus",
-            ),
-            DirectPlayProfile(
-                container = "aac",
-                type = DlnaProfileType.AUDIO,
-                audioCodec = "aac",
-            ),
-            DirectPlayProfile(
-                container = "m4a",
-                type = DlnaProfileType.AUDIO,
-                audioCodec = "aac",
-            ),
-        )
-
-        // Adaptive bitrate based on device capabilities
-        val maxBitrate = when {
-            maxWidth >= 3840 && maxHeight >= 2160 -> 400_000_000 // 400 Mbps for 4K devices
-            maxWidth >= 1920 && maxHeight >= 1080 -> 200_000_000 // 200 Mbps for 1080p devices
-            else -> 100_000_000 // 100 Mbps for lower resolution devices
-        }
 
         return DeviceProfile(
-            name = "Jellyfin Android Client",
-            maxStreamingBitrate = maxBitrate,
-            maxStaticBitrate = maxBitrate,
-            musicStreamingTranscodingBitrate = 192_000, // 192 kbps for music transcoding
-
-            // 4. Use our enhanced direct play profiles with permissive audio
-            directPlayProfiles = myDirectPlayProfiles,
-
-            // Transcoding profiles for fallback when direct play isn't possible
-            transcodingProfiles = listOf(
-                // H.265/HEVC transcoding profile (preferred for better quality/compression)
-                TranscodingProfile(
-                    container = "mp4",
-                    type = DlnaProfileType.VIDEO,
-                    videoCodec = "h265,hevc",
-                    audioCodec = "opus,aac",
-                    context = EncodingContext.STREAMING,
-                    protocol = MediaStreamProtocol.HTTP,
-                    enableMpegtsM2TsMode = false,
-                    minSegments = 2,
-                    segmentLength = 6,
-                    conditions = listOf(
-                        // Explicit max resolution for transcoding output to prevent 416p defaults
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.HEIGHT,
-                            value = "$maxHeight",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.WIDTH,
-                            value = "$maxWidth",
-                            isRequired = false,
-                        ),
-                    ),
-                ),
-                // H.264 transcoding profile (fallback for compatibility)
-                TranscodingProfile(
-                    container = "mp4",
-                    type = DlnaProfileType.VIDEO,
-                    videoCodec = "h264",
-                    audioCodec = "aac,opus",
-                    context = EncodingContext.STREAMING,
-                    protocol = MediaStreamProtocol.HLS,
-                    enableMpegtsM2TsMode = false,
-                    minSegments = 2,
-                    segmentLength = 6,
-                    conditions = listOf(
-                        // Explicit max resolution for transcoding output to prevent 416p defaults
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.HEIGHT,
-                            value = "$maxHeight",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.WIDTH,
-                            value = "$maxWidth",
-                            isRequired = false,
-                        ),
-                    ),
-                ),
-                TranscodingProfile(
-                    container = "mp3",
-                    type = DlnaProfileType.AUDIO,
-                    videoCodec = "",
-                    audioCodec = "mp3",
-                    context = EncodingContext.STREAMING,
-                    protocol = MediaStreamProtocol.HTTP,
-                    conditions = emptyList(),
-                ),
+            name = "Jellyfin Android Client (Static)",
+            maxStreamingBitrate = 100_000_000,
+            maxStaticBitrate = 100_000_000,
+            musicStreamingTranscodingBitrate = 192_000,
+            directPlayProfiles = listOf(
+                DirectPlayProfile(container = "mkv", type = DlnaProfileType.VIDEO, videoCodec = "h264,h265,hevc,vp9,av1", audioCodec = permissiveAudioCodecs),
+                DirectPlayProfile(container = "mp4,m4v", type = DlnaProfileType.VIDEO, videoCodec = "h264,h265,hevc,vp9,av1", audioCodec = permissiveAudioCodecs)
             ),
-
-            // Container profiles define which containers are supported
+            subtitleProfiles = subtitleProfiles,
             containerProfiles = listOf(
-                ContainerProfile(
-                    type = DlnaProfileType.VIDEO,
-                    container = "mkv,mp4,m4v,webm,avi,mov",
-                    conditions = emptyList(),
-                ),
-                ContainerProfile(
-                    type = DlnaProfileType.AUDIO,
-                    container = "flac,mp3,ogg,aac,m4a",
-                    conditions = emptyList(),
-                ),
+                ContainerProfile(type = DlnaProfileType.VIDEO, container = "mkv,mp4,m4v,webm,avi,mov", conditions = emptyList())
             ),
-
-            // Enhanced codec profiles with dynamic resolution limits
             codecProfiles = listOf(
-                // H.264 profile - report device can decode up to device max resolution
-                CodecProfile(
-                    type = CodecType.VIDEO,
-                    codec = "h264",
-                    applyConditions = emptyList(),
-                    conditions = listOf(
-                        ProfileCondition(
-                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
-                            property = ProfileConditionValue.HEIGHT,
-                            value = "1",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.HEIGHT,
-                            value = "$maxHeight",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
-                            property = ProfileConditionValue.WIDTH,
-                            value = "1",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.WIDTH,
-                            value = "$maxWidth",
-                            isRequired = false,
-                        ),
-                    ),
-                ),
-                // H.265/HEVC profile - report device can decode up to device max resolution
-                CodecProfile(
-                    type = CodecType.VIDEO,
-                    codec = "h265,hevc",
-                    applyConditions = emptyList(),
-                    conditions = listOf(
-                        ProfileCondition(
-                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
-                            property = ProfileConditionValue.HEIGHT,
-                            value = "1",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.HEIGHT,
-                            value = "$maxHeight",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
-                            property = ProfileConditionValue.WIDTH,
-                            value = "1",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.WIDTH,
-                            value = "$maxWidth",
-                            isRequired = false,
-                        ),
-                    ),
-                ),
-                // VP9 profile - report device can decode up to device max resolution
-                CodecProfile(
-                    type = CodecType.VIDEO,
-                    codec = "vp9",
-                    applyConditions = emptyList(),
-                    conditions = listOf(
-                        ProfileCondition(
-                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
-                            property = ProfileConditionValue.HEIGHT,
-                            value = "1",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.HEIGHT,
-                            value = "$maxHeight",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
-                            property = ProfileConditionValue.WIDTH,
-                            value = "1",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.WIDTH,
-                            value = "$maxWidth",
-                            isRequired = false,
-                        ),
-                    ),
-                ),
-                // AV1 profile - report device can decode up to device max resolution
-                CodecProfile(
-                    type = CodecType.VIDEO,
-                    codec = "av1",
-                    applyConditions = emptyList(),
-                    conditions = listOf(
-                        ProfileCondition(
-                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
-                            property = ProfileConditionValue.HEIGHT,
-                            value = "1",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.HEIGHT,
-                            value = "$maxHeight",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.GREATER_THAN_EQUAL,
-                            property = ProfileConditionValue.WIDTH,
-                            value = "1",
-                            isRequired = false,
-                        ),
-                        ProfileCondition(
-                            condition = ProfileConditionType.LESS_THAN_EQUAL,
-                            property = ProfileConditionValue.WIDTH,
-                            value = "$maxWidth",
-                            isRequired = false,
-                        ),
-                    ),
-                ),
+                CodecProfile(type = CodecType.VIDEO, codec = "h264,h265,hevc,vp9,av1", applyConditions = emptyList<ProfileCondition>(), conditions = listOf(
+                    ProfileCondition(ProfileConditionType.LESS_THAN_EQUAL, ProfileConditionValue.WIDTH, "$maxWidth", isRequired = false),
+                    ProfileCondition(ProfileConditionType.LESS_THAN_EQUAL, ProfileConditionValue.HEIGHT, "$maxHeight", isRequired = false)
+                ))
             ),
-
-            // 5. Use our external-only subtitle profiles to prevent burning
-            subtitleProfiles = mySubtitleProfiles,
+            transcodingProfiles = emptyList<TranscodingProfile>()
         )
     }
+}
+
+/**
+ * Extension function to convert a DeviceProfile to a map of URL parameters.
+ * This provides the shorthand parameters Jellyfin expects in streaming URLs.
+ */
+fun DeviceProfile.toUrlParameters(): Map<String, String> {
+    val params = mutableMapOf<String, String>()
+    
+    // Extract primary video codecs
+    val videoCodecs = codecProfiles
+        ?.filter { it.type == CodecType.VIDEO }
+        ?.mapNotNull { it.codec }
+        ?.flatMap { it.split(",") }
+        ?.distinct()
+        ?.joinToString(",")
+    
+    if (!videoCodecs.isNullOrBlank()) {
+        params["VideoCodec"] = videoCodecs
+    }
+
+    // Extract primary audio codecs from DirectPlay profiles
+    val audioCodecs = directPlayProfiles
+        ?.mapNotNull { it.audioCodec }
+        ?.flatMap { it.split(",") }
+        ?.distinct()
+        ?.joinToString(",")
+    
+    if (!audioCodecs.isNullOrBlank()) {
+        params["AudioCodec"] = audioCodecs
+    }
+
+    params["MaxStreamingBitrate"] = maxStreamingBitrate?.toString() ?: ""
+    
+    return params
 }

@@ -976,7 +976,11 @@ class JellyfinRepository @Inject constructor(
     fun getDashStreamUrl(itemId: String): String? =
         streamRepository.getDashStreamUrl(itemId)
 
-    suspend fun getPlaybackInfo(itemId: String): PlaybackInfoResponse {
+    suspend fun getPlaybackInfo(
+        itemId: String,
+        audioStreamIndex: Int? = null,
+        subtitleStreamIndex: Int? = null
+    ): PlaybackInfoResponse {
         val server = authRepository.getCurrentServer()
             ?: throw IllegalStateException("No authenticated server available")
         val client = sessionManager.getClientForUrl(server.url)
@@ -990,15 +994,15 @@ class JellyfinRepository @Inject constructor(
         // Get device capabilities to create proper device profile
         val capabilities = deviceCapabilities.getDirectPlayCapabilities()
         Log.d("JellyfinRepository", "Device capabilities: maxResolution=${capabilities.maxResolution}, supports4K=${capabilities.supports4K}")
-        val deviceProfile = JellyfinDeviceProfile.createAndroidDeviceProfile(
-            maxWidth = capabilities.maxResolution.first,
-            maxHeight = capabilities.maxResolution.second,
-        )
-        Log.d("JellyfinRepository", "DeviceProfile created with codecProfiles: ${deviceProfile.codecProfiles.size}")
+        val deviceProfile = JellyfinDeviceProfile.createAndroidDeviceProfile(capabilities)
+        Log.d("JellyfinRepository", "DeviceProfile created with codecProfiles: ${deviceProfile.codecProfiles?.size ?: 0}")
 
         // Log the actual codec profiles being sent
-        deviceProfile.codecProfiles.forEachIndexed { index, codecProfile ->
-            Log.d("JellyfinRepository", "  CodecProfile[$index]: type=${codecProfile.type}, codec=${codecProfile.codec}, conditions=${codecProfile.conditions.size}")
+        deviceProfile.codecProfiles?.forEachIndexed { index, codecProfile ->
+            Log.d("JellyfinRepository", "  CodecProfile[$index]: type=${codecProfile.type}, codec=${codecProfile.codec}, conditions=${codecProfile.conditions?.size ?: 0}")
+            codecProfile.conditions?.forEach { condition ->
+                Log.d("JellyfinRepository", "    Condition: ${condition.property} ${condition.condition} ${condition.value}")
+            }
         }
 
         // Set maxStreamingBitrate based on network quality to guide server transcoding decisions
@@ -1009,12 +1013,12 @@ class JellyfinRepository @Inject constructor(
             userId = userUuid,
             maxStreamingBitrate = maxBitrate,
             startTimeTicks = null,
-            audioStreamIndex = null,
-            subtitleStreamIndex = null, // Don't force subtitle stream to avoid unnecessary transcoding
+            audioStreamIndex = audioStreamIndex,
+            subtitleStreamIndex = subtitleStreamIndex,
             maxAudioChannels = null,
             mediaSourceId = null,
             liveStreamId = null,
-            deviceProfile = deviceProfile, // Custom profile with Vorbis support
+            deviceProfile = deviceProfile,
             enableDirectPlay = true,
             enableDirectStream = true,
             enableTranscoding = true,
@@ -1037,6 +1041,11 @@ class JellyfinRepository @Inject constructor(
             // Log DeviceProfile details
             val transcodingProfiles = deviceProfile.transcodingProfiles.orEmpty()
             Log.d("JellyfinRepository", "DeviceProfile: ${deviceProfile.name}, maxStreamBitrate=${deviceProfile.maxStreamingBitrate}, maxStaticBitrate=${deviceProfile.maxStaticBitrate}")
+
+            // Log DirectPlayProfiles
+            deviceProfile.directPlayProfiles?.forEachIndexed { index, profile ->
+                Log.d("JellyfinRepository", "  DirectPlayProfile[$index]: container=${profile.container}, type=${profile.type}, videoCodec=${profile.videoCodec}, audioCodec=${profile.audioCodec}")
+            }
             transcodingProfiles.forEachIndexed { index, profile ->
                 Log.d("JellyfinRepository", "  TranscodingProfile[$index]: codec=${profile.videoCodec}, container=${profile.container}, protocol=${profile.protocol}, conditions=${profile.conditions.orEmpty().size}")
                 profile.conditions.orEmpty().forEach { condition ->
@@ -1111,7 +1120,12 @@ class JellyfinRepository @Inject constructor(
      * @param itemId The item ID to get playback info for
      * @param isShieldOrAndroidTV Whether the Cast receiver is a SHIELD/Android TV (more capable)
      */
-    suspend fun getCastPlaybackInfo(itemId: String, isShieldOrAndroidTV: Boolean = false): PlaybackInfoResponse {
+    suspend fun getCastPlaybackInfo(
+        itemId: String, 
+        isShieldOrAndroidTV: Boolean = false,
+        audioStreamIndex: Int? = null,
+        subtitleStreamIndex: Int? = null
+    ): PlaybackInfoResponse {
         val server = authRepository.getCurrentServer()
             ?: throw IllegalStateException("No authenticated server available")
         val client = sessionManager.getClientForUrl(server.url)
@@ -1140,8 +1154,8 @@ class JellyfinRepository @Inject constructor(
             userId = userUuid,
             maxStreamingBitrate = maxBitrate,
             startTimeTicks = null,
-            audioStreamIndex = null,
-            subtitleStreamIndex = null,
+            audioStreamIndex = audioStreamIndex,
+            subtitleStreamIndex = subtitleStreamIndex,
             maxAudioChannels = null,
             mediaSourceId = null,
             liveStreamId = null,

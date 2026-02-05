@@ -6,6 +6,7 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.cache.JellyfinCache
 import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
+import com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
@@ -177,8 +178,17 @@ object NetworkModule {
         repository: JellyfinRepository,
         streamRepository: JellyfinStreamRepository,
         deviceCapabilities: DeviceCapabilities,
+        connectivityChecker: ConnectivityChecker,
+        playbackPreferencesRepository: PlaybackPreferencesRepository,
     ): EnhancedPlaybackManager {
-        return EnhancedPlaybackManager(context, repository, streamRepository, deviceCapabilities)
+        return EnhancedPlaybackManager(
+            context,
+            repository,
+            streamRepository,
+            deviceCapabilities,
+            connectivityChecker,
+            playbackPreferencesRepository
+        )
     }
 
     @Provides
