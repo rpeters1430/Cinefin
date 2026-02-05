@@ -181,7 +181,7 @@ class VideoPlayerViewModel @Inject constructor(
         viewModelScope.launch {
             adaptiveBitrateMonitor.qualityRecommendation.collect { recommendation ->
                 _playerState.value = _playerState.value.copy(
-                    qualityRecommendation = recommendation
+                    qualityRecommendation = recommendation,
                 )
             }
         }
@@ -338,7 +338,7 @@ class VideoPlayerViewModel @Inject constructor(
                         exoPlayer = player,
                         scope = viewModelScope,
                         currentQuality = currentQuality,
-                        isTranscoding = _playerState.value.isTranscoding
+                        isTranscoding = _playerState.value.isTranscoding,
                     )
                 }
             } else if (playbackState == Player.STATE_ENDED) {
@@ -373,13 +373,14 @@ class VideoPlayerViewModel @Inject constructor(
                     PlaybackException.ERROR_CODE_DECODING_FAILED,
                     PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES,
                     PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
-                    PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED -> true
-                    
+                    PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED,
+                    -> true
+
                     // Also check for common audio renderer issues that might not have specific codes
                     else -> {
                         val errorMsg = error.message ?: ""
                         errorMsg.contains("AudioRenderer", ignoreCase = true) ||
-                        errorMsg.contains("MediaCodecAudioRenderer", ignoreCase = true)
+                            errorMsg.contains("MediaCodecAudioRenderer", ignoreCase = true)
                     }
                 }
 
@@ -630,7 +631,7 @@ class VideoPlayerViewModel @Inject constructor(
                 val playbackResult = enhancedPlaybackManager.getOptimalPlaybackUrl(
                     item = currentItemMetadata ?: throw Exception("Failed to load item metadata"),
                     audioStreamIndex = audioIndex,
-                    subtitleStreamIndex = subtitleIndex
+                    subtitleStreamIndex = subtitleIndex,
                 )
 
                 val streamUrl: String
@@ -726,7 +727,7 @@ class VideoPlayerViewModel @Inject constructor(
                     scope = viewModelScope,
                     sessionId = sessionId,
                     mediaSourceId = currentMediaSourceId,
-                    playMethod = playMethod
+                    playMethod = playMethod,
                 )
 
                 if (streamUrl.isNullOrEmpty()) {
@@ -896,7 +897,7 @@ class VideoPlayerViewModel @Inject constructor(
             val playbackResult = enhancedPlaybackManager.getTranscodingPlaybackUrl(
                 item = metadata,
                 audioStreamIndex = _playerState.value.selectedAudioTrack?.format?.id?.toIntOrNull(),
-                subtitleStreamIndex = _playerState.value.selectedSubtitleTrack?.format?.id?.toIntOrNull()
+                subtitleStreamIndex = _playerState.value.selectedSubtitleTrack?.format?.id?.toIntOrNull(),
             )
 
             val streamUrl: String
@@ -950,7 +951,7 @@ class VideoPlayerViewModel @Inject constructor(
                 scope = viewModelScope,
                 sessionId = sessionId,
                 mediaSourceId = currentMediaSourceId,
-                playMethod = playMethod
+                playMethod = playMethod,
             )
 
             withContext(Dispatchers.Main) {
@@ -1678,7 +1679,7 @@ class VideoPlayerViewModel @Inject constructor(
 
     fun selectAudioTrack(track: TrackInfo) {
         val player = exoPlayer ?: return
-        
+
         // If we are transcoding, we need to ask the server to transcode the new track
         if (_playerState.value.isTranscoding) {
             val audioIndex = track.format.id?.toIntOrNull()
@@ -1692,7 +1693,7 @@ class VideoPlayerViewModel @Inject constructor(
                         itemName = currentItemName ?: "",
                         startPosition = currentPos,
                         audioIndex = audioIndex,
-                        subtitleIndex = _playerState.value.selectedSubtitleTrack?.format?.id?.toIntOrNull()
+                        subtitleIndex = _playerState.value.selectedSubtitleTrack?.format?.id?.toIntOrNull(),
                     )
                 }
                 return
@@ -1730,7 +1731,7 @@ class VideoPlayerViewModel @Inject constructor(
                         itemId = currentItemId ?: return@launch,
                         itemName = currentItemName ?: "",
                         startPosition = currentPos,
-                        subtitleIndex = subIndex
+                        subtitleIndex = subIndex,
                     )
                 }
                 return
@@ -1904,7 +1905,7 @@ class VideoPlayerViewModel @Inject constructor(
 
         SecureLogger.d(
             "VideoPlayer",
-            "Accepting quality recommendation: ${recommendation.recommendedQuality} (${recommendation.reason})"
+            "Accepting quality recommendation: ${recommendation.recommendedQuality} (${recommendation.reason})",
         )
 
         analytics.logUiEvent("video_player", "quality_recommendation_accepted")
@@ -1939,7 +1940,7 @@ class VideoPlayerViewModel @Inject constructor(
         if (recommendation != null) {
             SecureLogger.d(
                 "VideoPlayer",
-                "Dismissing quality recommendation: ${recommendation.recommendedQuality} (${recommendation.reason})"
+                "Dismissing quality recommendation: ${recommendation.recommendedQuality} (${recommendation.reason})",
             )
 
             analytics.logUiEvent("video_player", "quality_recommendation_dismissed")

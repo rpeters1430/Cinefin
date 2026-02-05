@@ -1,7 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
 import android.app.Activity
-import com.rpeters.jellyfin.ui.screens.home.SearchResultsContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -55,6 +54,7 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.components.MiniPlayer
+import com.rpeters.jellyfin.ui.screens.home.SearchResultsContent
 import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.ui.viewmodel.SearchViewModel

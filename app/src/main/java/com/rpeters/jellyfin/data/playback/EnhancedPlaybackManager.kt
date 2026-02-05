@@ -1,16 +1,12 @@
 package com.rpeters.jellyfin.data.playback
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.DeviceCapabilities
-import com.rpeters.jellyfin.data.repository.JellyfinRepository
-import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
-import com.rpeters.jellyfin.data.preferences.AudioChannelPreference
-import com.rpeters.jellyfin.data.preferences.PlaybackPreferences
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
 import com.rpeters.jellyfin.data.preferences.TranscodingQuality
+import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.network.ConnectivityQuality
 import com.rpeters.jellyfin.network.NetworkType
@@ -186,7 +182,7 @@ class EnhancedPlaybackManager @Inject constructor(
                     audioCodec = audioStream?.codec,
                     bitrate = anySource.bitrate ?: 0,
                     reason = "Server incorrectly rejected 10-bit HEVC - device IS capable",
-                    playSessionId = playSessionId
+                    playSessionId = playSessionId,
                 )
             }
         }
@@ -230,7 +226,7 @@ class EnhancedPlaybackManager @Inject constructor(
                         audioCodec = audioStream?.codec,
                         bitrate = directPlaySource.bitrate ?: 0,
                         reason = "Server SupportsDirectPlay=true and device supports ${videoStream?.codec}/${audioStream?.codec}",
-                        playSessionId = playSessionId
+                        playSessionId = playSessionId,
                     )
                 }
             } else {
@@ -262,7 +258,7 @@ class EnhancedPlaybackManager @Inject constructor(
         val mediaSource = mediaSources.firstOrNull { it.supportsDirectPlay }
             ?: mediaSources.firstOrNull { it.supportsDirectStream }
             ?: mediaSources.first()
-            
+
         // Double check if it's REALLY suitable for Direct Play based on our logic
         if (!canDirectPlayMediaSource(mediaSource, item)) {
             return getOptimalTranscodingUrl(item, playbackInfo, audioStreamIndex, subtitleStreamIndex)
@@ -271,7 +267,7 @@ class EnhancedPlaybackManager @Inject constructor(
         val mediaSourceId = mediaSource.id
         val container = mediaSource.container ?: "mkv"
         val playSessionId = playbackInfo.playSessionId
-        
+
         val directPlayUrl = if (serverUrl != null && mediaSourceId != null) {
             buildString {
                 append(serverUrl)
@@ -368,7 +364,7 @@ class EnhancedPlaybackManager @Inject constructor(
     private suspend fun isNetworkSuitableForDirectPlay(bitrate: Int): Boolean {
         val type = connectivityChecker.getNetworkType()
         val prefs = playbackPreferencesRepository.preferences.first()
-        
+
         return when (type) {
             NetworkType.WIFI -> bitrate <= prefs.maxBitrateWifi
             NetworkType.CELLULAR -> bitrate <= prefs.maxBitrateCellular
@@ -478,7 +474,7 @@ class EnhancedPlaybackManager @Inject constructor(
             playSessionId = playSessionId,
             audioStreamIndex = audioStreamIndex,
             subtitleStreamIndex = subtitleStreamIndex,
-            maxAudioChannels = maxAudioChannels
+            maxAudioChannels = maxAudioChannels,
         )
 
         // Return error if no valid URL could be generated
@@ -505,7 +501,7 @@ class EnhancedPlaybackManager @Inject constructor(
     private suspend fun getPlaybackInfo(
         itemId: String,
         audioStreamIndex: Int? = null,
-        subtitleStreamIndex: Int? = null
+        subtitleStreamIndex: Int? = null,
     ): PlaybackInfoResponse? {
         return try {
             repository.getPlaybackInfo(itemId, audioStreamIndex, subtitleStreamIndex)

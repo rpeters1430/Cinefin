@@ -187,7 +187,7 @@ object NetworkModule {
             streamRepository,
             deviceCapabilities,
             connectivityChecker,
-            playbackPreferencesRepository
+            playbackPreferencesRepository,
         )
     }
 

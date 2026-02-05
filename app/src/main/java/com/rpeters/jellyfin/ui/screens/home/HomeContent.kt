@@ -2,7 +2,6 @@ package com.rpeters.jellyfin.ui.screens.home
 
 import android.app.Activity
 import androidx.annotation.StringRes
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.lazy.grid.*

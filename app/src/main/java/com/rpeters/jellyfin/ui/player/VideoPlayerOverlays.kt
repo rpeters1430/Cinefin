@@ -24,13 +24,13 @@ fun GestureFeedbackOverlay(
     text: String,
     overlayScrim: Color,
     overlayContent: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(),
         exit = fadeOut(),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Card(
             colors = CardDefaults.cardColors(
@@ -68,7 +68,7 @@ fun SkipIntroOutroButtons(
     overlayScrim: Color,
     overlayContent: Color,
     onSeek: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val showSkipIntro = remember(playerState.introStartMs, playerState.introEndMs, currentPosMs) {
         val s = playerState.introStartMs
@@ -142,13 +142,13 @@ fun NextEpisodeCountdownOverlay(
     overlayContent: Color,
     onCancel: () -> Unit,
     onPlayNow: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(animationSpec = MotionTokens.expressiveEnter),
         exit = fadeOut(animationSpec = MotionTokens.expressiveExit),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Card(
             colors = CardDefaults.cardColors(

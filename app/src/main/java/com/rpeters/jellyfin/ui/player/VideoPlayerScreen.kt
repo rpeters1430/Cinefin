@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.player
 
-import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -13,14 +12,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
-import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.lang.ref.WeakReference
@@ -103,7 +100,7 @@ fun VideoPlayerScreen(
     var controlsVisible by remember { mutableStateOf(true) }
     var showAudioDialog by remember { mutableStateOf(false) }
     var showSubtitleDialog by remember { mutableStateOf(false) }
-    
+
     // Gesture feedback states
     var showSeekFeedback by remember { mutableStateOf(false) }
     var seekFeedbackText by remember { mutableStateOf("") }
@@ -111,7 +108,12 @@ fun VideoPlayerScreen(
     var lastPlayerViewBounds by remember { mutableStateOf<android.graphics.Rect?>(null) }
 
     // Control visibility timers
-    LaunchedEffect(showSeekFeedback) { if (showSeekFeedback) { delay(1500); showSeekFeedback = false } }
+    LaunchedEffect(showSeekFeedback) {
+        if (showSeekFeedback) {
+            delay(1500)
+            showSeekFeedback = false
+        }
+    }
     LaunchedEffect(controlsVisible, playerState.isPlaying) {
         if (controlsVisible && playerState.isPlaying) {
             delay(5000)
@@ -176,8 +178,8 @@ fun VideoPlayerScreen(
                         seekFeedbackIcon = if (next == 0) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp
                         seekFeedbackText = "${(next * 100 / maxVolume)}%"
                     }
-                }
-            )
+                },
+            ),
     ) {
         if (playerState.isCastConnected) {
             CastRemoteScreen(
@@ -209,13 +211,13 @@ fun VideoPlayerScreen(
                         bounds.left.roundToInt(),
                         bounds.top.roundToInt(),
                         bounds.right.roundToInt(),
-                        bounds.bottom.roundToInt()
+                        bounds.bottom.roundToInt(),
                     )
                     if (rect.width() > 0 && rect.height() > 0 && rect != lastPlayerViewBounds) {
                         lastPlayerViewBounds = rect
                         onPlayerViewBoundsChanged(rect)
                     }
-                }
+                },
             )
 
             GestureFeedbackOverlay(
@@ -224,7 +226,7 @@ fun VideoPlayerScreen(
                 text = seekFeedbackText,
                 overlayScrim = playerColors.overlayScrim,
                 overlayContent = playerColors.overlayContent,
-                modifier = Modifier.align(Alignment.Center)
+                modifier = Modifier.align(Alignment.Center),
             )
 
             SkipIntroOutroButtons(
@@ -232,7 +234,7 @@ fun VideoPlayerScreen(
                 currentPosMs = currentPosMs,
                 overlayScrim = playerColors.overlayScrim,
                 overlayContent = playerColors.overlayContent,
-                onSeek = onSeek
+                onSeek = onSeek,
             )
 
             NextEpisodeCountdownOverlay(
@@ -243,7 +245,7 @@ fun VideoPlayerScreen(
                 overlayContent = playerColors.overlayContent,
                 onCancel = onCancelNextEpisode,
                 onPlayNow = onPlayNextEpisode,
-                modifier = Modifier.align(Alignment.BottomCenter)
+                modifier = Modifier.align(Alignment.BottomCenter),
             )
 
             ExpressiveVideoControls(
@@ -267,7 +269,7 @@ fun VideoPlayerScreen(
             AudioTrackSelectionDialog(
                 availableTracks = playerState.availableAudioTracks,
                 onTrackSelect = onAudioTrackSelect,
-                onDismiss = { showAudioDialog = false }
+                onDismiss = { showAudioDialog = false },
             )
         }
 
@@ -276,7 +278,7 @@ fun VideoPlayerScreen(
                 availableTracks = playerState.availableSubtitleTracks,
                 selectedTrack = playerState.selectedSubtitleTrack,
                 onTrackSelect = onSubtitleTrackSelect,
-                onDismiss = { showSubtitleDialog = false }
+                onDismiss = { showSubtitleDialog = false },
             )
         }
 
@@ -284,7 +286,7 @@ fun VideoPlayerScreen(
             CastDeviceSelectionDialog(
                 availableDevices = playerState.availableCastDevices,
                 onDeviceSelect = onCastDeviceSelect,
-                onDismiss = onCastDialogDismiss
+                onDismiss = onCastDialogDismiss,
             )
         }
 
@@ -294,7 +296,7 @@ fun VideoPlayerScreen(
                 recommendation = recommendation,
                 onAccept = onAcceptQualityRecommendation,
                 onDismiss = onDismissQualityRecommendation,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp)
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
             )
         }
 
