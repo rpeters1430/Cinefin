@@ -14,7 +14,23 @@ This document tracks user-facing bugs, workarounds, and fix status. For technica
 
 ## 🟠 HIGH PRIORITY Issues (Significant Impact)
 
-**Status**: None currently identified (issues #1, #2, #3 were fixed in January 2026)
+### #10: Casting Requires Unauthenticated or Proxy URLs
+
+**Impact**: Cast playback may fail on servers that require tokenized URLs
+**Affected Users**: Users casting from secured Jellyfin servers
+**Files**:
+- `app/src/main/java/com/rpeters/jellyfin/ui/player/CastManager.kt`
+
+**Details**:
+- Cast receivers do not support custom authorization headers
+- Access tokens are no longer appended to Cast URLs
+- Requires either a trusted local proxy or an unauthenticated streaming endpoint for casting
+
+**Workaround**:
+- Use a local proxy that injects authorization headers
+- Allow unauthenticated access to the specific streaming endpoint (if acceptable)
+
+**Fix Status**: ✅ Documented trade-off (Phase B1)
 
 ---
 

@@ -88,6 +88,16 @@ class CastManager @Inject constructor(
             val client = castContext?.sessionManager?.currentCastSession?.remoteMediaClient ?: return
             val status = client.mediaStatus ?: return
 
+            if (status.playerState == MediaStatus.PLAYER_STATE_IDLE &&
+                status.idleReason == MediaStatus.IDLE_REASON_ERROR
+            ) {
+                val errorMessage = buildCastAuthErrorMessage(status)
+                SecureLogger.e("CastManager", "Cast playback failed: $errorMessage")
+                _castState.update { state ->
+                    state.copy(error = errorMessage)
+                }
+            }
+
             if (pendingSeekPosition > 0L) {
                 // Wait for BUFFERING, PLAYING or PAUSED state to ensure media is ready
                 // BUFFERING state indicates the receiver has started loading the media
@@ -573,39 +583,22 @@ class CastManager @Inject constructor(
         return "$cleanServerUrl/$cleanPath"
     }
 
-    /**
-     * Append access token to URL for Cast receiver authentication.
-     * Chromecast receivers cannot use custom headers, so we need to include
-     * the auth token as a query parameter.
-     */
-    private fun addAuthTokenToUrl(url: String): String {
-        val accessToken = authRepository.getCurrentServer()?.accessToken
-        if (accessToken.isNullOrBlank()) {
-            SecureLogger.w("CastManager", "addAuthTokenToUrl: No access token available")
-            return url
-        }
-
-        // FIX: Check if api_key already exists to avoid duplication
-        if (url.contains("api_key=")) {
-            return url
-        }
-
-        val separator = if (url.contains("?")) "&" else "?"
-        return "$url${separator}api_key=$accessToken"
+    private fun buildCastAuthErrorMessage(status: MediaStatus): String {
+        val errorInfo = status.mediaError?.let { " (${it.type})" } ?: ""
+        return "Cast playback failed$errorInfo. " +
+            "If your Jellyfin server requires authentication, casting needs a local proxy or " +
+            "an unauthenticated stream endpoint."
     }
 
     /**
      * Convert SubtitleSpec to Cast MediaTrack
      */
     private fun SubtitleSpec.toCastTrack(id: Long): com.google.android.gms.cast.MediaTrack {
-        // Add authentication to subtitle URL for Cast receiver
-        val authenticatedUrl = addAuthTokenToUrl(this.url)
-
         val builder = com.google.android.gms.cast.MediaTrack.Builder(
             id,
             com.google.android.gms.cast.MediaTrack.TYPE_TEXT,
         )
-            .setContentId(authenticatedUrl)
+            .setContentId(this.url)
             .setContentType(this.mimeType)
             .setLanguage(this.language)
             .setName(this.label ?: this.language?.uppercase() ?: "Subtitles")
@@ -666,8 +659,9 @@ class CastManager @Inject constructor(
                         SecureLogger.d("CastManager", "PlaybackInfo resolved in ${playbackInfoTime}ms")
                     }
 
-                    // Add auth token to URL since Cast receivers can't use custom headers
-                    val mediaUrl = addAuthTokenToUrl(playbackData.url)
+                    // Cast receivers can't use custom headers; URLs must be accessible without tokens.
+                    // Use a local proxy or an unauthenticated endpoint when casting protected media.
+                    val mediaUrl = playbackData.url
 
                     // Determine stream type
                     val isLive = item.type == BaseItemKind.TV_CHANNEL || (item.runTimeTicks ?: 0L) <= 0L

@@ -177,8 +177,11 @@ All major transcoding improvements have been implemented!
 **Problem**: Access tokens are appended as `?api_key=` query parameters in subtitle and Cast URLs. 
 
 **Plan**:
-- [ ] For subtitle URLs: Use `Authorization: MediaBrowser Token="..."` header via OkHttp interceptor
-- [ ] For Cast URLs: Document the trade-off (Cast receiver compatibility) or use local proxy
+- [x] For subtitle URLs: Use `Authorization: MediaBrowser Token="..."` header via OkHttp interceptor
+- [x] For Cast URLs: Document the trade-off (Cast receiver compatibility) or use local proxy
+
+**Notes**:
+- Cast playback URLs no longer include access tokens; authenticated casting now requires a trusted proxy or unauthenticated endpoint.
 
 ---
 

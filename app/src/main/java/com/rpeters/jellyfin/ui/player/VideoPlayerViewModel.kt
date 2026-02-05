@@ -776,7 +776,12 @@ class VideoPlayerViewModel @Inject constructor(
                     val httpFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
                         .apply {
                             if (!token.isNullOrBlank()) {
-                                setDefaultRequestProperties(mapOf("X-Emby-Token" to token))
+                                setDefaultRequestProperties(
+                                    mapOf(
+                                        "X-Emby-Token" to token,
+                                        "Authorization" to buildMediaBrowserAuthorization(token),
+                                    ),
+                                )
                             }
                         }
                     val dataSourceFactory =
@@ -963,7 +968,12 @@ class VideoPlayerViewModel @Inject constructor(
                 val httpFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
                     .apply {
                         if (!token.isNullOrBlank()) {
-                            setDefaultRequestProperties(mapOf("X-Emby-Token" to token))
+                            setDefaultRequestProperties(
+                                mapOf(
+                                    "X-Emby-Token" to token,
+                                    "Authorization" to buildMediaBrowserAuthorization(token),
+                                ),
+                            )
                         }
                     }
                 val dataSourceFactory =
@@ -1169,6 +1179,10 @@ class VideoPlayerViewModel @Inject constructor(
         val normalizedServer = serverUrl.removeSuffix("/")
         val normalizedPath = if (path.startsWith("/")) path else "/$path"
         return normalizedServer + normalizedPath
+    }
+
+    private fun buildMediaBrowserAuthorization(token: String): String {
+        return "MediaBrowser Token=\"$token\""
     }
 
     private suspend fun handleCastState(castState: CastState) {
