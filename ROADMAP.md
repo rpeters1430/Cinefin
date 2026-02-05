@@ -1,6 +1,6 @@
 # Jellyfin Android - Roadmap
 
-**Last Updated**: January 30, 2026
+**Last Updated**: February 4, 2026
 
 > **Quick Links**: [Feature Status](CURRENT_STATUS.md) | [Known Issues](KNOWN_ISSUES.md) | [Upgrade Path](UPGRADE_PATH.md)
 
@@ -29,6 +29,12 @@ A clear, actionable improvement plan for the Jellyfin Android client.
 - **Picture-in-Picture** - Full implementation with remote actions (play/pause, skip ±30s)
 - **Chromecast** - Full casting with seek bar, volume control, position tracking
 - **Auto-Play Next Episode** - Automatic continuation with countdown UI (added Jan 23, 2026)
+- **Transcoding position reset fix** - Position preserved across codec flushes with retry limits
+- **Transcoding diagnostics tool** - Identifies which videos need transcoding and why
+
+### Needs Improvement
+- **Transcoding system** - Works but missing DeviceProfile, hardcoded bitrates, broken network assessment. See [IMPROVEMENT_PLAN Phase A](docs/IMPROVEMENT_PLAN.md#phase-a-transcoding--playback-system-overhaul-critical)
+- **Subtitle system** - Embedded subs work, but no external subs, no ASS/SSA styling, no sync delay
 
 ### Not Implemented
 - Live TV & DVR
@@ -94,6 +100,73 @@ Files: `ui/player/VideoPlayerActivity.kt`, `ui/player/PipActionReceiver.kt`
 
 ---
 
+## Phase 1.5: Transcoding & Playback System Overhaul
+
+> **Full Details**: [docs/IMPROVEMENT_PLAN.md - Phase A](docs/IMPROVEMENT_PLAN.md#phase-a-transcoding--playback-system-overhaul-critical)
+
+The transcoding system works for basic playback but has architectural gaps that cause unnecessary transcoding and degrade quality. This phase addresses the critical server communication and decision-making issues.
+
+### 1.5.1 DeviceProfile & Server Communication
+**Priority**: Critical | **Effort**: 5-7 days
+
+Tasks:
+- [ ] Implement Jellyfin DeviceProfile specification (send device capabilities to server)
+- [ ] Fix broken network quality assessment (currently hardcoded to HIGH)
+- [ ] Send AudioStreamIndex/SubtitleStreamIndex to server for multilingual content
+- [ ] Implement transcoding session lifecycle (heartbeat, cleanup)
+
+Files: `data/DeviceCapabilities.kt`, `data/repository/JellyfinStreamRepository.kt`, `data/playback/EnhancedPlaybackManager.kt`
+
+### 1.5.2 Quality Control & Adaptivity
+**Priority**: High | **Effort**: 3-5 days
+
+Tasks:
+- [ ] Make bitrate thresholds configurable (WiFi/Cellular/LAN separate)
+- [ ] Add default playback quality user preference
+- [ ] Add adaptive bitrate during playback (detect buffering, auto-reduce quality)
+- [ ] Unify codec detection logic (3 separate implementations → 1 source of truth)
+
+Files: `data/playback/EnhancedPlaybackManager.kt`, `ui/player/VideoPlayerViewModel.kt`, `data/DeviceCapabilities.kt`
+
+### 1.5.3 Error Recovery Improvements
+**Priority**: Medium | **Effort**: 2-3 days
+
+Tasks:
+- [ ] Replace string-matching fallback detection with ExoPlayer error codes
+- [ ] Distinguish codec errors vs bitrate errors vs resolution errors
+- [ ] Allow multiple fallback attempts (currently limited to 1)
+- [ ] Try lower quality before switching to full transcoding
+
+Files: `ui/player/VideoPlayerViewModel.kt`
+
+---
+
+## Phase 1.6: Subtitle & Preference Improvements
+
+### 1.6.1 Subtitle System
+**Priority**: Medium | **Effort**: 3-5 days
+
+Tasks:
+- [ ] Enable external subtitle support (currently filtered out)
+- [ ] Preserve ASS/SSA styling instead of converting everything to VTT
+- [ ] Add subtitle sync delay setting (±5 seconds)
+- [ ] Add subtitle encoding preference
+
+Files: `ui/player/VideoPlayerViewModel.kt`
+
+### 1.6.2 Playback Preferences
+**Priority**: Medium | **Effort**: 3-5 days
+
+Tasks:
+- [ ] Add preferred audio language setting (currently hardcoded to English)
+- [ ] Add auto-play next episode toggle with configurable countdown
+- [ ] Add auto-skip intro/outro preference
+- [ ] Add resume playback mode (Always/Ask/Never)
+
+Files: `ui/player/VideoPlayerViewModel.kt`, new DataStore preferences
+
+---
+
 ## Phase 2: Android TV Polish
 
 ### 2.1 D-pad Navigation Audit
@@ -123,7 +196,21 @@ Tasks:
 
 ---
 
-## Phase 3: Code Quality
+## Phase 3: Code Quality, Security & Reliability
+
+### 3.0 Security & Reliability
+**Priority**: High | **Effort**: 5-7 days
+
+> **Full Details**: [docs/IMPROVEMENT_PLAN.md - Phase B & C](docs/IMPROVEMENT_PLAN.md#phase-b-security-hardening-high)
+
+Tasks:
+- [ ] Remove API tokens from URL query parameters (CWE-598) - use Authorization header
+- [ ] Restrict cleartext HTTP to RFC 1918 private networks only
+- [ ] Add progress sync resilience for network drops (queue and retry)
+- [ ] Fix Cast session initialization race condition
+- [ ] Make auth interceptor non-blocking (replace Thread.sleep/runBlocking)
+- [ ] Add empty states and retry buttons across all screens
+- [ ] Add content descriptions for accessibility (TalkBack support)
 
 ### 3.1 Refactor Large Files
 **Priority**: Medium | **Effort**: 3-5 days
@@ -233,7 +320,10 @@ When completing a task:
 
 ## Related Documentation
 
+- [docs/IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md) - Detailed technical improvement plan (transcoding, security, accessibility)
 - [CLAUDE.md](CLAUDE.md) - Development guidelines
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution process
 - [MATERIAL3_EXPRESSIVE.md](MATERIAL3_EXPRESSIVE.md) - M3 Expressive components
 - [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) - Testing patterns
+- [TRANSCODING_FIX_SUMMARY.md](TRANSCODING_FIX_SUMMARY.md) - Transcoding position reset fix
+- [TRANSCODING_DIAGNOSTICS_GUIDE.md](TRANSCODING_DIAGNOSTICS_GUIDE.md) - Diagnostics tool usage
