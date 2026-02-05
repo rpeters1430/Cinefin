@@ -293,11 +293,12 @@ class PlaybackProgressManager @Inject constructor(
                         "PlaybackProgressManager",
                         "Failed to report progress: ${result.message} (Type: ${result.errorType})",
                     )
-                    
+
                     // If server returns 404 or Unauthorized, the session might have timed out
                     // Re-report start to establish a new session
                     if (result.errorType == com.rpeters.jellyfin.data.repository.common.ErrorType.NOT_FOUND ||
-                        result.errorType == com.rpeters.jellyfin.data.repository.common.ErrorType.UNAUTHORIZED) {
+                        result.errorType == com.rpeters.jellyfin.data.repository.common.ErrorType.UNAUTHORIZED
+                    ) {
                         Log.w("PlaybackProgressManager", "Session $sessionId timed out or not found, re-reporting start")
                         reportPlaybackStart(positionMs, durationMs)
                     }

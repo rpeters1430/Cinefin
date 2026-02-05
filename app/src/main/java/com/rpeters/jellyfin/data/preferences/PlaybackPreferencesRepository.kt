@@ -46,10 +46,10 @@ data class PlaybackPreferences(
 ) {
     companion object {
         val DEFAULT = PlaybackPreferences(
-            maxBitrateWifi = 80_000_000,    // 80 Mbps
+            maxBitrateWifi = 80_000_000, // 80 Mbps
             maxBitrateCellular = 25_000_000, // 25 Mbps
             transcodingQuality = TranscodingQuality.AUTO,
-            audioChannels = AudioChannelPreference.AUTO
+            audioChannels = AudioChannelPreference.AUTO,
         )
     }
 }
@@ -86,7 +86,7 @@ class PlaybackPreferencesRepository(
                 }.getOrDefault(PlaybackPreferences.DEFAULT.transcodingQuality),
                 audioChannels = runCatching {
                     AudioChannelPreference.valueOf(prefs[PreferencesKeys.AUDIO_CHANNELS] ?: "")
-                }.getOrDefault(PlaybackPreferences.DEFAULT.audioChannels)
+                }.getOrDefault(PlaybackPreferences.DEFAULT.audioChannels),
             )
         }
 

@@ -242,11 +242,11 @@ class JellyfinStreamRepository @Inject constructor(
             // Allow Direct Stream - keep video quality, only transcode audio if needed
             params.add("AllowVideoStreamCopy=true")
             params.add("AllowAudioStreamCopy=$allowAudioStreamCopy")
-            
+
             // Add stream indices for multilingual content
             audioStreamIndex?.let { params.add("AudioStreamIndex=$it") }
             subtitleStreamIndex?.let { params.add("SubtitleStreamIndex=$it") }
-            
+
             // Add playback identifiers when available so the server can apply session-specific settings.
             mediaSourceId?.let { params.add("MediaSourceId=$it") }
             playSessionId?.let { params.add("PlaySessionId=$it") }

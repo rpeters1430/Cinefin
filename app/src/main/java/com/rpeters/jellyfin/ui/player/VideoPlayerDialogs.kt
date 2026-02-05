@@ -33,7 +33,7 @@ fun AudioTrackSelectionDialog(
     availableTracks: List<TrackInfo>,
     onTrackSelect: (TrackInfo) -> Unit,
     onDismiss: () -> Unit,
-    maxHeight: Dp = LocalConfiguration.current.screenHeightDp.dp * 0.6f
+    maxHeight: Dp = LocalConfiguration.current.screenHeightDp.dp * 0.6f,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -74,7 +74,7 @@ fun SubtitleTrackSelectionDialog(
     selectedTrack: TrackInfo?,
     onTrackSelect: (TrackInfo?) -> Unit,
     onDismiss: () -> Unit,
-    maxHeight: Dp = LocalConfiguration.current.screenHeightDp.dp * 0.6f
+    maxHeight: Dp = LocalConfiguration.current.screenHeightDp.dp * 0.6f,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -125,7 +125,7 @@ fun SubtitleTrackSelectionDialog(
 fun CastDeviceSelectionDialog(
     availableDevices: List<String>,
     onDeviceSelect: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -163,25 +163,25 @@ fun QualityRecommendationNotification(
     recommendation: com.rpeters.jellyfin.data.playback.QualityRecommendation,
     onAccept: () -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier.fillMaxWidth().padding(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = Icons.Default.Speed,
                     contentDescription = "Quality recommendation",
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -189,23 +189,23 @@ fun QualityRecommendationNotification(
                         text = "Quality Recommendation",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                     Text(
                         text = recommendation.reason,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                     Text(
                         text = "Switch to ${recommendation.recommendedQuality.label} quality?",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                 }
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             ) {
                 Spacer(modifier = Modifier.weight(1f))
                 TextButton(onClick = onDismiss) {

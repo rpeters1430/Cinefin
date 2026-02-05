@@ -2,17 +2,8 @@ package com.rpeters.jellyfin.ui.player
 
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.Brightness6
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
-import java.lang.ref.WeakReference
 
 object VideoPlayerGestureConstants {
     const val DOUBLE_TAP_THRESHOLD_MS = 300L
@@ -44,7 +35,7 @@ fun Modifier.videoPlayerGestures(
                     onTap()
                 }
                 lastTapTime = currentTime
-            }
+            },
         )
     }
     .pointerInput(Unit) {

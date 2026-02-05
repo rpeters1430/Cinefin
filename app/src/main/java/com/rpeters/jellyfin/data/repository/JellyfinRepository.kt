@@ -979,7 +979,7 @@ class JellyfinRepository @Inject constructor(
     suspend fun getPlaybackInfo(
         itemId: String,
         audioStreamIndex: Int? = null,
-        subtitleStreamIndex: Int? = null
+        subtitleStreamIndex: Int? = null,
     ): PlaybackInfoResponse {
         val server = authRepository.getCurrentServer()
             ?: throw IllegalStateException("No authenticated server available")
@@ -1121,10 +1121,10 @@ class JellyfinRepository @Inject constructor(
      * @param isShieldOrAndroidTV Whether the Cast receiver is a SHIELD/Android TV (more capable)
      */
     suspend fun getCastPlaybackInfo(
-        itemId: String, 
+        itemId: String,
         isShieldOrAndroidTV: Boolean = false,
         audioStreamIndex: Int? = null,
-        subtitleStreamIndex: Int? = null
+        subtitleStreamIndex: Int? = null,
     ): PlaybackInfoResponse {
         val server = authRepository.getCurrentServer()
             ?: throw IllegalStateException("No authenticated server available")

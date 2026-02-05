@@ -74,13 +74,15 @@ class AdaptiveBitrateMonitor @Inject constructor(
 
                     // Track buffering events
                     if (currentState == androidx.media3.common.Player.STATE_BUFFERING &&
-                        previousPlaybackState == androidx.media3.common.Player.STATE_READY) {
+                        previousPlaybackState == androidx.media3.common.Player.STATE_READY
+                    ) {
                         // Started buffering
                         bufferingStartTime = currentTime
                         consecutiveBufferingEvents++
                         SecureLogger.v(TAG, "Buffering started (event #$consecutiveBufferingEvents)")
                     } else if (currentState == androidx.media3.common.Player.STATE_READY &&
-                               bufferingStartTime != null) {
+                        bufferingStartTime != null
+                    ) {
                         // Recovered from buffering
                         bufferingDuration = currentTime - (bufferingStartTime ?: currentTime)
                         SecureLogger.v(TAG, "Buffering ended after ${bufferingDuration}ms")
@@ -101,9 +103,9 @@ class AdaptiveBitrateMonitor @Inject constructor(
                     // 4. Not already at lowest quality
                     val prefs = playbackPreferencesRepository.preferences.first()
                     val canDowngrade = prefs.transcodingQuality == TranscodingQuality.AUTO &&
-                                       isTranscoding &&
-                                       (currentTime - lastQualityDowngrade) > MIN_TIME_BETWEEN_DOWNGRADES_MS &&
-                                       currentQuality != TranscodingQuality.LOW
+                        isTranscoding &&
+                        (currentTime - lastQualityDowngrade) > MIN_TIME_BETWEEN_DOWNGRADES_MS &&
+                        currentQuality != TranscodingQuality.LOW
 
                     if (canDowngrade) {
                         // Check for sustained buffering
@@ -111,12 +113,12 @@ class AdaptiveBitrateMonitor @Inject constructor(
                             val newQuality = getDowngradedQuality(currentQuality)
                             SecureLogger.w(
                                 TAG,
-                                "Sustained buffering detected (${currentBufferingDuration}ms). Recommending quality downgrade: $currentQuality -> $newQuality"
+                                "Sustained buffering detected (${currentBufferingDuration}ms). Recommending quality downgrade: $currentQuality -> $newQuality",
                             )
                             _qualityRecommendation.value = QualityRecommendation(
                                 recommendedQuality = newQuality,
                                 reason = "Buffering for ${currentBufferingDuration / 1000}s",
-                                severity = RecommendationSeverity.HIGH
+                                severity = RecommendationSeverity.HIGH,
                             )
                             lastQualityDowngrade = currentTime
                         }
@@ -125,12 +127,12 @@ class AdaptiveBitrateMonitor @Inject constructor(
                             val newQuality = getDowngradedQuality(currentQuality)
                             SecureLogger.w(
                                 TAG,
-                                "Multiple buffering events detected ($consecutiveBufferingEvents). Recommending quality downgrade: $currentQuality -> $newQuality"
+                                "Multiple buffering events detected ($consecutiveBufferingEvents). Recommending quality downgrade: $currentQuality -> $newQuality",
                             )
                             _qualityRecommendation.value = QualityRecommendation(
                                 recommendedQuality = newQuality,
                                 reason = "Frequent buffering ($consecutiveBufferingEvents events)",
-                                severity = RecommendationSeverity.MEDIUM
+                                severity = RecommendationSeverity.MEDIUM,
                             )
                             lastQualityDowngrade = currentTime
                             consecutiveBufferingEvents = 0 // Reset counter
@@ -146,12 +148,12 @@ class AdaptiveBitrateMonitor @Inject constructor(
                             val newQuality = getDowngradedQuality(currentQuality)
                             SecureLogger.w(
                                 TAG,
-                                "Critical bandwidth detected (${bandwidthEstimate / 1_000_000}Mbps). Recommending quality downgrade: $currentQuality -> $newQuality"
+                                "Critical bandwidth detected (${bandwidthEstimate / 1_000_000}Mbps). Recommending quality downgrade: $currentQuality -> $newQuality",
                             )
                             _qualityRecommendation.value = QualityRecommendation(
                                 recommendedQuality = newQuality,
                                 reason = "Low bandwidth (${bandwidthEstimate / 1_000_000}Mbps)",
-                                severity = RecommendationSeverity.HIGH
+                                severity = RecommendationSeverity.HIGH,
                             )
                             lastQualityDowngrade = currentTime
                         }
@@ -218,7 +220,7 @@ data class QualityRecommendation(
 )
 
 enum class RecommendationSeverity {
-    LOW,     // Suggestion
-    MEDIUM,  // Recommended
-    HIGH,    // Strongly recommended (buffering/bandwidth issues)
+    LOW, // Suggestion
+    MEDIUM, // Recommended
+    HIGH, // Strongly recommended (buffering/bandwidth issues)
 }

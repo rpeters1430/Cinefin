@@ -25,7 +25,7 @@ class PlaybackPreferencesViewModel @Inject constructor(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = PlaybackPreferences.DEFAULT
+            initialValue = PlaybackPreferences.DEFAULT,
         )
 
     fun setMaxBitrateWifi(bitrate: Int) {

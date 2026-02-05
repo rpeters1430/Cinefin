@@ -7,7 +7,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -38,7 +37,7 @@ fun PlaybackSettingsScreen(
                             contentDescription = stringResource(id = R.string.navigate_up),
                         )
                     }
-                }
+                },
             )
         },
         modifier = modifier,
@@ -48,13 +47,13 @@ fun PlaybackSettingsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
                 Text(
                     text = "Streaming Quality",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
 
@@ -62,7 +61,7 @@ fun PlaybackSettingsScreen(
                 BitrateSetting(
                     title = "WiFi Max Bitrate",
                     currentValue = prefs.maxBitrateWifi,
-                    onValueSelected = viewModel::setMaxBitrateWifi
+                    onValueSelected = viewModel::setMaxBitrateWifi,
                 )
             }
 
@@ -70,7 +69,7 @@ fun PlaybackSettingsScreen(
                 BitrateSetting(
                     title = "Cellular Max Bitrate",
                     currentValue = prefs.maxBitrateCellular,
-                    onValueSelected = viewModel::setMaxBitrateCellular
+                    onValueSelected = viewModel::setMaxBitrateCellular,
                 )
             }
 
@@ -81,7 +80,7 @@ fun PlaybackSettingsScreen(
                     currentValue = prefs.transcodingQuality,
                     values = TranscodingQuality.entries,
                     onValueSelected = viewModel::setTranscodingQuality,
-                    labelProvider = { it.label }
+                    labelProvider = { it.label },
                 )
             }
 
@@ -92,7 +91,7 @@ fun PlaybackSettingsScreen(
                     currentValue = prefs.audioChannels,
                     values = AudioChannelPreference.entries,
                     onValueSelected = viewModel::setAudioChannels,
-                    labelProvider = { it.label }
+                    labelProvider = { it.label },
                 )
             }
         }
@@ -103,7 +102,7 @@ fun PlaybackSettingsScreen(
 private fun BitrateSetting(
     title: String,
     currentValue: Int,
-    onValueSelected: (Int) -> Unit
+    onValueSelected: (Int) -> Unit,
 ) {
     val bitrates = listOf(
         120_000_000 to "120 Mbps (4K)",
@@ -112,7 +111,7 @@ private fun BitrateSetting(
         20_000_000 to "20 Mbps",
         10_000_000 to "10 Mbps (720p)",
         5_000_000 to "5 Mbps",
-        3_000_000 to "3 Mbps (480p)"
+        3_000_000 to "3 Mbps (480p)",
     )
 
     var expanded by remember { mutableStateOf(false) }
@@ -127,7 +126,7 @@ private fun BitrateSetting(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = true }
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = 8.dp),
             )
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 bitrates.forEach { (value, label) ->
@@ -136,7 +135,7 @@ private fun BitrateSetting(
                         onClick = {
                             onValueSelected(value)
                             expanded = false
-                        }
+                        },
                     )
                 }
             }
@@ -151,7 +150,7 @@ private fun <T : Enum<T>> EnumSetting(
     currentValue: T,
     values: List<T>,
     onValueSelected: (T) -> Unit,
-    labelProvider: (T) -> String
+    labelProvider: (T) -> String,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -166,7 +165,7 @@ private fun <T : Enum<T>> EnumSetting(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = true }
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = 8.dp),
             )
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 values.forEach { value ->
@@ -175,7 +174,7 @@ private fun <T : Enum<T>> EnumSetting(
                         onClick = {
                             onValueSelected(value)
                             expanded = false
-                        }
+                        },
                     )
                 }
             }

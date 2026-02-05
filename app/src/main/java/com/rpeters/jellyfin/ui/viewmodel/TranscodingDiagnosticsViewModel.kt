@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
-import android.media.MediaCodecList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.DeviceCapabilities
@@ -119,7 +118,7 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
             audioCodec = audioCodec,
             width = width,
             height = height,
-            bitrate = bitrate
+            bitrate = bitrate,
         )
 
         return VideoAnalysis(
