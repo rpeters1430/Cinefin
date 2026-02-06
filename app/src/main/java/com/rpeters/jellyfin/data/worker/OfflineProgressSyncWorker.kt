@@ -14,12 +14,12 @@ import java.util.concurrent.TimeUnit
 class OfflineProgressSyncWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val userRepository: JellyfinUserRepository
+    private val userRepository: JellyfinUserRepository,
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
         SecureLogger.d("OfflineProgressWorker", "Starting offline progress sync")
-        
+
         return try {
             val result = userRepository.syncOfflineProgress()
             if (result is ApiResult.Success) {
@@ -48,7 +48,7 @@ class OfflineProgressSyncWorker @AssistedInject constructor(
                 .setBackoffCriteria(
                     BackoffPolicy.EXPONENTIAL,
                     WorkRequest.MIN_BACKOFF_MILLIS,
-                    TimeUnit.MILLISECONDS
+                    TimeUnit.MILLISECONDS,
                 )
                 .addTag(WORK_NAME)
                 .build()
@@ -56,9 +56,9 @@ class OfflineProgressSyncWorker @AssistedInject constructor(
             WorkManager.getInstance(context).enqueueUniqueWork(
                 WORK_NAME,
                 ExistingWorkPolicy.REPLACE,
-                request
+                request,
             )
-            
+
             SecureLogger.d("OfflineProgressWorker", "Scheduled offline progress sync")
         }
     }

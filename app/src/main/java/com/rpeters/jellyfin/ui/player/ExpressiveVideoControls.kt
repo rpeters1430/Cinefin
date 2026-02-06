@@ -14,7 +14,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -359,7 +358,7 @@ private fun ExpressiveBottomControls(
                                     .height(4.dp)
                                     .align(Alignment.CenterStart)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f))
+                                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)),
                             )
 
                             // Main progress slider (foreground layer)
