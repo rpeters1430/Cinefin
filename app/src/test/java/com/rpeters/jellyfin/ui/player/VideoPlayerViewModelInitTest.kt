@@ -39,7 +39,9 @@ class VideoPlayerViewModelInitTest {
     private lateinit var mockCastManager: CastManager
     private lateinit var mockPlaybackProgressManager: PlaybackProgressManager
     private lateinit var mockEnhancedPlaybackManager: EnhancedPlaybackManager
+    private lateinit var mockAdaptiveBitrateMonitor: com.rpeters.jellyfin.data.playback.AdaptiveBitrateMonitor
     private lateinit var mockAnalyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper
+    private lateinit var mockOkHttpClient: okhttp3.OkHttpClient
     private lateinit var castStateFlow: MutableStateFlow<CastState>
     private lateinit var playbackProgressFlow: MutableStateFlow<PlaybackProgress>
 
@@ -52,7 +54,9 @@ class VideoPlayerViewModelInitTest {
         mockCastManager = mockk(relaxed = true)
         mockPlaybackProgressManager = mockk(relaxed = true)
         mockEnhancedPlaybackManager = mockk(relaxed = true)
+        mockAdaptiveBitrateMonitor = mockk(relaxed = true)
         mockAnalyticsHelper = mockk(relaxed = true)
+        mockOkHttpClient = mockk(relaxed = true)
 
         // Create flows that CastManager and PlaybackProgressManager will expose
         castStateFlow = MutableStateFlow(CastState())
@@ -96,7 +100,9 @@ class VideoPlayerViewModelInitTest {
             castManager = mockCastManager,
             playbackProgressManager = mockPlaybackProgressManager,
             enhancedPlaybackManager = mockEnhancedPlaybackManager,
+            adaptiveBitrateMonitor = mockAdaptiveBitrateMonitor,
             analytics = mockAnalyticsHelper,
+            okHttpClient = mockOkHttpClient,
         )
 
         // Allow coroutines to process
@@ -123,7 +129,9 @@ class VideoPlayerViewModelInitTest {
             castManager = mockCastManager,
             playbackProgressManager = mockPlaybackProgressManager,
             enhancedPlaybackManager = mockEnhancedPlaybackManager,
+            adaptiveBitrateMonitor = mockAdaptiveBitrateMonitor,
             analytics = mockAnalyticsHelper,
+            okHttpClient = mockOkHttpClient,
         )
 
         advanceUntilIdle()
@@ -147,7 +155,9 @@ class VideoPlayerViewModelInitTest {
             castManager = mockCastManager,
             playbackProgressManager = mockPlaybackProgressManager,
             enhancedPlaybackManager = mockEnhancedPlaybackManager,
+            adaptiveBitrateMonitor = mockAdaptiveBitrateMonitor,
             analytics = mockAnalyticsHelper,
+            okHttpClient = mockOkHttpClient,
         )
 
         advanceUntilIdle()

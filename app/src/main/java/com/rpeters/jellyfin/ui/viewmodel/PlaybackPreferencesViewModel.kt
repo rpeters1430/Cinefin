@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.preferences.AudioChannelPreference
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferences
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
+import com.rpeters.jellyfin.data.preferences.ResumePlaybackMode
 import com.rpeters.jellyfin.data.preferences.TranscodingQuality
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -49,6 +50,24 @@ class PlaybackPreferencesViewModel @Inject constructor(
     fun setAudioChannels(preference: AudioChannelPreference) {
         viewModelScope.launch {
             repository.setAudioChannels(preference)
+        }
+    }
+
+    fun setPreferredAudioLanguage(language: String?) {
+        viewModelScope.launch {
+            repository.setPreferredAudioLanguage(language)
+        }
+    }
+
+    fun setAutoPlayNextEpisode(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setAutoPlayNextEpisode(enabled)
+        }
+    }
+
+    fun setResumePlaybackMode(mode: ResumePlaybackMode) {
+        viewModelScope.launch {
+            repository.setResumePlaybackMode(mode)
         }
     }
 }

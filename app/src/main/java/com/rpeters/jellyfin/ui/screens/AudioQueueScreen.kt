@@ -49,6 +49,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.MediaItem
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.ui.components.EmptyStateComposable
+import com.rpeters.jellyfin.ui.components.EmptyStateType
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
 
@@ -116,35 +118,15 @@ fun AudioQueueScreen(
         modifier = modifier,
     ) { paddingValues ->
         if (queue.isEmpty()) {
-            // Empty state
-            Box(
+            EmptyStateComposable(
+                icon = Icons.Filled.MusicNote,
+                title = "Queue is empty",
+                description = "Add some music to get started",
+                type = EmptyStateType.Info,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Icon(
-                        Icons.Filled.MusicNote,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    )
-                    Text(
-                        text = "Queue is empty",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = "Add some music to get started",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    )
-                }
-            }
+            )
         } else {
             LazyColumn(
                 modifier = Modifier

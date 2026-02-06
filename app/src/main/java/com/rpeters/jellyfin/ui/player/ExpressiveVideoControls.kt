@@ -343,27 +343,26 @@ private fun ExpressiveBottomControls(
                             }
                         }
 
-                        BoxWithConstraints(
+                        Box(
                             modifier = Modifier.weight(1f),
                         ) {
-                            // Buffer progress (background) - Expressive wavy indicator
-                            LinearWavyProgressIndicator(
-                                progress = {
-                                    if (playerState.duration > 0) {
-                                        playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()
-                                    } else {
-                                        0f
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                                trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
-                                amplitude = { 0.12f },
-                                wavelength = 56.dp,
-                                waveSpeed = 28.dp,
+                            // Buffer indicator (background layer) - subtle and less prominent
+                            val bufferedProgress = if (playerState.duration > 0) {
+                                (playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()).coerceIn(0f, 1f)
+                            } else {
+                                0f
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(bufferedProgress)
+                                    .height(4.dp)
+                                    .align(Alignment.CenterStart)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f))
                             )
 
-                            // Main progress slider
+                            // Main progress slider (foreground layer)
                             Slider(
                                 value = sliderPosition,
                                 onValueChange = { progress ->
@@ -380,7 +379,7 @@ private fun ExpressiveBottomControls(
                                 colors = SliderDefaults.colors(
                                     thumbColor = MaterialTheme.colorScheme.primary,
                                     activeTrackColor = MaterialTheme.colorScheme.primary,
-                                    inactiveTrackColor = Color.Transparent,
+                                    inactiveTrackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
                                 ),
                             )
                         }

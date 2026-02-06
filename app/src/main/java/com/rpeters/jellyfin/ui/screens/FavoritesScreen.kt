@@ -34,6 +34,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.EmptyStateComposable
+import com.rpeters.jellyfin.ui.components.EmptyStateType
 import com.rpeters.jellyfin.ui.components.MediaCard
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -119,32 +121,12 @@ fun FavoritesScreen(
                     }
                 }
                 favorites.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Favorite,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Text(
-                                text = "No favorites yet",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Medium,
-                            )
-                            Text(
-                                text = "Add items to your favorites to see them here",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+                    EmptyStateComposable(
+                        icon = Icons.Default.Favorite,
+                        title = "No favorites yet",
+                        description = "Add items to your favorites to see them here",
+                        type = EmptyStateType.Info,
+                    )
                 }
                 else -> {
                     LazyColumn(

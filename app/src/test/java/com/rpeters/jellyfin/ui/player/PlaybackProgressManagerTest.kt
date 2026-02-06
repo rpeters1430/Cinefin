@@ -51,8 +51,8 @@ class PlaybackProgressManagerTest {
         advanceUntilIdle()
 
         val expectedTicks = 6_000L * 10_000L
-        coVerify { repository.reportPlaybackStart(itemId, sessionId, expectedTicks, null, false, false, true) }
-        coVerify { repository.reportPlaybackProgress(itemId, sessionId, expectedTicks, null, false, false, true) }
+        coVerify { repository.reportPlaybackStart(itemId, sessionId, expectedTicks, null, org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY, false, false, true) }
+        coVerify { repository.reportPlaybackProgress(itemId, sessionId, expectedTicks, null, org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY, false, false, true) }
 
         advanceTimeBy(10_000L)
         advanceUntilIdle()

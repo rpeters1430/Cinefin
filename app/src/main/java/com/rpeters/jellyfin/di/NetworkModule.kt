@@ -193,6 +193,28 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideJellyfinRepository(
+        sessionManager: com.rpeters.jellyfin.data.session.JellyfinSessionManager,
+        secureCredentialManager: com.rpeters.jellyfin.data.SecureCredentialManager,
+        @ApplicationContext context: Context,
+        deviceCapabilities: DeviceCapabilities,
+        authRepository: JellyfinAuthRepository,
+        streamRepository: JellyfinStreamRepository,
+        connectivityChecker: ConnectivityChecker,
+    ): JellyfinRepository {
+        return JellyfinRepository(
+            sessionManager,
+            secureCredentialManager,
+            context,
+            deviceCapabilities,
+            authRepository,
+            streamRepository,
+            connectivityChecker,
+        )
+    }
+
+    @Provides
+    @Singleton
     fun provideTimeProvider(): () -> Long {
         return System::currentTimeMillis
     }

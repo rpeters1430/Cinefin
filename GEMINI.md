@@ -4,10 +4,10 @@
 This is a modern Android client for Jellyfin media servers, built with **Jetpack Compose** and **Material 3 Expressive Design**. It follows a clean **MVVM architecture** with **Hilt** dependency injection.
 
 **Key Technologies:**
-- **Language:** Kotlin 2.3.0 (JDK 21 required)
+- **Language:** Kotlin 2.3.10 (JDK 21 required)
 - **UI:** Jetpack Compose (BOM 2026.01.01), Material 3 Expressive (Alpha)
 - **Architecture:** MVVM + Repository Pattern
-- **Dependency Injection:** Hilt 2.59
+- **Dependency Injection:** Hilt 2.59.1
 - **Async:** Kotlin Coroutines 1.10.2 + StateFlow
 - **Media:** ExoPlayer (Media3 1.9.1) + FFmpeg decoder
 - **Networking:** Retrofit 3.0.0 + OkHttp 5.3.2 + Jellyfin SDK 1.8.6
@@ -54,6 +54,7 @@ This is a modern Android client for Jellyfin media servers, built with **Jetpack
   - **Storage:** `SecureCredentialManager` (Android Keystore).
   - **Network:** `network_security_config.xml` + TOFU Certificate Pinning.
   - **Logging:** `SecureLogger` (strips PII).
+  - **URL Safety:** API tokens removed from URL query parameters (CWE-598).
 
 ### Testing Guidelines
 - **Mocking:**
@@ -62,7 +63,7 @@ This is a modern Android client for Jellyfin media servers, built with **Jetpack
 - **Coroutines:** Use `StandardTestDispatcher` with `advanceUntilIdle()` in `runTest`.
 - **Coverage:** Target 70%+ for ViewModels.
 
-## 5. Development Status (from CURRENT_STATUS.md)
+## 5. Development Status (Updated Feb 5, 2026)
 - **Active Development:**
   - Music Background Playback.
   - Offline Downloads (Core logic).
@@ -70,8 +71,16 @@ This is a modern Android client for Jellyfin media servers, built with **Jetpack
 - **Stable Features:**
   - Authentication (Multi-server, Quick Connect).
   - Video Playback (ExoPlayer, PiP, HLS/DASH).
-  - Chromecast.
+  - Chromecast (Enhanced with Seek/Volume/Tracking).
   - Material 3 Adaptive UI.
+  - Adaptive Bitrate Monitoring & Quality Control.
+  - Transcoding Diagnostics Tool.
+  - Firebase Integration (Analytics, Config, Crashlytics).
+  - AI Assistant & AI Summaries.
+  - DNS Resolution Error Handling.
+- **Security Enhancements:**
+  - Authorization headers used instead of URL tokens.
+  - TOFU Certificate Pinning.
 
 ## 6. Commit & Contribution
 - **Format:** Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`).

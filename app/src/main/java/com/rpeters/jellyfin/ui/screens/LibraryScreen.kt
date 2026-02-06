@@ -45,6 +45,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.EmptyStateComposable
+import com.rpeters.jellyfin.ui.components.EmptyStateType
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.components.shimmer
 import com.rpeters.jellyfin.utils.getItemKey
@@ -153,16 +155,13 @@ fun LibraryScreen(
                         }
                     }
                     libraries.isEmpty() -> {
-                        Box(
+                        EmptyStateComposable(
+                            icon = Icons.AutoMirrored.Filled.LibraryBooks,
+                            title = stringResource(id = R.string.no_libraries_found),
+                            description = "Your media libraries will appear here once they are configured on your server",
+                            type = EmptyStateType.Info,
                             modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = stringResource(id = R.string.no_libraries_found),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        )
                     }
                     else -> {
                         LazyColumn(

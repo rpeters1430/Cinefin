@@ -43,6 +43,8 @@ class EnhancedPlaybackManagerTest {
     private lateinit var repository: JellyfinRepository
     private lateinit var streamRepository: JellyfinStreamRepository
     private lateinit var deviceCapabilities: DeviceCapabilities
+    private lateinit var connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker
+    private lateinit var playbackPreferencesRepository: com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
     private lateinit var connectivityManager: ConnectivityManager
     private lateinit var network: Network
     private lateinit var networkCapabilities: NetworkCapabilities
@@ -53,6 +55,8 @@ class EnhancedPlaybackManagerTest {
         repository = mockk(relaxed = true)
         streamRepository = mockk(relaxed = true)
         deviceCapabilities = mockk(relaxed = true)
+        connectivityChecker = mockk(relaxed = true)
+        playbackPreferencesRepository = mockk(relaxed = true)
         connectivityManager = mockk(relaxed = true)
         network = mockk(relaxed = true)
         networkCapabilities = mockk(relaxed = true)
@@ -72,6 +76,8 @@ class EnhancedPlaybackManagerTest {
             repository = repository,
             streamRepository = streamRepository,
             deviceCapabilities = deviceCapabilities,
+            connectivityChecker = connectivityChecker,
+            playbackPreferencesRepository = playbackPreferencesRepository,
         )
     }
 

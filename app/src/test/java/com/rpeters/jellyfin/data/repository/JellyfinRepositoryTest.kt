@@ -34,6 +34,7 @@ class JellyfinRepositoryTest {
         every { isUserAuthenticated() } answers { connectedFlow.value }
     }
     private val mockStreamRepository = mockk<JellyfinStreamRepository>(relaxed = true)
+    private val mockConnectivityChecker = mockk<com.rpeters.jellyfin.network.ConnectivityChecker>(relaxed = true)
     private val repository = JellyfinRepository(
         mockSessionManager,
         mockCredentialManager,
@@ -41,6 +42,7 @@ class JellyfinRepositoryTest {
         mockDeviceCapabilities,
         mockAuthRepository,
         mockStreamRepository,
+        mockConnectivityChecker,
     )
 
     @Test

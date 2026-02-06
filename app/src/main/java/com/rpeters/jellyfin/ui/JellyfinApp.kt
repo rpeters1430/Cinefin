@@ -71,8 +71,12 @@ fun JellyfinApp(
     onShortcutConsumed: () -> Unit = {},
 ) {
     // Collect theme preferences
-    val themeViewModel: ThemePreferencesViewModel = hiltViewModel()
+    val themeViewModel: com.rpeters.jellyfin.ui.viewmodel.ThemePreferencesViewModel = hiltViewModel()
     val themePreferences by themeViewModel.themePreferences.collectAsStateWithLifecycle()
+
+    // Main app ViewModel for global state and sync tasks
+    val mainAppViewModel: com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel = hiltViewModel()
+    val appState by mainAppViewModel.appState.collectAsStateWithLifecycle()
 
     JellyfinAndroidTheme(themePreferences = themePreferences) {
         val navController = rememberNavController()

@@ -584,8 +584,7 @@ class CastManager @Inject constructor(
     }
 
     private fun buildCastAuthErrorMessage(status: MediaStatus): String {
-        val errorInfo = status.mediaError?.let { " (${it.type})" } ?: ""
-        return "Cast playback failed$errorInfo. " +
+        return "Cast playback failed. " +
             "If your Jellyfin server requires authentication, casting needs a local proxy or " +
             "an unauthenticated stream endpoint."
     }
@@ -778,8 +777,10 @@ class CastManager @Inject constructor(
                 return
             }
 
-            val primaryImage = imageUrl?.let { addAuthTokenToUrl(it) }
-            val backdropImage = backdropUrl?.let { addAuthTokenToUrl(it) }
+            // SECURITY: Do not add tokens to Cast image URLs (CWE-598)
+            // Cast receivers fetch images directly without custom headers
+            val primaryImage = imageUrl
+            val backdropImage = backdropUrl
             val largestImageUrl = backdropImage ?: primaryImage
             if (largestImageUrl.isNullOrBlank()) {
                 return
@@ -1010,9 +1011,10 @@ class CastManager @Inject constructor(
         if (url.isNullOrBlank()) {
             return
         }
-        val authenticatedUrl = addAuthTokenToUrl(url)
+        // SECURITY: Do not add tokens to Cast image URLs (CWE-598)
+        // Cast receivers fetch images directly without custom headers
         runCatching {
-            addImage(WebImage(authenticatedUrl.toUri()))
+            addImage(WebImage(url.toUri()))
         }.onFailure { throwable ->
             SecureLogger.w(
                 "CastManager",
