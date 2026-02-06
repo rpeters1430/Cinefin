@@ -21,7 +21,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 
 /**
  * Auto-hiding translucent top app bar for immersive layouts.
@@ -49,17 +48,17 @@ fun AutoHideTopAppBar(
         enter = slideInVertically(
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow
+                stiffness = Spring.StiffnessLow,
             ),
-            initialOffsetY = { -it }
+            initialOffsetY = { -it },
         ),
         exit = slideOutVertically(
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioNoBouncy,
-                stiffness = Spring.StiffnessMedium
+                stiffness = Spring.StiffnessMedium,
             ),
-            targetOffsetY = { -it }
-        )
+            targetOffsetY = { -it },
+        ),
     ) {
         TopAppBar(
             title = { Text(title) },
@@ -126,6 +125,6 @@ fun ScrollAwareTopAppBar(
         actions = actions,
         translucent = translucent,
         scrollBehavior = scrollBehavior,
-        modifier = modifier
+        modifier = modifier,
     )
 }

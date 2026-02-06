@@ -8,9 +8,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
@@ -33,29 +30,29 @@ fun FloatingActionGroup(
     orientation: FabOrientation = FabOrientation.Vertical,
     visible: Boolean = true,
     primaryAction: FabAction? = null,
-    secondaryActions: List<FabAction> = emptyList()
+    secondaryActions: List<FabAction> = emptyList(),
 ) {
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
+        exit = fadeOut() + shrinkVertically(),
     ) {
         when (orientation) {
             FabOrientation.Vertical -> {
                 Column(
                     modifier = modifier,
                     verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.FabSpacing),
-                    horizontalAlignment = Alignment.End
+                    horizontalAlignment = Alignment.End,
                 ) {
                     secondaryActions.forEach { action ->
                         SmallFloatingActionButton(
                             onClick = action.onClick,
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            contentColor = MaterialTheme.colorScheme.onSurface
+                            contentColor = MaterialTheme.colorScheme.onSurface,
                         ) {
                             Icon(
                                 imageVector = action.icon,
-                                contentDescription = action.contentDescription
+                                contentDescription = action.contentDescription,
                             )
                         }
                     }
@@ -66,12 +63,12 @@ fun FloatingActionGroup(
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             elevation = FloatingActionButtonDefaults.elevation(
-                                defaultElevation = Dimens.Spacing8
-                            )
+                                defaultElevation = Dimens.Spacing8,
+                            ),
                         ) {
                             Icon(
                                 imageVector = action.icon,
-                                contentDescription = action.contentDescription
+                                contentDescription = action.contentDescription,
                             )
                         }
                     }
@@ -82,17 +79,17 @@ fun FloatingActionGroup(
                 Row(
                     modifier = modifier,
                     horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.FabSpacing),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     primaryAction?.let { action ->
                         FloatingActionButton(
                             onClick = action.onClick,
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         ) {
                             Icon(
                                 imageVector = action.icon,
-                                contentDescription = action.contentDescription
+                                contentDescription = action.contentDescription,
                             )
                         }
                     }
@@ -101,11 +98,11 @@ fun FloatingActionGroup(
                         SmallFloatingActionButton(
                             onClick = action.onClick,
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            contentColor = MaterialTheme.colorScheme.onSurface
+                            contentColor = MaterialTheme.colorScheme.onSurface,
                         ) {
                             Icon(
                                 imageVector = action.icon,
-                                contentDescription = action.contentDescription
+                                contentDescription = action.contentDescription,
                             )
                         }
                     }
@@ -118,10 +115,10 @@ fun FloatingActionGroup(
 data class FabAction(
     val icon: ImageVector,
     val contentDescription: String,
-    val onClick: () -> Unit
+    val onClick: () -> Unit,
 )
 
 enum class FabOrientation {
     Vertical,
-    Horizontal
+    Horizontal,
 }

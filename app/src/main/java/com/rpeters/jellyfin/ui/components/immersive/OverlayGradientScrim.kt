@@ -24,25 +24,25 @@ fun OverlayGradientScrim(
     startColor: Color = Color.Black.copy(alpha = 0.8f),
     endColor: Color = Color.Transparent,
     height: androidx.compose.ui.unit.Dp = ImmersiveDimens.GradientHeightHero,
-    content: @Composable BoxScope.() -> Unit = {}
+    content: @Composable BoxScope.() -> Unit = {},
 ) {
     Box(modifier = modifier) {
         val gradientBrush = when (style) {
             GradientStyle.BottomUp -> Brush.verticalGradient(
                 colors = listOf(endColor, startColor),
                 startY = 0f,
-                endY = Float.POSITIVE_INFINITY
+                endY = Float.POSITIVE_INFINITY,
             )
             GradientStyle.TopDown -> Brush.verticalGradient(
                 colors = listOf(startColor, endColor),
                 startY = 0f,
-                endY = Float.POSITIVE_INFINITY
+                endY = Float.POSITIVE_INFINITY,
             )
             GradientStyle.FullOverlay -> Brush.verticalGradient(
-                colors = listOf(startColor, startColor)
+                colors = listOf(startColor, startColor),
             )
             GradientStyle.CenterFade -> Brush.radialGradient(
-                colors = listOf(endColor, startColor)
+                colors = listOf(endColor, startColor),
             )
         }
 
@@ -53,11 +53,11 @@ fun OverlayGradientScrim(
                         GradientStyle.BottomUp -> Alignment.BottomCenter
                         GradientStyle.TopDown -> Alignment.TopCenter
                         else -> Alignment.Center
-                    }
+                    },
                 )
                 .fillMaxWidth()
                 .height(if (style == GradientStyle.FullOverlay) height else height)
-                .background(gradientBrush)
+                .background(gradientBrush),
         )
 
         content()
@@ -70,7 +70,7 @@ fun OverlayGradientScrim(
 @Composable
 fun HeroGradientScrim(
     modifier: Modifier = Modifier,
-    content: @Composable BoxScope.() -> Unit = {}
+    content: @Composable BoxScope.() -> Unit = {},
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // Bottom gradient for readability
@@ -84,10 +84,10 @@ fun HeroGradientScrim(
                         colors = listOf(
                             Color.Transparent,
                             Color.Black.copy(alpha = 0.7f),
-                            Color.Black.copy(alpha = 0.9f)
-                        )
-                    )
-                )
+                            Color.Black.copy(alpha = 0.9f),
+                        ),
+                    ),
+                ),
         )
 
         content()
@@ -98,5 +98,5 @@ enum class GradientStyle {
     BottomUp,
     TopDown,
     FullOverlay,
-    CenterFade
+    CenterFade,
 }

@@ -13,7 +13,6 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -44,17 +43,17 @@ fun AutoHideBottomNavBar(
         enter = slideInVertically(
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow
+                stiffness = Spring.StiffnessLow,
             ),
-            initialOffsetY = { it }
+            initialOffsetY = { it },
         ),
         exit = slideOutVertically(
             animationSpec = spring(
                 dampingRatio = Spring.DampingRatioNoBouncy,
-                stiffness = Spring.StiffnessMedium
+                stiffness = Spring.StiffnessMedium,
             ),
-            targetOffsetY = { it }
-        )
+            targetOffsetY = { it },
+        ),
     ) {
         NavigationBar(
             modifier = modifier,
@@ -66,12 +65,12 @@ fun AutoHideBottomNavBar(
                     icon = {
                         Icon(
                             imageVector = if (index == selectedItem) item.selectedIcon else item.icon,
-                            contentDescription = item.label
+                            contentDescription = item.label,
                         )
                     },
                     label = { Text(item.label) },
                     selected = index == selectedItem,
-                    onClick = { onItemSelected(index) }
+                    onClick = { onItemSelected(index) },
                 )
             }
         }
@@ -118,7 +117,7 @@ fun ScrollAwareBottomNavBar(
         items = items,
         selectedItem = selectedItem,
         onItemSelected = onItemSelected,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 

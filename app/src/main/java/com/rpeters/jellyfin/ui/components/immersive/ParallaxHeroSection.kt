@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -38,12 +37,12 @@ fun ParallaxHeroSection(
     parallaxFactor: Float = 0.5f,
     contentScale: ContentScale = ContentScale.Crop,
     showGradient: Boolean = true,
-    content: @Composable BoxScope.() -> Unit = {}
+    content: @Composable BoxScope.() -> Unit = {},
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(height)
+            .height(height),
     ) {
         // Background image with parallax effect
         AsyncImage(
@@ -58,7 +57,7 @@ fun ParallaxHeroSection(
                 .graphicsLayer {
                     // Parallax effect: move image slower than scroll
                     translationY = scrollOffset * parallaxFactor * height.toPx()
-                }
+                },
         )
 
         // Gradient overlay for text readability
@@ -74,13 +73,13 @@ fun ParallaxHeroSection(
                                     Color.Transparent,
                                     Color.Black.copy(alpha = 0.3f),
                                     Color.Black.copy(alpha = 0.7f),
-                                    Color.Black.copy(alpha = 0.9f)
+                                    Color.Black.copy(alpha = 0.9f),
                                 ),
                                 startY = 0f,
-                                endY = size.height
-                            )
+                                endY = size.height,
+                            ),
                         )
-                    }
+                    },
             )
         }
 
@@ -98,7 +97,7 @@ fun StaticHeroSection(
     modifier: Modifier = Modifier,
     height: Dp = ImmersiveDimens.HeroHeightPhone,
     contentScale: ContentScale = ContentScale.Crop,
-    content: @Composable BoxScope.() -> Unit = {}
+    content: @Composable BoxScope.() -> Unit = {},
 ) {
     ParallaxHeroSection(
         imageUrl = imageUrl,
@@ -107,6 +106,6 @@ fun StaticHeroSection(
         height = height,
         parallaxFactor = 0f,
         contentScale = contentScale,
-        content = content
+        content = content,
     )
 }

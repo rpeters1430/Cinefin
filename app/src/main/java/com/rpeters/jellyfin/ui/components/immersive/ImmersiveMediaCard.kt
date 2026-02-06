@@ -45,11 +45,9 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.image.ImageQuality
 import com.rpeters.jellyfin.ui.image.ImageSize
@@ -192,10 +190,10 @@ private fun ImmersiveCardContent(
                             Color.Transparent,
                             Color.Black.copy(alpha = 0.3f),
                             Color.Black.copy(alpha = 0.7f),
-                            Color.Black.copy(alpha = 0.9f)
+                            Color.Black.copy(alpha = 0.9f),
                         ),
                         startY = 0f,
-                        endY = Float.POSITIVE_INFINITY
+                        endY = Float.POSITIVE_INFINITY,
                     ),
                 ),
         )
@@ -363,5 +361,5 @@ private fun ImmersiveCardContent(
 enum class ImmersiveCardSize {
     SMALL,
     MEDIUM,
-    LARGE
+    LARGE,
 }

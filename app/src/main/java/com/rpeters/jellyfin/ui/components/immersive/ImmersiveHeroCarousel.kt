@@ -179,7 +179,7 @@ private fun ImmersiveHeroCard(
                             Color.Transparent,
                             scrimColor.copy(alpha = 0.3f),
                             scrimColor.copy(alpha = 0.7f),
-                            scrimColor.copy(alpha = 0.9f)
+                            scrimColor.copy(alpha = 0.9f),
                         ),
                         startY = size.height * 0.3f,
                         endY = size.height,
