@@ -21,8 +21,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26
         targetSdk = 35
-        versionCode = 35
-        versionName = "14.03"
+        versionCode = 36
+        versionName = "14.04"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -178,6 +178,7 @@ dependencies {
     implementation(libs.androidx.media3.common)
     implementation(libs.androidx.media3.cast)
     implementation(libs.androidx.media3.session)
+    implementation(libs.androidx.media3.datasource.okhttp)
     implementation(libs.jellyfin.media3.ffmpeg.decoder)
     implementation(libs.google.cast.framework)
 
@@ -199,6 +200,11 @@ dependencies {
     ksp(libs.dagger.hilt.compiler)
     ksp(libs.kotlinx.metadata.jvm)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
+
+    // WorkManager
+    implementation(libs.androidx.work.runtime)
 
     // Android TV Compose
     implementation(libs.androidx.tv.material)
@@ -214,6 +220,8 @@ dependencies {
     testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.ui.test.junit4)
+    testImplementation(platform(libs.androidx.compose.bom))
 
     // Hilt testing
     testImplementation(libs.dagger.hilt.android.testing)

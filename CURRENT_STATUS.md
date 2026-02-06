@@ -1,6 +1,6 @@
 # Jellyfin Android - Current Status
 
-**Last Updated**: January 30, 2026
+**Last Updated**: February 5, 2026
 
 This document provides a comprehensive snapshot of what works RIGHT NOW in the Jellyfin Android client. For planned features and improvements, see [ROADMAP.md](ROADMAP.md). For known bugs and workarounds, see [KNOWN_ISSUES.md](KNOWN_ISSUES.md). For dependency upgrade strategy, see [UPGRADE_PATH.md](UPGRADE_PATH.md).
 
@@ -16,6 +16,10 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 | **Secure Storage** | ✅ Complete | All | Android Keystore, AES-256-GCM encryption |
 | **Certificate Pinning** | ✅ Complete | All | TOFU (Trust-on-First-Use) model |
 | **Video Playback** | ✅ Complete | Phone, Tablet, TV | ExoPlayer/Media3, HLS/DASH, FFmpeg decoder, Direct Play detection |
+| **Adaptive Bitrate** | ✅ Complete | All | Real-time monitoring and quality adjustment |
+| **Transcoding Diagnostics**| ✅ Complete | All | Tool to identify transcoding reasons |
+| **AI Assistant** | ✅ Complete | Phone, Tablet | On-device and cloud AI capabilities |
+| **AI Summaries** | ✅ Complete | Phone, Tablet | AI-generated viewing mood analysis and summaries |
 | **Library Browsing** | ✅ Complete | All | Movies, TV Shows, Music libraries |
 | **Search** | ✅ Complete | Phone, Tablet | Multi-library search with filters |
 | **Favorites** | ✅ Complete | All | Add/remove favorites, dedicated favorites screen |
@@ -23,6 +27,7 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 | **Picture-in-Picture** | ✅ Complete | Phone, Tablet, TV | Manual/auto-enter, remote actions (play/pause, skip ±30s) |
 | **Chromecast** | ✅ Complete | Phone, Tablet | Full casting with seek, volume, position tracking |
 | **Auto-Play Next Episode** | ✅ Complete | Phone, Tablet | Countdown UI, automatic continuation |
+| **Firebase Integration** | ✅ Complete | All | Analytics, Config, Crashlytics, App Check |
 | **Material 3 UI** | ✅ Complete | All | Expressive components, dark/light/AMOLED themes |
 | **Adaptive Navigation** | ✅ Complete | All | Screen-size responsive navigation |
 | **Recently Added Carousel** | ✅ Complete | Phone, Tablet | Cinematic 16:9 cards with animations |
@@ -84,10 +89,10 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 
 | Component | Version | Status |
 |-----------|---------|--------|
-| **Kotlin** | 2.3.0 | ✅ Stable |
+| **Kotlin** | 2.3.10 | ✅ Stable |
 | **Compose BOM** | 2026.01.01 | ✅ Latest |
 | **Material 3** | 1.5.0-alpha13 | ⚠️ Alpha (intentional for Expressive) |
-| **Hilt** | 2.59 | ✅ Stable |
+| **Hilt** | 2.59.1 | ✅ Stable |
 | **Coroutines** | 1.10.2 | ✅ Stable |
 | **Retrofit** | 3.0.0 | ✅ Stable |
 | **OkHttp** | 5.3.2 | ✅ Stable |
@@ -141,13 +146,17 @@ This document provides a comprehensive snapshot of what works RIGHT NOW in the J
 
 ## Development Status
 
-### Recent Completions (January 2026)
-- ✅ Auto-play next episode with countdown UI (Jan 23, 2026)
-- ✅ Offline download hanging bug fixed (Jan 2026)
-- ✅ Download ID mismatch resolved (Jan 2026)
-- ✅ Chromecast enhancements: seek bar, volume control, position tracking (Jan 2026)
-- ✅ Auto quality selection now uses adaptive track selection in the player (Jan 2026)
-- ✅ Cache initialization/thread-safety improvements in JellyfinCache (Jan 2026)
+### Recent Completions (January - February 2026)
+- ✅ **API Token Security**: Removed API tokens from URL query parameters (Feb 2026)
+- ✅ **Adaptive Bitrate**: Implemented adaptive bitrate monitoring and configurable playback settings (Feb 2026)
+- ✅ **AI Assistant**: Implemented AI Assistant with on-device and cloud capabilities (Feb 2026)
+- ✅ **AI Summaries**: Added AI-powered summaries and viewing mood analysis (Feb 2026)
+- ✅ **Transcoding Diagnostics**: Added transcoding diagnostics tool and firebase integration (Feb 2026)
+- ✅ **Network Resilience**: Added offline startup handling, network state monitoring, and DNS resolution error handling (Feb 2026)
+- ✅ **Auto-play next episode** with countdown UI (Jan 23, 2026)
+- ✅ **Offline download hanging bug** fixed (Jan 2026)
+- ✅ **Download ID mismatch** resolved (Jan 2026)
+- ✅ **Chromecast enhancements**: seek bar, volume control, position tracking (Jan 2026)
 
 ### Active Development
 - 🔄 Music background playback (in progress - [ROADMAP §1.1](ROADMAP.md))

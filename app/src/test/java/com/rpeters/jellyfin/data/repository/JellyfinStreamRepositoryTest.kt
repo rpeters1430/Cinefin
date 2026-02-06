@@ -27,6 +27,9 @@ class JellyfinStreamRepositoryTest {
     @MockK
     private lateinit var deviceCapabilities: DeviceCapabilities
 
+    @MockK
+    private lateinit var connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker
+
     private lateinit var streamRepository: JellyfinStreamRepository
 
     private val testServer = JellyfinServer(
@@ -42,7 +45,7 @@ class JellyfinStreamRepositoryTest {
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        streamRepository = JellyfinStreamRepository(authRepository, deviceCapabilities)
+        streamRepository = JellyfinStreamRepository(authRepository, deviceCapabilities, connectivityChecker)
     }
 
     @Test
@@ -58,7 +61,8 @@ class JellyfinStreamRepositoryTest {
         assertNotNull("Stream URL should not be null", result)
         assertTrue("URL should contain server URL", result!!.contains(testServer.url))
         assertTrue("URL should contain item ID", result.contains(itemId))
-        assertTrue("URL should contain access token", result.contains(testServer.accessToken!!))
+        // Token removed from URL for security (CWE-598), handled by headers
+        assertFalse("URL should NOT contain access token", result.contains("api_key="))
         assertTrue("URL should be static stream", result.contains("static=true"))
     }
 
@@ -215,7 +219,8 @@ class JellyfinStreamRepositoryTest {
         assertTrue("URL should contain server URL", result!!.contains(testServer.url))
         assertTrue("URL should contain item ID", result.contains(itemId))
         assertTrue("URL should be download endpoint", result.contains("/Download"))
-        assertTrue("URL should contain access token", result.contains("api_key=${testServer.accessToken}"))
+        // Token removed from URL for security (CWE-598), handled by headers
+        assertFalse("URL should NOT contain access token", result.contains("api_key="))
     }
 
     @Test
@@ -234,6 +239,8 @@ class JellyfinStreamRepositoryTest {
         assertTrue("URL should contain container", result.contains("stream.mkv"))
         assertTrue("URL should be static", result.contains("static=true"))
         assertTrue("URL should contain Container param", result.contains("Container=mkv"))
+        // Token removed from URL for security (CWE-598), handled by headers
+        assertFalse("URL should NOT contain access token", result.contains("api_key="))
     }
 
     @Test
@@ -248,6 +255,8 @@ class JellyfinStreamRepositoryTest {
         // Then
         assertNotNull("Direct stream URL should not be null", result)
         assertTrue("URL should contain default mp4 container", result!!.contains("stream.mp4"))
+        // Token removed from URL for security (CWE-598), handled by headers
+        assertFalse("URL should NOT contain access token", result.contains("api_key="))
     }
 
     @Test

@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
@@ -297,6 +298,28 @@ fun VideoPlayerScreen(
                 onAccept = onAcceptQualityRecommendation,
                 onDismiss = onDismissQualityRecommendation,
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp),
+            )
+        }
+
+        // Thin wavy progress indicator at bottom when controls are hidden
+        if (!controlsVisible && !playerState.isCastConnected && playerState.duration > 0) {
+            androidx.compose.material3.LinearWavyProgressIndicator(
+                progress = {
+                    if (playerState.duration > 0) {
+                        playerState.currentPosition.toFloat() / playerState.duration.toFloat()
+                    } else {
+                        0f
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .height(3.dp),
+                color = playerColors.overlayContent.copy(alpha = 0.8f),
+                trackColor = Color.Transparent,
+                amplitude = { 0.15f },
+                wavelength = 48.dp,
+                waveSpeed = 24.dp,
             )
         }
 

@@ -56,6 +56,7 @@ class JellyfinRepository @Inject constructor(
     private val deviceCapabilities: DeviceCapabilities,
     private val authRepository: JellyfinAuthRepository,
     private val streamRepository: JellyfinStreamRepository,
+    val connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker,
 ) {
     companion object {
         // ✅ PHASE 4: Use centralized constants

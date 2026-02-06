@@ -29,6 +29,7 @@ A clear, actionable improvement plan for the Jellyfin Android client.
 - **Picture-in-Picture** - Full implementation with remote actions (play/pause, skip ±30s)
 - **Chromecast** - Full casting with seek bar, volume control, position tracking
 - **Auto-Play Next Episode** - Automatic continuation with countdown UI (added Jan 23, 2026)
+- **Progress Sync Resilience** - Local queuing and background sync for offline playback (added Feb 5, 2026)
 - **Transcoding position reset fix** - Position preserved across codec flushes with retry limits
 - **Transcoding diagnostics tool** - Identifies which videos need transcoding and why
 

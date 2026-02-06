@@ -131,6 +131,17 @@ class MainAppViewModel @Inject constructor(
         private const val API_DEFAULT_LIMIT = 100
     }
 
+    init {
+        // Observe network connectivity to trigger offline sync when online
+        viewModelScope.launch {
+            repository.connectivityChecker.observeNetworkConnectivity().collect { isOnline ->
+                if (isOnline) {
+                    com.rpeters.jellyfin.data.worker.OfflineProgressSyncWorker.schedule(context)
+                }
+            }
+        }
+    }
+
     internal fun libraryItemKey(item: BaseItemDto): String =
         item.id.toString().ifBlank {
             // For items without IDs, generate a deterministic UUID from metadata

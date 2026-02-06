@@ -38,11 +38,23 @@ enum class AudioChannelPreference(val label: String, val channels: Int?) {
     SURROUND_7_1("7.1 Surround", 8),
 }
 
+/**
+ * Resume playback mode preferences.
+ */
+enum class ResumePlaybackMode(val label: String) {
+    ALWAYS("Always resume"),
+    ASK("Ask me"),
+    NEVER("Always start from beginning"),
+}
+
 data class PlaybackPreferences(
     val maxBitrateWifi: Int,
     val maxBitrateCellular: Int,
     val transcodingQuality: TranscodingQuality,
     val audioChannels: AudioChannelPreference,
+    val preferredAudioLanguage: String?,
+    val autoPlayNextEpisode: Boolean,
+    val resumePlaybackMode: ResumePlaybackMode,
 ) {
     companion object {
         val DEFAULT = PlaybackPreferences(
@@ -50,6 +62,9 @@ data class PlaybackPreferences(
             maxBitrateCellular = 25_000_000, // 25 Mbps
             transcodingQuality = TranscodingQuality.AUTO,
             audioChannels = AudioChannelPreference.AUTO,
+            preferredAudioLanguage = null, // null = no preference
+            autoPlayNextEpisode = true, // enabled by default
+            resumePlaybackMode = ResumePlaybackMode.ALWAYS, // always resume by default
         )
     }
 }
@@ -87,6 +102,11 @@ class PlaybackPreferencesRepository(
                 audioChannels = runCatching {
                     AudioChannelPreference.valueOf(prefs[PreferencesKeys.AUDIO_CHANNELS] ?: "")
                 }.getOrDefault(PlaybackPreferences.DEFAULT.audioChannels),
+                preferredAudioLanguage = prefs[PreferencesKeys.PREFERRED_AUDIO_LANGUAGE],
+                autoPlayNextEpisode = prefs[PreferencesKeys.AUTO_PLAY_NEXT_EPISODE] ?: PlaybackPreferences.DEFAULT.autoPlayNextEpisode,
+                resumePlaybackMode = runCatching {
+                    ResumePlaybackMode.valueOf(prefs[PreferencesKeys.RESUME_PLAYBACK_MODE] ?: "")
+                }.getOrDefault(PlaybackPreferences.DEFAULT.resumePlaybackMode),
             )
         }
 
@@ -106,11 +126,32 @@ class PlaybackPreferencesRepository(
         dataStore.edit { it[PreferencesKeys.AUDIO_CHANNELS] = preference.name }
     }
 
+    suspend fun setPreferredAudioLanguage(language: String?) {
+        dataStore.edit { prefs ->
+            if (language != null) {
+                prefs[PreferencesKeys.PREFERRED_AUDIO_LANGUAGE] = language
+            } else {
+                prefs.remove(PreferencesKeys.PREFERRED_AUDIO_LANGUAGE)
+            }
+        }
+    }
+
+    suspend fun setAutoPlayNextEpisode(enabled: Boolean) {
+        dataStore.edit { it[PreferencesKeys.AUTO_PLAY_NEXT_EPISODE] = enabled }
+    }
+
+    suspend fun setResumePlaybackMode(mode: ResumePlaybackMode) {
+        dataStore.edit { it[PreferencesKeys.RESUME_PLAYBACK_MODE] = mode.name }
+    }
+
     private object PreferencesKeys {
         val MAX_BITRATE_WIFI = intPreferencesKey("max_bitrate_wifi")
         val MAX_BITRATE_CELLULAR = intPreferencesKey("max_bitrate_cellular")
         val TRANSCODING_QUALITY = stringPreferencesKey("transcoding_quality")
         val AUDIO_CHANNELS = stringPreferencesKey("audio_channels")
+        val PREFERRED_AUDIO_LANGUAGE = stringPreferencesKey("preferred_audio_language")
+        val AUTO_PLAY_NEXT_EPISODE = booleanPreferencesKey("auto_play_next_episode")
+        val RESUME_PLAYBACK_MODE = stringPreferencesKey("resume_playback_mode")
     }
 
     companion object {

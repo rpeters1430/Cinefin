@@ -20,8 +20,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -134,6 +136,8 @@ class VideoPlayerViewModel @Inject constructor(
     private val enhancedPlaybackManager: com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager,
     private val adaptiveBitrateMonitor: com.rpeters.jellyfin.data.playback.AdaptiveBitrateMonitor,
     private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
+    private val okHttpClient: okhttp3.OkHttpClient,
+    private val playbackPreferencesRepository: com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository,
 ) : ViewModel() {
 
     // Initialize state flows before init block to prevent race condition where
@@ -141,6 +145,15 @@ class VideoPlayerViewModel @Inject constructor(
     private val _playerState = MutableStateFlow(VideoPlayerState())
     val playerState: StateFlow<VideoPlayerState> = _playerState.asStateFlow()
     val playbackProgress: StateFlow<PlaybackProgress> = playbackProgressManager.playbackProgress
+
+    // Collect playback preferences for controlling behavior (audio language, auto-play, resume mode)
+    private val playbackPreferences: StateFlow<com.rpeters.jellyfin.data.preferences.PlaybackPreferences> =
+        playbackPreferencesRepository.preferences
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = com.rpeters.jellyfin.data.preferences.PlaybackPreferences.DEFAULT,
+            )
 
     // MediaRouter callback to detect audio route changes
     private val mediaRouterCallback = object : MediaRouter.Callback() {
@@ -448,19 +461,23 @@ class VideoPlayerViewModel @Inject constructor(
                 isHdrContent = isHdr,
             )
 
-            // Apply one-time defaults: English audio if available; subtitles off OR requested
+            // Apply one-time defaults: preferred audio language if available; subtitles off OR requested
             if (!defaultsApplied) {
                 defaultsApplied = true
                 val player = exoPlayer ?: return
                 val currentParams = player.trackSelectionParameters
                 val builder = currentParams.buildUpon()
 
-                // Prefer English audio
+                // Prefer user's preferred audio language (or English as fallback)
+                val preferredLanguage = playbackPreferences.value.preferredAudioLanguage ?: "eng"
                 val preferredAudio = audio.firstOrNull {
                     val lang = it.format.language ?: ""
-                    lang.startsWith("en", ignoreCase = true)
+                    // Match against ISO 639-2/T codes or language names
+                    lang.startsWith(preferredLanguage, ignoreCase = true) ||
+                        (preferredLanguage == "eng" && lang.startsWith("en", ignoreCase = true))
                 }
                 if (preferredAudio != null) {
+                    SecureLogger.d("VideoPlayer", "Auto-selecting preferred audio language: ${preferredAudio.format.language} (preference: $preferredLanguage)")
                     val group = tracks.groups.getOrNull(preferredAudio.groupIndex) ?: return
                     val override = androidx.media3.common.TrackSelectionOverride(
                         group.mediaTrackGroup,
@@ -588,8 +605,33 @@ class VideoPlayerViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
+                // Get resume position from server
                 val resumePosition = playbackProgressManager.getResumePosition(itemId)
-                val initialStartPosition = if (startPosition > 0) startPosition else resumePosition
+
+                // Apply resume playback mode preference
+                val resumeMode = playbackPreferences.value.resumePlaybackMode
+                val shouldResume = when (resumeMode) {
+                    com.rpeters.jellyfin.data.preferences.ResumePlaybackMode.ALWAYS -> true
+                    com.rpeters.jellyfin.data.preferences.ResumePlaybackMode.NEVER -> false
+                    com.rpeters.jellyfin.data.preferences.ResumePlaybackMode.ASK -> {
+                        // TODO: Implement resume dialog in UI layer
+                        // For now, default to ALWAYS behavior
+                        SecureLogger.d("VideoPlayer", "Resume mode set to ASK - defaulting to ALWAYS (dialog not yet implemented)")
+                        true
+                    }
+                }
+
+                val initialStartPosition = when {
+                    startPosition > 0 -> startPosition // Explicit position takes precedence
+                    shouldResume -> resumePosition // Use saved position if resume enabled
+                    else -> 0L // Start from beginning if resume disabled
+                }
+
+                if (resumePosition > 0 && !shouldResume) {
+                    SecureLogger.d("VideoPlayer", "Resume disabled - ignoring saved position ${resumePosition}ms")
+                } else if (resumePosition > 0 && shouldResume) {
+                    SecureLogger.d("VideoPlayer", "Resume enabled - starting from saved position ${resumePosition}ms")
+                }
 
                 // Attempt to load chapter markers and full metadata for intro/outro skip
                 currentItemMetadata = loadSkipMarkers(itemId)
@@ -771,19 +813,10 @@ class VideoPlayerViewModel @Inject constructor(
                         .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
                         .setEnableDecoderFallback(true) // Enable fallback for codec issues
 
-                    // Ensure HTTP requests carry the token header
-                    val token = repository.getCurrentServer()?.accessToken
-                    val httpFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
-                        .apply {
-                            if (!token.isNullOrBlank()) {
-                                setDefaultRequestProperties(
-                                    mapOf(
-                                        "X-Emby-Token" to token,
-                                        "Authorization" to buildMediaBrowserAuthorization(token),
-                                    ),
-                                )
-                            }
-                        }
+                    // Use OkHttp for all media/subtitle requests to ensure headers (auth, pinning) are applied.
+                    // This allows us to remove tokens from URLs while maintaining authentication.
+                    val httpFactory = androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(okHttpClient)
+                    
                     val dataSourceFactory =
                         androidx.media3.datasource.DefaultDataSource.Factory(context, httpFactory)
                     val mediaSourceFactory =
@@ -1844,12 +1877,19 @@ class VideoPlayerViewModel @Inject constructor(
         stopPositionUpdates()
 
         val nextEpisode = _playerState.value.nextEpisode
-        if (nextEpisode != null) {
-            // Episode with next episode available - start countdown
+        val autoPlayEnabled = playbackPreferences.value.autoPlayNextEpisode
+
+        if (nextEpisode != null && autoPlayEnabled) {
+            // Episode with next episode available and auto-play enabled - start countdown
+            SecureLogger.d("VideoPlayer", "Auto-play enabled: starting next episode countdown")
             startNextEpisodeCountdown()
         } else {
-            // Movie or last episode in season - activity will handle finish
-            SecureLogger.d("VideoPlayer", "No next episode, video ended")
+            // Movie, last episode in season, or auto-play disabled - activity will handle finish
+            if (nextEpisode != null && !autoPlayEnabled) {
+                SecureLogger.d("VideoPlayer", "Next episode available but auto-play disabled - video ended")
+            } else {
+                SecureLogger.d("VideoPlayer", "No next episode, video ended")
+            }
         }
     }
 

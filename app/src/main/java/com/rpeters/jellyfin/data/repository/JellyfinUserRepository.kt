@@ -5,6 +5,7 @@ import com.rpeters.jellyfin.data.model.CurrentUserDetails
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.BaseJellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ErrorType
+import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
@@ -31,10 +32,48 @@ class JellyfinUserRepository @Inject constructor(
     authRepository: JellyfinAuthRepository,
     sessionManager: com.rpeters.jellyfin.data.session.JellyfinSessionManager,
     cache: JellyfinCache,
+    private val offlineProgressRepository: OfflineProgressRepository,
 ) : BaseJellyfinRepository(authRepository, sessionManager, cache) {
 
     suspend fun logout() {
         authRepository.logout()
+    }
+
+    /**
+     * Flushes all queued offline progress updates to the server.
+     */
+    suspend fun syncOfflineProgress(): ApiResult<Int> {
+        val updates = offlineProgressRepository.getAndClearUpdates()
+        if (updates.isEmpty()) return ApiResult.Success(0)
+
+        SecureLogger.i("JellyfinUserRepository", "Syncing ${updates.size} offline progress updates")
+        var successCount = 0
+        
+        for (update in updates) {
+            try {
+                val result = reportPlaybackProgress(
+                    itemId = update.itemId,
+                    sessionId = update.sessionId,
+                    positionTicks = update.positionTicks,
+                    mediaSourceId = update.mediaSourceId,
+                    playMethod = update.playMethod,
+                    isPaused = update.isPaused,
+                    isMuted = update.isMuted
+                )
+                if (result is ApiResult.Success) {
+                    successCount++
+                } else {
+                    // Re-queue if sync fails due to network (not auth error)
+                    if (result is ApiResult.Error && result.errorType == ErrorType.NETWORK) {
+                        offlineProgressRepository.addUpdate(update)
+                    }
+                }
+            } catch (e: Exception) {
+                SecureLogger.e("JellyfinUserRepository", "Failed to sync progress for ${update.itemId}", e)
+            }
+        }
+        
+        return ApiResult.Success(successCount)
     }
 
     suspend fun getCurrentUser(): ApiResult<CurrentUserDetails> =
@@ -122,8 +161,8 @@ class JellyfinUserRepository @Inject constructor(
         isPaused: Boolean = false,
         isMuted: Boolean = false,
         canSeek: Boolean = true,
-    ): ApiResult<Unit> =
-        withServerClient("reportPlaybackProgress") { _, client ->
+    ): ApiResult<Unit> {
+        val result = withServerClient("reportPlaybackProgress") { _, client ->
             val itemUuid = parseUuid(itemId, "item")
             val info = PlaybackProgressInfo(
                 canSeek = canSeek,
@@ -141,6 +180,24 @@ class JellyfinUserRepository @Inject constructor(
             client.playStateApi.reportPlaybackProgress(info)
             Unit
         }
+
+        // If network error, queue for later sync
+        if (result is ApiResult.Error && result.errorType == ErrorType.NETWORK) {
+            offlineProgressRepository.addUpdate(
+                QueuedProgressUpdate(
+                    itemId = itemId,
+                    sessionId = sessionId,
+                    positionTicks = positionTicks,
+                    mediaSourceId = mediaSourceId,
+                    playMethod = playMethod,
+                    isPaused = isPaused,
+                    isMuted = isMuted
+                )
+            )
+        }
+
+        return result
+    }
 
     suspend fun reportPlaybackStopped(
         itemId: String,
