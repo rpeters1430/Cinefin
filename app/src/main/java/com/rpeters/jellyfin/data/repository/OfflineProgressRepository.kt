@@ -27,16 +27,16 @@ data class QueuedProgressUpdate(
     val playMethod: PlayMethod = PlayMethod.DIRECT_PLAY,
     val isPaused: Boolean = false,
     val isMuted: Boolean = false,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
 )
 
 private val Context.offlineProgressDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "offline_progress_updates"
+    name = "offline_progress_updates",
 )
 
 @Singleton
 class OfflineProgressRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) {
     private val dataStore = context.offlineProgressDataStore
     private val QUEUED_UPDATES_KEY = stringPreferencesKey("queued_updates")
@@ -63,7 +63,7 @@ class OfflineProgressRepository @Inject constructor(
             // Keep only last 50 updates to prevent unbounded growth
             val limitedList = currentList.takeLast(50)
             preferences[QUEUED_UPDATES_KEY] = json.encodeToString(limitedList)
-            
+
             SecureLogger.d("OfflineProgress", "Queued progress for item ${update.itemId} at ${update.positionTicks} ticks")
         }
     }
@@ -74,7 +74,7 @@ class OfflineProgressRepository @Inject constructor(
     suspend fun getAndClearUpdates(): List<QueuedProgressUpdate> {
         val preferences = dataStore.data.first()
         val currentJson = preferences[QUEUED_UPDATES_KEY] ?: "[]"
-        
+
         val updates = try {
             json.decodeFromString<List<QueuedProgressUpdate>>(currentJson)
         } catch (e: Exception) {
@@ -85,7 +85,7 @@ class OfflineProgressRepository @Inject constructor(
             dataStore.edit { it.remove(QUEUED_UPDATES_KEY) }
             SecureLogger.d("OfflineProgress", "Cleared ${updates.size} queued updates")
         }
-        
+
         return updates
     }
 

@@ -816,7 +816,7 @@ class VideoPlayerViewModel @Inject constructor(
                     // Use OkHttp for all media/subtitle requests to ensure headers (auth, pinning) are applied.
                     // This allows us to remove tokens from URLs while maintaining authentication.
                     val httpFactory = androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(okHttpClient)
-                    
+
                     val dataSourceFactory =
                         androidx.media3.datasource.DefaultDataSource.Factory(context, httpFactory)
                     val mediaSourceFactory =

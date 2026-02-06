@@ -24,7 +24,7 @@ class ThemeComposeTest {
                 Text("Hello Compose")
             }
         }
-        
+
         // If it reaches here without NoSuchMethodError, it's likely fixed or not present in this config
     }
 }

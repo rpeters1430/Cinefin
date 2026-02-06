@@ -48,7 +48,7 @@ class JellyfinUserRepository @Inject constructor(
 
         SecureLogger.i("JellyfinUserRepository", "Syncing ${updates.size} offline progress updates")
         var successCount = 0
-        
+
         for (update in updates) {
             try {
                 val result = reportPlaybackProgress(
@@ -58,7 +58,7 @@ class JellyfinUserRepository @Inject constructor(
                     mediaSourceId = update.mediaSourceId,
                     playMethod = update.playMethod,
                     isPaused = update.isPaused,
-                    isMuted = update.isMuted
+                    isMuted = update.isMuted,
                 )
                 if (result is ApiResult.Success) {
                     successCount++
@@ -72,7 +72,7 @@ class JellyfinUserRepository @Inject constructor(
                 SecureLogger.e("JellyfinUserRepository", "Failed to sync progress for ${update.itemId}", e)
             }
         }
-        
+
         return ApiResult.Success(successCount)
     }
 
@@ -191,8 +191,8 @@ class JellyfinUserRepository @Inject constructor(
                     mediaSourceId = mediaSourceId,
                     playMethod = playMethod,
                     isPaused = isPaused,
-                    isMuted = isMuted
-                )
+                    isMuted = isMuted,
+                ),
             )
         }
 
