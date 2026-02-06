@@ -29,6 +29,19 @@ object RemoteConfigModule {
             }
         }
         remoteConfig.setConfigSettingsAsync(configSettings)
+
+        // Set default values for feature flags
+        val defaults = mapOf(
+            // Immersive UI feature flags
+            "enable_immersive_ui" to false,
+            "immersive_home_screen" to false,
+            "immersive_detail_screens" to false,
+            "immersive_browse_screens" to false,
+            "immersive_search_screen" to false,
+            "immersive_library_screen" to false,
+        )
+        remoteConfig.setDefaultsAsync(defaults)
+
         return remoteConfig
     }
 
