@@ -487,7 +487,7 @@ class CastManager @Inject constructor(
             val session = castContext?.sessionManager?.currentCastSession
             val device = session?.castDevice
             if (device != null) {
-                Pair(device.modelName ?: "", device.friendlyName ?: "")
+                Pair(device.modelName, device.friendlyName)
             } else {
                 null
             }

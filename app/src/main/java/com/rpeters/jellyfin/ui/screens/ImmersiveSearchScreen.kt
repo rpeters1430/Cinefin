@@ -444,7 +444,7 @@ fun ImmersiveSearchScreen(
                             BaseItemKind.EPISODE -> item.seriesName ?: ""
                             else -> item.productionYear?.toString() ?: ""
                         },
-                        rating = item.communityRating?.toFloat(),
+                        rating = item.communityRating,
                         isFavorite = item.userData?.isFavorite == true,
                         isWatched = item.userData?.played == true,
                         watchProgress = (item.userData?.playedPercentage ?: 0.0).toFloat() / 100f,

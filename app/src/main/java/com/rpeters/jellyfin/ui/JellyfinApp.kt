@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MenuOpen
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -195,7 +195,7 @@ fun JellyfinApp(
                             onClick = { isNavExpanded = !isNavExpanded },
                             icon = {
                                 Icon(
-                                    imageVector = if (isNavExpanded) Icons.Filled.MenuOpen else Icons.Filled.Menu,
+                                    imageVector = if (isNavExpanded) Icons.AutoMirrored.Filled.MenuOpen else Icons.Filled.Menu,
                                     contentDescription = if (isNavExpanded) "Collapse navigation" else "Expand navigation",
                                 )
                             },

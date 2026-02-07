@@ -290,7 +290,7 @@ private fun ImmersiveTVSeasonContent(
                 key = { it.getItemKey().ifEmpty { it.name ?: it.toString() } },
                 contentType = { "season_item" },
             ) { season ->
-                val seasonId = season.id?.toString()
+                val seasonId = season.id.toString()
                 val isExpanded = seasonId != null && expandedSeasonId == seasonId
                 val seasonEpisodes = seasonId?.let { state.episodesBySeasonId[it].orEmpty() }.orEmpty()
                 val isLoadingEpisodes = seasonId != null && seasonId in state.loadingSeasonIds
@@ -927,7 +927,7 @@ private fun ImmersiveCastAndCrewSection(
                 items(cast.take(15)) { person ->
                     ImmersiveCastMemberCard(
                         person = person,
-                        imageUrl = person.id?.let { id ->
+                        imageUrl = person.id.let { id ->
                             getImageUrl(id, person.primaryImageTag)
                         },
                     )

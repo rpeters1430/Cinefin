@@ -152,10 +152,8 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                     }
                 },
                 onEpisodeClick = { episode ->
-                    episode.id?.let { episodeId ->
-                        viewModel.addOrUpdateItem(episode)
-                        navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
-                    }
+                    viewModel.addOrUpdateItem(episode)
+                    navController.navigate(Screen.TVEpisodeDetail.createRoute(episode.id.toString()))
                 },
                 onPlayEpisode = { episodeItem ->
                     try {
@@ -190,10 +188,8 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                     }
                 },
                 onEpisodeClick = { episode ->
-                    episode.id?.let { episodeId ->
-                        viewModel.addOrUpdateItem(episode)
-                        navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
-                    }
+                    viewModel.addOrUpdateItem(episode)
+                    navController.navigate(Screen.TVEpisodeDetail.createRoute(episode.id.toString()))
                 },
                 onPlayEpisode = { episodeItem ->
                     try {
@@ -229,10 +225,8 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                     }
                 },
                 onEpisodeClick = { episode ->
-                    episode.id?.let { episodeId ->
-                        viewModel.addOrUpdateItem(episode)
-                        navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
-                    }
+                    viewModel.addOrUpdateItem(episode)
+                    navController.navigate(Screen.TVEpisodeDetail.createRoute(episode.id.toString()))
                 },
                 onPlayEpisode = { episodeItem ->
                     try {

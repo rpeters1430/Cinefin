@@ -280,7 +280,7 @@ private fun TVSeasonContent(
                 key = { it.getItemKey().ifEmpty { it.name ?: it.toString() } },
                 contentType = { "season_item" },
             ) { season ->
-                val seasonId = season.id?.toString()
+                val seasonId = season.id.toString()
                 val isExpanded = seasonId != null && expandedSeasonId == seasonId
                 val seasonEpisodes = seasonId?.let { state.episodesBySeasonId[it].orEmpty() }.orEmpty()
                 val isLoadingEpisodes = seasonId != null && seasonId in state.loadingSeasonIds
@@ -811,7 +811,7 @@ private fun ExpressiveSeasonListItem(
                 trailingContent?.invoke()
             }
         },
-        onClick = { season.id?.toString()?.let { onClick(it) } },
+        onClick = { season.id.toString().let { onClick(it) } },
         modifier = modifier,
     )
 }
@@ -1227,7 +1227,7 @@ private fun PersonCard(
         )
 
         // Role/Character - with fallback to type for crew
-        val roleText = person.role ?: person.type?.name?.takeIf { it.isNotBlank() }
+        val roleText = person.role ?: person.type.name.takeIf { it.isNotBlank() }
         roleText?.let { text ->
             Text(
                 text = text,

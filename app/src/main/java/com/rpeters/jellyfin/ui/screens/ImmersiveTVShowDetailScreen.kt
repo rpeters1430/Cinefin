@@ -221,7 +221,7 @@ private fun ImmersiveShowDetailContent(
             }
 
             items(state.seasons, key = { it.getItemKey() }) { season ->
-                val seasonId = season.id?.toString()
+                val seasonId = season.id.toString()
                 val isExpanded = seasonId != null && expandedSeasonId == seasonId
 
                 SeasonItem(
@@ -259,7 +259,7 @@ private fun ImmersiveShowDetailContent(
                     title = "More Like This",
                     items = state.similarSeries,
                     getImageUrl = getImageUrl,
-                    onItemClick = { it.id?.let { id -> onSeriesClick(id.toString()) } },
+                    onItemClick = { it.id.let { id -> onSeriesClick(id.toString()) } },
                     modifier = Modifier.padding(top = 24.dp),
                 )
             }
