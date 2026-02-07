@@ -12,7 +12,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.core.FeatureFlags
-import com.rpeters.jellyfin.data.repository.RemoteConfigRepository
 import com.rpeters.jellyfin.ui.screens.HomeScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveHomeScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveLibraryScreen
@@ -69,69 +68,69 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
 
         if (useImmersiveUI) {
             ImmersiveHomeScreen(
-            appState = appState,
-            currentServer = currentServer,
-            onRefresh = { viewModel.loadInitialData() },
-            onSearch = { query ->
-                viewModel.search(query)
-                navController.navigate(Screen.Search.route)
-            },
-            onClearSearch = { viewModel.clearSearch() },
-            onSearchClick = { navController.navigate(Screen.Search.route) },
-            onAiAssistantClick = { navController.navigate(Screen.AiAssistant.route) },
-            getImageUrl = { item -> viewModel.getImageUrl(item) },
-            getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
-            getSeriesImageUrl = { item -> viewModel.getSeriesImageUrl(item) },
-            onItemClick = { item ->
-                when (item.type) {
-                    org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
-                        item.id.let { movieId ->
-                            navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                appState = appState,
+                currentServer = currentServer,
+                onRefresh = { viewModel.loadInitialData() },
+                onSearch = { query ->
+                    viewModel.search(query)
+                    navController.navigate(Screen.Search.route)
+                },
+                onClearSearch = { viewModel.clearSearch() },
+                onSearchClick = { navController.navigate(Screen.Search.route) },
+                onAiAssistantClick = { navController.navigate(Screen.AiAssistant.route) },
+                getImageUrl = { item -> viewModel.getImageUrl(item) },
+                getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
+                getSeriesImageUrl = { item -> viewModel.getSeriesImageUrl(item) },
+                onItemClick = { item ->
+                    when (item.type) {
+                        org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
+                            item.id.let { movieId ->
+                                navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                            }
                         }
-                    }
 
-                    org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
-                        item.id.let { videoId ->
-                            navController.navigate(Screen.HomeVideoDetail.createRoute(videoId.toString()))
+                        org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
+                            item.id.let { videoId ->
+                                navController.navigate(Screen.HomeVideoDetail.createRoute(videoId.toString()))
+                            }
                         }
-                    }
 
-                    org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
-                        item.id.let { seriesId ->
-                            navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
+                        org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+                            item.id.let { seriesId ->
+                                navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
+                            }
                         }
-                    }
 
-                    org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
-                        item.id.let { episodeId ->
-                            navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                        org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
+                            item.id.let { episodeId ->
+                                navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                            }
                         }
-                    }
 
-                    else -> {
-                        item.id.let { genericId ->
-                            navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
+                        else -> {
+                            item.id.let { genericId ->
+                                navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
+                            }
                         }
                     }
-                }
-            },
-            onLibraryClick = { library ->
-                try {
-                    libraryRouteFor(library)?.let { route ->
-                        navController.navigate(route)
-                    } ?: run {
-                        Log.w(
-                            "NavGraph",
-                            "No route found for library: ${library.name} (${library.collectionType})",
-                        )
+                },
+                onLibraryClick = { library ->
+                    try {
+                        libraryRouteFor(library)?.let { route ->
+                            navController.navigate(route)
+                        } ?: run {
+                            Log.w(
+                                "NavGraph",
+                                "No route found for library: ${library.name} (${library.collectionType})",
+                            )
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
                     }
-                } catch (e: CancellationException) {
-                    throw e
-                }
-            },
-            onSettingsClick = { navController.navigate(Screen.Profile.route) },
-            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
-        )
+                },
+                onSettingsClick = { navController.navigate(Screen.Profile.route) },
+                onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+            )
         } else {
             // Use the original HomeScreen when immersive UI is disabled
             HomeScreen(

@@ -2,33 +2,25 @@ package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
-import com.rpeters.jellyfin.R
-import com.rpeters.jellyfin.data.models.MovieFilter
-import com.rpeters.jellyfin.data.models.MovieSortOrder
-import com.rpeters.jellyfin.data.models.MovieViewMode
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.immersive.*
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.MovieRed
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
-import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 /**
@@ -55,12 +47,12 @@ fun ImmersiveMoviesScreen(
     onBackClick: () -> Unit = {},
 ) {
     val listState = rememberLazyListState()
-    
+
     // Smooth scroll detection for top bar - handled by ImmersiveScaffold overlay
     val topBarVisible by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 200 ||
-            listState.firstVisibleItemScrollOffset < (listState.layoutInfo.viewportEndOffset / 4)
+                listState.firstVisibleItemScrollOffset < (listState.layoutInfo.viewportEndOffset / 4)
         }
     }
 
@@ -100,10 +92,10 @@ fun ImmersiveMoviesScreen(
                             icon = Icons.Default.Tune,
                             contentDescription = "Filter",
                             onClick = { /* TODO: Show filter dialog */ },
-                        )
-                    )
+                        ),
+                    ),
                 )
-            }
+            },
         ) { paddingValues ->
             ExpressivePullToRefreshBox(
                 isRefreshing = isLoading,
@@ -140,21 +132,24 @@ fun ImmersiveMoviesScreen(
                                         imageUrl = getBackdropUrl(it) ?: getImageUrl(it) ?: "",
                                     )
                                 }
-                                
+
                                 // Apply a subtle parallax translation to fix "scrolling down" visual bug
                                 val carouselScrollOffset by remember {
                                     derivedStateOf {
                                         if (listState.firstVisibleItemIndex == 0) {
                                             listState.firstVisibleItemScrollOffset.toFloat() * 0.5f
-                                        } else 0f
+                                        } else {
+                                            0f
+                                        }
                                     }
                                 }
 
-                                Box(modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(ImmersiveDimens.HeroHeightPhone)
-                                    .graphicsLayer { translationY = carouselScrollOffset }
-                                    .clipToBounds()
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(ImmersiveDimens.HeroHeightPhone)
+                                        .graphicsLayer { translationY = carouselScrollOffset }
+                                        .clipToBounds(),
                                 ) {
                                     ImmersiveHeroCarousel(
                                         items = carouselItems,
@@ -163,7 +158,7 @@ fun ImmersiveMoviesScreen(
                                         },
                                         onPlayClick = { item ->
                                             featuredMovies.find { it.id.toString() == item.id }?.let(onMovieClick)
-                                        }
+                                        },
                                     )
                                 }
                             }
@@ -173,14 +168,14 @@ fun ImmersiveMoviesScreen(
                         items(
                             items = movieSections,
                             key = { it.title },
-                            contentType = { "movie_section" }
+                            contentType = { "movie_section" },
                         ) { section ->
                             ImmersiveMediaRow(
                                 title = section.title,
                                 items = section.items,
                                 getImageUrl = getImageUrl,
                                 onItemClick = onMovieClick,
-                                size = ImmersiveCardSize.MEDIUM
+                                size = ImmersiveCardSize.MEDIUM,
                             )
                         }
                     }
@@ -195,7 +190,7 @@ fun ImmersiveMoviesScreen(
  */
 private data class MovieSection(
     val title: String,
-    val items: List<BaseItemDto>
+    val items: List<BaseItemDto>,
 )
 
 /**
@@ -237,9 +232,11 @@ private fun organizeMoviesIntoSections(movies: List<BaseItemDto>): List<MovieSec
     }
 
     // Sci-Fi & Fantasy
-    val sciFi = movies.filter { it.genres?.any { g -> 
-        g.contains("Science Fiction", true) || g.contains("Sci-Fi", true) || g.contains("Fantasy", true) 
-    } == true }.take(15)
+    val sciFi = movies.filter {
+        it.genres?.any { g ->
+            g.contains("Science Fiction", true) || g.contains("Sci-Fi", true) || g.contains("Fantasy", true)
+        } == true
+    }.take(15)
     if (sciFi.isNotEmpty()) {
         sections.add(MovieSection("Sci-Fi & Fantasy", sciFi))
     }
@@ -287,6 +284,6 @@ fun ImmersiveMoviesScreenContainer(
         getImageUrl = { viewModel.getImageUrl(it) },
         getBackdropUrl = { viewModel.getBackdropUrl(it) },
         onBackClick = onBackClick,
-        modifier = modifier
+        modifier = modifier,
     )
 }

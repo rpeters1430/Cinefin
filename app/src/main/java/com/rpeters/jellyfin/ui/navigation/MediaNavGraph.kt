@@ -16,9 +16,9 @@ import com.rpeters.jellyfin.ui.screens.AudioQueueScreen
 import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveMoviesScreenContainer
+import com.rpeters.jellyfin.ui.screens.ImmersiveTVSeasonScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveTVShowDetailScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveTVShowsScreenContainer
-import com.rpeters.jellyfin.ui.screens.ImmersiveTVSeasonScreen
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.screens.LibraryTypeScreen
 import com.rpeters.jellyfin.ui.screens.MoviesScreenContainer

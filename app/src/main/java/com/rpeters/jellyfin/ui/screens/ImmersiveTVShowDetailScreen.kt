@@ -3,14 +3,12 @@ package com.rpeters.jellyfin.ui.screens
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -26,11 +24,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -134,7 +130,7 @@ fun ImmersiveTVShowDetailScreen(
                         onSeasonExpand = viewModel::loadSeasonEpisodes,
                         onEpisodeClick = onEpisodeClick,
                         onPlayEpisode = onPlayEpisode,
-                        onRefresh = { viewModel.refresh() }
+                        onRefresh = { viewModel.refresh() },
                     )
                 }
             }
@@ -192,7 +188,7 @@ private fun ImmersiveShowDetailContent(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 40.dp)
+        contentPadding = PaddingValues(bottom = 40.dp),
     ) {
         // 1. Hero Header
         state.seriesDetails?.let { series ->
@@ -203,7 +199,7 @@ private fun ImmersiveShowDetailContent(
                     getLogoUrl = getLogoUrl,
                     nextEpisode = state.nextEpisode,
                     onPlayEpisode = onPlayEpisode,
-                    scrollOffset = scrollOffset
+                    scrollOffset = scrollOffset,
                 )
             }
 
@@ -220,27 +216,27 @@ private fun ImmersiveShowDetailContent(
                     text = "Seasons",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                 )
             }
 
             items(state.seasons, key = { it.getItemKey() }) { season ->
                 val seasonId = season.id?.toString()
                 val isExpanded = seasonId != null && expandedSeasonId == seasonId
-                
+
                 SeasonItem(
                     season = season,
                     isExpanded = isExpanded,
                     episodes = seasonId?.let { state.episodesBySeasonId[it] }.orEmpty(),
                     isLoadingEpisodes = seasonId != null && seasonId in state.loadingSeasonIds,
                     getImageUrl = getImageUrl,
-                    onExpand = { 
+                    onExpand = {
                         if (seasonId != null) {
                             expandedSeasonId = if (isExpanded) null else seasonId
                             if (!isExpanded) onSeasonExpand(seasonId)
                         }
                     },
-                    onEpisodeClick = onEpisodeClick
+                    onEpisodeClick = onEpisodeClick,
                 )
             }
         }
@@ -251,7 +247,7 @@ private fun ImmersiveShowDetailContent(
                 ImmersiveCastSection(
                     people = people,
                     getImageUrl = getImageUrl,
-                    modifier = Modifier.padding(top = 24.dp)
+                    modifier = Modifier.padding(top = 24.dp),
                 )
             }
         }
@@ -264,7 +260,7 @@ private fun ImmersiveShowDetailContent(
                     items = state.similarSeries,
                     getImageUrl = getImageUrl,
                     onItemClick = { it.id?.let { id -> onSeriesClick(id.toString()) } },
-                    modifier = Modifier.padding(top = 24.dp)
+                    modifier = Modifier.padding(top = 24.dp),
                 )
             }
         }
@@ -296,7 +292,7 @@ private fun ShowHeroHeader(
                 .padding(16.dp)
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Logo or Title
             if (!logoUrl.isNullOrBlank()) {
@@ -304,7 +300,7 @@ private fun ShowHeroHeader(
                     model = logoUrl,
                     contentDescription = series.name,
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier.height(120.dp).fillMaxWidth(0.8f)
+                    modifier = Modifier.height(120.dp).fillMaxWidth(0.8f),
                 )
             } else {
                 Text(
@@ -312,14 +308,14 @@ private fun ShowHeroHeader(
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
 
             // Quick Info
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // Rating
                 series.communityRating?.let { rating ->
@@ -330,7 +326,7 @@ private fun ShowHeroHeader(
                 Text(
                     text = series.productionYear?.toString() ?: "",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White.copy(alpha = 0.9f)
+                    color = Color.White.copy(alpha = 0.9f),
                 )
 
                 // Season Count
@@ -338,7 +334,7 @@ private fun ShowHeroHeader(
                     Text(
                         text = "$it Seasons",
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White.copy(alpha = 0.9f)
+                        color = Color.White.copy(alpha = 0.9f),
                     )
                 }
             }
@@ -347,7 +343,7 @@ private fun ShowHeroHeader(
             ExpressiveFilledButton(
                 onClick = { nextEpisode?.let { onPlayEpisode(it) } },
                 enabled = nextEpisode != null,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             ) {
                 Icon(Icons.Default.PlayArrow, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -361,29 +357,29 @@ private fun ShowHeroHeader(
 private fun ShowMetadataSection(series: BaseItemDto) {
     Column(
         modifier = Modifier.padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // Official Rating & Status
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             series.officialRating?.let { rating ->
                 normalizeOfficialRating(rating)?.let { normalized ->
                     Surface(
                         shape = RoundedCornerShape(4.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                     ) {
                         Text(
                             text = normalized,
                             style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         )
                     }
                 }
             }
-            
+
             if (series.status == "Continuing") {
                 Badge(containerColor = Color(0xFF4CAF50), contentColor = Color.White) {
                     Text("Ongoing")
@@ -399,7 +395,7 @@ private fun ShowMetadataSection(series: BaseItemDto) {
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
                 maxLines = 5,
                 overflow = TextOverflow.Ellipsis,
-                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.4
+                lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.4,
             )
         }
 
@@ -411,7 +407,7 @@ private fun ShowMetadataSection(series: BaseItemDto) {
                         text = genre,
                         style = MaterialTheme.typography.labelLarge,
                         color = SeriesBlue,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                 }
             }
@@ -427,7 +423,7 @@ private fun SeasonItem(
     isLoadingEpisodes: Boolean,
     getImageUrl: (BaseItemDto) -> String?,
     onExpand: () -> Unit,
-    onEpisodeClick: (BaseItemDto) -> Unit
+    onEpisodeClick: (BaseItemDto) -> Unit,
 ) {
     val rotation by animateFloatAsState(if (isExpanded) 180f else 0f, label = "chevron")
 
@@ -435,21 +431,21 @@ private fun SeasonItem(
         Surface(
             onClick = onExpand,
             shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceContainer
+            color = MaterialTheme.colorScheme.surfaceContainer,
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Season Poster
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.size(width = 60.dp, height = 90.dp)
+                    modifier = Modifier.size(width = 60.dp, height = 90.dp),
                 ) {
                     JellyfinAsyncImage(
                         model = getImageUrl(season),
                         contentDescription = null,
-                        contentScale = ContentScale.Crop
+                        contentScale = ContentScale.Crop,
                     )
                 }
 
@@ -459,19 +455,19 @@ private fun SeasonItem(
                     Text(
                         text = season.name ?: "Season",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                     Text(
                         text = "${season.childCount ?: 0} Episodes",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
                 Icon(
                     Icons.Default.ExpandMore,
                     contentDescription = null,
-                    modifier = Modifier.rotate(rotation)
+                    modifier = Modifier.rotate(rotation),
                 )
             }
         }
@@ -479,11 +475,11 @@ private fun SeasonItem(
         AnimatedVisibility(
             visible = isExpanded,
             enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+            exit = shrinkVertically() + fadeOut(),
         ) {
             Column(
                 modifier = Modifier.padding(top = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (isLoadingEpisodes) {
                     repeat(2) { ExpressiveLoadingCard(modifier = Modifier.fillMaxWidth().height(80.dp)) }
@@ -501,26 +497,26 @@ private fun SeasonItem(
 private fun EpisodeRow(
     episode: BaseItemDto,
     getImageUrl: (BaseItemDto) -> String?,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Thumbnail
             Surface(
                 shape = RoundedCornerShape(4.dp),
-                modifier = Modifier.size(width = 100.dp, height = 56.dp)
+                modifier = Modifier.size(width = 100.dp, height = 56.dp),
             ) {
                 JellyfinAsyncImage(
                     model = getImageUrl(episode),
                     contentDescription = null,
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
             }
 
@@ -532,14 +528,14 @@ private fun EpisodeRow(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = episode.overview ?: "",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -550,14 +546,14 @@ private fun EpisodeRow(
 private fun RatingBadge(rating: Float) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(16.dp))
         Text(
             text = String.format(Locale.ROOT, "%.1f", rating),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = Color.White,
         )
     }
 }
@@ -566,7 +562,7 @@ private fun RatingBadge(rating: Float) {
 private fun ImmersiveCastSection(
     people: List<BaseItemPerson>,
     getImageUrl: (BaseItemDto) -> String?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val cast = people.filter { it.type.toString().lowercase() in listOf("actor", "gueststar") }.take(12)
     if (cast.isEmpty()) return
@@ -576,32 +572,32 @@ private fun ImmersiveCastSection(
             text = "Cast",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
 
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(cast) { person ->
                 Column(
                     modifier = Modifier.width(120.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Surface(
                         shape = CircleShape,
                         modifier = Modifier.size(120.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant
+                        color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
                         val personItem = BaseItemDto(
                             id = person.id,
                             type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
-                            imageTags = person.primaryImageTag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) }
+                            imageTags = person.primaryImageTag?.let { mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it) },
                         )
                         JellyfinAsyncImage(
                             model = getImageUrl(personItem),
                             contentDescription = person.name,
-                            contentScale = ContentScale.Crop
+                            contentScale = ContentScale.Crop,
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -611,7 +607,7 @@ private fun ImmersiveCastSection(
                         fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.Center,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }

@@ -76,7 +76,7 @@ fun itemSubtitle(item: BaseItemDto): String {
             val season = item.parentIndexNumber
             val episode = item.indexNumber
             if (season != null && episode != null) {
-                "S${season}E${episode}"
+                "S${season}E$episode"
             } else {
                 item.seriesName ?: ""
             }

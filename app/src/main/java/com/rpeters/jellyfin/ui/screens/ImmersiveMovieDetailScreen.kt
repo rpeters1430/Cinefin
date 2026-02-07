@@ -168,7 +168,7 @@ fun ImmersiveMovieDetailScreen(
                                 .padding(horizontal = 16.dp)
                                 .padding(bottom = 32.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             // Logo or Title
                             val logoUrl = getLogoUrl(movie)
@@ -182,7 +182,7 @@ fun ImmersiveMovieDetailScreen(
                                     contentScale = ContentScale.Fit,
                                     modifier = Modifier
                                         .height(120.dp)
-                                        .fillMaxWidth(0.8f)
+                                        .fillMaxWidth(0.8f),
                                 )
                             } else {
                                 Text(
@@ -192,7 +192,7 @@ fun ImmersiveMovieDetailScreen(
                                     color = Color.White,
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
                                 )
                             }
 
@@ -200,7 +200,7 @@ fun ImmersiveMovieDetailScreen(
                             FlowRow(
                                 horizontalArrangement = Arrangement.Center,
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
                                 val ratingBadges = remember(movie) { buildRatingBadges(movie) }
                                 if (ratingBadges.isNotEmpty()) {
