@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -113,7 +114,11 @@ fun ImmersiveHomeScreen(
 
     // Track scroll state for auto-hiding navigation
     val listState = rememberLazyListState()
-    val topBarVisible = rememberAutoHideTopBarVisible(listState = listState)
+    // Use hero height as threshold to avoid flickering within hero
+    val topBarVisible = rememberAutoHideTopBarVisible(
+        listState = listState,
+        nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
+    )
 
     Box(modifier = modifier.fillMaxSize()) {
         ImmersiveScaffold(
@@ -346,7 +351,6 @@ private fun ImmersiveHomeContent(
     val stableOnItemClick = remember(onItemClick) { onItemClick }
     val stableOnItemLongPress = remember(onItemLongPress) { onItemLongPress }
     val viewingMood = appState.viewingMood
-    val topBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
 
     PullToRefreshBox(
         isRefreshing = appState.isLoading,
@@ -358,9 +362,9 @@ private fun ImmersiveHomeContent(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight), // Tighter: 16dp vs 24dp
             contentPadding = PaddingValues(
-                top = topBarPadding,
-                bottom = 120.dp,
-            ), // Keep hero clear of overlay top bar + space for mini player/FAB
+                top = 0.dp, // No top padding - hero should be full-bleed behind translucent top bar
+                bottom = 120.dp, // Space for mini player/FAB
+            ),
             userScrollEnabled = true,
         ) {
             // Full-screen hero carousel (480dp height, edge-to-edge)
@@ -404,7 +408,9 @@ private fun ImmersiveHomeContent(
                 item(key = "viewing_mood", contentType = "ai_widget") {
                     ViewingMoodWidget(
                         viewingMood = viewingMood,
-                        modifier = Modifier.padding(horizontal = ImmersiveDimens.SpacingContentPadding),
+                        modifier = Modifier
+                            .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
+                            .padding(top = ImmersiveDimens.SpacingRowTight),
                     )
                 }
             }

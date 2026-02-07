@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -49,7 +50,11 @@ fun ImmersiveTVShowsScreen(
     onBackClick: () -> Unit = {},
 ) {
     val listState = rememberLazyListState()
-    val topBarVisible = rememberAutoHideTopBarVisible(listState = listState)
+    // Use hero height as threshold to avoid flickering within hero
+    val topBarVisible = rememberAutoHideTopBarVisible(
+        listState = listState,
+        nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
+    )
 
     // Organize TV shows into sections for immersive browsing
     val tvShowSections = remember(tvShows) { organizeTVShowsIntoSections(tvShows) }
@@ -99,7 +104,6 @@ fun ImmersiveTVShowsScreen(
                 indicatorColor = SeriesBlue,
                 useWavyIndicator = true,
             ) {
-                val topBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
                 if (tvShows.isEmpty() && !isLoading) {
                     ExpressiveSimpleEmptyState(
                         icon = Icons.Default.Tv,
@@ -114,7 +118,7 @@ fun ImmersiveTVShowsScreen(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
                         contentPadding = PaddingValues(
-                            top = topBarPadding,
+                            top = 0.dp, // No top padding - hero should be full-bleed behind translucent top bar
                             bottom = 120.dp,
                         ),
                     ) {
@@ -237,7 +241,12 @@ private fun organizeTVShowsIntoSections(tvShows: List<BaseItemDto>): List<TVShow
     val remaining = tvShows.filter { it.id !in usedIds }
     if (remaining.isNotEmpty()) {
         remaining.chunked(15).forEachIndexed { index, chunk ->
-            sections.add(TVShowSection(if (index == 0) "More TV Shows" else "Discover More", chunk))
+            // Use unique titles to avoid duplicate keys in LazyColumn
+            val title = when (index) {
+                0 -> "More TV Shows"
+                else -> "Discover More ${index + 1}"
+            }
+            sections.add(TVShowSection(title, chunk))
         }
     }
 

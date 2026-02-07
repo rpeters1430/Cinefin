@@ -41,6 +41,9 @@ object FeatureFlags {
         /** Enable immersive album detail screen */
         const val IMMERSIVE_ALBUM_DETAIL = "immersive_album_detail"
 
+        /** Enable immersive home video detail screen */
+        const val IMMERSIVE_HOME_VIDEO_DETAIL = "immersive_home_video_detail"
+
         // ===== Browse Screens =====
         /** Enable immersive movies browse screen */
         const val IMMERSIVE_MOVIES_BROWSE = "immersive_movies_browse"
@@ -50,6 +53,9 @@ object FeatureFlags {
 
         /** Enable immersive music browse screen */
         const val IMMERSIVE_MUSIC_BROWSE = "immersive_music_browse"
+
+        /** Enable immersive home videos browse screen */
+        const val IMMERSIVE_HOME_VIDEOS_BROWSE = "immersive_home_videos_browse"
 
         // ===== Legacy Grouped Flags (Deprecated - use specific flags above) =====
         /** @deprecated Use specific detail screen flags instead */

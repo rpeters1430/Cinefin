@@ -33,6 +33,8 @@ import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.screens.AlbumDetailScreen
 import com.rpeters.jellyfin.ui.screens.ArtistDetailScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideoDetailScreen
+import com.rpeters.jellyfin.ui.screens.ImmersiveAlbumDetailScreen
+import com.rpeters.jellyfin.ui.screens.ImmersiveHomeVideoDetailScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveMovieDetailScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveTVEpisodeDetailScreen
 import com.rpeters.jellyfin.ui.screens.ItemDetailViewModel
@@ -63,11 +65,34 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         val albumId =
             backStackEntry.arguments?.getString(Screen.ALBUM_ID_ARG) ?: return@composable
         val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
-        AlbumDetailScreen(
-            albumId = albumId,
-            onBackClick = { navController.popBackStack() },
-            mainViewModel = mainViewModel,
-        )
+
+        // Feature Flag: Check if immersive album detail should be used
+        val remoteConfigViewModel: RemoteConfigViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+        val useImmersiveUI = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
+            remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_ALBUM_DETAIL)
+
+        if (BuildConfig.DEBUG) {
+            SecureLogger.d(
+                "DetailNavGraph",
+                "AlbumDetail: enable_immersive_ui=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI)}, " +
+                    "immersive_album_detail=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_ALBUM_DETAIL)}, " +
+                    "using immersive: $useImmersiveUI",
+            )
+        }
+
+        if (useImmersiveUI) {
+            ImmersiveAlbumDetailScreen(
+                albumId = albumId,
+                onBackClick = { navController.popBackStack() },
+                mainViewModel = mainViewModel,
+            )
+        } else {
+            AlbumDetailScreen(
+                albumId = albumId,
+                onBackClick = { navController.popBackStack() },
+                mainViewModel = mainViewModel,
+            )
+        }
     }
 
     composable(
@@ -113,48 +138,107 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         val item by detailViewModel.item
         val playbackAnalysis by detailViewModel.playbackAnalysis
         val error by detailViewModel.error
-        item?.let { videoItem ->
-            HomeVideoDetailScreen(
-                item = videoItem,
-                getImageUrl = { mainViewModel.getImageUrl(it) },
-                getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
-                onBackClick = { navController.popBackStack() },
-                onPlayClick = { video ->
-                    val streamUrl = mainViewModel.getStreamUrl(video)
-                    if (streamUrl != null) {
-                        MediaPlayerUtils.playMedia(
-                            context = navController.context,
-                            streamUrl = streamUrl,
-                            item = video,
-                        )
-                    }
-                },
-                onFavoriteClick = { video -> mainViewModel.toggleFavorite(video) },
-                onShareClick = { video ->
-                    ShareUtils.shareMedia(context = navController.context, item = video)
-                },
-                onDownloadClick = { video ->
-                    downloadsViewModel.startDownload(video)
-                },
-                onDeleteClick = { video ->
-                    mainViewModel.deleteItem(video) { success, message ->
-                        if (success) {
-                            navController.popBackStack()
-                        } else {
-                            // Show error via Toast
-                            android.widget.Toast.makeText(
-                                navController.context,
-                                message ?: "Failed to delete item",
-                                android.widget.Toast.LENGTH_SHORT,
-                            ).show()
-                        }
-                    }
-                },
-                onMarkWatchedClick = { video ->
-                    mainViewModel.toggleWatchedStatus(video)
-                },
-                playbackAnalysis = playbackAnalysis,
+
+        // Feature Flag: Check if immersive home video detail should be used
+        val remoteConfigViewModel: RemoteConfigViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+        val useImmersiveUI = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
+            remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_HOME_VIDEO_DETAIL)
+
+        if (BuildConfig.DEBUG) {
+            SecureLogger.d(
+                "DetailNavGraph",
+                "HomeVideoDetail: enable_immersive_ui=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI)}, " +
+                    "immersive_home_video_detail=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_HOME_VIDEO_DETAIL)}, " +
+                    "using immersive: $useImmersiveUI",
             )
+        }
+
+        item?.let { videoItem ->
+            if (useImmersiveUI) {
+                ImmersiveHomeVideoDetailScreen(
+                    item = videoItem,
+                    getImageUrl = { mainViewModel.getImageUrl(it) },
+                    getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
+                    onBackClick = { navController.popBackStack() },
+                    onPlayClick = { video ->
+                        val streamUrl = mainViewModel.getStreamUrl(video)
+                        if (streamUrl != null) {
+                            MediaPlayerUtils.playMedia(
+                                context = navController.context,
+                                streamUrl = streamUrl,
+                                item = video,
+                            )
+                        }
+                    },
+                    onFavoriteClick = { video -> mainViewModel.toggleFavorite(video) },
+                    onShareClick = { video ->
+                        ShareUtils.shareMedia(context = navController.context, item = video)
+                    },
+                    onDownloadClick = { video ->
+                        downloadsViewModel.startDownload(video)
+                    },
+                    onDeleteClick = { video ->
+                        mainViewModel.deleteItem(video) { success, message ->
+                            if (success) {
+                                navController.popBackStack()
+                            } else {
+                                // Show error via Toast
+                                android.widget.Toast.makeText(
+                                    navController.context,
+                                    message ?: "Failed to delete item",
+                                    android.widget.Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                        }
+                    },
+                    onMarkWatchedClick = { video ->
+                        mainViewModel.toggleWatchedStatus(video)
+                    },
+                    playbackAnalysis = playbackAnalysis,
+                )
+            } else {
+                HomeVideoDetailScreen(
+                    item = videoItem,
+                    getImageUrl = { mainViewModel.getImageUrl(it) },
+                    getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
+                    onBackClick = { navController.popBackStack() },
+                    onPlayClick = { video ->
+                        val streamUrl = mainViewModel.getStreamUrl(video)
+                        if (streamUrl != null) {
+                            MediaPlayerUtils.playMedia(
+                                context = navController.context,
+                                streamUrl = streamUrl,
+                                item = video,
+                            )
+                        }
+                    },
+                    onFavoriteClick = { video -> mainViewModel.toggleFavorite(video) },
+                    onShareClick = { video ->
+                        ShareUtils.shareMedia(context = navController.context, item = video)
+                    },
+                    onDownloadClick = { video ->
+                        downloadsViewModel.startDownload(video)
+                    },
+                    onDeleteClick = { video ->
+                        mainViewModel.deleteItem(video) { success, message ->
+                            if (success) {
+                                navController.popBackStack()
+                            } else {
+                                // Show error via Toast
+                                android.widget.Toast.makeText(
+                                    navController.context,
+                                    message ?: "Failed to delete item",
+                                    android.widget.Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                        }
+                    },
+                    onMarkWatchedClick = { video ->
+                        mainViewModel.toggleWatchedStatus(video)
+                    },
+                    playbackAnalysis = playbackAnalysis,
+                )
+            }
         } ?: run {
             val errorMessage = error
             if (errorMessage != null) {

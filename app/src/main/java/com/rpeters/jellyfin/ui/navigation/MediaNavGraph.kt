@@ -15,6 +15,7 @@ import com.rpeters.jellyfin.core.FeatureFlags
 import com.rpeters.jellyfin.ui.screens.AudioQueueScreen
 import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
+import com.rpeters.jellyfin.ui.screens.ImmersiveHomeVideosScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveMoviesScreenContainer
 import com.rpeters.jellyfin.ui.screens.ImmersiveTVSeasonScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveTVShowDetailScreen
@@ -374,19 +375,49 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             }
         }
 
-        HomeVideosScreen(
-            onBackClick = { navController.popBackStack() },
-            viewModel = viewModel,
-            onItemClick = { id ->
-                val item = appState.itemsByLibrary.values.flatten()
-                    .find { it.id.toString() == id }
-                if (item?.type == org.jellyfin.sdk.model.api.BaseItemKind.VIDEO) {
-                    navController.navigate(Screen.HomeVideoDetail.createRoute(id))
-                } else {
-                    navController.navigate(Screen.ItemDetail.createRoute(id))
-                }
-            },
-        )
+        // Feature Flag: Check if immersive UI should be used
+        val remoteConfigViewModel: RemoteConfigViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+        val useImmersiveUI = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
+            remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_HOME_VIDEOS_BROWSE)
+
+        if (BuildConfig.DEBUG) {
+            SecureLogger.d(
+                "MediaNavGraph",
+                "HomeVideosScreen: enable_immersive_ui=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI)}, " +
+                    "immersive_home_videos_browse=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_HOME_VIDEOS_BROWSE)}, " +
+                    "using immersive: $useImmersiveUI",
+            )
+        }
+
+        if (useImmersiveUI) {
+            ImmersiveHomeVideosScreen(
+                onBackClick = { navController.popBackStack() },
+                onItemClick = { id ->
+                    val item = appState.itemsByLibrary.values.flatten()
+                        .find { it.id.toString() == id }
+                    if (item?.type == org.jellyfin.sdk.model.api.BaseItemKind.VIDEO) {
+                        navController.navigate(Screen.HomeVideoDetail.createRoute(id))
+                    } else {
+                        navController.navigate(Screen.ItemDetail.createRoute(id))
+                    }
+                },
+                viewModel = viewModel,
+            )
+        } else {
+            HomeVideosScreen(
+                onBackClick = { navController.popBackStack() },
+                viewModel = viewModel,
+                onItemClick = { id ->
+                    val item = appState.itemsByLibrary.values.flatten()
+                        .find { it.id.toString() == id }
+                    if (item?.type == org.jellyfin.sdk.model.api.BaseItemKind.VIDEO) {
+                        navController.navigate(Screen.HomeVideoDetail.createRoute(id))
+                    } else {
+                        navController.navigate(Screen.ItemDetail.createRoute(id))
+                    }
+                },
+            )
+        }
     }
 
     composable(Screen.Books.route) {

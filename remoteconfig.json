@@ -8,28 +8,28 @@
     },
     "immersive_album_detail": {
       "defaultValue": {
-        "value": "false"
+        "value": "true"
       },
       "description": "Enable immersive album detail screen.",
       "valueType": "BOOLEAN"
     },
     "immersive_movies_browse": {
       "defaultValue": {
-        "value": "false"
+        "value": "true"
       },
       "description": "Enable immersive movies browse screen.",
       "valueType": "BOOLEAN"
     },
     "immersive_library_screen": {
       "defaultValue": {
-        "value": "false"
+        "value": "true"
       },
       "description": "Enable immersive library screen.",
       "valueType": "BOOLEAN"
     },
     "immersive_home_screen": {
       "defaultValue": {
-        "value": "false"
+        "value": "true"
       },
       "description": "Enable immersive home screen design.",
       "valueType": "BOOLEAN"
@@ -42,7 +42,7 @@
     },
     "enable_immersive_ui": {
       "defaultValue": {
-        "value": "false"
+        "value": "true"
       },
       "description": "Master toggle for all immersive UI features.",
       "valueType": "BOOLEAN"
@@ -55,7 +55,7 @@
     },
     "immersive_favorites_screen": {
       "defaultValue": {
-        "value": "false"
+        "value": "true"
       },
       "description": "Enable immersive favorites screen.",
       "valueType": "BOOLEAN"
@@ -74,14 +74,14 @@
     },
     "immersive_tv_show_detail": {
       "defaultValue": {
-        "value": "false"
+        "value": "true"
       },
       "description": "Enable immersive TV show detail screen.",
       "valueType": "BOOLEAN"
     },
     "immersive_search_screen": {
       "defaultValue": {
-        "value": "false"
+        "value": "true"
       },
       "description": "Enable immersive search screen.",
       "valueType": "BOOLEAN"
@@ -100,14 +100,14 @@
     },
     "immersive_tv_episode_detail": {
       "defaultValue": {
-        "value": "false"
+        "value": "true"
       },
       "description": "Enable immersive TV episode detail screen.",
       "valueType": "BOOLEAN"
     },
     "immersive_tv_season": {
       "defaultValue": {
-        "value": "false"
+        "value": "true"
       },
       "description": "Enable immersive TV season screen.",
       "valueType": "BOOLEAN"
@@ -120,14 +120,14 @@
     },
     "immersive_movie_detail": {
       "defaultValue": {
-        "value": "false"
+        "value": "true"
       },
       "description": "Enable immersive movie detail screen.",
       "valueType": "BOOLEAN"
     },
     "immersive_tv_browse": {
       "defaultValue": {
-        "value": "false"
+        "value": "true"
       },
       "description": "Enable immersive TV shows browse screen.",
       "valueType": "BOOLEAN"
@@ -137,6 +137,27 @@
         "value": "10"
       },
       "valueType": "NUMBER"
+    },
+    "immersive_home_video_detail": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable immersive home video detail screen.",
+      "valueType": "BOOLEAN"
+    },
+    "immersive_home_videos_browse": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable immersive home videos browse screen.",
+      "valueType": "BOOLEAN"
+    },
+    "immersive_music_browse": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable immersive music browse screen.",
+      "valueType": "BOOLEAN"
     }
   }
 }

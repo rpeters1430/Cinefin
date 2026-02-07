@@ -13,62 +13,43 @@ import kotlin.math.abs
 
 /**
  * Scroll-aware top bar visibility with hysteresis to avoid flicker at low scroll velocity.
+ *
+ * @param listState The LazyListState to monitor
+ * @param nearTopOffsetPx Offset from top where bar is always visible (should be >= hero height)
+ * @param toggleThresholdPx Minimum scroll distance to trigger hide/show
  */
 @Composable
 fun rememberAutoHideTopBarVisible(
     listState: LazyListState,
     nearTopOffsetPx: Int = 140,
-    toggleThresholdPx: Int = 24,
+    toggleThresholdPx: Int = 50,
 ): Boolean {
     var isVisible by remember { mutableStateOf(true) }
-    var previousIndex by remember { mutableIntStateOf(listState.firstVisibleItemIndex) }
-    var previousOffset by remember { mutableIntStateOf(listState.firstVisibleItemScrollOffset) }
-    var directionAccumulatorPx by remember { mutableIntStateOf(0) }
-    var lastDirection by remember { mutableIntStateOf(0) } // -1 up, +1 down
+    var previousOffset by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(listState, nearTopOffsetPx, toggleThresholdPx) {
-        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
-            .collect { (index, offset) ->
-                val isNearTop = index == 0 && offset <= nearTopOffsetPx
-                if (isNearTop) {
-                    isVisible = true
-                    directionAccumulatorPx = 0
-                    lastDirection = 0
-                    previousIndex = index
-                    previousOffset = offset
-                    return@collect
-                }
+        snapshotFlow {
+            listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
+        }.collect { (index, offset) ->
+            // Calculate total scroll position
+            val totalOffset = if (index == 0) offset else Int.MAX_VALUE
 
-                val direction = when {
-                    index > previousIndex -> 1
-                    index < previousIndex -> -1
-                    offset > previousOffset -> 1
-                    offset < previousOffset -> -1
-                    else -> 0
-                }
-
-                if (direction != 0) {
-                    if (direction != lastDirection) {
-                        directionAccumulatorPx = 0
-                        lastDirection = direction
-                    }
-
-                    val deltaPx = if (index == previousIndex) {
-                        abs(offset - previousOffset)
-                    } else {
-                        toggleThresholdPx
-                    }
-                    directionAccumulatorPx += deltaPx
-
-                    if (directionAccumulatorPx >= toggleThresholdPx) {
-                        isVisible = direction < 0
-                        directionAccumulatorPx = 0
-                    }
-                }
-
-                previousIndex = index
-                previousOffset = offset
+            // Always show at top
+            if (totalOffset <= nearTopOffsetPx) {
+                isVisible = true
+                previousOffset = totalOffset
+                return@collect
             }
+
+            // Calculate scroll delta
+            val delta = totalOffset - previousOffset
+
+            // Only toggle if scrolled enough
+            if (abs(delta) >= toggleThresholdPx) {
+                isVisible = delta < 0 // Show when scrolling up, hide when scrolling down
+                previousOffset = totalOffset
+            }
+        }
     }
 
     return isVisible

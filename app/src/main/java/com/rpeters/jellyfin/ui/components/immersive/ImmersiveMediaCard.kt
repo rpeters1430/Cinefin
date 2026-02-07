@@ -59,6 +59,10 @@ import com.rpeters.jellyfin.ui.theme.MotionTokens
  * Immersive media card with larger imagery and overlaid text for cinematic experiences.
  * Based on ExpressiveMediaCard but optimized for full-bleed immersive layouts.
  *
+ * **Performance Optimizations** (Phase 5):
+ * - Conditional image loading via `loadImage` parameter (use with PerformanceOptimizedLazyRow)
+ * - Adaptive image quality via `imageQuality` parameter (set from ImmersivePerformanceConfig)
+ *
  * Key differences from ExpressiveMediaCard:
  * - Larger default size (280dp width vs 200dp)
  * - Full-bleed image with gradient overlay
@@ -76,6 +80,8 @@ import com.rpeters.jellyfin.ui.theme.MotionTokens
  * @param onCardClick Click handler for the card
  * @param onPlayClick Click handler for play action
  * @param onFavoriteClick Click handler for favorite action
+ * @param loadImage Whether to load the image (use false for off-screen items to save memory)
+ * @param imageQuality Image quality setting (adaptive based on device tier)
  * @param modifier Optional modifier
  * @param cardSize Size variant for the card
  */
@@ -93,6 +99,8 @@ fun ImmersiveMediaCard(
     unwatchedEpisodeCount: Int? = null,
     onPlayClick: () -> Unit = {},
     onFavoriteClick: () -> Unit = {},
+    loadImage: Boolean = true,
+    imageQuality: ImageQuality = ImageQuality.HIGH,
     cardSize: ImmersiveCardSize = ImmersiveCardSize.MEDIUM,
 ) {
     var isPressed by remember { mutableStateOf(false) }
@@ -131,6 +139,8 @@ fun ImmersiveMediaCard(
             onPlayClick = onPlayClick,
             onFavoriteClick = onFavoriteClick,
             onPressedChange = { isPressed = it },
+            loadImage = loadImage, // ✅ Pass through performance parameters
+            imageQuality = imageQuality,
         )
     }
 }
@@ -149,6 +159,8 @@ private fun ImmersiveCardContent(
     onPlayClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     onPressedChange: (Boolean) -> Unit,
+    loadImage: Boolean,
+    imageQuality: ImageQuality,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -168,13 +180,13 @@ private fun ImmersiveCardContent(
                 onCardClick()
             },
     ) {
-        // Full-bleed background image
+        // ✅ Performance: Full-bleed background image with conditional loading
         OptimizedImage(
-            imageUrl = imageUrl,
+            imageUrl = if (loadImage) imageUrl else "", // Only load if visible
             contentDescription = title,
             contentScale = ContentScale.Crop,
             size = ImageSize.BANNER,
-            quality = ImageQuality.HIGH,
+            quality = imageQuality, // Adaptive quality based on device tier
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(ImmersiveDimens.CornerRadiusCinematic)),

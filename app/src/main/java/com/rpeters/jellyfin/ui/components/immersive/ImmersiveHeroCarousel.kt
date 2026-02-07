@@ -6,10 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -37,28 +40,37 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.image.ImageSize
 import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
+import com.rpeters.jellyfin.utils.SecureLogger
 
 /**
  * Immersive full-screen hero carousel for cinematic media experiences.
  * Based on ExpressiveHeroCarousel but optimized for immersive layouts.
  *
- * Key differences:
+ * **Performance Optimizations** (Phase 5):
+ * - Limits items based on device tier (3-10 items)
+ * - Disables auto-scroll on low-end devices to prevent jank
+ * - Uses adaptive image quality
+ * - Logs performance metrics in debug builds
+ *
+ * Key differences from ExpressiveHeroCarousel:
  * - Larger hero height (480dp on phone vs 280dp)
  * - Full-bleed design with no horizontal padding
  * - Stronger gradient overlay
  * - Larger typography
- * - Auto-scrolling enabled by default
+ * - Auto-scrolling enabled by default (adaptive)
  *
- * @param items List of carousel items to display
+ * @param items List of carousel items to display (will be limited by device tier)
  * @param onItemClick Click handler for carousel items
  * @param onPlayClick Click handler for play button
+ * @param performanceConfig Performance configuration (defaults to device-detected)
  * @param heroHeight Height of the carousel (defaults to phone height, adjust for tablet/TV)
  * @param pageSpacing Spacing between carousel items
- * @param autoScrollEnabled Enable auto-scrolling through items
+ * @param autoScrollEnabled Enable auto-scrolling through items (ignored on low-end devices)
  * @param autoScrollIntervalMillis Time between auto-scroll transitions (default 15s)
  */
 @Composable
@@ -67,6 +79,7 @@ fun ImmersiveHeroCarousel(
     onItemClick: (CarouselItem) -> Unit,
     onPlayClick: (CarouselItem) -> Unit,
     modifier: Modifier = Modifier,
+    performanceConfig: ImmersivePerformanceConfig = rememberImmersivePerformanceConfig(),
     heroHeight: Dp = ImmersiveDimens.HeroHeightPhone,
     pageSpacing: Dp = 0.dp,
     autoScrollEnabled: Boolean = true,
@@ -74,12 +87,29 @@ fun ImmersiveHeroCarousel(
 ) {
     if (items.isEmpty()) return
 
+    // ✅ Performance: Limit items based on device tier
+    val optimizedItems = remember(items, performanceConfig.maxHeroCarouselItems) {
+        val limited = items.take(performanceConfig.maxHeroCarouselItems)
+        if (BuildConfig.DEBUG && items.size > limited.size) {
+            SecureLogger.d(
+                "ImmersiveHeroCarousel",
+                "Limited ${items.size} items to ${limited.size} for ${performanceConfig.tier} tier device",
+            )
+        }
+        limited
+    }
+
+    // ✅ Performance: Disable auto-scroll on low-end devices (prevents jank)
+    val effectiveAutoScroll = remember(autoScrollEnabled, performanceConfig.enableAutoScroll) {
+        autoScrollEnabled && performanceConfig.enableAutoScroll
+    }
+
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     // Full-screen items for immersive experience
     val itemWidth = remember(screenWidth) { screenWidth }
 
-    val carouselState = rememberCarouselState { items.size }
+    val carouselState = rememberCarouselState { optimizedItems.size }
 
     // Track current item for indicators
     val currentItem by remember {
@@ -88,13 +118,13 @@ fun ImmersiveHeroCarousel(
         }
     }
 
-    // Auto-scroll effect
-    LaunchedEffect(carouselState, autoScrollEnabled, autoScrollIntervalMillis, items.size) {
-        if (!autoScrollEnabled || items.size <= 1) return@LaunchedEffect
+    // ✅ Performance: Auto-scroll effect (disabled on LOW tier devices)
+    LaunchedEffect(carouselState, effectiveAutoScroll, autoScrollIntervalMillis, optimizedItems.size) {
+        if (!effectiveAutoScroll || optimizedItems.size <= 1) return@LaunchedEffect
 
         while (true) {
             kotlinx.coroutines.delay(autoScrollIntervalMillis)
-            val nextPage = (carouselState.currentItem + 1) % items.size
+            val nextPage = (carouselState.currentItem + 1) % optimizedItems.size
             carouselState.scrollToItem(nextPage)
         }
     }
@@ -111,7 +141,8 @@ fun ImmersiveHeroCarousel(
                 flingBehavior = CarouselDefaults.singleAdvanceFlingBehavior(state = carouselState),
                 modifier = Modifier.height(heroHeight),
             ) { index ->
-                val item = items[index]
+                // ✅ Performance: Use optimized items list
+                val item = optimizedItems[index]
                 val isActive = index == currentItem
 
                 ImmersiveHeroCard(
@@ -119,6 +150,7 @@ fun ImmersiveHeroCarousel(
                     onItemClick = { onItemClick(item) },
                     onPlayClick = { onPlayClick(item) },
                     isActive = isActive,
+                    performanceConfig = performanceConfig,
                     modifier = Modifier
                         .height(heroHeight)
                         .fillMaxWidth(),
@@ -128,7 +160,7 @@ fun ImmersiveHeroCarousel(
             // Carousel indicators
             ImmersiveCarouselIndicators(
                 currentIndex = currentItem,
-                itemCount = items.size,
+                itemCount = optimizedItems.size, // ✅ Performance: Use optimized count
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 24.dp),
@@ -143,6 +175,7 @@ private fun ImmersiveHeroCard(
     onItemClick: () -> Unit,
     onPlayClick: () -> Unit,
     isActive: Boolean,
+    performanceConfig: ImmersivePerformanceConfig,
     modifier: Modifier = Modifier,
 ) {
     val scale = if (isActive) 1.0f else 0.98f
@@ -156,12 +189,13 @@ private fun ImmersiveHeroCard(
             }
             .clickable { onItemClick() },
     ) {
-        // Full-bleed background image
+        // ✅ Performance: Full-bleed background image with adaptive quality
         OptimizedImage(
             imageUrl = item.imageUrl,
             contentDescription = item.title,
             contentScale = ContentScale.Crop,
             size = ImageSize.BANNER,
+            quality = performanceConfig.heroImageQuality, // Adaptive quality
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(0.dp)),
@@ -191,10 +225,20 @@ private fun ImmersiveHeroCard(
         )
 
         // Content overlay at bottom
+        // Add top padding to keep content visible below translucent top bar
+        val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        val topBarHeight = 64.dp
+        val safeTopPadding = statusBarHeight + topBarHeight + 16.dp // Extra 16dp for breathing room
+
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(32.dp),
+                .padding(
+                    start = 32.dp,
+                    end = 32.dp,
+                    bottom = 32.dp,
+                    top = safeTopPadding, // Keep content below top bar
+                ),
         ) {
             Text(
                 text = item.title,

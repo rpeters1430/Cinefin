@@ -52,11 +52,13 @@ object RemoteConfigModule {
             "immersive_tv_show_detail" to enableImmersiveUIDebug, // ✅ Implemented
             "immersive_tv_season" to enableImmersiveUIDebug, // ✅ Implemented
             "immersive_tv_episode_detail" to enableImmersiveUIDebug, // ✅ Implemented
-            "immersive_album_detail" to false, // ⏳ Not implemented yet
+            "immersive_album_detail" to enableImmersiveUIDebug, // ✅ Implemented (Phase 4)
+            "immersive_home_video_detail" to enableImmersiveUIDebug, // ✅ Implemented (Phase 4)
 
             // Browse Screens
             "immersive_movies_browse" to enableImmersiveUIDebug, // ✅ Implemented
             "immersive_tv_browse" to enableImmersiveUIDebug, // ✅ Implemented
+            "immersive_home_videos_browse" to enableImmersiveUIDebug, // ✅ Implemented (Phase 4)
             "immersive_music_browse" to false, // ⏳ Not implemented yet
 
             // Legacy grouped flags (deprecated but kept for backwards compatibility)

@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
@@ -46,7 +47,11 @@ fun ImmersiveMoviesScreen(
     onBackClick: () -> Unit = {},
 ) {
     val listState = rememberLazyListState()
-    val topBarVisible = rememberAutoHideTopBarVisible(listState = listState)
+    // Use hero height as threshold to avoid flickering within hero
+    val topBarVisible = rememberAutoHideTopBarVisible(
+        listState = listState,
+        nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
+    )
 
     // Organize movies into sections for immersive browsing
     val movieSections = remember(movies) { organizeMoviesIntoSections(movies) }
@@ -96,7 +101,6 @@ fun ImmersiveMoviesScreen(
                 indicatorColor = MovieRed,
                 useWavyIndicator = true,
             ) {
-                val topBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
                 if (movies.isEmpty() && !isLoading) {
                     MoviesEmptyState(
                         icon = Icons.Default.Movie,
@@ -111,7 +115,7 @@ fun ImmersiveMoviesScreen(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
                         contentPadding = PaddingValues(
-                            top = topBarPadding,
+                            top = 0.dp, // No top padding - hero should be full-bleed behind translucent top bar
                             bottom = 120.dp,
                         ),
                     ) {

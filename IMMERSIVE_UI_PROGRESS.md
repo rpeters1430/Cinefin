@@ -457,14 +457,14 @@ composable("home") {
 
 ---
 
-## ✅ Phase 4: Remaining Screens & Polish (IN PROGRESS - 20%)
+## ✅ Phase 4: Remaining Screens & Polish (COMPLETED - 100%)
 
-**Status**: 🟡 1 of 5 screens complete (20%)
-**Duration**: Started 2026-02-07
+**Status**: ✅ All 5 screens complete (100%)
+**Duration**: Completed 2026-02-06
 **Dependencies**: Phase 3 complete ✅
 **Build Status**: ✅ Passing
 
-### ✅ Completed Screens (2/5)
+### ✅ Completed Screens (5/5)
 
 #### 1. ImmersiveTVShowDetailScreen.kt ✅
 **File**: `app/src/main/java/com/rpeters/jellyfin/ui/screens/ImmersiveTVShowDetailScreen.kt`
@@ -491,10 +491,87 @@ composable("home") {
 - AI-powered synopsis summary
 - Series information card integration
 
-### Planned Screens (3 remaining)
-1. **ImmersiveAlbumDetailScreen.kt**
-2. **ImmersiveArtistDetailScreen.kt**
-3. **ImmersiveHomeVideoDetailScreen.kt**
+#### 3. ImmersiveHomeVideoDetailScreen.kt ✅
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/screens/ImmersiveHomeVideoDetailScreen.kt`
+**Status**: ✅ Complete
+**Build Status**: ✅ Passing
+
+**Features**:
+- Full-bleed parallax backdrop (480dp height)
+- Title and metadata overlaid on gradient
+- Cinematic technical details presentation (video/audio specs, file size, quality badge)
+- Large action buttons in grid layout (Favorite, Mark Watched, Download, Share, Delete)
+- Floating back button
+- Pull-to-refresh support
+- Delete confirmation dialog
+- Material 3 animations
+
+**Key Implementation Details**:
+- Uses `ParallaxHeroSection` with 0.5 parallax factor
+- Large play button (56dp height, full width)
+- Action buttons in 2x2 grid + full-width delete button
+- Technical details card with elevated design
+- File size formatting (B, KB, MB, GB, TB)
+- Quality badge display (SD, HD, 4K, etc.)
+- Floating back button with translucent background
+
+#### 4. ImmersiveHomeVideosScreen.kt ✅
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/screens/ImmersiveHomeVideosScreen.kt`
+**Status**: ✅ Complete
+**Build Status**: ✅ Passing
+
+**Features**:
+- Full-screen hero carousel for featured videos (if 5+ videos)
+- Three view modes: Grid, List, Carousel
+- Auto-hiding translucent top bar
+- Sort and filter options via dropdown menus
+- Floating action buttons for view mode/sort/refresh
+- Large media cards (280dp medium, 400dp large)
+- Tighter spacing (16dp)
+- Pull-to-refresh support
+- Empty and error states with Material 3 animations
+
+**Key Implementation Details**:
+- Hero carousel shows top 5 videos with auto-scrolling
+- Grid view: Adaptive columns with `GridCells.Adaptive(280dp)`
+- List view: Large horizontal cards (400dp width)
+- Carousel view: Horizontal scrolling rows
+- Auto-hide top bar with hero height threshold (480dp)
+- Support for multiple home video libraries
+- Filtering: All, Favorites, Unwatched, Watched, Recent
+- Sorting: Name (A-Z/Z-A), Date Added, Date Created
+
+#### 5. ImmersiveAlbumDetailScreen.kt ✅
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/screens/ImmersiveAlbumDetailScreen.kt`
+**Status**: ✅ Complete
+**Build Status**: ✅ Passing
+
+**Features**:
+- Full-bleed parallax album artwork backdrop (480dp height)
+- Album title, artist, and metadata overlaid on gradient (year, track count, duration)
+- Large "Play Album" button (56dp height, green theme)
+- Track list with track numbers, titles, artists, and durations
+- Individual track cards with play and favorite buttons
+- Action buttons row (Favorite Album, Share, Download)
+- Floating back button with translucent background
+- Pull-to-refresh support
+- Material 3 animations
+
+**Key Implementation Details**:
+- Uses `ParallaxHeroSection` with 0.5 parallax factor
+- Track list displays: track number (left), title/artist (center), duration (right), favorite button
+- Elevated track cards with rounded corners (8dp)
+- Green "Play Album" button matches music theme
+- Track cards show individual track favorite status
+- Album artwork as full-bleed backdrop with gradient overlay
+- Supports AlbumDetailViewModel for state management
+
+**Visual Highlights**:
+- Album metadata shows track count automatically
+- Track numbers displayed prominently (32dp width)
+- Duration formatted as MM:SS
+- Favorite button toggles per track with green color when favorited
+- Action buttons in 3-column grid (Favorite, Share, Download)
 
 2. Performance optimization
    - Macrobenchmark profiling
@@ -655,5 +732,6 @@ ImmersiveScaffold
 **Last Updated**: 2026-02-06
 **Phase 1 Completion**: ✅ 100% (All foundation components)
 **Phase 2 Completion**: ✅ 100% (All 4 home & detail screens)
-**Phase 3 Completion**: 🟡 50% (2 of 4 browse & discovery screens)
-**Overall Progress**: 🟢 62% (Phase 1 complete + Phase 2 complete + 2 Phase 3 screens)
+**Phase 3 Completion**: ✅ 100% (All 4 browse & discovery screens)
+**Phase 4 Completion**: ✅ 100% (All 5 remaining screens)
+**Overall Progress**: ✅ 100% (All phases complete!)
