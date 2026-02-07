@@ -1,8 +1,8 @@
 package com.rpeters.jellyfin.ui.components.immersive
 
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -21,7 +21,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -56,9 +55,9 @@ fun AutoHideTopAppBar(
         targetValue = if (visible) 0f else -appBarHeightPx * 1.5f, // Slide further up to hide shadow/glow
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessMedium
+            stiffness = Spring.StiffnessMedium,
         ),
-        label = "top_bar_translation"
+        label = "top_bar_translation",
     )
 
     Box(
@@ -69,8 +68,10 @@ fun AutoHideTopAppBar(
                 // Reduce alpha as it slides away for extra smoothness
                 this.alpha = if (translationY < -10f) {
                     (1f + translationY / appBarHeightPx).coerceIn(0f, 1f)
-                } else 1f
-            }
+                } else {
+                    1f
+                }
+            },
     ) {
         TopAppBar(
             title = { Text(title) },
@@ -137,6 +138,6 @@ fun ScrollAwareTopAppBar(
         actions = actions,
         translucent = translucent,
         scrollBehavior = scrollBehavior,
-        modifier = modifier
+        modifier = modifier,
     )
 }

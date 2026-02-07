@@ -363,54 +363,54 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 )
             } else {
                 MovieDetailScreen(
-                movie = resolvedMovie,
-                relatedItems = detailState.similarMovies,
-                onBackClick = { navController.popBackStack() },
-                onPlayClick = { movieItem, subtitleIndex ->
-                    val streamUrl = mainViewModel.getStreamUrl(movieItem)
-                    if (streamUrl != null) {
-                        MediaPlayerUtils.playMedia(
-                            context = navController.context,
-                            streamUrl = streamUrl,
-                            item = movieItem,
-                            subtitleIndex = subtitleIndex,
-                        )
-                    }
-                },
-                onFavoriteClick = { mainViewModel.toggleFavorite(resolvedMovie) },
-                onShareClick = { ShareUtils.shareMedia(navController.context, resolvedMovie) },
-                onDeleteClick = { movieItem ->
-                    mainViewModel.deleteItem(movieItem) { success, message ->
-                        val toastMessage = if (success) {
-                            "Item deleted successfully"
-                        } else {
-                            message ?: "Failed to delete item"
+                    movie = resolvedMovie,
+                    relatedItems = detailState.similarMovies,
+                    onBackClick = { navController.popBackStack() },
+                    onPlayClick = { movieItem, subtitleIndex ->
+                        val streamUrl = mainViewModel.getStreamUrl(movieItem)
+                        if (streamUrl != null) {
+                            MediaPlayerUtils.playMedia(
+                                context = navController.context,
+                                streamUrl = streamUrl,
+                                item = movieItem,
+                                subtitleIndex = subtitleIndex,
+                            )
                         }
-                        android.widget.Toast.makeText(
-                            navController.context,
-                            toastMessage,
-                            android.widget.Toast.LENGTH_SHORT,
-                        ).show()
-                        if (success) {
-                            navController.popBackStack()
+                    },
+                    onFavoriteClick = { mainViewModel.toggleFavorite(resolvedMovie) },
+                    onShareClick = { ShareUtils.shareMedia(navController.context, resolvedMovie) },
+                    onDeleteClick = { movieItem ->
+                        mainViewModel.deleteItem(movieItem) { success, message ->
+                            val toastMessage = if (success) {
+                                "Item deleted successfully"
+                            } else {
+                                message ?: "Failed to delete item"
+                            }
+                            android.widget.Toast.makeText(
+                                navController.context,
+                                toastMessage,
+                                android.widget.Toast.LENGTH_SHORT,
+                            ).show()
+                            if (success) {
+                                navController.popBackStack()
+                            }
                         }
-                    }
-                },
-                onRelatedMovieClick = { relatedMovieId ->
-                    navController.navigate(Screen.MovieDetail.createRoute(relatedMovieId))
-                },
-                onRefresh = { detailViewModel.refresh() },
-                isRefreshing = detailState.isLoading || detailState.isSimilarMoviesLoading,
-                playbackAnalysis = detailState.playbackAnalysis,
-                getImageUrl = { item -> mainViewModel.getImageUrl(item) },
-                getBackdropUrl = { item -> mainViewModel.getBackdropUrl(item) },
-                getLogoUrl = { item -> mainViewModel.getLogoUrl(item) },
-                getPersonImageUrl = { person -> mainViewModel.getPersonImageUrl(person) },
-                serverUrl = currentServer?.url,
-                onGenerateAiSummary = { detailViewModel.generateAiSummary() },
-                aiSummary = detailState.aiSummary,
-                isLoadingAiSummary = detailState.isLoadingAiSummary,
-            )
+                    },
+                    onRelatedMovieClick = { relatedMovieId ->
+                        navController.navigate(Screen.MovieDetail.createRoute(relatedMovieId))
+                    },
+                    onRefresh = { detailViewModel.refresh() },
+                    isRefreshing = detailState.isLoading || detailState.isSimilarMoviesLoading,
+                    playbackAnalysis = detailState.playbackAnalysis,
+                    getImageUrl = { item -> mainViewModel.getImageUrl(item) },
+                    getBackdropUrl = { item -> mainViewModel.getBackdropUrl(item) },
+                    getLogoUrl = { item -> mainViewModel.getLogoUrl(item) },
+                    getPersonImageUrl = { person -> mainViewModel.getPersonImageUrl(person) },
+                    serverUrl = currentServer?.url,
+                    onGenerateAiSummary = { detailViewModel.generateAiSummary() },
+                    aiSummary = detailState.aiSummary,
+                    isLoadingAiSummary = detailState.isLoadingAiSummary,
+                )
             }
         } else if (detailState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -478,361 +478,292 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     )
                 }
 
-                                // Feature Flag: Check if immersive episode detail should be used
+                // Feature Flag: Check if immersive episode detail should be used
 
-                                val remoteConfigViewModel: RemoteConfigViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+                val remoteConfigViewModel: RemoteConfigViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 
-                                val useImmersiveUI = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
+                val useImmersiveUI = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
 
-                                    remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_TV_EPISODE_DETAIL)
+                    remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_TV_EPISODE_DETAIL)
 
-                
+                if (BuildConfig.DEBUG) {
+                    SecureLogger.d(
 
-                                if (BuildConfig.DEBUG) {
+                        "DetailNavGraph",
 
-                                    SecureLogger.d(
+                        "TVEpisodeDetail: enable_immersive_ui=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI)}, " +
 
-                                        "DetailNavGraph",
+                            "immersive_tv_episode_detail=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_TV_EPISODE_DETAIL)}, " +
 
-                                        "TVEpisodeDetail: enable_immersive_ui=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI)}, " +
+                            "using immersive: $useImmersiveUI",
 
-                                            "immersive_tv_episode_detail=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_TV_EPISODE_DETAIL)}, " +
+                    )
+                }
 
-                                            "using immersive: $useImmersiveUI",
+                if (useImmersiveUI) {
+                    ImmersiveTVEpisodeDetailScreen(
 
-                                    )
+                        episode = episode,
 
+                        seriesInfo = detailState.seriesInfo ?: series,
+
+                        seasonEpisodes = detailState.seasonEpisodes,
+
+                        getImageUrl = { mainViewModel.getImageUrl(it) },
+
+                        getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
+
+                        onBackClick = { navController.popBackStack() },
+
+                        onEpisodeClick = { episodeItem ->
+
+                            navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeItem.id.toString())) {
+                                popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
+                            }
+                        },
+
+                        onViewSeriesClick = {
+                            val seriesId = series?.id ?: detailState.seriesInfo?.id
+
+                            seriesId?.let { id ->
+
+                                navController.navigate(Screen.TVSeasons.createRoute(id.toString())) {
+                                    popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
                                 }
+                            }
+                        },
 
-                
+                        onPlayClick = { episodeItem, subtitleIndex ->
 
-                                if (useImmersiveUI) {
+                            val streamUrl = mainViewModel.getStreamUrl(episodeItem)
 
-                                    ImmersiveTVEpisodeDetailScreen(
+                            if (streamUrl != null) {
+                                MediaPlayerUtils.playMedia(
 
-                                        episode = episode,
+                                    context = navController.context,
 
-                                        seriesInfo = detailState.seriesInfo ?: series,
+                                    streamUrl = streamUrl,
 
-                                        seasonEpisodes = detailState.seasonEpisodes,
+                                    item = episodeItem,
 
-                                        getImageUrl = { mainViewModel.getImageUrl(it) },
+                                    subtitleIndex = subtitleIndex,
 
-                                        getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
+                                )
+                            }
+                        },
 
-                                        onBackClick = { navController.popBackStack() },
+                        onDownloadClick = { episodeItem ->
 
-                                        onEpisodeClick = { episodeItem ->
+                            mainViewModel.getDownloadUrl(episodeItem)?.let { downloadUrl ->
 
-                                            navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeItem.id.toString())) {
+                                val downloadManager = android.app.DownloadManager.Request(android.net.Uri.parse(downloadUrl))
 
-                                                popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
+                                downloadManager.setTitle(episodeItem.name ?: "Episode Download")
 
-                                            }
+                                downloadManager.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
 
-                                        },
+                                val manager = navController.context.getSystemService(android.app.DownloadManager::class.java)
 
-                                        onViewSeriesClick = {
+                                manager.enqueue(downloadManager)
+                            }
+                        },
 
-                                            val seriesId = series?.id ?: detailState.seriesInfo?.id
+                        onFavoriteClick = { mainViewModel.toggleFavorite(it) },
 
-                                            seriesId?.let { id ->
+                        onMarkWatchedClick = { mainViewModel.toggleWatchedStatus(it) },
 
-                                                navController.navigate(Screen.TVSeasons.createRoute(id.toString())) {
+                        playbackAnalysis = detailState.playbackAnalysis,
 
-                                                    popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
+                        onGenerateAiSummary = { viewModel.generateAiSummary() },
 
-                                                }
+                        aiSummary = detailState.aiSummary,
 
-                                            }
+                        isLoadingAiSummary = detailState.isLoadingAiSummary,
 
-                                        },
+                    )
+                } else {
+                    TVEpisodeDetailScreen(
 
-                                        onPlayClick = { episodeItem, subtitleIndex ->
+                        episode = episode,
 
-                                            val streamUrl = mainViewModel.getStreamUrl(episodeItem)
+                        seriesInfo = detailState.seriesInfo ?: series,
 
-                                            if (streamUrl != null) {
+                        previousEpisode = detailState.previousEpisode,
 
-                                                MediaPlayerUtils.playMedia(
+                        nextEpisode = detailState.nextEpisode,
 
-                                                    context = navController.context,
+                        seasonEpisodes = detailState.seasonEpisodes,
 
-                                                    streamUrl = streamUrl,
+                        getImageUrl = { mainViewModel.getImageUrl(it) },
 
-                                                    item = episodeItem,
+                        getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
 
-                                                    subtitleIndex = subtitleIndex,
+                        onBackClick = { navController.popBackStack() },
 
-                                                )
+                        onPreviousEpisodeClick = { previousEpisodeId ->
 
-                                            }
+                            navController.navigate(Screen.TVEpisodeDetail.createRoute(previousEpisodeId)) {
+                                popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
+                            }
+                        },
 
-                                        },
+                        onNextEpisodeClick = { nextEpisodeId ->
 
-                                        onDownloadClick = { episodeItem ->
+                            navController.navigate(Screen.TVEpisodeDetail.createRoute(nextEpisodeId)) {
+                                popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
+                            }
+                        },
 
-                                            mainViewModel.getDownloadUrl(episodeItem)?.let { downloadUrl ->
+                        onEpisodeClick = { episodeItem ->
 
-                                                val downloadManager = android.app.DownloadManager.Request(android.net.Uri.parse(downloadUrl))
+                            navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeItem.id.toString())) {
+                                popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
+                            }
+                        },
 
-                                                downloadManager.setTitle(episodeItem.name ?: "Episode Download")
+                        onViewSeriesClick = {
+                            val seriesId = series?.id ?: detailState.seriesInfo?.id
 
-                                                downloadManager.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                            seriesId?.let { id ->
 
-                                                val manager = navController.context.getSystemService(android.app.DownloadManager::class.java)
+                                navController.navigate(Screen.TVSeasons.createRoute(id.toString())) {
+                                    popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
+                                }
+                            }
+                        },
 
-                                                manager.enqueue(downloadManager)
+                        onPlayClick = { episodeItem, subtitleIndex ->
 
-                                            }
+                            try {
+                                val streamUrl = mainViewModel.getStreamUrl(episodeItem)
 
-                                        },
+                                if (streamUrl != null) {
+                                    MediaPlayerUtils.playMedia(
 
-                                        onFavoriteClick = { mainViewModel.toggleFavorite(it) },
+                                        context = navController.context,
 
-                                        onMarkWatchedClick = { mainViewModel.toggleWatchedStatus(it) },
+                                        streamUrl = streamUrl,
 
-                                        playbackAnalysis = detailState.playbackAnalysis,
+                                        item = episodeItem,
 
-                                        onGenerateAiSummary = { viewModel.generateAiSummary() },
-
-                                        aiSummary = detailState.aiSummary,
-
-                                        isLoadingAiSummary = detailState.isLoadingAiSummary,
+                                        subtitleIndex = subtitleIndex,
 
                                     )
-
                                 } else {
+                                    SecureLogger.e(
 
-                                    TVEpisodeDetailScreen(
+                                        "NavGraph",
 
-                                        episode = episode,
+                                        "No stream URL available for episode: ${episodeItem.name}",
 
-                                        seriesInfo = detailState.seriesInfo ?: series,
+                                    )
+                                }
+                            } catch (e: CancellationException) {
+                                throw e
+                            }
+                        },
 
-                                        previousEpisode = detailState.previousEpisode,
+                        onDownloadClick = { episodeItem ->
 
-                                        nextEpisode = detailState.nextEpisode,
+                            try {
+                                mainViewModel.getDownloadUrl(episodeItem)?.let { downloadUrl ->
 
-                                        seasonEpisodes = detailState.seasonEpisodes,
+                                    val context = navController.context
 
-                                        getImageUrl = { mainViewModel.getImageUrl(it) },
+                                    val downloadManager = android.app.DownloadManager.Request(
 
-                                        getBackdropUrl = { mainViewModel.getBackdropUrl(it) },
-
-                                        onBackClick = { navController.popBackStack() },
-
-                                        onPreviousEpisodeClick = { previousEpisodeId ->
-
-                                            navController.navigate(Screen.TVEpisodeDetail.createRoute(previousEpisodeId)) {
-
-                                                popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
-
-                                            }
-
-                                        },
-
-                                        onNextEpisodeClick = { nextEpisodeId ->
-
-                                            navController.navigate(Screen.TVEpisodeDetail.createRoute(nextEpisodeId)) {
-
-                                                popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
-
-                                            }
-
-                                        },
-
-                                        onEpisodeClick = { episodeItem ->
-
-                                            navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeItem.id.toString())) {
-
-                                                popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
-
-                                            }
-
-                                        },
-
-                                        onViewSeriesClick = {
-
-                                            val seriesId = series?.id ?: detailState.seriesInfo?.id
-
-                                            seriesId?.let { id ->
-
-                                                navController.navigate(Screen.TVSeasons.createRoute(id.toString())) {
-
-                                                    popUpTo(Screen.TVEpisodeDetail.route) { inclusive = true }
-
-                                                }
-
-                                            }
-
-                                        },
-
-                                        onPlayClick = { episodeItem, subtitleIndex ->
-
-                                            try {
-
-                                                val streamUrl = mainViewModel.getStreamUrl(episodeItem)
-
-                                                if (streamUrl != null) {
-
-                                                    MediaPlayerUtils.playMedia(
-
-                                                        context = navController.context,
-
-                                                        streamUrl = streamUrl,
-
-                                                        item = episodeItem,
-
-                                                        subtitleIndex = subtitleIndex,
-
-                                                    )
-
-                                                } else {
-
-                                                    SecureLogger.e(
-
-                                                        "NavGraph",
-
-                                                        "No stream URL available for episode: ${episodeItem.name}",
-
-                                                    )
-
-                                                }
-
-                                            } catch (e: CancellationException) {
-
-                                                throw e
-
-                                            }
-
-                                        },
-
-                                        onDownloadClick = { episodeItem ->
-
-                                            try {
-
-                                                mainViewModel.getDownloadUrl(episodeItem)?.let { downloadUrl ->
-
-                                                    val context = navController.context
-
-                                                    val downloadManager = android.app.DownloadManager.Request(
-
-                                                        android.net.Uri.parse(downloadUrl),
-
-                                                    )
-
-                                                    downloadManager.setTitle(episodeItem.name ?: "Episode Download")
-
-                                                    downloadManager.setDescription("Downloading episode")
-
-                                                    downloadManager.setNotificationVisibility(
-
-                                                        android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED,
-
-                                                    )
-
-                
-
-                                                    val manager =
-
-                                                        context.getSystemService(android.app.DownloadManager::class.java)
-
-                                                    manager.enqueue(downloadManager)
-
-                
-
-                                                    android.widget.Toast.makeText(
-
-                                                        context,
-
-                                                        "Download started: ${episodeItem.name}",
-
-                                                        android.widget.Toast.LENGTH_SHORT,
-
-                                                    ).show()
-
-                                                } ?: run {
-
-                                                    SecureLogger.e(
-
-                                                        "NavGraph",
-
-                                                        "Failed to start download for episode: ${episodeItem.name}",
-
-                                                    )
-
-                                                }
-
-                                            } catch (e: CancellationException) {
-
-                                                throw e
-
-                                            }
-
-                                        },
-
-                                        onDeleteClick = { episodeItem ->
-
-                                            mainViewModel.deleteItem(episodeItem) { success, error ->
-
-                                                val context = navController.context
-
-                                                val message = if (success) {
-
-                                                    "Item deleted successfully"
-
-                                                } else {
-
-                                                    error ?: "Failed to delete item"
-
-                                                }
-
-                                                android.widget.Toast.makeText(
-
-                                                    context,
-
-                                                    message,
-
-                                                    android.widget.Toast.LENGTH_SHORT,
-
-                                                ).show()
-
-                                            }
-
-                                        },
-
-                                        onMarkWatchedClick = { episodeItem ->
-
-                                            mainViewModel.markAsWatched(episodeItem)
-
-                                        },
-
-                                        onMarkUnwatchedClick = { episodeItem ->
-
-                                            mainViewModel.markAsUnwatched(episodeItem)
-
-                                        },
-
-                                        onFavoriteClick = { episodeItem ->
-
-                                            mainViewModel.toggleFavorite(episodeItem)
-
-                                        },
-
-                                        playbackAnalysis = detailState.playbackAnalysis,
-
-                                        onGenerateAiSummary = { viewModel.generateAiSummary() },
-
-                                        aiSummary = detailState.aiSummary,
-
-                                        isLoadingAiSummary = detailState.isLoadingAiSummary,
+                                        android.net.Uri.parse(downloadUrl),
 
                                     )
 
+                                    downloadManager.setTitle(episodeItem.name ?: "Episode Download")
+
+                                    downloadManager.setDescription("Downloading episode")
+
+                                    downloadManager.setNotificationVisibility(
+
+                                        android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED,
+
+                                    )
+
+                                    val manager =
+
+                                        context.getSystemService(android.app.DownloadManager::class.java)
+
+                                    manager.enqueue(downloadManager)
+
+                                    android.widget.Toast.makeText(
+
+                                        context,
+
+                                        "Download started: ${episodeItem.name}",
+
+                                        android.widget.Toast.LENGTH_SHORT,
+
+                                    ).show()
+                                } ?: run {
+                                    SecureLogger.e(
+
+                                        "NavGraph",
+
+                                        "Failed to start download for episode: ${episodeItem.name}",
+
+                                    )
+                                }
+                            } catch (e: CancellationException) {
+                                throw e
+                            }
+                        },
+
+                        onDeleteClick = { episodeItem ->
+
+                            mainViewModel.deleteItem(episodeItem) { success, error ->
+
+                                val context = navController.context
+
+                                val message = if (success) {
+                                    "Item deleted successfully"
+                                } else {
+                                    error ?: "Failed to delete item"
                                 }
 
-                
+                                android.widget.Toast.makeText(
+
+                                    context,
+
+                                    message,
+
+                                    android.widget.Toast.LENGTH_SHORT,
+
+                                ).show()
+                            }
+                        },
+
+                        onMarkWatchedClick = { episodeItem ->
+
+                            mainViewModel.markAsWatched(episodeItem)
+                        },
+
+                        onMarkUnwatchedClick = { episodeItem ->
+
+                            mainViewModel.markAsUnwatched(episodeItem)
+                        },
+
+                        onFavoriteClick = { episodeItem ->
+
+                            mainViewModel.toggleFavorite(episodeItem)
+                        },
+
+                        playbackAnalysis = detailState.playbackAnalysis,
+
+                        onGenerateAiSummary = { viewModel.generateAiSummary() },
+
+                        aiSummary = detailState.aiSummary,
+
+                        isLoadingAiSummary = detailState.isLoadingAiSummary,
+
+                    )
+                }
 
                 LaunchedEffect(episode.id) {
                     mainViewModel.sendCastPreview(episode)

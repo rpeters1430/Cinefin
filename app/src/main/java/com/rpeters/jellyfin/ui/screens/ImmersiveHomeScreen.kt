@@ -5,8 +5,6 @@ import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,6 +13,8 @@ import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -38,8 +38,6 @@ import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppState
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SurfaceCoordinatorViewModel
-import com.rpeters.jellyfin.utils.SecureLogger
-import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
@@ -116,12 +114,12 @@ fun ImmersiveHomeScreen(
 
     // Track scroll state for auto-hiding navigation
     val listState = rememberLazyListState()
-    
+
     // Smooth scroll detection for top bar - handled by ImmersiveScaffold overlay
     val topBarVisible by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 200 ||
-            listState.firstVisibleItemScrollOffset < (listState.layoutInfo.viewportEndOffset / 4)
+                listState.firstVisibleItemScrollOffset < (listState.layoutInfo.viewportEndOffset / 4)
         }
     }
 
@@ -207,7 +205,7 @@ fun ImmersiveHomeScreen(
 
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxSize(),
             ) {
                 ImmersiveHomeContent(
                     appState = appState,
@@ -227,7 +225,7 @@ fun ImmersiveHomeScreen(
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
+                        .fillMaxWidth(),
                 ) {
                     MiniPlayer(onExpandClick = onNowPlayingClick)
                 }
@@ -239,7 +237,7 @@ fun ImmersiveHomeScreen(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp)
+                .padding(bottom = 16.dp),
         )
     }
 
@@ -389,15 +387,18 @@ private fun ImmersiveHomeContent(
                         derivedStateOf {
                             if (listState.firstVisibleItemIndex == 0) {
                                 listState.firstVisibleItemScrollOffset.toFloat() * 0.5f
-                            } else 0f
+                            } else {
+                                0f
+                            }
                         }
                     }
 
-                    Box(modifier = Modifier
-                        .fillMaxWidth()
-                        .height(ImmersiveDimens.HeroHeightPhone)
-                        .graphicsLayer { translationY = carouselScrollOffset }
-                        .clipToBounds()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(ImmersiveDimens.HeroHeightPhone)
+                            .graphicsLayer { translationY = carouselScrollOffset }
+                            .clipToBounds(),
                     ) {
                         ImmersiveHeroCarousel(
                             items = featured,

@@ -2,31 +2,28 @@ package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
-import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.immersive.*
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
-import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 /**
@@ -53,12 +50,12 @@ fun ImmersiveTVShowsScreen(
     onBackClick: () -> Unit = {},
 ) {
     val listState = rememberLazyListState()
-    
+
     // Smooth scroll detection for top bar - handled by ImmersiveScaffold overlay
     val topBarVisible by remember {
         derivedStateOf {
             listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 200 ||
-            listState.firstVisibleItemScrollOffset < (listState.layoutInfo.viewportEndOffset / 4)
+                listState.firstVisibleItemScrollOffset < (listState.layoutInfo.viewportEndOffset / 4)
         }
     }
 
@@ -98,10 +95,10 @@ fun ImmersiveTVShowsScreen(
                             icon = Icons.Default.Tune,
                             contentDescription = "Filter",
                             onClick = { /* TODO: Show filter dialog */ },
-                        )
-                    )
+                        ),
+                    ),
                 )
-            }
+            },
         ) { paddingValues ->
             ExpressivePullToRefreshBox(
                 isRefreshing = isLoading,
@@ -142,15 +139,18 @@ fun ImmersiveTVShowsScreen(
                                     derivedStateOf {
                                         if (listState.firstVisibleItemIndex == 0) {
                                             listState.firstVisibleItemScrollOffset.toFloat() * 0.5f
-                                        } else 0f
+                                        } else {
+                                            0f
+                                        }
                                     }
                                 }
 
-                                Box(modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(ImmersiveDimens.HeroHeightPhone)
-                                    .graphicsLayer { translationY = carouselScrollOffset }
-                                    .clipToBounds()
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(ImmersiveDimens.HeroHeightPhone)
+                                        .graphicsLayer { translationY = carouselScrollOffset }
+                                        .clipToBounds(),
                                 ) {
                                     ImmersiveHeroCarousel(
                                         items = carouselItems,
@@ -159,7 +159,7 @@ fun ImmersiveTVShowsScreen(
                                         },
                                         onPlayClick = { item ->
                                             featuredShows.find { it.id.toString() == item.id }?.id?.let { onTVShowClick(it.toString()) }
-                                        }
+                                        },
                                     )
                                 }
                             }
@@ -169,14 +169,14 @@ fun ImmersiveTVShowsScreen(
                         items(
                             items = tvShowSections,
                             key = { it.title },
-                            contentType = { "tv_show_section" }
+                            contentType = { "tv_show_section" },
                         ) { section ->
                             ImmersiveMediaRow(
                                 title = section.title,
                                 items = section.items,
                                 getImageUrl = getImageUrl,
                                 onItemClick = { it.id?.let { id -> onTVShowClick(id.toString()) } },
-                                size = ImmersiveCardSize.MEDIUM
+                                size = ImmersiveCardSize.MEDIUM,
                             )
                         }
                     }
@@ -191,7 +191,7 @@ fun ImmersiveTVShowsScreen(
  */
 private data class TVShowSection(
     val title: String,
-    val items: List<BaseItemDto>
+    val items: List<BaseItemDto>,
 )
 
 /**
@@ -227,9 +227,11 @@ private fun organizeTVShowsIntoSections(tvShows: List<BaseItemDto>): List<TVShow
     }
 
     // Action & Adventure
-    val action = tvShows.filter { it.genres?.any { g -> 
-        g.contains("Action", true) || g.contains("Adventure", true) 
-    } == true }.take(15)
+    val action = tvShows.filter {
+        it.genres?.any { g ->
+            g.contains("Action", true) || g.contains("Adventure", true)
+        } == true
+    }.take(15)
     if (action.isNotEmpty()) {
         sections.add(TVShowSection("Action & Adventure", action))
     }
@@ -289,6 +291,6 @@ fun ImmersiveTVShowsScreenContainer(
         getImageUrl = { viewModel.getImageUrl(it) },
         getBackdropUrl = { viewModel.getBackdropUrl(it) },
         onBackClick = onBackClick,
-        modifier = modifier
+        modifier = modifier,
     )
 }
