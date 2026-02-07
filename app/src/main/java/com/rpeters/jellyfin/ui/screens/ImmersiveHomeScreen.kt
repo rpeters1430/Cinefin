@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -114,14 +113,7 @@ fun ImmersiveHomeScreen(
 
     // Track scroll state for auto-hiding navigation
     val listState = rememberLazyListState()
-
-    // Smooth scroll detection for top bar - handled by ImmersiveScaffold overlay
-    val topBarVisible by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 200 ||
-                listState.firstVisibleItemScrollOffset < (listState.layoutInfo.viewportEndOffset / 4)
-        }
-    }
+    val topBarVisible = rememberAutoHideTopBarVisible(listState = listState)
 
     Box(modifier = modifier.fillMaxSize()) {
         ImmersiveScaffold(
@@ -354,6 +346,7 @@ private fun ImmersiveHomeContent(
     val stableOnItemClick = remember(onItemClick) { onItemClick }
     val stableOnItemLongPress = remember(onItemLongPress) { onItemLongPress }
     val viewingMood = appState.viewingMood
+    val topBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
 
     PullToRefreshBox(
         isRefreshing = appState.isLoading,
@@ -364,7 +357,10 @@ private fun ImmersiveHomeContent(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight), // Tighter: 16dp vs 24dp
-            contentPadding = PaddingValues(bottom = 120.dp), // Space for mini player + FAB
+            contentPadding = PaddingValues(
+                top = topBarPadding,
+                bottom = 120.dp,
+            ), // Keep hero clear of overlay top bar + space for mini player/FAB
             userScrollEnabled = true,
         ) {
             // Full-screen hero carousel (480dp height, edge-to-edge)
@@ -382,22 +378,10 @@ private fun ImmersiveHomeContent(
                         }
                     }
 
-                    // Apply a subtle parallax translation to fix "scrolling down" visual bug
-                    val carouselScrollOffset by remember {
-                        derivedStateOf {
-                            if (listState.firstVisibleItemIndex == 0) {
-                                listState.firstVisibleItemScrollOffset.toFloat() * 0.5f
-                            } else {
-                                0f
-                            }
-                        }
-                    }
-
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(ImmersiveDimens.HeroHeightPhone)
-                            .graphicsLayer { translationY = carouselScrollOffset }
                             .clipToBounds(),
                     ) {
                         ImmersiveHeroCarousel(

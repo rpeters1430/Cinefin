@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -50,14 +49,7 @@ fun ImmersiveTVShowsScreen(
     onBackClick: () -> Unit = {},
 ) {
     val listState = rememberLazyListState()
-
-    // Smooth scroll detection for top bar - handled by ImmersiveScaffold overlay
-    val topBarVisible by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 200 ||
-                listState.firstVisibleItemScrollOffset < (listState.layoutInfo.viewportEndOffset / 4)
-        }
-    }
+    val topBarVisible = rememberAutoHideTopBarVisible(listState = listState)
 
     // Organize TV shows into sections for immersive browsing
     val tvShowSections = remember(tvShows) { organizeTVShowsIntoSections(tvShows) }
@@ -107,6 +99,7 @@ fun ImmersiveTVShowsScreen(
                 indicatorColor = SeriesBlue,
                 useWavyIndicator = true,
             ) {
+                val topBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
                 if (tvShows.isEmpty() && !isLoading) {
                     ExpressiveSimpleEmptyState(
                         icon = Icons.Default.Tv,
@@ -120,7 +113,10 @@ fun ImmersiveTVShowsScreen(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
-                        contentPadding = PaddingValues(top = 0.dp, bottom = 120.dp),
+                        contentPadding = PaddingValues(
+                            top = topBarPadding,
+                            bottom = 120.dp,
+                        ),
                     ) {
                         // 1. Hero Carousel (Top 5 Shows)
                         if (featuredShows.isNotEmpty()) {
@@ -134,22 +130,10 @@ fun ImmersiveTVShowsScreen(
                                     )
                                 }
 
-                                // Apply a subtle parallax translation to fix "scrolling down" visual bug
-                                val carouselScrollOffset by remember {
-                                    derivedStateOf {
-                                        if (listState.firstVisibleItemIndex == 0) {
-                                            listState.firstVisibleItemScrollOffset.toFloat() * 0.5f
-                                        } else {
-                                            0f
-                                        }
-                                    }
-                                }
-
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(ImmersiveDimens.HeroHeightPhone)
-                                        .graphicsLayer { translationY = carouselScrollOffset }
                                         .clipToBounds(),
                                 ) {
                                     ImmersiveHeroCarousel(

@@ -1,0 +1,142 @@
+{
+  "parameters": {
+    "ai_search_keyword_limit": {
+      "defaultValue": {
+        "value": "5"
+      },
+      "valueType": "NUMBER"
+    },
+    "immersive_album_detail": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Enable immersive album detail screen.",
+      "valueType": "BOOLEAN"
+    },
+    "immersive_movies_browse": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Enable immersive movies browse screen.",
+      "valueType": "BOOLEAN"
+    },
+    "immersive_library_screen": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Enable immersive library screen.",
+      "valueType": "BOOLEAN"
+    },
+    "immersive_home_screen": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Enable immersive home screen design.",
+      "valueType": "BOOLEAN"
+    },
+    "ai_primary_model_name": {
+      "defaultValue": {
+        "value": "gemini-3-flash-preview"
+      },
+      "valueType": "STRING"
+    },
+    "enable_immersive_ui": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Master toggle for all immersive UI features.",
+      "valueType": "BOOLEAN"
+    },
+    "ai_pro_model_name": {
+      "defaultValue": {
+        "value": "gemini-3-pro-preview"
+      },
+      "valueType": "STRING"
+    },
+    "immersive_favorites_screen": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Enable immersive favorites screen.",
+      "valueType": "BOOLEAN"
+    },
+    "ai_force_pro_model": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "valueType": "BOOLEAN"
+    },
+    "enable_ai_features": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "valueType": "BOOLEAN"
+    },
+    "immersive_tv_show_detail": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Enable immersive TV show detail screen.",
+      "valueType": "BOOLEAN"
+    },
+    "immersive_search_screen": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Enable immersive search screen.",
+      "valueType": "BOOLEAN"
+    },
+    "ai_chat_system_prompt": {
+      "defaultValue": {
+        "value": "You are Jellyfin AI Assistant. Answer the user's request clearly and briefly (max 120 words). If recommending media, suggest at most 5 titles."
+      },
+      "valueType": "STRING"
+    },
+    "ai_recommendation_count": {
+      "defaultValue": {
+        "value": "5"
+      },
+      "valueType": "NUMBER"
+    },
+    "immersive_tv_episode_detail": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Enable immersive TV episode detail screen.",
+      "valueType": "BOOLEAN"
+    },
+    "immersive_tv_season": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Enable immersive TV season screen.",
+      "valueType": "BOOLEAN"
+    },
+    "ai_summary_prompt_template": {
+      "defaultValue": {
+        "value": "Rewrite this into a fresh, spoiler-free summary in exactly 2 short sentences (max 55 words total). Do not copy phrases directly from the overview.\n\nTitle: %s\nOverview: %s\n\nFocus on the core premise only. Do not reveal twists or endings."
+      },
+      "valueType": "STRING"
+    },
+    "immersive_movie_detail": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Enable immersive movie detail screen.",
+      "valueType": "BOOLEAN"
+    },
+    "immersive_tv_browse": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Enable immersive TV shows browse screen.",
+      "valueType": "BOOLEAN"
+    },
+    "ai_history_context_size": {
+      "defaultValue": {
+        "value": "10"
+      },
+      "valueType": "NUMBER"
+    }
+  }
+}

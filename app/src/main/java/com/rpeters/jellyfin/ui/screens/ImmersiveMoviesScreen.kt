@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
@@ -47,14 +46,7 @@ fun ImmersiveMoviesScreen(
     onBackClick: () -> Unit = {},
 ) {
     val listState = rememberLazyListState()
-
-    // Smooth scroll detection for top bar - handled by ImmersiveScaffold overlay
-    val topBarVisible by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 200 ||
-                listState.firstVisibleItemScrollOffset < (listState.layoutInfo.viewportEndOffset / 4)
-        }
-    }
+    val topBarVisible = rememberAutoHideTopBarVisible(listState = listState)
 
     // Organize movies into sections for immersive browsing
     val movieSections = remember(movies) { organizeMoviesIntoSections(movies) }
@@ -104,6 +96,7 @@ fun ImmersiveMoviesScreen(
                 indicatorColor = MovieRed,
                 useWavyIndicator = true,
             ) {
+                val topBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
                 if (movies.isEmpty() && !isLoading) {
                     MoviesEmptyState(
                         icon = Icons.Default.Movie,
@@ -117,9 +110,10 @@ fun ImmersiveMoviesScreen(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
-                        // Add top padding so carousel isn't cut off by status bar at rest
-                        // But allow it to scroll all the way to the top
-                        contentPadding = PaddingValues(top = 0.dp, bottom = 120.dp),
+                        contentPadding = PaddingValues(
+                            top = topBarPadding,
+                            bottom = 120.dp,
+                        ),
                     ) {
                         // 1. Hero Carousel (Top 5 Movies)
                         if (featuredMovies.isNotEmpty()) {
@@ -133,22 +127,10 @@ fun ImmersiveMoviesScreen(
                                     )
                                 }
 
-                                // Apply a subtle parallax translation to fix "scrolling down" visual bug
-                                val carouselScrollOffset by remember {
-                                    derivedStateOf {
-                                        if (listState.firstVisibleItemIndex == 0) {
-                                            listState.firstVisibleItemScrollOffset.toFloat() * 0.5f
-                                        } else {
-                                            0f
-                                        }
-                                    }
-                                }
-
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(ImmersiveDimens.HeroHeightPhone)
-                                        .graphicsLayer { translationY = carouselScrollOffset }
                                         .clipToBounds(),
                                 ) {
                                     ImmersiveHeroCarousel(
