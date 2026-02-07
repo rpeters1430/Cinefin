@@ -11,9 +11,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.core.FeatureFlags
+import com.rpeters.jellyfin.data.repository.RemoteConfigRepository
 import com.rpeters.jellyfin.ui.screens.HomeScreen
+import com.rpeters.jellyfin.ui.screens.ImmersiveHomeScreen
+import com.rpeters.jellyfin.ui.screens.ImmersiveLibraryScreen
 import com.rpeters.jellyfin.ui.screens.LibraryScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.ui.viewmodel.RemoteConfigViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.CancellationException
 
@@ -53,7 +58,17 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             }
         }
 
-        HomeScreen(
+        // Feature Flag: Check if immersive UI should be used
+        val remoteConfigViewModel: RemoteConfigViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+        val useImmersiveUI = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
+            remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_HOME_SCREEN)
+
+        if (BuildConfig.DEBUG) {
+            Log.d("HomeScreen", "Feature flags - enable_immersive_ui: ${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI)}, immersive_home_screen: ${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_HOME_SCREEN)}, using immersive: $useImmersiveUI")
+        }
+
+        if (useImmersiveUI) {
+            ImmersiveHomeScreen(
             appState = appState,
             currentServer = currentServer,
             onRefresh = { viewModel.loadInitialData() },
@@ -117,6 +132,73 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             onSettingsClick = { navController.navigate(Screen.Profile.route) },
             onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
         )
+        } else {
+            // Use the original HomeScreen when immersive UI is disabled
+            HomeScreen(
+                appState = appState,
+                currentServer = currentServer,
+                onRefresh = { viewModel.loadInitialData() },
+                onSearch = { query ->
+                    viewModel.search(query)
+                    navController.navigate(Screen.Search.route)
+                },
+                onClearSearch = { viewModel.clearSearch() },
+                onSearchClick = { navController.navigate(Screen.Search.route) },
+                onAiAssistantClick = { navController.navigate(Screen.AiAssistant.route) },
+                getImageUrl = { item -> viewModel.getImageUrl(item) },
+                getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
+                getSeriesImageUrl = { item -> viewModel.getSeriesImageUrl(item) },
+                onItemClick = { item ->
+                    when (item.type) {
+                        org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
+                            item.id.let { movieId ->
+                                navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                            }
+                        }
+
+                        org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
+                            item.id.let { videoId ->
+                                navController.navigate(Screen.HomeVideoDetail.createRoute(videoId.toString()))
+                            }
+                        }
+
+                        org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+                            item.id.let { seriesId ->
+                                navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
+                            }
+                        }
+
+                        org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
+                            item.id.let { episodeId ->
+                                navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                            }
+                        }
+
+                        else -> {
+                            item.id.let { genericId ->
+                                navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
+                            }
+                        }
+                    }
+                },
+                onLibraryClick = { library ->
+                    try {
+                        libraryRouteFor(library)?.let { route ->
+                            navController.navigate(route)
+                        } ?: run {
+                            Log.w(
+                                "NavGraph",
+                                "No route found for library: ${library.name} (${library.collectionType})",
+                            )
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    }
+                },
+                onSettingsClick = { navController.navigate(Screen.Profile.route) },
+                onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+            )
+        }
     }
 
     composable(Screen.Library.route) {
@@ -136,30 +218,67 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             }
         }
 
-        LibraryScreen(
-            libraries = appState.libraries,
-            isLoading = appState.isLoading,
-            errorMessage = appState.errorMessage,
-            onRefresh = { viewModel.loadInitialData(forceRefresh = true) },
-            getImageUrl = { item -> viewModel.getImageUrl(item) },
-            onLibraryClick = { library ->
-                try {
-                    libraryRouteFor(library)?.let { route ->
-                        navController.navigate(route)
-                    } ?: run {
-                        Log.w(
-                            "NavGraph",
-                            "No route found for library: ${library.name} (${library.collectionType})",
-                        )
+        // Feature Flag: Check if immersive UI should be used
+        val remoteConfigViewModel: RemoteConfigViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+        val useImmersiveUI = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
+            remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_LIBRARY_SCREEN)
+
+        if (BuildConfig.DEBUG) {
+            SecureLogger.d("HomeLibraryNavGraph", "LibraryScreen: enable_immersive_ui=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI)}, immersive_library_screen=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_LIBRARY_SCREEN)}, using immersive: $useImmersiveUI")
+        }
+
+        if (useImmersiveUI) {
+            ImmersiveLibraryScreen(
+                libraries = appState.libraries,
+                isLoading = appState.isLoading,
+                errorMessage = appState.errorMessage,
+                onRefresh = { viewModel.loadInitialData(forceRefresh = true) },
+                getImageUrl = { item -> viewModel.getImageUrl(item) },
+                onLibraryClick = { library ->
+                    try {
+                        libraryRouteFor(library)?.let { route ->
+                            navController.navigate(route)
+                        } ?: run {
+                            Log.w(
+                                "NavGraph",
+                                "No route found for library: ${library.name} (${library.collectionType})",
+                            )
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
                     }
-                } catch (e: CancellationException) {
-                    throw e
-                }
-            },
-            onSearchClick = { navController.navigate(Screen.Search.route) },
-            onSettingsClick = { navController.navigate(Screen.Profile.route) },
-            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
-        )
+                },
+                onSearchClick = { navController.navigate(Screen.Search.route) },
+                onSettingsClick = { navController.navigate(Screen.Profile.route) },
+                onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+            )
+        } else {
+            // Use the original LibraryScreen when immersive UI is disabled
+            LibraryScreen(
+                libraries = appState.libraries,
+                isLoading = appState.isLoading,
+                errorMessage = appState.errorMessage,
+                onRefresh = { viewModel.loadInitialData(forceRefresh = true) },
+                getImageUrl = { item -> viewModel.getImageUrl(item) },
+                onLibraryClick = { library ->
+                    try {
+                        libraryRouteFor(library)?.let { route ->
+                            navController.navigate(route)
+                        } ?: run {
+                            Log.w(
+                                "NavGraph",
+                                "No route found for library: ${library.name} (${library.collectionType})",
+                            )
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    }
+                },
+                onSearchClick = { navController.navigate(Screen.Search.route) },
+                onSettingsClick = { navController.navigate(Screen.Profile.route) },
+                onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+            )
+        }
     }
 
     composable(Screen.AiAssistant.route) {

@@ -9,8 +9,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.core.FeatureFlags
 import com.rpeters.jellyfin.ui.screens.FavoritesScreen
+import com.rpeters.jellyfin.ui.screens.ImmersiveFavoritesScreen
+import com.rpeters.jellyfin.ui.screens.ImmersiveSearchScreen
 import com.rpeters.jellyfin.ui.screens.ProfileScreen
 import com.rpeters.jellyfin.ui.screens.SearchScreen
 import com.rpeters.jellyfin.ui.screens.SettingsRecommendationOptions
@@ -22,6 +26,8 @@ import com.rpeters.jellyfin.ui.screens.settings.PrivacySettingsScreen
 import com.rpeters.jellyfin.ui.screens.settings.SettingsSectionScreen
 import com.rpeters.jellyfin.ui.screens.settings.SubtitleSettingsScreen
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.ui.viewmodel.RemoteConfigViewModel
+import com.rpeters.jellyfin.utils.SecureLogger
 
 /**
  * Profile, search, favorites, and settings routes.
@@ -38,47 +44,100 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             minActiveState = Lifecycle.State.STARTED,
         )
 
-        SearchScreen(
-            appState = appState,
-            onSearch = { query -> viewModel.search(query) },
-            onClearSearch = { viewModel.clearSearch() },
-            getImageUrl = { item -> viewModel.getImageUrl(item) },
-            onBackClick = { navController.popBackStack() },
-            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
-            onItemClick = { item ->
-                when (item.type) {
-                    org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
-                        item.id.let { movieId ->
-                            navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
-                        }
-                    }
+        // Feature Flag: Check if immersive UI should be used
+        val remoteConfigViewModel: RemoteConfigViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+        val useImmersiveUI = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
+            remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_SEARCH_SCREEN)
 
-                    org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
-                        item.id.let { videoId ->
-                            navController.navigate(Screen.HomeVideoDetail.createRoute(videoId.toString()))
-                        }
-                    }
+        if (BuildConfig.DEBUG) {
+            SecureLogger.d("ProfileNavGraph", "SearchScreen: enable_immersive_ui=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI)}, immersive_search_screen=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_SEARCH_SCREEN)}, using immersive: $useImmersiveUI")
+        }
 
-                    org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
-                        item.id.let { seriesId ->
-                            navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
+        if (useImmersiveUI) {
+            ImmersiveSearchScreen(
+                appState = appState,
+                onSearch = { query -> viewModel.search(query) },
+                onClearSearch = { viewModel.clearSearch() },
+                getImageUrl = { item -> viewModel.getImageUrl(item) },
+                onBackClick = { navController.popBackStack() },
+                onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+                onItemClick = { item ->
+                    when (item.type) {
+                        org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
+                            item.id.let { movieId ->
+                                navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                            }
                         }
-                    }
 
-                    org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
-                        item.id.let { episodeId ->
-                            navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                        org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
+                            item.id.let { videoId ->
+                                navController.navigate(Screen.HomeVideoDetail.createRoute(videoId.toString()))
+                            }
                         }
-                    }
 
-                    else -> {
-                        item.id.let { genericId ->
-                            navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
+                        org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+                            item.id.let { seriesId ->
+                                navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
+                            }
+                        }
+
+                        org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
+                            item.id.let { episodeId ->
+                                navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                            }
+                        }
+
+                        else -> {
+                            item.id.let { genericId ->
+                                navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
+                            }
                         }
                     }
-                }
-            },
-        )
+                },
+            )
+        } else {
+            SearchScreen(
+                appState = appState,
+                onSearch = { query -> viewModel.search(query) },
+                onClearSearch = { viewModel.clearSearch() },
+                getImageUrl = { item -> viewModel.getImageUrl(item) },
+                onBackClick = { navController.popBackStack() },
+                onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+                onItemClick = { item ->
+                    when (item.type) {
+                        org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
+                            item.id.let { movieId ->
+                                navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                            }
+                        }
+
+                        org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
+                            item.id.let { videoId ->
+                                navController.navigate(Screen.HomeVideoDetail.createRoute(videoId.toString()))
+                            }
+                        }
+
+                        org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+                            item.id.let { seriesId ->
+                                navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
+                            }
+                        }
+
+                        org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
+                            item.id.let { episodeId ->
+                                navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                            }
+                        }
+
+                        else -> {
+                            item.id.let { genericId ->
+                                navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
+                            }
+                        }
+                    }
+                },
+            )
+        }
     }
 
     composable(Screen.Favorites.route) {
@@ -93,15 +152,69 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             viewModel.loadFavorites()
         }
 
-        FavoritesScreen(
-            favorites = appState.favorites,
-            isLoading = appState.isLoading,
-            errorMessage = appState.errorMessage,
-            onRefresh = { viewModel.loadFavorites() },
-            getImageUrl = { item -> viewModel.getImageUrl(item) },
-            onBackClick = { navController.popBackStack() },
-            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
-        )
+        // Feature Flag: Check if immersive UI should be used
+        val remoteConfigViewModel: RemoteConfigViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+        val useImmersiveUI = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
+            remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_FAVORITES_SCREEN)
+
+        if (BuildConfig.DEBUG) {
+            SecureLogger.d("ProfileNavGraph", "FavoritesScreen: enable_immersive_ui=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI)}, immersive_favorites_screen=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_FAVORITES_SCREEN)}, using immersive: $useImmersiveUI")
+        }
+
+        if (useImmersiveUI) {
+            ImmersiveFavoritesScreen(
+                favorites = appState.favorites,
+                isLoading = appState.isLoading,
+                errorMessage = appState.errorMessage,
+                onRefresh = { viewModel.loadFavorites() },
+                getImageUrl = { item -> viewModel.getImageUrl(item) },
+                onBackClick = { navController.popBackStack() },
+                onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+                onItemClick = { item ->
+                    when (item.type) {
+                        org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
+                            item.id.let { movieId ->
+                                navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                            }
+                        }
+
+                        org.jellyfin.sdk.model.api.BaseItemKind.VIDEO -> {
+                            item.id.let { videoId ->
+                                navController.navigate(Screen.HomeVideoDetail.createRoute(videoId.toString()))
+                            }
+                        }
+
+                        org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+                            item.id.let { seriesId ->
+                                navController.navigate(Screen.TVSeasons.createRoute(seriesId.toString()))
+                            }
+                        }
+
+                        org.jellyfin.sdk.model.api.BaseItemKind.EPISODE -> {
+                            item.id.let { episodeId ->
+                                navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                            }
+                        }
+
+                        else -> {
+                            item.id.let { genericId ->
+                                navController.navigate(Screen.ItemDetail.createRoute(genericId.toString()))
+                            }
+                        }
+                    }
+                },
+            )
+        } else {
+            FavoritesScreen(
+                favorites = appState.favorites,
+                isLoading = appState.isLoading,
+                errorMessage = appState.errorMessage,
+                onRefresh = { viewModel.loadFavorites() },
+                getImageUrl = { item -> viewModel.getImageUrl(item) },
+                onBackClick = { navController.popBackStack() },
+                onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+            )
+        }
     }
 
     composable(Screen.Profile.route) {

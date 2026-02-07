@@ -1,8 +1,11 @@
 package com.rpeters.jellyfin.ui.components.immersive
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.MaterialTheme
@@ -65,43 +68,49 @@ fun ImmersiveScaffold(
 ) {
     val finalScrollBehavior = scrollBehavior ?: TopAppBarDefaults.pinnedScrollBehavior()
 
-    Scaffold(
-        modifier = modifier.then(
-            if (scrollBehavior != null) {
-                Modifier.nestedScroll(finalScrollBehavior.nestedScrollConnection)
-            } else {
-                Modifier
+    Box(modifier = modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.then(
+                if (scrollBehavior != null) {
+                    Modifier.nestedScroll(finalScrollBehavior.nestedScrollConnection)
+                } else {
+                    Modifier
+                }
+            ),
+            // We intentionally leave topBar slot empty to prevent layout shifts
+            // when the top bar hides/shows. Instead, we overlay it below.
+            topBar = {},
+            bottomBar = {
+                if (bottomBarItems.isNotEmpty()) {
+                    AutoHideBottomNavBar(
+                        visible = bottomBarVisible,
+                        items = bottomBarItems,
+                        selectedItem = selectedBottomBarItem,
+                        onItemSelected = onBottomBarItemSelected,
+                    )
+                }
             },
-        ),
-        topBar = {
-            if (topBarTitle.isNotEmpty()) {
-                AutoHideTopAppBar(
-                    visible = topBarVisible,
-                    title = topBarTitle,
-                    navigationIcon = topBarNavigationIcon,
-                    actions = topBarActions,
-                    translucent = topBarTranslucent,
-                    scrollBehavior = finalScrollBehavior,
-                )
-            }
-        },
-        bottomBar = {
-            if (bottomBarItems.isNotEmpty()) {
-                AutoHideBottomNavBar(
-                    visible = bottomBarVisible,
-                    items = bottomBarItems,
-                    selectedItem = selectedBottomBarItem,
-                    onItemSelected = onBottomBarItemSelected,
-                )
-            }
-        },
-        floatingActionButton = floatingActionButton,
-        floatingActionButtonPosition = floatingActionButtonPosition,
-        containerColor = containerColor,
-        contentColor = contentColor,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0), // Edge-to-edge for immersive experience
-    ) { paddingValues ->
-        content(paddingValues)
+            floatingActionButton = floatingActionButton,
+            floatingActionButtonPosition = floatingActionButtonPosition,
+            containerColor = containerColor,
+            contentColor = contentColor,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0), // Edge-to-edge for immersive experience
+        ) { paddingValues ->
+            // paddingValues will now have top = 0
+            content(paddingValues)
+        }
+
+        // Overlay the top bar
+        if (topBarTitle.isNotEmpty()) {
+            AutoHideTopAppBar(
+                visible = topBarVisible,
+                title = topBarTitle,
+                navigationIcon = topBarNavigationIcon,
+                actions = topBarActions,
+                translucent = topBarTranslucent,
+                scrollBehavior = finalScrollBehavior,
+            )
+        }
     }
 }
 

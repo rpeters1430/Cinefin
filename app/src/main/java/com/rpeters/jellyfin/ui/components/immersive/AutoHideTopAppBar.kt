@@ -1,12 +1,12 @@
 package com.rpeters.jellyfin.ui.components.immersive
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.Spring
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -21,10 +21,14 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 
 /**
  * Auto-hiding translucent top app bar for immersive layouts.
- * Hides on scroll down, shows on scroll up.
+ * Uses graphicsLayer translation for smooth performance without layout jumps.
  *
  * @param visible Whether the app bar should be visible
  * @param title Title text to display
@@ -43,22 +47,30 @@ fun AutoHideTopAppBar(
     translucent: Boolean = true,
     scrollBehavior: TopAppBarScrollBehavior? = null,
 ) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = slideInVertically(
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow,
-            ),
-            initialOffsetY = { -it },
+    val density = LocalDensity.current
+    // Standard top app bar height is 64dp + status bars
+    val appBarHeight = 64.dp
+    val appBarHeightPx = with(density) { appBarHeight.toPx() }
+
+    val translationY by animateFloatAsState(
+        targetValue = if (visible) 0f else -appBarHeightPx * 1.5f, // Slide further up to hide shadow/glow
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMedium
         ),
-        exit = slideOutVertically(
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioNoBouncy,
-                stiffness = Spring.StiffnessMedium,
-            ),
-            targetOffsetY = { -it },
-        ),
+        label = "top_bar_translation"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                this.translationY = translationY
+                // Reduce alpha as it slides away for extra smoothness
+                this.alpha = if (translationY < -10f) {
+                    (1f + translationY / appBarHeightPx).coerceIn(0f, 1f)
+                } else 1f
+            }
     ) {
         TopAppBar(
             title = { Text(title) },
@@ -125,6 +137,6 @@ fun ScrollAwareTopAppBar(
         actions = actions,
         translucent = translucent,
         scrollBehavior = scrollBehavior,
-        modifier = modifier,
+        modifier = modifier
     )
 }

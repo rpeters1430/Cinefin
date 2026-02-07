@@ -152,10 +152,11 @@ Added `ImmersiveDimens` object with:
 - Container/content colors
 - Scroll behavior
 
-### 10. Feature Flags
+### 10. Feature Flags ✅
 
 #### Core Feature Flags Object
 **File**: `app/src/main/java/com/rpeters/jellyfin/core/FeatureFlags.kt`
+**Status**: ✅ Complete
 
 Centralized constants:
 ```kotlin
@@ -171,12 +172,17 @@ object FeatureFlags.ImmersiveUI {
 
 #### Remote Config Defaults
 **File**: `app/src/main/java/com/rpeters/jellyfin/di/RemoteConfigModule.kt`
+**Status**: ✅ Complete with debug override
 
-All flags default to `false` for gradual rollout:
+Debug builds: Immersive UI **enabled** by default for easy testing
+Production builds: Immersive UI **disabled** by default for controlled rollout
+
 ```kotlin
+val enableImmersiveUIDebug = BuildConfig.DEBUG
+
 val defaults = mapOf(
-    "enable_immersive_ui" to false,
-    "immersive_home_screen" to false,
+    "enable_immersive_ui" to enableImmersiveUIDebug,
+    "immersive_home_screen" to enableImmersiveUIDebug,
     "immersive_detail_screens" to false,
     "immersive_browse_screens" to false,
     "immersive_search_screen" to false,
@@ -184,64 +190,195 @@ val defaults = mapOf(
 )
 ```
 
+#### Navigation Integration
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/navigation/HomeLibraryNavGraph.kt`
+**Status**: ✅ Complete
+
+Added `RemoteConfigViewModel` for accessing feature flags in composables:
+```kotlin
+val remoteConfigViewModel: RemoteConfigViewModel = hiltViewModel()
+val useImmersiveUI = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
+    remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_HOME_SCREEN)
+
+if (useImmersiveUI) {
+    ImmersiveHomeScreen(...)
+} else {
+    HomeScreen(...) // Existing
+}
+```
+
+#### RemoteConfigViewModel
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/viewmodel/RemoteConfigViewModel.kt`
+**Status**: ✅ Complete
+
+Lightweight ViewModel for accessing RemoteConfig in navigation:
+```kotlin
+@HiltViewModel
+class RemoteConfigViewModel @Inject constructor(
+    val repository: RemoteConfigRepository,
+) : ViewModel()
+```
+
 ---
 
-## 🚧 Phase 2: Home & Detail Screens (NOT STARTED)
+## ✅ Phase 2: Home & Detail Screens (COMPLETED - 100%)
 
-**Status**: ⏳ Pending
-**Estimated Duration**: 2-3 weeks
+**Status**: ✅ All 4 screens complete (100%)
+**Duration**: Completed in one session
 **Dependencies**: Phase 1 complete ✅
+**Build Status**: ✅ Passing (assembleDebug successful)
 
-### Planned Screens
+### ✅ Completed Screens
 
-#### 1. ImmersiveHomeScreen.kt
-**Reference**: `ui/screens/HomeScreen.kt` (40KB file)
+#### 1. ImmersiveHomeScreen.kt ✅
+**File**: `ui/screens/ImmersiveHomeScreen.kt`
+**Status**: ✅ **COMPLETE** - Built and compiling successfully
+**Lines of Code**: ~610 lines
 
-**Changes**:
-- Replace `ExpressiveHeroCarousel` with `ImmersiveHeroCarousel`
-- Use `ImmersiveMediaCard` for all content rows
-- Tighter row spacing (16dp vs 24dp)
-- Auto-hiding navigation
-- Floating search FAB
-- Parallax hero effect
+**Implemented Features**:
+- ✅ Full-screen hero carousel using `ImmersiveHeroCarousel` (480dp height)
+- ✅ All content rows use `ImmersiveMediaCard` with proper sizing
+- ✅ Tighter row spacing (16dp vs 24dp expressive)
+- ✅ Auto-hiding top app bar (translucent background)
+- ✅ Floating action buttons (Search + AI Assistant)
+- ✅ Mini player overlay at bottom
+- ✅ Viewing mood widget (AI-powered)
+- ✅ Pull-to-refresh support
+- ✅ Long-press item management (delete, play actions)
+- ✅ Proper error handling and snackbars
 
 **Layout Order**:
-1. Hero Carousel (480dp height, full-bleed)
-2. Continue Watching (ImmersiveMediaCard medium)
-3. Next Up (ImmersiveMediaCard medium)
-4. Recently Added in Movies (ImmersiveMediaCard medium)
-5. Recently Added in Shows (ImmersiveMediaCard medium)
-6. Recently Added in Stuff (ImmersiveMediaCard large horizontal)
-7. Libraries (Grid at bottom)
+1. Hero Carousel (480dp height, full-bleed, auto-scrolling)
+2. Viewing Mood Widget (AI-powered mood analysis)
+3. Continue Watching (ImmersiveMediaCard medium)
+4. Next Up (ImmersiveMediaCard medium)
+5. Recently Added in Movies (ImmersiveMediaCard medium)
+6. Recently Added in Shows (ImmersiveMediaCard medium)
+7. Recently Added in Stuff (ImmersiveMediaCard large horizontal)
 
-#### 2. ImmersiveMovieDetailScreen.kt
+**Key Implementation Details**:
+- Uses `ImmersiveScaffold` with auto-hiding navigation
+- `FloatingActionGroup` with vertical orientation for FABs
+- `CarouselItem` for hero carousel (not ImmersiveCarouselItem)
+- `ImmersiveCardSize.MEDIUM` and `ImmersiveCardSize.LARGE` for cards
+- Proper handling of `MediaItemActionsSheet` callbacks
+- MiniPlayer overlays content at bottom (outside scaffold)
+- SnackbarHost positioned at bottom center
+
+**Build Status**: ✅ `assembleDebug` successful
+
+### ✅ ImmersiveMovieDetailScreen.kt (COMPLETED)
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/screens/ImmersiveMovieDetailScreen.kt`
 **Reference**: `ui/screens/MovieDetailScreen.kt`
+**Status**: ✅ Complete
+**Build Status**: ✅ Passing
 
-**Changes**:
-- Full-bleed hero backdrop (no padding)
-- Logo/title overlaid on gradient
-- Metadata badges floating over hero
-- Large play FAB
-- Sticky header (content scrolls under hero)
-- Collapsing toolbar effect
+**Implemented Features**:
+- ✅ Full-bleed parallax hero backdrop using `ParallaxHeroSection`
+- ✅ Title and metadata overlaid on gradient (at bottom of hero)
+- ✅ Rating badges (community, critics, IMDb, TMDB) on hero
+- ✅ Scroll-based parallax effect (0.5 factor)
+- ✅ Overview with AI summary button
+- ✅ Large play button
+- ✅ Action buttons (favorite, watched, share, delete)
+- ✅ Immersive details card with media info
+- ✅ Cast & crew section with larger cards (120dp)
+- ✅ Genre badges
+- ✅ Related movies using `ImmersiveMediaCard` (Small size)
+- ✅ Floating back button and more options menu
+- ✅ Pull-to-refresh support
+- ✅ Delete confirmation dialog
 
-#### 3. ImmersiveTVSeasonScreen.kt
+**Key Implementation Details**:
+- Uses `ParallaxHeroSection` with `scrollOffset` tracking via `derivedStateOf`
+- Title/metadata overlaid on hero with white text on gradient
+- Tighter spacing throughout (16dp padding vs 20dp)
+- Larger cast member cards (120dp vs 100dp)
+- All functionality from original MovieDetailScreen preserved
+- Renamed internal classes to avoid redeclaration (`ImmersiveRatingSource`, `ImmersiveExternalRating`)
+
+**Visual Differences**:
+- Hero: 480dp height vs 400dp, full parallax effect
+- Padding: 16dp vs 20dp throughout
+- Cast cards: 120dp vs 100dp
+- Related movies: Uses `ImmersiveMediaCard.SMALL` (200dp) vs `ExpressiveMediaCard` (140dp)
+
+### ✅ ImmersiveTVSeasonScreen.kt (COMPLETED)
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/screens/ImmersiveTVSeasonScreen.kt`
 **Reference**: `ui/screens/TVSeasonScreen.kt`
+**Status**: ✅ Complete
+**Build Status**: ✅ Passing
 
-**Changes**:
-- Same pattern as movie detail
-- Episode list with large thumbnails
-- Expand/collapse animations
-- Parallax hero
+**Implemented Features**:
+- ✅ Full-bleed parallax hero backdrop using `ParallaxHeroSection`
+- ✅ Series title and metadata overlaid on gradient (at bottom of hero)
+- ✅ Rating badges (community, official rating) and episode count on hero
+- ✅ Scroll-based parallax effect (0.5 factor)
+- ✅ Series overview and watch button below hero
+- ✅ Expandable season list with animated chevron rotation
+- ✅ Large episode cards with thumbnails (140x79dp - 16:9 aspect)
+- ✅ Watch progress indicators on episode thumbnails
+- ✅ Cast & crew section with circular avatars (100dp)
+- ✅ "More Like This" section using `ImmersiveMediaCard`
+- ✅ Floating back button and refresh button (with wavy progress indicator)
+- ✅ Loading/error/empty states with Material 3 Expressive animations
 
-#### 4. ImmersiveLibraryScreen.kt
+**Key Implementation Details**:
+- Uses `ParallaxHeroSection` with `scrollOffset` tracking via `derivedStateOf`
+- Title/metadata overlaid on hero with white text on gradient
+- Tighter spacing throughout (16dp padding vs 20dp)
+- Larger episode thumbnails (140x79dp vs original size)
+- Season list items use `ImmersiveSeasonListItem` with rounded corners
+- Episode dropdown uses `ImmersiveSeasonEpisodeDropdown` with Material 3 animations
+- Renamed internal enum to `ImmersiveSeasonScreenState` to avoid redeclaration
+- Fixed `JellyfinAsyncImage` parameter names (`model` not `url`)
+
+**Visual Differences**:
+- Hero: 480dp height vs 400dp, full parallax effect
+- Padding: 16dp vs 20dp throughout
+- Episode thumbnails: 140x79dp (16:9) with larger size
+- Cast avatars: 100dp (same size, consistent with movie detail)
+- Season cards: Rounded corners with surfaceVariant background
+
+### ✅ ImmersiveLibraryScreen.kt (COMPLETED)
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/screens/ImmersiveLibraryScreen.kt`
 **Reference**: `ui/screens/LibraryScreen.kt`
+**Status**: ✅ Complete
+**Build Status**: ✅ Passing
 
-**Changes**:
-- Large backdrop grid
+**Implemented Features**:
+- ✅ Floating action buttons (back, refresh, settings) in top-right
+- ✅ Search FAB in bottom-right above MiniPlayer
+- ✅ Large library cards with gradient backgrounds (120dp height)
+- ✅ Themed icon backgrounds with library-specific colors
+- ✅ Tighter spacing (16dp row spacing)
+- ✅ Auto-hiding FABs on scroll
+- ✅ Material 3 animations (fade in/out, scale, slide)
+- ✅ Pull-to-refresh support
+- ✅ Loading shimmer cards
+- ✅ Error and empty states
+- ✅ MiniPlayer at bottom
+
+**Key Implementation Details**:
+- No traditional Scaffold/TopAppBar - uses edge-to-edge layout with floating buttons
+- Library cards: 120dp height with horizontal gradient backgrounds
+- Auto-hide FABs based on scroll position (first item index + offset)
+- Themed colors per library type (Movies=Primary, TV=Secondary, Music=Tertiary, etc.)
+- Circular icon backgrounds with 20% opacity colored surfaces
+- Large library names (headlineSmall) with item counts
+- Spacing: 16dp between cards, 24dp top padding, 120dp bottom padding for MiniPlayer + FABs
+- Uses `ImmersiveDimens.SpacingRowTight` for consistent spacing
+
+**Visual Differences**:
+- Cards: 120dp height vs 80dp, with gradient backgrounds
+- Icons: 64dp circular backgrounds vs 48dp plain icons
+- Typography: headlineSmall vs titleLarge for names
+- Padding: 24dp padding in cards vs 20dp
+- FABs: Floating translucent buttons vs TopAppBar
+- Colors: Themed per library type with gradient overlays
 - Hover/focus reveals name overlay
 - Floating search FAB
-- Immersive grid spacing
+- Immersive grid spacing (16dp)
 
 ### Feature Flag Integration
 
@@ -264,43 +401,100 @@ composable("home") {
 
 ---
 
-## 📋 Phase 3: Browse & Discovery (NOT STARTED)
+## ✅ Phase 3: Browse & Discovery (COMPLETED - 100%)
 
-**Status**: ⏳ Pending
-**Estimated Duration**: 2-3 weeks
-**Dependencies**: Phase 2 complete
+**Status**: ✅ All 4 screens complete (100%)
+**Duration**: Completed 2026-02-07
+**Dependencies**: Phase 2 complete ✅
+**Build Status**: ✅ Passing (assembleDebug successful)
 
-### Planned Screens
+### ✅ Completed Screens (4/4)
 
-1. **ImmersiveSearchScreen.kt**
-   - Full-screen results grid
-   - Floating search bar (hides on scroll)
-   - Large result cards (280dp)
+#### 1. ImmersiveSearchScreen.kt ✅
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/screens/ImmersiveSearchScreen.kt`
+**Status**: ✅ Complete
+**Build Status**: ✅ Passing
 
-2. **ImmersiveMoviesScreen.kt / ImmersiveTVShowsScreen.kt / ImmersiveMusicScreen.kt**
-   - Hero carousel at top
-   - Genre rows with horizontal scrolling
-   - Auto-hide navigation
+**Features**:
+- Floating translucent search bar (auto-hides)
+- Full-screen results with large cards (280dp)
+- Auto-hiding FABs for AI search and filters
 
-3. **ImmersiveFavoritesScreen.kt**
-   - Masonry grid layout
-   - Random favorite as hero
+#### 2. ImmersiveFavoritesScreen.kt ✅
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/screens/ImmersiveFavoritesScreen.kt`
+**Status**: ✅ Complete
+**Build Status**: ✅ Passing
+
+**Features**:
+- Random favorite as parallax hero backdrop
+- Masonry/staggered grid layout (2-column)
+- Auto-hiding FABs for back and refresh
+
+#### 3. ImmersiveMoviesScreen.kt ✅
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/screens/ImmersiveMoviesScreen.kt`
+**Status**: ✅ Complete
+**Build Status**: ✅ Passing
+
+**Features**:
+- Full-screen hero carousel for top movies
+- Content rows grouped by genre/metadata
+- Horizontal scrolling rows using `ImmersiveMediaRow`
+- Floating Search/Filter FABs
+
+#### 4. ImmersiveTVShowsScreen.kt ✅
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/screens/ImmersiveTVShowsScreen.kt`
+**Status**: ✅ Complete
+**Build Status**: ✅ Passing
+
+**Features**:
+- Full-screen hero carousel for featured series
+- Content rows grouped by trending/metadata
+- Horizontal scrolling rows using `ImmersiveMediaRow`
+- Floating Search/Filter FABs
+
+### Shared Components Added
+- ✅ **ImmersiveMediaRow.kt**: Reusable horizontal media row with title and subtitle support.
 
 ---
 
-## 📋 Phase 4: Remaining Screens & Polish (NOT STARTED)
+## ✅ Phase 4: Remaining Screens & Polish (IN PROGRESS - 20%)
 
-**Status**: ⏳ Pending
-**Estimated Duration**: 2-3 weeks
-**Dependencies**: Phase 3 complete
+**Status**: 🟡 1 of 5 screens complete (20%)
+**Duration**: Started 2026-02-07
+**Dependencies**: Phase 3 complete ✅
+**Build Status**: ✅ Passing
 
-### Tasks
+### ✅ Completed Screens (2/5)
 
-1. Remaining detail screens:
-   - ImmersiveAlbumDetailScreen.kt
-   - ImmersiveArtistDetailScreen.kt
-   - ImmersiveHomeVideoDetailScreen.kt
-   - ImmersiveTVEpisodeDetailScreen.kt
+#### 1. ImmersiveTVShowDetailScreen.kt ✅
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/screens/ImmersiveTVShowDetailScreen.kt`
+**Status**: ✅ Complete
+**Build Status**: ✅ Passing
+
+**Features**:
+- High-end series overview with logo support
+- Parallax hero backdrop (480dp)
+- "Watch Next" smart action button
+- Season list with expandable episode rows
+- Cast & Crew circular avatars
+- Related shows discovery row
+
+#### 2. ImmersiveTVEpisodeDetailScreen.kt ✅
+**File**: `app/src/main/java/com/rpeters/jellyfin/ui/screens/ImmersiveTVEpisodeDetailScreen.kt`
+**Status**: ✅ Complete
+**Build Status**: ✅ Passing
+
+**Features**:
+- Parallax episode backdrop with series context
+- Quick action row (Favorite, Watched, Download, Share)
+- "More from this Season" horizontal navigation
+- AI-powered synopsis summary
+- Series information card integration
+
+### Planned Screens (3 remaining)
+1. **ImmersiveAlbumDetailScreen.kt**
+2. **ImmersiveArtistDetailScreen.kt**
+3. **ImmersiveHomeVideoDetailScreen.kt**
 
 2. Performance optimization
    - Macrobenchmark profiling
@@ -437,10 +631,12 @@ ImmersiveScaffold
 ## 🎯 Next Actions
 
 ### Immediate (This Week)
-1. ⏳ Start Phase 2: Create ImmersiveHomeScreen.kt
-2. ⏳ Add feature flag routing in NavGraph.kt
-3. ⏳ Test on emulator and real device
-4. ⏳ Create demo video/screenshots
+1. ✅ ~~Create ImmersiveHomeScreen.kt~~ **DONE**
+2. ✅ ~~Add feature flag routing in NavGraph.kt~~ **DONE**
+3. ✅ ~~Create RemoteConfigViewModel for flag access~~ **DONE**
+4. ⏳ Test ImmersiveHomeScreen on emulator/device
+5. ⏳ Create demo video/screenshots
+6. ⏳ Create ImmersiveMovieDetailScreen.kt
 
 ### Short Term (Next 2 Weeks)
 1. ⏳ Complete all Phase 2 screens
@@ -456,6 +652,8 @@ ImmersiveScaffold
 
 ---
 
-**Last Updated**: 2026-02-05
-**Phase 1 Completion**: ✅ 100%
-**Overall Progress**: 🟢 20% (1 of 5 phases complete)
+**Last Updated**: 2026-02-06
+**Phase 1 Completion**: ✅ 100% (All foundation components)
+**Phase 2 Completion**: ✅ 100% (All 4 home & detail screens)
+**Phase 3 Completion**: 🟡 50% (2 of 4 browse & discovery screens)
+**Overall Progress**: 🟢 62% (Phase 1 complete + Phase 2 complete + 2 Phase 3 screens)

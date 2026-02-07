@@ -10,9 +10,15 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.core.FeatureFlags
 import com.rpeters.jellyfin.ui.screens.AudioQueueScreen
 import com.rpeters.jellyfin.ui.screens.BooksScreen
 import com.rpeters.jellyfin.ui.screens.HomeVideosScreen
+import com.rpeters.jellyfin.ui.screens.ImmersiveMoviesScreenContainer
+import com.rpeters.jellyfin.ui.screens.ImmersiveTVShowDetailScreen
+import com.rpeters.jellyfin.ui.screens.ImmersiveTVShowsScreenContainer
+import com.rpeters.jellyfin.ui.screens.ImmersiveTVSeasonScreen
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.screens.LibraryTypeScreen
 import com.rpeters.jellyfin.ui.screens.MoviesScreenContainer
@@ -23,6 +29,7 @@ import com.rpeters.jellyfin.ui.screens.TVSeasonScreen
 import com.rpeters.jellyfin.ui.screens.TVShowsScreen
 import com.rpeters.jellyfin.ui.utils.MediaPlayerUtils
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.ui.viewmodel.RemoteConfigViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SeasonEpisodesViewModel
 import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.CancellationException
@@ -36,28 +43,73 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
     mainViewModel: MainAppViewModel,
 ) {
     composable(Screen.Movies.route) {
-        MoviesScreenContainer(
-            onMovieClick = { item ->
-                item.id.let { movieId ->
-                    navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
-                }
-            },
-            viewModel = mainViewModel,
-        )
+        val remoteConfigViewModel: RemoteConfigViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+        val useImmersiveUI = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
+            remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_MOVIES_BROWSE)
+
+        if (BuildConfig.DEBUG) {
+            SecureLogger.d("MediaNavGraph", "MoviesScreen: enable_immersive_ui=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI)}, immersive_movies_browse=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_MOVIES_BROWSE)}, using immersive: $useImmersiveUI")
+        }
+
+        if (useImmersiveUI) {
+            ImmersiveMoviesScreenContainer(
+                onMovieClick = { item ->
+                    item.id.let { movieId ->
+                        navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                    }
+                },
+                onSearchClick = { navController.navigate(Screen.Search.route) },
+                onBackClick = { navController.popBackStack() },
+                viewModel = mainViewModel,
+            )
+        } else {
+            MoviesScreenContainer(
+                onMovieClick = { item ->
+                    item.id.let { movieId ->
+                        navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
+                    }
+                },
+                viewModel = mainViewModel,
+            )
+        }
     }
 
     composable(Screen.TVShows.route) {
-        TVShowsScreen(
-            onTVShowClick = { seriesId ->
-                try {
-                    SecureLogger.v("NavGraph-TVShows", "Navigating to TV Seasons: $seriesId")
-                    navController.navigate(Screen.TVSeasons.createRoute(seriesId))
-                } catch (e: CancellationException) {
-                    throw e
-                }
-            },
-            viewModel = mainViewModel,
-        )
+        val remoteConfigViewModel: RemoteConfigViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+        val useImmersiveUI = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
+            remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_TV_BROWSE)
+
+        if (BuildConfig.DEBUG) {
+            SecureLogger.d("MediaNavGraph", "TVShowsScreen: enable_immersive_ui=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI)}, immersive_tv_browse=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_TV_BROWSE)}, using immersive: $useImmersiveUI")
+        }
+
+        if (useImmersiveUI) {
+            ImmersiveTVShowsScreenContainer(
+                onTVShowClick = { seriesId ->
+                    try {
+                        SecureLogger.v("NavGraph-TVShows", "Navigating to TV Seasons: $seriesId")
+                        navController.navigate(Screen.TVSeasons.createRoute(seriesId))
+                    } catch (e: CancellationException) {
+                        throw e
+                    }
+                },
+                onSearchClick = { navController.navigate(Screen.Search.route) },
+                onBackClick = { navController.popBackStack() },
+                viewModel = mainViewModel,
+            )
+        } else {
+            TVShowsScreen(
+                onTVShowClick = { seriesId ->
+                    try {
+                        SecureLogger.v("NavGraph-TVShows", "Navigating to TV Seasons: $seriesId")
+                        navController.navigate(Screen.TVSeasons.createRoute(seriesId))
+                    } catch (e: CancellationException) {
+                        throw e
+                    }
+                },
+                viewModel = mainViewModel,
+            )
+        }
     }
 
     composable(
@@ -76,43 +128,133 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             viewModel.loadTVShowDetails(seriesId)
         }
 
-        TVSeasonScreen(
-            seriesId = seriesId,
-            onBackClick = { navController.popBackStack() },
-            getImageUrl = { item -> viewModel.getImageUrl(item) },
-            getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
-            getLogoUrl = { item -> viewModel.getLogoUrl(item) },
-            onSeriesClick = { targetSeriesId ->
-                navController.navigate(Screen.TVSeasons.createRoute(targetSeriesId)) {
-                    launchSingleTop = true
-                }
-            },
-            onEpisodeClick = { episode ->
-                episode.id?.let { episodeId ->
-                    viewModel.addOrUpdateItem(episode)
-                    navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
-                }
-            },
-            onPlayEpisode = { episodeItem ->
-                try {
-                    val streamUrl = viewModel.getStreamUrl(episodeItem)
-                    if (streamUrl != null) {
-                        MediaPlayerUtils.playMedia(
-                            context = navController.context,
-                            streamUrl = streamUrl,
-                            item = episodeItem,
-                        )
-                    } else {
-                        SecureLogger.e(
-                            "NavGraph",
-                            "No stream URL available for episode: ${episodeItem.name}",
-                        )
+        // Feature Flag: Check if immersive UI should be used
+        val remoteConfigViewModel: RemoteConfigViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+        val useImmersiveDetail = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
+            remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_TV_SHOW_DETAIL)
+        val useImmersiveSeason = remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI) &&
+            remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.IMMERSIVE_TV_SEASON)
+
+        if (BuildConfig.DEBUG) {
+            SecureLogger.d("MediaNavGraph", "TVSeasonScreen: enable_immersive_ui=${remoteConfigViewModel.getBoolean(FeatureFlags.ImmersiveUI.ENABLE_IMMERSIVE_UI)}, immersive_tv_show_detail=$useImmersiveDetail, immersive_tv_season=$useImmersiveSeason")
+        }
+
+        if (useImmersiveDetail) {
+            ImmersiveTVShowDetailScreen(
+                seriesId = seriesId,
+                onBackClick = { navController.popBackStack() },
+                getImageUrl = { item -> viewModel.getImageUrl(item) },
+                getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
+                getLogoUrl = { item -> viewModel.getLogoUrl(item) },
+                onSeriesClick = { targetSeriesId ->
+                    navController.navigate(Screen.TVSeasons.createRoute(targetSeriesId)) {
+                        launchSingleTop = true
                     }
-                } catch (e: CancellationException) {
-                    throw e
-                }
-            },
-        )
+                },
+                onEpisodeClick = { episode ->
+                    episode.id?.let { episodeId ->
+                        viewModel.addOrUpdateItem(episode)
+                        navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                    }
+                },
+                onPlayEpisode = { episodeItem ->
+                    try {
+                        val streamUrl = viewModel.getStreamUrl(episodeItem)
+                        if (streamUrl != null) {
+                            MediaPlayerUtils.playMedia(
+                                context = navController.context,
+                                streamUrl = streamUrl,
+                                item = episodeItem,
+                            )
+                        } else {
+                            SecureLogger.e(
+                                "NavGraph",
+                                "No stream URL available for episode: ${episodeItem.name}",
+                            )
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    }
+                },
+            )
+        } else if (useImmersiveSeason) {
+            ImmersiveTVSeasonScreen(
+                seriesId = seriesId,
+                onBackClick = { navController.popBackStack() },
+                getImageUrl = { item -> viewModel.getImageUrl(item) },
+                getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
+                getLogoUrl = { item -> viewModel.getLogoUrl(item) },
+                onSeriesClick = { targetSeriesId ->
+                    navController.navigate(Screen.TVSeasons.createRoute(targetSeriesId)) {
+                        launchSingleTop = true
+                    }
+                },
+                onEpisodeClick = { episode ->
+                    episode.id?.let { episodeId ->
+                        viewModel.addOrUpdateItem(episode)
+                        navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                    }
+                },
+                onPlayEpisode = { episodeItem ->
+                    try {
+                        val streamUrl = viewModel.getStreamUrl(episodeItem)
+                        if (streamUrl != null) {
+                            MediaPlayerUtils.playMedia(
+                                context = navController.context,
+                                streamUrl = streamUrl,
+                                item = episodeItem,
+                            )
+                        } else {
+                            SecureLogger.e(
+                                "NavGraph",
+                                "No stream URL available for episode: ${episodeItem.name}",
+                            )
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    }
+                },
+            )
+        } else {
+            // Use the original TVSeasonScreen when immersive UI is disabled
+            TVSeasonScreen(
+                seriesId = seriesId,
+                onBackClick = { navController.popBackStack() },
+                getImageUrl = { item -> viewModel.getImageUrl(item) },
+                getBackdropUrl = { item -> viewModel.getBackdropUrl(item) },
+                getLogoUrl = { item -> viewModel.getLogoUrl(item) },
+                onSeriesClick = { targetSeriesId ->
+                    navController.navigate(Screen.TVSeasons.createRoute(targetSeriesId)) {
+                        launchSingleTop = true
+                    }
+                },
+                onEpisodeClick = { episode ->
+                    episode.id?.let { episodeId ->
+                        viewModel.addOrUpdateItem(episode)
+                        navController.navigate(Screen.TVEpisodeDetail.createRoute(episodeId.toString()))
+                    }
+                },
+                onPlayEpisode = { episodeItem ->
+                    try {
+                        val streamUrl = viewModel.getStreamUrl(episodeItem)
+                        if (streamUrl != null) {
+                            MediaPlayerUtils.playMedia(
+                                context = navController.context,
+                                streamUrl = streamUrl,
+                                item = episodeItem,
+                            )
+                        } else {
+                            SecureLogger.e(
+                                "NavGraph",
+                                "No stream URL available for episode: ${episodeItem.name}",
+                            )
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    }
+                },
+            )
+        }
     }
 
     composable(
