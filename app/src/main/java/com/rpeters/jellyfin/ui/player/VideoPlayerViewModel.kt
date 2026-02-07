@@ -157,6 +157,7 @@ class VideoPlayerViewModel @Inject constructor(
 
     // MediaRouter callback to detect audio route changes
     private val mediaRouterCallback = object : MediaRouter.Callback() {
+        @Deprecated("Deprecated in MediaRouter")
         override fun onRouteSelected(router: MediaRouter, route: MediaRouter.RouteInfo) {
             SecureLogger.d("VideoPlayer", "Media route selected: ${route.name}")
         }
@@ -762,7 +763,6 @@ class VideoPlayerViewModel @Inject constructor(
                 val playMethod = when (playbackResult) {
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.DirectPlay -> org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> org.jellyfin.sdk.model.api.PlayMethod.TRANSCODE
-                    else -> org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY
                 }
                 playbackProgressManager.startTracking(
                     itemId = itemId,
@@ -982,7 +982,6 @@ class VideoPlayerViewModel @Inject constructor(
             val playMethod = when (playbackResult) {
                 is com.rpeters.jellyfin.data.playback.PlaybackResult.DirectPlay -> org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY
                 is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> org.jellyfin.sdk.model.api.PlayMethod.TRANSCODE
-                else -> org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY
             }
             playbackProgressManager.startTracking(
                 itemId = metadata.id.toString(),

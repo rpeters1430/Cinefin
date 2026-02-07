@@ -175,7 +175,7 @@ fun ImmersiveTVShowsScreen(
                                 title = section.title,
                                 items = section.items,
                                 getImageUrl = getImageUrl,
-                                onItemClick = { it.id?.let { id -> onTVShowClick(id.toString()) } },
+                                onItemClick = { it.id.let { id -> onTVShowClick(id.toString()) } },
                                 size = ImmersiveCardSize.MEDIUM,
                             )
                         }

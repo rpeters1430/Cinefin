@@ -208,7 +208,7 @@ class TVSeasonViewModel @Inject constructor(
         )
 
         for (season in sortedSeasons) {
-            val seasonId = season.id?.toString() ?: continue
+            val seasonId = season.id.toString()
 
             // Check cache first to avoid redundant API calls
             val episodes = getEpisodesForSeason(seasonId) ?: continue
@@ -231,7 +231,7 @@ class TVSeasonViewModel @Inject constructor(
         )
 
         for (season in sortedSeasons) {
-            val seasonId = season.id?.toString() ?: continue
+            val seasonId = season.id.toString()
             val episodes = getEpisodesForSeason(seasonId) ?: continue
             val firstEpisode = episodes
                 .sortedWith(compareBy<BaseItemDto> { it.indexNumber ?: Int.MAX_VALUE })

@@ -188,6 +188,7 @@ class JellyfinRepository @Inject constructor(
     suspend fun getServerInfo(): ApiResult<ServerInfo> =
         withServerClient("getServerInfo") { _, client ->
             val info = client.systemApi.getSystemInfo().content
+            @Suppress("DEPRECATION")
             ServerInfo(
                 id = info.id ?: "",
                 name = info.serverName ?: "Jellyfin Server",
@@ -996,12 +997,12 @@ class JellyfinRepository @Inject constructor(
         val capabilities = deviceCapabilities.getDirectPlayCapabilities()
         Log.d("JellyfinRepository", "Device capabilities: maxResolution=${capabilities.maxResolution}, supports4K=${capabilities.supports4K}")
         val deviceProfile = JellyfinDeviceProfile.createAndroidDeviceProfile(capabilities)
-        Log.d("JellyfinRepository", "DeviceProfile created with codecProfiles: ${deviceProfile.codecProfiles?.size ?: 0}")
+        Log.d("JellyfinRepository", "DeviceProfile created with codecProfiles: ${deviceProfile.codecProfiles.size}")
 
         // Log the actual codec profiles being sent
-        deviceProfile.codecProfiles?.forEachIndexed { index, codecProfile ->
-            Log.d("JellyfinRepository", "  CodecProfile[$index]: type=${codecProfile.type}, codec=${codecProfile.codec}, conditions=${codecProfile.conditions?.size ?: 0}")
-            codecProfile.conditions?.forEach { condition ->
+        deviceProfile.codecProfiles.forEachIndexed { index, codecProfile ->
+            Log.d("JellyfinRepository", "  CodecProfile[$index]: type=${codecProfile.type}, codec=${codecProfile.codec}, conditions=${codecProfile.conditions.size}")
+            codecProfile.conditions.forEach { condition ->
                 Log.d("JellyfinRepository", "    Condition: ${condition.property} ${condition.condition} ${condition.value}")
             }
         }
@@ -1044,7 +1045,7 @@ class JellyfinRepository @Inject constructor(
             Log.d("JellyfinRepository", "DeviceProfile: ${deviceProfile.name}, maxStreamBitrate=${deviceProfile.maxStreamingBitrate}, maxStaticBitrate=${deviceProfile.maxStaticBitrate}")
 
             // Log DirectPlayProfiles
-            deviceProfile.directPlayProfiles?.forEachIndexed { index, profile ->
+            deviceProfile.directPlayProfiles.forEachIndexed { index, profile ->
                 Log.d("JellyfinRepository", "  DirectPlayProfile[$index]: container=${profile.container}, type=${profile.type}, videoCodec=${profile.videoCodec}, audioCodec=${profile.audioCodec}")
             }
             transcodingProfiles.forEachIndexed { index, profile ->

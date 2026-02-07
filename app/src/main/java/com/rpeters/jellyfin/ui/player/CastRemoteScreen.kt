@@ -149,7 +149,7 @@ fun CastRemoteScreen(
                     if (!playerState.castOverview.isNullOrBlank()) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = playerState.castOverview ?: "",
+                            text = playerState.castOverview,
                             color = playerColors.overlayContent.copy(alpha = 0.8f),
                             style = MaterialTheme.typography.bodyMedium,
                             maxLines = 3,
@@ -253,7 +253,6 @@ fun CastRemoteScreen(
     }
 }
 
-@OptIn(UnstableApi::class)
 @Composable
 fun CastNowPlayingOverlay(
     playerState: VideoPlayerState,

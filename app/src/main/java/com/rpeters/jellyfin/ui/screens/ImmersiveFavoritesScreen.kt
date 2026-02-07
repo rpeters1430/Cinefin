@@ -178,7 +178,7 @@ fun ImmersiveFavoritesScreen(
                                     BaseItemKind.EPISODE -> item.seriesName ?: ""
                                     else -> item.productionYear?.toString() ?: ""
                                 },
-                                rating = item.communityRating?.toFloat(),
+                                rating = item.communityRating,
                                 isFavorite = true, // All items here are favorites
                                 isWatched = item.userData?.played == true,
                                 watchProgress = (item.userData?.playedPercentage ?: 0.0).toFloat() / 100f,

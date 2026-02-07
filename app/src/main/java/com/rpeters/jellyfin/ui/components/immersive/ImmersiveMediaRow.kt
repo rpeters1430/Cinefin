@@ -57,7 +57,7 @@ fun ImmersiveMediaRow(
                     imageUrl = getImageUrl(item) ?: "",
                     onCardClick = { onItemClick(item) },
                     subtitle = itemSubtitle(item),
-                    rating = item.communityRating?.toFloat(),
+                    rating = item.communityRating,
                     isFavorite = item.userData?.isFavorite == true,
                     watchProgress = (item.userData?.playedPercentage ?: 0.0).toFloat() / 100f,
                     cardSize = size,

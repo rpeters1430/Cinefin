@@ -403,11 +403,11 @@ fun DeviceProfile.toUrlParameters(): Map<String, String> {
 
     // Extract primary video codecs
     val videoCodecs = codecProfiles
-        ?.filter { it.type == CodecType.VIDEO }
-        ?.mapNotNull { it.codec }
-        ?.flatMap { it.split(",") }
-        ?.distinct()
-        ?.joinToString(",")
+        .filter { it.type == CodecType.VIDEO }
+        .mapNotNull { it.codec }
+        .flatMap { it.split(",") }
+        .distinct()
+        .joinToString(",")
 
     if (!videoCodecs.isNullOrBlank()) {
         params["VideoCodec"] = videoCodecs
@@ -415,10 +415,10 @@ fun DeviceProfile.toUrlParameters(): Map<String, String> {
 
     // Extract primary audio codecs from DirectPlay profiles
     val audioCodecs = directPlayProfiles
-        ?.mapNotNull { it.audioCodec }
-        ?.flatMap { it.split(",") }
-        ?.distinct()
-        ?.joinToString(",")
+        .mapNotNull { it.audioCodec }
+        .flatMap { it.split(",") }
+        .distinct()
+        .joinToString(",")
 
     if (!audioCodecs.isNullOrBlank()) {
         params["AudioCodec"] = audioCodecs
