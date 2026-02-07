@@ -21,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.getQualityLabel
@@ -324,7 +323,7 @@ private fun ImmersiveHomeVideoTechnicalDetails(
         val width = videoStream?.width
         val height = videoStream?.height
         if (width != null && height != null) {
-            add("${width}×$height")
+            add("$width×$height")
         }
         videoStream?.codec?.let { add(it.uppercase()) }
         videoStream?.averageFrameRate?.let { frameRate ->
