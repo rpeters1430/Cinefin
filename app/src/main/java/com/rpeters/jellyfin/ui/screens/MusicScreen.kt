@@ -129,7 +129,7 @@ fun MusicScreen(
     val playbackState by audioPlaybackViewModel.playbackState.collectAsState()
     val playbackQueue by audioPlaybackViewModel.queue.collectAsState()
     val useImmersiveUI = remoteConfigViewModel.getBoolean("enable_immersive_ui") &&
-            remoteConfigViewModel.getBoolean("immersive_music_browse")
+        remoteConfigViewModel.getBoolean("immersive_music_browse")
 
     var selectedFilter by remember { mutableStateOf(MusicFilter.ALL) }
     var sortOrder by remember { mutableStateOf(MusicSortOrder.TITLE_ASC) }
