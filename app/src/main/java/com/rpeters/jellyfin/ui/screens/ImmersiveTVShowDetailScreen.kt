@@ -8,8 +8,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -214,7 +214,7 @@ private fun ImmersiveShowDetailContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(1.dp)
-                        .background(MaterialTheme.colorScheme.background)
+                        .background(MaterialTheme.colorScheme.background),
                 )
             }
             // 1. Overview & Metadata (now first scrollable item)
@@ -224,89 +224,89 @@ private fun ImmersiveShowDetailContent(
                 }
             }
 
-        // 3. Seasons & Episodes
-        if (state.seasons.isNotEmpty()) {
-            item {
-                Text(
-                    text = "Seasons",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                )
-            }
-
-            items(state.seasons, key = { it.getItemKey() }) { season ->
-                val seasonId = season.id.toString()
-                val isExpanded = seasonId != null && expandedSeasonId == seasonId
-
-                SeasonItem(
-                    season = season,
-                    isExpanded = isExpanded,
-                    episodes = seasonId?.let { state.episodesBySeasonId[it] }.orEmpty(),
-                    isLoadingEpisodes = seasonId != null && seasonId in state.loadingSeasonIds,
-                    getImageUrl = getImageUrl,
-                    onExpand = {
-                        if (seasonId != null) {
-                            expandedSeasonId = if (isExpanded) null else seasonId
-                            if (!isExpanded) onSeasonExpand(seasonId)
-                        }
-                    },
-                    onEpisodeClick = onEpisodeClick,
-                )
-            }
-        }
-
-        // 4. Cast & Crew
-        state.seriesDetails?.people?.takeIf { it.isNotEmpty() }?.let { people ->
-            item {
-                ImmersiveCastSection(
-                    people = people,
-                    getImageUrl = getImageUrl,
-                    modifier = Modifier.padding(top = 24.dp),
-                )
-            }
-        }
-
-        // 5. Similar Shows (aligned with Movies implementation)
-        if (state.similarSeries.isNotEmpty()) {
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(top = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
+            // 3. Seasons & Episodes
+            if (state.seasons.isNotEmpty()) {
+                item {
                     Text(
-                        text = "More Like This",
-                        style = MaterialTheme.typography.titleLarge,
+                        text = "Seasons",
+                        style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                     )
+                }
 
-                    PerformanceOptimizedLazyRow(
-                        items = state.similarSeries,
-                        horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
-                        maxVisibleItems = perfConfig.maxRowItems,
-                    ) { similarShow, _, _ ->
-                        ImmersiveMediaCard(
-                            title = similarShow.name ?: "Unknown",
-                            subtitle = buildYearRangeText(
-                                startYear = similarShow.productionYear,
-                                endYear = similarShow.endDate?.year,
-                                status = similarShow.status
-                            ),
-                            imageUrl = getImageUrl(similarShow) ?: "",
-                            rating = similarShow.communityRating,
-                            onCardClick = {
-                                onSeriesClick(similarShow.id.toString())
-                            },
-                            cardSize = ImmersiveCardSize.SMALL,
+                items(state.seasons, key = { it.getItemKey() }) { season ->
+                    val seasonId = season.id.toString()
+                    val isExpanded = seasonId != null && expandedSeasonId == seasonId
+
+                    SeasonItem(
+                        season = season,
+                        isExpanded = isExpanded,
+                        episodes = seasonId?.let { state.episodesBySeasonId[it] }.orEmpty(),
+                        isLoadingEpisodes = seasonId != null && seasonId in state.loadingSeasonIds,
+                        getImageUrl = getImageUrl,
+                        onExpand = {
+                            if (seasonId != null) {
+                                expandedSeasonId = if (isExpanded) null else seasonId
+                                if (!isExpanded) onSeasonExpand(seasonId)
+                            }
+                        },
+                        onEpisodeClick = onEpisodeClick,
+                    )
+                }
+            }
+
+            // 4. Cast & Crew
+            state.seriesDetails?.people?.takeIf { it.isNotEmpty() }?.let { people ->
+                item {
+                    ImmersiveCastSection(
+                        people = people,
+                        getImageUrl = getImageUrl,
+                        modifier = Modifier.padding(top = 24.dp),
+                    )
+                }
+            }
+
+            // 5. Similar Shows (aligned with Movies implementation)
+            if (state.similarSeries.isNotEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(top = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(
+                            text = "More Like This",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
                         )
+
+                        PerformanceOptimizedLazyRow(
+                            items = state.similarSeries,
+                            horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
+                            maxVisibleItems = perfConfig.maxRowItems,
+                        ) { similarShow, _, _ ->
+                            ImmersiveMediaCard(
+                                title = similarShow.name ?: "Unknown",
+                                subtitle = buildYearRangeText(
+                                    startYear = similarShow.productionYear,
+                                    endYear = similarShow.endDate?.year,
+                                    status = similarShow.status,
+                                ),
+                                imageUrl = getImageUrl(similarShow) ?: "",
+                                rating = similarShow.communityRating,
+                                onCardClick = {
+                                    onSeriesClick(similarShow.id.toString())
+                                },
+                                cardSize = ImmersiveCardSize.SMALL,
+                            )
+                        }
                     }
                 }
             }
-        }
-    } // End LazyColumn
+        } // End LazyColumn
     } // End Box
 }
 
@@ -367,7 +367,7 @@ private fun ShowHeroHeader(
                 val yearText = buildYearRangeText(
                     startYear = series.productionYear,
                     endYear = series.endDate?.year,
-                    status = series.status
+                    status = series.status,
                 )
                 if (yearText.isNotEmpty()) {
                     Text(
