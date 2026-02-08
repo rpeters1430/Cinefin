@@ -31,7 +31,6 @@ import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
-import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyGrid
 import com.rpeters.jellyfin.ui.components.immersive.*
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
