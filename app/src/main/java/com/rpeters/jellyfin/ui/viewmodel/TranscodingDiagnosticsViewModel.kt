@@ -54,13 +54,13 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
             val movieResult = jellyfinRepository.getLibraryItems(
                 itemTypes = "Movie",
                 limit = 500,
-                fields = fields
+                fields = fields,
             )
 
             val episodeResult = jellyfinRepository.getLibraryItems(
                 itemTypes = "Episode",
                 limit = 500,
-                fields = fields
+                fields = fields,
             )
 
             val allVideos = mutableListOf<BaseItemDto>()

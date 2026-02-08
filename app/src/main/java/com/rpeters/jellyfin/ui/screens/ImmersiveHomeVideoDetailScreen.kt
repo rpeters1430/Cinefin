@@ -153,7 +153,7 @@ fun ImmersiveHomeVideoDetailScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(1.dp)
-                            .background(MaterialTheme.colorScheme.background)
+                            .background(MaterialTheme.colorScheme.background),
                     )
                 }
 
