@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.MediaStream
 import org.jellyfin.sdk.model.api.MediaStreamType
 import javax.inject.Inject
@@ -46,15 +47,20 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = UiState.Loading
 
+            // Request extra fields to get codec and resolution information
+            val fields = listOf(ItemFields.MEDIA_SOURCES, ItemFields.MEDIA_STREAMS)
+
             // Get all movie and episode items
             val movieResult = jellyfinRepository.getLibraryItems(
                 itemTypes = "Movie",
                 limit = 500,
+                fields = fields
             )
 
             val episodeResult = jellyfinRepository.getLibraryItems(
                 itemTypes = "Episode",
                 limit = 500,
+                fields = fields
             )
 
             val allVideos = mutableListOf<BaseItemDto>()

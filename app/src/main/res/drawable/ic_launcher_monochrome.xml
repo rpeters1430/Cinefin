@@ -5,26 +5,18 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Monochrome themed icon for Android 13+ - "JR" initials -->
-    <group android:name="root">
-        <!-- Background circle -->
+    <!-- Stylized Egyptian Jellyfin (Monochrome for Themed Icons) -->
+    <group android:translateX="54" android:translateY="54">
+        <!-- Combined Shape: Ankh Loop + Jelly Head + Nemes Flaps -->
         <path
             android:fillColor="#000000"
-            android:pathData="M54,24 A30,30 0 1,1 54,84 A30,30 0 1,1 54,24 Z"/>
+            android:pathData="M0,-28 A24,24 0 1,0 0,20 A24,24 0 1,0 0,-28 Z M0,-22 A18,18 0 1,1 0,14 A18,18 0 1,1 0,-22 Z
+                              M-18,-15 Q0,-35 18,-15 L22,5 L28,25 Q30,35 20,35 L-20,35 Q-30,35 -28,25 L-22,5 Z
+                              M-5,15 L5,15 L3,35 Q0,40 -3,35 Z"/>
 
-        <!-- Letter J -->
+        <!-- Eye Highlight -->
         <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M38,40 L38,60 Q38,65 42,65 Q46,65 46,60 L46,40 L42,40 L42,60 Q42,62 40,62 L40,40 Z"/>
-
-        <!-- Letter R -->
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M52,40 L52,65 L56,65 L56,54 L60,54 L64,65 L68,65 L63.5,53.5 Q67,52 67,47 Q67,40 60,40 Z M56,44 L60,44 Q63,44 63,47 Q63,50 60,50 L56,50 Z"/>
-
-        <!-- Small play button accent -->
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M64,70 L70,74 L64,78 Z"/>
+            android:fillColor="#000000"
+            android:pathData="M-10,-5 Q0,-12 10,-5 Q0,2 -10,-5 Z"/>
     </group>
 </vector>

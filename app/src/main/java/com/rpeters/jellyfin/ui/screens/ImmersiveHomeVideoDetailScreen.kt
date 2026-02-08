@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -22,9 +23,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.getQualityLabel
-import com.rpeters.jellyfin.ui.components.immersive.ParallaxHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.findDefaultAudioStream
@@ -61,24 +64,76 @@ fun ImmersiveHomeVideoDetailScreen(
     isRefreshing: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    val perfConfig = rememberImmersivePerformanceConfig()
     var isFavorite by remember { mutableStateOf(item.userData?.isFavorite == true) }
     var isWatched by remember { mutableStateOf(item.userData?.played == true) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     val context = LocalContext.current
-
-    // Track scroll state for parallax effect
     val listState = rememberLazyListState()
-    val scrollOffset by remember {
-        derivedStateOf {
-            if (listState.firstVisibleItemIndex == 0) {
-                listState.firstVisibleItemScrollOffset / ImmersiveDimens.HeroHeightPhone.value
-            } else {
-                1f
-            }
-        }
-    }
+
+    PerformanceMetricsTracker(
+        enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
+        intervalMs = 30000,
+    )
 
     Box(modifier = modifier.fillMaxSize()) {
+        // ✅ Static Hero Background (doesn't scroll)
+        StaticHeroSection(
+            imageUrl = getBackdropUrl(item),
+            height = ImmersiveDimens.HeroHeightPhone,
+            contentScale = ContentScale.Crop,
+        ) {
+            // Title and metadata overlaid on gradient at bottom
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                Text(
+                    text = item.name ?: "Home Video",
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                // Metadata row
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    item.productionYear?.let { year ->
+                        Text(
+                            text = year.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.9f),
+                        )
+                    }
+
+                    item.runTimeTicks?.let { ticks ->
+                        val duration = item.getFormattedDuration()
+                        duration?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White.copy(alpha = 0.9f),
+                            )
+                        }
+                    }
+
+                    playbackAnalysis?.let { analysis ->
+                        PlaybackStatusBadge(analysis = analysis)
+                    }
+                }
+            }
+        }
+
+        // ✅ Scrollable Content Layer
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = onRefresh,
@@ -87,66 +142,19 @@ fun ImmersiveHomeVideoDetailScreen(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 16.dp),
+                contentPadding = PaddingValues(
+                    top = ImmersiveDimens.HeroHeightPhone, // ✅ Start below hero
+                    bottom = 16.dp,
+                ),
             ) {
-                // Parallax Hero Section with Backdrop
-                item(key = "hero", contentType = "hero") {
-                    ParallaxHeroSection(
-                        imageUrl = getBackdropUrl(item),
-                        scrollOffset = scrollOffset,
-                        height = ImmersiveDimens.HeroHeightPhone,
-                        parallaxFactor = 0.5f,
-                        contentScale = ContentScale.Crop,
-                    ) {
-                        // Title and metadata overlaid on gradient at bottom
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.BottomCenter)
-                                .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
-                                .padding(bottom = 32.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            horizontalAlignment = Alignment.Start,
-                        ) {
-                            Text(
-                                text = item.name ?: "Home Video",
-                                style = MaterialTheme.typography.displaySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-
-                            // Metadata row
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                item.productionYear?.let { year ->
-                                    Text(
-                                        text = year.toString(),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = Color.White.copy(alpha = 0.9f),
-                                    )
-                                }
-
-                                item.runTimeTicks?.let { ticks ->
-                                    val duration = item.getFormattedDuration()
-                                    duration?.let {
-                                        Text(
-                                            text = it,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = Color.White.copy(alpha = 0.9f),
-                                        )
-                                    }
-                                }
-
-                                playbackAnalysis?.let { analysis ->
-                                    PlaybackStatusBadge(analysis = analysis)
-                                }
-                            }
-                        }
-                    }
+                // ✅ Solid background spacer to cover hero when scrolled
+                item(key = "background_spacer") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(MaterialTheme.colorScheme.background)
+                    )
                 }
 
                 // Large Play Button

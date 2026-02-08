@@ -256,6 +256,7 @@ class JellyfinRepository @Inject constructor(
         itemTypes: String? = null,
         startIndex: Int = DEFAULT_START_INDEX,
         limit: Int = DEFAULT_LIMIT,
+        fields: List<ItemFields>? = null,
     ): ApiResult<List<BaseItemDto>> {
         // ✅ FIX: Validate token before making requests
         if (isTokenExpired()) {
@@ -303,6 +304,7 @@ class JellyfinRepository @Inject constructor(
                     includeItemTypes = includeTypes,
                     startIndex = startIndex,
                     limit = limit,
+                    fields = fields,
                 )
                 ApiResult.Success(response.content.items)
             }

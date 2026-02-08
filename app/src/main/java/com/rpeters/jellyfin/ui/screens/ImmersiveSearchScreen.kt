@@ -67,6 +67,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.constants.Constants
+import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
+import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
@@ -105,6 +107,12 @@ fun ImmersiveSearchScreen(
     val context = LocalContext.current
     val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
     val adaptiveConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
+    val perfConfig = rememberImmersivePerformanceConfig()
+
+    PerformanceMetricsTracker(
+        enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
+        intervalMs = 30000,
+    )
 
     var searchQuery by remember { mutableStateOf("") }
     var isFilterExpanded by remember { mutableStateOf(false) }
@@ -291,7 +299,7 @@ fun ImmersiveSearchScreen(
                                     contentPadding = PaddingValues(horizontal = 0.dp),
                                 ) {
                                     items(
-                                        items = recentSearches,
+                                        items = recentSearches.take(perfConfig.maxRowItems),
                                         key = { it },
                                         contentType = { "immersive_recent_search" },
                                     ) { search ->
@@ -319,12 +327,13 @@ fun ImmersiveSearchScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     contentPadding = PaddingValues(horizontal = 0.dp),
                                 ) {
+                                    val limitedSuggestions = smartSuggestions.take(perfConfig.maxRowItems)
                                     items(
-                                        count = smartSuggestions.size,
+                                        count = limitedSuggestions.size,
                                         key = { index -> "immersive_suggestion_$index" },
                                         contentType = { "immersive_smart_suggestion" },
                                     ) { index ->
-                                        val suggestion = smartSuggestions[index]
+                                        val suggestion = limitedSuggestions[index]
                                         SuggestionChip(
                                             onClick = { searchQuery = suggestion },
                                             label = { Text(suggestion) },

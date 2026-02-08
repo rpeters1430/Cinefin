@@ -42,10 +42,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.core.FeatureFlags
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
+import com.rpeters.jellyfin.ui.viewmodel.RemoteConfigViewModel
 
 @OptInAppExperimentalApis
 @Composable
@@ -63,8 +65,10 @@ fun SettingsScreen(
     onAccessibilitySettingsClick: () -> Unit = {},
     onTranscodingDiagnosticsClick: () -> Unit = {},
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
+    remoteConfigViewModel: RemoteConfigViewModel = hiltViewModel(),
 ) {
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
+    val showTranscodingDiagnostics = remoteConfigViewModel.getBoolean(FeatureFlags.Experimental.SHOW_TRANSCODING_DIAGNOSTICS)
 
     SettingsScreenContent(
         enableManagementActions = libraryActionPrefs.enableManagementActions,
@@ -81,6 +85,7 @@ fun SettingsScreen(
         onPrivacySettingsClick = onPrivacySettingsClick,
         onAccessibilitySettingsClick = onAccessibilitySettingsClick,
         onTranscodingDiagnosticsClick = onTranscodingDiagnosticsClick,
+        showTranscodingDiagnostics = showTranscodingDiagnostics,
     )
 }
 
@@ -101,6 +106,7 @@ private fun SettingsScreenContent(
     onPrivacySettingsClick: () -> Unit = {},
     onAccessibilitySettingsClick: () -> Unit = {},
     onTranscodingDiagnosticsClick: () -> Unit = {},
+    showTranscodingDiagnostics: Boolean = true,
 ) {
     Scaffold(
         topBar = {
@@ -166,13 +172,15 @@ private fun SettingsScreenContent(
                 )
             }
 
-            item {
-                ExpressiveMediaListItem(
-                    title = "Transcoding Diagnostics",
-                    subtitle = "Analyze which videos need transcoding and why",
-                    leadingIcon = Icons.Default.BugReport,
-                    onClick = onTranscodingDiagnosticsClick,
-                )
+            if (showTranscodingDiagnostics) {
+                item {
+                    ExpressiveMediaListItem(
+                        title = "Transcoding Diagnostics",
+                        subtitle = "Analyze which videos need transcoding and why",
+                        leadingIcon = Icons.Default.BugReport,
+                        onClick = onTranscodingDiagnosticsClick,
+                    )
+                }
             }
 
             item {

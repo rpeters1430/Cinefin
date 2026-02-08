@@ -60,7 +60,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.EmptyStateComposable
+import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.components.EmptyStateType
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.components.shimmer
@@ -93,7 +95,13 @@ fun ImmersiveLibraryScreen(
     showBackButton: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    val perfConfig = rememberImmersivePerformanceConfig()
     val listState = rememberLazyListState()
+
+    PerformanceMetricsTracker(
+        enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
+        intervalMs = 30000,
+    )
 
     // Auto-hide FABs when scrolling down
     val showFabs by remember {
@@ -130,7 +138,10 @@ fun ImmersiveLibraryScreen(
                         text = stringResource(id = R.string.your_libraries),
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 16.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center, // ✅ Center text
+                        modifier = Modifier
+                            .fillMaxWidth() // ✅ Fill width to center properly
+                            .padding(bottom = 16.dp),
                     )
                 }
 

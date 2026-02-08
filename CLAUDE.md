@@ -75,9 +75,9 @@ scripts/gen-local-properties.ps1  # PowerShell (Windows)
 This is a modern Android client for Jellyfin media servers built with:
 - **UI**: Jetpack Compose (BOM 2026.01.01) with Material 3 design system
 - **Architecture**: MVVM pattern with Repository pattern for data access
-- **DI**: Hilt 2.59 for dependency injection throughout the app
+- **DI**: Hilt 2.59.1 for dependency injection throughout the app
 - **Async**: Kotlin Coroutines 1.10.2 with StateFlow for reactive UI updates
-- **Media Playback**: ExoPlayer (Media3 1.9.1) with Jellyfin FFmpeg decoder
+- **Media Playback**: ExoPlayer (Media3 1.9.2) with Jellyfin FFmpeg decoder
 - **Networking**: Retrofit 3.0.0 + OkHttp 5.3.2 + Jellyfin SDK 1.8.6
 - **Image Loading**: Coil 3.3.0 with custom performance optimizations
 - **Security**: Android Keystore encryption, dynamic certificate pinning with TOFU model
@@ -215,7 +215,7 @@ Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<Jellyf
 - Centralized constants in `core/constants/Constants.kt`
 - SDK versions: compileSdk 36, targetSdk 35, minSdk 26 (Android 8.0+)
 - Java version: 21 with core library desugaring enabled
-- Kotlin version: 2.3.0 with KSP 2.3.0
+- Kotlin version: 2.3.10 with KSP 2.3.5
 - Dependency versions: Centralized in `gradle/libs.versions.toml`
 - **Release builds**: ProGuard/R8 enabled with shrinking and minification (`proguard-rules.pro`)
 - **Native debug symbols**: FULL debug symbols enabled for Play Console crash reporting
@@ -304,13 +304,13 @@ The app includes AI-powered features using Google's Gemini models with automatic
 ## Material 3 Design System
 
 ### Current Implementation
-- Using Material 3 alpha versions (1.5.0-alpha13)
+- Using Material 3 alpha versions (1.5.0-alpha13, expressive: 1.5.0-alpha02)
 - **Material 3 Expressive Components** enabled with official carousel implementation
 - **Official Material 3 Carousel** (androidx.compose.material3:material3-carousel) for hero content
   - `HorizontalUncontainedCarousel` for hero carousel with auto-scrolling (15 second intervals)
   - Maintains consistent item sizes ideal for large media content
   - Uses `CarouselState` and `CarouselDefaults` for state management
-- **Adaptive layouts** using Material 3 adaptive components (1.3.0-alpha06) for different screen sizes
+- **Adaptive layouts** using Material 3 adaptive components (1.3.0-alpha07) for different screen sizes
 - Theme defined in `ui/theme/` with Jellyfin brand colors:
   - Primary: Jellyfin Purple (#6200EE)
   - Secondary: Jellyfin Blue (#2962FF)
@@ -331,6 +331,43 @@ The home screen uses Material 3 Expressive components in the following order:
 5. **Recently Added in Shows** - Horizontal list with vertical poster cards
 6. **Recently Added in Stuff** - Horizontal list with horizontal cards for home videos
 7. **Libraries** - Grid of available media libraries (at bottom)
+
+## Immersive UI System
+
+The app has a complete immersive UI layer (Netflix/Disney+ style) alongside the standard Material 3 screens, controlled by feature flags for gradual rollout.
+
+### Architecture
+- **13 immersive screens** in `ui/screens/Immersive*.kt` (Home, Movies, TV Shows, Library, Search, Favorites, detail screens for Movie/TV Show/TV Season/TV Episode/Home Video/Home Videos/Album)
+- **11 reusable components** in `ui/components/immersive/` (hero carousel, parallax hero, media cards, auto-hide nav bars, scaffold, gradient scrims, floating action groups, top bar visibility, performance config)
+- **Feature flag routing**: `core/FeatureFlags.kt` defines per-screen flags (e.g., `immersive_home_screen`, `immersive_movie_detail`) toggled via Firebase Remote Config
+
+### Key Patterns
+
+**Background Spacer Pattern** (prevents hero image bleed-through):
+```kotlin
+LazyColumn(modifier = Modifier.fillMaxSize()) {  // No .background() modifier!
+    item(key = "background_spacer") {
+        Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.background))
+    }
+    // content items...
+}
+```
+
+**Auto-Hide Top Bar** (`TopBarVisibility.kt`):
+- Uses scroll delta tracking with 50px hysteresis
+- `nearTopOffsetPx` must be >= hero height to avoid flicker
+- Used via `rememberAutoHideTopBarVisible(lazyListState, nearTopOffsetPx, toggleThresholdPx)`
+
+**Performance Optimization** (`ImmersivePerformanceConfig.kt`):
+- Device-tier detection: LOW (<2GB RAM), MID (<4GB), HIGH (8GB+)
+- Adaptive limits: hero items (3-10), row items (20-50), grid items (50-200)
+- `rememberImmersivePerformanceConfig()` for one-line integration in any screen
+
+### Common Pitfalls
+- LazyColumn keys MUST be unique across all items (use indices for dynamic sections)
+- Full-bleed hero content needs safe area padding (statusBars + topBar height) to avoid being cut off
+- Use `graphicsLayer` for animations, not `scale()` modifier (better performance)
+- `season.childCount` from Jellyfin API is often null; only show episode count when data is available
 
 ## Android TV Considerations
 
@@ -373,6 +410,9 @@ Example: `feat: add movie detail screen`, `fix: prevent crash on empty library`
 - **AI infrastructure**: `data/ai/` (AiBackendStateHolder, AiTextModel interface)
 - **ViewModels**: `ui/viewmodel/`
 - **Reusable components**: `ui/components/`
+- **Immersive UI components**: `ui/components/immersive/`
+- **Immersive screens**: `ui/screens/Immersive*.kt`
+- **Feature flags**: `core/FeatureFlags.kt`
 - **Navigation**: `ui/navigation/`
 - **Theme**: `ui/theme/`
 - **Network layer**: `network/` directory

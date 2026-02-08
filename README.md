@@ -206,11 +206,15 @@ Automated workflows for:
 
 ## 📚 Documentation
 
+For detailed information on features, development, and project planning, please visit our **[Central Documentation Index](docs/README.md)**.
+
 **Quick Links**:
-- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Verified project status and features
-- **[ROADMAP.md](ROADMAP.md)** - Development roadmap and planned features
-- **[KNOWN_ISSUES.md](KNOWN_ISSUES.md)** - Active bugs and workarounds
-- **[UPGRADE_PATH.md](UPGRADE_PATH.md)** - Dependency upgrade strategy
+- **[Current Status](docs/plans/CURRENT_STATUS.md)** - Verified project status and features
+- **[Roadmap](docs/plans/ROADMAP.md)** - Development roadmap and planned features
+- **[Known Issues](docs/features/KNOWN_ISSUES.md)** - Active bugs and workarounds
+- **[Upgrade Path](docs/plans/UPGRADE_PATH.md)** - Dependency upgrade strategy
+- **[Immersive UI Progress](docs/features/IMMERSIVE_UI_PROGRESS.md)** - Detailed tracking of the Immersive UI overhaul
+- **[AI Setup Guide](docs/development/AI_SETUP.md)** - Instructions for configuring AI features
 
 ### **Current Status** ✅
 - [x] Core functionality (authentication, library browsing, Material 3 UI)
@@ -233,7 +237,7 @@ Automated workflows for:
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guidelines](docs/development/CONTRIBUTING.md) for details.
 
 ### **Development Setup**
 1. Fork the repository

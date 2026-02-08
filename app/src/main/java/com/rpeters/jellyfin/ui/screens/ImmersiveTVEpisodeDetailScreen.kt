@@ -26,8 +26,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.*
 import com.rpeters.jellyfin.ui.components.immersive.*
+import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
@@ -63,9 +65,15 @@ fun ImmersiveTVEpisodeDetailScreen(
     isLoadingAiSummary: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    val perfConfig = rememberImmersivePerformanceConfig()
     val listState = rememberLazyListState()
     val context = LocalContext.current
     val mainAppViewModel: MainAppViewModel = hiltViewModel()
+
+    PerformanceMetricsTracker(
+        enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
+        intervalMs = 30000,
+    )
 
     val scrollOffset by remember {
         derivedStateOf {
@@ -131,29 +139,28 @@ fun ImmersiveTVEpisodeDetailScreen(
                 }
 
                 item {
-                    LazyRow(
+                    PerformanceOptimizedLazyRow(
+                        items = seasonEpisodes,
                         contentPadding = PaddingValues(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        items(seasonEpisodes, key = { it.getItemKey() }) { item ->
-                            val isCurrent = item.id == episode.id
-                            ImmersiveMediaCard(
-                                title = item.name ?: "Episode ${item.indexNumber}",
-                                subtitle = "Episode ${item.indexNumber}",
-                                imageUrl = getImageUrl(item) ?: "",
-                                onCardClick = { if (!isCurrent) onEpisodeClick(item) },
-                                cardSize = ImmersiveCardSize.SMALL,
-                                isWatched = item.isWatched(),
-                                modifier = Modifier.width(200.dp).then(
-                                    if (isCurrent) {
-                                        Modifier.background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                                    } else {
-                                        Modifier
-                                    },
-                                ),
-                            )
-                        }
+                        maxVisibleItems = perfConfig.maxRowItems,
+                    ) { item, _, _ ->
+                        val isCurrent = item.id == episode.id
+                        ImmersiveMediaCard(
+                            title = item.name ?: "Episode ${item.indexNumber}",
+                            subtitle = "Episode ${item.indexNumber}",
+                            imageUrl = getImageUrl(item) ?: "",
+                            onCardClick = { if (!isCurrent) onEpisodeClick(item) },
+                            cardSize = ImmersiveCardSize.SMALL,
+                            isWatched = item.isWatched(),
+                            modifier = Modifier.width(200.dp).then(
+                                if (isCurrent) {
+                                    Modifier.background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                        )
                     }
                 }
             }
