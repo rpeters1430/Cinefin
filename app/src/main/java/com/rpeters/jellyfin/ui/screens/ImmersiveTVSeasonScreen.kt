@@ -72,14 +72,17 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.LogCategory
 import com.rpeters.jellyfin.core.Logger
+import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.ExpressiveEmptyState
 import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveFullScreenLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveLoadingCard
+import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
 import com.rpeters.jellyfin.ui.components.immersive.ParallaxHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.MotionTokens
@@ -113,6 +116,11 @@ fun ImmersiveTVSeasonScreen(
 ) {
     val viewModel: TVSeasonViewModel = hiltViewModel()
     val state by viewModel.state.collectAsState()
+
+    PerformanceMetricsTracker(
+        enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
+        intervalMs = 30000,
+    )
 
     LaunchedEffect(seriesId) {
         viewModel.loadSeriesData(seriesId)
@@ -241,6 +249,7 @@ private fun ImmersiveTVSeasonContent(
     onPlayEpisode: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val perfConfig = rememberImmersivePerformanceConfig()
     var expandedSeasonId by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Track scroll state for parallax effect
@@ -921,10 +930,11 @@ private fun ImmersiveCastAndCrewSection(
 
         // Cast
         if (cast.isNotEmpty()) {
+            val perfConfig = rememberImmersivePerformanceConfig()
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
             ) {
-                items(cast.take(15)) { person ->
+                items(cast.take(perfConfig.maxRowItems)) { person ->
                     ImmersiveCastMemberCard(
                         person = person,
                         imageUrl = person.id.let { id ->
@@ -1027,21 +1037,22 @@ private fun ImmersiveMoreLikeThisSection(
                 }
             }
         } else if (items.isNotEmpty()) {
-            LazyRow(
+            val perfConfig = rememberImmersivePerformanceConfig()
+            PerformanceOptimizedLazyRow(
+                items = items,
                 horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
-            ) {
-                items(items.take(10), key = { it.id.toString() }) { series ->
-                    ImmersiveMediaCard(
-                        title = series.name ?: "Unknown",
-                        subtitle = series.productionYear?.toString() ?: "",
-                        imageUrl = getImageUrl(series) ?: "",
-                        rating = series.communityRating,
-                        onCardClick = {
-                            onSeriesClick(series.id.toString())
-                        },
-                        cardSize = ImmersiveCardSize.SMALL,
-                    )
-                }
+                maxVisibleItems = perfConfig.maxRowItems,
+            ) { series, _, _ ->
+                ImmersiveMediaCard(
+                    title = series.name ?: "Unknown",
+                    subtitle = series.productionYear?.toString() ?: "",
+                    imageUrl = getImageUrl(series) ?: "",
+                    rating = series.communityRating,
+                    onCardClick = {
+                        onSeriesClick(series.id.toString())
+                    },
+                    cardSize = ImmersiveCardSize.SMALL,
+                )
             }
         }
     }

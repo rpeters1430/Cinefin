@@ -68,6 +68,7 @@ import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.ShareUtils
 import com.rpeters.jellyfin.ui.viewmodel.AudioPlaybackViewModel
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.ui.viewmodel.RemoteConfigViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -120,12 +121,16 @@ fun MusicScreen(
     onBackClick: () -> Unit = {},
     viewModel: MainAppViewModel = hiltViewModel(),
     audioPlaybackViewModel: AudioPlaybackViewModel = hiltViewModel(),
+    remoteConfigViewModel: RemoteConfigViewModel = hiltViewModel(),
     onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val appState by viewModel.appState.collectAsState()
     val playbackState by audioPlaybackViewModel.playbackState.collectAsState()
     val playbackQueue by audioPlaybackViewModel.queue.collectAsState()
+    val useImmersiveUI = remoteConfigViewModel.getBoolean("enable_immersive_ui") &&
+            remoteConfigViewModel.getBoolean("immersive_music_browse")
+
     var selectedFilter by remember { mutableStateOf(MusicFilter.ALL) }
     var sortOrder by remember { mutableStateOf(MusicSortOrder.TITLE_ASC) }
     var viewMode by remember { mutableStateOf(MusicViewMode.GRID) }
@@ -264,7 +269,7 @@ fun MusicScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = if (useImmersiveUI) androidx.compose.ui.graphics.Color.Transparent else MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                     navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),

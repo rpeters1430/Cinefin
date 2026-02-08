@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,8 +37,11 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.*
 import com.rpeters.jellyfin.ui.components.immersive.*
+import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.MotionTokens
@@ -77,6 +81,11 @@ fun ImmersiveTVShowDetailScreen(
     viewModel: TVSeasonViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+
+    PerformanceMetricsTracker(
+        enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
+        intervalMs = 30000,
+    )
 
     LaunchedEffect(seriesId) {
         viewModel.loadSeriesData(seriesId)
@@ -173,41 +182,47 @@ private fun ImmersiveShowDetailContent(
     onPlayEpisode: (BaseItemDto) -> Unit,
     onRefresh: () -> Unit,
 ) {
+    val perfConfig = rememberImmersivePerformanceConfig()
     var expandedSeasonId by rememberSaveable { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
-    val scrollOffset by remember {
-        derivedStateOf {
-            if (listState.firstVisibleItemIndex == 0) {
-                listState.firstVisibleItemScrollOffset / ImmersiveDimens.HeroHeightPhone.value
-            } else {
-                1f
-            }
-        }
-    }
 
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 40.dp),
-    ) {
-        // 1. Hero Header
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Static Hero Background (doesn't scroll)
         state.seriesDetails?.let { series ->
-            item {
-                ShowHeroHeader(
-                    series = series,
-                    getBackdropUrl = getBackdropUrl,
-                    getLogoUrl = getLogoUrl,
-                    nextEpisode = state.nextEpisode,
-                    onPlayEpisode = onPlayEpisode,
-                    scrollOffset = scrollOffset,
+            ShowHeroHeader(
+                series = series,
+                getBackdropUrl = getBackdropUrl,
+                getLogoUrl = getLogoUrl,
+                nextEpisode = state.nextEpisode,
+                onPlayEpisode = onPlayEpisode,
+                scrollOffset = 0f, // Static, no parallax
+            )
+        }
+
+        // Scrollable Content Layer
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                top = ImmersiveDimens.HeroHeightPhone, // Start below hero
+                bottom = 40.dp,
+            ),
+        ) {
+            // ✅ Solid background spacer to cover hero when scrolled
+            item(key = "background_spacer") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.background)
                 )
             }
-
-            // 2. Overview & Metadata
-            item {
-                ShowMetadataSection(series = series)
+            // 1. Overview & Metadata (now first scrollable item)
+            state.seriesDetails?.let { series ->
+                item {
+                    ShowMetadataSection(series = series)
+                }
             }
-        }
 
         // 3. Seasons & Episodes
         if (state.seasons.isNotEmpty()) {
@@ -252,19 +267,47 @@ private fun ImmersiveShowDetailContent(
             }
         }
 
-        // 5. Similar Shows
+        // 5. Similar Shows (aligned with Movies implementation)
         if (state.similarSeries.isNotEmpty()) {
             item {
-                ImmersiveMediaRow(
-                    title = "More Like This",
-                    items = state.similarSeries,
-                    getImageUrl = getImageUrl,
-                    onItemClick = { it.id.let { id -> onSeriesClick(id.toString()) } },
-                    modifier = Modifier.padding(top = 24.dp),
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        text = "More Like This",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+
+                    PerformanceOptimizedLazyRow(
+                        items = state.similarSeries,
+                        horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
+                        maxVisibleItems = perfConfig.maxRowItems,
+                    ) { similarShow, _, _ ->
+                        ImmersiveMediaCard(
+                            title = similarShow.name ?: "Unknown",
+                            subtitle = buildYearRangeText(
+                                startYear = similarShow.productionYear,
+                                endYear = similarShow.endDate?.year,
+                                status = similarShow.status
+                            ),
+                            imageUrl = getImageUrl(similarShow) ?: "",
+                            rating = similarShow.communityRating,
+                            onCardClick = {
+                                onSeriesClick(similarShow.id.toString())
+                            },
+                            cardSize = ImmersiveCardSize.SMALL,
+                        )
+                    }
+                }
             }
         }
-    }
+    } // End LazyColumn
+    } // End Box
 }
 
 @Composable
@@ -279,11 +322,9 @@ private fun ShowHeroHeader(
     val backdropUrl = getBackdropUrl(series) ?: ""
     val logoUrl = getLogoUrl(series)
 
-    ParallaxHeroSection(
+    StaticHeroSection(
         imageUrl = backdropUrl,
-        scrollOffset = scrollOffset,
         height = ImmersiveDimens.HeroHeightPhone,
-        parallaxFactor = 0.5f,
     ) {
         Column(
             modifier = Modifier
@@ -322,12 +363,19 @@ private fun ShowHeroHeader(
                     RatingBadge(rating)
                 }
 
-                // Year
-                Text(
-                    text = series.productionYear?.toString() ?: "",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White.copy(alpha = 0.9f),
+                // Year Range (e.g., "2020-2024" or "2020-Present")
+                val yearText = buildYearRangeText(
+                    startYear = series.productionYear,
+                    endYear = series.endDate?.year,
+                    status = series.status
                 )
+                if (yearText.isNotEmpty()) {
+                    Text(
+                        text = yearText,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White.copy(alpha = 0.9f),
+                    )
+                }
 
                 // Season Count
                 series.childCount?.let {
@@ -358,56 +406,81 @@ private fun ShowMetadataSection(series: BaseItemDto) {
     Column(
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // Official Rating & Status
+        // Official Rating & Status (larger, centered)
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             series.officialRating?.let { rating ->
                 normalizeOfficialRating(rating)?.let { normalized ->
                     Surface(
-                        shape = RoundedCornerShape(4.dp),
+                        shape = RoundedCornerShape(6.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                     ) {
                         Text(
                             text = normalized,
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                         )
                     }
                 }
             }
 
             if (series.status == "Continuing") {
-                Badge(containerColor = Color(0xFF4CAF50), contentColor = Color.White) {
-                    Text("Ongoing")
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = Color(0xFF4CAF50),
+                ) {
+                    Text(
+                        text = "Ongoing",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    )
                 }
             }
         }
 
-        // Overview
+        // Overview (centered, 3 lines)
         series.overview?.let {
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-                maxLines = 5,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
                 lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.4,
+                textAlign = TextAlign.Center,
             )
         }
 
-        // Genres
+        // Genres (FlowRow with buttons, no horizontal scroll)
         series.genres?.takeIf { it.isNotEmpty() }?.let { genres ->
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(genres) { genre ->
-                    Text(
-                        text = genre,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = SeriesBlue,
-                        fontWeight = FontWeight.SemiBold,
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                genres.forEach { genre ->
+                    SuggestionChip(
+                        onClick = { /* TODO: Filter by genre */ },
+                        label = {
+                            Text(
+                                text = genre,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        },
+                        colors = SuggestionChipDefaults.suggestionChipColors(
+                            containerColor = SeriesBlue.copy(alpha = 0.15f),
+                            labelColor = SeriesBlue,
+                        ),
+                        border = BorderStroke(1.dp, SeriesBlue.copy(alpha = 0.3f)), // ✅ Fixed: Use BorderStroke directly
                     )
                 }
             }
@@ -457,11 +530,22 @@ private fun SeasonItem(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
-                    Text(
-                        text = "${season.childCount ?: 0} Episodes",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    // ✅ Fixed: Only show episode count when we have reliable data
+                    // If episodes are loaded, use that count. Otherwise try metadata.
+                    // Don't show "0 Episodes" if we simply haven't loaded yet.
+                    val episodeCount = if (episodes.isNotEmpty()) {
+                        episodes.size
+                    } else {
+                        season.childCount?.takeIf { it > 0 }
+                    }
+
+                    episodeCount?.let { count ->
+                        Text(
+                            text = "$count Episode${if (count != 1) "s" else ""}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
 
                 Icon(
@@ -564,7 +648,8 @@ private fun ImmersiveCastSection(
     getImageUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
 ) {
-    val cast = people.filter { it.type.toString().lowercase() in listOf("actor", "gueststar") }.take(12)
+    val perfConfig = rememberImmersivePerformanceConfig()
+    val cast = people.filter { it.type.toString().lowercase() in listOf("actor", "gueststar") }.take(perfConfig.maxRowItems)
     if (cast.isEmpty()) return
 
     Column(modifier = modifier) {
@@ -612,5 +697,22 @@ private fun ImmersiveCastSection(
                 }
             }
         }
+    }
+}
+
+/**
+ * Builds year range text for TV shows.
+ * Examples: "2024", "2020-2024", "2020-Present"
+ */
+private fun buildYearRangeText(startYear: Int?, endYear: Int?, status: String?): String {
+    if (startYear == null) return ""
+
+    return when {
+        // Ongoing show (no end year)
+        status == "Continuing" -> "$startYear-Present"
+        // Ended show with different end year
+        endYear != null && endYear != startYear -> "$startYear-$endYear"
+        // Single year or same start/end
+        else -> startYear.toString()
     }
 }

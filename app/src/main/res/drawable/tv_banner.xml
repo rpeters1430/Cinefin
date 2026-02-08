@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="#6200EE" />
-</shape>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+
+    <path
+        android:fillColor="#1A0D2E"
+        android:pathData="M0,0 h320 v180 h-320 z"/>
+
+    <!-- Subtle Egyptian Pattern for TV Banner -->
+    <path
+        android:fillAlpha="0.1"
+        android:fillColor="#FFD700"
+        android:pathData="M160,40 L220,140 L100,140 Z"/>
+
+    <path
+        android:fillAlpha="0.05"
+        android:fillColor="#FFD700"
+        android:pathData="M40,40 h40 v40 h-40 z M240,40 h40 v40 h-40 z M40,100 h40 v40 h-40 z M240,100 h40 v40 h-40 z"/>
+</vector>

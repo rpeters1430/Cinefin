@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -17,10 +18,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
 import com.rpeters.jellyfin.ui.components.immersive.*
+import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -49,7 +52,14 @@ fun ImmersiveTVShowsScreen(
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
 ) {
+    val perfConfig = rememberImmersivePerformanceConfig()
     val listState = rememberLazyListState()
+
+    PerformanceMetricsTracker(
+        enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
+        intervalMs = 30000,
+    )
+
     // Use hero height as threshold to avoid flickering within hero
     val topBarVisible = rememberAutoHideTopBarVisible(
         listState = listState,
@@ -62,24 +72,11 @@ fun ImmersiveTVShowsScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         ImmersiveScaffold(
-            topBarVisible = topBarVisible,
-            topBarTitle = stringResource(id = R.string.tv_shows),
-            topBarNavigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-            },
-            topBarActions = {
-                IconButton(onClick = onRefresh, enabled = !isLoading) {
-                    if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                    } else {
-                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh", tint = SeriesBlue)
-                    }
-                }
-            },
-            topBarTranslucent = true,
+            topBarVisible = false,
+            topBarTitle = "",
+            topBarTranslucent = false,
             floatingActionButton = {
+                // ✅ Removed non-functional Filter button, keeping only Search
                 FloatingActionGroup(
                     orientation = FabOrientation.Vertical,
                     primaryAction = FabAction(
@@ -87,13 +84,7 @@ fun ImmersiveTVShowsScreen(
                         contentDescription = "Search",
                         onClick = onSearchClick,
                     ),
-                    secondaryActions = listOf(
-                        FabAction(
-                            icon = Icons.Default.Tune,
-                            contentDescription = "Filter",
-                            onClick = { /* TODO: Show filter dialog */ },
-                        ),
-                    ),
+                    secondaryActions = emptyList(), // ✅ Removed TODO Filter button
                 )
             },
         ) { paddingValues ->
@@ -169,6 +160,43 @@ fun ImmersiveTVShowsScreen(
                         }
                     }
                 }
+            }
+        }
+
+        // Floating Header Controls (Back and Settings)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            // Back Button
+            Surface(
+                onClick = onBackClick,
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(12.dp).size(24.dp),
+                )
+            }
+
+            // Settings Icon
+            Surface(
+                onClick = { /* TODO: Add settings action */ },
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(12.dp).size(24.dp),
+                )
             }
         }
     }

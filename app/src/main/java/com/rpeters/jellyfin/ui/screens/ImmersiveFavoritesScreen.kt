@@ -45,10 +45,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
 import com.rpeters.jellyfin.ui.components.immersive.ParallaxHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -76,7 +78,13 @@ fun ImmersiveFavoritesScreen(
     onItemClick: (BaseItemDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val perfConfig = rememberImmersivePerformanceConfig()
     val gridState = rememberLazyStaggeredGridState()
+
+    PerformanceMetricsTracker(
+        enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
+        intervalMs = 30000,
+    )
 
     // Auto-hide FABs when scrolling down
     val showFabs by remember {
@@ -164,7 +172,7 @@ fun ImmersiveFavoritesScreen(
                     }
                     else -> {
                         // Favorites grid (skip hero item to avoid duplication)
-                        val gridItems = if (heroItem != null) favorites.drop(1) else favorites
+                        val gridItems = (if (heroItem != null) favorites.drop(1) else favorites).take(perfConfig.maxGridItems)
                         items(
                             items = gridItems,
                             key = { it.getItemKey() },

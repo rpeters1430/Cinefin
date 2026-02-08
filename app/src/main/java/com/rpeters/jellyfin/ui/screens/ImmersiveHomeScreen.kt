@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -122,48 +123,10 @@ fun ImmersiveHomeScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         ImmersiveScaffold(
-            // Auto-hiding top bar with translucent background
-            topBarVisible = topBarVisible,
-            topBarTitle = currentServer?.name ?: stringResource(id = R.string.app_name),
-            topBarNavigationIcon = if (showBackButton) {
-                {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
-                }
-            } else {
-                {}
-            },
-            topBarActions = {
-                IconButton(
-                    onClick = onRefresh,
-                    enabled = !appState.isLoading,
-                ) {
-                    if (appState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp,
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh",
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-                IconButton(onClick = onSettingsClick) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = stringResource(id = R.string.settings),
-                        tint = MaterialTheme.colorScheme.tertiary,
-                    )
-                }
-            },
-            topBarTranslucent = true,
+            // No top bar - using floating settings icon instead
+            topBarVisible = false,
+            topBarTitle = "",
+            topBarTranslucent = false,
             // Show bottom bar with mini player
             bottomBarVisible = false, // Using MiniPlayer outside scaffold
             // Floating action group
@@ -227,6 +190,24 @@ fun ImmersiveHomeScreen(
                     MiniPlayer(onExpandClick = onNowPlayingClick)
                 }
             }
+        }
+
+        // Floating Settings Icon (top-right)
+        Surface(
+            onClick = onSettingsClick,
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = stringResource(id = R.string.settings),
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(12.dp).size(24.dp),
+            )
         }
 
         // Snackbar host outside scaffold
@@ -471,16 +452,16 @@ private fun ImmersiveHomeContent(
                 }
             }
 
-            // Recently Added Stuff (home videos, etc - larger horizontal cards)
+            // Recently Added Stuff (home videos, etc - vertical cards like other sections)
             if (contentLists.recentVideos.isNotEmpty()) {
-                item(key = "recent_stuff", contentType = "immersive_row_large") {
+                item(key = "recent_stuff", contentType = "immersive_row") {
                     ImmersiveMediaRow(
                         title = stringResource(id = R.string.home_recently_added_stuff),
                         items = contentLists.recentVideos,
-                        getImageUrl = { getBackdropUrl(it) ?: getImageUrl(it) },
+                        getImageUrl = getImageUrl, // Use poster image for vertical cards
                         onItemClick = stableOnItemClick,
                         onItemLongPress = stableOnItemLongPress,
-                        size = ImmersiveCardSize.LARGE,
+                        size = ImmersiveCardSize.MEDIUM, // ✅ Changed to MEDIUM for vertical cards
                     )
                 }
             }

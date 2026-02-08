@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,9 +31,12 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.Hd
+import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.Sd
 import androidx.compose.material.icons.rounded.OpenInBrowser
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.Person
@@ -78,10 +82,13 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
+import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
-import com.rpeters.jellyfin.ui.components.immersive.ParallaxHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
 import com.rpeters.jellyfin.ui.theme.Quality1440
@@ -122,6 +129,7 @@ fun ImmersiveMovieDetailScreen(
     serverUrl: String? = null,
     modifier: Modifier = Modifier,
 ) {
+    val perfConfig = rememberImmersivePerformanceConfig()
     var isFavorite by remember { mutableStateOf(movie.userData?.isFavorite == true) }
     var isWatched by remember { mutableStateOf(movie.userData?.played == true) }
     var selectedSubtitleIndex by remember { mutableStateOf<Int?>(null) }
@@ -129,19 +137,118 @@ fun ImmersiveMovieDetailScreen(
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    // Track scroll state for parallax effect
+    PerformanceMetricsTracker(
+        enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
+        intervalMs = 30000,
+    )
+
+    // Track scroll state (for future animations if needed)
     val listState = rememberLazyListState()
-    val scrollOffset by remember {
-        derivedStateOf {
-            if (listState.firstVisibleItemIndex == 0) {
-                listState.firstVisibleItemScrollOffset / ImmersiveDimens.HeroHeightPhone.value
-            } else {
-                1f
-            }
-        }
-    }
 
     Box(modifier = modifier.fillMaxSize()) {
+        // Static Hero Background (doesn't scroll)
+        StaticHeroSection(
+            imageUrl = getBackdropUrl(movie),
+            height = ImmersiveDimens.HeroHeightPhone,
+            contentScale = ContentScale.Crop,
+        ) {
+            // Title and metadata overlaid on hero with gradient
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // Logo or Title
+                val logoUrl = getLogoUrl(movie)
+                if (!logoUrl.isNullOrBlank()) {
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(logoUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = movie.name,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .height(120.dp)
+                            .fillMaxWidth(0.8f),
+                    )
+                } else {
+                    Text(
+                        text = movie.name ?: stringResource(R.string.unknown),
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+
+                // Metadata Row (Rating, Year, Runtime) - with proper spacing
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    val ratingBadges = remember(movie) { buildRatingBadges(movie) }
+                    if (ratingBadges.isNotEmpty()) {
+                        ratingBadges.forEach { rating ->
+                            ExternalRatingBadge(
+                                source = rating.source,
+                                value = rating.value,
+                            )
+                        }
+                    }
+
+                    // Official Rating Badge
+                    movie.officialRating?.let { rating ->
+                        val normalizedRating = normalizeOfficialRating(rating) ?: return@let
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color.White.copy(alpha = 0.2f),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+                        ) {
+                            Text(
+                                text = normalizedRating,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
+                        }
+                    }
+
+                    // Year
+                    movie.productionYear?.let { year ->
+                        Text(
+                            text = year.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.9f),
+                        )
+                    }
+
+                    // Runtime
+                    movie.runTimeTicks?.let { ticks ->
+                        val minutes = (ticks / 10_000_000 / 60).toInt()
+                        val hours = minutes / 60
+                        val remainingMinutes = minutes % 60
+                        val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
+
+                        Text(
+                            text = runtime,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.9f),
+                        )
+                    }
+                }
+            }
+        }
+
+        // Scrollable Content Layer
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = onRefresh,
@@ -150,114 +257,20 @@ fun ImmersiveMovieDetailScreen(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    top = ImmersiveDimens.HeroHeightPhone, // Start content below hero
+                ),
             ) {
-                // Parallax Hero Section with Overlaid Title/Metadata
-                item {
-                    ParallaxHeroSection(
-                        imageUrl = getBackdropUrl(movie),
-                        scrollOffset = scrollOffset,
-                        height = ImmersiveDimens.HeroHeightPhone,
-                        parallaxFactor = 0.5f,
-                        contentScale = ContentScale.Crop,
-                    ) {
-                        // Title and metadata overlaid on hero with gradient
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.BottomCenter)
-                                .padding(horizontal = 16.dp)
-                                .padding(bottom = 32.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            // Logo or Title
-                            val logoUrl = getLogoUrl(movie)
-                            if (!logoUrl.isNullOrBlank()) {
-                                SubcomposeAsyncImage(
-                                    model = ImageRequest.Builder(LocalContext.current)
-                                        .data(logoUrl)
-                                        .crossfade(true)
-                                        .build(),
-                                    contentDescription = movie.name,
-                                    contentScale = ContentScale.Fit,
-                                    modifier = Modifier
-                                        .height(120.dp)
-                                        .fillMaxWidth(0.8f),
-                                )
-                            } else {
-                                Text(
-                                    text = movie.name ?: stringResource(R.string.unknown),
-                                    style = MaterialTheme.typography.displaySmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    textAlign = TextAlign.Center,
-                                )
-                            }
-
-                            // Metadata Row (Rating, Year, Runtime)
-                            FlowRow(
-                                horizontalArrangement = Arrangement.Center,
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                val ratingBadges = remember(movie) { buildRatingBadges(movie) }
-                                if (ratingBadges.isNotEmpty()) {
-                                    ratingBadges.forEach { rating ->
-                                        ExternalRatingBadge(
-                                            source = rating.source,
-                                            value = rating.value,
-                                        )
-                                    }
-                                }
-
-                                // Official Rating Badge
-                                movie.officialRating?.let { rating ->
-                                    val normalizedRating = normalizeOfficialRating(rating) ?: return@let
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = Color.White.copy(alpha = 0.2f),
-                                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
-                                    ) {
-                                        Text(
-                                            text = normalizedRating,
-                                            style = MaterialTheme.typography.labelLarge,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        )
-                                    }
-                                }
-
-                                // Year
-                                movie.productionYear?.let { year ->
-                                    Text(
-                                        text = year.toString(),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = Color.White.copy(alpha = 0.9f),
-                                    )
-                                }
-
-                                // Runtime
-                                movie.runTimeTicks?.let { ticks ->
-                                    val minutes = (ticks / 10_000_000 / 60).toInt()
-                                    val hours = minutes / 60
-                                    val remainingMinutes = minutes % 60
-                                    val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
-
-                                    Text(
-                                        text = runtime,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = Color.White.copy(alpha = 0.9f),
-                                    )
-                                }
-                            }
-                        }
-                    }
+                // ✅ Solid background spacer to cover hero when scrolled
+                item(key = "background_spacer") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(MaterialTheme.colorScheme.background)
+                    )
                 }
-
-                // Overview and AI Summary Section
+                // Overview and AI Summary Section (first scrollable item)
                 item {
                     Column(
                         modifier = Modifier
@@ -266,17 +279,22 @@ fun ImmersiveMovieDetailScreen(
                             .padding(horizontal = 16.dp)
                             .padding(top = 16.dp, bottom = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         movie.overview?.let { overview ->
                             if (overview.isNotBlank()) {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
                                     Text(
                                         text = overview,
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
-                                        maxLines = 4,
+                                        maxLines = 3,
                                         overflow = TextOverflow.Ellipsis,
                                         lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.3,
+                                        textAlign = TextAlign.Center,
                                     )
 
                                     // AI Summary button and result
@@ -460,7 +478,7 @@ fun ImmersiveMovieDetailScreen(
                             LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
-                                items(genres, key = { it }) { genre ->
+                                items(genres.take(perfConfig.maxRowItems), key = { it }) { genre ->
                                     Surface(
                                         shape = RoundedCornerShape(20.dp),
                                         color = JellyfinTeal80.copy(alpha = 0.15f),
@@ -496,21 +514,21 @@ fun ImmersiveMovieDetailScreen(
                                 fontWeight = FontWeight.Bold,
                             )
 
-                            LazyRow(
+                            PerformanceOptimizedLazyRow(
+                                items = relatedItems,
                                 horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
-                            ) {
-                                items(relatedItems.take(10), key = { it.id.toString() }) { relatedMovie ->
-                                    ImmersiveMediaCard(
-                                        title = relatedMovie.name ?: stringResource(id = R.string.unknown),
-                                        subtitle = relatedMovie.productionYear?.toString() ?: "",
-                                        imageUrl = getImageUrl(relatedMovie) ?: "",
-                                        rating = relatedMovie.communityRating,
-                                        onCardClick = {
-                                            onRelatedMovieClick(relatedMovie.id.toString())
-                                        },
-                                        cardSize = ImmersiveCardSize.SMALL,
-                                    )
-                                }
+                                maxVisibleItems = perfConfig.maxRowItems,
+                            ) { relatedMovie, _, _ ->
+                                ImmersiveMediaCard(
+                                    title = relatedMovie.name ?: stringResource(id = R.string.unknown),
+                                    subtitle = relatedMovie.productionYear?.toString() ?: "",
+                                    imageUrl = getImageUrl(relatedMovie) ?: "",
+                                    rating = relatedMovie.communityRating,
+                                    onCardClick = {
+                                        onRelatedMovieClick(relatedMovie.id.toString())
+                                    },
+                                    cardSize = ImmersiveCardSize.SMALL,
+                                )
                             }
                         }
                     }
@@ -1080,6 +1098,8 @@ private fun ImmersiveCastAndCrewSection(
     getPersonImageUrl: (org.jellyfin.sdk.model.api.BaseItemPerson) -> String?,
     modifier: Modifier = Modifier,
 ) {
+    val perfConfig = rememberImmersivePerformanceConfig()
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -1148,7 +1168,7 @@ private fun ImmersiveCastAndCrewSection(
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
                 ) {
-                    items(cast.take(15), key = { it.id.toString() }) { person ->
+                    items(cast.take(perfConfig.maxRowItems), key = { it.id.toString() }) { person ->
                         CastMemberCard(
                             person = person,
                             imageUrl = getPersonImageUrl(person),
@@ -1190,7 +1210,7 @@ private fun ImmersiveVideoInfoRow(
     label: String,
     codec: String?,
     icon: ImageVector,
-    resolutionBadge: Pair<String, Color>? = null,
+    resolutionBadge: Triple<ImageVector, String, Color>? = null,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -1240,19 +1260,20 @@ private fun ImmersiveVideoInfoRow(
                     )
                 }
 
-                // Quality badge (4K, FHD, HD, SD)
-                resolutionBadge?.let { (text, color) ->
+                // Quality badge (4K, FHD, HD, SD) - Using Material Symbols icons
+                resolutionBadge?.let { (icon, label, color) ->
                     Surface(
                         shape = RoundedCornerShape(6.dp),
                         color = color,
                         modifier = Modifier,
                     ) {
-                        Text(
-                            text = text,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = "$label quality",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .padding(horizontal = 6.dp, vertical = 4.dp)
+                                .size(20.dp),
                         )
                     }
                 }
@@ -1358,16 +1379,16 @@ private fun getResolutionIcon(width: Int?, height: Int?): ImageVector {
     return Icons.Rounded.Movie
 }
 
-private fun getResolutionBadge(width: Int?, height: Int?): Pair<String, Color>? {
+private fun getResolutionBadge(width: Int?, height: Int?): Triple<ImageVector, String, Color>? {
     val w = width ?: 0
     val h = height ?: 0
 
     return when {
-        h >= 2160 || w >= 3840 -> "4K" to Quality4K
-        h >= 1440 || w >= 2560 -> "1440p" to Quality1440
-        h >= 1080 || w >= 1920 -> "FHD" to QualityHD
-        h >= 720 || w >= 1280 -> "HD" to QualityHD
-        h > 0 -> "SD" to QualitySD
+        h >= 2160 || w >= 3840 -> Triple(Icons.Rounded.HighQuality, "4K", Quality4K) // ✅ Use HighQuality for 4K
+        h >= 1440 || w >= 2560 -> Triple(Icons.Rounded.HighQuality, "1440p", Quality1440)
+        h >= 1080 || w >= 1920 -> Triple(Icons.Rounded.Hd, "FHD", QualityHD)
+        h >= 720 || w >= 1280 -> Triple(Icons.Rounded.Hd, "HD", QualityHD)
+        h > 0 -> Triple(Icons.Rounded.Sd, "SD", QualitySD)
         else -> null
     }
 }

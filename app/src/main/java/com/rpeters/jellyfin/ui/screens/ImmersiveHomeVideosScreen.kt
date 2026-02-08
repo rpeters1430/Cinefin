@@ -23,6 +23,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.data.models.HomeVideoFilter
 import com.rpeters.jellyfin.data.models.HomeVideoSortOrder
 import com.rpeters.jellyfin.data.models.HomeVideoViewMode
@@ -30,7 +31,9 @@ import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
+import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyGrid
 import com.rpeters.jellyfin.ui.components.immersive.*
+import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.PhotoYellow
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -55,6 +58,13 @@ fun ImmersiveHomeVideosScreen(
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
 ) {
+    val perfConfig = rememberImmersivePerformanceConfig()
+
+    PerformanceMetricsTracker(
+        enabled = BuildConfig.DEBUG,
+        intervalMs = 30000,
+    )
+
     if (BuildConfig.DEBUG) {
         SecureLogger.d("ImmersiveHomeVideosScreen", "Screen started")
     }
@@ -306,7 +316,7 @@ fun ImmersiveHomeVideosScreen(
 
                                     // Video Grid
                                     items(
-                                        items = filteredAndSortedVideos,
+                                        items = filteredAndSortedVideos.take(perfConfig.maxGridItems),
                                         key = { it.id.toString() },
                                     ) { video ->
                                         ImmersiveMediaCard(
