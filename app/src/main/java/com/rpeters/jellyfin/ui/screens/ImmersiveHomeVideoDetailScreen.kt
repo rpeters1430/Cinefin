@@ -77,61 +77,13 @@ fun ImmersiveHomeVideoDetailScreen(
     )
 
     Box(modifier = modifier.fillMaxSize()) {
-        // ✅ Static Hero Background (doesn't scroll)
+        // ✅ Static Hero Background (Fixed)
         StaticHeroSection(
             imageUrl = getBackdropUrl(item),
             height = ImmersiveDimens.HeroHeightPhone,
             contentScale = ContentScale.Crop,
-        ) {
-            // Title and metadata overlaid on gradient at bottom
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
-                    .padding(bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.Start,
-            ) {
-                Text(
-                    text = item.name ?: "Home Video",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                // Metadata row
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    item.productionYear?.let { year ->
-                        Text(
-                            text = year.toString(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White.copy(alpha = 0.9f),
-                        )
-                    }
-
-                    item.runTimeTicks?.let { ticks ->
-                        val duration = item.getFormattedDuration()
-                        duration?.let {
-                            Text(
-                                text = it,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = Color.White.copy(alpha = 0.9f),
-                            )
-                        }
-                    }
-
-                    playbackAnalysis?.let { analysis ->
-                        PlaybackStatusBadge(analysis = analysis)
-                    }
-                }
-            }
-        }
+            content = {} // Content moved to LazyColumn
+        )
 
         // ✅ Scrollable Content Layer
         PullToRefreshBox(
@@ -143,10 +95,17 @@ fun ImmersiveHomeVideoDetailScreen(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
-                    top = ImmersiveDimens.HeroHeightPhone, // ✅ Start below hero
                     bottom = 16.dp,
                 ),
             ) {
+                // Home Video Hero Content (Title, Metadata) - Now scrolls
+                item(key = "hero_content") {
+                    HomeVideoHeroContent(
+                        item = item,
+                        playbackAnalysis = playbackAnalysis,
+                    )
+                }
+
                 // ✅ Solid background spacer to cover hero when scrolled
                 item(key = "background_spacer") {
                     Box(
@@ -159,29 +118,31 @@ fun ImmersiveHomeVideoDetailScreen(
 
                 // Large Play Button
                 item(key = "play_button", contentType = "action") {
-                    Button(
-                        onClick = { onPlayClick(item) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
-                            .padding(top = 24.dp)
-                            .height(56.dp),
-                        shape = RoundedCornerShape(ImmersiveDimens.CornerRadiusCinematic),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(28.dp),
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Play",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
+                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                        Button(
+                            onClick = { onPlayClick(item) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
+                                .padding(top = 24.dp)
+                                .height(56.dp),
+                            shape = RoundedCornerShape(ImmersiveDimens.CornerRadiusCinematic),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Play",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
                     }
                 }
 
@@ -190,6 +151,7 @@ fun ImmersiveHomeVideoDetailScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.background)
                             .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
                             .padding(top = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -251,12 +213,14 @@ fun ImmersiveHomeVideoDetailScreen(
 
                 // Technical Details Card
                 item(key = "technical_details", contentType = "details") {
-                    ImmersiveHomeVideoTechnicalDetails(
-                        item = item,
-                        modifier = Modifier
-                            .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
-                            .padding(top = 24.dp),
-                    )
+                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                        ImmersiveHomeVideoTechnicalDetails(
+                            item = item,
+                            modifier = Modifier
+                                .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
+                                .padding(top = 24.dp),
+                        )
+                    }
                 }
             }
         }
@@ -313,6 +277,65 @@ fun ImmersiveHomeVideoDetailScreen(
                     }
                 },
             )
+        }
+    }
+}
+
+@Composable
+private fun HomeVideoHeroContent(
+    item: BaseItemDto,
+    playbackAnalysis: PlaybackCapabilityAnalysis?,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(ImmersiveDimens.HeroHeightPhone)
+            .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
+            .padding(bottom = 32.dp),
+        contentAlignment = Alignment.BottomStart,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.Start,
+        ) {
+            Text(
+                text = item.name ?: "Home Video",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            // Metadata row
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                item.productionYear?.let { year ->
+                    Text(
+                        text = year.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White.copy(alpha = 0.9f),
+                    )
+                }
+
+                item.runTimeTicks?.let { ticks ->
+                    val duration = item.getFormattedDuration()
+                    duration?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.9f),
+                        )
+                    }
+                }
+
+                playbackAnalysis?.let { analysis ->
+                    PlaybackStatusBadge(analysis = analysis)
+                }
+            }
         }
     }
 }

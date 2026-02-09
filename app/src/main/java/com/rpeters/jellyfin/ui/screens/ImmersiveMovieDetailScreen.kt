@@ -145,109 +145,15 @@ fun ImmersiveMovieDetailScreen(
     val listState = rememberLazyListState()
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Static Hero Background (doesn't scroll)
+        // 1. Static Hero Background (Fixed)
         StaticHeroSection(
             imageUrl = getBackdropUrl(movie),
             height = ImmersiveDimens.HeroHeightPhone,
             contentScale = ContentScale.Crop,
-        ) {
-            // Title and metadata overlaid on hero with gradient
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                // Logo or Title
-                val logoUrl = getLogoUrl(movie)
-                if (!logoUrl.isNullOrBlank()) {
-                    SubcomposeAsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(logoUrl)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = movie.name,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .height(120.dp)
-                            .fillMaxWidth(0.8f),
-                    )
-                } else {
-                    Text(
-                        text = movie.name ?: stringResource(R.string.unknown),
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center,
-                    )
-                }
+            content = {} // Content moved to LazyColumn
+        )
 
-                // Metadata Row (Rating, Year, Runtime) - with proper spacing
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    val ratingBadges = remember(movie) { buildRatingBadges(movie) }
-                    if (ratingBadges.isNotEmpty()) {
-                        ratingBadges.forEach { rating ->
-                            ExternalRatingBadge(
-                                source = rating.source,
-                                value = rating.value,
-                            )
-                        }
-                    }
-
-                    // Official Rating Badge
-                    movie.officialRating?.let { rating ->
-                        val normalizedRating = normalizeOfficialRating(rating) ?: return@let
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = Color.White.copy(alpha = 0.2f),
-                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
-                        ) {
-                            Text(
-                                text = normalizedRating,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            )
-                        }
-                    }
-
-                    // Year
-                    movie.productionYear?.let { year ->
-                        Text(
-                            text = year.toString(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White.copy(alpha = 0.9f),
-                        )
-                    }
-
-                    // Runtime
-                    movie.runTimeTicks?.let { ticks ->
-                        val minutes = (ticks / 10_000_000 / 60).toInt()
-                        val hours = minutes / 60
-                        val remainingMinutes = minutes % 60
-                        val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
-
-                        Text(
-                            text = runtime,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White.copy(alpha = 0.9f),
-                        )
-                    }
-                }
-            }
-        }
-
-        // Scrollable Content Layer
+        // 2. Scrollable Content Layer
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = onRefresh,
@@ -257,9 +163,17 @@ fun ImmersiveMovieDetailScreen(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
-                    top = ImmersiveDimens.HeroHeightPhone, // Start content below hero
+                    bottom = 40.dp,
                 ),
             ) {
+                // Movie Hero Content (Logo, Title, Metadata) - Now scrolls
+                item(key = "hero_content") {
+                    MovieHeroContent(
+                        movie = movie,
+                        getLogoUrl = getLogoUrl,
+                    )
+                }
+
                 // ✅ Solid background spacer to cover hero when scrolled
                 item(key = "background_spacer") {
                     Box(
@@ -269,7 +183,7 @@ fun ImmersiveMovieDetailScreen(
                             .background(MaterialTheme.colorScheme.background),
                     )
                 }
-                // Overview and AI Summary Section (first scrollable item)
+                // Overview and AI Summary Section
                 item {
                     Column(
                         modifier = Modifier
@@ -423,12 +337,14 @@ fun ImmersiveMovieDetailScreen(
 
                 // Movie Info Card (Details)
                 item {
-                    ImmersiveMovieInfoCard(
-                        movie = movie,
-                        getImageUrl = getImageUrl,
-                        selectedSubtitleIndex = selectedSubtitleIndex,
-                        onSubtitleSelect = { selectedSubtitleIndex = it },
-                    )
+                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                        ImmersiveMovieInfoCard(
+                            movie = movie,
+                            getImageUrl = getImageUrl,
+                            selectedSubtitleIndex = selectedSubtitleIndex,
+                            onSubtitleSelect = { selectedSubtitleIndex = it },
+                        )
+                    }
                 }
 
                 // Cast & Crew Section
@@ -448,13 +364,15 @@ fun ImmersiveMovieDetailScreen(
 
                     if (directors.isNotEmpty() || writers.isNotEmpty() || producers.isNotEmpty() || cast.isNotEmpty()) {
                         item {
-                            ImmersiveCastAndCrewSection(
-                                directors = directors,
-                                writers = writers,
-                                producers = producers,
-                                cast = cast,
-                                getPersonImageUrl = getPersonImageUrl,
-                            )
+                            Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                                ImmersiveCastAndCrewSection(
+                                    directors = directors,
+                                    writers = writers,
+                                    producers = producers,
+                                    cast = cast,
+                                    getPersonImageUrl = getPersonImageUrl,
+                                )
+                            }
                         }
                     }
                 }
@@ -465,6 +383,7 @@ fun ImmersiveMovieDetailScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.background)
                                 .padding(horizontal = 16.dp)
                                 .padding(top = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -503,6 +422,7 @@ fun ImmersiveMovieDetailScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.background)
                                 .padding(horizontal = 16.dp)
                                 .padding(top = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -535,7 +455,12 @@ fun ImmersiveMovieDetailScreen(
 
                 // Bottom spacing
                 item {
-                    Spacer(modifier = Modifier.height(40.dp))
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp)
+                            .background(MaterialTheme.colorScheme.background),
+                    )
                 }
             }
         }
@@ -674,6 +599,111 @@ fun ImmersiveMovieDetailScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun MovieHeroContent(
+    movie: BaseItemDto,
+    getLogoUrl: (BaseItemDto) -> String?,
+) {
+    val logoUrl = getLogoUrl(movie)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(ImmersiveDimens.HeroHeightPhone)
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 32.dp),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            // Logo or Title
+            if (!logoUrl.isNullOrBlank()) {
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(logoUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = movie.name,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .height(120.dp)
+                        .fillMaxWidth(0.8f),
+                )
+            } else {
+                Text(
+                    text = movie.name ?: stringResource(R.string.unknown),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                )
+            }
+
+            // Metadata Row (Rating, Year, Runtime) - with proper spacing
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                val ratingBadges = remember(movie) { buildRatingBadges(movie) }
+                if (ratingBadges.isNotEmpty()) {
+                    ratingBadges.forEach { rating ->
+                        ExternalRatingBadge(
+                            source = rating.source,
+                            value = rating.value,
+                        )
+                    }
+                }
+
+                // Official Rating Badge
+                movie.officialRating?.let { rating ->
+                    val normalizedRating = normalizeOfficialRating(rating) ?: return@let
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color.White.copy(alpha = 0.2f),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+                    ) {
+                        Text(
+                            text = normalizedRating,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+
+                // Year
+                movie.productionYear?.let { year ->
+                    Text(
+                        text = year.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White.copy(alpha = 0.9f),
+                    )
+                }
+
+                // Runtime
+                movie.runTimeTicks?.let { ticks ->
+                    val minutes = (ticks / 10_000_000 / 60).toInt()
+                    val hours = minutes / 60
+                    val remainingMinutes = minutes % 60
+                    val runtime = if (hours > 0) "${hours}h ${remainingMinutes}m" else "${minutes}m"
+
+                    Text(
+                        text = runtime,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White.copy(alpha = 0.9f),
+                    )
+                }
+            }
+        }
     }
 }
 

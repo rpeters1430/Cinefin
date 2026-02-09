@@ -187,27 +187,35 @@ private fun ImmersiveShowDetailContent(
     val listState = rememberLazyListState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Static Hero Background (doesn't scroll)
+        // 1. Static Hero Background (Fixed)
         state.seriesDetails?.let { series ->
-            ShowHeroHeader(
-                series = series,
-                getBackdropUrl = getBackdropUrl,
-                getLogoUrl = getLogoUrl,
-                nextEpisode = state.nextEpisode,
-                onPlayEpisode = onPlayEpisode,
-                scrollOffset = 0f, // Static, no parallax
+            StaticHeroSection(
+                imageUrl = getBackdropUrl(series),
+                height = ImmersiveDimens.HeroHeightPhone,
+                content = {} // Content moved to LazyColumn
             )
         }
 
-        // Scrollable Content Layer
+        // 2. Scrollable Layer
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                top = ImmersiveDimens.HeroHeightPhone, // Start below hero
                 bottom = 40.dp,
             ),
         ) {
+            // Hero Content (Logo, Title, Buttons) - Now scrolls
+            item(key = "hero_content") {
+                state.seriesDetails?.let { series ->
+                    ShowHeroContent(
+                        series = series,
+                        getLogoUrl = getLogoUrl,
+                        nextEpisode = state.nextEpisode,
+                        onPlayEpisode = onPlayEpisode,
+                    )
+                }
+            }
+
             // ✅ Solid background spacer to cover hero when scrolled
             item(key = "background_spacer") {
                 Box(
@@ -220,7 +228,9 @@ private fun ImmersiveShowDetailContent(
             // 1. Overview & Metadata (now first scrollable item)
             state.seriesDetails?.let { series ->
                 item {
-                    ShowMetadataSection(series = series)
+                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                        ShowMetadataSection(series = series)
+                    }
                 }
             }
 
@@ -231,7 +241,10 @@ private fun ImmersiveShowDetailContent(
                         text = "Seasons",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.background)
+                            .padding(horizontal = 16.dp, vertical = 16.dp),
                     )
                 }
 
@@ -239,31 +252,35 @@ private fun ImmersiveShowDetailContent(
                     val seasonId = season.id.toString()
                     val isExpanded = seasonId != null && expandedSeasonId == seasonId
 
-                    SeasonItem(
-                        season = season,
-                        isExpanded = isExpanded,
-                        episodes = seasonId?.let { state.episodesBySeasonId[it] }.orEmpty(),
-                        isLoadingEpisodes = seasonId != null && seasonId in state.loadingSeasonIds,
-                        getImageUrl = getImageUrl,
-                        onExpand = {
-                            if (seasonId != null) {
-                                expandedSeasonId = if (isExpanded) null else seasonId
-                                if (!isExpanded) onSeasonExpand(seasonId)
-                            }
-                        },
-                        onEpisodeClick = onEpisodeClick,
-                    )
+                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                        SeasonItem(
+                            season = season,
+                            isExpanded = isExpanded,
+                            episodes = seasonId?.let { state.episodesBySeasonId[it] }.orEmpty(),
+                            isLoadingEpisodes = seasonId != null && seasonId in state.loadingSeasonIds,
+                            getImageUrl = getImageUrl,
+                            onExpand = {
+                                if (seasonId != null) {
+                                    expandedSeasonId = if (isExpanded) null else seasonId
+                                    if (!isExpanded) onSeasonExpand(seasonId)
+                                }
+                            },
+                            onEpisodeClick = onEpisodeClick,
+                        )
+                    }
                 }
             }
 
             // 4. Cast & Crew
             state.seriesDetails?.people?.takeIf { it.isNotEmpty() }?.let { people ->
                 item {
-                    ImmersiveCastSection(
-                        people = people,
-                        getImageUrl = getImageUrl,
-                        modifier = Modifier.padding(top = 24.dp),
-                    )
+                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                        ImmersiveCastSection(
+                            people = people,
+                            getImageUrl = getImageUrl,
+                            modifier = Modifier.padding(top = 24.dp),
+                        )
+                    }
                 }
             }
 
@@ -273,6 +290,7 @@ private fun ImmersiveShowDetailContent(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.background)
                             .padding(horizontal = 16.dp)
                             .padding(top = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -311,27 +329,24 @@ private fun ImmersiveShowDetailContent(
 }
 
 @Composable
-private fun ShowHeroHeader(
+private fun ShowHeroContent(
     series: BaseItemDto,
-    getBackdropUrl: (BaseItemDto) -> String?,
     getLogoUrl: (BaseItemDto) -> String?,
     nextEpisode: BaseItemDto?,
     onPlayEpisode: (BaseItemDto) -> Unit,
-    scrollOffset: Float,
 ) {
-    val backdropUrl = getBackdropUrl(series) ?: ""
     val logoUrl = getLogoUrl(series)
 
-    StaticHeroSection(
-        imageUrl = backdropUrl,
-        height = ImmersiveDimens.HeroHeightPhone,
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(ImmersiveDimens.HeroHeightPhone)
+            .padding(16.dp)
+            .padding(bottom = 32.dp),
+        contentAlignment = Alignment.BottomCenter,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
-                .padding(bottom = 32.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
