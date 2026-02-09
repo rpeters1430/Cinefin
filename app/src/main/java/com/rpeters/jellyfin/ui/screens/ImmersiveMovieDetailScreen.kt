@@ -150,7 +150,7 @@ fun ImmersiveMovieDetailScreen(
             imageUrl = getBackdropUrl(movie),
             height = ImmersiveDimens.HeroHeightPhone,
             contentScale = ContentScale.Crop,
-            content = {} // Content moved to LazyColumn
+            content = {}, // Content moved to LazyColumn
         )
 
         // 2. Scrollable Content Layer
