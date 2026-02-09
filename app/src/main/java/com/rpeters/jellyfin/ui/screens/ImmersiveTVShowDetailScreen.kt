@@ -192,7 +192,7 @@ private fun ImmersiveShowDetailContent(
             StaticHeroSection(
                 imageUrl = getBackdropUrl(series),
                 height = ImmersiveDimens.HeroHeightPhone,
-                content = {} // Content moved to LazyColumn
+                content = {}, // Content moved to LazyColumn
             )
         }
 
