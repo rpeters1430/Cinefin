@@ -28,8 +28,8 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.*
 import com.rpeters.jellyfin.ui.components.immersive.*
-import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
+import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
@@ -84,7 +84,7 @@ fun ImmersiveTVEpisodeDetailScreen(
             imageUrl = heroImage.takeIf { it.isNotBlank() },
             height = ImmersiveDimens.HeroHeightPhone,
             contentScale = ContentScale.Crop,
-            content = {} // Content moved to LazyColumn
+            content = {}, // Content moved to LazyColumn
         )
 
         // Scrollable Content Layer
