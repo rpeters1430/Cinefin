@@ -41,6 +41,8 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
         val resolution: String,
         val needsTranscoding: Boolean,
         val transcodingReasons: List<String>,
+        val item: BaseItemDto, // Full item for navigation
+        val itemType: String, // "Movie" or "Episode"
     )
 
     fun loadLibraryVideos() {
@@ -95,6 +97,7 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
                 analyzeVideo(item)
             }.sortedWith(
                 compareByDescending<VideoAnalysis> { it.needsTranscoding }
+                    .thenBy { it.itemType } // Group Movies and Episodes
                     .thenBy { it.name },
             )
 
@@ -105,6 +108,7 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
     private fun analyzeVideo(item: BaseItemDto): VideoAnalysis? {
         val name = item.name ?: "Unknown"
         val id = item.id.toString()
+        val itemType = item.type?.name ?: "Unknown"
 
         val mediaSource = item.mediaSources?.firstOrNull()
         val videoStream = mediaSource?.mediaStreams?.find { it.type == MediaStreamType.VIDEO }
@@ -136,6 +140,8 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
             resolution = buildResolutionString(videoStream),
             needsTranscoding = !analysis.canDirectPlay,
             transcodingReasons = analysis.issues,
+            item = item,
+            itemType = itemType,
         )
     }
 

@@ -41,6 +41,7 @@ class DeviceCapabilities @Inject constructor(
     private var supportedAudioCodecs: Set<String>? = null
     private var maxResolution: Pair<Int, Int>? = null
     private var hdrSupported: Boolean? = null
+    private var totalRAM: Long? = null
 
     /**
      * Check if the device can directly play a given media format
@@ -643,9 +644,11 @@ class DeviceCapabilities @Inject constructor(
     }
 
     /**
-     * Get total device RAM (approximate)
+     * Get total device RAM (approximate) - cached to prevent repeated detection
      */
     private fun getTotalRAM(): Long {
+        totalRAM?.let { return it }
+
         return try {
             val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
             val memInfo = android.app.ActivityManager.MemoryInfo()
@@ -654,13 +657,16 @@ class DeviceCapabilities @Inject constructor(
             val totalMemory = memInfo.totalMem
             SecureLogger.d(TAG, "Detected total RAM: ${totalMemory / 1_000_000L}MB")
 
-            if (totalMemory > 0) {
+            val result = if (totalMemory > 0) {
                 totalMemory
             } else {
                 // Fallback for devices that don't expose memory info
                 SecureLogger.w(TAG, "Could not detect RAM, using fallback")
                 4_000_000_000L // 4GB assumption for modern devices
             }
+
+            totalRAM = result
+            result
         } catch (e: CancellationException) {
             throw e
         }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +20,7 @@ import com.rpeters.jellyfin.ui.viewmodel.TranscodingDiagnosticsViewModel
 @Composable
 fun TranscodingDiagnosticsScreen(
     onNavigateBack: () -> Unit,
+    onItemClick: (org.jellyfin.sdk.model.api.BaseItemDto) -> Unit = {},
     viewModel: TranscodingDiagnosticsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -85,7 +87,10 @@ fun TranscodingDiagnosticsScreen(
 
                     // Video list
                     items(state.videos) { video ->
-                        VideoAnalysisCard(video)
+                        VideoAnalysisCard(
+                            video = video,
+                            onClick = { onItemClick(video.item) },
+                        )
                     }
                 }
             }
@@ -158,8 +163,12 @@ private fun LegendCard() {
 }
 
 @Composable
-private fun VideoAnalysisCard(video: TranscodingDiagnosticsViewModel.VideoAnalysis) {
+private fun VideoAnalysisCard(
+    video: TranscodingDiagnosticsViewModel.VideoAnalysis,
+    onClick: () -> Unit = {},
+) {
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = if (video.needsTranscoding) {
@@ -181,25 +190,42 @@ private fun VideoAnalysisCard(video: TranscodingDiagnosticsViewModel.VideoAnalys
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    video.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f),
-                )
-                Surface(
-                    color = if (video.needsTranscoding) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.tertiary
-                    },
-                    shape = MaterialTheme.shapes.small,
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        if (video.needsTranscoding) "TRANSCODE" else "DIRECT PLAY",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        video.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        video.itemType,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onError,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Surface(
+                        color = if (video.needsTranscoding) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.tertiary
+                        },
+                        shape = MaterialTheme.shapes.small,
+                    ) {
+                        Text(
+                            if (video.needsTranscoding) "TRANSCODE" else "DIRECT PLAY",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onError,
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "View details",
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
@@ -225,8 +251,8 @@ private fun VideoAnalysisCard(video: TranscodingDiagnosticsViewModel.VideoAnalys
                 }
             }
 
-            // Reasons for transcoding
-            if (video.transcodingReasons.isNotEmpty()) {
+            // Reasons for transcoding (only show if transcoding is needed)
+            if (video.needsTranscoding && video.transcodingReasons.isNotEmpty()) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 Text(
                     "Why transcoding needed:",

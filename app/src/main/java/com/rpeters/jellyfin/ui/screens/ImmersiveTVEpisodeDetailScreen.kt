@@ -29,6 +29,7 @@ import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.*
 import com.rpeters.jellyfin.ui.components.immersive.*
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
+import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
@@ -73,111 +74,131 @@ fun ImmersiveTVEpisodeDetailScreen(
         intervalMs = 30000,
     )
 
-    val scrollOffset by remember {
-        derivedStateOf {
-            if (listState.firstVisibleItemIndex == 0) {
-                listState.firstVisibleItemScrollOffset / ImmersiveDimens.HeroHeightPhone.value
-            } else {
-                1f
-            }
-        }
-    }
+    val heroImage = getBackdropUrl(episode).takeIf { !it.isNullOrBlank() }
+        ?: seriesInfo?.let { getBackdropUrl(it) }
+        ?: getImageUrl(episode).orEmpty()
 
     Box(modifier = modifier.fillMaxSize()) {
+        // Static Hero Background (Fixed - doesn't scroll)
+        StaticHeroSection(
+            imageUrl = heroImage.takeIf { it.isNotBlank() },
+            height = ImmersiveDimens.HeroHeightPhone,
+            contentScale = ContentScale.Crop,
+            content = {} // Content moved to LazyColumn
+        )
+
+        // Scrollable Content Layer
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 40.dp),
         ) {
-            // 1. Parallax Hero Header
-            item {
-                EpisodeHeroHeader(
+            // 1. Hero Content (overlays hero initially, scrolls away)
+            item(key = "hero_content") {
+                EpisodeHeroContent(
                     episode = episode,
                     seriesInfo = seriesInfo,
-                    getImageUrl = getImageUrl,
-                    getBackdropUrl = getBackdropUrl,
                     onPlayClick = { onPlayClick(episode, null) },
-                    scrollOffset = scrollOffset,
+                )
+            }
+
+            // Background spacer to cover hero when scrolled
+            item(key = "background_spacer") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.background),
                 )
             }
 
             // 2. Overview & AI Summary
-            item {
-                EpisodeOverviewSection(
-                    episode = episode,
-                    onGenerateAiSummary = onGenerateAiSummary,
-                    aiSummary = aiSummary,
-                    isLoadingAiSummary = isLoadingAiSummary,
-                    playbackAnalysis = playbackAnalysis,
-                )
+            item(key = "overview") {
+                Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                    EpisodeOverviewSection(
+                        episode = episode,
+                        onGenerateAiSummary = onGenerateAiSummary,
+                        aiSummary = aiSummary,
+                        isLoadingAiSummary = isLoadingAiSummary,
+                        playbackAnalysis = playbackAnalysis,
+                    )
+                }
             }
 
             // 3. Quick Actions
-            item {
-                EpisodeActionRow(
-                    episode = episode,
-                    onFavoriteClick = { onFavoriteClick(episode) },
-                    onMarkWatchedClick = { onMarkWatchedClick(episode) },
-                    onDownloadClick = { onDownloadClick(episode) },
-                    onShareClick = {
-                        com.rpeters.jellyfin.ui.utils.ShareUtils.shareMedia(context, episode)
-                    },
-                )
+            item(key = "actions") {
+                Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                    EpisodeActionRow(
+                        episode = episode,
+                        onFavoriteClick = { onFavoriteClick(episode) },
+                        onMarkWatchedClick = { onMarkWatchedClick(episode) },
+                        onDownloadClick = { onDownloadClick(episode) },
+                        onShareClick = {
+                            com.rpeters.jellyfin.ui.utils.ShareUtils.shareMedia(context, episode)
+                        },
+                    )
+                }
             }
 
             // 4. Season Context / Navigation
             if (seasonEpisodes.isNotEmpty()) {
-                item {
-                    Text(
-                        text = "More from this Season",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                    )
+                item(key = "season_title") {
+                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                        Text(
+                            text = "More from this Season",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                        )
+                    }
                 }
 
-                item {
-                    PerformanceOptimizedLazyRow(
-                        items = seasonEpisodes,
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        maxVisibleItems = perfConfig.maxRowItems,
-                    ) { item, _, _ ->
-                        val isCurrent = item.id == episode.id
-                        ImmersiveMediaCard(
-                            title = item.name ?: "Episode ${item.indexNumber}",
-                            subtitle = "Episode ${item.indexNumber}",
-                            imageUrl = getImageUrl(item) ?: "",
-                            onCardClick = { if (!isCurrent) onEpisodeClick(item) },
-                            cardSize = ImmersiveCardSize.SMALL,
-                            isWatched = item.isWatched(),
-                            modifier = Modifier.width(200.dp).then(
-                                if (isCurrent) {
-                                    Modifier.background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                                } else {
-                                    Modifier
-                                },
-                            ),
-                        )
+                item(key = "season_episodes") {
+                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                        PerformanceOptimizedLazyRow(
+                            items = seasonEpisodes,
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            maxVisibleItems = perfConfig.maxRowItems,
+                        ) { item, _, _ ->
+                            val isCurrent = item.id == episode.id
+                            ImmersiveMediaCard(
+                                title = item.name ?: "Episode ${item.indexNumber}",
+                                subtitle = "Episode ${item.indexNumber}",
+                                imageUrl = getImageUrl(item) ?: "",
+                                onCardClick = { if (!isCurrent) onEpisodeClick(item) },
+                                cardSize = ImmersiveCardSize.SMALL,
+                                isWatched = item.isWatched(),
+                                modifier = Modifier.width(200.dp).then(
+                                    if (isCurrent) {
+                                        Modifier.background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
+                            )
+                        }
                     }
                 }
             }
 
             // 5. Series Info Card
             seriesInfo?.let { series ->
-                item {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Series Info",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 12.dp),
-                        )
-                        SeriesInfoCard(
-                            series = series,
-                            getImageUrl = getImageUrl,
-                            onClick = onViewSeriesClick,
-                        )
+                item(key = "series_info") {
+                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Series Info",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                            )
+                            SeriesInfoCard(
+                                series = series,
+                                getImageUrl = getImageUrl,
+                                onClick = onViewSeriesClick,
+                            )
+                        }
                     }
                 }
             }
@@ -207,28 +228,27 @@ fun ImmersiveTVEpisodeDetailScreen(
 }
 
 @Composable
-private fun EpisodeHeroHeader(
+private fun EpisodeHeroContent(
     episode: BaseItemDto,
     seriesInfo: BaseItemDto?,
-    getImageUrl: (BaseItemDto) -> String?,
-    getBackdropUrl: (BaseItemDto) -> String?,
     onPlayClick: () -> Unit,
-    scrollOffset: Float,
 ) {
-    val heroImage = getBackdropUrl(episode).takeIf { !it.isNullOrBlank() }
-        ?: seriesInfo?.let { getBackdropUrl(it) }
-        ?: getImageUrl(episode).orEmpty()
-
-    ParallaxHeroSection(
-        imageUrl = heroImage.takeIf { it.isNotBlank() },
-        scrollOffset = scrollOffset,
-        height = ImmersiveDimens.HeroHeightPhone,
-        parallaxFactor = 0.5f,
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(ImmersiveDimens.HeroHeightPhone),
     ) {
+        // Gradient overlay for text readability
+        OverlayGradientScrim(
+            modifier = Modifier.fillMaxSize(),
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
+                .statusBarsPadding()
+                .padding(top = 64.dp)
                 .padding(16.dp)
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
