@@ -82,7 +82,7 @@ fun ImmersiveHomeVideoDetailScreen(
             imageUrl = getBackdropUrl(item),
             height = ImmersiveDimens.HeroHeightPhone,
             contentScale = ContentScale.Crop,
-            content = {} // Content moved to LazyColumn
+            content = {}, // Content moved to LazyColumn
         )
 
         // ✅ Scrollable Content Layer
