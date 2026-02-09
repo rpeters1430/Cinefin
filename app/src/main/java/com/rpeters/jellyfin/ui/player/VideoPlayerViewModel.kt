@@ -156,6 +156,10 @@ class VideoPlayerViewModel @Inject constructor(
             )
 
     // MediaRouter callback to detect audio route changes
+    private companion object {
+        private const val ENABLE_DYNAMIC_VIDEO_SCHEDULING_EXPERIMENT = true
+    }
+
     private val mediaRouterCallback = object : MediaRouter.Callback() {
         @Deprecated("Deprecated in MediaRouter")
         override fun onRouteSelected(router: MediaRouter, route: MediaRouter.RouteInfo) {
@@ -809,9 +813,7 @@ class VideoPlayerViewModel @Inject constructor(
                     // Create ExoPlayer with optimized renderer support
                     // Use ON mode for extensions to allow hardware decoders for HEVC/high-res content
                     // while falling back to FFmpeg for unsupported codecs like Vorbis
-                    val renderersFactory = DefaultRenderersFactory(context)
-                        .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
-                        .setEnableDecoderFallback(true) // Enable fallback for codec issues
+                    val renderersFactory = createRenderersFactory()
 
                     // Use OkHttp for all media/subtitle requests to ensure headers (auth, pinning) are applied.
                     // This allows us to remove tokens from URLs while maintaining authentication.
@@ -823,25 +825,13 @@ class VideoPlayerViewModel @Inject constructor(
                         androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
 
                     // Create track selector with adaptive bitrate support
-                    trackSelector = DefaultTrackSelector(context).apply {
-                        // Enable adaptive track selection for better quality switching
-                        setParameters(
-                            buildUponParameters()
-                                .setAllowVideoMixedMimeTypeAdaptiveness(true)
-                                .setAllowVideoNonSeamlessAdaptiveness(true)
-                                .build(),
-                        )
-                    }
+                    trackSelector = createAdaptiveTrackSelector()
 
-                    exoPlayer = ExoPlayer.Builder(context)
-                        .setSeekBackIncrementMs(10_000)
-                        .setSeekForwardIncrementMs(10_000)
-                        .setMediaSourceFactory(mediaSourceFactory)
-                        .setRenderersFactory(renderersFactory)
-                        .setTrackSelector(trackSelector!!)
-                        // Handle video output to ensure proper surface attachment
-                        .setVideoScalingMode(androidx.media3.common.C.VIDEO_SCALING_MODE_SCALE_TO_FIT)
-                        .build()
+                    exoPlayer = createExoPlayer(
+                        mediaSourceFactory = mediaSourceFactory,
+                        renderersFactory = renderersFactory,
+                        trackSelector = trackSelector!!,
+                    )
 
                     // Add listener
                     exoPlayer?.addListener(playerListener)
@@ -992,9 +982,7 @@ class VideoPlayerViewModel @Inject constructor(
             )
 
             withContext(Dispatchers.Main) {
-                val renderersFactory = DefaultRenderersFactory(context)
-                    .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
-                    .setEnableDecoderFallback(true)
+                val renderersFactory = createRenderersFactory()
 
                 val token = repository.getCurrentServer()?.accessToken
                 val httpFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
@@ -1013,23 +1001,13 @@ class VideoPlayerViewModel @Inject constructor(
                 val mediaSourceFactory =
                     androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
 
-                trackSelector = DefaultTrackSelector(context).apply {
-                    setParameters(
-                        buildUponParameters()
-                            .setAllowVideoMixedMimeTypeAdaptiveness(true)
-                            .setAllowVideoNonSeamlessAdaptiveness(true)
-                            .build(),
-                    )
-                }
+                trackSelector = createAdaptiveTrackSelector()
 
-                exoPlayer = ExoPlayer.Builder(context)
-                    .setSeekBackIncrementMs(10_000)
-                    .setSeekForwardIncrementMs(10_000)
-                    .setMediaSourceFactory(mediaSourceFactory)
-                    .setRenderersFactory(renderersFactory)
-                    .setTrackSelector(trackSelector!!)
-                    .setVideoScalingMode(androidx.media3.common.C.VIDEO_SCALING_MODE_SCALE_TO_FIT)
-                    .build()
+                exoPlayer = createExoPlayer(
+                    mediaSourceFactory = mediaSourceFactory,
+                    renderersFactory = renderersFactory,
+                    trackSelector = trackSelector!!,
+                )
 
                 exoPlayer?.addListener(playerListener)
 
@@ -1983,6 +1961,53 @@ class VideoPlayerViewModel @Inject constructor(
                 startPosition = currentPosition,
             )
         }
+    }
+
+    private fun createAdaptiveTrackSelector(): DefaultTrackSelector {
+        return DefaultTrackSelector(context).apply {
+            setParameters(
+                buildUponParameters()
+                    .setAllowVideoMixedMimeTypeAdaptiveness(true)
+                    .setAllowVideoNonSeamlessAdaptiveness(true)
+                    .build(),
+            )
+        }
+    }
+
+    private fun createExoPlayer(
+        mediaSourceFactory: androidx.media3.exoplayer.source.MediaSourceFactory,
+        renderersFactory: DefaultRenderersFactory,
+        trackSelector: DefaultTrackSelector,
+    ): ExoPlayer {
+        return ExoPlayer.Builder(context)
+            .setSeekBackIncrementMs(10_000)
+            .setSeekForwardIncrementMs(10_000)
+            .setMediaSourceFactory(mediaSourceFactory)
+            .setRenderersFactory(renderersFactory)
+            .setTrackSelector(trackSelector)
+            // Handle video output to ensure proper surface attachment
+            .setVideoScalingMode(androidx.media3.common.C.VIDEO_SCALING_MODE_SCALE_TO_FIT)
+            .build()
+    }
+
+    private fun createRenderersFactory(): DefaultRenderersFactory {
+        val factory = DefaultRenderersFactory(context)
+            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+            .setEnableDecoderFallback(true)
+
+        if (ENABLE_DYNAMIC_VIDEO_SCHEDULING_EXPERIMENT) {
+            try {
+                factory.experimentalSetEnableMediaCodecVideoRendererDurationToProgressUs(true)
+                SecureLogger.d("VideoPlayer", "Enabled Media3 dynamic video scheduling experiment")
+            } catch (_: NoSuchMethodError) {
+                SecureLogger.d(
+                    "VideoPlayer",
+                    "Media3 dynamic video scheduling API unavailable on this dependency version",
+                )
+            }
+        }
+
+        return factory
     }
 
     /**
