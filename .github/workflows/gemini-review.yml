@@ -97,4 +97,4 @@ jobs:
                 }
               }
             }
-          prompt: '/gemini-review'
+          prompt: '.github/commands/gemini-review.md'

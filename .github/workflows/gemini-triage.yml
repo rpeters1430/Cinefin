@@ -90,7 +90,7 @@ jobs:
                 "outfile": ".gemini/telemetry.log"
               }
             }
-          prompt: '/gemini-triage'
+          prompt: '.github/commands/gemini-triage.md'
 
   label:
     runs-on: 'ubuntu-latest'
