@@ -74,7 +74,7 @@ class GenerativeAiRepository @Inject constructor(
 
         val systemPrompt = remoteConfig.getString("ai_chat_system_prompt").takeIf { it.isNotBlank() }
             ?: """
-            You are Jellyfin AI Assistant.
+            You are Cinefin AI Assistant.
             Answer the user's request clearly and briefly (max 120 words).
             If recommending media, suggest at most 5 titles.
             """.trimIndent()

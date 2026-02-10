@@ -985,12 +985,11 @@ class JellyfinRepository @Inject constructor(
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
     ): PlaybackInfoResponse {
-        val server = authRepository.getCurrentServer()
-            ?: throw IllegalStateException("No authenticated server available")
+        val server = validateServer()
         val client = sessionManager.getClientForUrl(server.url)
 
         // Create playbook info DTO with direct play enabled
-        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        val userUuid = runCatching { UUID.fromString(server.userId ?: "") }.getOrNull()
             ?: throw IllegalStateException("Invalid user UUID: ${server.userId}")
         val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull()
             ?: throw IllegalArgumentException("Invalid item UUID: $itemId")
@@ -1130,11 +1129,10 @@ class JellyfinRepository @Inject constructor(
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
     ): PlaybackInfoResponse {
-        val server = authRepository.getCurrentServer()
-            ?: throw IllegalStateException("No authenticated server available")
+        val server = validateServer()
         val client = sessionManager.getClientForUrl(server.url)
 
-        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        val userUuid = runCatching { UUID.fromString(server.userId ?: "") }.getOrNull()
             ?: throw IllegalStateException("Invalid user UUID: ${server.userId}")
         val itemUuid = runCatching { UUID.fromString(itemId) }.getOrNull()
             ?: throw IllegalArgumentException("Invalid item UUID: $itemId")

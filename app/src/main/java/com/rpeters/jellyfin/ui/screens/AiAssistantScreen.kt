@@ -89,9 +89,9 @@ fun AiAssistantScreen(
         topBar = {
             ExpressiveTopAppBar(
                 title = if (uiState.isOnDeviceAI) {
-                    "Jellyfin AI Assistant (On-Device)"
+                    "Cinefin AI Assistant (On-Device)"
                 } else {
-                    "Jellyfin AI Assistant"
+                    "Cinefin AI Assistant"
                 },
                 navigationIcon = {
                     ExpressiveBackNavigationIcon(onClick = onBackClick)

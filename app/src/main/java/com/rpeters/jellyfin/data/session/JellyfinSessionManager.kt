@@ -27,8 +27,14 @@ class JellyfinSessionManager @Inject constructor(
 ) {
     private val reauthMutex = Mutex()
 
-    private fun currentServerOrThrow(): JellyfinServer =
-        authRepository.getCurrentServer() ?: throw IllegalStateException("No authenticated server available")
+    private fun currentServerOrThrow(context: String = "Operation"): JellyfinServer {
+        val server = authRepository.getCurrentServer()
+        if (server == null) {
+            Logger.w(LogCategory.NETWORK, "SessionManager", "No authenticated server available for $context")
+            throw IllegalStateException("No authenticated server available for $context")
+        }
+        return server
+    }
 
     /**
      * Returns an ApiClient for the provided server URL, bound to the current token.
@@ -40,7 +46,7 @@ class JellyfinSessionManager @Inject constructor(
     /**
      * Returns an ApiClient for the current authenticated server.
      */
-    suspend fun getClient(): ApiClient = getClientForUrl(currentServerOrThrow().url)
+    suspend fun getClient(): ApiClient = getClientForUrl(currentServerOrThrow("getClient").url)
 
     /**
      * Executes an operation with proactive token validation and a single 401-driven retry.
@@ -53,15 +59,20 @@ class JellyfinSessionManager @Inject constructor(
         if (authRepository.isTokenExpired()) {
             reauthMutex.withLock {
                 if (authRepository.isTokenExpired()) {
-                    Logger.d(LogCategory.NETWORK, "SessionManager", "Token expired, forcing re-authentication")
-                    authRepository.forceReAuthenticate()
+                    Logger.d(LogCategory.NETWORK, "SessionManager", "Token expired for $operationName, forcing re-authentication")
+                    val success = authRepository.forceReAuthenticate()
+                    if (success) {
+                        Logger.i(LogCategory.NETWORK, "SessionManager", "Proactive re-authentication successful for $operationName")
+                    } else {
+                        Logger.w(LogCategory.NETWORK, "SessionManager", "Proactive re-authentication failed for $operationName")
+                    }
                     // Give client cache a moment to rebuild with new token
                     delay(50)
                 }
             }
         }
 
-        val server = currentServerOrThrow()
+        val server = currentServerOrThrow(operationName)
         val client = getClientForUrl(server.url)
 
         return try {
@@ -75,14 +86,19 @@ class JellyfinSessionManager @Inject constructor(
                 val inProgress = authRepository.isAuthenticating.first()
                 if (!inProgress) {
                     Logger.d(LogCategory.NETWORK, "SessionManager", "$operationName: 401 detected, forcing re-authentication")
-                    authRepository.forceReAuthenticate()
+                    val success = authRepository.forceReAuthenticate()
+                    if (success) {
+                        Logger.i(LogCategory.NETWORK, "SessionManager", "Retry re-authentication successful for $operationName")
+                    } else {
+                        Logger.w(LogCategory.NETWORK, "SessionManager", "Retry re-authentication failed for $operationName")
+                    }
                     delay(50)
                 } else {
                     Logger.d(LogCategory.NETWORK, "SessionManager", "$operationName: 401 detected, join ongoing re-auth")
                 }
             }
 
-            val freshServer = currentServerOrThrow()
+            val freshServer = currentServerOrThrow("$operationName (retry)")
             val freshClient = getClientForUrl(freshServer.url)
             block(freshServer, freshClient)
         }

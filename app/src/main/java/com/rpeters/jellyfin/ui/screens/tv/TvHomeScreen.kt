@@ -206,7 +206,7 @@ fun TvHomeHeader(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TvText(
-            text = "Welcome to Jellyfin",
+            text = "Welcome to Cinefin",
             style = TvMaterialTheme.typography.headlineMedium,
             color = TvMaterialTheme.colorScheme.onSurface,
         )

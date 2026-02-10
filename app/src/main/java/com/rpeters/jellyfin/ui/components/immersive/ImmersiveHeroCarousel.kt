@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -81,7 +82,7 @@ fun ImmersiveHeroCarousel(
     modifier: Modifier = Modifier,
     performanceConfig: ImmersivePerformanceConfig = rememberImmersivePerformanceConfig(),
     heroHeight: Dp = ImmersiveDimens.HeroHeightPhone,
-    pageSpacing: Dp = 0.dp,
+    pageSpacing: Dp = 8.dp, // ✅ Added default spacing to prevent bleeding
     autoScrollEnabled: Boolean = true,
     autoScrollIntervalMillis: Long = 15000L,
 ) {
@@ -183,6 +184,7 @@ private fun ImmersiveHeroCard(
     Box(
         modifier = modifier
             .fillMaxSize()
+            .clipToBounds() // ✅ Prevent content bleeding during transitions
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -197,8 +199,7 @@ private fun ImmersiveHeroCard(
             size = ImageSize.BANNER,
             quality = performanceConfig.heroImageQuality, // Adaptive quality
             modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(0.dp)),
+                .fillMaxSize(),
         )
 
         // Strong gradient overlay for text readability
@@ -233,6 +234,7 @@ private fun ImmersiveHeroCard(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
+                .fillMaxWidth() // ✅ Ensure text respects width constraints
                 .padding(
                     start = 32.dp,
                     end = 32.dp,

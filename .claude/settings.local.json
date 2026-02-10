@@ -50,7 +50,8 @@
       "Bash(adb shell:*)",
       "Bash(chmod:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(cmd.exe /c gradlew.bat assembleDebug)"
+      "Bash(cmd.exe /c gradlew.bat assembleDebug)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": [],

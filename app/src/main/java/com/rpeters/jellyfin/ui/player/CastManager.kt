@@ -572,8 +572,10 @@ class CastManager @Inject constructor(
                 mimeType = mimeType,
                 playSessionId = playbackInfo.playSessionId,
             )
-        } catch (e: CancellationException) {
-            throw e
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            SecureLogger.e("CastManager", "Failed to resolve Cast playback data", e)
+            null
         }
     }
 
@@ -637,123 +639,131 @@ class CastManager @Inject constructor(
 
                 // Launch coroutine to resolve playback data using PlaybackInfo API
                 managerScope.launch {
-                    val startTime = System.currentTimeMillis()
+                    try {
+                        val startTime = System.currentTimeMillis()
 
-                    // Get playback data from Jellyfin
-                    // Run on IO dispatcher to avoid blocking main thread
-                    val playbackData = withContext(Dispatchers.IO) {
-                        resolveCastPlaybackData(itemId)
-                    }
-
-                    if (playbackData == null) {
-                        SecureLogger.e("CastManager", "Failed to resolve Cast playback data")
-                        _castState.update { state ->
-                            state.copy(error = "Failed to get stream URL")
+                        // Get playback data from Jellyfin
+                        // Run on IO dispatcher to avoid blocking main thread
+                        val playbackData = withContext(Dispatchers.IO) {
+                            resolveCastPlaybackData(itemId)
                         }
-                        return@launch
-                    }
 
-                    val playbackInfoTime = System.currentTimeMillis() - startTime
-                    if (BuildConfig.DEBUG) {
-                        SecureLogger.d("CastManager", "PlaybackInfo resolved in ${playbackInfoTime}ms")
-                    }
-
-                    // Cast receivers can't use custom headers; URLs must be accessible without tokens.
-                    // Use a local proxy or an unauthenticated endpoint when casting protected media.
-                    val mediaUrl = playbackData.url
-
-                    // Determine stream type
-                    val isLive = item.type == BaseItemKind.TV_CHANNEL || (item.runTimeTicks ?: 0L) <= 0L
-                    val streamType = if (isLive) MediaInfo.STREAM_TYPE_LIVE else MediaInfo.STREAM_TYPE_BUFFERED
-
-                    if (BuildConfig.DEBUG) {
-                        SecureLogger.d(
-                            "CastManager",
-                            "Cast URL: $mediaUrl mimeType=${playbackData.mimeType} streamType=$streamType",
-                        )
-                    }
-
-                    // Build Cast media metadata
-                    val metadata = CastMediaMetadata(CastMediaMetadata.MEDIA_TYPE_MOVIE).apply {
-                        putString(
-                            CastMediaMetadata.KEY_TITLE,
-                            item.name ?: AppResources.getString(R.string.unknown),
-                        )
-                        putString(CastMediaMetadata.KEY_SUBTITLE, item.overview ?: "")
-                        attachCastArtwork(item)
-                    }
-
-                    // Build subtitle tracks for Cast
-                    val tracks = sideLoadedSubs.mapIndexed { idx, sub ->
-                        sub.toCastTrack(idx + 1L)
-                    }
-
-                    // Build media info for Google Default Media Receiver
-                    val mediaInfo = MediaInfo.Builder(mediaUrl)
-                        .setStreamType(streamType)
-                        .setContentType(playbackData.mimeType)
-                        .setMetadata(metadata)
-                        .setMediaTracks(tracks)
-                        .build()
-
-                    // Set pending seek position
-                    if (startPositionMs > 0L) {
-                        pendingSeekPosition = startPositionMs
-                    } else {
-                        pendingSeekPosition = -1L
-                    }
-
-                    // Load media on Cast device
-                    val request = MediaLoadRequestData.Builder()
-                        .setMediaInfo(mediaInfo)
-                        .setAutoplay(true)
-                        .build()
-
-                    Log.i(
-                        "CastManager",
-                        "Cast load (PlaybackInfo): url=$mediaUrl mimeType=${playbackData.mimeType} streamType=$streamType startPos=$startPositionMs",
-                    )
-
-                    val loadStartTime = System.currentTimeMillis()
-                    castSession.remoteMediaClient?.load(request)?.setResultCallback { result ->
-                        val loadTime = System.currentTimeMillis() - loadStartTime
-                        val totalTime = System.currentTimeMillis() - startTime
-                        val status = result.status
-                        Log.i("CastManager", "Cast load result: status=$status statusCode=${status.statusCode} (load took ${loadTime}ms, total ${totalTime}ms)")
-
-                        if (status.isSuccess) {
-                            val rmc = castSession.remoteMediaClient
-                            val mediaStatus = rmc?.mediaStatus
-                            val playerState = mediaStatus?.playerState
-                            Log.i("CastManager", "Cast status after load: playerState=$playerState")
-
-                            // If we have a pending seek and media is ready, seek immediately
-                            if (pendingSeekPosition > 0L && mediaStatus != null) {
-                                when (playerState) {
-                                    MediaStatus.PLAYER_STATE_PLAYING,
-                                    MediaStatus.PLAYER_STATE_PAUSED,
-                                    MediaStatus.PLAYER_STATE_BUFFERING,
-                                    -> {
-                                        val seekOptions = MediaSeekOptions.Builder()
-                                            .setPosition(pendingSeekPosition)
-                                            .setResumeState(MediaSeekOptions.RESUME_STATE_PLAY)
-                                            .build()
-                                        rmc.seek(seekOptions)
-                                        pendingSeekPosition = -1L
-                                    }
-                                }
-                            }
-                        } else {
-                            SecureLogger.e("CastManager", "Cast load failed with status code: ${status.statusCode}")
+                        if (playbackData == null) {
+                            SecureLogger.e("CastManager", "Failed to resolve Cast playback data")
                             _castState.update { state ->
-                                state.copy(error = "Failed to cast media (error ${status.statusCode})")
+                                state.copy(error = "Failed to get stream URL")
                             }
+                            return@launch
+                        }
+
+                        val playbackInfoTime = System.currentTimeMillis() - startTime
+                        if (BuildConfig.DEBUG) {
+                            SecureLogger.d("CastManager", "PlaybackInfo resolved in ${playbackInfoTime}ms")
+                        }
+
+                        // Cast receivers can't use custom headers; URLs must be accessible without tokens.
+                        // Use a local proxy or an unauthenticated endpoint when casting protected media.
+                        val mediaUrl = playbackData.url
+
+                        // Determine stream type
+                        val isLive = item.type == BaseItemKind.TV_CHANNEL || (item.runTimeTicks ?: 0L) <= 0L
+                        val streamType = if (isLive) MediaInfo.STREAM_TYPE_LIVE else MediaInfo.STREAM_TYPE_BUFFERED
+
+                        if (BuildConfig.DEBUG) {
+                            SecureLogger.d(
+                                "CastManager",
+                                "Cast URL: $mediaUrl mimeType=${playbackData.mimeType} streamType=$streamType",
+                            )
+                        }
+
+                        // Build Cast media metadata
+                        val metadata = CastMediaMetadata(CastMediaMetadata.MEDIA_TYPE_MOVIE).apply {
+                            putString(
+                                CastMediaMetadata.KEY_TITLE,
+                                item.name ?: AppResources.getString(R.string.unknown),
+                            )
+                            putString(CastMediaMetadata.KEY_SUBTITLE, item.overview ?: "")
+                            attachCastArtwork(item)
+                        }
+
+                        // Build subtitle tracks for Cast
+                        val tracks = sideLoadedSubs.mapIndexed { idx, sub ->
+                            sub.toCastTrack(idx + 1L)
+                        }
+
+                        // Build media info for Google Default Media Receiver
+                        val mediaInfo = MediaInfo.Builder(mediaUrl)
+                            .setStreamType(streamType)
+                            .setContentType(playbackData.mimeType)
+                            .setMetadata(metadata)
+                            .setMediaTracks(tracks)
+                            .build()
+
+                        // Set pending seek position
+                        if (startPositionMs > 0L) {
+                            pendingSeekPosition = startPositionMs
+                        } else {
                             pendingSeekPosition = -1L
                         }
-                    }
 
-                    _castState.update { state ->
-                        state.copy(isCasting = true, isRemotePlaying = true, error = null)
+                        // Load media on Cast device
+                        val request = MediaLoadRequestData.Builder()
+                            .setMediaInfo(mediaInfo)
+                            .setAutoplay(true)
+                            .build()
+
+                        Log.i(
+                            "CastManager",
+                            "Cast load (PlaybackInfo): url=$mediaUrl mimeType=${playbackData.mimeType} streamType=$streamType startPos=$startPositionMs",
+                        )
+
+                        val loadStartTime = System.currentTimeMillis()
+                        castSession.remoteMediaClient?.load(request)?.setResultCallback { result ->
+                            val loadTime = System.currentTimeMillis() - loadStartTime
+                            val totalTime = System.currentTimeMillis() - startTime
+                            val status = result.status
+                            Log.i("CastManager", "Cast load result: status=$status statusCode=${status.statusCode} (load took ${loadTime}ms, total ${totalTime}ms)")
+
+                            if (status.isSuccess) {
+                                val rmc = castSession.remoteMediaClient
+                                val mediaStatus = rmc?.mediaStatus
+                                val playerState = mediaStatus?.playerState
+                                Log.i("CastManager", "Cast status after load: playerState=$playerState")
+
+                                // If we have a pending seek and media is ready, seek immediately
+                                if (pendingSeekPosition > 0L && mediaStatus != null) {
+                                    when (playerState) {
+                                        MediaStatus.PLAYER_STATE_PLAYING,
+                                        MediaStatus.PLAYER_STATE_PAUSED,
+                                        MediaStatus.PLAYER_STATE_BUFFERING,
+                                        -> {
+                                            val seekOptions = MediaSeekOptions.Builder()
+                                                .setPosition(pendingSeekPosition)
+                                                .setResumeState(MediaSeekOptions.RESUME_STATE_PLAY)
+                                                .build()
+                                            rmc.seek(seekOptions)
+                                            pendingSeekPosition = -1L
+                                        }
+                                    }
+                                }
+                            } else {
+                                SecureLogger.e("CastManager", "Cast load failed with status code: ${status.statusCode}")
+                                _castState.update { state ->
+                                    state.copy(error = "Failed to cast media (error ${status.statusCode})")
+                                }
+                                pendingSeekPosition = -1L
+                            }
+                        }
+
+                        _castState.update { state ->
+                            state.copy(isCasting = true, isRemotePlaying = true, error = null)
+                        }
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                        SecureLogger.e("CastManager", "Error during startCasting coroutine", e)
+                        _castState.update { state ->
+                            state.copy(error = "Cast failed: ${e.message}")
+                        }
                     }
                 }
             } else {

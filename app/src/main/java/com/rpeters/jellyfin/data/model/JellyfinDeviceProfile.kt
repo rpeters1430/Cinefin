@@ -96,7 +96,7 @@ object JellyfinDeviceProfile {
         }
 
         return DeviceProfile(
-            name = "Jellyfin Android Client (Dynamic)",
+            name = "Cinefin Android Client (Dynamic)",
             maxStreamingBitrate = capabilities.maxBitrate,
             maxStaticBitrate = capabilities.maxBitrate,
             musicStreamingTranscodingBitrate = 192_000,
@@ -221,7 +221,7 @@ object JellyfinDeviceProfile {
         )
 
         return DeviceProfile(
-            name = "Jellyfin SHIELD Cast Client",
+            name = "Cinefin SHIELD Cast Client",
             maxStreamingBitrate = 120_000_000, // 120 Mbps for 4K
             maxStaticBitrate = 120_000_000,
             musicStreamingTranscodingBitrate = 192_000,
@@ -315,7 +315,7 @@ object JellyfinDeviceProfile {
         )
 
         return DeviceProfile(
-            name = "Jellyfin Chromecast Client",
+            name = "Cinefin Chromecast Client",
             maxStreamingBitrate = 20_000_000, // 20 Mbps max for Cast
             maxStaticBitrate = 20_000_000,
             musicStreamingTranscodingBitrate = 192_000,
@@ -366,7 +366,7 @@ object JellyfinDeviceProfile {
         )
 
         return DeviceProfile(
-            name = "Jellyfin Android Client (Static)",
+            name = "Cinefin Android Client (Static)",
             maxStreamingBitrate = 100_000_000,
             maxStaticBitrate = 100_000_000,
             musicStreamingTranscodingBitrate = 192_000,

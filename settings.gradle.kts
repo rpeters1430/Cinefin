@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Jellyfin Android"
+rootProject.name = "Cinefin Android"
 include(":app")

@@ -125,7 +125,7 @@ object NetworkModule {
     fun provideJellyfinSdk(@ApplicationContext context: Context): Jellyfin {
         return createJellyfin {
             clientInfo = ClientInfo(
-                name = "Jellyfin Android",
+                name = "Cinefin Android",
                 version = "1.0.0",
             )
             deviceInfo = DeviceInfo(

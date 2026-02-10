@@ -135,7 +135,7 @@
     },
     "ai_chat_system_prompt": {
       "defaultValue": {
-        "value": "You are Jellyfin AI Assistant. Answer the user's request clearly and briefly (max 120 words). If recommending media, suggest at most 5 titles."
+        "value": "You are Cinefin AI Assistant. Answer the user's request clearly and briefly (max 120 words). If recommending media, suggest at most 5 titles."
       },
       "description": "System prompt for AI chat.",
       "valueType": "STRING"

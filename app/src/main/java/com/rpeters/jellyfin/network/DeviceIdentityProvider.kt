@@ -25,7 +25,7 @@ class DeviceIdentityProvider @Inject constructor(
 
     fun clientVersion(): String = BuildConfigWrapper.versionName
 
-    fun clientName(): String = "Jellyfin Android"
+    fun clientName(): String = "Cinefin Android"
 
     private fun resolveDeviceId(): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)

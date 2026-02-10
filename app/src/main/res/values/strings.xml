@@ -316,7 +316,7 @@
     <string name="shortcut_library_long">Browse library</string>
 
     <!-- Settings -->
-    <string name="settings_recommendations_intro">Recommended controls for configuring the Jellyfin Android experience.</string>
+    <string name="settings_recommendations_intro">Recommended controls for configuring the Cinefin experience.</string>
     <string name="settings_open">Open settings</string>
 
     <string name="settings_appearance_title">Appearance</string>

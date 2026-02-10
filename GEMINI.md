@@ -1,7 +1,7 @@
-# Gemini Context: Jellyfin Android Client
+# Gemini Context: Cinefin Android Client
 
 ## 1. Project Overview
-This is a modern Android client for Jellyfin media servers, built with **Jetpack Compose** and **Material 3 Expressive Design**. It follows a clean **MVVM architecture** with **Hilt** dependency injection.
+This is a modern Android client for Jellyfin media servers (branded as Cinefin), built with **Jetpack Compose** and **Material 3 Expressive Design**. It follows a clean **MVVM architecture** with **Hilt** dependency injection.
 
 **Key Technologies:**
 - **Language:** Kotlin 2.3.10 (JDK 21 required)

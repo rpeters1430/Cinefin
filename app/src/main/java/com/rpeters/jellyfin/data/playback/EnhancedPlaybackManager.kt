@@ -505,8 +505,10 @@ class EnhancedPlaybackManager @Inject constructor(
     ): PlaybackInfoResponse? {
         return try {
             repository.getPlaybackInfo(itemId, audioStreamIndex, subtitleStreamIndex)
-        } catch (e: CancellationException) {
-            throw e
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            SecureLogger.e(TAG, "Failed to get playback info for item $itemId", e)
+            null
         }
     }
 

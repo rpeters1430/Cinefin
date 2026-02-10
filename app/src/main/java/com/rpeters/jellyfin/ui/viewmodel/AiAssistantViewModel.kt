@@ -48,7 +48,7 @@ class AiAssistantViewModel @Inject constructor(
     init {
         // Add welcome message
         val welcomeMessage = AiMessage(
-            content = "Hello! I'm your Jellyfin AI Assistant. Ask me to find movies, recommend something based on your mood, or just chat about your library!",
+            content = "Hello! I'm your Cinefin AI Assistant. Ask me to find movies, recommend something based on your mood, or just chat about your library!",
             isUser = false,
         )
         _uiState.value = _uiState.value.copy(
