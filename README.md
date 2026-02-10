@@ -1,7 +1,13 @@
-# Jellyfin Android Client
+# Cinefin Android
 
-[![Android CI](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/android-ci.yml/badge.svg)](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/android-ci.yml)
-[![Dependency Check](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/rpeters1430/JellyfinAndroid/actions/workflows/dependency-check.yml)
+> A refreshed Android Jellyfin client experience (formerly **Jellyfin Android Client**).
+
+<p align="center">
+  <img src="docs/assets/cinefin-featured-icon.svg" alt="Cinefin featured icon" width="220" />
+</p>
+
+[![Android CI](https://github.com/rpeters1430/Cinefin/actions/workflows/android-ci.yml/badge.svg)](https://github.com/rpeters1430/Cinefin/actions/workflows/android-ci.yml)
+[![Dependency Check](https://github.com/rpeters1430/Cinefin/actions/workflows/dependency-check.yml/badge.svg)](https://github.com/rpeters1430/Cinefin/actions/workflows/dependency-check.yml)
 [![API Level](https://img.shields.io/badge/API-26%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=26)
 
 A modern, beautiful Android client for Jellyfin media servers built with Material 3 design principles and the latest Android development technologies.
@@ -216,24 +222,26 @@ For detailed information on features, development, and project planning, please 
 - **[Immersive UI Progress](docs/features/IMMERSIVE_UI_PROGRESS.md)** - Detailed tracking of the Immersive UI overhaul
 - **[AI Setup Guide](docs/development/AI_SETUP.md)** - Instructions for configuring AI features
 
-### **Current Status** ✅
-- [x] Core functionality (authentication, library browsing, Material 3 UI)
-- [x] Video playback with Direct Play detection, PiP, and auto-play next episode
-- [x] Search, favorites, and recently added carousel
-- [x] Chromecast support with playback controls
+### **Current Status (Q1 2026)** ✅
+- [x] **Rebrand underway** in docs from *Jellyfin Android Client* to **Cinefin Android**
+- [x] **Core client** is stable: auth, libraries, details, search, favorites, and playback
+- [x] **Playback experience** supports Direct Play checks, subtitles, PiP, and next-episode autoplay
+- [x] **Casting support** is available with transport controls and progress synchronization
+- [x] **Android CI workflow** is active and badge-enabled in this README
 
 ### **Active Development: Core Experience Polish** 🔴 *HIGH PRIORITY*
-- [ ] **Music Playback**: Background playback + notification controls
-- [ ] **Offline Downloads**: Core download logic and offline playback
-- [ ] **Android TV**: D-pad navigation and focus indicators
-- [ ] **Code Quality**: Refactor large composables and address lint warnings
+- [ ] **Branding assets rollout**: replace launcher/marketing assets with Cinefin artwork across modules
+- [ ] **Music playback**: background play + notification controls
+- [ ] **Offline downloads**: queueing, storage management, offline playback
+- [ ] **Android TV focus**: D-pad navigation, focus visuals, and TV polish
+- [ ] **Code quality**: split large composables and reduce lint debt
 
 ### **Upcoming Priorities** 📋
-- **Platform Expansion**: Full Android TV support, tablet optimization
-- **Advanced Media**: Music playback, offline downloads, live TV
-- **Power User Features**: Chromecast, sync play, widgets
+- **Platform expansion**: deeper Android TV and tablet optimization
+- **Advanced media**: music playback, offline downloads, live TV
+- **Power-user features**: sync play, widgets, queue controls
 
-**[📖 See detailed roadmap in ROADMAP.md](ROADMAP.md)**
+**[📖 See detailed roadmap in docs/plans/ROADMAP.md](docs/plans/ROADMAP.md)**
 
 ## 🤝 Contributing
 
