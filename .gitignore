@@ -101,7 +101,8 @@ Desktop.ini
 .aider*
 
 # Gemini CLI
-.gemini/
+.gemini/*
 !.gemini/commands/
+!.gemini/commands/**
 .gemini/telemetry.log
 gha-creds-*.json
