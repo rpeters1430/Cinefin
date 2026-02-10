@@ -24,11 +24,15 @@ jobs:
       id-token: 'write'
       issues: 'write'
       pull-requests: 'write'
+
     steps:
+      # Required so /gemini-invoke can load .gemini/commands and so Gemini can read repo files locally
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@v4'
+
       - name: 'Mint identity token'
         id: 'mint_identity_token'
-        if: |-
-          ${{ vars.APP_ID }}
+        if: ${{ vars.APP_ID }}
         uses: 'actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf' # ratchet:actions/create-github-app-token@v2
         with:
           app-id: '${{ vars.APP_ID }}'
@@ -44,6 +48,7 @@ jobs:
           TITLE: '${{ github.event.pull_request.title || github.event.issue.title }}'
           DESCRIPTION: '${{ github.event.pull_request.body || github.event.issue.body }}'
           EVENT_NAME: '${{ github.event_name }}'
+          # Keep token for posting back (your dispatch/command flow). Gemini will read code from checkout, not MCP.
           GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
           IS_PULL_REQUEST: '${{ !!github.event.pull_request }}'
           ISSUE_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
@@ -63,50 +68,16 @@ jobs:
           use_vertex_ai: '${{ vars.GOOGLE_GENAI_USE_VERTEXAI }}'
           upload_artifacts: '${{ vars.UPLOAD_ARTIFACTS }}'
           workflow_name: 'gemini-invoke'
+          # IMPORTANT: No GitHub MCP here. Read repo from the checked-out workspace.
           settings: |-
             {
               "model": {
-                "maxSessionTurns": 25
+                "maxSessionTurns": 60
               },
               "telemetry": {
                 "enabled": true,
                 "target": "local",
                 "outfile": ".gemini/telemetry.log"
-              },
-              "mcpServers": {
-                "github": {
-                  "command": "docker",
-                  "args": [
-                    "run",
-                    "-i",
-                    "--rm",
-                    "-e",
-                    "GITHUB_PERSONAL_ACCESS_TOKEN",
-                    "ghcr.io/github/github-mcp-server:v0.27.0"
-                  ],
-                  "includeTools": [
-                    "add_issue_comment",
-                    "issue_read",
-                    "list_issues",
-                    "search_issues",
-                    "create_pull_request",
-                    "pull_request_read",
-                    "list_pull_requests",
-                    "search_pull_requests",
-                    "create_branch",
-                    "create_or_update_file",
-                    "delete_file",
-                    "fork_repository",
-                    "get_commit",
-                    "get_file_contents",
-                    "list_commits",
-                    "push_files",
-                    "search_code"
-                  ],
-                  "env": {
-                    "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
-                  }
-                }
               },
               "tools": {
                 "core": [
