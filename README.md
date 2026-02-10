@@ -3,7 +3,7 @@
 > A refreshed Android Jellyfin client experience (formerly **Jellyfin Android Client**).
 
 <p align="center">
-  <img src="docs/assets/cinefin-featured-icon.svg" alt="Cinefin featured icon" width="220" />
+  <img src="docs/assets/newicon-readme.png" alt="Cinefin featured icon" width="220" />
 </p>
 
 [![Android CI](https://github.com/rpeters1430/Cinefin/actions/workflows/android-ci.yml/badge.svg)](https://github.com/rpeters1430/Cinefin/actions/workflows/android-ci.yml)
