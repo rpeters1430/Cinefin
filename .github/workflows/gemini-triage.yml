@@ -82,17 +82,12 @@ jobs:
           settings: |-
             {
               "model": {
-                "maxSessionTurns": 25
+                "maxSessionTurns": 15
               },
               "telemetry": {
                 "enabled": true,
                 "target": "local",
                 "outfile": ".gemini/telemetry.log"
-              },
-              "tools": {
-                "core": [
-                  "run_shell_command(echo)"
-                ]
               }
             }
           prompt: '/gemini-triage'
