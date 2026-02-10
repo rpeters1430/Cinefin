@@ -1,0 +1,76 @@
+name: "🧠 Gemini Propose Fix"
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  propose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Gemini (propose)
+        id: gemini
+        uses: google-github-actions/run-gemini-cli@v0.1.20
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          workflow_name: gemini-propose
+          settings: |
+            {
+              "model": { "maxSessionTurns": 60 },
+              "tools": { "core": [
+                "run_shell_command(cat)",
+                "run_shell_command(grep)",
+                "run_shell_command(find)",
+                "run_shell_command(head)",
+                "run_shell_command(tail)"
+              ]}
+            }
+          prompt: |
+            You are working in a Git repo checked out in the current workspace.
+            Task: propose a fix for this issue and generate a unified diff patch.
+
+            Issue title: ${ISSUE_TITLE}
+            Issue body:
+            ${ISSUE_BODY}
+
+            Requirements:
+            - Inspect the repo to locate relevant code.
+            - Provide a short Fix Plan.
+            - Output a unified diff patch to a file named gemini.patch (use shell redirection).
+            - Do NOT apply changes to the repo; only generate the patch.
+            - Also output a concise summary for an issue comment.
+
+      - name: Upload patch artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemini-patch
+          path: gemini.patch
+
+      - name: Comment with summary + approval instruction
+        uses: actions/github-script@v8
+        env:
+          BODY: ${{ steps.gemini.outputs.gemini_response }}
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: [
+                "### Gemini proposed a fix",
+                "",
+                process.env.BODY || "(No response.)",
+                "",
+                "**To apply this and open a PR:** comment `@gemini-cli /apply`."
+              ].join("\n")
+            });
+  
