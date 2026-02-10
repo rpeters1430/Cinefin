@@ -1,17 +1,17 @@
-# Privacy Policy for Jellyfin Ryan
+# Privacy Policy for Cinefin
 
 **Unofficial Jellyfin Android Client**
 
 **Effective Date:** January 27, 2026
 **Last Updated:** January 27, 2026
 
-This Privacy Policy describes how Jellyfin Ryan ("the App", "we", "us", or "our") collects, uses, shares, and protects information when you use our Android application. By using the App, you agree to the collection and use of information in accordance with this policy.
+This Privacy Policy describes how Cinefin ("the App", "we", "us", or "our") collects, uses, shares, and protects information when you use our Android application. By using the App, you agree to the collection and use of information in accordance with this policy.
 
-**Application Scope:** This Privacy Policy applies to the Jellyfin Ryan application distributed on Google Play. Jellyfin Ryan is an unofficial, third-party Jellyfin Android client and is not affiliated with or endorsed by the Jellyfin project.
+**Application Scope:** This Privacy Policy applies to the Cinefin application distributed on Google Play. Cinefin is an unofficial, third-party Jellyfin Android client and is not affiliated with or endorsed by the Jellyfin project.
 
 ## 1. Overview
 
-Jellyfin Ryan is an unofficial third-party client for Jellyfin media servers. The App operates as a bridge between your device and your personal Jellyfin server. We are committed to protecting your privacy and being transparent about our data practices.
+Cinefin is an unofficial third-party client for Jellyfin media servers. The App operates as a bridge between your device and your personal Jellyfin server. We are committed to protecting your privacy and being transparent about our data practices.
 
 **Key Privacy Principles:**
 - We do **not** collect, store, or have access to your personal information
@@ -248,4 +248,4 @@ For users in the European Economic Area, UK, or Switzerland, GDPR and local data
 
 ---
 
-**Acknowledgment:** By installing, accessing, or using Jellyfin Ryan, you acknowledge that you have read, understood, and agree to be bound by this Privacy Policy.
+**Acknowledgment:** By installing, accessing, or using Cinefin, you acknowledge that you have read, understood, and agree to be bound by this Privacy Policy.
