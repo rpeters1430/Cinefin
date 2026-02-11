@@ -618,10 +618,12 @@ private fun ExpressiveEpisodeInfoCard(
                     // Video information
                     videoStream?.let { stream ->
                         val icon = getResolutionIcon(stream.width, stream.height)
+                        val resolutionBadge = getResolutionBadge(stream.width, stream.height)
                         ExpressiveVideoInfoRow(
                             label = stringResource(id = R.string.video),
                             codec = stream.codec?.uppercase(),
                             icon = icon,
+                            resolutionBadge = resolutionBadge,
                         )
                     }
 
@@ -761,6 +763,7 @@ private fun ExpressiveVideoInfoRow(
     label: String,
     codec: String?,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    resolutionBadge: Pair<String, Color>? = null,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -793,20 +796,42 @@ private fun ExpressiveVideoInfoRow(
                 fontWeight = FontWeight.Medium,
             )
 
-            codec?.let { codecText ->
-                Text(
-                    text = codecText,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            } ?: run {
-                Text(
-                    text = stringResource(id = R.string.unknown),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                codec?.let { codecText ->
+                    Text(
+                        text = codecText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                } ?: run {
+                    Text(
+                        text = stringResource(id = R.string.unknown),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+
+                // Quality badge (4K, FHD, HD, SD)
+                resolutionBadge?.let { (text, color) ->
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = color,
+                        modifier = Modifier,
+                    ) {
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
+                }
             }
         }
     }
@@ -909,6 +934,20 @@ private fun ExpressiveSubtitleRow(
 private fun getResolutionIcon(width: Int?, height: Int?): androidx.compose.ui.graphics.vector.ImageVector {
     // Using generic TV icon as Material Icons doesn't include specific resolution icons
     return Icons.Default.Tv
+}
+
+private fun getResolutionBadge(width: Int?, height: Int?): Pair<String, Color>? {
+    val w = width ?: 0
+    val h = height ?: 0
+
+    return when {
+        h >= 2160 || w >= 3840 -> "4K" to Quality4K
+        h >= 1440 || w >= 2560 -> "1440p" to Quality1440
+        h >= 1080 || w >= 1920 -> "FHD" to QualityHD
+        h >= 720 || w >= 1280 -> "HD" to QualityHD
+        h > 0 -> "SD" to QualitySD
+        else -> null
+    }
 }
 
 private fun getEpisodeResolution(episode: BaseItemDto): Pair<String, Color>? {

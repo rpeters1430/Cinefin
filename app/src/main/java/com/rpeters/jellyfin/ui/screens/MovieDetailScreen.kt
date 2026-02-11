@@ -854,6 +854,9 @@ private fun ExpressiveMovieInfoCard(
             movie.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
                 val videoStream = streams.findDefaultVideoStream()
                 val audioStream = streams.firstOrNull { it.type == MediaStreamType.AUDIO }
+                // Check for 3D format from media source
+                val mediaSource = movie.mediaSources?.firstOrNull()
+                val is3D = mediaSource?.video3DFormat != null
 
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     videoStream?.let { stream ->
@@ -864,6 +867,7 @@ private fun ExpressiveMovieInfoCard(
                             codec = stream.codec?.uppercase(),
                             icon = icon,
                             resolutionBadge = resolutionBadge,
+                            is3D = is3D,
                         )
                     }
 
@@ -1204,6 +1208,7 @@ private fun ExpressiveVideoInfoRow(
     codec: String?,
     icon: ImageVector,
     resolutionBadge: Pair<String, Color>? = null,
+    is3D: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -1262,6 +1267,23 @@ private fun ExpressiveVideoInfoRow(
                     ) {
                         Text(
                             text = text,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+
+                // 3D badge
+                if (is3D) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier,
+                    ) {
+                        Text(
+                            text = "3D",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
