@@ -27,22 +27,50 @@ jobs:
           workflow_name: gemini-triage
           upload_artifacts: false
           prompt: |
-            You are an issue triage assistant.
-            Output ONLY valid JSON with this schema:
+            You are an intelligent issue triage assistant for a GitHub repository.
+            Analyze the issue and suggest appropriate labels.
 
-            {"labels":["type:bug","area:docs","priority:medium"]}
+            **Output Format (JSON only):**
+            ```json
+            {"labels":["type:bug","area:android","priority:medium"]}
+            ```
 
-            Rules:
-            - Prefer these families:
-              - type:bug | type:feature | type:chore | type:question
-              - area:android | area:ui | area:backend | area:build | area:docs
-              - priority:low | priority:medium | priority:high
-            - If unsure, output fewer labels.
-            - Output ONLY JSON. No markdown.
+            **Label Guidelines:**
 
-            Issue title: ${{ github.event.issue.title }}
+            **Type Labels** (choose ONE):
+            - `type:bug` - Something is broken or not working as expected
+            - `type:feature` - New functionality request
+            - `type:enhancement` - Improvement to existing feature
+            - `type:chore` - Maintenance, dependencies, refactoring
+            - `type:question` - General question or discussion
+            - `type:documentation` - Documentation related
 
-            Issue body:
+            **Area Labels** (choose ONE or MORE if applicable):
+            - `area:android` - Android platform specific
+            - `area:ui` - User interface, Compose, Material Design
+            - `area:media` - Video/audio playback, ExoPlayer
+            - `area:network` - API calls, Retrofit, networking
+            - `area:auth` - Authentication, login, security
+            - `area:build` - Gradle, build system, CI/CD
+            - `area:docs` - Documentation files
+            - `area:testing` - Tests, test infrastructure
+
+            **Priority Labels** (choose ONE):
+            - `priority:critical` - Crashes, data loss, security issues
+            - `priority:high` - Major functionality broken
+            - `priority:medium` - Normal bugs or features
+            - `priority:low` - Minor issues, nice-to-have
+
+            **RULES:**
+            - Output ONLY valid JSON with the exact schema shown
+            - NO markdown code fences (```)
+            - NO explanatory text
+            - If uncertain, use fewer labels rather than guessing
+            - Minimum 2 labels, maximum 5 labels
+
+            **Issue Title:** ${{ github.event.issue.title }}
+
+            **Issue Body:**
             ${{ github.event.issue.body }}
 
       - name: Parse + apply labels

@@ -41,6 +41,7 @@ jobs:
             }
 
       - name: Merge PR (squash)
+        id: merge
         uses: actions/github-script@v7
         with:
           script: |
@@ -48,11 +49,16 @@ jobs:
             const repo = context.repo.repo;
             const pull_number = context.payload.issue.number;
 
-            await github.rest.pulls.merge({
+            const result = await github.rest.pulls.merge({
               owner, repo,
               pull_number,
-              merge_method: 'squash'
+              merge_method: 'squash',
+              commit_title: `Fix: #${pull_number} (Gemini) (#${pull_number})`,
+              commit_message: `Merged PR #${pull_number} - Automated fix by Gemini`
             });
+            
+            core.setOutput('merged', result.data.merged);
+            core.setOutput('sha', result.data.sha);
 
       - name: Clean up labels + comment
         uses: actions/github-script@v7
@@ -62,13 +68,34 @@ jobs:
             const repo = context.repo.repo;
             const issue_number = context.payload.issue.number;
 
+            // Remove the awaiting-merge label
             for (const name of ['gemini:awaiting-merge']) {
               try {
                 await github.rest.issues.removeLabel({ owner, repo, issue_number, name });
               } catch (e) {}
             }
 
+            // Comment on the PR
             await github.rest.issues.createComment({
               owner, repo, issue_number,
-              body: `🚀 Merged!`
+              body: `🚀 **Merged!** Changes have been integrated into the main branch.`
             });
+            
+            // Try to extract the original issue number from the PR body
+            // PR body format: "Closes #123\n\nComment `/approve` ..."
+            const pr = await github.rest.pulls.get({ owner, repo, pull_number: issue_number });
+            const prBody = pr.data.body || '';
+            const issueMatch = prBody.match(/Closes #(\d+)/i);
+            
+            if (issueMatch) {
+              const originalIssue = parseInt(issueMatch[1]);
+              try {
+                await github.rest.issues.createComment({
+                  owner, repo,
+                  issue_number: originalIssue,
+                  body: `✅ **Fixed!** PR #${issue_number} has been merged and this issue is now resolved.`
+                });
+              } catch (e) {
+                console.log(`Could not comment on issue #${originalIssue}: ${e.message}`);
+              }
+            }

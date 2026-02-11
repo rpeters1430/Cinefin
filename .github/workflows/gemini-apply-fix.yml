@@ -85,40 +85,62 @@ jobs:
           workflow_name: gemini-apply-fix
           upload_artifacts: true
           prompt: |
-            You are generating a patch for a GitHub repository.
+            You are a code patch generator for a GitHub repository.
 
-            HARD REQUIREMENTS:
-            - Output ONLY a unified diff.
-            - The first diff line MUST start with: diff --git
-            - No markdown fences, no commentary, no JSON.
+            **CRITICAL REQUIREMENTS:**
+            1. Output ONLY a valid unified diff format patch
+            2. The FIRST line of output MUST start with: diff --git
+            3. NO markdown code fences (no ```)
+            4. NO explanatory text or commentary
+            5. NO JSON or other formats
 
-            Goal:
-            Fix the issue described below. Prefer minimal changes.
+            **PATCH FORMAT EXAMPLE:**
+            ```
+            diff --git a/path/to/file.ext b/path/to/file.ext
+            index abc123..def456 100644
+            --- a/path/to/file.ext
+            +++ b/path/to/file.ext
+            @@ -10,7 +10,7 @@ context line
+             context line
+            -old line
+            +new line
+             context line
+            ```
 
-            Issue title: ${{ github.event.issue.title }}
+            **Your Task:**
+            Fix the issue described below with minimal, targeted changes.
+            - Prefer small, surgical edits
+            - Include sufficient context in diffs (3+ lines)
+            - Ensure file paths in diff headers are correct
 
-            Issue body:
+            **Issue Title:** ${{ github.event.issue.title }}
+
+            **Issue Body:**
             ${{ github.event.issue.body }}
 
-            Repo file list (partial):
+            **Repository Context:**
+
+            Available files (partial list):
             ---
             ${{ steps.tree.outputs.TREE }}
             ---
 
-            Current README.md (first 200 lines, if present):
+            Current README.md (first 200 lines):
             ---
             ${{ steps.readme.outputs.README_CONTENT }}
             ---
 
-            If your change touches README.md, ensure the patch matches the exact existing content above.
+            **REMINDER:** Output ONLY the unified diff starting with "diff --git". No other text.
 
       - name: Extract diff into patch file
         id: patch
+        env:
+          GEMINI_OUTPUT: ${{ steps.gemini.outputs.summary }}
         run: |
           set -euo pipefail
 
           # Write the raw model output
-          printf "%s\n" "${{ steps.gemini.outputs.gemini_response }}" > /tmp/gemini_raw.txt
+          printf "%s\n" "${GEMINI_OUTPUT}" > /tmp/gemini_raw.txt
 
           # Extract from first "diff --git" onward (guards against any accidental preface)
           awk 'BEGIN{p=0} /^diff --git /{p=1} p{print}' /tmp/gemini_raw.txt > /tmp/gemini.patch
@@ -241,7 +263,7 @@ jobs:
         if: failure()
         uses: actions/github-script@v7
         env:
-          GEMINI_ERRORS: ${{ steps.gemini.outputs.gemini_errors }}
+          GEMINI_ERROR: ${{ steps.gemini.outputs.error }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -249,7 +271,7 @@ jobs:
             const repo = context.repo.repo;
             const issue_number = context.payload.issue.number;
 
-            const err = (process.env.GEMINI_ERRORS || '').trim();
+            const err = (process.env.GEMINI_ERROR || '').trim();
             const body =
               `⚠️ Apply failed.\n\n` +
               `Common causes:\n` +
