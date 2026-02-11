@@ -68,6 +68,9 @@ jobs:
             SECTION B: PATCH
             - A unified diff that can be applied with `git apply`.
             - Put the diff inside a fenced code block that starts with ```diff and ends with ```.
+            - IMPORTANT: If you fail to include a ```diff fenced block, still output a valid unified diff starting with:
+              --- a/<path>
+              +++ b/<path>
 
             If the change is not possible, explain why in SECTION A and omit SECTION B.
 
@@ -77,15 +80,28 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           import os, re, sys
-          text = os.environ.get("GEMINI_OUTPUT", "")
-          # Look for a ```diff ... ``` block
-          m = re.search(r"```diff\s*(.*?)\s*```", text, re.DOTALL)
-          if not m:
-            print("No diff block found in Gemini output.")
+
+          text = os.environ.get("GEMINI_OUTPUT", "") or ""
+
+          patch = None
+
+          # 1) Prefer fenced ```diff blocks
+          m = re.search(r"```diff\s*(.*?)\s*```", text, re.DOTALL | re.IGNORECASE)
+          if m:
+            patch = m.group(1).strip() + "\n"
+          else:
+            # 2) Fallback: raw unified diff starting at '--- a/...'
+            m2 = re.search(r"(?ms)^(--- a/.*)$", text)
+            if m2:
+              patch = m2.group(1).rstrip() + "\n"
+
+          if not patch:
+            print("No patch found in Gemini output.")
             sys.exit(0)
-          patch = m.group(1).strip() + "\n"
+
           with open("gemini.patch", "w", encoding="utf-8") as f:
             f.write(patch)
+
           print(f"Wrote gemini.patch ({len(patch)} bytes)")
           PY
         env:
@@ -110,7 +126,6 @@ jobs:
             const issueNumber = Number(process.env.ISSUE_NUMBER);
             const runUrl = process.env.RUN_URL;
 
-            // Pull SECTION A (SUMMARY) if present, otherwise just include the whole output (trimmed)
             let summary = out;
             const m = out.match(/SECTION A: SUMMARY([\s\S]*?)(SECTION B: PATCH|$)/i);
             if (m) summary = m[1].trim();
