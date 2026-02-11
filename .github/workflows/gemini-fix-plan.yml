@@ -39,23 +39,33 @@ jobs:
           workflow_name: gemini-fix-plan
           upload_artifacts: true
           prompt: |
-            Create a concise plan to fix the GitHub issue below.
-            Ask questions only if truly necessary.
+            You are a GitHub issue assistant analyzing an issue to create a fix plan.
 
-            Output format:
+            Create a concise, actionable plan to fix the issue below.
+            Be specific about what files need to be changed and what the changes should accomplish.
+            Only ask clarifying questions if the issue is genuinely ambiguous.
 
-            ## Plan
-            - ...
+            **Output Format:**
 
-            ## Questions (if any)
-            - ...
+            ## 📋 Fix Plan
+            1. [First step with specific file/action]
+            2. [Second step with specific file/action]
+            3. [etc.]
 
-            ## Next step
-            Comment `/approve` to implement and open a PR, or `/deny` to cancel and close the issue.
+            ## ❓ Questions (if any)
+            - [Only include if truly necessary]
 
-            Issue title: ${{ github.event.issue.title }}
+            ## ⚙️ Implementation Approach
+            [Brief technical approach or considerations]
 
-            Issue body:
+            ---
+            ## 🚀 Next Steps
+            - Comment `/approve` to implement this fix and create a PR
+            - Comment `/deny` to cancel and close the issue
+
+            **Issue Title:** ${{ github.event.issue.title }}
+
+            **Issue Body:**
             ${{ github.event.issue.body }}
 
       - name: Add awaiting-approval label

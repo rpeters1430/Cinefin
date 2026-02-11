@@ -29,7 +29,7 @@ jobs:
               core.setFailed(`Not allowed: author_association=${assoc}`);
             }
 
-      - name: Remove all labels + close
+      - name: Remove Gemini labels + close
         uses: actions/github-script@v7
         with:
           script: |
@@ -38,27 +38,33 @@ jobs:
             const number = context.payload.issue.number;
             const isPr = !!context.payload.issue.pull_request;
 
-            // Remove ALL labels (this is your "remove tags" requirement)
+            // Get current labels
+            const currentLabels = (context.payload.issue.labels || []).map(l => l.name);
+            
+            // Remove only Gemini-related labels, keep other labels
+            const geminiLabels = ['gemini:awaiting-approval', 'gemini:awaiting-merge'];
+            const labelsToKeep = currentLabels.filter(l => !geminiLabels.includes(l));
+            
             await github.rest.issues.setLabels({
               owner, repo,
               issue_number: number,
-              labels: []
+              labels: labelsToKeep
             });
 
-            // Close (GitHub does not support "delete issue" via API)
+            // Close the issue/PR
             await github.rest.issues.update({
               owner, repo,
               issue_number: number,
-              state: 'closed'
+              state: 'closed',
+              state_reason: isPr ? undefined : 'not_planned'
             });
 
-            // Optional: lock conversation to reduce noise
-            // try {
-            //   await github.rest.issues.lock({ owner, repo, issue_number: number, lock_reason: 'resolved' });
-            // } catch (e) {}
+            const message = isPr 
+              ? '🛑 **Denied.** PR closed without merging. Gemini labels removed.' 
+              : '🛑 **Denied.** Issue closed as not planned. Gemini labels removed.';
 
             await github.rest.issues.createComment({
               owner, repo,
               issue_number: number,
-              body: isPr ? '🛑 Denied. Labels removed and PR closed (not merged).' : '🛑 Denied. Labels removed and issue closed.'
+              body: message
             });
