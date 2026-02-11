@@ -17,7 +17,7 @@ jobs:
   merge:
     if: |
       github.event.issue.pull_request != null &&
-      (github.event.comment.body == '/approve' || github.event.comment.body == '@gemini-cli /approve')
+      (github.event.comment.body == '/accept' || github.event.comment.body == '@gemini-cli /accept')
     runs-on: ubuntu-latest
 
     steps:
