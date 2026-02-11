@@ -854,20 +854,18 @@ private fun ExpressiveMovieInfoCard(
             movie.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
                 val videoStream = streams.findDefaultVideoStream()
                 val audioStream = streams.firstOrNull { it.type == MediaStreamType.AUDIO }
-                // Check for 3D format from media source
-                val mediaSource = movie.mediaSources?.firstOrNull()
-                val is3D = mediaSource?.video3DFormat != null
 
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     videoStream?.let { stream ->
                         val icon = getResolutionIcon(stream.width, stream.height)
                         val resolutionBadge = getResolutionBadge(stream.width, stream.height)
+                        // TODO: Add 3D detection when SDK property is available
                         ExpressiveVideoInfoRow(
                             label = stringResource(id = R.string.video),
                             codec = stream.codec?.uppercase(),
                             icon = icon,
                             resolutionBadge = resolutionBadge,
-                            is3D = is3D,
+                            is3D = false, // Placeholder until SDK supports it
                         )
                     }
 
