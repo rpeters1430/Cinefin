@@ -17,8 +17,8 @@ jobs:
   apply:
     if: |
       github.event.issue.pull_request == null &&
-      (github.event.comment.body == '/accept' || github.event.comment.body == '/apply' ||
-       github.event.comment.body == '@gemini-cli /accept' || github.event.comment.body == '@gemini-cli /apply')
+      (github.event.comment.body == '/approve' || github.event.comment.body == '/approve' ||
+       github.event.comment.body == '@gemini-cli /approve' || github.event.comment.body == '@gemini-cli /approve')
     runs-on: ubuntu-latest
 
     steps:
@@ -37,8 +37,8 @@ jobs:
         with:
           script: |
             const labels = context.payload.issue.labels.map(l => l.name);
-            if (!labels.includes('gemini:awaiting-accept')) {
-              core.setFailed('Issue is not in gemini:awaiting-accept state.');
+            if (!labels.includes('gemini:awaiting-approval')) {
+              core.setFailed('Issue is not in gemini:awaiting-approval state.');
             }
 
       - name: Checkout
