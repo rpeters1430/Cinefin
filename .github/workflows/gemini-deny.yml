@@ -1,0 +1,65 @@
+name: Gemini Deny (Cancel)
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: gemini-deny-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  deny:
+    if: |
+      github.event.comment.body == '/deny' || github.event.comment.body == '@gemini-cli /deny'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Permission gate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const assoc = context.payload.comment.author_association;
+            const allowed = ['OWNER','MEMBER','COLLABORATOR'];
+            if (!allowed.includes(assoc)) {
+              core.setFailed(`Not allowed: author_association=${assoc}`);
+            }
+
+      - name: Cancel state + comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const number = context.payload.issue.number;
+
+            const isPr = !!context.payload.issue.pull_request;
+
+            // Remove any gemini state labels (best effort)
+            const labelsToRemove = [
+              'gemini:awaiting-approval',
+              'gemini:pr-open',
+              'gemini:awaiting-merge',
+              'gemini:working',
+            ];
+
+            for (const name of labelsToRemove) {
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number: number, name });
+              } catch (e) {}
+            }
+
+            const msg = isPr
+              ? '🛑 Cancelled. I will not merge this PR.'
+              : '🛑 Cancelled. I will not proceed with implementation.';
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: number,
+              body: msg
+            });
