@@ -8,6 +8,9 @@ on:
   schedule:
     - cron: '0 6 * * 1'
 
+permissions:
+  contents: read
+
 jobs:
   dependency-check:
     runs-on: ubuntu-latest
@@ -22,40 +25,39 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/libs.versions.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Install Android SDK components
         shell: bash
         run: |
+          # Use the pre-installed sdkmanager on the runner
+          # Android 36 is the compileSdk in the project
           yes | sdkmanager --licenses >/dev/null
-          yes | sdkmanager \
-            "platform-tools" \
-            "platforms;android-36" \
-            "build-tools;35.0.0"
+          sdkmanager --install "platforms;android-36" "build-tools;35.0.0" "platform-tools"
 
-      - name: Generate local.properties from SDK env
+      - name: Generate local.properties
         run: |
-          chmod +x scripts/gen-local-properties.sh || true
-          ./scripts/gen-local-properties.sh
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
 
       - name: Run dependency report
-        run: ./gradlew :app:dependencies --configuration releaseRuntimeClasspath
+        run: |
+          mkdir -p build/reports
+          ./gradlew :app:dependencies --configuration releaseRuntimeClasspath > build/reports/dependencies.txt
 
       - name: Upload dependency reports
         uses: actions/upload-artifact@v4
         with:
           name: dependency-report
-          path: |
-            app/build/reports
-          if-no-files-found: ignore
+          path: build/reports/dependencies.txt
+
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
