@@ -48,9 +48,6 @@ jobs:
             const repo = context.repo.repo;
             const pull_number = context.payload.issue.number;
 
-            // Optionally: ensure checks are green by enabling auto-merge instead:
-            // await github.rest.pulls.enableAutoMerge({ owner, repo, pull_number, merge_method: 'squash' });
-
             await github.rest.pulls.merge({
               owner, repo,
               pull_number,
@@ -65,8 +62,7 @@ jobs:
             const repo = context.repo.repo;
             const issue_number = context.payload.issue.number;
 
-            const remove = ['gemini:awaiting-merge','gemini:pr-open'];
-            for (const name of remove) {
+            for (const name of ['gemini:awaiting-merge']) {
               try {
                 await github.rest.issues.removeLabel({ owner, repo, issue_number, name });
               } catch (e) {}
