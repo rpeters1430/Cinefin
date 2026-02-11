@@ -1,1 +1,114 @@
+name: Gemini Fix Plan (Issue)
 
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: gemini-fix-plan-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    if: |
+      github.event.issue.pull_request == null &&
+      contains(github.event.comment.body, '@gemini-cli') &&
+      contains(github.event.comment.body, '/fix')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Optional: only allow repo members/collaborators to trigger
+      - name: Permission gate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const assoc = context.payload.comment.author_association;
+            const allowed = ['OWNER','MEMBER','COLLABORATOR'];
+            if (!allowed.includes(assoc)) {
+              core.setFailed(`Not allowed: author_association=${assoc}`);
+            }
+
+      - name: Run Gemini (create plan + questions)
+        id: gemini
+        uses: google-github-actions/run-gemini-cli@v0.1.20
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          gemini_model: ${{ vars.GEMINI_MODEL }}
+          workflow_name: gemini-fix-plan
+          upload_artifacts: true
+          # If your action supports passing prompt directly, do it here.
+          # Otherwise your "workflow_name" should map to a prompt inside your gemini-cli config.
+          prompt: |
+            You are a coding agent. Create a concise plan to fix the GitHub issue below.
+            If you need clarifications, ask questions.
+            Output format:
+
+            ## Plan
+            - ...
+
+            ## Questions (if any)
+            - ...
+
+            ## Approval
+            Reply with `/approve` to proceed with implementation, or `/deny` to cancel.
+
+            Issue title: ${{ github.event.issue.title }}
+
+            Issue body:
+            ${{ github.event.issue.body }}
+
+            User comment:
+            ${{ github.event.comment.body }}
+
+      - name: Add awaiting-approval label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.payload.issue.number;
+            const label = 'gemini:awaiting-approval';
+
+            // Create label if it doesn't exist (best effort)
+            try {
+              await github.rest.issues.createLabel({
+                owner, repo,
+                name: label,
+                color: 'FBCA04',
+                description: 'Gemini waiting for /approve or /deny'
+              });
+            } catch (e) {}
+
+            await github.rest.issues.addLabels({
+              owner, repo,
+              issue_number,
+              labels: [label]
+            });
+
+      - name: Post plan to issue
+        uses: actions/github-script@v7
+        env:
+          GEMINI_SUMMARY: ${{ steps.gemini.outputs.summary }}
+          GEMINI_ERROR: ${{ steps.gemini.outputs.error }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.payload.issue.number;
+
+            const summary = (process.env.GEMINI_SUMMARY || '').trim();
+            const err = (process.env.GEMINI_ERROR || '').trim();
+
+            let body = `## 🤖 Gemini plan for #${issue_number}\n\n`;
+            body += summary ? summary : '_No summary output received from Gemini._';
+            if (err) body += `\n\n---\n### ⚠️ Gemini error\n\`\`\`\n${err}\n\`\`\``;
+
+            await github.rest.issues.createComment({ owner, repo, issue_number, body });
