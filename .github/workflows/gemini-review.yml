@@ -87,9 +87,12 @@ jobs:
                     "ghcr.io/github/github-mcp-server:v0.27.0"
                   ],
                   "includeTools": [
+                    "create_pending_pull_request_review",
                     "add_comment_to_pending_review",
+                    "submit_pending_pull_request_review",
                     "pull_request_read",
-                    "pull_request_review_write"
+                    "get_file_contents",
+                    "list_commits"
                   ],
                   "env": {
                     "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
