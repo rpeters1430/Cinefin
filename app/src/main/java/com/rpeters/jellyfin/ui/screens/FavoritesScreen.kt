@@ -34,6 +34,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.EmptyStateComposable
 import com.rpeters.jellyfin.ui.components.EmptyStateType
+import com.rpeters.jellyfin.ui.components.ExpressiveWavyCircularLoading
 import com.rpeters.jellyfin.ui.components.MediaCard
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -95,7 +96,9 @@ fun FavoritesScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator()
+                        ExpressiveWavyCircularLoading(
+                            modifier = Modifier.size(64.dp),
+                        )
                     }
                 }
                 errorMessage != null -> {
