@@ -58,7 +58,7 @@ jobs:
             Issue body:
             ${{ github.event.issue.body }}
 
-      - name: Add awaiting-accept label
+      - name: Add awaiting-approval label
         uses: actions/github-script@v7
         with:
           script: |
