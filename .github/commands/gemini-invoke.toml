@@ -82,7 +82,7 @@ Begin every task by building a complete picture of the situation.
       Please review this plan. To approve, comment `/approve` on this issue. To reject, comment `/deny`.
       ```
 
-3. **Post the Plan**: Use `add_issue_comment` to post your plan.
+3. **Post the Plan**: You **MUST** use the `add_issue_comment` tool to post the plan to the issue. **DO NOT** just output the plan text in your final response; you must execute the tool.
 
 ### B. Await Human Approval
 
