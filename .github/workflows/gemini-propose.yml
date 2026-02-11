@@ -32,7 +32,7 @@ jobs:
           upload_artifacts: true
           settings: |
             {
-              "model": { "maxSessionTurns": 60 },
+              "model": { "maxSessionTurns": 30 },
               "telemetry": {
                 "enabled": true,
                 "target": "local",
@@ -41,34 +41,57 @@ jobs:
               "tools": {
                 "core": [
                   "run_shell_command(cat)",
-                  "run_shell_command(echo)",
                   "run_shell_command(grep)",
                   "run_shell_command(find)",
                   "run_shell_command(head)",
                   "run_shell_command(tail)",
-                  "run_shell_command(pwd)",
                   "run_shell_command(ls)"
                 ]
               }
             }
           prompt: |
             You are working in a Git repo checked out in the current workspace.
-            Task: propose a fix for this issue and generate a unified diff patch.
 
-            Issue number: #${{ github.event.issue.number }}
-            Issue title: ${{ github.event.issue.title }}
-            Issue body:
+            Issue #${{ github.event.issue.number }}
+            Title: ${{ github.event.issue.title }}
+            Body:
             ${{ github.event.issue.body }}
 
-            Requirements:
-            - Inspect the repo to locate relevant code.
-            - Provide a short Fix Plan.
-            - Create a unified diff patch and write it to a file named gemini.patch (use shell redirection in a shell command).
-            - The patch must apply cleanly with: git apply gemini.patch
-            - Do NOT commit or push anything.
-            - Also include a concise summary suitable for an issue comment.
+            Your job:
+            1) Identify the minimal change needed.
+            2) DO NOT modify any files.
+            3) Output TWO sections in plain text:
 
-      - name: Upload patch artifact
+            SECTION A: SUMMARY
+            - 3-7 bullet points: what you’ll change and why.
+
+            SECTION B: PATCH
+            - A unified diff that can be applied with `git apply`.
+            - Put the diff inside a fenced code block that starts with ```diff and ends with ```.
+
+            If the change is not possible, explain why in SECTION A and omit SECTION B.
+
+      - name: Extract patch from Gemini output
+        id: extract
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, re, sys
+          text = os.environ.get("GEMINI_OUTPUT", "")
+          # Look for a ```diff ... ``` block
+          m = re.search(r"```diff\s*(.*?)\s*```", text, re.DOTALL)
+          if not m:
+            print("No diff block found in Gemini output.")
+            sys.exit(0)
+          patch = m.group(1).strip() + "\n"
+          with open("gemini.patch", "w", encoding="utf-8") as f:
+            f.write(patch)
+          print(f"Wrote gemini.patch ({len(patch)} bytes)")
+          PY
+        env:
+          GEMINI_OUTPUT: ${{ steps.gemini.outputs.gemini_response }}
+
+      - name: Upload patch artifact (if present)
         uses: actions/upload-artifact@v4
         with:
           name: gemini-patch-issue-${{ github.event.issue.number }}
@@ -78,24 +101,29 @@ jobs:
       - name: Comment with summary + approval instruction
         uses: actions/github-script@v8
         env:
-          SUMMARY: ${{ steps.gemini.outputs.summary }}
+          OUT: ${{ steps.gemini.outputs.gemini_response }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           script: |
-            const summary = (process.env.SUMMARY || "").trim();
+            const out = (process.env.OUT || "").trim();
             const issueNumber = Number(process.env.ISSUE_NUMBER);
             const runUrl = process.env.RUN_URL;
+
+            // Pull SECTION A (SUMMARY) if present, otherwise just include the whole output (trimmed)
+            let summary = out;
+            const m = out.match(/SECTION A: SUMMARY([\s\S]*?)(SECTION B: PATCH|$)/i);
+            if (m) summary = m[1].trim();
 
             const body = [
               "### Gemini proposed a fix",
               "",
-              summary ? summary : "(No summary was returned by Gemini. Check the workflow logs.)",
+              summary ? summary : "(No response.)",
               "",
               `Patch artifact: **gemini-patch-issue-${issueNumber}**`,
               `Workflow run: ${runUrl}`,
               "",
-              "**To apply this patch and open a PR:** comment `@gemini-cli /apply`.",
+              "**To apply this patch and open a PR:** comment `@gemini-cli /apply`."
             ].join("\n");
 
             await github.rest.issues.createComment({
