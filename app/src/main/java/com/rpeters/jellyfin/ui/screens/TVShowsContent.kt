@@ -147,11 +147,10 @@ internal fun TVShowsContent(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Featured shows carousel - top 5 highly rated shows
+    // Featured shows carousel - recently added TV shows
     val featuredShows = remember(tvShows) {
         tvShows
-            .filter { it.communityRating != null && it.communityRating!! >= 7.5f }
-            .sortedByDescending { it.communityRating }
+            .sortedByDescending { it.dateCreated }
             .take(5)
     }
 

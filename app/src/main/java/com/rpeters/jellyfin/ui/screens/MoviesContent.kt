@@ -83,11 +83,10 @@ internal fun MoviesContent(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
-        // Featured movies carousel - top 5 highly rated movies
+        // Featured movies carousel - recently added movies
         val featuredMovies = remember(filteredAndSortedMovies) {
             filteredAndSortedMovies
-                .filter { it.communityRating != null && it.communityRating!! >= 7.5f }
-                .sortedByDescending { it.communityRating }
+                .sortedByDescending { it.dateCreated }
                 .take(5)
         }
 

@@ -126,7 +126,7 @@ fun LibraryScreen(
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
-            Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 32.dp).fillMaxWidth()) {
                 Text(
                     text = stringResource(id = R.string.your_libraries),
                     style = MaterialTheme.typography.headlineSmall,
