@@ -51,7 +51,7 @@ jobs:
             - ...
 
             ## Next step
-            Comment `/accept` (or `/apply`) to implement and open a PR, or `/deny` to cancel and close the issue.
+            Comment `/approve` to implement and open a PR, or `/deny` to cancel and close the issue.
 
             Issue title: ${{ github.event.issue.title }}
 
@@ -65,12 +65,12 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const issue_number = context.payload.issue.number;
-            const label = 'gemini:awaiting-accept';
+            const label = 'gemini:awaiting-approval';
 
             try {
               await github.rest.issues.createLabel({
                 owner, repo, name: label, color: 'FBCA04',
-                description: 'Gemini waiting for /accept or /deny'
+                description: 'Gemini waiting for /approve or /deny'
               });
             } catch (e) {}
 
