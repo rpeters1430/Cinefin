@@ -8,69 +8,99 @@ permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: "${{ github.workflow }}-issue-${{ github.event.issue.number }}"
+  cancel-in-progress: true
+
 jobs:
   propose:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    timeout-minutes: 10
 
-      - name: Run Gemini (propose)
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Gemini (propose patch)
         id: gemini
         uses: google-github-actions/run-gemini-cli@v0.1.20
-        env:
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
           workflow_name: gemini-propose
+          gemini_model: ${{ vars.GEMINI_MODEL }}
+          gemini_debug: false
+          upload_artifacts: true
           settings: |
             {
               "model": { "maxSessionTurns": 60 },
-              "tools": { "core": [
-                "run_shell_command(cat)",
-                "run_shell_command(grep)",
-                "run_shell_command(find)",
-                "run_shell_command(head)",
-                "run_shell_command(tail)"
-              ]}
+              "telemetry": {
+                "enabled": true,
+                "target": "local",
+                "outfile": ".gemini/telemetry.log"
+              },
+              "tools": {
+                "core": [
+                  "run_shell_command(cat)",
+                  "run_shell_command(echo)",
+                  "run_shell_command(grep)",
+                  "run_shell_command(find)",
+                  "run_shell_command(head)",
+                  "run_shell_command(tail)",
+                  "run_shell_command(pwd)",
+                  "run_shell_command(ls)"
+                ]
+              }
             }
           prompt: |
             You are working in a Git repo checked out in the current workspace.
             Task: propose a fix for this issue and generate a unified diff patch.
 
-            Issue title: ${ISSUE_TITLE}
+            Issue number: #${{ github.event.issue.number }}
+            Issue title: ${{ github.event.issue.title }}
             Issue body:
-            ${ISSUE_BODY}
+            ${{ github.event.issue.body }}
 
             Requirements:
             - Inspect the repo to locate relevant code.
             - Provide a short Fix Plan.
-            - Output a unified diff patch to a file named gemini.patch (use shell redirection).
-            - Do NOT apply changes to the repo; only generate the patch.
-            - Also output a concise summary for an issue comment.
+            - Create a unified diff patch and write it to a file named gemini.patch (use shell redirection in a shell command).
+            - The patch must apply cleanly with: git apply gemini.patch
+            - Do NOT commit or push anything.
+            - Also include a concise summary suitable for an issue comment.
 
       - name: Upload patch artifact
         uses: actions/upload-artifact@v4
         with:
-          name: gemini-patch
+          name: gemini-patch-issue-${{ github.event.issue.number }}
           path: gemini.patch
+          if-no-files-found: warn
 
       - name: Comment with summary + approval instruction
         uses: actions/github-script@v8
         env:
-          BODY: ${{ steps.gemini.outputs.gemini_response }}
+          SUMMARY: ${{ steps.gemini.outputs.summary }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           script: |
+            const summary = (process.env.SUMMARY || "").trim();
+            const issueNumber = Number(process.env.ISSUE_NUMBER);
+            const runUrl = process.env.RUN_URL;
+
+            const body = [
+              "### Gemini proposed a fix",
+              "",
+              summary ? summary : "(No summary was returned by Gemini. Check the workflow logs.)",
+              "",
+              `Patch artifact: **gemini-patch-issue-${issueNumber}**`,
+              `Workflow run: ${runUrl}`,
+              "",
+              "**To apply this patch and open a PR:** comment `@gemini-cli /apply`.",
+            ].join("\n");
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.payload.issue.number,
-              body: [
-                "### Gemini proposed a fix",
-                "",
-                process.env.BODY || "(No response.)",
-                "",
-                "**To apply this and open a PR:** comment `@gemini-cli /apply`."
-              ].join("\n")
+              issue_number: issueNumber,
+              body
             });
-  
