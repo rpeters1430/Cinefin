@@ -1,1 +1,78 @@
+name: Gemini Merge PR (Approve)
 
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: gemini-merge-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  merge:
+    if: |
+      github.event.issue.pull_request != null &&
+      (github.event.comment.body == '/approve' || github.event.comment.body == '@gemini-cli /approve')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Permission gate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const assoc = context.payload.comment.author_association;
+            const allowed = ['OWNER','MEMBER','COLLABORATOR'];
+            if (!allowed.includes(assoc)) {
+              core.setFailed(`Not allowed: author_association=${assoc}`);
+            }
+
+      - name: Verify PR has awaiting-merge label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = context.payload.issue.labels.map(l => l.name);
+            if (!labels.includes('gemini:awaiting-merge')) {
+              core.setFailed('PR is not in gemini:awaiting-merge state.');
+            }
+
+      - name: Merge PR (squash)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull_number = context.payload.issue.number;
+
+            // Optionally: ensure checks are green by enabling auto-merge instead:
+            // await github.rest.pulls.enableAutoMerge({ owner, repo, pull_number, merge_method: 'squash' });
+
+            await github.rest.pulls.merge({
+              owner, repo,
+              pull_number,
+              merge_method: 'squash'
+            });
+
+      - name: Clean up labels + comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.payload.issue.number;
+
+            const remove = ['gemini:awaiting-merge','gemini:pr-open'];
+            for (const name of remove) {
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name });
+              } catch (e) {}
+            }
+
+            await github.rest.issues.createComment({
+              owner, repo, issue_number,
+              body: `🚀 Merged!`
+            });
