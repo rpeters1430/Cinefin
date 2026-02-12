@@ -247,7 +247,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 }
             } else {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading()
                 }
             }
         }
@@ -333,7 +333,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                CircularProgressIndicator()
+                com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading()
             }
         }
     }
@@ -433,6 +433,9 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     onRelatedMovieClick = { relatedMovieId ->
                         navController.navigate(Screen.MovieDetail.createRoute(relatedMovieId))
                     },
+                    onPersonClick = { personId, personName ->
+                        navController.navigate(Screen.Search.createRoute(personName))
+                    },
                     onRefresh = { detailViewModel.refresh() },
                     isRefreshing = detailState.isLoading || detailState.isSimilarMoviesLoading,
                     playbackAnalysis = detailState.playbackAnalysis,
@@ -483,6 +486,9 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     onRelatedMovieClick = { relatedMovieId ->
                         navController.navigate(Screen.MovieDetail.createRoute(relatedMovieId))
                     },
+                    onPersonClick = { personId, personName ->
+                        navController.navigate(Screen.Search.createRoute(personName))
+                    },
                     onRefresh = { detailViewModel.refresh() },
                     isRefreshing = detailState.isLoading || detailState.isSimilarMoviesLoading,
                     playbackAnalysis = detailState.playbackAnalysis,
@@ -498,7 +504,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             }
         } else if (detailState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading()
             }
         } else {
             Column(
@@ -655,6 +661,29 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                         onFavoriteClick = { mainViewModel.toggleFavorite(it) },
 
                         onMarkWatchedClick = { mainViewModel.toggleWatchedStatus(it) },
+
+                        onDeleteClick = { episodeItem ->
+                            mainViewModel.deleteItem(episodeItem) { success, error ->
+                                val context = navController.context
+                                val message = if (success) {
+                                    "Item deleted successfully"
+                                } else {
+                                    error ?: "Failed to delete item"
+                                }
+                                android.widget.Toast.makeText(
+                                    context,
+                                    message,
+                                    android.widget.Toast.LENGTH_SHORT,
+                                ).show()
+                                if (success) {
+                                    navController.popBackStack()
+                                }
+                            }
+                        },
+
+                        onPersonClick = { personId, personName ->
+                            navController.navigate(Screen.Search.createRoute(personName))
+                        },
 
                         playbackAnalysis = detailState.playbackAnalysis,
 
@@ -862,7 +891,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     )
                 }
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading()
                 }
             }
 
@@ -910,7 +939,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        CircularProgressIndicator()
+                        com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading()
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "Loading episode...",

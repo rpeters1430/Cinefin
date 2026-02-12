@@ -9,7 +9,7 @@ sdk.dir=C\:\\Users\\YourUsername\\AppData\\Local\\Android\\Sdk
 GOOGLE_AI_API_KEY=your-api-key-here
 
 ## Release Signing Config (optional, for release builds)
-#JELLYFIN_KEYSTORE_FILE=jellyfin-release.keystore
-#JELLYFIN_KEYSTORE_PASSWORD=your-keystore-password
-#JELLYFIN_KEY_ALIAS=jellyfin-release
-#JELLYFIN_KEY_PASSWORD=your-key-password
+JELLYFIN_KEYSTORE_FILE=your-keystore-path.jks
+JELLYFIN_KEYSTORE_PASSWORD=your-keystore-password
+JELLYFIN_KEY_ALIAS=your-key-alias
+JELLYFIN_KEY_PASSWORD=your-key-password

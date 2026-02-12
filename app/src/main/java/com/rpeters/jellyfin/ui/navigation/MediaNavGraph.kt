@@ -175,6 +175,9 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                         throw e
                     }
                 },
+                onPersonClick = { personId, personName ->
+                    navController.navigate(Screen.Search.createRoute(personName))
+                },
             )
         } else if (useImmersiveSeason) {
             ImmersiveTVSeasonScreen(
@@ -210,6 +213,9 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                     } catch (e: CancellationException) {
                         throw e
                     }
+                },
+                onPersonClick = { personId, personName ->
+                    navController.navigate(Screen.Search.createRoute(personName))
                 },
             )
         } else {
@@ -247,6 +253,9 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                     } catch (e: CancellationException) {
                         throw e
                     }
+                },
+                onPersonClick = { personId, personName ->
+                    navController.navigate(Screen.Search.createRoute(personName))
                 },
             )
         }

@@ -24,7 +24,6 @@ ProGuard_Rules_Implementation.md
 # Additional Android Studio / IntelliJ IDEA
 .idea/
 .gradle/
-gradle.properties
 *.iws
 *.ipr
 *.swp

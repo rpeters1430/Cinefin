@@ -259,14 +259,7 @@ private fun organizeMoviesIntoSections(movies: List<BaseItemDto>): List<MovieSec
     val usedIds = sections.flatMap { it.items.map { m -> m.id } }.toSet()
     val remaining = movies.filter { it.id !in usedIds }
     if (remaining.isNotEmpty()) {
-        remaining.chunked(15).forEachIndexed { index, chunk ->
-            // ✅ Fixed: Use unique titles to avoid duplicate keys in LazyColumn
-            val title = when (index) {
-                0 -> "More Movies"
-                else -> "Discover More ${index + 1}"
-            }
-            sections.add(MovieSection(title, chunk))
-        }
+        sections.add(MovieSection("More Movies", remaining))
     }
 
     return sections

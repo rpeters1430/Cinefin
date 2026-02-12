@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.animation.core.LinearEasing
@@ -22,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -48,82 +51,24 @@ import kotlin.math.sin
  */
 
 /**
- * Expressive circular loading indicator with gradient and pulsing animation
+ * Expressive circular loading indicator using Material 3 Expressive wavy animation
  */
 @Composable
 fun ExpressiveCircularLoading(
     modifier: Modifier = Modifier,
     size: Dp = 48.dp,
-    strokeWidth: Dp = 4.dp,
-    showPulse: Boolean = true,
+    strokeWidth: Dp = 4.dp, // Restored for compatibility
+    showPulse: Boolean = true, // Restored for compatibility
+    color: Color = MaterialTheme.colorScheme.primary,
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "circular_loading")
-    val primary = MaterialTheme.colorScheme.primary
-    val primaryAccent = primary.copy(alpha = 0.7f)
-
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "rotation",
-    )
-
-    val pulse by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "pulse",
-    )
-
-    Box(
+    CircularWavyProgressIndicator(
         modifier = modifier.size(size),
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .rotate(rotation),
-        ) {
-            val canvasWidth = size.value
-            val canvasHeight = size.value
-            val strokeWidthPx = strokeWidth.toPx()
-            val radius = (minOf(canvasWidth, canvasHeight) / 2) - strokeWidthPx / 2
-
-            drawCircle(
-                brush = Brush.sweepGradient(
-                    colors = listOf(
-                        Color.Transparent,
-                        Color.Transparent,
-                        Color.Transparent,
-                        Color.Transparent,
-                        Color.Transparent,
-                        Color.Transparent,
-                        primary,
-                        primaryAccent,
-                    ),
-                ),
-                radius = radius,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(
-                    width = strokeWidthPx,
-                    cap = StrokeCap.Round,
-                ),
-            )
-        }
-
-        if (showPulse) {
-            Surface(
-                modifier = Modifier.size(size * 0.3f * pulse),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-            ) {}
-        }
-    }
+        color = color,
+        trackColor = color.copy(alpha = 0.2f),
+        amplitude = 0.12f,
+        wavelength = 32.dp,
+        waveSpeed = 16.dp,
+    )
 }
 
 /**

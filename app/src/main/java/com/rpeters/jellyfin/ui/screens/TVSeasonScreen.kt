@@ -15,6 +15,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -110,6 +111,7 @@ fun TVSeasonScreen(
     onSeriesClick: (String) -> Unit,
     onEpisodeClick: (BaseItemDto) -> Unit,
     onPlayEpisode: (BaseItemDto) -> Unit,
+    onPersonClick: (String, String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val viewModel: TVSeasonViewModel = hiltViewModel()
@@ -176,6 +178,7 @@ fun TVSeasonScreen(
                         onSeasonExpand = viewModel::loadSeasonEpisodes,
                         onEpisodeClick = onEpisodeClick,
                         onPlayEpisode = onPlayEpisode,
+                        onPersonClick = onPersonClick,
                     )
                 }
             }
@@ -243,6 +246,7 @@ private fun TVSeasonContent(
     onSeasonExpand: (String) -> Unit,
     onEpisodeClick: (BaseItemDto) -> Unit,
     onPlayEpisode: (BaseItemDto) -> Unit,
+    onPersonClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var expandedSeasonId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -394,6 +398,7 @@ private fun TVSeasonContent(
                             )
                             getImageUrl(personItem)
                         },
+                        onPersonClick = onPersonClick,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
                     )
                 }
@@ -1042,6 +1047,7 @@ private fun CastAndCrewSection(
     cast: List<BaseItemPerson>,
     crew: List<BaseItemPerson>,
     getImageUrl: (java.util.UUID, String?) -> String?,
+    onPersonClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -1077,6 +1083,7 @@ private fun CastAndCrewSection(
                         PersonCard(
                             person = person,
                             getImageUrl = getImageUrl,
+                            onPersonClick = onPersonClick,
                         )
                     }
                 }
@@ -1106,6 +1113,7 @@ private fun CastAndCrewSection(
                         PersonCard(
                             person = person,
                             getImageUrl = getImageUrl,
+                            onPersonClick = onPersonClick,
                         )
                     }
                 }
@@ -1179,10 +1187,17 @@ private fun MoreLikeThisSection(
 private fun PersonCard(
     person: BaseItemPerson,
     getImageUrl: (java.util.UUID, String?) -> String?,
+    onPersonClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.width(100.dp),
+        modifier = modifier
+            .width(100.dp)
+            .clickable {
+                person.id?.let { id ->
+                    onPersonClick(id.toString(), person.name ?: "Unknown")
+                }
+            },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {

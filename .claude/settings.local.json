@@ -51,7 +51,11 @@
       "Bash(chmod:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(cmd.exe /c gradlew.bat assembleDebug)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(gh variable set:*)",
+      "Bash(gh variable:*)",
+      "Bash(gh api:*)",
+      "Bash(gh run list:*)"
     ],
     "deny": [],
     "ask": [],

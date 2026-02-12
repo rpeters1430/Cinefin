@@ -33,7 +33,9 @@ sealed class Screen(val route: String) {
         fun createRoute(libraryId: String, collectionType: String) =
             "stuff/$libraryId/$collectionType"
     }
-    object Search : Screen("search")
+    object Search : Screen("search?query={query}") {
+        fun createRoute(query: String) = "search?query=$query"
+    }
     object AiAssistant : Screen("ai_assistant")
     object Favorites : Screen("favorites")
     object Profile : Screen("profile")

@@ -114,7 +114,7 @@ fun ImmersiveSearchScreen(
         intervalMs = 30000,
     )
 
-    var searchQuery by remember { mutableStateOf("") }
+    var searchQuery by remember { mutableStateOf(appState.searchQuery) }
     var isFilterExpanded by remember { mutableStateOf(false) }
     var selectedContentTypes by remember {
         mutableStateOf(

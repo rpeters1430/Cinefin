@@ -10,7 +10,7 @@ The Gemini workflow system consists of 5 interconnected workflows that automate 
 2. **Fix Plan** → Generate fix plans with `/fix` command
 3. **Apply Fix** → Create PR with `/approve` command on issue
 4. **Merge** → Merge PR with `/approve` command on PR
-5. **Deny** → Cancel and close with `/deny` command
+5. **Deny** → No-op on `/deny` command
 
 ## 🔄 Workflow Sequence
 
@@ -37,11 +37,11 @@ User reviews plan
     │       │
     │       └─→ Comment "/deny" on PR
     │               ↓
-    │           [🛑 Deny] → Closes PR
+    │           [🛑 Deny] → No action
     │
     └─→ Comment "/deny" on issue
             ↓
-        [🛑 Deny] → Closes issue
+        [🛑 Deny] → No action
 ```
 
 ## 🏷️ Workflow 1: Auto-Triage (`gemini-triage.yml`)
@@ -90,7 +90,7 @@ Modify the ExoPlayer initialization to include fallback codec support...
 ---
 ## 🚀 Next Steps
 - Comment `/approve` to implement this fix and create a PR
-- Comment `/deny` to cancel and close the issue
+- Comment `/deny` to take no action
 ```
 
 **Permissions required:** `issues: write`, `contents: read`
@@ -122,7 +122,7 @@ Title: Fix: #123 (Gemini)
 Body:
 Closes #123
 
-Comment `/approve` on this PR to merge, or `/deny` to cancel.
+Comment `/approve` on this PR to merge.
 
 <!-- gemini-issue:123 -->
 ```
@@ -149,24 +149,21 @@ Issue #123: ✅ Fixed! PR #124 has been merged and this issue is now resolved.
 
 **Permissions required:** `contents: write`, `pull-requests: write`, `issues: write`
 
-## 🛑 Workflow 5: Deny (`gemini-deny.yml`)
+## 🛑 Workflow 5: Deny (`gemini-deny.yml`, no-op)
 
 **Trigger:** When someone comments `/deny` (or `@gemini-cli /deny`) on an issue or PR
 
 **What it does:**
 1. Verifies the commenter has permission
-2. Removes Gemini-specific labels (`gemini:awaiting-approval`, `gemini:awaiting-merge`)
-3. Keeps other labels intact
-4. Closes the issue/PR as "not planned"
-5. Posts a cancellation comment
+2. Performs no repository changes
 
 **Example:**
 ```
-Issue: 🛑 Denied. Issue closed as not planned. Gemini labels removed.
-PR: 🛑 Denied. PR closed without merging. Gemini labels removed.
+Issue: /deny comment is ignored (no-op)
+PR: /deny comment is ignored (no-op)
 ```
 
-**Permissions required:** `issues: write`, `pull-requests: write`
+**Permissions required:** `contents: read`
 
 ## 🔐 Required Secrets & Variables
 
@@ -198,7 +195,7 @@ PR: 🛑 Denied. PR closed without merging. Gemini labels removed.
 3. Maintainer comments: /fix
 4. ✅ Gemini posts implementation plan
 5. Maintainer decides not to implement, comments: /deny
-6. ✅ Issue closed as not planned
+6. ✅ No action taken
 ```
 
 ### Example 3: Invalid Fix
@@ -207,7 +204,7 @@ PR: 🛑 Denied. PR closed without merging. Gemini labels removed.
 2. Maintainer comments: /approve
 3. ✅ PR created but fix is incorrect
 4. Maintainer comments /deny on PR
-5. ✅ PR closed, can try /fix again on original issue
+5. ✅ No action taken
 ```
 
 ## ⚙️ Customization

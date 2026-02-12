@@ -131,6 +131,7 @@ fun MovieDetailScreen(
     onDeleteClick: (BaseItemDto) -> Unit = {},
     onMarkWatchedClick: (BaseItemDto) -> Unit = {},
     onRelatedMovieClick: (String) -> Unit = {},
+    onPersonClick: (String, String) -> Unit = { _, _ -> },
     onRefresh: () -> Unit = {},
     onGenerateAiSummary: () -> Unit = {},
     aiSummary: String? = null,
@@ -450,6 +451,7 @@ fun MovieDetailScreen(
                                 producers = producers,
                                 cast = cast,
                                 getPersonImageUrl = getPersonImageUrl,
+                                onPersonClick = onPersonClick,
                             )
                         }
                     }
@@ -859,13 +861,14 @@ private fun ExpressiveMovieInfoCard(
                     videoStream?.let { stream ->
                         val icon = getResolutionIcon(stream.width, stream.height)
                         val resolutionBadge = getResolutionBadge(stream.width, stream.height)
-                        // TODO: Add 3D detection when SDK property is available
+                        val is3D = movie.video3dFormat != null &&
+                            movie.video3dFormat.toString() != "None"
                         ExpressiveVideoInfoRow(
                             label = stringResource(id = R.string.video),
                             codec = stream.codec?.uppercase(),
                             icon = icon,
                             resolutionBadge = resolutionBadge,
-                            is3D = false, // Placeholder until SDK supports it
+                            is3D = is3D,
                         )
                     }
 
@@ -997,10 +1000,17 @@ private fun ExpressiveInfoRow(
 private fun CastMemberCard(
     person: org.jellyfin.sdk.model.api.BaseItemPerson,
     imageUrl: String?,
+    onPersonClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.width(100.dp),
+        modifier = modifier
+            .width(100.dp)
+            .clickable {
+                person.id?.let { id ->
+                    onPersonClick(id.toString(), person.name ?: "Unknown")
+                }
+            },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -1093,6 +1103,7 @@ private fun EnhancedCastAndCrewSection(
     producers: List<org.jellyfin.sdk.model.api.BaseItemPerson>,
     cast: List<org.jellyfin.sdk.model.api.BaseItemPerson>,
     getPersonImageUrl: (org.jellyfin.sdk.model.api.BaseItemPerson) -> String?,
+    onPersonClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -1127,6 +1138,7 @@ private fun EnhancedCastAndCrewSection(
                         CrewInfoRow(
                             label = if (directors.size == 1) "Director" else "Directors",
                             people = directors,
+                            onPersonClick = onPersonClick,
                         )
                     }
 
@@ -1135,6 +1147,7 @@ private fun EnhancedCastAndCrewSection(
                         CrewInfoRow(
                             label = if (writers.size == 1) "Writer" else "Writers",
                             people = writers,
+                            onPersonClick = onPersonClick,
                         )
                     }
 
@@ -1143,6 +1156,7 @@ private fun EnhancedCastAndCrewSection(
                         CrewInfoRow(
                             label = if (producers.size == 1) "Producer" else "Producers",
                             people = producers,
+                            onPersonClick = onPersonClick,
                         )
                     }
                 }
@@ -1167,6 +1181,7 @@ private fun EnhancedCastAndCrewSection(
                         CastMemberCard(
                             person = person,
                             imageUrl = getPersonImageUrl(person),
+                            onPersonClick = onPersonClick,
                         )
                     }
                 }
@@ -1179,6 +1194,7 @@ private fun EnhancedCastAndCrewSection(
 private fun CrewInfoRow(
     label: String,
     people: List<org.jellyfin.sdk.model.api.BaseItemPerson>,
+    onPersonClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -1191,12 +1207,23 @@ private fun CrewInfoRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Medium,
         )
-        Text(
-            text = people.joinToString(", ") { it.name ?: "Unknown" },
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.SemiBold,
-        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            people.forEachIndexed { index, person ->
+                Text(
+                    text = (person.name ?: "Unknown") + if (index < people.size - 1) "," else "",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.clickable {
+                        person.id?.let { id ->
+                            onPersonClick(id.toString(), person.name ?: "Unknown")
+                        }
+                    },
+                )
+            }
+        }
     }
 }
 

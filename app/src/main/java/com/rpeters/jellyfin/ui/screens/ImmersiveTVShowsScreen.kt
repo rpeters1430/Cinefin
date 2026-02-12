@@ -43,12 +43,14 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 @Composable
 fun ImmersiveTVShowsScreen(
     tvShows: List<BaseItemDto>,
+    recentEpisodes: List<BaseItemDto>, // Added recent episodes
     isLoading: Boolean,
     onTVShowClick: (String) -> Unit,
     onRefresh: () -> Unit,
     onSearchClick: () -> Unit,
     getImageUrl: (BaseItemDto) -> String?,
     getBackdropUrl: (BaseItemDto) -> String?,
+    getSeriesImageUrl: (BaseItemDto) -> String?, // Added series image getter
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
 ) {
@@ -68,7 +70,13 @@ fun ImmersiveTVShowsScreen(
 
     // Organize TV shows into sections for immersive browsing
     val tvShowSections = remember(tvShows) { organizeTVShowsIntoSections(tvShows) }
-    val featuredShows = remember(tvShows) { tvShows.take(5) }
+
+    // Featured shows carousel - recently added TV episodes but showing series info
+    val featuredShows = remember(recentEpisodes) {
+        recentEpisodes
+            .distinctBy { it.seriesId }
+            .take(5)
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         ImmersiveScaffold(
@@ -113,15 +121,15 @@ fun ImmersiveTVShowsScreen(
                             bottom = 120.dp,
                         ),
                     ) {
-                        // 1. Hero Carousel (Top 5 Shows)
+                        // 1. Hero Carousel (Recently Added Episodes showing Series)
                         if (featuredShows.isNotEmpty()) {
                             item(key = "tv_shows_hero", contentType = "hero") {
                                 val carouselItems = featuredShows.map {
                                     CarouselItem(
-                                        id = it.id.toString(),
-                                        title = it.name ?: "Unknown",
-                                        subtitle = itemSubtitle(it),
-                                        imageUrl = getBackdropUrl(it) ?: getImageUrl(it) ?: "",
+                                        id = it.seriesId.toString(),
+                                        title = it.seriesName ?: it.name ?: "Unknown",
+                                        subtitle = "New Episode Added",
+                                        imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it) ?: getImageUrl(it) ?: "",
                                     )
                                 }
 
@@ -134,10 +142,10 @@ fun ImmersiveTVShowsScreen(
                                     ImmersiveHeroCarousel(
                                         items = carouselItems,
                                         onItemClick = { item ->
-                                            featuredShows.find { it.id.toString() == item.id }?.id?.let { onTVShowClick(it.toString()) }
+                                            onTVShowClick(item.id)
                                         },
                                         onPlayClick = { item ->
-                                            featuredShows.find { it.id.toString() == item.id }?.id?.let { onTVShowClick(it.toString()) }
+                                            onTVShowClick(item.id)
                                         },
                                     )
                                 }
@@ -268,14 +276,7 @@ private fun organizeTVShowsIntoSections(tvShows: List<BaseItemDto>): List<TVShow
     val usedIds = sections.flatMap { it.items.map { s -> s.id } }.toSet()
     val remaining = tvShows.filter { it.id !in usedIds }
     if (remaining.isNotEmpty()) {
-        remaining.chunked(15).forEachIndexed { index, chunk ->
-            // Use unique titles to avoid duplicate keys in LazyColumn
-            val title = when (index) {
-                0 -> "More TV Shows"
-                else -> "Discover More ${index + 1}"
-            }
-            sections.add(TVShowSection(title, chunk))
-        }
+        sections.add(TVShowSection("More TV Shows", remaining))
     }
 
     return sections
@@ -295,6 +296,7 @@ fun ImmersiveTVShowsScreenContainer(
 ) {
     val appState by viewModel.appState.collectAsState()
     val tvShows = viewModel.getLibraryTypeData(LibraryType.TV_SHOWS)
+    val recentEpisodes = appState.recentlyAddedByTypes[org.jellyfin.sdk.model.api.BaseItemKind.EPISODE.name] ?: emptyList()
     val isLoading = appState.isLoadingTVShows
 
     LaunchedEffect(Unit) {
@@ -305,12 +307,14 @@ fun ImmersiveTVShowsScreenContainer(
 
     ImmersiveTVShowsScreen(
         tvShows = tvShows,
+        recentEpisodes = recentEpisodes,
         isLoading = isLoading,
         onTVShowClick = onTVShowClick,
         onRefresh = { viewModel.loadLibraryTypeData(LibraryType.TV_SHOWS, forceRefresh = true) },
         onSearchClick = onSearchClick,
         getImageUrl = { viewModel.getImageUrl(it) },
         getBackdropUrl = { viewModel.getBackdropUrl(it) },
+        getSeriesImageUrl = { viewModel.getSeriesImageUrl(it) },
         onBackClick = onBackClick,
         modifier = modifier,
     )

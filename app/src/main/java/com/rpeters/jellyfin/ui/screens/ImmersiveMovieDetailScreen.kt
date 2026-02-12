@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -118,6 +119,7 @@ fun ImmersiveMovieDetailScreen(
     onDeleteClick: (BaseItemDto) -> Unit = {},
     onMarkWatchedClick: (BaseItemDto) -> Unit = {},
     onRelatedMovieClick: (String) -> Unit = {},
+    onPersonClick: (String, String) -> Unit = { _, _ -> },
     onRefresh: () -> Unit = {},
     onGenerateAiSummary: () -> Unit = {},
     aiSummary: String? = null,
@@ -141,8 +143,8 @@ fun ImmersiveMovieDetailScreen(
         intervalMs = 30000,
     )
 
-    // Track scroll state (for future animations if needed)
-    val listState = rememberLazyListState()
+    // Track scroll state - reset on navigation by using movie ID as key for remember
+    val listState = remember(movie.id.toString()) { LazyListState() }
 
     Box(modifier = modifier.fillMaxSize()) {
         // 1. Static Hero Background (Fixed)
@@ -371,6 +373,7 @@ fun ImmersiveMovieDetailScreen(
                                     producers = producers,
                                     cast = cast,
                                     getPersonImageUrl = getPersonImageUrl,
+                                    onPersonClick = onPersonClick,
                                 )
                             }
                         }
@@ -1029,10 +1032,17 @@ private fun ImmersiveInfoRow(
 private fun CastMemberCard(
     person: org.jellyfin.sdk.model.api.BaseItemPerson,
     imageUrl: String?,
+    onPersonClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.width(140.dp),
+        modifier = modifier
+            .width(140.dp)
+            .clickable {
+                person.id?.let { id ->
+                    onPersonClick(id.toString(), person.name ?: "Unknown")
+                }
+            },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -1125,6 +1135,7 @@ private fun ImmersiveCastAndCrewSection(
     producers: List<org.jellyfin.sdk.model.api.BaseItemPerson>,
     cast: List<org.jellyfin.sdk.model.api.BaseItemPerson>,
     getPersonImageUrl: (org.jellyfin.sdk.model.api.BaseItemPerson) -> String?,
+    onPersonClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
@@ -1161,6 +1172,7 @@ private fun ImmersiveCastAndCrewSection(
                         CrewInfoRow(
                             label = if (directors.size == 1) "Director" else "Directors",
                             people = directors,
+                            onPersonClick = onPersonClick,
                         )
                     }
 
@@ -1169,6 +1181,7 @@ private fun ImmersiveCastAndCrewSection(
                         CrewInfoRow(
                             label = if (writers.size == 1) "Writer" else "Writers",
                             people = writers,
+                            onPersonClick = onPersonClick,
                         )
                     }
 
@@ -1177,6 +1190,7 @@ private fun ImmersiveCastAndCrewSection(
                         CrewInfoRow(
                             label = if (producers.size == 1) "Producer" else "Producers",
                             people = producers,
+                            onPersonClick = onPersonClick,
                         )
                     }
                 }
@@ -1201,6 +1215,7 @@ private fun ImmersiveCastAndCrewSection(
                         CastMemberCard(
                             person = person,
                             imageUrl = getPersonImageUrl(person),
+                            onPersonClick = onPersonClick,
                         )
                     }
                 }
@@ -1213,6 +1228,7 @@ private fun ImmersiveCastAndCrewSection(
 private fun CrewInfoRow(
     label: String,
     people: List<org.jellyfin.sdk.model.api.BaseItemPerson>,
+    onPersonClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -1225,12 +1241,23 @@ private fun CrewInfoRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Medium,
         )
-        Text(
-            text = people.joinToString(", ") { it.name ?: "Unknown" },
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.SemiBold,
-        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            people.forEachIndexed { index, person ->
+                Text(
+                    text = (person.name ?: "Unknown") + if (index < people.size - 1) "," else "",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.clickable {
+                        person.id?.let { id ->
+                            onPersonClick(id.toString(), person.name ?: "Unknown")
+                        }
+                    },
+                )
+            }
+        }
     }
 }
 

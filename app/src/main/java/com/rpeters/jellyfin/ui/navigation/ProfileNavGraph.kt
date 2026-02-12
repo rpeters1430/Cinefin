@@ -36,8 +36,26 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
     navController: NavHostController,
     onLogout: () -> Unit,
 ) {
-    composable(Screen.Search.route) {
+    composable(
+        route = Screen.Search.route,
+        arguments = listOf(
+            androidx.navigation.navArgument("query") {
+                type = androidx.navigation.NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+        ),
+    ) { backStackEntry ->
+        val query = backStackEntry.arguments?.getString("query")
         val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
+        
+        // If a query was passed via navigation, trigger a search immediately
+        LaunchedEffect(query) {
+            if (!query.isNullOrBlank()) {
+                viewModel.search(query)
+            }
+        }
+
         val lifecycleOwner = LocalLifecycleOwner.current
         val appState by viewModel.appState.collectAsStateWithLifecycle(
             lifecycle = lifecycleOwner.lifecycle,

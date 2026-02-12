@@ -10,8 +10,10 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -77,6 +79,7 @@ fun ImmersiveTVShowDetailScreen(
     onSeriesClick: (String) -> Unit,
     onEpisodeClick: (BaseItemDto) -> Unit,
     onPlayEpisode: (BaseItemDto) -> Unit,
+    onPersonClick: (String, String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: TVSeasonViewModel = hiltViewModel(),
 ) {
@@ -140,6 +143,7 @@ fun ImmersiveTVShowDetailScreen(
                         onEpisodeClick = onEpisodeClick,
                         onPlayEpisode = onPlayEpisode,
                         onRefresh = { viewModel.refresh() },
+                        onPersonClick = onPersonClick,
                     )
                 }
             }
@@ -181,10 +185,11 @@ private fun ImmersiveShowDetailContent(
     onEpisodeClick: (BaseItemDto) -> Unit,
     onPlayEpisode: (BaseItemDto) -> Unit,
     onRefresh: () -> Unit,
+    onPersonClick: (String, String) -> Unit,
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
     var expandedSeasonId by rememberSaveable { mutableStateOf<String?>(null) }
-    val listState = rememberLazyListState()
+    val listState = remember(state.seriesDetails?.id?.toString()) { LazyListState() }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // 1. Static Hero Background (Fixed)
@@ -278,6 +283,7 @@ private fun ImmersiveShowDetailContent(
                         ImmersiveCastSection(
                             people = people,
                             getImageUrl = getImageUrl,
+                            onPersonClick = onPersonClick,
                             modifier = Modifier.padding(top = 24.dp),
                         )
                     }
@@ -661,6 +667,7 @@ private fun RatingBadge(rating: Float) {
 private fun ImmersiveCastSection(
     people: List<BaseItemPerson>,
     getImageUrl: (BaseItemDto) -> String?,
+    onPersonClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
@@ -681,7 +688,13 @@ private fun ImmersiveCastSection(
         ) {
             items(cast) { person ->
                 Column(
-                    modifier = Modifier.width(120.dp),
+                    modifier = Modifier
+                        .width(120.dp)
+                        .clickable {
+                            person.id?.let { id ->
+                                onPersonClick(id.toString(), person.name ?: "Unknown")
+                            }
+                        },
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Surface(

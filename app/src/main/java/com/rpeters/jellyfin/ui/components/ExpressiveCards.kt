@@ -82,13 +82,13 @@ fun ExpressiveMediaCard(
     subtitle: String = "",
     imageUrl: String,
     rating: Float? = null,
-    isFavorite: Boolean = false,
+    isFavorite: Boolean = false, // Restored for compatibility
     isWatched: Boolean = false,
     watchProgress: Float = 0f,
     unwatchedEpisodeCount: Int? = null,
     onCardClick: () -> Unit,
     onPlayClick: () -> Unit = {},
-    onFavoriteClick: () -> Unit = {},
+    onFavoriteClick: () -> Unit = {}, // Restored for compatibility
     onMoreClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     cardType: ExpressiveCardType = ExpressiveCardType.ELEVATED,
@@ -349,51 +349,26 @@ private fun MediaCardContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.Top,
         ) {
-            Column {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            if (subtitle.isNotEmpty()) {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp),
                 )
-
-                if (subtitle.isNotEmpty()) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
-            }
-
-            // Bottom actions
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                val favoriteColor by animateColorAsState(
-                    targetValue = if (isFavorite) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    label = "favorite_color",
-                )
-
-                IconButton(onClick = onFavoriteClick) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                        tint = favoriteColor,
-                    )
-                }
             }
         }
     }
