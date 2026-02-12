@@ -48,7 +48,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
     ) { backStackEntry ->
         val query = backStackEntry.arguments?.getString("query")
         val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
-        
+
         // If a query was passed via navigation, trigger a search immediately
         LaunchedEffect(query) {
             if (!query.isNullOrBlank()) {

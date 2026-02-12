@@ -37,10 +37,12 @@ android {
 
         // Google AI API key for Gemini cloud fallback
         // Reads from (in order): local.properties, gradle.properties, or environment variable
-        val googleAiApiKey = (localProperties.getProperty("GOOGLE_AI_API_KEY")
-            ?: project.findProperty("GOOGLE_AI_API_KEY")
-            ?: System.getenv("GOOGLE_AI_API_KEY")
-            ?: "").toString()
+        val googleAiApiKey = (
+            localProperties.getProperty("GOOGLE_AI_API_KEY")
+                ?: project.findProperty("GOOGLE_AI_API_KEY")
+                ?: System.getenv("GOOGLE_AI_API_KEY")
+                ?: ""
+            ).toString()
 
         buildConfigField(
             "String",
@@ -51,24 +53,32 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystorePath = (localProperties.getProperty("JELLYFIN_KEYSTORE_FILE")
-                ?: project.findProperty("JELLYFIN_KEYSTORE_FILE")
-                ?: System.getenv("JELLYFIN_KEYSTORE_FILE")
-                ?: "jellyfin-release.keystore").toString()
+            val keystorePath = (
+                localProperties.getProperty("JELLYFIN_KEYSTORE_FILE")
+                    ?: project.findProperty("JELLYFIN_KEYSTORE_FILE")
+                    ?: System.getenv("JELLYFIN_KEYSTORE_FILE")
+                    ?: "jellyfin-release.keystore"
+                ).toString()
             storeFile = file(keystorePath)
 
-            storePassword = (localProperties.getProperty("JELLYFIN_KEYSTORE_PASSWORD")
-                ?: project.findProperty("JELLYFIN_KEYSTORE_PASSWORD")
-                ?: System.getenv("JELLYFIN_KEYSTORE_PASSWORD")).toString()
+            storePassword = (
+                localProperties.getProperty("JELLYFIN_KEYSTORE_PASSWORD")
+                    ?: project.findProperty("JELLYFIN_KEYSTORE_PASSWORD")
+                    ?: System.getenv("JELLYFIN_KEYSTORE_PASSWORD")
+                ).toString()
 
-            keyAlias = (localProperties.getProperty("JELLYFIN_KEY_ALIAS")
-                ?: project.findProperty("JELLYFIN_KEY_ALIAS")
-                ?: System.getenv("JELLYFIN_KEY_ALIAS")
-                ?: "jellyfin-release").toString()
+            keyAlias = (
+                localProperties.getProperty("JELLYFIN_KEY_ALIAS")
+                    ?: project.findProperty("JELLYFIN_KEY_ALIAS")
+                    ?: System.getenv("JELLYFIN_KEY_ALIAS")
+                    ?: "jellyfin-release"
+                ).toString()
 
-            keyPassword = (localProperties.getProperty("JELLYFIN_KEY_PASSWORD")
-                ?: project.findProperty("JELLYFIN_KEY_PASSWORD")
-                ?: System.getenv("JELLYFIN_KEY_PASSWORD")).toString()
+            keyPassword = (
+                localProperties.getProperty("JELLYFIN_KEY_PASSWORD")
+                    ?: project.findProperty("JELLYFIN_KEY_PASSWORD")
+                    ?: System.getenv("JELLYFIN_KEY_PASSWORD")
+                ).toString()
         }
     }
 
