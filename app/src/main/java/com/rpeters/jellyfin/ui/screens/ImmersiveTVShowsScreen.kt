@@ -1,9 +1,9 @@
 package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -12,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -23,7 +22,6 @@ import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
 import com.rpeters.jellyfin.ui.components.immersive.*
-import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -54,29 +52,24 @@ fun ImmersiveTVShowsScreen(
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
 ) {
-    val perfConfig = rememberImmersivePerformanceConfig()
-    val listState = rememberLazyListState()
-
     PerformanceMetricsTracker(
         enabled = com.rpeters.jellyfin.BuildConfig.DEBUG,
         intervalMs = 30000,
     )
 
-    // Use hero height as threshold to avoid flickering within hero
-    val topBarVisible = rememberAutoHideTopBarVisible(
-        listState = listState,
-        nearTopOffsetPx = with(LocalDensity.current) { ImmersiveDimens.HeroHeightPhone.toPx().toInt() },
-    )
+    // Featured shows carousel - prefer recently added episodes, fallback to TV library data.
+    val featuredShows = remember(tvShows, recentEpisodes) {
+        val fromRecentEpisodes = recentEpisodes
+            .filter { it.seriesId != null || it.seriesName != null || it.name != null }
+            .distinctBy { it.seriesId ?: it.seriesName ?: it.name }
 
-    // Organize TV shows into sections for immersive browsing
-    val tvShowSections = remember(tvShows) { organizeTVShowsIntoDiscoverySections(tvShows) }
-
-    // Featured shows carousel - recently added TV episodes but showing series info
-    val featuredShows = remember(recentEpisodes) {
-        // ✅ Uses Recently Added TV Episodes but grouped by series
-        recentEpisodes
-            .distinctBy { it.seriesId }
-            .take(5)
+        if (fromRecentEpisodes.isNotEmpty()) {
+            fromRecentEpisodes.take(5)
+        } else {
+            tvShows
+                .sortedByDescending { it.dateCreated }
+                .take(5)
+        }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -113,58 +106,60 @@ fun ImmersiveTVShowsScreen(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    LazyColumn(
-                        state = listState,
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(ImmersiveDimens.CardWidthSmall),
                         modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
                         contentPadding = PaddingValues(
-                            top = 0.dp, // No top padding - hero should be full-bleed behind translucent top bar
+                            top = 0.dp,
+                            start = ImmersiveDimens.SpacingRowTight,
+                            end = ImmersiveDimens.SpacingRowTight,
                             bottom = 120.dp,
                         ),
+                        verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
+                        horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
                     ) {
-                        // 1. Hero Carousel (Recently Added Episodes showing Series)
                         if (featuredShows.isNotEmpty()) {
-                            item(key = "tv_shows_hero", contentType = "hero") {
-                                val carouselItems = featuredShows.map {
+                            item(
+                                key = "tv_shows_hero",
+                                span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) },
+                            ) {
+                                val carouselItems = featuredShows.mapNotNull { item ->
                                     CarouselItem(
-                                        id = it.seriesId.toString(),
-                                        title = it.seriesName ?: it.name ?: "Unknown",
-                                        subtitle = "New Episode Added",
-                                        imageUrl = getBackdropUrl(it) ?: getSeriesImageUrl(it) ?: getImageUrl(it) ?: "",
+                                        id = (item.seriesId ?: item.id).toString(),
+                                        title = item.seriesName ?: item.name ?: "Unknown",
+                                        subtitle = if (item.seriesId != null) "New Episode Added" else (item.productionYear?.toString() ?: ""),
+                                        imageUrl = getBackdropUrl(item) ?: getSeriesImageUrl(item) ?: getImageUrl(item) ?: "",
                                     )
                                 }
 
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(ImmersiveDimens.HeroHeightPhone)
-                                        .clipToBounds(),
-                                ) {
-                                    ImmersiveHeroCarousel(
-                                        items = carouselItems,
-                                        onItemClick = { item ->
-                                            onTVShowClick(item.id)
-                                        },
-                                        onPlayClick = { item ->
-                                            onTVShowClick(item.id)
-                                        },
-                                    )
+                                if (carouselItems.isNotEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(ImmersiveDimens.HeroHeightPhone)
+                                            .clipToBounds(),
+                                    ) {
+                                        ImmersiveHeroCarousel(
+                                            items = carouselItems,
+                                            onItemClick = { item -> onTVShowClick(item.id) },
+                                            onPlayClick = { item -> onTVShowClick(item.id) },
+                                        )
+                                    }
                                 }
                             }
                         }
 
-                        // 2. Sections (Recently Added, Favorites, Trending, Genres)
                         items(
-                            items = tvShowSections,
-                            key = { it.title },
-                            contentType = { "tv_show_section" },
-                        ) { section ->
-                            ImmersiveMediaRow(
-                                title = section.title,
-                                items = section.items,
-                                getImageUrl = getImageUrl,
-                                onItemClick = { it.id.let { id -> onTVShowClick(id.toString()) } },
-                                size = ImmersiveCardSize.MEDIUM,
+                            items = tvShows,
+                            key = { it.id.toString() },
+                        ) { tvShow ->
+                            ImmersiveMediaCard(
+                                title = tvShow.name ?: "Unknown",
+                                subtitle = tvShow.productionYear?.toString() ?: "",
+                                imageUrl = getImageUrl(tvShow) ?: "",
+                                onCardClick = { onTVShowClick(tvShow.id.toString()) },
+                                onPlayClick = { onTVShowClick(tvShow.id.toString()) },
+                                cardSize = ImmersiveCardSize.SMALL,
                             )
                         }
                     }
@@ -209,40 +204,6 @@ fun ImmersiveTVShowsScreen(
             }
         }
     }
-}
-
-/**
- * Container for TV show sections
- */
-private data class TVShowSection(
-    val title: String,
-    val items: List<BaseItemDto>,
-)
-
-/**
- * Groups TV shows into Discovery sections.
- */
-private fun organizeTVShowsIntoDiscoverySections(tvShows: List<BaseItemDto>): List<TVShowSection> {
-    if (tvShows.isEmpty()) return emptyList()
-
-    // Sort by name or other criteria
-    val sortedShows = tvShows.sortedBy { it.name }
-    val sections = mutableListOf<TVShowSection>()
-
-    // Chunk into discovery rows
-    val chunkSize = 15
-    val chunks = sortedShows.chunked(chunkSize)
-
-    if (chunks.isNotEmpty()) {
-        sections.add(TVShowSection("More TV Shows", chunks[0]))
-    }
-
-    for (i in 1 until chunks.size) {
-        if (i > 4) break // Limit to 4 discovery sections
-        sections.add(TVShowSection("Discover More ${i + 1}", chunks[i]))
-    }
-
-    return sections
 }
 
 /**
