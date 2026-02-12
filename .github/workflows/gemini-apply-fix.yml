@@ -58,9 +58,9 @@ jobs:
         id: tree
         run: |
           set -euo pipefail
-          echo "TREE<<'EOF'" >> "$GITHUB_OUTPUT"
+          echo "TREE<<EOF" >> "$GITHUB_OUTPUT"
           # Keep it short-ish but useful
-          (git ls-files | head -n 400) >> "$GITHUB_OUTPUT"
+          (git ls-files | head -n 400 || true) >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Load README.md into prompt context (if present)
@@ -68,9 +68,9 @@ jobs:
         run: |
           set -euo pipefail
           if [ -f README.md ]; then
-            echo "README_CONTENT<<'EOF'" >> "$GITHUB_OUTPUT"
+            echo "README_CONTENT<<EOF" >> "$GITHUB_OUTPUT"
             # Limit size to avoid huge prompts
-            head -n 200 README.md >> "$GITHUB_OUTPUT"
+            (head -n 200 README.md || true) >> "$GITHUB_OUTPUT"
             echo "EOF" >> "$GITHUB_OUTPUT"
           else
             echo "README_CONTENT=" >> "$GITHUB_OUTPUT"
