@@ -125,7 +125,6 @@ fun ExpressiveMediaCard(
                     unwatchedEpisodeCount = unwatchedEpisodeCount,
                     onCardClick = onCardClick,
                     onPlayClick = onPlayClick,
-                    onFavoriteClick = onFavoriteClick,
                     onMoreClick = onMoreClick,
                     onPressedChange = { isPressed = it },
                 )
@@ -151,7 +150,6 @@ fun ExpressiveMediaCard(
                     unwatchedEpisodeCount = unwatchedEpisodeCount,
                     onCardClick = onCardClick,
                     onPlayClick = onPlayClick,
-                    onFavoriteClick = onFavoriteClick,
                     onMoreClick = onMoreClick,
                     onPressedChange = { isPressed = it },
                 )
@@ -179,7 +177,6 @@ fun ExpressiveMediaCard(
                     unwatchedEpisodeCount = unwatchedEpisodeCount,
                     onCardClick = onCardClick,
                     onPlayClick = onPlayClick,
-                    onFavoriteClick = onFavoriteClick,
                     onMoreClick = onMoreClick,
                     onPressedChange = { isPressed = it },
                 )
@@ -200,7 +197,6 @@ private fun MediaCardContent(
     unwatchedEpisodeCount: Int?,
     onCardClick: () -> Unit,
     onPlayClick: () -> Unit,
-    onFavoriteClick: () -> Unit,
     onMoreClick: () -> Unit,
     onPressedChange: (Boolean) -> Unit,
 ) {

@@ -19,6 +19,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
+import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
 import com.rpeters.jellyfin.ui.components.immersive.*
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
@@ -64,8 +65,11 @@ fun ImmersiveMoviesScreen(
     )
 
     // Organize movies into sections for immersive browsing
-    val movieSections = remember(movies) { organizeMoviesIntoSections(movies) }
-    val featuredMovies = remember(movies) { movies.take(5) }
+    val featuredMovies = remember(movies) {
+        // ✅ Hero carousel uses Recently Added Movies
+        movies.sortedByDescending { it.dateCreated }.take(5)
+    }
+    val movieSections = remember(movies) { organizeMoviesIntoDiscoverySections(movies) }
 
     Box(modifier = modifier.fillMaxSize()) {
         ImmersiveScaffold(
@@ -93,7 +97,7 @@ fun ImmersiveMoviesScreen(
                 useWavyIndicator = true,
             ) {
                 if (movies.isEmpty() && !isLoading) {
-                    MoviesEmptyState(
+                    ExpressiveSimpleEmptyState(
                         icon = Icons.Default.Movie,
                         title = "No movies found",
                         subtitle = "Try adding some movies to your library",
@@ -208,58 +212,26 @@ private data class MovieSection(
 )
 
 /**
- * Groups movies into sections for an immersive browse experience.
+ * Groups movies into Discovery sections.
  */
-private fun organizeMoviesIntoSections(movies: List<BaseItemDto>): List<MovieSection> {
+private fun organizeMoviesIntoDiscoverySections(movies: List<BaseItemDto>): List<MovieSection> {
     if (movies.isEmpty()) return emptyList()
+
+    // Sort by name or other criteria for generic sections
+    val sortedMovies = movies.sortedBy { it.name }
     val sections = mutableListOf<MovieSection>()
 
-    // Recently Added
-    val recentlyAdded = movies.sortedByDescending { it.dateCreated }.take(15)
-    if (recentlyAdded.isNotEmpty()) {
-        sections.add(MovieSection("Recently Added", recentlyAdded))
+    // Chunk movies into discovery rows (approx 15 items per row)
+    val chunkSize = 15
+    val chunks = sortedMovies.chunked(chunkSize)
+
+    if (chunks.isNotEmpty()) {
+        sections.add(MovieSection("More Movies", chunks[0]))
     }
 
-    // Favorites
-    val favorites = movies.filter { it.userData?.isFavorite == true }.take(15)
-    if (favorites.isNotEmpty()) {
-        sections.add(MovieSection("Your Favorites", favorites))
-    }
-
-    // Top Rated
-    val topRated = movies.filter { (it.communityRating ?: 0f) >= 8f }
-        .sortedByDescending { it.communityRating }.take(15)
-    if (topRated.isNotEmpty()) {
-        sections.add(MovieSection("Top Rated Movies", topRated))
-    }
-
-    // Action Movies
-    val action = movies.filter { it.genres?.any { g -> g.contains("Action", true) } == true }.take(15)
-    if (action.isNotEmpty()) {
-        sections.add(MovieSection("Action Packed", action))
-    }
-
-    // Comedy Movies
-    val comedy = movies.filter { it.genres?.any { g -> g.contains("Comedy", true) } == true }.take(15)
-    if (comedy.isNotEmpty()) {
-        sections.add(MovieSection("Laugh Out Loud", comedy))
-    }
-
-    // Sci-Fi & Fantasy
-    val sciFi = movies.filter {
-        it.genres?.any { g ->
-            g.contains("Science Fiction", true) || g.contains("Sci-Fi", true) || g.contains("Fantasy", true)
-        } == true
-    }.take(15)
-    if (sciFi.isNotEmpty()) {
-        sections.add(MovieSection("Sci-Fi & Fantasy", sciFi))
-    }
-
-    // More Movies (Remaining)
-    val usedIds = sections.flatMap { it.items.map { m -> m.id } }.toSet()
-    val remaining = movies.filter { it.id !in usedIds }
-    if (remaining.isNotEmpty()) {
-        sections.add(MovieSection("More Movies", remaining))
+    for (i in 1 until chunks.size) {
+        if (i > 4) break // Limit to 4 discovery sections as requested
+        sections.add(MovieSection("Discover More ${i + 1}", chunks[i]))
     }
 
     return sections

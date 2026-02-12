@@ -23,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -248,12 +247,9 @@ fun MediaCard(
                                 else -> RatingBronze
                             }
                             Box(contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(
-                                    progress = { rating / 10f },
-                                    modifier = Modifier.size(28.dp),
-                                    strokeWidth = 2.dp,
+                                ExpressiveCircularLoading(
+                                    size = 28.dp,
                                     color = ratingColor,
-                                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
                                 )
                                 Text(
                                     text = rating.toInt().toString(),
@@ -479,12 +475,9 @@ fun PosterMediaCard(
                                     else -> RatingBronze
                                 }
                                 Box(contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(
-                                        progress = { rating / 10f },
-                                        modifier = Modifier.size(20.dp),
-                                        strokeWidth = 1.5.dp,
+                                    ExpressiveCircularLoading(
+                                        size = 20.dp,
                                         color = ratingColor,
-                                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                                     )
                                     Text(
                                         text = rating.toInt().toString(),
@@ -702,12 +695,9 @@ fun RecentlyAddedCard(
                             else -> RatingBronze
                         }
                         Box(contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(
-                                progress = { rating / 10f },
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp,
+                            ExpressiveCircularLoading(
+                                size = 24.dp,
                                 color = ratingColor,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
                             )
                             Text(
                                 text = rating.toInt().toString(),

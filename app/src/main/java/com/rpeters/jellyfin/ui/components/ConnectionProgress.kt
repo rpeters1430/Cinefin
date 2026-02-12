@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -146,8 +145,8 @@ private fun ConnectionPhaseContent(
                 )
             } else {
                 // Circular progress for operations without known progress
-                CircularProgressIndicator(
-                    modifier = Modifier.size(32.dp),
+                ExpressiveCircularLoading(
+                    size = 32.dp,
                 )
             }
         }

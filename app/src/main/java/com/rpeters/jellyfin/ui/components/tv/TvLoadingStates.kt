@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.ui.appShimmer
+import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import androidx.tv.material3.Button as TvButton
 import androidx.tv.material3.Card as TvCard
 import androidx.tv.material3.CardDefaults as TvCardDefaults
@@ -296,10 +297,9 @@ fun TvFullScreenLoading(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            androidx.compose.material3.CircularProgressIndicator(
-                modifier = Modifier.size(64.dp),
+            ExpressiveCircularLoading(
+                size = 64.dp,
                 color = TvMaterialTheme.colorScheme.primary,
-                strokeWidth = 6.dp,
             )
 
             TvText(

@@ -62,8 +62,7 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
-import com.rpeters.jellyfin.ui.components.EmptyStateComposable
-import com.rpeters.jellyfin.ui.components.EmptyStateType
+import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
 import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.components.shimmer
@@ -130,21 +129,22 @@ fun ImmersiveLibraryScreen(
                 contentPadding = PaddingValues(
                     start = 16.dp,
                     end = 16.dp,
-                    top = 48.dp, // Increased top padding
+                    top = 80.dp, // ✅ Increased top padding to prevent title clipping
                     bottom = 120.dp, // Extra space for MiniPlayer + FABs
                 ),
                 verticalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
             ) {
                 // Header
                 item(key = "header") {
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(24.dp)) // ✅ Move everything down
                     Text(
                         text = stringResource(id = R.string.your_libraries),
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center, // ✅ Center text
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         modifier = Modifier
-                            .fillMaxWidth() // ✅ Fill width to center properly
-                            .padding(bottom = 16.dp),
+                            .fillMaxWidth()
+                            .padding(bottom = 24.dp),
                     )
                 }
 
@@ -162,11 +162,11 @@ fun ImmersiveLibraryScreen(
                     }
                     libraries.isEmpty() -> {
                         item(key = "empty") {
-                            EmptyStateComposable(
+                            ExpressiveSimpleEmptyState(
                                 icon = Icons.AutoMirrored.Filled.LibraryBooks,
                                 title = stringResource(id = R.string.no_libraries_found),
-                                description = "Your media libraries will appear here once they are configured on your server",
-                                type = EmptyStateType.Info,
+                                subtitle = "Your media libraries will appear here once they are configured on your server",
+                                iconTint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 48.dp),

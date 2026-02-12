@@ -28,6 +28,7 @@ import com.rpeters.jellyfin.data.models.HomeVideoFilter
 import com.rpeters.jellyfin.data.models.HomeVideoSortOrder
 import com.rpeters.jellyfin.data.models.HomeVideoViewMode
 import com.rpeters.jellyfin.ui.components.CarouselItem
+import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
@@ -214,9 +215,8 @@ fun ImmersiveHomeVideosScreen(
                     enabled = !appState.isLoading,
                 ) {
                     if (appState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp,
+                        ExpressiveCircularLoading(
+                            size = 24.dp,
                         )
                     } else {
                         Icon(

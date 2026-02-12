@@ -83,6 +83,11 @@ fun ImmersiveTVEpisodeDetailScreen(
         intervalMs = 30000,
     )
 
+    // ✅ Fix: Scroll to top when episode changes
+    LaunchedEffect(episode.id) {
+        listState.scrollToItem(0)
+    }
+
     val heroImage = getBackdropUrl(episode).takeIf { !it.isNullOrBlank() }
         ?: seriesInfo?.let { getBackdropUrl(it) }
         ?: getImageUrl(episode).orEmpty()
@@ -277,8 +282,6 @@ private fun EpisodeHeroContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .statusBarsPadding()
-                .padding(top = 64.dp)
                 .padding(16.dp)
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -412,7 +415,7 @@ private fun EpisodeOverviewSection(
             ) {
                 if (isLoadingAiSummary) {
                     Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        ExpressiveCircularLoading(size = 24.dp)
                     }
                 } else {
                     Text(
@@ -426,6 +429,67 @@ private fun EpisodeOverviewSection(
 
         // Playback Capability
         playbackAnalysis?.let { PlaybackStatusBadge(analysis = it) }
+
+        // ✅ Add Episode Details (Quality, Runtime, Air Date)
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                // Quality and Video Info
+                episode.mediaSources?.firstOrNull()?.mediaStreams?.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }?.let { stream ->
+                    val quality = when {
+                        (stream.height ?: 0) >= 2160 -> "4K"
+                        (stream.height ?: 0) >= 1080 -> "1080p"
+                        (stream.height ?: 0) >= 720 -> "720p"
+                        else -> "SD"
+                    }
+                    DetailInfoRow(label = "Quality", value = quality)
+                    DetailInfoRow(label = "Video", value = "${stream.codec?.uppercase() ?: ""} ${stream.width}x${stream.height}")
+                }
+
+                // Runtime
+                episode.runTimeTicks?.let { ticks ->
+                    val minutes = (ticks / 10_000_000 / 60).toInt()
+                    DetailInfoRow(label = "Runtime", value = "${minutes}m")
+                }
+
+                // Air Date
+                episode.premiereDate?.let { date ->
+                    val formattedDate = date.toString().substringBefore('T')
+                    DetailInfoRow(label = "Air Date", value = formattedDate)
+                }
+
+                // Audio
+                episode.mediaSources?.firstOrNull()?.mediaStreams?.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO }?.let { stream ->
+                    DetailInfoRow(label = "Audio", value = stream.codec?.uppercase() ?: "Unknown")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailInfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 

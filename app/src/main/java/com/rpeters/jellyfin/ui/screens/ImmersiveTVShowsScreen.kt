@@ -69,10 +69,11 @@ fun ImmersiveTVShowsScreen(
     )
 
     // Organize TV shows into sections for immersive browsing
-    val tvShowSections = remember(tvShows) { organizeTVShowsIntoSections(tvShows) }
+    val tvShowSections = remember(tvShows) { organizeTVShowsIntoDiscoverySections(tvShows) }
 
     // Featured shows carousel - recently added TV episodes but showing series info
     val featuredShows = remember(recentEpisodes) {
+        // ✅ Uses Recently Added TV Episodes but grouped by series
         recentEpisodes
             .distinctBy { it.seriesId }
             .take(5)
@@ -219,64 +220,26 @@ private data class TVShowSection(
 )
 
 /**
- * Groups TV shows into sections for an immersive browse experience.
+ * Groups TV shows into Discovery sections.
  */
-private fun organizeTVShowsIntoSections(tvShows: List<BaseItemDto>): List<TVShowSection> {
+private fun organizeTVShowsIntoDiscoverySections(tvShows: List<BaseItemDto>): List<TVShowSection> {
     if (tvShows.isEmpty()) return emptyList()
+
+    // Sort by name or other criteria
+    val sortedShows = tvShows.sortedBy { it.name }
     val sections = mutableListOf<TVShowSection>()
 
-    // Recently Added
-    val recentlyAdded = tvShows.sortedByDescending { it.dateCreated }.take(15)
-    if (recentlyAdded.isNotEmpty()) {
-        sections.add(TVShowSection("Recently Added", recentlyAdded))
+    // Chunk into discovery rows
+    val chunkSize = 15
+    val chunks = sortedShows.chunked(chunkSize)
+
+    if (chunks.isNotEmpty()) {
+        sections.add(TVShowSection("More TV Shows", chunks[0]))
     }
 
-    // Favorites
-    val favorites = tvShows.filter { it.userData?.isFavorite == true }.take(15)
-    if (favorites.isNotEmpty()) {
-        sections.add(TVShowSection("Your Favorites", favorites))
-    }
-
-    // Continuing Series (Trending/Active)
-    val continuing = tvShows.filter { it.status == "Continuing" }.take(15)
-    if (continuing.isNotEmpty()) {
-        sections.add(TVShowSection("New Episodes Coming", continuing))
-    }
-
-    // Top Rated
-    val topRated = tvShows.filter { (it.communityRating ?: 0f) >= 8f }
-        .sortedByDescending { it.communityRating }.take(15)
-    if (topRated.isNotEmpty()) {
-        sections.add(TVShowSection("Top Rated Series", topRated))
-    }
-
-    // Action & Adventure
-    val action = tvShows.filter {
-        it.genres?.any { g ->
-            g.contains("Action", true) || g.contains("Adventure", true)
-        } == true
-    }.take(15)
-    if (action.isNotEmpty()) {
-        sections.add(TVShowSection("Action & Adventure", action))
-    }
-
-    // Comedy
-    val comedy = tvShows.filter { it.genres?.any { g -> g.contains("Comedy", true) } == true }.take(15)
-    if (comedy.isNotEmpty()) {
-        sections.add(TVShowSection("Binge-worthy Comedies", comedy))
-    }
-
-    // Drama
-    val drama = tvShows.filter { it.genres?.any { g -> g.contains("Drama", true) } == true }.take(15)
-    if (drama.isNotEmpty()) {
-        sections.add(TVShowSection("Must-Watch Dramas", drama))
-    }
-
-    // More TV Shows (Remaining)
-    val usedIds = sections.flatMap { it.items.map { s -> s.id } }.toSet()
-    val remaining = tvShows.filter { it.id !in usedIds }
-    if (remaining.isNotEmpty()) {
-        sections.add(TVShowSection("More TV Shows", remaining))
+    for (i in 1 until chunks.size) {
+        if (i > 4) break // Limit to 4 discovery sections
+        sections.add(TVShowSection("Discover More ${i + 1}", chunks[i]))
     }
 
     return sections

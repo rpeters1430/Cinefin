@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,7 +43,7 @@ fun AccessibleLoadingState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            CircularProgressIndicator(
+            ExpressiveCircularLoading(
                 modifier = Modifier
                     .size(48.dp)
                     .progressSemantics(message),
@@ -184,11 +183,10 @@ fun RefreshLoadingState(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(16.dp),
         ) {
-            CircularProgressIndicator(
+            ExpressiveCircularLoading(
                 modifier = Modifier
                     .size(32.dp)
                     .progressSemantics("Refreshing $contentType"),
-                strokeWidth = 3.dp,
             )
 
             Text(

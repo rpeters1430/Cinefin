@@ -9,7 +9,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -22,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
@@ -127,15 +125,16 @@ fun ExpressivePullToRefreshIndicator(
         contentAlignment = Alignment.Center,
     ) {
         if (isRefreshing || state.distanceFraction > 0f) {
-            CircularProgressIndicator(
+            CircularWavyProgressIndicator(
                 progress = { if (isRefreshing) 0.8f else state.distanceFraction.coerceIn(0f, 1f) },
                 modifier = Modifier
                     .size(size)
                     .rotate(rotation.value),
                 color = color,
-                strokeWidth = 4.dp,
                 trackColor = color.copy(alpha = 0.2f),
-                strokeCap = StrokeCap.Round,
+                amplitude = { 0.12f },
+                wavelength = 32.dp,
+                waveSpeed = 16.dp,
             )
         }
     }

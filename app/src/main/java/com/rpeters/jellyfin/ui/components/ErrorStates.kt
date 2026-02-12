@@ -28,7 +28,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -215,10 +214,9 @@ private fun ErrorContent(
                                     horizontalArrangement = Arrangement.Center,
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
+                                    ExpressiveCircularLoading(
+                                        size = 16.dp,
                                         color = MaterialTheme.colorScheme.onPrimary,
-                                        strokeWidth = 2.dp,
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }

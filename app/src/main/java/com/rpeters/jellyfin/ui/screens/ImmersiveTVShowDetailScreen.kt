@@ -346,12 +346,13 @@ private fun ShowHeroContent(
         modifier = Modifier
             .fillMaxWidth()
             .height(ImmersiveDimens.HeroHeightPhone)
-            .padding(16.dp)
-            .padding(bottom = 32.dp),
+            .padding(16.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

@@ -65,6 +65,7 @@ android {
                 localProperties.getProperty("JELLYFIN_KEYSTORE_PASSWORD")
                     ?: project.findProperty("JELLYFIN_KEYSTORE_PASSWORD")
                     ?: System.getenv("JELLYFIN_KEYSTORE_PASSWORD")
+                    ?: ""
                 ).toString()
 
             keyAlias = (
@@ -78,6 +79,7 @@ android {
                 localProperties.getProperty("JELLYFIN_KEY_PASSWORD")
                     ?: project.findProperty("JELLYFIN_KEY_PASSWORD")
                     ?: System.getenv("JELLYFIN_KEY_PASSWORD")
+                    ?: ""
                 ).toString()
         }
     }

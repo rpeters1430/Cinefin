@@ -47,7 +47,6 @@ import androidx.compose.material.icons.rounded.Sd
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -82,6 +81,7 @@ import coil3.request.crossfade
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
+import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
@@ -230,7 +230,7 @@ fun ImmersiveMovieDetailScreen(
                                         }
 
                                         if (isLoadingAiSummary) {
-                                            CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                                            ExpressiveCircularLoading(size = 16.dp)
                                         }
                                     }
 
@@ -614,12 +614,13 @@ private fun MovieHeroContent(
         modifier = Modifier
             .fillMaxWidth()
             .height(ImmersiveDimens.HeroHeightPhone)
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 32.dp),
+            .padding(horizontal = 16.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -895,11 +896,20 @@ private fun ImmersiveMovieInfoCard(
                     videoStream?.let { stream ->
                         val icon = getResolutionIcon(stream.width, stream.height)
                         val resolutionBadge = getResolutionBadge(stream.width, stream.height)
+                        val qualityText = when {
+                            (stream.height ?: 0) >= 2160 -> "4K"
+                            (stream.height ?: 0) >= 1440 -> "1440p"
+                            (stream.height ?: 0) >= 1080 -> "1080p"
+                            (stream.height ?: 0) >= 720 -> "720p"
+                            else -> resolutionBadge?.second ?: ""
+                        }
+
                         ImmersiveVideoInfoRow(
                             label = stringResource(id = R.string.video),
-                            codec = stream.codec?.uppercase(),
+                            codec = "${stream.codec?.uppercase() ?: ""} $qualityText".trim(),
                             icon = icon,
                             resolutionBadge = resolutionBadge,
+                            is3D = false, // TODO: Find correct property for 3D
                         )
                     }
 
@@ -1266,6 +1276,7 @@ private fun ImmersiveVideoInfoRow(
     codec: String?,
     icon: ImageVector,
     resolutionBadge: Triple<ImageVector, String, Color>? = null,
+    is3D: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -1313,6 +1324,23 @@ private fun ImmersiveVideoInfoRow(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
+                }
+
+                // 3D Badge
+                if (is3D) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier,
+                    ) {
+                        Text(
+                            text = "3D",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onTertiary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                        )
+                    }
                 }
 
                 // Quality badge (4K, FHD, HD, SD) - Using Material Symbols icons
