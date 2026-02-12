@@ -19,6 +19,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
+import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
 import com.rpeters.jellyfin.ui.components.immersive.*
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
@@ -93,7 +94,7 @@ fun ImmersiveMoviesScreen(
                 useWavyIndicator = true,
             ) {
                 if (movies.isEmpty() && !isLoading) {
-                    MoviesEmptyState(
+                    ExpressiveSimpleEmptyState(
                         icon = Icons.Default.Movie,
                         title = "No movies found",
                         subtitle = "Try adding some movies to your library",
