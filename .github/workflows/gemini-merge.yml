@@ -25,7 +25,7 @@ jobs:
   merge:
     if: |
       github.event.issue.pull_request != null &&
-      (github.event.comment.body == '/approve' || github.event.comment.body == '@gemini-cli /approve')
+      (startsWith(github.event.comment.body, '/approve') || startsWith(github.event.comment.body, '@gemini-cli /approve'))
     runs-on: ubuntu-latest
 
     steps:
@@ -43,7 +43,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const labels = context.payload.issue.labels.map(l => l.name);
+            const labels = (context.payload.issue.labels || []).map(l => l.name);
             if (!labels.includes('gemini:awaiting-merge')) {
               core.setFailed('PR is not in gemini:awaiting-merge state.');
             }
@@ -57,18 +57,27 @@ jobs:
             const repo = context.repo.repo;
             const pull_number = context.payload.issue.number;
 
-            const result = await github.rest.pulls.merge({
-              owner, repo,
-              pull_number,
-              merge_method: 'squash',
-              commit_title: `Fix: #${pull_number} (Gemini) (#${pull_number})`,
-              commit_message: `Merged PR #${pull_number} - Automated fix by Gemini`
-            });
-            
-            core.setOutput('merged', result.data.merged);
-            core.setOutput('sha', result.data.sha);
+            try {
+              const result = await github.rest.pulls.merge({
+                owner, repo,
+                pull_number,
+                merge_method: 'squash',
+                commit_title: `Fix: PR #${pull_number} (Gemini)`,
+                commit_message: `Merged PR #${pull_number} - Automated fix by Gemini`
+              });
+              
+              core.setOutput('merged', String(result.data.merged));
+              core.setOutput('sha', result.data.sha || '');
+            } catch (e) {
+              const msg = e?.message || String(e);
+              core.setOutput('merged', 'false');
+              core.setOutput('sha', '');
+              core.setOutput('error', msg);
+              core.setFailed(`Merge failed: ${msg}`);
+            }
 
       - name: Clean up labels + comment
+        if: success() && steps.merge.outputs.merged == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -107,3 +116,26 @@ jobs:
                 console.log(`Could not comment on issue #${originalIssue}: ${e.message}`);
               }
             }
+
+      - name: On merge failure, comment with diagnostics
+        if: failure() && steps.merge.outcome == 'failure'
+        uses: actions/github-script@v7
+        env:
+          MERGE_ERROR: ${{ steps.merge.outputs.error }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.payload.issue.number;
+            const err = (process.env.MERGE_ERROR || '').trim();
+
+            const body =
+              `⚠️ Merge failed for this PR.\n\n` +
+              `Common causes:\n` +
+              `- Branch protection rules require additional checks/reviews\n` +
+              `- Merge conflicts exist\n` +
+              `- PR is already merged or closed\n\n` +
+              (err ? `Error details:\n\`\`\`\n${err.slice(0, 3000)}\n\`\`\`` : '');
+
+            await github.rest.issues.createComment({ owner, repo, issue_number, body });

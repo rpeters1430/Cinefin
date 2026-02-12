@@ -21,6 +21,8 @@ concurrency:
 
 jobs:
   triage:
+    # Skip if issue was created by a bot
+    if: github.event.sender.type != 'Bot'
     runs-on: ubuntu-latest
     timeout-minutes: 7
 
@@ -91,11 +93,14 @@ jobs:
             const repo = context.repo.repo;
             const issue_number = context.payload.issue.number;
 
-            const raw = (process.env.GEMINI_JSON || '').trim();
+            let raw = (process.env.GEMINI_JSON || '').trim();
             if (!raw) {
               core.warning('Gemini returned empty output; skipping labels.');
               return;
             }
+
+            // Strip markdown code fences if present (```json ... ``` or ``` ... ```)
+            raw = raw.replace(/^```(?:json)?\s*/g, '').replace(/```$/g, '').trim();
 
             let data;
             try { data = JSON.parse(raw); }
@@ -110,17 +115,11 @@ jobs:
               return;
             }
 
-            // Best effort: create missing labels (optional)
-            for (const name of labels) {
-              try {
-                await github.rest.issues.createLabel({
-                  owner, repo,
-                  name,
-                  color: 'ededed',
-                  description: 'Auto-added by Gemini triage'
-                });
-              } catch (e) {}
+            // Apply labels (pre-created labels are used)
+            try {
+              await github.rest.issues.addLabels({ owner, repo, issue_number, labels });
+              core.info(`✅ Applied labels: ${labels.join(', ')}`);
+            } catch (e) {
+              core.warning(`Failed to apply some labels: ${e.message}`);
+              core.warning(`Suggested labels were: ${labels.join(', ')}`);
             }
-
-            await github.rest.issues.addLabels({ owner, repo, issue_number, labels });
-            core.info(`Applied labels: ${labels.join(', ')}`);

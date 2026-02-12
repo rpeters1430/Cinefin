@@ -2,7 +2,7 @@
 #
 # Triggered by: Comment "/fix" on an issue
 # Creates a detailed plan for fixing the issue with implementation steps.
-# Adds "gemini:awaiting-approval" label and waits for /approve or /deny.
+# Adds "gemini:awaiting-approval" label and waits for /approve.
 #
 # Documentation: .github/GEMINI_WORKFLOWS.md
 
@@ -24,7 +24,7 @@ jobs:
   plan:
     if: |
       github.event.issue.pull_request == null &&
-      contains(github.event.comment.body, '/fix')
+      (startsWith(github.event.comment.body, '/fix') || startsWith(github.event.comment.body, '@gemini-cli /fix'))
     runs-on: ubuntu-latest
 
     steps:
@@ -69,7 +69,7 @@ jobs:
             ---
             ## 🚀 Next Steps
             - Comment `/approve` to implement this fix and create a PR
-            - Comment `/deny` to cancel and close the issue
+            - Comment `/deny` to take no action
 
             **Issue Title:** ${{ github.event.issue.title }}
 
@@ -84,13 +84,6 @@ jobs:
             const repo = context.repo.repo;
             const issue_number = context.payload.issue.number;
             const label = 'gemini:awaiting-approval';
-
-            try {
-              await github.rest.issues.createLabel({
-                owner, repo, name: label, color: 'FBCA04',
-                description: 'Gemini waiting for /approve or /deny'
-              });
-            } catch (e) {}
 
             await github.rest.issues.addLabels({ owner, repo, issue_number, labels: [label] });
 

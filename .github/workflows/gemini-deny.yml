@@ -1,20 +1,18 @@
-# 🛑 Gemini Deny Workflow
+# 🛑 Gemini Deny Workflow (No-op)
 #
 # Triggered by: Comment "/deny" on an issue or PR
-# Removes Gemini labels and closes the issue/PR as "not planned".
-# Preserves any non-Gemini labels that were applied.
+# Intentionally performs no mutations (does not close, relabel, or comment).
 #
 # Documentation: .github/GEMINI_WORKFLOWS.md
 
-name: Gemini Deny (Cancel)
+name: Gemini Deny (No-op)
 
 on:
   issue_comment:
     types: [created]
 
 permissions:
-  issues: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: gemini-deny-${{ github.event.issue.number }}
@@ -23,7 +21,7 @@ concurrency:
 jobs:
   deny:
     if: |
-      github.event.comment.body == '/deny' || github.event.comment.body == '@gemini-cli /deny'
+      startsWith(github.event.comment.body, '/deny') || startsWith(github.event.comment.body, '@gemini-cli /deny')
     runs-on: ubuntu-latest
 
     steps:
@@ -37,42 +35,5 @@ jobs:
               core.setFailed(`Not allowed: author_association=${assoc}`);
             }
 
-      - name: Remove Gemini labels + close
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const number = context.payload.issue.number;
-            const isPr = !!context.payload.issue.pull_request;
-
-            // Get current labels
-            const currentLabels = (context.payload.issue.labels || []).map(l => l.name);
-            
-            // Remove only Gemini-related labels, keep other labels
-            const geminiLabels = ['gemini:awaiting-approval', 'gemini:awaiting-merge'];
-            const labelsToKeep = currentLabels.filter(l => !geminiLabels.includes(l));
-            
-            await github.rest.issues.setLabels({
-              owner, repo,
-              issue_number: number,
-              labels: labelsToKeep
-            });
-
-            // Close the issue/PR
-            await github.rest.issues.update({
-              owner, repo,
-              issue_number: number,
-              state: 'closed',
-              state_reason: isPr ? undefined : 'not_planned'
-            });
-
-            const message = isPr 
-              ? '🛑 **Denied.** PR closed without merging. Gemini labels removed.' 
-              : '🛑 **Denied.** Issue closed as not planned. Gemini labels removed.';
-
-            await github.rest.issues.createComment({
-              owner, repo,
-              issue_number: number,
-              body: message
-            });
+      - name: No-op
+        run: echo "/deny received; no action taken."
