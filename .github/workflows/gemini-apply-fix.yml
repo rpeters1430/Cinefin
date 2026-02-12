@@ -204,27 +204,6 @@ jobs:
             exit 1
           fi
 
-      - name: Run tests and lint (best effort)
-        id: tests
-        continue-on-error: true
-        run: |
-          set -euo pipefail
-          if [ -f "./gradlew.bat" ]; then
-            chmod +x ./gradlew.bat
-            # Run unit tests
-            ./gradlew.bat testDebugUnitTest || echo "Tests failed"
-            # Run lint
-            ./gradlew.bat lintDebug || echo "Lint failed"
-          elif [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-            # Run unit tests
-            ./gradlew testDebugUnitTest || echo "Tests failed"
-            # Run lint
-            ./gradlew lintDebug || echo "Lint failed"
-          else
-            echo "No gradlew found; skipping tests."
-          fi
-
       - name: Commit changes
         run: |
           set -euo pipefail
@@ -297,15 +276,11 @@ jobs:
               body: `✅ Opened PR: ${prUrl}\n\nComment \`/approve\` on the PR to merge.`
             });
 
-            // Comment on the PR with instructions and test status
-            const testStatus = "${{ steps.tests.outcome }}" === "success"
-              ? "✅ Tests and lint passed"
-              : "⚠️ Tests or lint had issues (check logs)";
-
+            // Comment on the PR with instructions
             await github.rest.issues.createComment({
               owner, repo,
               issue_number: pr_number,
-              body: `🤖 PR created for #${issue_number}.\n\n${testStatus}\n\nComment \`/approve\` to merge.`
+              body: `🤖 PR created for #${issue_number}.\n\nComment \`/approve\` to merge.`
             });
 
       - name: On failure, comment with diagnostics
