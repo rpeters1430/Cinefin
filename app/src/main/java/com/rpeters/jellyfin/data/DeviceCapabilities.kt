@@ -317,7 +317,7 @@ class DeviceCapabilities @Inject constructor(
      * Check if an audio codec is supported with the given channel count.
      * This is more accurate than [isCodecSupported] for audio because many devices
      * report support for surround codecs (EAC3, AC3, DTS) at stereo but fail at 5.1/7.1.
-     * 
+     *
      * For surround sound codecs (>2 channels), if the device doesn't explicitly support
      * the requested channel count, we fall back to checking stereo (2-channel) support.
      * ExoPlayer can decode multi-channel audio and downmix to stereo automatically,
@@ -329,22 +329,22 @@ class DeviceCapabilities @Inject constructor(
             try {
                 val mimeType = codecToMimeType(codec, false) ?: return false
                 val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
-                
+
                 // First, try to find a decoder for the exact channel count
                 val format = android.media.MediaFormat.createAudioFormat(mimeType, 48_000, channels)
                 val decoderName = codecList.findDecoderForFormat(format)
-                
+
                 if (decoderName != null) {
                     SecureLogger.d(TAG, "Found decoder for $codec with $channels channels: $decoderName")
                     return true
                 }
-                
+
                 // For surround sound codecs (>2 channels), fall back to checking stereo support
                 // ExoPlayer can decode multi-channel and downmix to stereo automatically
                 if (channels > 2 && isSurroundSoundCodec(codec)) {
                     val stereoFormat = android.media.MediaFormat.createAudioFormat(mimeType, 48_000, 2)
                     val stereoDecoderName = codecList.findDecoderForFormat(stereoFormat)
-                    
+
                     if (stereoDecoderName != null) {
                         SecureLogger.d(TAG, "Found stereo decoder for $codec (will downmix from $channels ch): $stereoDecoderName")
                         return true
@@ -354,7 +354,7 @@ class DeviceCapabilities @Inject constructor(
                 } else {
                     SecureLogger.d(TAG, "No decoder found for $codec with $channels channels")
                 }
-                
+
                 false
             } catch (e: Exception) {
                 SecureLogger.w(TAG, "Failed to check audio codec support for $codec ($channels ch)", e)
@@ -365,7 +365,7 @@ class DeviceCapabilities @Inject constructor(
             codecs.contains(codec.lowercase())
         }
     }
-    
+
     /**
      * Check if a codec is a surround sound codec that supports multi-channel audio.
      */
