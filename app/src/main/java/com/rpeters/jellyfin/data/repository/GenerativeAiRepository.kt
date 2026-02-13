@@ -339,6 +339,440 @@ class GenerativeAiRepository @Inject constructor(
     }
 
     /**
+     * Generates an AI-powered biography for a person (actor, director, etc.)
+     * based on their filmography in the user's library.
+     *
+     * @param personName The name of the person
+     * @param filmography List of movies and TV shows they've appeared in
+     * @return AI-generated biography highlighting career, known roles, and library presence
+     */
+    suspend fun generatePersonBio(
+        personName: String,
+        filmography: List<BaseItemDto>,
+    ): String = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext ""
+        if (filmography.isEmpty()) return@withContext ""
+        logModelUsage("generatePersonBio", usesPrimaryModel = true)
+
+        // Build filmography context (limit to most notable/recent items)
+        val contextSize = remoteConfig.getLong("ai_person_bio_context_size").toInt()
+            .let { if (it <= 0) 15 else it }
+
+        val movieTitles = filmography
+            .filter { it.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE }
+            .take(contextSize)
+            .mapNotNull { it.name }
+            .joinToString(", ")
+
+        val tvTitles = filmography
+            .filter { it.type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES }
+            .take(contextSize)
+            .mapNotNull { it.name }
+            .joinToString(", ")
+
+        val movieCount = filmography.count { it.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE }
+        val tvCount = filmography.count { it.type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES }
+
+        val prompt = buildString {
+            append("Generate a concise 2-3 sentence biography for $personName based on their filmography in this library.\n\n")
+            append("Context:\n")
+            append("- Total in library: $movieCount movies, $tvCount TV shows\n")
+            if (movieTitles.isNotEmpty()) {
+                append("- Notable movies: $movieTitles\n")
+            }
+            if (tvTitles.isNotEmpty()) {
+                append("- Notable TV shows: $tvTitles\n")
+            }
+            append("\nFocus on:\n")
+            append("1. Career highlights and known roles (based on titles)\n")
+            append("2. Acting style or typical genres\n")
+            append("3. Presence in this library (${filmography.size} total appearances)\n\n")
+            append("Keep it engaging and informative. Max 60 words.")
+        }
+
+        try {
+            val response = withTimeout(15_000L) {
+                getPrimaryModel().generateText(prompt)
+            }
+            val success = response.isNotBlank()
+            analytics.logAiEvent("person_bio", success, getBackendName(true))
+            response.ifBlank {
+                // Fallback bio
+                buildString {
+                    append("Featured in $movieCount ${if (movieCount == 1) "movie" else "movies"}")
+                    if (tvCount > 0) {
+                        append(" and $tvCount ${if (tvCount == 1) "show" else "shows"}")
+                    }
+                    append(" in your library.")
+                }
+            }
+        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+            Log.w("GenerativeAi", "Person bio generation timed out for: $personName")
+            analytics.logAiEvent("person_bio", false, getBackendName(true))
+            ""
+        } catch (e: Exception) {
+            Log.e("GenerativeAi", "Person bio generation failed for: $personName", e)
+            analytics.logAiEvent("person_bio", false, getBackendName(true))
+            ""
+        }
+    }
+
+    /**
+     * Extracts thematic elements from content overview.
+     * Returns a list of themes like "redemption", "found family", "coming of age", etc.
+     *
+     * @param title The title of the content
+     * @param overview The content overview/description
+     * @param genres List of genres (helps guide theme extraction)
+     * @return List of theme strings (max 5)
+     */
+    suspend fun extractThemes(
+        title: String,
+        overview: String,
+        genres: List<String> = emptyList(),
+    ): List<String> = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext emptyList()
+        if (overview.isBlank()) return@withContext emptyList()
+        logModelUsage("extractThemes", usesPrimaryModel = true)
+
+        val maxThemes = remoteConfig.getLong("ai_theme_extraction_limit").toInt()
+            .let { if (it <= 0) 5 else it }
+
+        val genreContext = if (genres.isNotEmpty()) {
+            "Genres: ${genres.joinToString(", ")}\n"
+        } else ""
+
+        val prompt = """
+            Extract $maxThemes thematic elements from this content. Focus on deeper themes beyond just genre.
+
+            Title: $title
+            $genreContext
+            Overview: $overview
+
+            Examples of themes: "redemption", "found family", "coming of age", "moral ambiguity", "survival", "betrayal", "identity crisis", "power corruption", "revenge", "sacrifice", "forbidden love", "class struggle"
+
+            Return ONLY a JSON array of theme strings, lowercase, 1-3 words each.
+            Example: ["redemption", "found family", "survival"]
+        """.trimIndent()
+
+        try {
+            val response = withTimeout(10_000L) {
+                getPrimaryModel().generateText(prompt)
+            }
+            val success = response.isNotBlank()
+            analytics.logAiEvent("theme_extraction", success, getBackendName(true))
+
+            if (response.isBlank()) return@withContext emptyList()
+
+            // Parse JSON array
+            val jsonString = response
+                .replace("```json", "")
+                .replace("```", "")
+                .trim()
+                .trim('[', ']')
+
+            val themes = jsonString
+                .split(",")
+                .map { it.trim().trim('"').lowercase() }
+                .filter { it.isNotBlank() && it.length >= 3 }
+                .distinct()
+                .take(maxThemes)
+
+            themes
+        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+            Log.w("GenerativeAi", "Theme extraction timed out for: $title")
+            analytics.logAiEvent("theme_extraction", false, getBackendName(true))
+            emptyList()
+        } catch (e: Exception) {
+            Log.e("GenerativeAi", "Theme extraction failed for: $title", e)
+            analytics.logAiEvent("theme_extraction", false, getBackendName(true))
+            emptyList()
+        }
+    }
+
+    /**
+     * Generates a personalized "Why You'll Love This" pitch for a movie/show.
+     * Analyzes user's viewing history to find connections and similarities.
+     *
+     * @param item The movie/show to generate a pitch for
+     * @param viewingHistory User's recent viewing history (max 20 items)
+     * @return Personalized pitch explaining why the user would enjoy this content
+     */
+    suspend fun generateWhyYoullLoveThis(
+        item: BaseItemDto,
+        viewingHistory: List<BaseItemDto>,
+    ): String = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext ""
+        if (viewingHistory.isEmpty()) return@withContext ""
+        logModelUsage("whyYoullLoveThis", usesPrimaryModel = true)
+
+        val historySize = remoteConfig.getLong("ai_history_context_size").toInt()
+            .let { if (it <= 0) 10 else it }
+
+        // Build viewing history context
+        val recentTitles = viewingHistory.take(historySize)
+            .mapNotNull { it.name }
+            .joinToString(", ")
+
+        val itemTitle = item.name ?: "this content"
+        val itemGenres = item.genres?.mapNotNull { it.name }?.joinToString(", ") ?: ""
+        val itemOverview = item.overview?.take(300) ?: ""
+
+        val prompt = """
+            Based on the user's viewing history, explain why they would enjoy "$itemTitle" in ONE compelling sentence (max 40 words).
+
+            Their recent watches: $recentTitles
+
+            About "$itemTitle":
+            - Genres: $itemGenres
+            - Overview: $itemOverview
+
+            Find connections to their history (similar themes, genres, actors, tone, storytelling style).
+
+            Format: "You loved [Title] and [Title] - this has the same [specific quality]."
+
+            Be specific and engaging. Focus on WHY, not just WHAT.
+        """.trimIndent()
+
+        try {
+            val response = withTimeout(12_000L) {
+                getPrimaryModel().generateText(prompt)
+            }
+            val success = response.isNotBlank()
+            analytics.logAiEvent("why_youll_love_this", success, getBackendName(true))
+            response.trim().takeIf { it.isNotBlank() } ?: ""
+        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+            Log.w("GenerativeAi", "Why you'll love this timed out for: $itemTitle")
+            analytics.logAiEvent("why_youll_love_this", false, getBackendName(true))
+            ""
+        } catch (e: Exception) {
+            Log.e("GenerativeAi", "Why you'll love this failed for: $itemTitle", e)
+            analytics.logAiEvent("why_youll_love_this", false, getBackendName(true))
+            ""
+        }
+    }
+
+    /**
+     * Generates mood-based collections from the user's library.
+     * Creates dynamic collections like "Feel-Good Comedies", "Mind-Bending Thrillers", etc.
+     *
+     * @param library The user's complete library
+     * @param currentHour Hour of day (0-23) for time-aware collections
+     * @return Map of collection name to list of items
+     */
+    suspend fun generateMoodCollections(
+        library: List<BaseItemDto>,
+        currentHour: Int = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY),
+    ): Map<String, List<BaseItemDto>> = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext emptyMap()
+        if (library.isEmpty()) return@withContext emptyMap()
+        logModelUsage("moodCollections", usesPrimaryModel = true)
+
+        val maxCollections = remoteConfig.getLong("ai_mood_collections_count").toInt()
+            .let { if (it <= 0) 3 else it }
+
+        val itemsPerCollection = remoteConfig.getLong("ai_mood_collection_size").toInt()
+            .let { if (it <= 0) 10 else it }
+
+        // Build library context (limit to avoid huge prompts)
+        val libraryContext = library.take(100).joinToString("\n") { item ->
+            "${item.name} (${item.type}, ${item.genres?.joinToString { it.name ?: "" } ?: ""})"
+        }
+
+        // Time-aware context
+        val timeContext = when (currentHour) {
+            in 6..11 -> "morning (suggest energizing, light content)"
+            in 12..17 -> "afternoon (suggest engaging, varied content)"
+            in 18..21 -> "evening (suggest entertaining, relaxing content)"
+            else -> "late night (suggest mysteries, thrillers, or comfort content)"
+        }
+
+        val prompt = """
+            Based on this library and the current time ($timeContext), create $maxCollections mood-based collections.
+
+            Library sample (first 100 items):
+            $libraryContext
+
+            Create collections with:
+            1. Engaging collection names (e.g., "Feel-Good Comedies", "Mind-Bending Thrillers", "Cozy Comfort Shows")
+            2. $itemsPerCollection items per collection
+            3. Time-appropriate suggestions
+
+            Return as JSON:
+            {
+              "Collection Name 1": ["Title 1", "Title 2", ...],
+              "Collection Name 2": ["Title 1", "Title 2", ...],
+              ...
+            }
+
+            Only include titles that exist in the library above.
+        """.trimIndent()
+
+        try {
+            val response = withTimeout(15_000L) {
+                getPrimaryModel().generateText(prompt)
+            }
+            val success = response.isNotBlank()
+            analytics.logAiEvent("mood_collections", success, getBackendName(true))
+
+            if (response.isBlank()) return@withContext emptyMap()
+
+            // Parse JSON response
+            val jsonString = response
+                .replace("```json", "")
+                .replace("```", "")
+                .trim()
+
+            // Simple JSON parsing (production would use kotlinx.serialization)
+            val collections = mutableMapOf<String, List<BaseItemDto>>()
+
+            // Create a title-to-item lookup for fast matching
+            val titleMap = library.associateBy { it.name?.lowercase()?.trim() }
+
+            // Extract collection name and titles (simplified parsing)
+            val collectionPattern = """"([^"]+)":\s*\[([^\]]+)\]""".toRegex()
+            collectionPattern.findAll(jsonString).forEach { match ->
+                val collectionName = match.groupValues[1]
+                val titlesString = match.groupValues[2]
+
+                // Extract individual titles
+                val titles = """"([^"]+)"""".toRegex()
+                    .findAll(titlesString)
+                    .map { it.groupValues[1] }
+                    .toList()
+
+                // Match titles to actual items
+                val items = titles.mapNotNull { title ->
+                    titleMap[title.lowercase().trim()]
+                }.take(itemsPerCollection)
+
+                if (items.isNotEmpty()) {
+                    collections[collectionName] = items
+                }
+            }
+
+            collections.take(maxCollections).toMap()
+        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+            Log.w("GenerativeAi", "Mood collections generation timed out")
+            analytics.logAiEvent("mood_collections", false, getBackendName(true))
+            emptyMap()
+        } catch (e: Exception) {
+            Log.e("GenerativeAi", "Mood collections generation failed", e)
+            analytics.logAiEvent("mood_collections", false, getBackendName(true))
+            emptyMap()
+        }
+    }
+
+    /**
+     * Generates smart AI-powered recommendations for a movie/show.
+     * Analyzes viewing history and library to find thematic matches beyond metadata.
+     *
+     * This is the HYBRID approach - use alongside Jellyfin's built-in similar items.
+     * Jellyfin provides metadata-based matches, AI provides thematic/mood matches.
+     *
+     * @param currentItem The movie/show to find recommendations for
+     * @param viewingHistory User's recent viewing history
+     * @param library Full library to recommend from
+     * @return List of recommended items (AI-selected from library)
+     */
+    suspend fun generateSmartRecommendations(
+        currentItem: BaseItemDto,
+        viewingHistory: List<BaseItemDto>,
+        library: List<BaseItemDto>,
+    ): List<BaseItemDto> = withContext(Dispatchers.IO) {
+        if (!isAiEnabled()) return@withContext emptyList()
+        if (library.isEmpty()) return@withContext emptyList()
+        logModelUsage("smartRecommendations", usesPrimaryModel = true)
+
+        val maxRecommendations = remoteConfig.getLong("ai_smart_recommendations_limit").toInt()
+            .let { if (it <= 0) 10 else it }
+
+        val historySize = remoteConfig.getLong("ai_history_context_size").toInt()
+            .let { if (it <= 0) 10 else it }
+
+        // Build context
+        val currentTitle = currentItem.name ?: "this content"
+        val currentGenres = currentItem.genres?.mapNotNull { it.name }?.joinToString(", ") ?: ""
+        val currentOverview = currentItem.overview?.take(200) ?: ""
+
+        val historyTitles = viewingHistory.take(historySize)
+            .mapNotNull { it.name }
+            .joinToString(", ")
+
+        // Build library context (sample to avoid huge prompts)
+        val libraryContext = library.take(100).joinToString("\n") { item ->
+            "${item.name} (${item.type}, ${item.genres?.joinToString { it.name ?: "" } ?: ""})"
+        }
+
+        val prompt = """
+            You are a smart content recommendation engine. Find $maxRecommendations titles from the library that the user would enjoy based on thematic similarities, mood, and tone.
+
+            Current item: $currentTitle
+            Genres: $currentGenres
+            Overview: $currentOverview
+
+            User's recent viewing history: $historyTitles
+
+            Available library (sample):
+            $libraryContext
+
+            Find items that match:
+            1. Thematic elements (e.g., similar character arcs, moral dilemmas, storytelling style)
+            2. Mood and tone (not just genre)
+            3. User's demonstrated preferences from history
+
+            DO NOT recommend the current item itself.
+
+            Return ONLY a JSON array of title strings, in priority order:
+            ["Title 1", "Title 2", "Title 3", ...]
+
+            Include ONLY titles that exist in the library above.
+        """.trimIndent()
+
+        try {
+            val response = withTimeout(15_000L) {
+                getPrimaryModel().generateText(prompt)
+            }
+            val success = response.isNotBlank()
+            analytics.logAiEvent("smart_recommendations", success, getBackendName(true))
+
+            if (response.isBlank()) return@withContext emptyList()
+
+            // Parse JSON array
+            val jsonString = response
+                .replace("```json", "")
+                .replace("```", "")
+                .trim()
+                .trim('[', ']')
+
+            // Create title lookup map
+            val titleMap = library.associateBy { it.name?.lowercase()?.trim() }
+
+            // Extract and match titles
+            val recommendedTitles = """"([^"]+)"""".toRegex()
+                .findAll(jsonString)
+                .map { it.groupValues[1] }
+                .toList()
+
+            val recommendations = recommendedTitles
+                .mapNotNull { title -> titleMap[title.lowercase().trim()] }
+                .filter { it.id != currentItem.id } // Don't recommend the current item
+                .distinct()
+                .take(maxRecommendations)
+
+            recommendations
+        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+            Log.w("GenerativeAi", "Smart recommendations timed out for: $currentTitle")
+            analytics.logAiEvent("smart_recommendations", false, getBackendName(true))
+            emptyList()
+        } catch (e: Exception) {
+            Log.e("GenerativeAi", "Smart recommendations failed for: $currentTitle", e)
+            analytics.logAiEvent("smart_recommendations", false, getBackendName(true))
+            emptyList()
+        }
+    }
+
+    /**
      * Returns whether the current model is using on-device AI (Gemini Nano)
      * This can be used to show a privacy badge in the UI
      */

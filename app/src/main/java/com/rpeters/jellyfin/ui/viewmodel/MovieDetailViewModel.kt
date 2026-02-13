@@ -20,12 +20,18 @@ import javax.inject.Inject
 data class MovieDetailState(
     val movie: BaseItemDto? = null,
     val similarMovies: List<BaseItemDto> = emptyList(),
+    val aiRecommendations: List<BaseItemDto> = emptyList(),
     val playbackAnalysis: PlaybackCapabilityAnalysis? = null,
     val isLoading: Boolean = false,
     val isSimilarMoviesLoading: Boolean = false,
+    val isAiRecommendationsLoading: Boolean = false,
     val errorMessage: String? = null,
     val aiSummary: String? = null,
     val isLoadingAiSummary: Boolean = false,
+    val themes: List<String> = emptyList(),
+    val isLoadingThemes: Boolean = false,
+    val whyYoullLoveThis: String? = null,
+    val isLoadingWhyYoullLoveThis: Boolean = false,
 )
 
 @HiltViewModel
@@ -59,6 +65,15 @@ class MovieDetailViewModel @Inject constructor(
 
                     // Load similar movies in background
                     loadSimilarMovies(movieId)
+
+                    // Generate AI recommendations in background
+                    generateAiRecommendations(result.data)
+
+                    // Extract themes in background
+                    extractThemes(result.data)
+
+                    // Generate personalized pitch in background
+                    generateWhyYoullLoveThis(result.data)
                 }
                 is ApiResult.Error -> {
                     _state.value = _state.value.copy(
@@ -90,6 +105,120 @@ class MovieDetailViewModel @Inject constructor(
                 is ApiResult.Loading -> {
                     // no-op
                 }
+            }
+        }
+    }
+
+    private fun extractThemes(movie: BaseItemDto) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingThemes = true)
+            try {
+                val themes = generativeAiRepository.extractThemes(
+                    title = movie.name ?: "Unknown",
+                    overview = movie.overview ?: "",
+                    genres = movie.genres?.map { it.name ?: "" } ?: emptyList()
+                )
+                _state.value = _state.value.copy(
+                    themes = themes,
+                    isLoadingThemes = false
+                )
+            } catch (e: Exception) {
+                // Theme extraction is non-critical
+                _state.value = _state.value.copy(
+                    themes = emptyList(),
+                    isLoadingThemes = false
+                )
+            }
+        }
+    }
+
+    private fun generateWhyYoullLoveThis(movie: BaseItemDto) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingWhyYoullLoveThis = true)
+            try {
+                // Get viewing history - we'll use recently played items as a proxy
+                // In a real implementation, we'd fetch from repository
+                val viewingHistory = try {
+                    when (val result = repository.getRecentlyPlayed(limit = 20)) {
+                        is ApiResult.Success -> result.data
+                        else -> emptyList()
+                    }
+                } catch (e: Exception) {
+                    emptyList()
+                }
+
+                if (viewingHistory.isNotEmpty()) {
+                    val pitch = generativeAiRepository.generateWhyYoullLoveThis(
+                        item = movie,
+                        viewingHistory = viewingHistory
+                    )
+                    _state.value = _state.value.copy(
+                        whyYoullLoveThis = pitch.takeIf { it.isNotBlank() },
+                        isLoadingWhyYoullLoveThis = false
+                    )
+                } else {
+                    // No viewing history, skip
+                    _state.value = _state.value.copy(
+                        whyYoullLoveThis = null,
+                        isLoadingWhyYoullLoveThis = false
+                    )
+                }
+            } catch (e: Exception) {
+                // Personalized pitch is non-critical
+                _state.value = _state.value.copy(
+                    whyYoullLoveThis = null,
+                    isLoadingWhyYoullLoveThis = false
+                )
+            }
+        }
+    }
+
+    private fun generateAiRecommendations(movie: BaseItemDto) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isAiRecommendationsLoading = true)
+            try {
+                // Get viewing history
+                val viewingHistory = try {
+                    when (val result = repository.getRecentlyPlayed(limit = 20)) {
+                        is ApiResult.Success -> result.data
+                        else -> emptyList()
+                    }
+                } catch (e: Exception) {
+                    emptyList()
+                }
+
+                // Get library for recommendations
+                val library = try {
+                    when (val result = repository.getAllMovies(limit = 200, startIndex = 0)) {
+                        is ApiResult.Success -> result.data
+                        else -> emptyList()
+                    }
+                } catch (e: Exception) {
+                    emptyList()
+                }
+
+                if (library.isNotEmpty()) {
+                    val recommendations = generativeAiRepository.generateSmartRecommendations(
+                        currentItem = movie,
+                        viewingHistory = viewingHistory,
+                        library = library
+                    )
+                    _state.value = _state.value.copy(
+                        aiRecommendations = recommendations,
+                        isAiRecommendationsLoading = false
+                    )
+                } else {
+                    _state.value = _state.value.copy(
+                        aiRecommendations = emptyList(),
+                        isAiRecommendationsLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                // AI recommendations are non-critical
+                _state.value = _state.value.copy(
+                    aiRecommendations = emptyList(),
+                    isAiRecommendationsLoading = false
+                )
             }
         }
     }

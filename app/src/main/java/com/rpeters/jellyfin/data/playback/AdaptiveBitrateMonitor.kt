@@ -138,25 +138,9 @@ class AdaptiveBitrateMonitor @Inject constructor(
                             consecutiveBufferingEvents = 0 // Reset counter
                         }
 
-                        // Check bandwidth estimates (if available)
-                        val bandwidthEstimate = exoPlayer.currentTracks.groups
-                            .firstNotNullOfOrNull { group ->
-                                group.getTrackFormat(0).bitrate.takeIf { it > 0 }
-                            }
-
-                        if (bandwidthEstimate != null && bandwidthEstimate < CRITICAL_BANDWIDTH_THRESHOLD) {
-                            val newQuality = getDowngradedQuality(currentQuality)
-                            SecureLogger.w(
-                                TAG,
-                                "Critical bandwidth detected (${bandwidthEstimate / 1_000_000}Mbps). Recommending quality downgrade: $currentQuality -> $newQuality",
-                            )
-                            _qualityRecommendation.value = QualityRecommendation(
-                                recommendedQuality = newQuality,
-                                reason = "Low bandwidth (${bandwidthEstimate / 1_000_000}Mbps)",
-                                severity = RecommendationSeverity.HIGH,
-                            )
-                            lastQualityDowngrade = currentTime
-                        }
+                        // Note: Removed incorrect bandwidth check that was using track bitrate
+                        // instead of actual network bandwidth. Buffering-based detection above
+                        // is more reliable for quality recommendations.
                     }
 
                     previousPlaybackState = currentState

@@ -118,7 +118,7 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
                 }
             },
             onPersonClick = { personId, personName ->
-                navController.navigate(Screen.Search.createRoute(personName))
+                navController.navigate(Screen.PersonDetail.createRoute(personId, personName))
             },
         )
     }

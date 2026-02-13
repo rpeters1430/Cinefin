@@ -313,6 +313,57 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
+    /**
+     * Get all movies and TV shows for a specific person (actor/director/etc)
+     */
+    suspend fun getItemsByPerson(
+        personId: String,
+        includeTypes: List<BaseItemKind>? = listOf(BaseItemKind.MOVIE, BaseItemKind.SERIES),
+        limit: Int = 100,
+    ): ApiResult<List<BaseItemDto>> {
+        if (isTokenExpired()) {
+            Log.w("JellyfinRepository", "getItemsByPerson: Token expired, attempting proactive refresh")
+            if (!forceReAuthenticate()) {
+                return ApiResult.Error("Authentication expired", errorType = ErrorType.AUTHENTICATION)
+            }
+        }
+
+        val server = authRepository.getCurrentServer()
+        if (server?.accessToken == null || server.userId == null) {
+            return ApiResult.Error("Not authenticated", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        val userUuid = runCatching { UUID.fromString(server.userId) }.getOrNull()
+        if (userUuid == null) {
+            return ApiResult.Error("Invalid user ID", errorType = ErrorType.AUTHENTICATION)
+        }
+
+        return try {
+            withIo {
+                val client = getClient(server.url, server.accessToken)
+                val response = client.itemsApi.getItems(
+                    userId = userUuid,
+                    recursive = true,
+                    personIds = listOf(UUID.fromString(personId)),
+                    includeItemTypes = includeTypes,
+                    limit = limit,
+                    sortBy = listOf(ItemSortBy.PRODUCTION_YEAR, ItemSortBy.SORT_NAME),
+                    sortOrder = listOf(SortOrder.DESCENDING),
+                    fields = listOf(
+                        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+                        ItemFields.OVERVIEW,
+                        ItemFields.GENRES,
+                        ItemFields.PEOPLE,
+                        ItemFields.PRODUCTION_YEAR,
+                    ),
+                )
+                ApiResult.Success(response.content.items)
+            }
+        } catch (e: Exception) {
+            handleExceptionSafely(e, "getItemsByPerson")
+        }
+    }
+
     suspend fun getRecentlyAdded(limit: Int = RECENTLY_ADDED_LIMIT): ApiResult<List<BaseItemDto>> {
         // ✅ FIX: Validate token before making requests
         if (isTokenExpired()) {

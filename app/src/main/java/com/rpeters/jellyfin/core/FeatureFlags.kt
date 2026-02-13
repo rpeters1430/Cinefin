@@ -18,6 +18,16 @@ object FeatureFlags {
         const val AI_SEARCH_KEYWORD_LIMIT = "ai_search_keyword_limit"
         const val AI_RECOMMENDATION_COUNT = "ai_recommendation_count"
         const val AI_HISTORY_CONTEXT_SIZE = "ai_history_context_size"
+
+        // Quick Win AI Features
+        const val AI_PERSON_BIO = "ai_person_bio"
+        const val AI_PERSON_BIO_CONTEXT_SIZE = "ai_person_bio_context_size"
+        const val AI_THEMATIC_ANALYSIS = "ai_thematic_analysis"
+        const val AI_THEME_EXTRACTION_LIMIT = "ai_theme_extraction_limit"
+        const val AI_WHY_YOULL_LOVE_THIS = "ai_why_youll_love_this"
+        const val AI_MOOD_COLLECTIONS = "ai_mood_collections"
+        const val AI_SMART_RECOMMENDATIONS = "ai_smart_recommendations"
+        const val AI_SMART_RECOMMENDATIONS_LIMIT = "ai_smart_recommendations_limit"
     }
 
     /**

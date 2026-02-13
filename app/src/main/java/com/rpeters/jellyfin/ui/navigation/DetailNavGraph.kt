@@ -333,7 +333,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     navController.navigate(Screen.MovieDetail.createRoute(relatedMovieId))
                 },
                 onPersonClick = { personId, personName ->
-                    navController.navigate(Screen.Search.createRoute(personName))
+                    navController.navigate(Screen.PersonDetail.createRoute(personId, personName))
                 },
                 onRefresh = { detailViewModel.refresh() },
                 isRefreshing = detailState.isLoading || detailState.isSimilarMoviesLoading,
@@ -475,7 +475,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                         }
                     },
                     onPersonClick = { personId, personName ->
-                        navController.navigate(Screen.Search.createRoute(personName))
+                        navController.navigate(Screen.PersonDetail.createRoute(personId, personName))
                     },
                     playbackAnalysis = detailState.playbackAnalysis,
                     onGenerateAiSummary = { viewModel.generateAiSummary() },
@@ -554,5 +554,32 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 }
             }
         }
+    }
+
+    // Person Detail Screen - Actor/Director filmography
+    composable(
+        route = Screen.PersonDetail.route,
+        arguments = listOf(
+            navArgument("personId") { type = NavType.StringType },
+            navArgument("personName") { type = NavType.StringType }
+        )
+    ) {
+        com.rpeters.jellyfin.ui.screens.PersonDetailScreen(
+            onBackClick = { navController.popBackStack() },
+            onItemClick = { item ->
+                when (item.type) {
+                    org.jellyfin.sdk.model.api.BaseItemKind.MOVIE -> {
+                        navController.navigate(Screen.MovieDetail.createRoute(item.id.toString()))
+                    }
+                    org.jellyfin.sdk.model.api.BaseItemKind.SERIES -> {
+                        navController.navigate(Screen.TVSeasons.createRoute(item.id.toString()))
+                    }
+                    else -> {
+                        // Handle other types if needed
+                    }
+                }
+            },
+            getImageUrl = { item -> mainViewModel.getImageUrl(item) }
+        )
     }
 }

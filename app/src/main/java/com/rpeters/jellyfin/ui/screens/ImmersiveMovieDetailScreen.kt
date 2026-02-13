@@ -54,6 +54,8 @@ import androidx.compose.material.icons.rounded.Sd
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -96,12 +98,12 @@ import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
+import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
+import com.rpeters.jellyfin.ui.components.immersive.HdrType
+import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
+import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
-import com.rpeters.jellyfin.ui.theme.Quality1440
-import com.rpeters.jellyfin.ui.theme.Quality4K
-import com.rpeters.jellyfin.ui.theme.QualityHD
-import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.utils.normalizeOfficialRating
@@ -270,6 +272,17 @@ fun ImmersiveMovieDetailScreen(
                     }
                 }
 
+                // "Why You'll Love This" AI Card
+                if (movieState.whyYoullLoveThis != null || movieState.isLoadingWhyYoullLoveThis) {
+                    item {
+                        WhyYoullLoveThisCard(
+                            pitch = movieState.whyYoullLoveThis,
+                            isLoading = movieState.isLoadingWhyYoullLoveThis,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+
                 // Play Button and Action Row
                 item {
                     Column(
@@ -429,7 +442,74 @@ fun ImmersiveMovieDetailScreen(
                     }
                 }
 
-                // Related Movies Section
+                // AI Themes Section
+                if (movieState.themes.isNotEmpty() || movieState.isLoadingThemes) {
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.background)
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "Themes",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = "AI Generated",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            if (movieState.isLoadingThemes) {
+                                LinearProgressIndicator(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            } else {
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    items(movieState.themes, key = { it }) { theme ->
+                                        AssistChip(
+                                            onClick = { /* TODO: Navigate to search with theme */ },
+                                            label = {
+                                                Text(
+                                                    text = theme.replaceFirstChar { it.uppercase() },
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    imageVector = Icons.Default.AutoAwesome,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            },
+                                            colors = AssistChipDefaults.assistChipColors(
+                                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                leadingIconContentColor = MaterialTheme.colorScheme.primary
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Related Movies Section (Jellyfin metadata-based)
                 if (relatedItems.isNotEmpty()) {
                     item {
                         Column(
@@ -461,6 +541,75 @@ fun ImmersiveMovieDetailScreen(
                                     },
                                     cardSize = ImmersiveCardSize.SMALL,
                                 )
+                            }
+                        }
+                    }
+                }
+
+                // AI Recommendations Section (AI-powered thematic matches)
+                if (movieState.aiRecommendations.isNotEmpty() || movieState.isAiRecommendationsLoading) {
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.background)
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "You Might Also Like",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = "AI Powered",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            if (movieState.isAiRecommendationsLoading) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        ExpressiveCircularLoading(size = 32.dp)
+                                        Text(
+                                            text = "Finding recommendations...",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            } else {
+                                PerformanceOptimizedLazyRow(
+                                    items = movieState.aiRecommendations,
+                                    horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
+                                    maxVisibleItems = perfConfig.maxRowItems,
+                                ) { recommendedMovie, _, _ ->
+                                    ImmersiveMediaCard(
+                                        title = recommendedMovie.name ?: stringResource(id = R.string.unknown),
+                                        subtitle = recommendedMovie.productionYear?.toString() ?: "",
+                                        imageUrl = getImageUrl(recommendedMovie) ?: "",
+                                        rating = recommendedMovie.communityRating,
+                                        onCardClick = {
+                                            onRelatedMovieClick(recommendedMovie.id.toString())
+                                        },
+                                        cardSize = ImmersiveCardSize.SMALL,
+                                    )
+                                }
                             }
                         }
                     }
@@ -933,136 +1082,87 @@ private fun ImmersiveMovieInfoCard(
                 DetailRow(label = "Release Date", value = formattedDate)
             }
 
-            // Media info with resolution and codecs
+            // ✨ Beautiful Material 3 Expressive Media Info Cards
             movie.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
                 val videoStream = streams.findDefaultVideoStream()
                 val audioStream = streams.firstOrNull { it.type == MediaStreamType.AUDIO }
 
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    // New Enhanced Video Info Row
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Premium Video Info Card
                     videoStream?.let { stream ->
-                        val width = stream.width ?: 0
-                        val height = stream.height ?: 0
-                        val resolutionText = when {
-                            height >= 4320 || width >= 7680 -> "8K"
-                            height >= 2160 || width >= 3840 -> "4K"
-                            height >= 1080 || width >= 1920 -> "FHD"
-                            height >= 720 || width >= 1280 -> "HD"
-                            else -> "SD"
-                        }
+                        val resolution = ResolutionQuality.fromResolution(stream.width, stream.height)
 
-                        val codecText = when (stream.codec) {
-                            "hevc", "h265" -> "H265 HEVC"
-                            "h264", "avc" -> "H264 AVC"
+                        val codecText = when (stream.codec?.lowercase()) {
+                            "hevc", "h265" -> "HEVC"
+                            "h264", "avc" -> "H.264"
                             "av1" -> "AV1"
                             "vp9" -> "VP9"
-                            else -> stream.codec ?: ""
+                            "mpeg2" -> "MPEG-2"
+                            "mpeg4" -> "MPEG-4"
+                            else -> stream.codec?.uppercase() ?: "UNKNOWN"
                         }
 
-                        val isHdr = stream.videoRange?.toString()?.contains("hdr", ignoreCase = true) == true ||
-                            stream.videoRangeType?.toString()?.contains("hdr", ignoreCase = true) == true
+                        val hdrType = HdrType.detect(
+                            stream.videoRange?.toString(),
+                            stream.videoRangeType?.toString()
+                        )
 
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.secondaryContainer,
-                                    modifier = Modifier.size(40.dp),
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.VideoFile,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                        modifier = Modifier.padding(6.dp),
-                                    )
-                                }
-                                Column {
-                                    Text(
-                                        text = "Video",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        MetadataTag(
-                                            text = resolutionText,
-                                            icon = Icons.Outlined.HighQuality,
-                                            iconSize = 20.dp,
-                                        )
-                                        MetadataTag(text = codecText)
-                                        if (isHdr) {
-                                            MetadataTag(
-                                                text = "HDR",
-                                                icon = Icons.Outlined.HdrOn,
-                                                iconSize = 20.dp,
-                                            )
-                                        }
-                                        stream.bitDepth?.let { MetadataTag(text = "${it}-bit") }
-                                        stream.averageFrameRate?.let { MetadataTag(text = "${it.roundToInt()} FPS") }
-                                    }
-                                }
-                            }
-                        }
+                        VideoInfoCard(
+                            resolution = resolution,
+                            codec = codecText,
+                            bitDepth = stream.bitDepth,
+                            frameRate = stream.averageFrameRate,
+                            isHdr = hdrType != null,
+                            hdrType = hdrType ?: HdrType.HDR,
+                            is3D = stream.videoDoViTitle?.contains("3D", ignoreCase = true) == true
+                        )
                     }
 
-                    // New Enhanced Audio Info Row
+                    // Premium Audio Info Card
                     audioStream?.let { stream ->
                         val channelText = when (stream.channels) {
                             8 -> "7.1"
                             6 -> "5.1"
-                            2 -> "2.0"
-                            else -> stream.channels?.toString() ?: ""
+                            2 -> "Stereo"
+                            1 -> "Mono"
+                            else -> stream.channels?.toString()?.let { "$it.0" } ?: ""
                         }
 
-                        val codecText = when (stream.codec) {
-                            "truehd" -> "TRUEHD"
-                            "eac3" -> "EAC3"
+                        val codecText = when (stream.codec?.lowercase()) {
+                            "truehd" -> "TrueHD"
+                            "eac3" -> "DD+"
                             "aac" -> "AAC"
                             "ac3" -> "DD"
                             "dca", "dts" -> "DTS"
-                            else -> stream.codec ?: ""
+                            "dtshd" -> "DTS-HD"
+                            "flac" -> "FLAC"
+                            "opus" -> "Opus"
+                            "vorbis" -> "Vorbis"
+                            else -> stream.codec?.uppercase() ?: "UNKNOWN"
                         }
 
                         val isAtmos = stream.title?.contains("atmos", ignoreCase = true) == true ||
-                            stream.codec?.contains("atmos", ignoreCase = true) == true
+                            stream.codec?.contains("atmos", ignoreCase = true) == true ||
+                            stream.profile?.contains("atmos", ignoreCase = true) == true
 
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                modifier = Modifier.size(40.dp),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Speaker,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.padding(6.dp),
-                                )
-                            }
-                            Column {
-                                Text(
-                                    text = "Audio",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    if (channelText.isNotEmpty()) {
-                                        MetadataTag(
-                                            text = channelText,
-                                            icon = Icons.Outlined.SurroundSound,
-                                            iconSize = 20.dp,
-                                        )
-                                    }
-                                    MetadataTag(text = codecText)
-                                    if (isAtmos) MetadataTag(text = "ATMOS")
+                        AudioInfoCard(
+                            channels = channelText,
+                            codec = codecText,
+                            isAtmos = isAtmos,
+                            language = stream.language?.let { lang ->
+                                when (lang.lowercase()) {
+                                    "eng" -> "EN"
+                                    "spa" -> "ES"
+                                    "fre", "fra" -> "FR"
+                                    "ger", "deu" -> "DE"
+                                    "ita" -> "IT"
+                                    "jpn" -> "JA"
+                                    "kor" -> "KO"
+                                    "chi", "zho" -> "ZH"
+                                    else -> lang.take(2).uppercase()
                                 }
                             }
-                        }
+                        )
                     }
 
                     // Subtitles
@@ -1653,5 +1753,68 @@ private fun getResolutionBadge(width: Int?, height: Int?): Triple<ImageVector, S
         h >= 720 || w >= 1280 -> Triple(Icons.Rounded.Hd, "HD", QualityHD)
         h > 0 -> Triple(Icons.Rounded.Sd, "SD", QualitySD)
         else -> null
+    }
+}
+
+/**
+ * "Why You'll Love This" AI-powered personalized pitch card
+ */
+@Composable
+private fun WhyYoullLoveThisCard(
+    pitch: String?,
+    isLoading: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        ),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = "AI Generated",
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = "Why You'll Love This",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+            }
+
+            // Content
+            when {
+                isLoading -> {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+                pitch != null -> {
+                    Text(
+                        text = pitch,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight.times(1.5f)
+                    )
+                }
+            }
+        }
     }
 }

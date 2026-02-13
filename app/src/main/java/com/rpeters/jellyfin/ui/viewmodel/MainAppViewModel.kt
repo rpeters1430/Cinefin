@@ -78,6 +78,8 @@ data class MainAppState(
     // AI features
     val viewingMood: String? = null,
     val isLoadingViewingMood: Boolean = false,
+    val moodCollections: Map<String, List<BaseItemDto>> = emptyMap(),
+    val isLoadingMoodCollections: Boolean = false,
 
     // Pagination (legacy)
     val isLoadingMore: Boolean = false,
@@ -1353,6 +1355,44 @@ class MainAppViewModel @Inject constructor(
                 )
             } catch (e: CancellationException) {
                 throw e
+            }
+        }
+    }
+
+    /**
+     * Generate AI-powered mood-based collections for the home screen.
+     * Creates dynamic collections like "Feel-Good Comedies", "Mind-Bending Thrillers", etc.
+     */
+    fun generateMoodCollections() {
+        viewModelScope.launch {
+            _appState.value = _appState.value.copy(isLoadingMoodCollections = true)
+
+            try {
+                // Combine all available content for analysis
+                val library = _appState.value.allItems.ifEmpty {
+                    _appState.value.allMovies + _appState.value.allTVShows
+                }
+
+                if (library.isEmpty()) {
+                    _appState.value = _appState.value.copy(
+                        moodCollections = emptyMap(),
+                        isLoadingMoodCollections = false,
+                    )
+                    return@launch
+                }
+
+                val collections = generativeAiRepository.generateMoodCollections(library)
+                _appState.value = _appState.value.copy(
+                    moodCollections = collections,
+                    isLoadingMoodCollections = false,
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _appState.value = _appState.value.copy(
+                    moodCollections = emptyMap(),
+                    isLoadingMoodCollections = false,
+                )
             }
         }
     }

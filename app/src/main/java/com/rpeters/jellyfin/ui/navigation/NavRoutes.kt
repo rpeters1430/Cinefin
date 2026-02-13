@@ -64,6 +64,10 @@ sealed class Screen(val route: String) {
     object ArtistDetail : Screen("artist_detail/{artistId}") {
         fun createRoute(artistId: String) = "artist_detail/$artistId"
     }
+    object PersonDetail : Screen("person_detail/{personId}/{personName}") {
+        fun createRoute(personId: String, personName: String) =
+            "person_detail/$personId/${Uri.encode(personName)}"
+    }
     object HomeVideoDetail : Screen("home_video_detail/{videoId}") {
         fun createRoute(videoId: String) = "home_video_detail/$videoId"
     }
