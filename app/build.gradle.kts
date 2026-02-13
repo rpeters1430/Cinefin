@@ -30,8 +30,8 @@ android {
         applicationId = "com.rpeters.jellyfin"
         minSdk = 26
         targetSdk = 35
-        versionCode = 45
-        versionName = "14.13"
+        versionCode = 46
+        versionName = "14.14"
 
         testInstrumentationRunner = "com.rpeters.jellyfin.testing.HiltTestRunner"
 
@@ -86,8 +86,12 @@ android {
 
     buildTypes {
         debug {
-            enableUnitTestCoverage = true
-            enableAndroidTestCoverage = true
+            // Keep regular debug builds fast/stable; opt in to coverage when needed:
+            //   ./gradlew :app:assembleDebug -PenableCoverage=true
+            val enableCoverage = (project.findProperty("enableCoverage") as String?)
+                ?.toBooleanStrictOrNull() == true
+            enableUnitTestCoverage = enableCoverage
+            enableAndroidTestCoverage = enableCoverage
         }
         release {
             isMinifyEnabled = true
