@@ -212,7 +212,7 @@ class DeviceCapabilitiesTest {
     }
 
     @Test
-    fun `canPlayAudioCodec with channels supports EAC3 5_1 with fallback`() {
+    fun `canPlayAudioCodec with channels supports EAC3 sixChannel with fallback`() {
         // EAC3 5.1 (6 channels) should fall back to stereo check if not explicitly supported
         // This is the key fix: devices that support EAC3 stereo can downmix 5.1
         val result = deviceCapabilities.canPlayAudioCodec("eac3", 6)
@@ -222,28 +222,28 @@ class DeviceCapabilitiesTest {
     }
 
     @Test
-    fun `canPlayAudioCodec with channels supports EAC3 7_1 with fallback`() {
+    fun `canPlayAudioCodec with channels supports EAC3 eightChannel with fallback`() {
         // EAC3 7.1 (8 channels) should fall back to stereo check if not explicitly supported
         val result = deviceCapabilities.canPlayAudioCodec("eac3", 8)
         assertNotNull("Result should not be null", result)
     }
 
     @Test
-    fun `canPlayAudioCodec with channels supports AC3 5_1 with fallback`() {
+    fun `canPlayAudioCodec with channels supports AC3 sixChannel with fallback`() {
         // AC3 5.1 (6 channels) should fall back to stereo check if not explicitly supported
         val result = deviceCapabilities.canPlayAudioCodec("ac3", 6)
         assertNotNull("Result should not be null", result)
     }
 
     @Test
-    fun `canPlayAudioCodec with channels supports AC3 7_1 with fallback`() {
+    fun `canPlayAudioCodec with channels supports AC3 eightChannel with fallback`() {
         // AC3 7.1 (8 channels) should fall back to stereo check if not explicitly supported
         val result = deviceCapabilities.canPlayAudioCodec("ac3", 8)
         assertNotNull("Result should not be null", result)
     }
 
     @Test
-    fun `canPlayAudioCodec with channels supports DTS 5_1 with fallback`() {
+    fun `canPlayAudioCodec with channels supports DTS sixChannel with fallback`() {
         // DTS 5.1 (6 channels) should fall back to stereo check if not explicitly supported
         val result = deviceCapabilities.canPlayAudioCodec("dts", 6)
         assertNotNull("Result should not be null", result)
