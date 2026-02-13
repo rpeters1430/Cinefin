@@ -57,6 +57,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -104,6 +106,10 @@ import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
+import com.rpeters.jellyfin.ui.theme.Quality1440
+import com.rpeters.jellyfin.ui.theme.Quality4K
+import com.rpeters.jellyfin.ui.theme.QualityHD
+import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.utils.normalizeOfficialRating
@@ -135,6 +141,12 @@ fun ImmersiveMovieDetailScreen(
     isLoadingAiSummary: Boolean = false,
     relatedItems: List<BaseItemDto> = emptyList(),
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
+    themes: List<String> = emptyList(),
+    isLoadingThemes: Boolean = false,
+    whyYoullLoveThis: String? = null,
+    isLoadingWhyYoullLoveThis: Boolean = false,
+    aiRecommendations: List<BaseItemDto> = emptyList(),
+    isAiRecommendationsLoading: Boolean = false,
     isRefreshing: Boolean = false,
     serverUrl: String? = null,
     modifier: Modifier = Modifier,
@@ -273,11 +285,11 @@ fun ImmersiveMovieDetailScreen(
                 }
 
                 // "Why You'll Love This" AI Card
-                if (movieState.whyYoullLoveThis != null || movieState.isLoadingWhyYoullLoveThis) {
+                if (whyYoullLoveThis != null || isLoadingWhyYoullLoveThis) {
                     item {
                         WhyYoullLoveThisCard(
-                            pitch = movieState.whyYoullLoveThis,
-                            isLoading = movieState.isLoadingWhyYoullLoveThis,
+                            pitch = whyYoullLoveThis,
+                            isLoading = isLoadingWhyYoullLoveThis,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
@@ -443,7 +455,7 @@ fun ImmersiveMovieDetailScreen(
                 }
 
                 // AI Themes Section
-                if (movieState.themes.isNotEmpty() || movieState.isLoadingThemes) {
+                if (themes.isNotEmpty() || isLoadingThemes) {
                     item {
                         Column(
                             modifier = Modifier
@@ -470,7 +482,7 @@ fun ImmersiveMovieDetailScreen(
                                 )
                             }
 
-                            if (movieState.isLoadingThemes) {
+                            if (isLoadingThemes) {
                                 LinearProgressIndicator(
                                     modifier = Modifier.fillMaxWidth(),
                                     color = MaterialTheme.colorScheme.primary
@@ -479,7 +491,7 @@ fun ImmersiveMovieDetailScreen(
                                 LazyRow(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
-                                    items(movieState.themes, key = { it }) { theme ->
+                                    items(themes, key = { it }) { theme ->
                                         AssistChip(
                                             onClick = { /* TODO: Navigate to search with theme */ },
                                             label = {
@@ -547,7 +559,7 @@ fun ImmersiveMovieDetailScreen(
                 }
 
                 // AI Recommendations Section (AI-powered thematic matches)
-                if (movieState.aiRecommendations.isNotEmpty() || movieState.isAiRecommendationsLoading) {
+                if (aiRecommendations.isNotEmpty() || isAiRecommendationsLoading) {
                     item {
                         Column(
                             modifier = Modifier
@@ -574,7 +586,7 @@ fun ImmersiveMovieDetailScreen(
                                 )
                             }
 
-                            if (movieState.isAiRecommendationsLoading) {
+                            if (isAiRecommendationsLoading) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -595,7 +607,7 @@ fun ImmersiveMovieDetailScreen(
                                 }
                             } else {
                                 PerformanceOptimizedLazyRow(
-                                    items = movieState.aiRecommendations,
+                                    items = aiRecommendations,
                                     horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
                                     maxVisibleItems = perfConfig.maxRowItems,
                                 ) { recommendedMovie, _, _ ->
@@ -1103,15 +1115,15 @@ private fun ImmersiveMovieInfoCard(
                         }
 
                         val hdrType = HdrType.detect(
-                            stream.videoRange?.toString(),
-                            stream.videoRangeType?.toString()
+                            stream.videoRange.toString(),
+                            stream.videoRangeType.toString(),
                         )
 
                         VideoInfoCard(
                             resolution = resolution,
                             codec = codecText,
                             bitDepth = stream.bitDepth,
-                            frameRate = stream.averageFrameRate,
+                            frameRate = stream.averageFrameRate?.toDouble(),
                             isHdr = hdrType != null,
                             hdrType = hdrType ?: HdrType.HDR,
                             is3D = stream.videoDoViTitle?.contains("3D", ignoreCase = true) == true
@@ -1292,9 +1304,7 @@ private fun CastMemberCard(
         modifier = modifier
             .width(140.dp)
             .clickable {
-                person.id?.let { id ->
-                    onPersonClick(id.toString(), person.name ?: "Unknown")
-                }
+                onPersonClick(person.id.toString(), person.name ?: "Unknown")
             },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -1504,9 +1514,7 @@ private fun CrewInfoRow(
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.clickable {
-                        person.id?.let { id ->
-                            onPersonClick(id.toString(), person.name ?: "Unknown")
-                        }
+                        onPersonClick(person.id.toString(), person.name ?: "Unknown")
                     },
                 )
             }

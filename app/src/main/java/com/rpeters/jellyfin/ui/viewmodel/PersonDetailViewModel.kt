@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
-import com.rpeters.jellyfin.network.ApiResult
+import com.rpeters.jellyfin.data.repository.common.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -61,6 +61,7 @@ class PersonDetailViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     _uiState.value = PersonDetailUiState.Error(result.message)
                 }
+                is ApiResult.Loading -> Unit
             }
         }
     }

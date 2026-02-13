@@ -108,7 +108,7 @@ class TranscodingDiagnosticsViewModel @Inject constructor(
     private fun analyzeVideo(item: BaseItemDto): VideoAnalysis? {
         val name = item.name ?: "Unknown"
         val id = item.id.toString()
-        val itemType = item.type?.name ?: "Unknown"
+        val itemType = item.type.name
 
         val mediaSource = item.mediaSources?.firstOrNull()
         val videoStream = mediaSource?.mediaStreams?.find { it.type == MediaStreamType.VIDEO }

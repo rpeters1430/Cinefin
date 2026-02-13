@@ -77,7 +77,7 @@ fun PerformanceOptimizedLazyColumn(
     ) {
         itemsIndexed(
             items = optimizedItems,
-            key = { index, item -> "${item.id ?: "null"}_$index" },
+            key = { index, item -> "${item.id}_$index" },
             contentType = { _, _ -> "performance_list_item" },
         ) { index, item ->
             val isVisible = index in visibleRange
@@ -135,7 +135,7 @@ fun PerformanceOptimizedLazyRow(
     ) {
         itemsIndexed(
             items = optimizedItems,
-            key = { index, item -> "${item.id ?: "null"}_$index" },
+            key = { index, item -> "${item.id}_$index" },
             contentType = { _, _ -> "performance_row_item" },
         ) { index, item ->
             val isVisible = index in visibleRange
@@ -176,7 +176,7 @@ fun PerformanceOptimizedLazyGrid(
     ) {
         itemsIndexed(
             items = optimizedItems,
-            key = { index, item -> "${item.id ?: "null"}_$index" },
+            key = { index, item -> "${item.id}_$index" },
             contentType = { _, _ -> "performance_grid_item" },
         ) { index, item ->
             content(item, index)

@@ -338,6 +338,12 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onRefresh = { detailViewModel.refresh() },
                 isRefreshing = detailState.isLoading || detailState.isSimilarMoviesLoading,
                 playbackAnalysis = detailState.playbackAnalysis,
+                themes = detailState.themes,
+                isLoadingThemes = detailState.isLoadingThemes,
+                whyYoullLoveThis = detailState.whyYoullLoveThis,
+                isLoadingWhyYoullLoveThis = detailState.isLoadingWhyYoullLoveThis,
+                aiRecommendations = detailState.aiRecommendations,
+                isAiRecommendationsLoading = detailState.isAiRecommendationsLoading,
                 getImageUrl = { item -> mainViewModel.getImageUrl(item) },
                 getBackdropUrl = { item -> mainViewModel.getBackdropUrl(item) },
                 getLogoUrl = { item -> mainViewModel.getLogoUrl(item) },
@@ -564,6 +570,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
             navArgument("personName") { type = NavType.StringType }
         )
     ) {
+        val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         com.rpeters.jellyfin.ui.screens.PersonDetailScreen(
             onBackClick = { navController.popBackStack() },
             onItemClick = { item ->

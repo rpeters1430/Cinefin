@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 import javax.inject.Inject
 
 data class MovieDetailState(
@@ -116,7 +117,7 @@ class MovieDetailViewModel @Inject constructor(
                 val themes = generativeAiRepository.extractThemes(
                     title = movie.name ?: "Unknown",
                     overview = movie.overview ?: "",
-                    genres = movie.genres?.map { it.name ?: "" } ?: emptyList()
+                    genres = movie.genres?.map { it.orEmpty() }?.filter { it.isNotBlank() } ?: emptyList(),
                 )
                 _state.value = _state.value.copy(
                     themes = themes,
@@ -139,7 +140,7 @@ class MovieDetailViewModel @Inject constructor(
                 // Get viewing history - we'll use recently played items as a proxy
                 // In a real implementation, we'd fetch from repository
                 val viewingHistory = try {
-                    when (val result = repository.getRecentlyPlayed(limit = 20)) {
+                    when (val result = mediaRepository.getContinueWatching(limit = 20)) {
                         is ApiResult.Success -> result.data
                         else -> emptyList()
                     }
@@ -179,7 +180,7 @@ class MovieDetailViewModel @Inject constructor(
             try {
                 // Get viewing history
                 val viewingHistory = try {
-                    when (val result = repository.getRecentlyPlayed(limit = 20)) {
+                    when (val result = mediaRepository.getContinueWatching(limit = 20)) {
                         is ApiResult.Success -> result.data
                         else -> emptyList()
                     }
@@ -189,7 +190,7 @@ class MovieDetailViewModel @Inject constructor(
 
                 // Get library for recommendations
                 val library = try {
-                    when (val result = repository.getAllMovies(limit = 200, startIndex = 0)) {
+                    when (val result = mediaRepository.getRecentlyAddedByType(itemType = BaseItemKind.MOVIE, limit = 200)) {
                         is ApiResult.Success -> result.data
                         else -> emptyList()
                     }

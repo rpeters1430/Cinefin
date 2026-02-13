@@ -145,6 +145,11 @@ android {
             // Tell Play Console we don't have unstripped libraries
             // This suppresses the warning for third-party .so files
             useLegacyPackaging = false
+            keepDebugSymbols += setOf(
+                "**/libandroidx.graphics.path.so",
+                "**/libdatastore_shared_counter.so",
+                "**/libffmpegJNI.so",
+            )
         }
     }
     ndkVersion = "29.0.14206865"

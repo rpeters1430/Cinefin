@@ -354,7 +354,6 @@ class JellyfinRepository @Inject constructor(
                         ItemFields.OVERVIEW,
                         ItemFields.GENRES,
                         ItemFields.PEOPLE,
-                        ItemFields.PRODUCTION_YEAR,
                     ),
                 )
                 ApiResult.Success(response.content.items)

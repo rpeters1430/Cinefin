@@ -41,10 +41,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -63,7 +63,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.ui.components.MediaCard
 import com.rpeters.jellyfin.ui.viewmodel.PersonDetailUiState
@@ -91,7 +91,7 @@ fun PersonDetailScreen(
         modifier = modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
-        topAppBar = {
+        topBar = {
             LargeTopAppBar(
                 title = {
                     when (val state = uiState) {
@@ -122,10 +122,10 @@ fun PersonDetailScreen(
                     }
                 },
                 scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.largeTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
             )
         }
     ) { paddingValues ->
@@ -222,11 +222,11 @@ private fun PersonFilmography(
         }
 
         // Tab Row
-        TabRow(
+        PrimaryTabRow(
             selectedTabIndex = selectedTab,
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             tabs.forEachIndexed { index, title ->
                 val count = when (index) {
@@ -309,11 +309,10 @@ private fun PersonFilmography(
                     key = { it.id.toString() }
                 ) { item ->
                     MediaCard(
-                        title = item.name ?: "",
-                        imageUrl = getImageUrl(item),
-                        onClick = { onItemClick(item) },
-                        subtitle = item.productionYear?.toString(),
-                        modifier = Modifier.fillMaxWidth()
+                        item = item,
+                        getImageUrl = getImageUrl,
+                        onClick = onItemClick,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }

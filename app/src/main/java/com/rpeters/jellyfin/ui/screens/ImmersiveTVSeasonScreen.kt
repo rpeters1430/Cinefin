@@ -304,10 +304,10 @@ private fun ImmersiveTVSeasonContent(
                 contentType = { "season_item" },
             ) { season ->
                 val seasonId = season.id.toString()
-                val isExpanded = seasonId != null && expandedSeasonId == seasonId
-                val seasonEpisodes = seasonId?.let { state.episodesBySeasonId[it].orEmpty() }.orEmpty()
-                val isLoadingEpisodes = seasonId != null && seasonId in state.loadingSeasonIds
-                val seasonErrorMessage = seasonId?.let { state.seasonEpisodeErrors[it] }
+                val isExpanded = expandedSeasonId == seasonId
+                val seasonEpisodes = state.episodesBySeasonId[seasonId].orEmpty()
+                val isLoadingEpisodes = seasonId in state.loadingSeasonIds
+                val seasonErrorMessage = state.seasonEpisodeErrors[seasonId]
 
                 // Animate chevron rotation
                 val chevronRotation by animateFloatAsState(
@@ -320,13 +320,11 @@ private fun ImmersiveTVSeasonContent(
                     season = season,
                     getImageUrl = getImageUrl,
                     onClick = {
-                        if (seasonId != null) {
-                            if (isExpanded) {
-                                expandedSeasonId = null
-                            } else {
-                                expandedSeasonId = seasonId
-                                onSeasonExpand(seasonId)
-                            }
+                        if (isExpanded) {
+                            expandedSeasonId = null
+                        } else {
+                            expandedSeasonId = seasonId
+                            onSeasonExpand(seasonId)
                         }
                     },
                     trailingContent = {
@@ -965,9 +963,7 @@ private fun ImmersiveCastMemberCard(
         modifier = modifier
             .width(120.dp)
             .clickable {
-                person.id?.let { id ->
-                    onPersonClick(id.toString(), person.name ?: "Unknown")
-                }
+                onPersonClick(person.id.toString(), person.name ?: "Unknown")
             },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),

@@ -26,7 +26,6 @@ import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.HdrOn
 import androidx.compose.material.icons.outlined.SurroundSound
 import androidx.compose.material.icons.outlined.VideoFile
-import androidx.compose.material.icons.rounded.FourK
 import androidx.compose.material.icons.rounded.Hd
 import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.SdCard
@@ -431,7 +430,7 @@ enum class ResolutionQuality(
     ),
     UHD_4K(
         label = "4K",
-        icon = Icons.Rounded.FourK, // CORRECT 4K ICON!
+        icon = Icons.Rounded.HighQuality,
         gradientColors = listOf(
             Color(0xFFFF6B6B), // Coral red
             Color(0xFFEE5A6F)  // Rose

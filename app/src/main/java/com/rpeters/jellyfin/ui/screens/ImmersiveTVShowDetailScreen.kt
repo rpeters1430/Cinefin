@@ -268,20 +268,18 @@ private fun ImmersiveShowDetailContent(
 
                 items(state.seasons, key = { it.getItemKey() }) { season ->
                     val seasonId = season.id.toString()
-                    val isExpanded = seasonId != null && expandedSeasonId == seasonId
+                    val isExpanded = expandedSeasonId == seasonId
 
                     Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
                         SeasonItem(
                             season = season,
                             isExpanded = isExpanded,
-                            episodes = seasonId?.let { state.episodesBySeasonId[it] }.orEmpty(),
-                            isLoadingEpisodes = seasonId != null && seasonId in state.loadingSeasonIds,
+                            episodes = state.episodesBySeasonId[seasonId].orEmpty(),
+                            isLoadingEpisodes = seasonId in state.loadingSeasonIds,
                             getImageUrl = getImageUrl,
                             onExpand = {
-                                if (seasonId != null) {
-                                    expandedSeasonId = if (isExpanded) null else seasonId
-                                    if (!isExpanded) onSeasonExpand(seasonId)
-                                }
+                                expandedSeasonId = if (isExpanded) null else seasonId
+                                if (!isExpanded) onSeasonExpand(seasonId)
                             },
                             onEpisodeClick = onEpisodeClick,
                         )
@@ -760,9 +758,7 @@ private fun ImmersiveCastSection(
                     modifier = Modifier
                         .width(120.dp)
                         .clickable {
-                            person.id?.let { id ->
-                                onPersonClick(id.toString(), person.name ?: "Unknown")
-                            }
+                            onPersonClick(person.id.toString(), person.name ?: "Unknown")
                         },
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {

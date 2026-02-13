@@ -515,7 +515,7 @@ class GenerativeAiRepository @Inject constructor(
             .joinToString(", ")
 
         val itemTitle = item.name ?: "this content"
-        val itemGenres = item.genres?.mapNotNull { it.name }?.joinToString(", ") ?: ""
+        val itemGenres = item.genres?.joinToString(", ") ?: ""
         val itemOverview = item.overview?.take(300) ?: ""
 
         val prompt = """
@@ -576,7 +576,7 @@ class GenerativeAiRepository @Inject constructor(
 
         // Build library context (limit to avoid huge prompts)
         val libraryContext = library.take(100).joinToString("\n") { item ->
-            "${item.name} (${item.type}, ${item.genres?.joinToString { it.name ?: "" } ?: ""})"
+            "${item.name} (${item.type}, ${item.genres?.joinToString(", ").orEmpty()})"
         }
 
         // Time-aware context
@@ -651,7 +651,9 @@ class GenerativeAiRepository @Inject constructor(
                 }
             }
 
-            collections.take(maxCollections).toMap()
+            collections.entries
+                .take(maxCollections)
+                .associate { (name, items) -> name to items }
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
             Log.w("GenerativeAi", "Mood collections generation timed out")
             analytics.logAiEvent("mood_collections", false, getBackendName(true))
@@ -692,7 +694,7 @@ class GenerativeAiRepository @Inject constructor(
 
         // Build context
         val currentTitle = currentItem.name ?: "this content"
-        val currentGenres = currentItem.genres?.mapNotNull { it.name }?.joinToString(", ") ?: ""
+        val currentGenres = currentItem.genres?.joinToString(", ") ?: ""
         val currentOverview = currentItem.overview?.take(200) ?: ""
 
         val historyTitles = viewingHistory.take(historySize)
@@ -701,7 +703,7 @@ class GenerativeAiRepository @Inject constructor(
 
         // Build library context (sample to avoid huge prompts)
         val libraryContext = library.take(100).joinToString("\n") { item ->
-            "${item.name} (${item.type}, ${item.genres?.joinToString { it.name ?: "" } ?: ""})"
+            "${item.name} (${item.type}, ${item.genres?.joinToString(", ").orEmpty()})"
         }
 
         val prompt = """

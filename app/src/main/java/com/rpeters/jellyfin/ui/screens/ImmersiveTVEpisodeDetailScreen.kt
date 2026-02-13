@@ -486,8 +486,8 @@ private fun EpisodeOverviewSection(
                         "vp9" -> "VP9"
                         else -> stream.codec ?: ""
                     }
-                    val isHdr = stream.videoRange?.toString()?.contains("hdr", ignoreCase = true) == true ||
-                        stream.videoRangeType?.toString()?.contains("hdr", ignoreCase = true) == true
+                    val isHdr = stream.videoRange.toString().contains("hdr", ignoreCase = true) ||
+                        stream.videoRangeType.toString().contains("hdr", ignoreCase = true)
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -837,21 +837,18 @@ private fun ImmersiveCastSection(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(cast, key = { it.id.toString() }) { person ->
-                val personId = person.id
-                if (personId != null) {
-                    val personItem = BaseItemDto(
-                        id = personId,
-                        type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
-                        imageTags = person.primaryImageTag?.let {
-                            mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it)
-                        },
-                    )
-                    CastMemberCard(
-                        person = person,
-                        imageUrl = getImageUrl(personItem),
-                        onPersonClick = onPersonClick,
-                    )
-                }
+                val personItem = BaseItemDto(
+                    id = person.id,
+                    type = org.jellyfin.sdk.model.api.BaseItemKind.PERSON,
+                    imageTags = person.primaryImageTag?.let {
+                        mapOf(org.jellyfin.sdk.model.api.ImageType.PRIMARY to it)
+                    },
+                )
+                CastMemberCard(
+                    person = person,
+                    imageUrl = getImageUrl(personItem),
+                    onPersonClick = onPersonClick,
+                )
             }
         }
     }
@@ -868,9 +865,7 @@ private fun CastMemberCard(
         modifier = modifier
             .width(120.dp)
             .clickable {
-                person.id?.let { id ->
-                    onPersonClick(id.toString(), person.name ?: "Unknown")
-                }
+                onPersonClick(person.id.toString(), person.name ?: "Unknown")
             },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
