@@ -36,7 +36,7 @@ jobs:
         run: |
           # Use the pre-installed sdkmanager on the runner
           # Android 36 is the compileSdk in the project
-          yes | sdkmanager --licenses >/dev/null
+          yes | sdkmanager --licenses >/dev/null || true
           sdkmanager --install "platforms;android-36" "build-tools;35.0.0" "platform-tools"
 
       - name: Generate local.properties
