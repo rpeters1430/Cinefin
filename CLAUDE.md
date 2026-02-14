@@ -70,7 +70,7 @@ scripts/gen-local-properties.ps1  # PowerShell (Windows)
 - **Project Name**: Cinefin Android (formerly Jellyfin Android Client)
 - **Application ID**: `com.rpeters.jellyfin`
 - **Namespace**: `com.rpeters.jellyfin`
-- **Version**: Defined in `app/build.gradle.kts` (versionCode: 44, versionName: "14.12")
+- **Version**: Defined in `app/build.gradle.kts` (versionCode: 46, versionName: "14.14")
 
 ### High-Level Architecture
 This is a modern Android client for Jellyfin media servers built with:
@@ -215,7 +215,7 @@ Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<Jellyf
 ### Key Constants & Configuration
 - Centralized constants in `core/constants/Constants.kt`
 - **SDK versions**: compileSdk 36, targetSdk 35, minSdk 26 (Android 8.0+)
-- **Current version**: versionCode 44, versionName "14.12"
+- **Current version**: versionCode 46, versionName "14.14"
 - **Java version**: 21 with core library desugaring enabled
 - **Kotlin version**: 2.3.10 with KSP 2.3.5
 - **Dependency versions**: Centralized in `gradle/libs.versions.toml`

@@ -23,6 +23,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.lang.ref.WeakReference
 import kotlin.math.roundToInt
+import android.graphics.PixelFormat
+import android.os.Build
+import android.view.SurfaceView
+import android.view.View
 
 @UnstableApi
 @Composable
@@ -205,6 +209,8 @@ fun VideoPlayerScreen(
                     if (view.player != exoPlayer) view.player = exoPlayer
                     view.resizeMode = playerState.selectedAspectRatio.resizeMode
                     applySubtitleAppearance(view, subtitleAppearance)
+                    // Configure HDR support when HDR content is detected
+                    configureHdrSupport(view, playerState.isHdrContent)
                 },
                 modifier = Modifier.fillMaxSize().onGloballyPositioned { coords ->
                     val bounds = coords.boundsInWindow()
@@ -262,6 +268,8 @@ fun VideoPlayerScreen(
                 onPlaybackSpeedChange = onPlaybackSpeedChange,
                 onBackClick = onClose,
                 onFullscreenToggle = onOrientationToggle,
+                onPictureInPictureClick = onPictureInPictureClick,
+                supportsPip = supportsPip,
                 isVisible = controlsVisible,
             )
         }
@@ -325,4 +333,58 @@ fun VideoPlayerScreen(
 
         SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }
+}
+
+/**
+ * Configure HDR support on the PlayerView's SurfaceView.
+ * When HDR content is detected, the SurfaceView needs to be configured to handle HDR color spaces.
+ * Without this configuration, HDR video will show a black screen even though audio plays.
+ */
+private fun configureHdrSupport(playerView: PlayerView, isHdrContent: Boolean) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
+
+    try {
+        // Find the SurfaceView inside PlayerView
+        val surfaceView = findSurfaceView(playerView) ?: return
+
+        if (isHdrContent) {
+            // Enable HDR rendering by setting the surface to support wide color gamut
+            // This allows the surface to display HDR10 and HLG content properly
+            surfaceView.holder.setFormat(PixelFormat.RGBA_1010102)
+
+            com.rpeters.jellyfin.utils.SecureLogger.d(
+                "VideoPlayerScreen",
+                "Configured SurfaceView for HDR content with RGBA_1010102 format"
+            )
+        } else {
+            // Use default format for SDR content
+            surfaceView.holder.setFormat(PixelFormat.RGBA_8888)
+        }
+    } catch (e: Exception) {
+        com.rpeters.jellyfin.utils.SecureLogger.w(
+            "VideoPlayerScreen",
+            "Failed to configure HDR support: ${e.message}"
+        )
+    }
+}
+
+/**
+ * Recursively find the SurfaceView within a PlayerView's view hierarchy.
+ */
+private fun findSurfaceView(view: View): SurfaceView? {
+    if (view is SurfaceView) {
+        return view
+    }
+
+    if (view is android.view.ViewGroup) {
+        for (i in 0 until view.childCount) {
+            val child = view.getChildAt(i)
+            val surfaceView = findSurfaceView(child)
+            if (surfaceView != null) {
+                return surfaceView
+            }
+        }
+    }
+
+    return null
 }

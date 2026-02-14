@@ -261,6 +261,14 @@ class EnhancedPlaybackManager @Inject constructor(
 
         // Double check if it's REALLY suitable for Direct Play based on our logic
         if (!canDirectPlayMediaSource(mediaSource, item)) {
+            // Full Direct Play not possible, but check if Direct Stream is possible
+            // (video can be played natively, only audio needs transcoding)
+            if (canDirectStreamMediaSource(mediaSource, item)) {
+                SecureLogger.d(TAG, "🎬 Video codec supported but audio needs transcoding - using Direct Stream (audio-only transcode)")
+                return getDirectStreamWithAudioTranscode(item, mediaSource, playbackInfo, audioStreamIndex, subtitleStreamIndex)
+            }
+
+            // Neither Direct Play nor Direct Stream possible - must transcode everything
             return getOptimalTranscodingUrl(item, playbackInfo, audioStreamIndex, subtitleStreamIndex)
         }
 
@@ -302,7 +310,7 @@ class EnhancedPlaybackManager @Inject constructor(
     }
 
     /**
-     * Check if a media source can be directly played
+     * Check if a media source can be directly played (both video and audio supported)
      */
     private suspend fun canDirectPlayMediaSource(
         mediaSource: org.jellyfin.sdk.model.api.MediaSourceInfo,
@@ -359,6 +367,51 @@ class EnhancedPlaybackManager @Inject constructor(
     }
 
     /**
+     * Check if a media source can be direct streamed (video supported, audio may need transcoding)
+     * This is better than full transcoding when only audio is incompatible.
+     */
+    private suspend fun canDirectStreamMediaSource(
+        mediaSource: org.jellyfin.sdk.model.api.MediaSourceInfo,
+        item: BaseItemDto,
+    ): Boolean {
+        // Check container support
+        val container = mediaSource.container
+        if (!deviceCapabilities.canPlayContainer(container)) {
+            SecureLogger.d(TAG, "❌ Container '$container' not supported for Direct Stream")
+            return false
+        }
+
+        // Check video codec support (REQUIRED for direct stream)
+        val videoStream = mediaSource.mediaStreams.findDefaultVideoStream()
+        if (videoStream != null) {
+            val videoCodec = videoStream.codec
+            val width = videoStream.width ?: 0
+            val height = videoStream.height ?: 0
+
+            if (!deviceCapabilities.canPlayVideoCodec(videoCodec, width, height)) {
+                SecureLogger.d(TAG, "❌ Video codec '$videoCodec' at ${width}x$height not supported for Direct Stream")
+                return false
+            }
+        } else {
+            // No video stream means this is audio-only content
+            return false
+        }
+
+        // Check network conditions
+        val bitrate = mediaSource.bitrate ?: 0
+        if (!isNetworkSuitableForDirectPlay(bitrate)) {
+            SecureLogger.d(TAG, "❌ Network conditions not suitable for Direct Stream (bitrate: ${bitrate / 1_000_000} Mbps)")
+            return false
+        }
+
+        // Audio codec check is intentionally NOT included - that's the whole point of Direct Stream!
+        val audioStream = mediaSource.mediaStreams.findDefaultAudioStream()
+        val audioCodec = audioStream?.codec
+        SecureLogger.d(TAG, "✅ Device CAN direct stream: container=$container, video=${videoStream.codec}, audio=$audioCodec (may transcode audio)")
+        return true
+    }
+
+    /**
      * Check if network conditions are suitable for Direct Play
      */
     private suspend fun isNetworkSuitableForDirectPlay(bitrate: Int): Boolean {
@@ -371,6 +424,71 @@ class EnhancedPlaybackManager @Inject constructor(
             NetworkType.ETHERNET -> bitrate <= DIRECT_PLAY_MAX_BITRATE
             else -> bitrate <= LOW_QUALITY_THRESHOLD * 1_000_000
         }
+    }
+
+    /**
+     * Get Direct Stream URL with audio-only transcoding.
+     * This keeps the original video stream and only transcodes the audio,
+     * which is much more efficient than transcoding both.
+     */
+    private suspend fun getDirectStreamWithAudioTranscode(
+        item: BaseItemDto,
+        mediaSource: org.jellyfin.sdk.model.api.MediaSourceInfo,
+        playbackInfo: PlaybackInfoResponse,
+        audioStreamIndex: Int? = null,
+        subtitleStreamIndex: Int? = null,
+    ): PlaybackResult {
+        val itemId = item.id.toString()
+        val serverUrl = repository.getCurrentServer()?.url
+        val mediaSourceId = mediaSource.id
+        val playSessionId = playbackInfo.playSessionId
+        val prefs = playbackPreferencesRepository.preferences.first()
+
+        // Get source video info (we're keeping this unchanged)
+        val sourceVideoStream = mediaSource.mediaStreams?.findDefaultVideoStream()
+        val sourceAudioStream = mediaSource.mediaStreams?.findDefaultAudioStream()
+
+        val maxAudioChannels = prefs.audioChannels.channels ?: 2
+
+        // Build Direct Stream URL with audio transcoding parameters
+        // VideoCodec=copy tells the server to NOT transcode video
+        val directStreamUrl = streamRepository.getTranscodedStreamUrl(
+            itemId = itemId,
+            maxBitrate = mediaSource.bitrate ?: 20_000_000, // Use source bitrate
+            maxWidth = sourceVideoStream?.width ?: 1920,
+            maxHeight = sourceVideoStream?.height ?: 1080,
+            videoCodec = "copy", // CRITICAL: This tells server to copy video stream without transcoding
+            audioCodec = "aac", // Transcode audio to AAC (universally supported)
+            container = "ts", // Use TS container for better streaming compatibility
+            mediaSourceId = mediaSourceId,
+            playSessionId = playSessionId,
+            audioStreamIndex = audioStreamIndex,
+            subtitleStreamIndex = subtitleStreamIndex,
+            maxAudioChannels = maxAudioChannels,
+        )
+
+        if (directStreamUrl.isNullOrBlank()) {
+            SecureLogger.e(TAG, "Failed to generate Direct Stream URL with audio transcode for item $itemId")
+            return PlaybackResult.Error("Unable to generate playback URL")
+        }
+
+        SecureLogger.d(
+            TAG,
+            "Direct Stream with audio transcode: video=${sourceVideoStream?.codec} (copy), " +
+                "audio=${sourceAudioStream?.codec} → aac, " +
+                "channels: ${sourceAudioStream?.channels} → $maxAudioChannels"
+        )
+
+        return PlaybackResult.Transcoding(
+            url = directStreamUrl,
+            targetBitrate = mediaSource.bitrate ?: 20_000_000,
+            targetResolution = "${sourceVideoStream?.width ?: 1920}x${sourceVideoStream?.height ?: 1080}",
+            targetVideoCodec = sourceVideoStream?.codec ?: "h264", // Original codec
+            targetAudioCodec = "aac",
+            targetContainer = "ts",
+            reason = "Direct Stream: Original video (${sourceVideoStream?.codec}), audio transcoded (${sourceAudioStream?.codec} → aac)",
+            playSessionId = playSessionId,
+        )
     }
 
     /**

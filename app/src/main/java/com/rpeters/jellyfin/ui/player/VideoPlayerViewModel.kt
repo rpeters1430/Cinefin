@@ -812,6 +812,8 @@ class VideoPlayerViewModel @Inject constructor(
                     val renderersFactory = DefaultRenderersFactory(context)
                         .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
                         .setEnableDecoderFallback(true) // Enable fallback for codec issues
+                        .forceEnableMediaCodecAsynchronousQueueing() // Better performance on high-end devices
+                        .setAllowedVideoJoiningTimeMs(5000) // Allow seamless track switching (important for adaptive bitrate)
 
                     // Use OkHttp for all media/subtitle requests to ensure headers (auth, pinning) are applied.
                     // This allows us to remove tokens from URLs while maintaining authentication.
@@ -825,13 +827,32 @@ class VideoPlayerViewModel @Inject constructor(
                     // Create track selector with adaptive bitrate support
                     trackSelector = DefaultTrackSelector(context).apply {
                         // Enable adaptive track selection for better quality switching
-                        setParameters(
-                            buildUponParameters()
-                                .setAllowVideoMixedMimeTypeAdaptiveness(true)
-                                .setAllowVideoNonSeamlessAdaptiveness(true)
-                                .build(),
-                        )
+                        val params = buildUponParameters()
+                            .setAllowVideoMixedMimeTypeAdaptiveness(true)
+                            .setAllowVideoNonSeamlessAdaptiveness(true)
+                            // Don't constrain quality based on viewport (important for 4K content on HDR displays)
+                            .setMaxVideoSizeSd()
+                            .clearVideoSizeConstraints()
+                            // Allow hardware decode for all codecs (fixes some Pixel codec issues)
+                            .setAllowVideoMixedDecoderSupportAdaptiveness(true)
+
+                        // Set viewport size to physical display size on high-end devices
+                        val displayMetrics = this@VideoPlayerViewModel.context.resources.displayMetrics
+                        params.setMaxVideoSize(displayMetrics.widthPixels, displayMetrics.heightPixels)
+
+                        setParameters(params.build())
                     }
+
+                    // Configure load control for better buffering on high-bitrate content
+                    val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
+                        .setBufferDurationsMs(
+                            /* minBufferMs = */ 15_000, // Minimum buffer before playback can start (15s)
+                            /* maxBufferMs = */ 50_000, // Maximum buffer duration (50s for smooth playback)
+                            /* bufferForPlaybackMs = */ 2_500, // Buffer required to start playback (2.5s)
+                            /* bufferForPlaybackAfterRebufferMs = */ 5_000, // Buffer required after rebuffering (5s)
+                        )
+                        .setPrioritizeTimeOverSizeThresholds(true) // Better for streaming
+                        .build()
 
                     exoPlayer = ExoPlayer.Builder(context)
                         .setSeekBackIncrementMs(10_000)
@@ -839,8 +860,17 @@ class VideoPlayerViewModel @Inject constructor(
                         .setMediaSourceFactory(mediaSourceFactory)
                         .setRenderersFactory(renderersFactory)
                         .setTrackSelector(trackSelector!!)
+                        .setLoadControl(loadControl)
                         // Handle video output to ensure proper surface attachment
                         .setVideoScalingMode(androidx.media3.common.C.VIDEO_SCALING_MODE_SCALE_TO_FIT)
+                        // Enable audio offload for better battery life on supported devices
+                        .setAudioAttributes(
+                            androidx.media3.common.AudioAttributes.Builder()
+                                .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE)
+                                .setUsage(androidx.media3.common.C.USAGE_MEDIA)
+                                .build(),
+                            /* handleAudioFocus = */ true
+                        )
                         .build()
 
                     // Add listener

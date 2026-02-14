@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Sd
 import androidx.compose.material.icons.filled.Settings
@@ -88,7 +89,8 @@ fun ExpressiveVideoControls(
     onPlaybackSpeedChange: (Float) -> Unit,
     onBackClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
-
+    onPictureInPictureClick: () -> Unit,
+    supportsPip: Boolean,
     isVisible: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -118,11 +120,13 @@ fun ExpressiveVideoControls(
             )
 
             Column {
-                // Top Controls Bar (simplified - removed settings, PiP, extra fullscreen)
+                // Top Controls Bar
                 ExpressiveTopControls(
                     playerState = playerState,
                     onBackClick = onBackClick,
                     onCastClick = onCastClick,
+                    onPictureInPictureClick = onPictureInPictureClick,
+                    supportsPip = supportsPip,
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -166,6 +170,8 @@ private fun ExpressiveTopControls(
     playerState: VideoPlayerState,
     onBackClick: () -> Unit,
     onCastClick: () -> Unit,
+    onPictureInPictureClick: () -> Unit,
+    supportsPip: Boolean,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -264,17 +270,32 @@ private fun ExpressiveTopControls(
                     }
                 }
 
-                // Right side - Cast button (click to disconnect when connected)
-                AnimatedContent(
-                    targetState = playerState.isCastConnected,
-                    label = "cast_button",
-                ) { isConnected ->
-                    ExpressiveIconButton(
-                        icon = if (isConnected) Icons.Default.CastConnected else Icons.Default.Cast,
-                        contentDescription = if (isConnected) "Disconnect from ${playerState.castDeviceName ?: "Cast Device"}" else "Cast to Device",
-                        onClick = onCastClick,
-                        isActive = isConnected,
-                    )
+                // Right side - PiP and Cast buttons
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // PiP button (only show if supported)
+                    if (supportsPip) {
+                        ExpressiveIconButton(
+                            icon = Icons.Default.PictureInPictureAlt,
+                            contentDescription = "Picture in Picture",
+                            onClick = onPictureInPictureClick,
+                        )
+                    }
+
+                    // Cast button (click to disconnect when connected)
+                    AnimatedContent(
+                        targetState = playerState.isCastConnected,
+                        label = "cast_button",
+                    ) { isConnected ->
+                        ExpressiveIconButton(
+                            icon = if (isConnected) Icons.Default.CastConnected else Icons.Default.Cast,
+                            contentDescription = if (isConnected) "Disconnect from ${playerState.castDeviceName ?: "Cast Device"}" else "Cast to Device",
+                            onClick = onCastClick,
+                            isActive = isConnected,
+                        )
+                    }
                 }
             }
         }

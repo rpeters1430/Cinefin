@@ -10,6 +10,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.screens.AiDiagnosticsScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveFavoritesScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveSearchScreen
 import com.rpeters.jellyfin.ui.screens.ProfileScreen
@@ -212,6 +213,7 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
             onPrivacySettingsClick = { navController.navigate(Screen.PrivacySettings.route) },
             onAccessibilitySettingsClick = { navController.navigate(Screen.AccessibilitySettings.route) },
             onTranscodingDiagnosticsClick = { navController.navigate(Screen.TranscodingDiagnostics.route) },
+            onAiDiagnosticsClick = { navController.navigate(Screen.AiDiagnostics.route) },
         )
     }
 
@@ -308,6 +310,12 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
                     }
                 }
             },
+        )
+    }
+
+    composable(Screen.AiDiagnostics.route) {
+        AiDiagnosticsScreen(
+            onBackClick = { navController.popBackStack() },
         )
     }
 

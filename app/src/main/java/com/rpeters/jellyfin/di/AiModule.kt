@@ -339,13 +339,15 @@ object AiModule {
                 val response = model.generateContent(prompt)
                 response.candidates.firstOrNull()?.text.orEmpty()
             } catch (e: Exception) {
-                Log.e("AiModule", "Nano generation failed", e)
+                Log.e("AiModule", "Nano generation failed: ${e.message}", e)
+                // Update state to indicate Nano failed
                 stateHolder.update(
                     isUsingNano = false,
-                    nanoStatus = "Error during generation",
+                    nanoStatus = "Error during generation - using cloud",
                     canRetryDownload = false,
                 )
-                ""
+                // Re-throw the exception so DelegatingAiTextModel can catch it and fall back to cloud
+                throw e
             }
         }
 
@@ -382,18 +384,35 @@ object AiModule {
                 )
             }
 
-            // Use cloud if Nano not ready or currently downloading
+            // Try Nano if available, but fall back to cloud on error
             return if (state.isUsingNano && !state.isDownloading) {
-                nano.generateText(prompt)
+                try {
+                    val result = nano.generateText(prompt)
+                    if (result.isBlank()) {
+                        // Nano returned empty - fall back to cloud
+                        Log.w("AiModule", "Nano returned empty response, falling back to cloud")
+                        cloud.generateText(prompt)
+                    } else {
+                        result
+                    }
+                } catch (e: Exception) {
+                    // Nano failed - fall back to cloud
+                    Log.w("AiModule", "Nano generation failed, falling back to cloud: ${e.message}")
+                    cloud.generateText(prompt)
+                }
             } else {
+                // Use cloud if Nano not ready or currently downloading
                 cloud.generateText(prompt)
             }
         }
 
         override fun generateTextStream(prompt: String): Flow<String> {
             val state = stateHolder.state.value
-            // Use cloud if Nano not ready or currently downloading
+            // Try Nano if available, but use cloud as fallback
             return if (state.isUsingNano && !state.isDownloading) {
+                // Note: For streaming, we can't catch errors mid-stream easily,
+                // so we rely on the caller to handle errors. The state will be updated
+                // if Nano fails, and subsequent calls will use cloud.
                 nano.generateTextStream(prompt)
             } else {
                 cloud.generateTextStream(prompt)

@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Accessibility
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Download
@@ -64,6 +65,7 @@ fun SettingsScreen(
     onPrivacySettingsClick: () -> Unit = {},
     onAccessibilitySettingsClick: () -> Unit = {},
     onTranscodingDiagnosticsClick: () -> Unit = {},
+    onAiDiagnosticsClick: () -> Unit = {},
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
     remoteConfigViewModel: RemoteConfigViewModel = hiltViewModel(),
 ) {
@@ -85,6 +87,7 @@ fun SettingsScreen(
         onPrivacySettingsClick = onPrivacySettingsClick,
         onAccessibilitySettingsClick = onAccessibilitySettingsClick,
         onTranscodingDiagnosticsClick = onTranscodingDiagnosticsClick,
+        onAiDiagnosticsClick = onAiDiagnosticsClick,
         showTranscodingDiagnostics = showTranscodingDiagnostics,
     )
 }
@@ -106,6 +109,7 @@ private fun SettingsScreenContent(
     onPrivacySettingsClick: () -> Unit = {},
     onAccessibilitySettingsClick: () -> Unit = {},
     onTranscodingDiagnosticsClick: () -> Unit = {},
+    onAiDiagnosticsClick: () -> Unit = {},
     showTranscodingDiagnostics: Boolean = true,
 ) {
     Scaffold(
@@ -181,6 +185,15 @@ private fun SettingsScreenContent(
                         onClick = onTranscodingDiagnosticsClick,
                     )
                 }
+            }
+
+            item {
+                ExpressiveMediaListItem(
+                    title = "AI Backend Diagnostics",
+                    subtitle = "Check Gemini Nano status and troubleshoot AI features",
+                    leadingIcon = Icons.Default.AutoAwesome,
+                    onClick = onAiDiagnosticsClick,
+                )
             }
 
             item {
