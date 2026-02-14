@@ -139,6 +139,10 @@
 -keep class com.google.android.gms.cast.** { *; }
 -keep class com.google.android.gms.cast.framework.** { *; }
 -dontwarn com.google.android.gms.cast.**
+-dontwarn com.google.android.gms.internal.cast.**
+-dontwarn com.google.android.gms.cast.framework.**
+-dontwarn com.google.android.gms.internal.**
+-dontwarn androidx.media3.cast.**
 
 # ================================
 # FIREBASE & GOOGLE ML KIT
