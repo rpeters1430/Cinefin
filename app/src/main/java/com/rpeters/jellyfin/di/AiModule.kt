@@ -170,8 +170,12 @@ object AiModule {
         return withContext(Dispatchers.IO) {
             try {
                 when (model.checkStatus()) {
-                    FeatureStatus.AVAILABLE ->
-                        NanoAvailabilityResult(true, "Ready", false)
+                    FeatureStatus.AVAILABLE -> {
+                        // Verify Nano actually works with a simple test generation
+                        // This prevents ErrorCode 4 issues where checkStatus() returns AVAILABLE
+                        // but the model isn't actually ready
+                        verifyNanoWorks(model)
+                    }
                     FeatureStatus.DOWNLOADABLE -> {
                         startNanoDownload(model, stateHolder)
                         NanoAvailabilityResult(false, "Starting download...", false)
@@ -187,6 +191,51 @@ object AiModule {
                 Log.e("AiModule", "Nano availability check failed", e)
                 handleGenAiException(e)
             }
+        }
+    }
+
+    /**
+     * Verifies that Nano can actually generate content (not just report as available)
+     * This catches ErrorCode 4 and other initialization issues.
+     *
+     * Uses a realistic test that mimics actual app usage to catch policy/safety issues.
+     */
+    private suspend fun verifyNanoWorks(model: MlKitGenerativeModel): NanoAvailabilityResult {
+        return try {
+            // Realistic test prompt that mimics actual viewing habits analysis
+            // This catches ErrorCode 4 policy issues that a simple "Say OK" test misses
+            val testPrompt = """
+                Based on the following list of recently watched media, describe the viewing mood in one sentence:
+                - The Matrix (Movie)
+                - Inception (Movie)
+                - Breaking Bad (Series)
+            """.trimIndent()
+
+            val response = model.generateContent(testPrompt)
+            val hasContent = response.candidates.firstOrNull()?.text?.isNotBlank() == true
+
+            if (hasContent) {
+                Log.i("AiModule", "Nano verification successful - model is ready")
+                NanoAvailabilityResult(true, "Ready", false)
+            } else {
+                Log.w("AiModule", "Nano verification failed - empty response")
+                NanoAvailabilityResult(false, "Not ready - using cloud", false, errorCode = null)
+            }
+        } catch (e: GenAiException) {
+            Log.w("AiModule", "Nano verification failed with error ${e.errorCode}: ${e.message}")
+            // Handle specific error codes
+            when (e.errorCode) {
+                4 -> {
+                    // REQUEST_PROCESSING_ERROR - strict policy/safety checks blocking prompts
+                    // This is common on Pixel devices with Gemini Nano
+                    Log.w("AiModule", "Nano has strict policy checks preventing usage (ErrorCode 4) - using cloud fallback")
+                    NanoAvailabilityResult(false, "Safety filters too strict - using cloud", false, errorCode = 4)
+                }
+                else -> handleGenAiException(e)
+            }
+        } catch (e: Exception) {
+            Log.w("AiModule", "Nano verification failed: ${e.message}")
+            NanoAvailabilityResult(false, "Verification failed - using cloud", false)
         }
     }
 
@@ -338,15 +387,33 @@ object AiModule {
             return try {
                 val response = model.generateContent(prompt)
                 response.candidates.firstOrNull()?.text.orEmpty()
+            } catch (e: GenAiException) {
+                Log.e("AiModule", "Nano generation failed: ${e.message}", e)
+                // Handle ErrorCode 4 specially - it means policy/safety filters are blocking content
+                // This is permanent and won't be fixed by retrying
+                val (statusMessage, errorCode) = when (e.errorCode) {
+                    4 -> {
+                        Log.w("AiModule", "Nano blocked by safety filters (ErrorCode 4) - permanently using cloud")
+                        "Safety filters blocking content" to 4
+                    }
+                    else -> "Error during generation - using cloud" to e.errorCode
+                }
+
+                stateHolder.update(
+                    isUsingNano = false,
+                    nanoStatus = statusMessage,
+                    canRetryDownload = false,
+                    errorCode = errorCode,
+                )
+                // Re-throw so DelegatingAiTextModel falls back to cloud
+                throw e
             } catch (e: Exception) {
                 Log.e("AiModule", "Nano generation failed: ${e.message}", e)
-                // Update state to indicate Nano failed
                 stateHolder.update(
                     isUsingNano = false,
                     nanoStatus = "Error during generation - using cloud",
                     canRetryDownload = false,
                 )
-                // Re-throw the exception so DelegatingAiTextModel can catch it and fall back to cloud
                 throw e
             }
         }

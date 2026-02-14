@@ -127,13 +127,22 @@ class GenerativeAiRepository @Inject constructor(
     suspend fun analyzeViewingHabits(recentItems: List<BaseItemDto>): String = withContext(Dispatchers.IO) {
         if (!isAiEnabled()) return@withContext "AI analysis disabled."
         if (recentItems.isEmpty()) return@withContext "No viewing history available to analyze."
-        logModelUsage("analyzeViewingHabits", usesPrimaryModel = true)
+        logModelUsage("analyzeViewingHabits", usesPrimaryModel = false)
 
         val contextSize = remoteConfig.getLong("ai_history_context_size").toInt().coerceAtLeast(1)
         // Fallback to 10 if config is 0 (which is default for missing numbers)
         val finalContextSize = if (contextSize == 0) 10 else contextSize
 
-        val itemDescriptions = recentItems.take(finalContextSize).joinToString("\n") { item ->
+        // Filter to only Movies and Series to avoid problematic content types
+        // and sanitize titles to prevent Gemini Nano safety filter issues
+        val filteredItems = recentItems.filter { item ->
+            item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE ||
+            item.type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES
+        }
+
+        if (filteredItems.isEmpty()) return@withContext "No movies or shows watched recently."
+
+        val itemDescriptions = filteredItems.take(finalContextSize).joinToString("\n") { item ->
             "- ${item.name} (${item.type})"
         }
 
@@ -145,12 +154,13 @@ class GenerativeAiRepository @Inject constructor(
         """.trimIndent()
 
         try {
-            val response = getPrimaryModel().generateText(prompt)
+            // Always use cloud model for user content analysis to avoid Nano safety filter issues
+            val response = proModel.generateText(prompt)
             val success = response.isNotBlank()
-            analytics.logAiEvent("mood_analysis", success, getBackendName(true))
+            analytics.logAiEvent("mood_analysis", success, getBackendName(false))
             response.ifBlank { "Enjoying the library!" }
         } catch (e: Exception) {
-            analytics.logAiEvent("mood_analysis", false, getBackendName(true))
+            analytics.logAiEvent("mood_analysis", false, getBackendName(false))
             "Enjoying the library!"
         }
     }
@@ -286,7 +296,7 @@ class GenerativeAiRepository @Inject constructor(
         userPreferences: String? = null,
     ): String = withContext(Dispatchers.IO) {
         if (!isAiEnabled()) return@withContext "AI recommendations disabled."
-        logModelUsage("generateRecommendations", usesPrimaryModel = true)
+        logModelUsage("generateRecommendations", usesPrimaryModel = false)
 
         val contextSize = remoteConfig.getLong("ai_history_context_size").toInt().coerceAtLeast(1)
         val finalContextSize = if (contextSize == 0) 10 else contextSize
@@ -294,7 +304,13 @@ class GenerativeAiRepository @Inject constructor(
         val recCount = remoteConfig.getLong("ai_recommendation_count").toInt().coerceAtLeast(1)
         val finalRecCount = if (recCount == 0) 5 else recCount
 
-        val itemDescriptions = recentItems.take(finalContextSize).joinToString("\n") { item ->
+        // Filter to Movies and Series only to avoid problematic content types
+        val filteredItems = recentItems.filter { item ->
+            item.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE ||
+            item.type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES
+        }
+
+        val itemDescriptions = filteredItems.take(finalContextSize).joinToString("\n") { item ->
             "- ${item.name} (${item.type})"
         }
 
@@ -308,12 +324,13 @@ class GenerativeAiRepository @Inject constructor(
         }
 
         try {
-            val response = getPrimaryModel().generateText(prompt)
+            // Use cloud model for user content to avoid Nano safety filter issues
+            val response = proModel.generateText(prompt)
             val success = response.isNotBlank()
-            analytics.logAiEvent("recommendations", success, getBackendName(true))
+            analytics.logAiEvent("recommendations", success, getBackendName(false))
             response.ifBlank { "No recommendations available." }
         } catch (e: Exception) {
-            analytics.logAiEvent("recommendations", false, getBackendName(true))
+            analytics.logAiEvent("recommendations", false, getBackendName(false))
             "Unable to generate recommendations at this time."
         }
     }
@@ -504,13 +521,19 @@ class GenerativeAiRepository @Inject constructor(
     ): String = withContext(Dispatchers.IO) {
         if (!isAiEnabled()) return@withContext ""
         if (viewingHistory.isEmpty()) return@withContext ""
-        logModelUsage("whyYoullLoveThis", usesPrimaryModel = true)
+        logModelUsage("whyYoullLoveThis", usesPrimaryModel = false)
 
         val historySize = remoteConfig.getLong("ai_history_context_size").toInt()
             .let { if (it <= 0) 10 else it }
 
+        // Filter to Movies and Series only
+        val filteredHistory = viewingHistory.filter {
+            it.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE ||
+            it.type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES
+        }
+
         // Build viewing history context
-        val recentTitles = viewingHistory.take(historySize)
+        val recentTitles = filteredHistory.take(historySize)
             .mapNotNull { it.name }
             .joinToString(", ")
 
@@ -535,19 +558,21 @@ class GenerativeAiRepository @Inject constructor(
         """.trimIndent()
 
         try {
-            val response = withTimeout(12_000L) {
-                getPrimaryModel().generateText(prompt)
+            // Use cloud model for user content to avoid Nano safety filter issues
+            // Increased timeout to 30s for Firebase AI API (can be slow on first calls)
+            val response = withTimeout(30_000L) {
+                proModel.generateText(prompt)
             }
             val success = response.isNotBlank()
-            analytics.logAiEvent("why_youll_love_this", success, getBackendName(true))
+            analytics.logAiEvent("why_youll_love_this", success, getBackendName(false))
             response.trim().takeIf { it.isNotBlank() } ?: ""
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
             Log.w("GenerativeAi", "Why you'll love this timed out for: $itemTitle")
-            analytics.logAiEvent("why_youll_love_this", false, getBackendName(true))
+            analytics.logAiEvent("why_youll_love_this", false, getBackendName(false))
             ""
         } catch (e: Exception) {
             Log.e("GenerativeAi", "Why you'll love this failed for: $itemTitle", e)
-            analytics.logAiEvent("why_youll_love_this", false, getBackendName(true))
+            analytics.logAiEvent("why_youll_love_this", false, getBackendName(false))
             ""
         }
     }
@@ -566,7 +591,7 @@ class GenerativeAiRepository @Inject constructor(
     ): Map<String, List<BaseItemDto>> = withContext(Dispatchers.IO) {
         if (!isAiEnabled()) return@withContext emptyMap()
         if (library.isEmpty()) return@withContext emptyMap()
-        logModelUsage("moodCollections", usesPrimaryModel = true)
+        logModelUsage("moodCollections", usesPrimaryModel = false)
 
         val maxCollections = remoteConfig.getLong("ai_mood_collections_count").toInt()
             .let { if (it <= 0) 3 else it }
@@ -609,11 +634,12 @@ class GenerativeAiRepository @Inject constructor(
         """.trimIndent()
 
         try {
+            // Use cloud model for user content to avoid Nano safety filter issues
             val response = withTimeout(15_000L) {
-                getPrimaryModel().generateText(prompt)
+                proModel.generateText(prompt)
             }
             val success = response.isNotBlank()
-            analytics.logAiEvent("mood_collections", success, getBackendName(true))
+            analytics.logAiEvent("mood_collections", success, getBackendName(false))
 
             if (response.isBlank()) return@withContext emptyMap()
 
@@ -656,11 +682,11 @@ class GenerativeAiRepository @Inject constructor(
                 .associate { (name, items) -> name to items }
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
             Log.w("GenerativeAi", "Mood collections generation timed out")
-            analytics.logAiEvent("mood_collections", false, getBackendName(true))
+            analytics.logAiEvent("mood_collections", false, getBackendName(false))
             emptyMap()
         } catch (e: Exception) {
             Log.e("GenerativeAi", "Mood collections generation failed", e)
-            analytics.logAiEvent("mood_collections", false, getBackendName(true))
+            analytics.logAiEvent("mood_collections", false, getBackendName(false))
             emptyMap()
         }
     }
@@ -684,7 +710,7 @@ class GenerativeAiRepository @Inject constructor(
     ): List<BaseItemDto> = withContext(Dispatchers.IO) {
         if (!isAiEnabled()) return@withContext emptyList()
         if (library.isEmpty()) return@withContext emptyList()
-        logModelUsage("smartRecommendations", usesPrimaryModel = true)
+        logModelUsage("smartRecommendations", usesPrimaryModel = false)
 
         val maxRecommendations = remoteConfig.getLong("ai_smart_recommendations_limit").toInt()
             .let { if (it <= 0) 10 else it }
@@ -732,11 +758,13 @@ class GenerativeAiRepository @Inject constructor(
         """.trimIndent()
 
         try {
-            val response = withTimeout(15_000L) {
-                getPrimaryModel().generateText(prompt)
+            // Use cloud model for user content to avoid Nano safety filter issues
+            // Increased timeout to 30s for Firebase AI API (can be slow on first calls)
+            val response = withTimeout(30_000L) {
+                proModel.generateText(prompt)
             }
             val success = response.isNotBlank()
-            analytics.logAiEvent("smart_recommendations", success, getBackendName(true))
+            analytics.logAiEvent("smart_recommendations", success, getBackendName(false))
 
             if (response.isBlank()) return@withContext emptyList()
 
@@ -765,11 +793,11 @@ class GenerativeAiRepository @Inject constructor(
             recommendations
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
             Log.w("GenerativeAi", "Smart recommendations timed out for: $currentTitle")
-            analytics.logAiEvent("smart_recommendations", false, getBackendName(true))
+            analytics.logAiEvent("smart_recommendations", false, getBackendName(false))
             emptyList()
         } catch (e: Exception) {
             Log.e("GenerativeAi", "Smart recommendations failed for: $currentTitle", e)
-            analytics.logAiEvent("smart_recommendations", false, getBackendName(true))
+            analytics.logAiEvent("smart_recommendations", false, getBackendName(false))
             emptyList()
         }
     }

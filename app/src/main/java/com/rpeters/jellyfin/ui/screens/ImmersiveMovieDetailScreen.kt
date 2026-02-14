@@ -141,12 +141,8 @@ fun ImmersiveMovieDetailScreen(
     isLoadingAiSummary: Boolean = false,
     relatedItems: List<BaseItemDto> = emptyList(),
     playbackAnalysis: PlaybackCapabilityAnalysis? = null,
-    themes: List<String> = emptyList(),
-    isLoadingThemes: Boolean = false,
     whyYoullLoveThis: String? = null,
     isLoadingWhyYoullLoveThis: Boolean = false,
-    aiRecommendations: List<BaseItemDto> = emptyList(),
-    isAiRecommendationsLoading: Boolean = false,
     isRefreshing: Boolean = false,
     serverUrl: String? = null,
     modifier: Modifier = Modifier,
@@ -454,73 +450,6 @@ fun ImmersiveMovieDetailScreen(
                     }
                 }
 
-                // AI Themes Section
-                if (themes.isNotEmpty() || isLoadingThemes) {
-                    item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.background)
-                                .padding(horizontal = 16.dp)
-                                .padding(top = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = "Themes",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.AutoAwesome,
-                                    contentDescription = "AI Generated",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-
-                            if (isLoadingThemes) {
-                                LinearProgressIndicator(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            } else {
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    items(themes, key = { it }) { theme ->
-                                        AssistChip(
-                                            onClick = { /* TODO: Navigate to search with theme */ },
-                                            label = {
-                                                Text(
-                                                    text = theme.replaceFirstChar { it.uppercase() },
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    fontWeight = FontWeight.Medium
-                                                )
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    imageVector = Icons.Default.AutoAwesome,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                            },
-                                            colors = AssistChipDefaults.assistChipColors(
-                                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                                labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                leadingIconContentColor = MaterialTheme.colorScheme.primary
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
                 // Related Movies Section (Jellyfin metadata-based)
                 if (relatedItems.isNotEmpty()) {
                     item {
@@ -553,75 +482,6 @@ fun ImmersiveMovieDetailScreen(
                                     },
                                     cardSize = ImmersiveCardSize.SMALL,
                                 )
-                            }
-                        }
-                    }
-                }
-
-                // AI Recommendations Section (AI-powered thematic matches)
-                if (aiRecommendations.isNotEmpty() || isAiRecommendationsLoading) {
-                    item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.background)
-                                .padding(horizontal = 16.dp)
-                                .padding(top = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = "You Might Also Like",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.AutoAwesome,
-                                    contentDescription = "AI Powered",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-
-                            if (isAiRecommendationsLoading) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        ExpressiveCircularLoading(size = 32.dp)
-                                        Text(
-                                            text = "Finding recommendations...",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            } else {
-                                PerformanceOptimizedLazyRow(
-                                    items = aiRecommendations,
-                                    horizontalArrangement = Arrangement.spacedBy(ImmersiveDimens.SpacingRowTight),
-                                    maxVisibleItems = perfConfig.maxRowItems,
-                                ) { recommendedMovie, _, _ ->
-                                    ImmersiveMediaCard(
-                                        title = recommendedMovie.name ?: stringResource(id = R.string.unknown),
-                                        subtitle = recommendedMovie.productionYear?.toString() ?: "",
-                                        imageUrl = getImageUrl(recommendedMovie) ?: "",
-                                        rating = recommendedMovie.communityRating,
-                                        onCardClick = {
-                                            onRelatedMovieClick(recommendedMovie.id.toString())
-                                        },
-                                        cardSize = ImmersiveCardSize.SMALL,
-                                    )
-                                }
                             }
                         }
                     }

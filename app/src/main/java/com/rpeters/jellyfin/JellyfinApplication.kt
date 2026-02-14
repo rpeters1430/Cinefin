@@ -135,14 +135,14 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
 
     /**
      * Initializes Firebase App Check
-     * - Debug builds: Tries to use DebugAppCheckProviderFactory, falls back to Play Integrity
+     * - Debug builds: Uses DebugAppCheckProviderFactory (requires registering token in Firebase Console)
      * - Release builds: Uses Play Integrity API
      */
     private fun initializeAppCheck() {
         val firebaseAppCheck = FirebaseAppCheck.getInstance()
 
         if (BuildConfig.DEBUG) {
-            // Debug mode: Try to use debug provider (requires firebase-appcheck-debug dependency)
+            // Debug mode: Use debug provider (requires registering debug token in Firebase Console)
             try {
                 val debugProviderClass = Class.forName(
                     "com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory",
