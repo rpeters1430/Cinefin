@@ -79,9 +79,9 @@ fun PrivacyPolicyScreen(
             PrivacyPolicySection(
                 title = "1. Information We Collect",
                 content = """
-                    The App itself does not collect or store personal information such as names, email addresses, or payment details.
+                    Cinefin does not collect or store personal information such as names, email addresses, or payment details.
                     
-                    However, the App may collect limited technical information for stability and performance purposes:
+                    However, Cinefin may collect limited technical information for stability and performance purposes:
                     • Crash reports (via Firebase Crashlytics)
                     • Performance metrics (via Firebase Performance Monitoring)
                     • Device information such as Android version, device model, and app version
@@ -94,7 +94,7 @@ fun PrivacyPolicyScreen(
             PrivacyPolicySection(
                 title = "2. Media and Server Data",
                 content = """
-                    The App connects to a user-provided Jellyfin server to access media content.
+                    Cinefin connects to a user-provided Jellyfin server to access media content.
                     
                     • Server URLs, authentication tokens, and user IDs are stored locally on the device only
                     • These credentials are never transmitted to the app developer
@@ -118,7 +118,7 @@ fun PrivacyPolicyScreen(
             PrivacyPolicySection(
                 title = "4. Third-Party Services",
                 content = """
-                    The App uses the following third-party services:
+                    Cinefin uses the following third-party services:
                     • Google Firebase
                       - Crashlytics
                       - Performance Monitoring
@@ -132,14 +132,14 @@ fun PrivacyPolicyScreen(
                 title = "5. Data Retention",
                 content = """
                     • Crash and performance data are retained only as long as necessary for diagnostics
-                    • Locally stored server credentials remain on the device until the user clears app data or uninstalls the app
+                    • Locally stored server credentials remain on the device until the user clears app data or uninstalls Cinefin
                 """.trimIndent(),
             )
 
             PrivacyPolicySection(
                 title = "6. Children's Privacy",
                 content = """
-                    The App does not knowingly collect personal information from children under 13.
+                    Cinefin does not knowingly collect personal information from children under 13.
                 """.trimIndent(),
             )
 
@@ -153,7 +153,7 @@ fun PrivacyPolicyScreen(
             PrivacyPolicySection(
                 title = "8. Contact",
                 content = """
-                    If you have questions about this Privacy Policy, you may contact the developer via the app's GitHub repository.
+                    If you have questions about this Privacy Policy, you may contact the developer via the Cinefin GitHub repository.
                 """.trimIndent(),
             )
 
@@ -161,7 +161,7 @@ fun PrivacyPolicyScreen(
 
             Button(
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rpeters1430.github.io/JellyfinAndroid/privacy-policy.html"))
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://rpeters1430.github.io/Cinefin/privacy-policy.html"))
                     context.startActivity(intent)
                 },
                 modifier = Modifier.fillMaxWidth(),

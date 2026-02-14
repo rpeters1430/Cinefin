@@ -87,8 +87,8 @@ object Constants {
 
     // App Information
     object AppInfo {
-        const val PRIVACY_POLICY_URL = "https://github.com/rpeters1430/JellyfinAndroid/blob/main/privacy-policy.md"
-        const val GITHUB_REPO_URL = "https://github.com/rpeters1430/JellyfinAndroid"
+        const val PRIVACY_POLICY_URL = "https://rpeters1430.github.io/Cinefin/privacy-policy.html"
+        const val GITHUB_REPO_URL = "https://github.com/rpeters1430/Cinefin"
     }
 
     // Error Messages

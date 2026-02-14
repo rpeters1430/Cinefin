@@ -84,8 +84,8 @@ A modern, beautiful Android client for Jellyfin media servers built with Materia
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/rpeters1430/JellyfinAndroid.git
-   cd JellyfinAndroid
+   git clone https://github.com/rpeters1430/Cinefin.git
+   cd Cinefin
    ```
 
 2. **Open in Android Studio:**
@@ -319,7 +319,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **GitHub Issues:** [Report bugs and request features](https://github.com/rpeters1430/JellyfinAndroid/issues)
+- **GitHub Issues:** [Report bugs and request features](https://github.com/rpeters1430/Cinefin/issues)
 - **Jellyfin Community:** [Official Jellyfin forums](https://forum.jellyfin.org/)
 - **Documentation:** [Jellyfin API docs](https://api.jellyfin.org/)
 

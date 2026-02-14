@@ -2,8 +2,8 @@
 
 **Unofficial Jellyfin Android Client**
 
-**Effective Date:** January 27, 2026
-**Last Updated:** January 27, 2026
+**Effective Date:** February 14, 2026
+**Last Updated:** February 14, 2026
 
 This Privacy Policy describes how Cinefin ("the App", "we", "us", or "our") collects, uses, shares, and protects information when you use our Android application. By using the App, you agree to the collection and use of information in accordance with this policy.
 
@@ -228,6 +228,7 @@ We may update this Privacy Policy from time to time to reflect changes in our pr
 **Your continued use of the App after changes become effective constitutes acceptance of the updated Privacy Policy.** We encourage you to review this policy periodically.
 
 **Policy Version History:**
+- v1.1 - February 14, 2026: Updated for rebranding and updated repository URLs
 - v1.0 - January 27, 2026: Initial privacy policy for Google Play submission
 
 ## 12. Contact Us
@@ -235,8 +236,8 @@ We may update this Privacy Policy from time to time to reflect changes in our pr
 If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:
 
 **Email:** rpeters1430@gmail.com
-**GitHub Repository:** [https://github.com/rpeters1430/JellyfinAndroid](https://github.com/rpeters1430/JellyfinAndroid)
-**Privacy Policy URL:** [https://rpeters1430.github.io/JellyfinAndroid/privacy-policy.html](https://rpeters1430.github.io/JellyfinAndroid/privacy-policy.html)
+**GitHub Repository:** [https://github.com/rpeters1430/Cinefin](https://github.com/rpeters1430/Cinefin)
+**Privacy Policy URL:** [https://rpeters1430.github.io/Cinefin/privacy-policy.html](https://rpeters1430.github.io/Cinefin/privacy-policy.html)
 
 We will respond to privacy inquiries within 30 days.
 
