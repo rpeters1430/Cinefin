@@ -201,10 +201,9 @@ private fun ImmersiveShowDetailContent(
         state.seriesDetails?.let { series ->
             StaticHeroSection(
                 imageUrl = getBackdropUrl(series),
-                height = ImmersiveDimens.HeroHeightPhone + 60.dp, // ✅ Increased height
+                height = ImmersiveDimens.HeroHeightPhone,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .offset(y = (-60).dp), // ✅ Top bleed
+                    .fillMaxWidth(),
                 content = {}, // Content moved to LazyColumn
             )
         }

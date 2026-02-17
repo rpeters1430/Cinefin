@@ -349,9 +349,12 @@ fun VideoInfoCard(
             }
 
             frameRate?.let {
-                CodecBadge(
-                    text = "${it.toInt()} FPS"
-                )
+                val fpsBadge = when {
+                    it >= 59.0 -> "60fps"
+                    it >= 29.0 -> "30fps"
+                    else -> "${it.toInt()}fps"
+                }
+                CodecBadge(text = fpsBadge)
             }
 
             if (is3D) {

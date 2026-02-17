@@ -167,11 +167,10 @@ fun ImmersiveMovieDetailScreen(
         // 1. Static Hero Background (Fixed) - Extended to edges
         StaticHeroSection(
             imageUrl = getBackdropUrl(movie),
-            height = ImmersiveDimens.HeroHeightPhone + 60.dp, // ✅ Increased height for top bleed
+            height = ImmersiveDimens.HeroHeightPhone,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .fillMaxWidth()
-                .offset(y = (-60).dp), // ✅ Bleed into status bar area
+                .fillMaxWidth(),
             content = {}, // Content moved to LazyColumn
         )
 
@@ -966,7 +965,7 @@ private fun ImmersiveMovieInfoCard(
 
                         val codecText = when (stream.codec?.lowercase()) {
                             "hevc", "h265" -> "HEVC"
-                            "h264", "avc" -> "H.264"
+                            "h264", "avc" -> "AVC"
                             "av1" -> "AV1"
                             "vp9" -> "VP9"
                             "mpeg2" -> "MPEG-2"
@@ -1615,7 +1614,8 @@ private fun getResolutionBadge(width: Int?, height: Int?): Triple<ImageVector, S
     val h = height ?: 0
 
     return when {
-        h >= 2160 || w >= 3840 -> Triple(Icons.Rounded.HighQuality, "4K", Quality4K) // ✅ Use HighQuality for 4K
+        h >= 4320 || w >= 7680 -> Triple(Icons.Rounded.HighQuality, "8K", Quality4K)
+        h >= 2160 || w >= 3840 -> Triple(Icons.Rounded.HighQuality, "4K", Quality4K)
         h >= 1440 || w >= 2560 -> Triple(Icons.Rounded.HighQuality, "1440p", Quality1440)
         h >= 1080 || w >= 1920 -> Triple(Icons.Rounded.Hd, "FHD", QualityHD)
         h >= 720 || w >= 1280 -> Triple(Icons.Rounded.Hd, "HD", QualityHD)
