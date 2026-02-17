@@ -1,27 +1,27 @@
 package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.rpeters.jellyfin.data.ai.AiBackendStateHolder
-import com.rpeters.jellyfin.di.AiModule
+import com.rpeters.jellyfin.data.ai.AiBackendState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
-/**
- * ViewModel for AI diagnostics screen.
- * Exposes the current AI backend state and provides retry functionality.
- */
 @HiltViewModel
-class AiDiagnosticsViewModel @Inject constructor(
-    private val aiBackendStateHolder: AiBackendStateHolder,
-) : ViewModel() {
+class AiDiagnosticsViewModel @Inject constructor() : ViewModel() {
 
-    val aiBackendState: StateFlow<com.rpeters.jellyfin.data.ai.AiBackendState> = aiBackendStateHolder.state
+    private val _aiBackendState = MutableStateFlow(
+        AiBackendState(
+            isUsingNano = false,
+            nanoStatus = "Cloud API only",
+            isDownloading = false,
+            downloadBytesProgress = null,
+            canRetryDownload = false,
+            errorCode = null,
+        ),
+    )
+    val aiBackendState: StateFlow<AiBackendState> = _aiBackendState.asStateFlow()
 
-    /**
-     * Retry downloading the Gemini Nano model if previous attempt failed.
-     */
-    fun retryNanoDownload() {
-        AiModule.retryNanoDownload()
-    }
+    fun retryNanoDownload() = Unit
 }

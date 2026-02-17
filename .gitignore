@@ -93,6 +93,9 @@ Desktop.ini
 *.tmp
 *.temp
 *~
+*.txt
+latest_logcat
+session_log_*
 
 # Kotlin
 *.kt.class

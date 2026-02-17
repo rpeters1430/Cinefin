@@ -2,8 +2,11 @@ package com.rpeters.jellyfin
 
 import android.app.Application
 import android.os.SystemClock
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
+import com.google.firebase.FirebaseApp
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
 import com.rpeters.jellyfin.core.Logger
@@ -25,7 +28,10 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltAndroidApp
-class JellyfinApplication : Application(), SingletonImageLoader.Factory {
+class JellyfinApplication : Application(), SingletonImageLoader.Factory, Configuration.Provider {
+
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
 
     @Inject
     lateinit var offlineDownloadManager: OfflineDownloadManager
@@ -68,6 +74,7 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
 
         // Initialize Firebase App Check (debug mode for testing without Play Store)
         initializeAppCheck()
+        validateAiApiKeyConfiguration()
 
         // Fetch latest remote configuration early
         initializeRemoteConfig()
@@ -189,14 +196,56 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
         }
     }
 
+    /**
+     * Validates API key wiring for Firebase AI Logic.
+     * If GOOGLE_AI_API_KEY is set, AiModule can initialize a dedicated Firebase app
+     * for AI calls using that override key.
+     */
+    private fun validateAiApiKeyConfiguration() {
+        try {
+            val buildConfigKey = BuildConfig.GOOGLE_AI_API_KEY.trim()
+            val firebaseKey = FirebaseApp.getInstance().options.apiKey.orEmpty().trim()
+
+            if (buildConfigKey.isBlank()) {
+                SecureLogger.w(
+                    TAG,
+                    "GOOGLE_AI_API_KEY is empty. Firebase AI will use the default Firebase key from google-services.json.",
+                )
+                return
+            }
+
+            if (firebaseKey.isBlank()) {
+                SecureLogger.e(
+                    TAG,
+                    "Firebase API key from google-services.json is empty. Firebase AI requests will fail.",
+                )
+                return
+            }
+
+            if (buildConfigKey != firebaseKey) {
+                SecureLogger.w(
+                    TAG,
+                    "AI key mismatch detected (BuildConfig=${maskKey(buildConfigKey)}, Firebase=${maskKey(firebaseKey)}). " +
+                        "AI requests will use the BuildConfig override via AiModule secondary Firebase app.",
+                )
+            } else {
+                SecureLogger.i(TAG, "AI API key is aligned with default Firebase options.")
+            }
+        } catch (e: Exception) {
+            SecureLogger.w(TAG, "Unable to validate AI key configuration", e)
+        }
+    }
+
+    private fun maskKey(value: String): String {
+        if (value.length <= 10) return "***"
+        return value.take(6) + "***" + value.takeLast(4)
+    }
+
     private fun initializeAiBackend() {
         applicationScope.launch {
             try {
-                // Trigger AI initialization by checking backend status
-                // This will start Nano download if available or fallback to cloud
                 SecureLogger.i(TAG, "Initializing AI backend in background")
-                val isOnDevice = generativeAiRepository.isUsingOnDeviceAI()
-                SecureLogger.i(TAG, "AI backend initialized: ${if (isOnDevice) "On-Device (Nano)" else "Cloud (API)"}")
+                SecureLogger.i(TAG, "AI backend mode: Cloud API only")
             } catch (e: CancellationException) {
                 throw e
             }
@@ -289,4 +338,9 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory {
     }
 
     override fun newImageLoader(context: android.content.Context): ImageLoader = imageLoader
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 }

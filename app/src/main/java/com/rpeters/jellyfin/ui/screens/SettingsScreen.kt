@@ -190,7 +190,7 @@ private fun SettingsScreenContent(
             item {
                 ExpressiveMediaListItem(
                     title = "AI Backend Diagnostics",
-                    subtitle = "Check Gemini Nano status and troubleshoot AI features",
+                    subtitle = "Check cloud API status and troubleshoot AI features",
                     leadingIcon = Icons.Default.AutoAwesome,
                     onClick = onAiDiagnosticsClick,
                 )

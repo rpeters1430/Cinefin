@@ -170,8 +170,8 @@ private fun StatusCard(
                 Text(
                     text = when {
                         isDownloading -> "Downloading Model"
-                        isUsingNano -> "On-Device AI (Gemini Nano)"
-                        else -> "Cloud AI (Gemini 2.5 Flash)"
+                        isUsingNano -> "Cloud AI (legacy state)"
+                        else -> "Cloud AI (Gemini API)"
                     },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
@@ -179,8 +179,8 @@ private fun StatusCard(
                 Text(
                     text = when {
                         isDownloading -> "Installing on-device model..."
-                        isUsingNano -> "Privacy-first • No internet required"
-                        else -> "Reliable fallback • Internet required"
+                        isUsingNano -> "Cloud mode only"
+                        else -> "Internet required • API key required"
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -351,25 +351,25 @@ private fun InfoCard() {
             )
 
             InfoRow(
-                icon = Icons.Default.Smartphone,
-                title = "Gemini Nano",
-                description = "On-device AI model for privacy and speed. No internet required. Available on Pixel 8+ and select Android 15+ devices.",
+                icon = Icons.Default.Cloud,
+                title = "Gemini API",
+                description = "Cloud-only mode is enabled to simplify troubleshooting and verify key/project configuration.",
             )
 
             HorizontalDivider()
 
             InfoRow(
                 icon = Icons.Default.Cloud,
-                title = "Gemini 2.5 Flash",
-                description = "Cloud-based AI for all devices. Automatic fallback when Nano is unavailable. Requires internet connection.",
+                title = "Model Routing",
+                description = "All requests go through Firebase AI Logic using Google AI backend from AiModule.",
             )
 
             HorizontalDivider()
 
             InfoRow(
                 icon = Icons.Default.AutoAwesome,
-                title = "Smart Fallback",
-                description = "The app automatically uses the best available AI backend. Cloud API is always available as a reliable backup.",
+                title = "Debug Focus",
+                description = "Use this screen together with Home AI status and logcat to validate active key, model, and endpoint.",
             )
         }
     }

@@ -157,15 +157,6 @@
 -keep interface com.google.firebase.ai.** { *; }
 -dontwarn com.google.firebase.ai.**
 
-# Keep ML Kit GenAI (Gemini Nano on-device)
--keep class com.google.mlkit.genai.** { *; }
--keep interface com.google.mlkit.genai.** { *; }
--dontwarn com.google.mlkit.genai.**
-
-# Keep Google Play Services ML Kit
--keep class com.google.android.gms.internal.mlkit_genai_prompt.** { *; }
--dontwarn com.google.android.gms.internal.mlkit_genai_prompt.**
-
 # ================================
 # COIL IMAGE LOADING
 # ================================

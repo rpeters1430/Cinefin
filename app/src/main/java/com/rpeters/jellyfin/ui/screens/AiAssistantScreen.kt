@@ -20,10 +20,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -62,22 +60,8 @@ fun AiAssistantScreen(
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
-    val aiBackendLabel = when {
-        uiState.isDownloadingNano -> "AI: Cloud (downloading on-device model...)"
-        uiState.isOnDeviceAI -> "AI: On-Device (Private & Fast)"
-        else -> "AI: Cloud"
-    }
-
-    val nanoStatusLabel = when {
-        uiState.isDownloadingNano && uiState.downloadProgress != null ->
-            "Download: ${uiState.downloadProgress}"
-        uiState.isDownloadingNano ->
-            "Downloading on-device AI..."
-        uiState.isOnDeviceAI ->
-            "On-device: ${uiState.nanoStatus}"
-        else ->
-            "On-device: ${uiState.nanoStatus}"
-    }
+    val aiBackendLabel = "AI: Cloud API"
+    val nanoStatusLabel = "Backend: ${uiState.nanoStatus}"
 
     LaunchedEffect(uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
@@ -88,11 +72,7 @@ fun AiAssistantScreen(
     Scaffold(
         topBar = {
             ExpressiveTopAppBar(
-                title = if (uiState.isOnDeviceAI) {
-                    "Cinefin AI Assistant (On-Device)"
-                } else {
-                    "Cinefin AI Assistant"
-                },
+                title = "Cinefin AI Assistant",
                 navigationIcon = {
                     ExpressiveBackNavigationIcon(onClick = onBackClick)
                 },
@@ -166,16 +146,8 @@ fun AiAssistantScreen(
                         item {
                             StatusBadge(
                                 text = aiBackendLabel,
-                                containerColor = if (uiState.isOnDeviceAI) {
-                                    MaterialTheme.colorScheme.primaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.tertiaryContainer
-                                },
-                                contentColor = if (uiState.isOnDeviceAI) {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onTertiaryContainer
-                                },
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                             )
                         }
                         item {
@@ -194,129 +166,6 @@ fun AiAssistantScreen(
                         }
                     }
 
-                    // Download progress indicator
-                    if (uiState.isDownloadingNano) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.primaryContainer)
-                                .padding(12.dp),
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = "Downloading on-device AI model",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                )
-                                uiState.downloadProgress?.let { progress ->
-                                    Text(
-                                        text = progress,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            LinearProgressIndicator(
-                                modifier = Modifier.fillMaxWidth(),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                            )
-                        }
-                    }
-
-                    // Error 606 specific guidance for S25 Ultra and compatible devices
-                    if (uiState.canRetryDownload && uiState.errorCode == 606) {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.tertiaryContainer,
-                            shape = RoundedCornerShape(8.dp),
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = "On-Device AI Initializing",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Your device supports Gemini Nano, but AICore is still initializing. This can take a few minutes to a few hours on new devices.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "To speed this up:",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                )
-                                Text(
-                                    text = "• Restart your device\n• Ensure internet connection\n• Update Google Play Services\n• Wait a few hours and retry",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.End,
-                                ) {
-                                    TextButton(
-                                        onClick = { viewModel.retryNanoDownload() },
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Refresh,
-                                            contentDescription = "Retry",
-                                            modifier = Modifier.padding(end = 4.dp),
-                                        )
-                                        Text("Retry Now")
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Generic retry button for other errors
-                    if (uiState.canRetryDownload && uiState.errorCode != 606) {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = RoundedCornerShape(8.dp),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "Download Failed",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onErrorContainer,
-                                    )
-                                    Text(
-                                        text = "On-device AI couldn't be downloaded",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f),
-                                    )
-                                }
-                                TextButton(
-                                    onClick = { viewModel.retryNanoDownload() },
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Refresh,
-                                        contentDescription = "Retry",
-                                        modifier = Modifier.padding(end = 4.dp),
-                                    )
-                                    Text("Retry")
-                                }
-                            }
-                        }
-                    }
                 }
             }
             items(uiState.messages) { message ->

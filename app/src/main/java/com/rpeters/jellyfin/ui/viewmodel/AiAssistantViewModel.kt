@@ -2,7 +2,6 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rpeters.jellyfin.data.ai.AiBackendStateHolder
 import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
@@ -11,8 +10,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import javax.inject.Inject
@@ -39,7 +36,6 @@ data class AiAssistantState(
 class AiAssistantViewModel @Inject constructor(
     private val generativeAiRepository: GenerativeAiRepository,
     private val jellyfinRepository: JellyfinRepository,
-    private val backendStateHolder: AiBackendStateHolder,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AiAssistantState())
@@ -53,23 +49,12 @@ class AiAssistantViewModel @Inject constructor(
         )
         _uiState.value = _uiState.value.copy(
             messages = listOf(welcomeMessage),
-            isOnDeviceAI = generativeAiRepository.isUsingOnDeviceAI(),
+            isOnDeviceAI = false,
+            nanoStatus = "Cloud API only",
+            isDownloadingNano = false,
+            canRetryDownload = false,
+            errorCode = null,
         )
-
-        viewModelScope.launch {
-            backendStateHolder.state.collectLatest { state ->
-                _uiState.update {
-                    it.copy(
-                        isOnDeviceAI = state.isUsingNano,
-                        nanoStatus = state.nanoStatus,
-                        isDownloadingNano = state.isDownloading,
-                        downloadProgress = state.downloadBytesProgress,
-                        canRetryDownload = state.canRetryDownload,
-                        errorCode = state.errorCode,
-                    )
-                }
-            }
-        }
     }
 
     fun sendMessage(query: String) {
@@ -146,6 +131,6 @@ class AiAssistantViewModel @Inject constructor(
     fun getImageUrl(item: BaseItemDto): String? = jellyfinRepository.getImageUrl(item.id.toString())
 
     fun retryNanoDownload() {
-        generativeAiRepository.retryNanoDownload()
+        // No-op in cloud-only mode.
     }
 }

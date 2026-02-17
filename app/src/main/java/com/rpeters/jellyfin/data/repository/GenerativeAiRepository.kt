@@ -1,9 +1,7 @@
 package com.rpeters.jellyfin.data.repository
 
 import android.util.Log
-import com.rpeters.jellyfin.data.ai.AiBackendStateHolder
 import com.rpeters.jellyfin.data.ai.AiTextModel
-import com.rpeters.jellyfin.di.AiModule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -28,19 +26,19 @@ import javax.inject.Singleton
 class GenerativeAiRepository @Inject constructor(
     @Named("primary-model") private val primaryModel: AiTextModel,
     @Named("pro-model") private val proModel: AiTextModel,
-    private val backendStateHolder: AiBackendStateHolder,
     private val remoteConfig: RemoteConfigRepository,
     private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
 ) {
+    data class AiHealthResult(
+        val isHealthy: Boolean,
+        val message: String,
+    )
+
     // Simple memory cache for AI summaries to avoid redundant API calls
     private val summaryCache = mutableMapOf<String, String>()
 
     private fun getBackendName(usesPrimaryModel: Boolean): String {
-        return if (usesPrimaryModel) {
-            if (backendStateHolder.state.value.isUsingNano) "nano" else "cloud"
-        } else {
-            "pro_cloud"
-        }
+        return if (usesPrimaryModel) "cloud" else "pro_cloud"
     }
 
     private fun logModelUsage(operation: String, usesPrimaryModel: Boolean) {
@@ -65,6 +63,39 @@ class GenerativeAiRepository @Inject constructor(
             proModel
         } else {
             primaryModel
+        }
+    }
+
+    /**
+     * Minimal cloud API health test for home-screen diagnostics.
+     * This is intentionally small/cheap and logs enough context for debugging.
+     */
+    suspend fun checkCloudApiHealth(): AiHealthResult = withContext(Dispatchers.IO) {
+        val prompt = "Reply with exactly: OK"
+        val backend = getBackendName(usesPrimaryModel = true)
+        Log.i(
+            "GenerativeAi",
+            "[GenerativeAiRepository.kt] checkCloudApiHealth start backend=$backend promptChars=${prompt.length}",
+        )
+        return@withContext try {
+            val response = withTimeout(15_000L) { getPrimaryModel().generateText(prompt).trim() }
+            val isHealthy = response.contains("OK", ignoreCase = true)
+            val normalized = response.take(120)
+            Log.i(
+                "GenerativeAi",
+                "[GenerativeAiRepository.kt] checkCloudApiHealth success backend=$backend response='$normalized'",
+            )
+            analytics.logAiEvent("health_check", isHealthy, backend)
+            if (isHealthy) {
+                AiHealthResult(true, "AI API connected")
+            } else {
+                AiHealthResult(false, "Unexpected response: $normalized")
+            }
+        } catch (e: Exception) {
+            Log.e("GenerativeAi", "[GenerativeAiRepository.kt] checkCloudApiHealth failed backend=$backend", e)
+            analytics.logAiEvent("health_check", false, backend)
+            val message = e.message?.take(140) ?: e::class.simpleName.orEmpty()
+            AiHealthResult(false, message.ifBlank { "Unknown AI API error" })
         }
     }
 
@@ -146,12 +177,19 @@ class GenerativeAiRepository @Inject constructor(
             "- ${item.name} (${item.type})"
         }
 
-        val prompt = """
+        val template = remoteConfig.getString("ai_mood_analysis_prompt_template").takeIf { it.isNotBlank() }
+            ?: """
             Based on the following list of recently watched media, describe the user's current viewing mood in one short sentence (e.g., "You're into sci-fi adventures right now!" or "Looks like a comedy weekend.").
 
             Media List:
-            $itemDescriptions
-        """.trimIndent()
+            %s
+            """.trimIndent()
+
+        val prompt = if (template.contains("%s")) {
+            try { template.format(itemDescriptions) } catch (e: Exception) { "$template\n\n$itemDescriptions" }
+        } else {
+            "$template\n\n$itemDescriptions"
+        }
 
         try {
             // Always use cloud model for user content analysis to avoid Nano safety filter issues
@@ -171,7 +209,7 @@ class GenerativeAiRepository @Inject constructor(
      * Timeout: 15 seconds to prevent indefinite loading
      */
     suspend fun generateSummary(title: String, overview: String): String = withContext(Dispatchers.IO) {
-        if (!isAiEnabled()) return@withContext overview
+        if (!isAiEnabled() || !remoteConfig.getBoolean("ai_summaries")) return@withContext overview
         if (overview.isBlank()) return@withContext "No overview available."
 
         // Check cache first
@@ -367,7 +405,7 @@ class GenerativeAiRepository @Inject constructor(
         personName: String,
         filmography: List<BaseItemDto>,
     ): String = withContext(Dispatchers.IO) {
-        if (!isAiEnabled()) return@withContext ""
+        if (!isAiEnabled() || !remoteConfig.getBoolean("ai_person_bio")) return@withContext ""
         if (filmography.isEmpty()) return@withContext ""
         logModelUsage("generatePersonBio", usesPrimaryModel = true)
 
@@ -390,21 +428,32 @@ class GenerativeAiRepository @Inject constructor(
         val movieCount = filmography.count { it.type == org.jellyfin.sdk.model.api.BaseItemKind.MOVIE }
         val tvCount = filmography.count { it.type == org.jellyfin.sdk.model.api.BaseItemKind.SERIES }
 
-        val prompt = buildString {
-            append("Generate a concise 2-3 sentence biography for $personName based on their filmography in this library.\n\n")
-            append("Context:\n")
-            append("- Total in library: $movieCount movies, $tvCount TV shows\n")
-            if (movieTitles.isNotEmpty()) {
-                append("- Notable movies: $movieTitles\n")
-            }
-            if (tvTitles.isNotEmpty()) {
-                append("- Notable TV shows: $tvTitles\n")
-            }
-            append("\nFocus on:\n")
-            append("1. Career highlights and known roles (based on titles)\n")
-            append("2. Acting style or typical genres\n")
-            append("3. Presence in this library (${filmography.size} total appearances)\n\n")
-            append("Keep it engaging and informative. Max 60 words.")
+        val template = remoteConfig.getString("ai_person_bio_prompt_template").takeIf { it.isNotBlank() }
+            ?: """
+            Generate a concise 2-3 sentence biography for %s based on their filmography in this library.
+
+            Context:
+            - Total in library: %d movies, %d TV shows
+            Notable movies: %s
+            Notable TV shows: %s
+
+            Focus on:
+            1. Career highlights and known roles (based on titles)
+            2. Acting style or typical genres
+            3. Presence in this library (%d total appearances)
+
+            Keep it engaging and informative. Max 60 words.
+            """.trimIndent()
+
+        val prompt = try {
+            template.format(personName, movieCount, tvCount, movieTitles, tvTitles, filmography.size)
+        } catch (e: Exception) {
+            """
+            $template
+            Person: $personName
+            Movies: $movieTitles
+            TV Shows: $tvTitles
+            """.trimIndent()
         }
 
         try {
@@ -448,7 +497,7 @@ class GenerativeAiRepository @Inject constructor(
         overview: String,
         genres: List<String> = emptyList(),
     ): List<String> = withContext(Dispatchers.IO) {
-        if (!isAiEnabled()) return@withContext emptyList()
+        if (!isAiEnabled() || !remoteConfig.getBoolean("ai_thematic_analysis")) return@withContext emptyList()
         if (overview.isBlank()) return@withContext emptyList()
         logModelUsage("extractThemes", usesPrimaryModel = true)
 
@@ -456,21 +505,33 @@ class GenerativeAiRepository @Inject constructor(
             .let { if (it <= 0) 5 else it }
 
         val genreContext = if (genres.isNotEmpty()) {
-            "Genres: ${genres.joinToString(", ")}\n"
-        } else ""
+            genres.joinToString(", ")
+        } else "None"
 
-        val prompt = """
-            Extract $maxThemes thematic elements from this content. Focus on deeper themes beyond just genre.
+        val template = remoteConfig.getString("ai_theme_extraction_prompt_template").takeIf { it.isNotBlank() }
+            ?: """
+            Extract %d thematic elements from this content. Focus on deeper themes beyond just genre.
 
-            Title: $title
-            $genreContext
-            Overview: $overview
+            Title: %s
+            Genres: %s
+            Overview: %s
 
             Examples of themes: "redemption", "found family", "coming of age", "moral ambiguity", "survival", "betrayal", "identity crisis", "power corruption", "revenge", "sacrifice", "forbidden love", "class struggle"
 
             Return ONLY a JSON array of theme strings, lowercase, 1-3 words each.
             Example: ["redemption", "found family", "survival"]
-        """.trimIndent()
+            """.trimIndent()
+
+        val prompt = try {
+            template.format(maxThemes, title, genreContext, overview)
+        } catch (e: Exception) {
+            """
+            $template
+            Title: $title
+            Genres: $genreContext
+            Overview: $overview
+            """.trimIndent()
+        }
 
         try {
             val response = withTimeout(10_000L) {
@@ -519,7 +580,7 @@ class GenerativeAiRepository @Inject constructor(
         item: BaseItemDto,
         viewingHistory: List<BaseItemDto>,
     ): String = withContext(Dispatchers.IO) {
-        if (!isAiEnabled()) return@withContext ""
+        if (!isAiEnabled() || !remoteConfig.getBoolean("ai_why_youll_love_this")) return@withContext ""
         if (viewingHistory.isEmpty()) return@withContext ""
         logModelUsage("whyYoullLoveThis", usesPrimaryModel = false)
 
@@ -541,21 +602,32 @@ class GenerativeAiRepository @Inject constructor(
         val itemGenres = item.genres?.joinToString(", ") ?: ""
         val itemOverview = item.overview?.take(300) ?: ""
 
-        val prompt = """
-            Based on the user's viewing history, explain why they would enjoy "$itemTitle" in ONE compelling sentence (max 40 words).
+        val template = remoteConfig.getString("ai_why_love_this_prompt_template").takeIf { it.isNotBlank() }
+            ?: """
+            Based on the user's viewing history, explain why they would enjoy "%s" in ONE compelling sentence (max 40 words).
 
-            Their recent watches: $recentTitles
+            Their recent watches: %s
 
-            About "$itemTitle":
-            - Genres: $itemGenres
-            - Overview: $itemOverview
+            About "%s":
+            - Genres: %s
+            - Overview: %s
 
             Find connections to their history (similar themes, genres, actors, tone, storytelling style).
 
             Format: "You loved [Title] and [Title] - this has the same [specific quality]."
 
             Be specific and engaging. Focus on WHY, not just WHAT.
-        """.trimIndent()
+            """.trimIndent()
+
+        val prompt = try {
+            template.format(itemTitle, recentTitles, itemTitle, itemGenres, itemOverview)
+        } catch (e: Exception) {
+            """
+            $template
+            Title: $itemTitle
+            History: $recentTitles
+            """.trimIndent()
+        }
 
         try {
             // Use cloud model for user content to avoid Nano safety filter issues
@@ -589,7 +661,7 @@ class GenerativeAiRepository @Inject constructor(
         library: List<BaseItemDto>,
         currentHour: Int = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY),
     ): Map<String, List<BaseItemDto>> = withContext(Dispatchers.IO) {
-        if (!isAiEnabled()) return@withContext emptyMap()
+        if (!isAiEnabled() || !remoteConfig.getBoolean("ai_mood_collections")) return@withContext emptyMap()
         if (library.isEmpty()) return@withContext emptyMap()
         logModelUsage("moodCollections", usesPrimaryModel = false)
 
@@ -612,15 +684,16 @@ class GenerativeAiRepository @Inject constructor(
             else -> "late night (suggest mysteries, thrillers, or comfort content)"
         }
 
-        val prompt = """
-            Based on this library and the current time ($timeContext), create $maxCollections mood-based collections.
+        val template = remoteConfig.getString("ai_mood_collections_prompt_template").takeIf { it.isNotBlank() }
+            ?: """
+            Based on this library and the current time (%s), create %d mood-based collections.
 
             Library sample (first 100 items):
-            $libraryContext
+            %s
 
             Create collections with:
             1. Engaging collection names (e.g., "Feel-Good Comedies", "Mind-Bending Thrillers", "Cozy Comfort Shows")
-            2. $itemsPerCollection items per collection
+            2. %d items per collection
             3. Time-appropriate suggestions
 
             Return as JSON:
@@ -631,7 +704,17 @@ class GenerativeAiRepository @Inject constructor(
             }
 
             Only include titles that exist in the library above.
-        """.trimIndent()
+            """.trimIndent()
+
+        val prompt = try {
+            template.format(timeContext, maxCollections, libraryContext, itemsPerCollection)
+        } catch (e: Exception) {
+            """
+            $template
+            Time: $timeContext
+            Collections: $maxCollections
+            """.trimIndent()
+        }
 
         try {
             // Use cloud model for user content to avoid Nano safety filter issues
@@ -708,7 +791,7 @@ class GenerativeAiRepository @Inject constructor(
         viewingHistory: List<BaseItemDto>,
         library: List<BaseItemDto>,
     ): List<BaseItemDto> = withContext(Dispatchers.IO) {
-        if (!isAiEnabled()) return@withContext emptyList()
+        if (!isAiEnabled() || !remoteConfig.getBoolean("ai_smart_recommendations")) return@withContext emptyList()
         if (library.isEmpty()) return@withContext emptyList()
         logModelUsage("smartRecommendations", usesPrimaryModel = false)
 
@@ -732,17 +815,18 @@ class GenerativeAiRepository @Inject constructor(
             "${item.name} (${item.type}, ${item.genres?.joinToString(", ").orEmpty()})"
         }
 
-        val prompt = """
-            You are a smart content recommendation engine. Find $maxRecommendations titles from the library that the user would enjoy based on thematic similarities, mood, and tone.
+        val template = remoteConfig.getString("ai_smart_recommendations_prompt_template").takeIf { it.isNotBlank() }
+            ?: """
+            You are a smart content recommendation engine. Find %d titles from the library that the user would enjoy based on thematic similarities, mood, and tone.
 
-            Current item: $currentTitle
-            Genres: $currentGenres
-            Overview: $currentOverview
+            Current item: %s
+            Genres: %s
+            Overview: %s
 
-            User's recent viewing history: $historyTitles
+            User's recent viewing history: %s
 
             Available library (sample):
-            $libraryContext
+            %s
 
             Find items that match:
             1. Thematic elements (e.g., similar character arcs, moral dilemmas, storytelling style)
@@ -755,7 +839,17 @@ class GenerativeAiRepository @Inject constructor(
             ["Title 1", "Title 2", "Title 3", ...]
 
             Include ONLY titles that exist in the library above.
-        """.trimIndent()
+            """.trimIndent()
+
+        val prompt = try {
+            template.format(maxRecommendations, currentTitle, currentGenres, currentOverview, historyTitles, libraryContext)
+        } catch (e: Exception) {
+            """
+            $template
+            Item: $currentTitle
+            History: $historyTitles
+            """.trimIndent()
+        }
 
         try {
             // Use cloud model for user content to avoid Nano safety filter issues
@@ -802,19 +896,8 @@ class GenerativeAiRepository @Inject constructor(
         }
     }
 
-    /**
-     * Returns whether the current model is using on-device AI (Gemini Nano)
-     * This can be used to show a privacy badge in the UI
-     */
-    fun isUsingOnDeviceAI(): Boolean = backendStateHolder.state.value.isUsingNano
-
-    /**
-     * Retry downloading the Gemini Nano model if a previous download failed
-     */
-    fun retryNanoDownload() {
-        Log.d("GenerativeAi", "User initiated Nano download retry")
-        AiModule.retryNanoDownload()
-    }
+    fun isUsingOnDeviceAI(): Boolean = false
+    fun retryNanoDownload() = Unit
 
     /**
      * Analyzes an image (e.g., movie poster) and provides insights.

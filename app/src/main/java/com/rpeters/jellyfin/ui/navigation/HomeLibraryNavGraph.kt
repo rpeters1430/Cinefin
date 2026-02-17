@@ -46,6 +46,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
                     Log.d("HomeScreen", "Current server available, loading initial data for: ${server.name}")
                 }
                 viewModel.loadInitialData()
+                viewModel.runAiHealthCheck()
             } else {
                 if (BuildConfig.DEBUG) {
                     Log.d("HomeScreen", "Waiting for server connection before loading data")
@@ -117,6 +118,7 @@ fun androidx.navigation.NavGraphBuilder.homeLibraryNavGraph(
             },
             onSettingsClick = { navController.navigate(Screen.Profile.route) },
             onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
+            onAiHealthCheck = { viewModel.runAiHealthCheck(force = true) },
         )
     }
 

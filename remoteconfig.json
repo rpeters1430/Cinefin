@@ -28,6 +28,34 @@
       "description": "Pro AI model name.",
       "valueType": "STRING"
     },
+    "ai_primary_model_temperature": {
+      "defaultValue": {
+        "value": "0.7"
+      },
+      "description": "Temperature (randomness) for primary AI model.",
+      "valueType": "NUMBER"
+    },
+    "ai_pro_model_temperature": {
+      "defaultValue": {
+        "value": "0.8"
+      },
+      "description": "Temperature (randomness) for pro AI model.",
+      "valueType": "NUMBER"
+    },
+    "ai_primary_model_max_tokens": {
+      "defaultValue": {
+        "value": "2048"
+      },
+      "description": "Max tokens for primary AI model responses.",
+      "valueType": "NUMBER"
+    },
+    "ai_pro_model_max_tokens": {
+      "defaultValue": {
+        "value": "4096"
+      },
+      "description": "Max tokens for pro AI model responses.",
+      "valueType": "NUMBER"
+    },
     "ai_chat_system_prompt": {
       "defaultValue": {
         "value": "You are Cinefin AI Assistant. Answer the user's request clearly and briefly (max 120 words). If recommending media, suggest at most 5 titles."
@@ -40,6 +68,48 @@
         "value": "Rewrite this into a fresh, spoiler-free summary in exactly 2 short sentences (max 55 words total). Do not copy phrases directly from the overview.\n\nTitle: %s\nOverview: %s\n\nFocus on the core premise only. Do not reveal twists or endings."
       },
       "description": "Prompt template for AI summaries.",
+      "valueType": "STRING"
+    },
+    "ai_mood_analysis_prompt_template": {
+      "defaultValue": {
+        "value": "Based on the following list of recently watched media, describe the user's current viewing mood in one short sentence (e.g., \"You're into sci-fi adventures right now!\" or \"Looks like a comedy weekend.\").\n\nMedia List:\n%s"
+      },
+      "description": "Prompt template for mood analysis.",
+      "valueType": "STRING"
+    },
+    "ai_person_bio_prompt_template": {
+      "defaultValue": {
+        "value": "Generate a concise 2-3 sentence biography for %s based on their filmography in this library.\n\nContext:\n- Total in library: %d movies, %d TV shows\nNotable movies: %s\nNotable TV shows: %s\n\nFocus on:\n1. Career highlights and known roles (based on titles)\n2. Acting style or typical genres\n3. Presence in this library (%d total appearances)\n\nKeep it engaging and informative. Max 60 words."
+      },
+      "description": "Prompt template for person biographies.",
+      "valueType": "STRING"
+    },
+    "ai_theme_extraction_prompt_template": {
+      "defaultValue": {
+        "value": "Extract %d thematic elements from this content. Focus on deeper themes beyond just genre.\n\nTitle: %s\nGenres: %s\nOverview: %s\n\nExamples of themes: \"redemption\", \"found family\", \"coming of age\", \"moral ambiguity\", \"survival\", \"betrayal\", \"identity crisis\", \"power corruption\", \"revenge\", \"sacrifice\", \"forbidden love\", \"class struggle\"\n\nReturn ONLY a JSON array of theme strings, lowercase, 1-3 words each.\nExample: [\"redemption\", \"found family\", \"survival\"]"
+      },
+      "description": "Prompt template for thematic analysis.",
+      "valueType": "STRING"
+    },
+    "ai_why_love_this_prompt_template": {
+      "defaultValue": {
+        "value": "Based on the user's viewing history, explain why they would enjoy \"%s\" in ONE compelling sentence (max 40 words).\n\nTheir recent watches: %s\n\nAbout \"%s\":\n- Genres: %s\n- Overview: %s\n\nFind connections to their history (similar themes, genres, actors, tone, storytelling style).\n\nFormat: \"You loved [Title] and [Title] - this has the same [specific quality].\"\n\nBe specific and engaging. Focus on WHY, not just WHAT."
+      },
+      "description": "Prompt template for 'Why You'll Love This' pitches.",
+      "valueType": "STRING"
+    },
+    "ai_mood_collections_prompt_template": {
+      "defaultValue": {
+        "value": "Based on this library and the current time (%s), create %d mood-based collections.\n\nLibrary sample (first 100 items):\n%s\n\nCreate collections with:\n1. Engaging collection names (e.g., \"Feel-Good Comedies\", \"Mind-Bending Thrillers\", \"Cozy Comfort Shows\")\n2. %d items per collection\n3. Time-appropriate suggestions\n\nReturn as JSON:\n{\n  \"Collection Name 1\": [\"Title 1\", \"Title 2\", ...],\n  \"Collection Name 2\": [\"Title 1\", \"Title 2\", ...],\n  ...\n}\n\nOnly include titles that exist in the library above."
+      },
+      "description": "Prompt template for mood-based collection generation.",
+      "valueType": "STRING"
+    },
+    "ai_smart_recommendations_prompt_template": {
+      "defaultValue": {
+        "value": "You are a smart content recommendation engine. Find %d titles from the library that the user would enjoy based on thematic similarities, mood, and tone.\n\nCurrent item: %s\nGenres: %s\nOverview: %s\n\nUser's recent viewing history: %s\n\nAvailable library (sample):\n%s\n\nFind items that match:\n1. Thematic elements (e.g., similar character arcs, moral dilemmas, storytelling style)\n2. Mood and tone (not just genre)\n3. User's demonstrated preferences from history\n\nDO NOT recommend the current item itself.\n\nReturn ONLY a JSON array of title strings, in priority order:\n[\"Title 1\", \"Title 2\", \"Title 3\", ...]\n\nInclude ONLY titles that exist in the library above."
+      },
+      "description": "Prompt template for smart thematic recommendations.",
       "valueType": "STRING"
     },
     "ai_search_keyword_limit": {
@@ -61,6 +131,83 @@
         "value": "10"
       },
       "description": "Number of previous messages to include in AI context.",
+      "valueType": "NUMBER"
+    },
+    "ai_summaries": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable AI-generated content summaries.",
+      "valueType": "BOOLEAN"
+    },
+    "ai_person_bio": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable AI-generated biographies for persons.",
+      "valueType": "BOOLEAN"
+    },
+    "ai_person_bio_context_size": {
+      "defaultValue": {
+        "value": "15"
+      },
+      "description": "Max titles to include in person bio generation context.",
+      "valueType": "NUMBER"
+    },
+    "ai_thematic_analysis": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable AI-based thematic analysis and theme extraction.",
+      "valueType": "BOOLEAN"
+    },
+    "ai_theme_extraction_limit": {
+      "defaultValue": {
+        "value": "5"
+      },
+      "description": "Max thematic elements to extract per item.",
+      "valueType": "NUMBER"
+    },
+    "ai_why_youll_love_this": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable personalized 'Why You'll Love This' AI summaries.",
+      "valueType": "BOOLEAN"
+    },
+    "ai_mood_collections": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable AI-generated mood collections.",
+      "valueType": "BOOLEAN"
+    },
+    "ai_mood_collections_count": {
+      "defaultValue": {
+        "value": "3"
+      },
+      "description": "Number of mood-based collections to generate.",
+      "valueType": "NUMBER"
+    },
+    "ai_mood_collection_size": {
+      "defaultValue": {
+        "value": "10"
+      },
+      "description": "Number of items per mood collection.",
+      "valueType": "NUMBER"
+    },
+    "ai_smart_recommendations": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable AI-powered smart recommendations.",
+      "valueType": "BOOLEAN"
+    },
+    "ai_smart_recommendations_limit": {
+      "defaultValue": {
+        "value": "10"
+      },
+      "description": "Max smart AI recommendations to provide.",
       "valueType": "NUMBER"
     },
     "enable_video_player_gestures": {

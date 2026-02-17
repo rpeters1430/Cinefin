@@ -80,6 +80,9 @@ data class MainAppState(
     val isLoadingViewingMood: Boolean = false,
     val moodCollections: Map<String, List<BaseItemDto>> = emptyMap(),
     val isLoadingMoodCollections: Boolean = false,
+    val isCheckingAiHealth: Boolean = false,
+    val aiHealthCheckPassed: Boolean? = null,
+    val aiHealthStatusMessage: String = "Not tested",
 
     // Pagination (legacy)
     val isLoadingMore: Boolean = false,
@@ -366,6 +369,39 @@ class MainAppViewModel @Inject constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
+            }
+        }
+    }
+
+    fun runAiHealthCheck(force: Boolean = false) {
+        viewModelScope.launch {
+            val current = _appState.value
+            if (current.isCheckingAiHealth) return@launch
+            if (!force && current.aiHealthCheckPassed == true) return@launch
+
+            SecureLogger.i(
+                "MainAppViewModel-AI",
+                "[MainAppViewModel.kt] Starting AI health check on home screen (force=$force)",
+            )
+            _appState.update {
+                it.copy(
+                    isCheckingAiHealth = true,
+                    aiHealthStatusMessage = "Checking API...",
+                )
+            }
+
+            val result = generativeAiRepository.checkCloudApiHealth()
+            SecureLogger.i(
+                "MainAppViewModel-AI",
+                "[MainAppViewModel.kt] AI health result success=${result.isHealthy} msg=${result.message}",
+            )
+
+            _appState.update {
+                it.copy(
+                    isCheckingAiHealth = false,
+                    aiHealthCheckPassed = result.isHealthy,
+                    aiHealthStatusMessage = result.message,
+                )
             }
         }
     }
