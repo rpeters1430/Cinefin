@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -116,10 +115,9 @@ fun ImmersiveTVEpisodeDetailScreen(
         // Static Hero Background (Fixed - doesn't scroll) - Extended to edges
         StaticHeroSection(
             imageUrl = heroImage.takeIf { it.isNotBlank() },
-            height = ImmersiveDimens.HeroHeightPhone + 60.dp, // ✅ Increased height
+            height = ImmersiveDimens.HeroHeightPhone,
             modifier = Modifier
-                .fillMaxWidth()
-                .offset(y = (-60).dp), // ✅ Top bleed
+                .fillMaxWidth(),
             contentScale = ContentScale.Crop,
             content = {}, // Content moved to LazyColumn
         )

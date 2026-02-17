@@ -12,9 +12,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.CarouselItem
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
@@ -56,6 +58,17 @@ fun ImmersiveMoviesScreen(
     val featuredMovies = remember(movies) {
         // ✅ Hero carousel uses Recently Added Movies
         movies.sortedByDescending { it.dateCreated }.take(5)
+    }
+
+    var selectedSort by remember { mutableStateOf(MovieSortOption.ALPHABETICAL) }
+    var showSortMenu by remember { mutableStateOf(false) }
+
+    val sortedMovies = remember(movies, selectedSort) {
+        when (selectedSort) {
+            MovieSortOption.ALPHABETICAL -> movies.sortedBy { (it.sortName ?: it.name).orEmpty().lowercase() }
+            MovieSortOption.RECENTLY_ADDED -> movies.sortedByDescending { it.dateCreated }
+            MovieSortOption.YEAR_NEWEST -> movies.sortedByDescending { it.productionYear ?: 0 }
+        }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -140,7 +153,7 @@ fun ImmersiveMoviesScreen(
                         }
 
                         items(
-                            items = movies,
+                            items = sortedMovies,
                             key = { it.id.toString() },
                         ) { movie ->
                             ImmersiveMediaCard(
@@ -179,21 +192,43 @@ fun ImmersiveMoviesScreen(
                 )
             }
 
-            // Settings Icon
-            Surface(
-                onClick = { /* TODO: Add settings action */ },
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(12.dp).size(24.dp),
-                )
+            Box {
+                Surface(
+                    onClick = { showSortMenu = true },
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Sort,
+                        contentDescription = stringResource(id = R.string.sort),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(12.dp).size(24.dp),
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = showSortMenu,
+                    onDismissRequest = { showSortMenu = false },
+                ) {
+                    MovieSortOption.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(id = option.labelRes)) },
+                            onClick = {
+                                selectedSort = option
+                                showSortMenu = false
+                            },
+                        )
+                    }
+                }
             }
         }
     }
+}
+
+private enum class MovieSortOption(val labelRes: Int) {
+    ALPHABETICAL(R.string.sort_title_asc),
+    RECENTLY_ADDED(R.string.sort_date_added_desc),
+    YEAR_NEWEST(R.string.sort_year_desc),
 }
 
 /**

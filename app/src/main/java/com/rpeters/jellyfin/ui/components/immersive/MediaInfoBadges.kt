@@ -1,13 +1,8 @@
 package com.rpeters.jellyfin.ui.components.immersive
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -45,7 +39,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -63,7 +56,7 @@ fun QualityBadge(
     val scale by animateFloatAsState(
         targetValue = if (animate) 1f else 0.95f,
         animationSpec = tween(300, easing = FastOutSlowInEasing),
-        label = "quality_badge_scale"
+        label = "quality_badge_scale",
     )
 
     Surface(
@@ -75,21 +68,21 @@ fun QualityBadge(
             modifier = Modifier
                 .background(
                     brush = Brush.horizontalGradient(
-                        colors = resolution.gradientColors
-                    )
+                        colors = resolution.gradientColors,
+                    ),
                 )
-                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 if (showIcon) {
                     Icon(
                         imageVector = resolution.icon,
                         contentDescription = resolution.label,
                         modifier = Modifier.size(20.dp),
-                        tint = resolution.iconTint
+                        tint = resolution.iconTint,
                     )
                 }
                 Text(
@@ -98,7 +91,7 @@ fun QualityBadge(
                     fontWeight = FontWeight.ExtraBold,
                     color = resolution.textColor,
                     fontSize = 13.sp,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.5.sp,
                 )
             }
         }
@@ -125,21 +118,21 @@ fun HdrBadge(
                         colors = listOf(
                             Color(0xFFFF6B9D),
                             Color(0xFFC239B3),
-                            Color(0xFF7928CA)
-                        )
-                    )
+                            Color(0xFF7928CA),
+                        ),
+                    ),
                 )
-                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Icon(
                     imageVector = Icons.Outlined.HdrOn,
                     contentDescription = hdrType.label,
                     modifier = Modifier.size(18.dp),
-                    tint = Color.White
+                    tint = Color.White,
                 )
                 Text(
                     text = hdrType.label,
@@ -147,7 +140,7 @@ fun HdrBadge(
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
                     fontSize = 12.sp,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.5.sp,
                 )
             }
         }
@@ -173,20 +166,20 @@ fun AtmosBadge(
                         colors = listOf(
                             Color(0xFF1E3A8A), // Deep blue
                             Color(0xFF3B82F6), // Bright blue
-                        )
-                    )
+                        ),
+                    ),
                 )
-                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Icon(
                     imageVector = Icons.Outlined.GraphicEq,
                     contentDescription = "Dolby Atmos",
                     modifier = Modifier.size(18.dp),
-                    tint = Color.White
+                    tint = Color.White,
                 )
                 Text(
                     text = "ATMOS",
@@ -194,7 +187,7 @@ fun AtmosBadge(
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
                     fontSize = 12.sp,
-                    letterSpacing = 0.8.sp
+                    letterSpacing = 0.8.sp,
                 )
             }
         }
@@ -219,14 +212,14 @@ fun CodecBadge(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(5.dp),
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
         ) {
             icon?.let {
                 Icon(
                     imageVector = it,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                 )
             }
             Text(
@@ -235,7 +228,7 @@ fun CodecBadge(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
-                letterSpacing = 0.3.sp
+                letterSpacing = 0.3.sp,
             )
         }
     }
@@ -259,34 +252,34 @@ fun MediaInfoCard(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f)
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f),
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+            defaultElevation = 2.dp,
+        ),
     ) {
         Row(
             modifier = Modifier
                 .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.Top,
         ) {
             // Icon container with elevation
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = iconBackground,
                 tonalElevation = 4.dp,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.padding(10.dp)
+                    modifier = Modifier.padding(10.dp),
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
                         tint = iconTint,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(28.dp),
                     )
                 }
             }
@@ -294,7 +287,7 @@ fun MediaInfoCard(
             // Content column
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(
                     text = title,
@@ -302,7 +295,7 @@ fun MediaInfoCard(
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     fontSize = 13.sp,
-                    letterSpacing = 0.8.sp
+                    letterSpacing = 0.8.sp,
                 )
                 content()
             }
@@ -330,11 +323,11 @@ fun VideoInfoCard(
         icon = Icons.Outlined.VideoFile,
         iconBackground = MaterialTheme.colorScheme.primaryContainer,
         iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
-        modifier = modifier
+        modifier = modifier,
     ) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             QualityBadge(resolution = resolution)
 
@@ -345,13 +338,16 @@ fun VideoInfoCard(
             CodecBadge(text = codec)
 
             bitDepth?.let {
-                CodecBadge(text = "${it}-bit")
+                CodecBadge(text = "$it-bit")
             }
 
             frameRate?.let {
-                CodecBadge(
-                    text = "${it.toInt()} FPS"
-                )
+                val fpsBadge = when {
+                    it >= 59.0 -> "60fps"
+                    it >= 29.0 -> "30fps"
+                    else -> "${it.toInt()}fps"
+                }
+                CodecBadge(text = fpsBadge)
             }
 
             if (is3D) {
@@ -378,16 +374,16 @@ fun AudioInfoCard(
         icon = Icons.Outlined.SurroundSound,
         iconBackground = MaterialTheme.colorScheme.tertiaryContainer,
         iconTint = MaterialTheme.colorScheme.onTertiaryContainer,
-        modifier = modifier
+        modifier = modifier,
     ) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (channels.isNotEmpty()) {
                 CodecBadge(
                     text = channels,
-                    icon = Icons.Outlined.SurroundSound
+                    icon = Icons.Outlined.SurroundSound,
                 )
             }
 
@@ -423,61 +419,62 @@ enum class ResolutionQuality(
         icon = Icons.Rounded.HighQuality,
         gradientColors = listOf(
             Color(0xFFFFD700), // Gold
-            Color(0xFFFFA500)  // Orange
+            Color(0xFFFFA500), // Orange
         ),
         textColor = Color(0xFF000000),
-        iconTint = Color(0xFF000000).copy(alpha = 0.8f)
+        iconTint = Color(0xFF000000).copy(alpha = 0.8f),
     ),
     UHD_4K(
         label = "4K",
         icon = Icons.Rounded.HighQuality,
         gradientColors = listOf(
             Color(0xFFFF6B6B), // Coral red
-            Color(0xFFEE5A6F)  // Rose
+            Color(0xFFEE5A6F), // Rose
         ),
         textColor = Color.White,
-        iconTint = Color.White
+        iconTint = Color.White,
     ),
     QHD_1440P(
         label = "1440P",
         icon = Icons.Rounded.HighQuality,
         gradientColors = listOf(
             Color(0xFF667EEA), // Purple blue
-            Color(0xFF764BA2)  // Purple
+            Color(0xFF764BA2), // Purple
         ),
         textColor = Color.White,
-        iconTint = Color.White
+        iconTint = Color.White,
     ),
     FHD_1080P(
         label = "FHD",
         icon = Icons.Rounded.Hd,
         gradientColors = listOf(
             Color(0xFF4FACFE), // Light blue
-            Color(0xFF00F2FE)  // Cyan
+            Color(0xFF00F2FE), // Cyan
         ),
         textColor = Color.White,
-        iconTint = Color.White
+        iconTint = Color.White,
     ),
     HD_720P(
         label = "HD",
         icon = Icons.Rounded.Hd,
         gradientColors = listOf(
             Color(0xFF43E97B), // Green
-            Color(0xFF38F9D7)  // Teal
+            Color(0xFF38F9D7), // Teal
         ),
         textColor = Color(0xFF000000),
-        iconTint = Color(0xFF000000).copy(alpha = 0.7f)
+        iconTint = Color(0xFF000000).copy(alpha = 0.7f),
     ),
     SD(
         label = "SD",
         icon = Icons.Rounded.SdCard,
         gradientColors = listOf(
             Color(0xFFBDBDBD), // Gray
-            Color(0xFF9E9E9E)  // Darker gray
+            Color(0xFF9E9E9E), // Darker gray
         ),
         textColor = Color.White,
-        iconTint = Color.White
-    );
+        iconTint = Color.White,
+    ),
+    ;
 
     companion object {
         fun fromResolution(width: Int?, height: Int?): ResolutionQuality {
@@ -503,7 +500,8 @@ enum class HdrType(val label: String) {
     HDR10("HDR10"),
     HDR10_PLUS("HDR10+"),
     DOLBY_VISION("Dolby Vision"),
-    HLG("HLG");
+    HLG("HLG"),
+    ;
 
     companion object {
         fun detect(videoRange: String?, videoRangeType: String?): HdrType? {

@@ -72,6 +72,17 @@ fun ImmersiveTVShowsScreen(
         }
     }
 
+    var selectedSort by remember { mutableStateOf(TvShowSortOption.ALPHABETICAL) }
+    var showSortMenu by remember { mutableStateOf(false) }
+
+    val sortedTvShows = remember(tvShows, selectedSort) {
+        when (selectedSort) {
+            TvShowSortOption.ALPHABETICAL -> tvShows.sortedBy { (it.sortName ?: it.name).orEmpty().lowercase() }
+            TvShowSortOption.RECENTLY_ADDED -> tvShows.sortedByDescending { it.dateCreated }
+            TvShowSortOption.YEAR_NEWEST -> tvShows.sortedByDescending { it.productionYear ?: 0 }
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         ImmersiveScaffold(
             topBarVisible = false,
@@ -107,7 +118,7 @@ fun ImmersiveTVShowsScreen(
                     )
                 } else {
                     LazyVerticalGrid(
-                        columns = GridCells.Adaptive(ImmersiveDimens.CardWidthSmall),
+                        columns = GridCells.Adaptive(minSize = ImmersiveDimens.CardWidthSmall),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
                             top = 0.dp,
@@ -152,7 +163,7 @@ fun ImmersiveTVShowsScreen(
                         }
 
                         items(
-                            items = tvShows,
+                            items = sortedTvShows,
                             key = { it.id.toString() },
                         ) { tvShow ->
                             ImmersiveMediaCard(
@@ -191,21 +202,43 @@ fun ImmersiveTVShowsScreen(
                 )
             }
 
-            // Settings Icon
-            Surface(
-                onClick = { /* TODO: Add settings action */ },
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(12.dp).size(24.dp),
-                )
+            Box {
+                Surface(
+                    onClick = { showSortMenu = true },
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Sort,
+                        contentDescription = stringResource(id = R.string.sort),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(12.dp).size(24.dp),
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = showSortMenu,
+                    onDismissRequest = { showSortMenu = false },
+                ) {
+                    TvShowSortOption.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(id = option.labelRes)) },
+                            onClick = {
+                                selectedSort = option
+                                showSortMenu = false
+                            },
+                        )
+                    }
+                }
             }
         }
     }
+}
+
+private enum class TvShowSortOption(val labelRes: Int) {
+    ALPHABETICAL(R.string.sort_title_asc_shows),
+    RECENTLY_ADDED(R.string.sort_date_added_desc_shows),
+    YEAR_NEWEST(R.string.sort_year_desc_shows),
 }
 
 /**

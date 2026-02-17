@@ -206,7 +206,7 @@ fun ImmersiveLibraryScreen(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
-                .padding(top = 16.dp, end = 16.dp),
+                .padding(top = 28.dp, end = 16.dp),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -264,9 +264,9 @@ fun ImmersiveLibraryScreen(
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp, bottom = 64.dp),
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.End,
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 // AI Assistant FAB
                 FloatingActionButton(

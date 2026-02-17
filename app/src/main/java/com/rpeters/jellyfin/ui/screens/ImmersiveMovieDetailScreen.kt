@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,11 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.HdrOn
 import androidx.compose.material.icons.outlined.HighQuality
-import androidx.compose.material.icons.outlined.Speaker
-import androidx.compose.material.icons.outlined.SurroundSound
-import androidx.compose.material.icons.outlined.VideoFile
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.Delete
@@ -42,7 +37,6 @@ import androidx.compose.material.icons.rounded.Hd
 import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Movie
-import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.OpenInBrowser
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.Person
@@ -52,10 +46,7 @@ import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.RateReview
 import androidx.compose.material.icons.rounded.Sd
 import androidx.compose.material.icons.rounded.Share
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -96,14 +87,14 @@ import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
-import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
-import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
-import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
-import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.HdrType
+import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
+import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
 import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
+import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
+import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
 import com.rpeters.jellyfin.ui.theme.Quality1440
@@ -167,11 +158,10 @@ fun ImmersiveMovieDetailScreen(
         // 1. Static Hero Background (Fixed) - Extended to edges
         StaticHeroSection(
             imageUrl = getBackdropUrl(movie),
-            height = ImmersiveDimens.HeroHeightPhone + 60.dp, // ✅ Increased height for top bleed
+            height = ImmersiveDimens.HeroHeightPhone,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .fillMaxWidth()
-                .offset(y = (-60).dp), // ✅ Bleed into status bar area
+                .fillMaxWidth(),
             content = {}, // Content moved to LazyColumn
         )
 
@@ -286,7 +276,7 @@ fun ImmersiveMovieDetailScreen(
                         WhyYoullLoveThisCard(
                             pitch = whyYoullLoveThis,
                             isLoading = isLoadingWhyYoullLoveThis,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         )
                     }
                 }
@@ -966,7 +956,7 @@ private fun ImmersiveMovieInfoCard(
 
                         val codecText = when (stream.codec?.lowercase()) {
                             "hevc", "h265" -> "HEVC"
-                            "h264", "avc" -> "H.264"
+                            "h264", "avc" -> "AVC"
                             "av1" -> "AV1"
                             "vp9" -> "VP9"
                             "mpeg2" -> "MPEG-2"
@@ -986,7 +976,7 @@ private fun ImmersiveMovieInfoCard(
                             frameRate = stream.averageFrameRate?.toDouble(),
                             isHdr = hdrType != null,
                             hdrType = hdrType ?: HdrType.HDR,
-                            is3D = stream.videoDoViTitle?.contains("3D", ignoreCase = true) == true
+                            is3D = stream.videoDoViTitle?.contains("3D", ignoreCase = true) == true,
                         )
                     }
 
@@ -1033,7 +1023,7 @@ private fun ImmersiveMovieInfoCard(
                                     "chi", "zho" -> "ZH"
                                     else -> lang.take(2).uppercase()
                                 }
-                            }
+                            },
                         )
                     }
 
@@ -1581,26 +1571,26 @@ private fun MetadataTag(
         shape = RoundedCornerShape(4.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
         ) {
             if (icon != null) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(iconSize),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -1615,7 +1605,8 @@ private fun getResolutionBadge(width: Int?, height: Int?): Triple<ImageVector, S
     val h = height ?: 0
 
     return when {
-        h >= 2160 || w >= 3840 -> Triple(Icons.Rounded.HighQuality, "4K", Quality4K) // ✅ Use HighQuality for 4K
+        h >= 4320 || w >= 7680 -> Triple(Icons.Rounded.HighQuality, "8K", Quality4K)
+        h >= 2160 || w >= 3840 -> Triple(Icons.Rounded.HighQuality, "4K", Quality4K)
         h >= 1440 || w >= 2560 -> Triple(Icons.Rounded.HighQuality, "1440p", Quality1440)
         h >= 1080 || w >= 1920 -> Triple(Icons.Rounded.Hd, "FHD", QualityHD)
         h >= 720 || w >= 1280 -> Triple(Icons.Rounded.Hd, "HD", QualityHD)
@@ -1636,33 +1627,33 @@ private fun WhyYoullLoveThisCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
         ),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = "AI Generated",
                     tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
                 Text(
                     text = "Why You'll Love This",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
             }
 
@@ -1671,7 +1662,7 @@ private fun WhyYoullLoveThisCard(
                 isLoading -> {
                     LinearProgressIndicator(
                         modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.tertiary
+                        color = MaterialTheme.colorScheme.tertiary,
                     )
                 }
                 pitch != null -> {
@@ -1679,7 +1670,7 @@ private fun WhyYoullLoveThisCard(
                         text = pitch,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onTertiaryContainer,
-                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight.times(1.5f)
+                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight.times(1.5f),
                     )
                 }
             }
