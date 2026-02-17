@@ -1,0 +1,1535 @@
+##[debug]Evaluating: (github.event.pull_request.title || github.event.issue.title)
+##[debug]Evaluating Or:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'pull_request'
+##[debug]....=> null
+##[debug]..=> null
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'issue'
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'title'
+##[debug]..=> 'Remove the "AI OK" button from the Homescreen'
+##[debug]=> 'Remove the "AI OK" button from the Homescreen'
+##[debug]Expanded: (null || 'Remove the "AI OK" button from the Homescreen')
+##[debug]Result: 'Remove the "AI OK" button from the Homescreen'
+##[debug]Evaluating: (github.event.pull_request.body || github.event.issue.body)
+##[debug]Evaluating Or:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'pull_request'
+##[debug]....=> null
+##[debug]..=> null
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'issue'
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'body'
+##[debug]..=> 'The AI functionality is now working, so we no longer need the temporary "AI OK" button located on the top left of the Homescreen. Please remove this button and its associated code from the UI.'
+##[debug]=> 'The AI functionality is now working, so we no longer need the temporary "AI OK" button located on the top left of the Homescreen. Please remove this button and its associated code from the UI.'
+##[debug]Expanded: (null || 'The AI functionality is now working, so we no longer need the temporary "AI OK" button located on the top left of the Homescreen. Please remove this button and its associated code from the UI.')
+##[debug]Result: 'The AI functionality is now working, so we no longer need the temporary "AI OK" button located on the top left of the Homescreen. Please remove this button and its associated code from the UI.'
+##[debug]Evaluating: github.event_name
+##[debug]Evaluating Index:
+##[debug]..Evaluating github:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'event_name'
+##[debug]=> 'issue_comment'
+##[debug]Result: 'issue_comment'
+##[debug]Evaluating: (steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token)
+##[debug]Evaluating Or:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating steps:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'mint_identity_token'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'outputs'
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'token'
+##[debug]..=> null
+##[debug]..Evaluating Index:
+##[debug]....Evaluating secrets:
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'GITHUB_TOKEN'
+##[debug]..=> '***'
+##[debug]=> '***'
+##[debug]Expanded: (null || '***' || github['token'])
+##[debug]Result: '***'
+##[debug]Evaluating: !!github.event.pull_request
+##[debug]Evaluating Not:
+##[debug]..Evaluating Not:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'pull_request'
+##[debug]....=> null
+##[debug]..=> true
+##[debug]=> false
+##[debug]Expanded: !!null
+##[debug]Result: false
+##[debug]Evaluating: (github.event.pull_request.number || github.event.issue.number)
+##[debug]Evaluating Or:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'pull_request'
+##[debug]....=> null
+##[debug]..=> null
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'issue'
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'number'
+##[debug]..=> 839
+##[debug]=> 839
+##[debug]Expanded: (null || 839)
+##[debug]Result: 839
+##[debug]Evaluating: github.repository
+##[debug]Evaluating Index:
+##[debug]..Evaluating github:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'repository'
+##[debug]=> 'rpeters1430/Cinefin'
+##[debug]Result: 'rpeters1430/Cinefin'
+##[debug]Evaluating: inputs.additional_context
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'additional_context'
+##[debug]=> 'fix this issue'
+##[debug]Result: 'fix this issue'
+##[debug]Evaluating condition for step: 'Run Gemini CLI'
+##[debug]Evaluating: success()
+##[debug]Evaluating success:
+##[debug]=> true
+##[debug]Result: true
+##[debug]Starting: Run Gemini CLI
+##[debug]Register post job cleanup for action: google-github-actions/run-gemini-cli@v0
+##[debug]Loading inputs
+##[debug]Evaluating: vars.GOOGLE_CLOUD_LOCATION
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GOOGLE_CLOUD_LOCATION'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: vars.GOOGLE_CLOUD_PROJECT
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GOOGLE_CLOUD_PROJECT'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: vars.SERVICE_ACCOUNT_EMAIL
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'SERVICE_ACCOUNT_EMAIL'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: vars.GCP_WIF_PROVIDER
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GCP_WIF_PROVIDER'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: secrets.GEMINI_API_KEY
+##[debug]Evaluating Index:
+##[debug]..Evaluating secrets:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GEMINI_API_KEY'
+##[debug]=> '***'
+##[debug]Result: '***'
+##[debug]Evaluating: vars.GEMINI_CLI_VERSION
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GEMINI_CLI_VERSION'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: fromJSON((vars.GEMINI_DEBUG || vars.ACTIONS_STEP_DEBUG || false))
+##[debug]Evaluating fromJSON:
+##[debug]..Evaluating Or:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating vars:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'GEMINI_DEBUG'
+##[debug]....=> null
+##[debug]....Evaluating Index:
+##[debug]......Evaluating vars:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'ACTIONS_STEP_DEBUG'
+##[debug]....=> null
+##[debug]....Evaluating Boolean:
+##[debug]....=> false
+##[debug]..=> false
+##[debug]=> false
+##[debug]Result: false
+##[debug]Evaluating: vars.GEMINI_MODEL
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GEMINI_MODEL'
+##[debug]=> 'gemini-3-flash-preview'
+##[debug]Result: 'gemini-3-flash-preview'
+##[debug]Evaluating: secrets.GOOGLE_API_KEY
+##[debug]Evaluating Index:
+##[debug]..Evaluating secrets:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GOOGLE_API_KEY'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: vars.GOOGLE_GENAI_USE_GCA
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GOOGLE_GENAI_USE_GCA'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: vars.GOOGLE_GENAI_USE_VERTEXAI
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GOOGLE_GENAI_USE_VERTEXAI'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: vars.UPLOAD_ARTIFACTS
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'UPLOAD_ARTIFACTS'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Loading env
+Run google-github-actions/run-gemini-cli@v0
+##[debug]Evaluating: (inputs.gemini_api_key != '')
+##[debug]Evaluating NotEqual:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating inputs:
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'gemini_api_key'
+##[debug]..=> '***'
+##[debug]..Evaluating String:
+##[debug]..=> ''
+##[debug]=> true
+##[debug]Expanded: ('***' != '')
+##[debug]Result: true
+##[debug]Evaluating: (inputs.google_api_key != '')
+##[debug]Evaluating NotEqual:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating inputs:
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'google_api_key'
+##[debug]..=> ''
+##[debug]..Evaluating String:
+##[debug]..=> ''
+##[debug]=> false
+##[debug]Expanded: ('' != '')
+##[debug]Result: false
+##[debug]Evaluating: (inputs.gcp_workload_identity_provider != '')
+##[debug]Evaluating NotEqual:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating inputs:
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'gcp_workload_identity_provider'
+##[debug]..=> ''
+##[debug]..Evaluating String:
+##[debug]..=> ''
+##[debug]=> false
+##[debug]Expanded: ('' != '')
+##[debug]Result: false
+##[debug]Evaluating: (inputs.gcp_project_id != '')
+##[debug]Evaluating NotEqual:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating inputs:
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'gcp_project_id'
+##[debug]..=> ''
+##[debug]..Evaluating String:
+##[debug]..=> ''
+##[debug]=> false
+##[debug]Expanded: ('' != '')
+##[debug]Result: false
+##[debug]Evaluating: (inputs.gcp_service_account != '')
+##[debug]Evaluating NotEqual:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating inputs:
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'gcp_service_account'
+##[debug]..=> ''
+##[debug]..Evaluating String:
+##[debug]..=> ''
+##[debug]=> false
+##[debug]Expanded: ('' != '')
+##[debug]Result: false
+##[debug]Evaluating: inputs.gcp_token_format
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'gcp_token_format'
+##[debug]=> 'access_token'
+##[debug]Result: 'access_token'
+##[debug]Evaluating: inputs.use_vertex_ai
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'use_vertex_ai'
+##[debug]=> ''
+##[debug]Result: ''
+##[debug]Evaluating: inputs.use_gemini_code_assist
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'use_gemini_code_assist'
+##[debug]=> ''
+##[debug]Result: ''
+##[debug]Evaluating condition for step: 'run'
+##[debug]Evaluating: success()
+##[debug]Evaluating success:
+##[debug]=> true
+##[debug]Result: true
+##[debug]Starting: run
+##[debug]Loading inputs
+##[debug]Loading env
+Run set -exuo pipefail
+##[debug]/usr/bin/bash --noprofile --norc -e -o pipefail /home/runner/work/_temp/e854050d-7cc9-46f2-98d5-2002d29300b8.sh
++ auth_methods=0
++ [[ true == \t\r\u\e ]]
++ (( ++auth_methods ))
++ [[ false == \t\r\u\e ]]
++ [[ false == \t\r\u\e ]]
++ [[ 1 -eq 0 ]]
++ [[ 1 -gt 1 ]]
++ [[ false == \t\r\u\e ]]
++ [[ false == \t\r\u\e ]]
++ [[ true == \t\r\u\e ]]
++ [[ false == \t\r\u\e ]]
++ [[ false == \t\r\u\e ]]
+##[debug]Finished: run
+##[debug]Evaluating: inputs.workflow_name
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'workflow_name'
+##[debug]=> 'gemini-invoke'
+##[debug]Result: 'gemini-invoke'
+##[debug]Evaluating condition for step: 'run'
+##[debug]Evaluating: success()
+##[debug]Evaluating success:
+##[debug]=> true
+##[debug]Result: true
+##[debug]Starting: run
+##[debug]Loading inputs
+##[debug]Loading env
+Run SANITIZED=$(echo "${WORKFLOW_NAME}" | sed 's/[^ a-zA-Z0-9-]//g' | xargs | tr ' ' '_' | tr '[:upper:]' '[:lower:]')
+##[debug]/usr/bin/bash --noprofile --norc -e -o pipefail /home/runner/work/_temp/d201887c-17ad-40f9-ad9f-abe466eb855c.sh
+##[debug]Set output gh_workflow_name = gemini-invoke
+##[debug]Finished: run
+##[debug]Evaluating: inputs.settings
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'settings'
+##[debug]=> '{
+##[debug]  "model": {
+##[debug]    "maxSessionTurns": 25
+##[debug]  },
+##[debug]  "telemetry": {
+##[debug]    "enabled": true,
+##[debug]    "target": "local",
+##[debug]    "outfile": ".gemini/telemetry.log"
+##[debug]  },
+##[debug]  "mcpServers": {
+##[debug]    "github": {
+##[debug]      "command": "docker",
+##[debug]      "args": [
+##[debug]        "run",
+##[debug]        "-i",
+##[debug]        "--rm",
+##[debug]        "-e",
+##[debug]        "GITHUB_PERSONAL_ACCESS_TOKEN",
+##[debug]        "ghcr.io/github/github-mcp-server:v0.27.0"
+##[debug]      ],
+##[debug]      "includeTools": [
+##[debug]        "add_issue_comment",
+##[debug]        "issue_read",
+##[debug]        "list_issues",
+##[debug]        "search_issues",
+##[debug]        "create_pull_request",
+##[debug]        "pull_request_read",
+##[debug]        "list_pull_requests",
+##[debug]        "search_pull_requests",
+##[debug]        "create_branch",
+##[debug]        "create_or_update_file",
+##[debug]        "delete_file",
+##[debug]        "fork_repository",
+##[debug]        "get_commit",
+##[debug]        "get_file_contents",
+##[debug]        "list_commits",
+##[debug]        "push_files",
+##[debug]        "search_code"
+##[debug]      ],
+##[debug]      "env": {
+##[debug]        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+##[debug]      }
+##[debug]    }
+##[debug]  },
+##[debug]  "tools": {
+##[debug]    "core": [
+##[debug]      "run_shell_command(cat)",
+##[debug]      "run_shell_command(echo)",
+##[debug]      "run_shell_command(grep)",
+##[debug]      "run_shell_command(head)",
+##[debug]      "run_shell_command(tail)"
+##[debug]    ]
+##[debug]  }
+##[debug]}'
+##[debug]Result: '{
+##[debug]  "model": {
+##[debug]    "maxSessionTurns": 25
+##[debug]  },
+##[debug]  "telemetry": {
+##[debug]    "enabled": true,
+##[debug]    "target": "local",
+##[debug]    "outfile": ".gemini/telemetry.log"
+##[debug]  },
+##[debug]  "mcpServers": {
+##[debug]    "github": {
+##[debug]      "command": "docker",
+##[debug]      "args": [
+##[debug]        "run",
+##[debug]        "-i",
+##[debug]        "--rm",
+##[debug]        "-e",
+##[debug]        "GITHUB_PERSONAL_ACCESS_TOKEN",
+##[debug]        "ghcr.io/github/github-mcp-server:v0.27.0"
+##[debug]      ],
+##[debug]      "includeTools": [
+##[debug]        "add_issue_comment",
+##[debug]        "issue_read",
+##[debug]        "list_issues",
+##[debug]        "search_issues",
+##[debug]        "create_pull_request",
+##[debug]        "pull_request_read",
+##[debug]        "list_pull_requests",
+##[debug]        "search_pull_requests",
+##[debug]        "create_branch",
+##[debug]        "create_or_update_file",
+##[debug]        "delete_file",
+##[debug]        "fork_repository",
+##[debug]        "get_commit",
+##[debug]        "get_file_contents",
+##[debug]        "list_commits",
+##[debug]        "push_files",
+##[debug]        "search_code"
+##[debug]      ],
+##[debug]      "env": {
+##[debug]        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+##[debug]      }
+##[debug]    }
+##[debug]  },
+##[debug]  "tools": {
+##[debug]    "core": [
+##[debug]      "run_shell_command(cat)",
+##[debug]      "run_shell_command(echo)",
+##[debug]      "run_shell_command(grep)",
+##[debug]      "run_shell_command(head)",
+##[debug]      "run_shell_command(tail)"
+##[debug]    ]
+##[debug]  }
+##[debug]}'
+##[debug]Evaluating condition for step: 'run'
+##[debug]Evaluating: (success() && (inputs.settings != ''))
+##[debug]Evaluating And:
+##[debug]..Evaluating success:
+##[debug]..=> true
+##[debug]..Evaluating NotEqual:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating inputs:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'settings'
+##[debug]....=> '{
+##[debug]  "model": {
+##[debug]    "maxSessionTurns": 25
+##[debug]  },
+##[debug]  "telemetry": {
+##[debug]    "enabled": true,
+##[debug]    "target": "local",
+##[debug]    "outfile": ".gemini/telemetry.log"
+##[debug]  },
+##[debug]  "mcpServers": {
+##[debug]    "github": {
+##[debug]      "command": "docker",
+##[debug]      "args": [
+##[debug]        "run",
+##[debug]        "-i",
+##[debug]        "--rm",
+##[debug]        "-e",
+##[debug]        "GITHUB_PERSONAL_ACCESS_TOKEN",
+##[debug]        "ghcr.io/github/github-mcp-server:v0.27.0"
+##[debug]      ],
+##[debug]      "includeTools": [
+##[debug]        "add_issue_comment",
+##[debug]        "issue_read",
+##[debug]        "list_issues",
+##[debug]        "search_issues",
+##[debug]        "create_pull_request",
+##[debug]        "pull_request_read",
+##[debug]        "list_pull_requests",
+##[debug]        "search_pull_requests",
+##[debug]        "create_branch",
+##[debug]        "create_or_update_file",
+##[debug]        "delete_file",
+##[debug]        "fork_repository",
+##[debug]        "get_commit",
+##[debug]        "get_file_contents",
+##[debug]        "list_commits",
+##[debug]        "push_files",
+##[debug]        "search_code"
+##[debug]      ],
+##[debug]      "env": {
+##[debug]        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+##[debug]      }
+##[debug]    }
+##[debug]  },
+##[debug]  "tools": {
+##[debug]    "core": [
+##[debug]      "run_shell_command(cat)",
+##[debug]      "run_shell_command(echo)",
+##[debug]      "run_shell_command(grep)",
+##[debug]      "run_shell_command(head)",
+##[debug]      "run_shell_command(tail)"
+##[debug]    ]
+##[debug]  }
+##[debug]}'
+##[debug]....Evaluating String:
+##[debug]....=> ''
+##[debug]..=> true
+##[debug]=> true
+##[debug]Expanded: (true && ('{
+##[debug]  "model": {
+##[debug]    "maxSessionTurns": 25
+##[debug]  },
+##[debug]  "telemetry": {
+##[debug]    "enabled": true,
+##[debug]    "target": "local",
+##[debug]    "outfile": ".gemini/telemetry.log"
+##[debug]  },
+##[debug]  "mcpServers": {
+##[debug]    "github": {
+##[debug]      "command": "docker",
+##[debug]      "args": [
+##[debug]        "run",
+##[debug]        "-i",
+##[debug]        "--rm",
+##[debug]        "-e",
+##[debug]        "GITHUB_PERSONAL_ACCESS_TOKEN",
+##[debug]        "ghcr.io/github/github-mcp-server:v0.27.0"
+##[debug]      ],
+##[debug]      "includeTools": [
+##[debug]        "add_issue_comment",
+##[debug]        "issue_read",
+##[debug]        "list_issues",
+##[debug]        "search_issues",
+##[debug]        "create_pull_request",
+##[debug]        "pull_request_read",
+##[debug]        "list_pull_requests",
+##[debug]        "search_pull_requests",
+##[debug]        "create_branch",
+##[debug]        "create_or_update_file",
+##[debug]        "delete_file",
+##[debug]        "fork_repository",
+##[debug]        "get_commit",
+##[debug]        "get_file_contents",
+##[debug]        "list_commits",
+##[debug]        "push_files",
+##[debug]        "search_code"
+##[debug]      ],
+##[debug]      "env": {
+##[debug]        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+##[debug]      }
+##[debug]    }
+##[debug]  },
+##[debug]  "tools": {
+##[debug]    "core": [
+##[debug]      "run_shell_command(cat)",
+##[debug]      "run_shell_command(echo)",
+##[debug]      "run_shell_command(grep)",
+##[debug]      "run_shell_command(head)",
+##[debug]      "run_shell_command(tail)"
+##[debug]    ]
+##[debug]  }
+##[debug]}' != ''))
+##[debug]Result: true
+##[debug]Starting: run
+##[debug]Loading inputs
+##[debug]Loading env
+Run mkdir -p .gemini/
+##[debug]/usr/bin/bash --noprofile --norc -e -o pipefail /home/runner/work/_temp/e2ec0814-94fe-4d95-b711-28b0c1b5ef6b.sh
+##[debug]Finished: run
+##[debug]Evaluating: github.action_path
+##[debug]Evaluating Index:
+##[debug]..Evaluating github:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'action_path'
+##[debug]=> '/home/runner/work/_actions/google-github-actions/run-gemini-cli/v0'
+##[debug]Result: '/home/runner/work/_actions/google-github-actions/run-gemini-cli/v0'
+##[debug]Evaluating condition for step: 'run'
+##[debug]Evaluating: success()
+##[debug]Evaluating success:
+##[debug]=> true
+##[debug]Result: true
+##[debug]Starting: run
+##[debug]Loading inputs
+##[debug]Loading env
+Run set -euo pipefail
+##[debug]/usr/bin/bash --noprofile --norc -e -o pipefail /home/runner/work/_temp/e1f312d0-2879-43fb-971e-1d814aa96d2d.sh
+##[debug]Finished: run
+##[debug]Evaluating condition for step: 'run'
+##[debug]Evaluating: (success() && (inputs.gcp_workload_identity_provider != ''))
+##[debug]Evaluating And:
+##[debug]..Evaluating success:
+##[debug]..=> true
+##[debug]..Evaluating NotEqual:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating inputs:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'gcp_workload_identity_provider'
+##[debug]....=> ''
+##[debug]....Evaluating String:
+##[debug]....=> ''
+##[debug]..=> false
+##[debug]=> false
+##[debug]Expanded: (true && ('' != ''))
+##[debug]Result: false
+##[debug]Evaluating condition for step: 'run'
+##[debug]Evaluating: (success() && (inputs.use_pnpm == 'true'))
+##[debug]Evaluating And:
+##[debug]..Evaluating success:
+##[debug]..=> true
+##[debug]..Evaluating Equal:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating inputs:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'use_pnpm'
+##[debug]....=> 'false'
+##[debug]....Evaluating String:
+##[debug]....=> 'true'
+##[debug]..=> false
+##[debug]=> false
+##[debug]Expanded: (true && ('false' == 'true'))
+##[debug]Result: false
+##[debug]Evaluating: inputs.gemini_cli_version
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'gemini_cli_version'
+##[debug]=> ''
+##[debug]Result: ''
+##[debug]Evaluating: inputs.extensions
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'extensions'
+##[debug]=> ''
+##[debug]Result: ''
+##[debug]Evaluating: inputs.use_pnpm
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'use_pnpm'
+##[debug]=> 'false'
+##[debug]Result: 'false'
+##[debug]Evaluating condition for step: 'run'
+##[debug]Evaluating: success()
+##[debug]Evaluating success:
+##[debug]=> true
+##[debug]Result: true
+##[debug]Starting: run
+##[debug]Loading inputs
+##[debug]Loading env
+Run set -euo pipefail
+##[debug]/usr/bin/bash --noprofile --norc -e -o pipefail /home/runner/work/_temp/24fdcdf9-5a76-43be-ad4e-d9b5f4100be8.sh
+Installing Gemini CLI from npm: @google/gemini-cli@latest
+Verifying installation:
+0.28.2
+##[debug]Finished: run
+##[debug]Evaluating: fromJSON((inputs.gemini_debug || false))
+##[debug]Evaluating fromJSON:
+##[debug]..Evaluating Or:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating inputs:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'gemini_debug'
+##[debug]....=> 'false'
+##[debug]..=> 'false'
+##[debug]=> false
+##[debug]Result: false
+##[debug]Evaluating: inputs.gemini_api_key
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'gemini_api_key'
+##[debug]=> '***'
+##[debug]Result: '***'
+##[debug]Evaluating: inputs.gcp_project_id
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'gcp_project_id'
+##[debug]=> ''
+##[debug]Result: ''
+##[debug]Evaluating: inputs.gcp_location
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'gcp_location'
+##[debug]=> ''
+##[debug]Result: ''
+##[debug]Evaluating: inputs.use_vertex_ai
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'use_vertex_ai'
+##[debug]=> ''
+##[debug]Result: ''
+##[debug]Evaluating: inputs.google_api_key
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'google_api_key'
+##[debug]=> ''
+##[debug]Result: ''
+##[debug]Evaluating: inputs.use_gemini_code_assist
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'use_gemini_code_assist'
+##[debug]=> ''
+##[debug]Result: ''
+##[debug]Evaluating: steps.auth.outputs.access_token
+##[debug]Evaluating Index:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating steps:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'auth'
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'outputs'
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'access_token'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: inputs.prompt
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'prompt'
+##[debug]=> '/gemini-invoke'
+##[debug]Result: '/gemini-invoke'
+##[debug]Evaluating: inputs.gemini_model
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'gemini_model'
+##[debug]=> 'gemini-3-flash-preview'
+##[debug]Result: 'gemini-3-flash-preview'
+##[debug]Evaluating: steps.sanitize_workflow_name.outputs.gh_workflow_name
+##[debug]Evaluating Index:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating steps:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'sanitize_workflow_name'
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'outputs'
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'gh_workflow_name'
+##[debug]=> 'gemini-invoke'
+##[debug]Result: 'gemini-invoke'
+##[debug]Evaluating condition for step: 'run'
+##[debug]Evaluating: success()
+##[debug]Evaluating success:
+##[debug]=> true
+##[debug]Result: true
+##[debug]Starting: run
+##[debug]Loading inputs
+##[debug]Loading env
+Run set -euo pipefail
+##[debug]/usr/bin/bash --noprofile --norc -e -o pipefail /home/runner/work/_temp/632a683b-69c8-479a-b8f2-7c786c7dd2b1.sh
+Warning: Gemini CLI stderr was not valid JSON
+Warning: Gemini CLI stdout was not valid JSON
+::: Start Gemini CLI STDERR :::
+Timeout of 30000 exceeds the interval of 10000. Clamping timeout to interval duration.
+YOLO mode is enabled. All tool calls will be automatically approved.
+YOLO mode is enabled. All tool calls will be automatically approved.
+Server 'github' supports tool updates. Listening for changes...
+Server 'github' supports resource updates. Listening for changes...
+Server 'github' supports prompt updates. Listening for changes...
+🔔 Received prompt update notification from 'github'
+🔔 Received tool update notification from 'github'
+🔔 Received resource update notification from 'github'
+Prompt with name "AssignCodingAgent" is already registered. Renaming to "github_AssignCodingAgent".
+Prompt with name "issue_to_fix_workflow" is already registered. Renaming to "github_issue_to_fix_workflow".
+Tools changed, updating Gemini context...
+Hook registry initialized with 0 hook entries
+[INFO] Tools updated for server: github
+[LocalAgentExecutor] Blocked call: Unauthorized tool call: 'list_files' is not available to this agent.
+[LocalAgentExecutor] Blocked call: Unauthorized tool call: 'run_shell_command' is not available to this agent.
+[LocalAgentExecutor] Blocked call: Unauthorized tool call: 'ls' is not available to this agent.
+[LocalAgentExecutor] Blocked call: Unauthorized tool call: 'grep' is not available to this agent.
+[LocalAgentExecutor] Blocked call: Unauthorized tool call: 'code_analysis:ls' is not available to this agent.
+[LocalAgentExecutor] Blocked call: Unauthorized tool call: 'ls' is not available to this agent.
+[LocalAgentExecutor] Blocked call: Unauthorized tool call: 'web_fetch' is not available to this agent.
+[LocalAgentExecutor] Blocked call: Unauthorized tool call: 'read_file' is not available to this agent.
+[LocalAgentExecutor] Blocked call: Unauthorized tool call: 'ls' is not available to this agent.
+(node:2312) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. MaxListeners is 10. Use events.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+[LocalAgentExecutor] Blocked call: Unauthorized tool call: 'web_fetch' is not available to this agent.
+Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+Please retry in 50.063674108s.
+Suggested retry after 50s.. Retrying after 50000ms...
+Error executing tool search_code: Error: MCP tool 'search_code' reported an error.
+Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+Please retry in 15.004071449s.
+Suggested retry after 15s.. Retrying after 15000ms...
+Attempt 2 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+Please retry in 59.847035299s.
+Suggested retry after 59s.. Retrying after 59000ms...
+Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+Please retry in 22.761947671s.
+Suggested retry after 22s.. Retrying after 22000ms...
+Attempt 2 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+Please retry in 604.288321ms.
+Suggested retry after 60s.. Retrying after 60000ms...
+Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+Please retry in 50.094732779s.
+Suggested retry after 50s.. Retrying after 50000ms...
+{
+  "session_id": "5dfde3bc-c135-4bb1-a0cf-c3dea26a4a01",
+  "error": {
+    "type": "FatalTurnLimitedError",
+    "message": "Reached max session turns for this session. Increase the number of turns by specifying maxSessionTurns in settings.json.",
+    "code": 53
+  }
+Error: ] {
+  "session_id": "5dfde3bc-c135-4bb1-a0cf-c3dea26a4a01",
+  "error": {
+    "type": "FatalTurnLimitedError",
+    "message": "Reached max session turns for this session. Increase the number of turns by specifying maxSessionTurns in settings.json.",
+    "code": 53
+  }
+}
+::: End Gemini CLI STDERR :::
+Error: Process completed with exit code 1.
+##[debug]Set output gemini_response = Prompts updated for server: githubResources updated for server: githubTools updated for server: githubEOF
+##[debug]gemini_errors<<EOF
+##[debug]Timeout of 30000 exceeds the interval of 10000. Clamping timeout to interval duration.
+##[debug]YOLO mode is enabled. All tool calls will be automatically approved.
+##[debug]YOLO mode is enabled. All tool calls will be automatically approved.
+##[debug]Server 'github' supports tool updates. Listening for changes...
+##[debug]Server 'github' supports resource updates. Listening for changes...
+##[debug]Server 'github' supports prompt updates. Listening for changes...
+##[debug]🔔 Received prompt update notification from 'github'
+##[debug]🔔 Received tool update notification from 'github'
+##[debug]🔔 Received resource update notification from 'github'
+##[debug]Prompt with name "AssignCodingAgent" is already registered. Renaming to "github_AssignCodingAgent".
+##[debug]Prompt with name "issue_to_fix_workflow" is already registered. Renaming to "github_issue_to_fix_workflow".
+##[debug]Tools changed, updating Gemini context...
+##[debug]Hook registry initialized with 0 hook entries
+##[debug][INFO] Tools updated for server: github
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: 'list_files' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: 'run_shell_command' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: 'ls' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: 'grep' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: 'code_analysis:ls' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: 'ls' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: 'web_fetch' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: 'read_file' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: 'ls' is not available to this agent.
+##[debug](node:2312) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. MaxListeners is 10. Use events.setMaxListeners() to increase limit
+##[debug](Use `node --trace-warnings ...` to show where the warning was created)
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: 'web_fetch' is not available to this agent.
+##[debug]Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 50.063674108s.
+##[debug]Suggested retry after 50s.. Retrying after 50000ms...
+##[debug]Error executing tool search_code: Error: MCP tool 'search_code' reported an error.
+##[debug]Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 15.004071449s.
+##[debug]Suggested retry after 15s.. Retrying after 15000ms...
+##[debug]Attempt 2 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 59.847035299s.
+##[debug]Suggested retry after 59s.. Retrying after 59000ms...
+##[debug]Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 22.761947671s.
+##[debug]Suggested retry after 22s.. Retrying after 22000ms...
+##[debug]Attempt 2 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 604.288321ms.
+##[debug]Suggested retry after 60s.. Retrying after 60000ms...
+##[debug]Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 50.094732779s.
+##[debug]Suggested retry after 50s.. Retrying after 50000ms...
+##[debug]{
+##[debug]  "session_id": "5dfde3bc-c135-4bb1-a0cf-c3dea26a4a01",
+##[debug]  "error": {
+##[debug]    "type": "FatalTurnLimitedError",
+##[debug]    "message": "Reached max session turns for this session. Increase the number of turns by specifying maxSessionTurns in settings.json.",
+##[debug]    "code": 53
+##[debug]  }
+Error: }[ERROR] {
+##[debug]  "session_id": "5dfde3bc-c135-4bb1-a0cf-c3dea26a4a01",
+##[debug]  "error": {
+##[debug]    "type": "FatalTurnLimitedError",
+##[debug]    "message": "Reached max session turns for this session. Increase the number of turns by specifying maxSessionTurns in settings.json.",
+##[debug]    "code": 53
+##[debug]  }
+##[debug]}
+##[debug]Finished: run
+##[debug]Evaluating condition for step: 'run'
+##[debug]Evaluating: (success() && (inputs.upload_artifacts == 'true'))
+##[debug]Evaluating And:
+##[debug]..Evaluating success:
+##[debug]..=> false
+##[debug]=> false
+##[debug]Expanded: (false && (inputs['upload_artifacts'] == 'true'))
+##[debug]Result: false
+##[debug]Evaluating: inputs.gcp_project_id
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'gcp_project_id'
+##[debug]=> ''
+##[debug]Result: ''
+##[debug]Evaluating: github.action_path
+##[debug]Evaluating Index:
+##[debug]..Evaluating github:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'action_path'
+##[debug]=> '/home/runner/work/_actions/google-github-actions/run-gemini-cli/v0'
+##[debug]Result: '/home/runner/work/_actions/google-github-actions/run-gemini-cli/v0'
+##[debug]Evaluating: github.repository
+##[debug]Evaluating Index:
+##[debug]..Evaluating github:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'repository'
+##[debug]=> 'rpeters1430/Cinefin'
+##[debug]Result: 'rpeters1430/Cinefin'
+##[debug]Evaluating: github.run_id
+##[debug]Evaluating Index:
+##[debug]..Evaluating github:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'run_id'
+##[debug]=> '22111903114'
+##[debug]Result: '22111903114'
+##[debug]Evaluating condition for step: 'run'
+##[debug]Evaluating: (success() && (inputs.gcp_workload_identity_provider != ''))
+##[debug]Evaluating And:
+##[debug]..Evaluating success:
+##[debug]..=> false
+##[debug]=> false
+##[debug]Expanded: (false && (inputs['gcp_workload_identity_provider'] != ''))
+##[debug]Result: false
+##[debug]Evaluating: steps.gemini_run.outputs.gemini_response
+##[debug]Evaluating Index:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating steps:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'gemini_run'
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'outputs'
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'gemini_response'
+##[debug]=> 'Prompts updated for server: githubResources updated for server: githubTools updated for server: githubEOF
+##[debug]gemini_errors<<EOF
+##[debug]Timeout of 30000 exceeds the interval of 10000. Clamping timeout to interval duration.
+##[debug]YOLO mode is enabled. All tool calls will be automatically approved.
+##[debug]YOLO mode is enabled. All tool calls will be automatically approved.
+##[debug]Server ''github'' supports tool updates. Listening for changes...
+##[debug]Server ''github'' supports resource updates. Listening for changes...
+##[debug]Server ''github'' supports prompt updates. Listening for changes...
+##[debug]🔔 Received prompt update notification from ''github''
+##[debug]🔔 Received tool update notification from ''github''
+##[debug]🔔 Received resource update notification from ''github''
+##[debug]Prompt with name "AssignCodingAgent" is already registered. Renaming to "github_AssignCodingAgent".
+##[debug]Prompt with name "issue_to_fix_workflow" is already registered. Renaming to "github_issue_to_fix_workflow".
+##[debug]Tools changed, updating Gemini context...
+##[debug]Hook registry initialized with 0 hook entries
+##[debug][INFO] Tools updated for server: github
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''list_files'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''run_shell_command'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''ls'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''grep'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''code_analysis:ls'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''ls'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''web_fetch'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''read_file'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''ls'' is not available to this agent.
+##[debug](node:2312) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. MaxListeners is 10. Use events.setMaxListeners() to increase limit
+##[debug](Use `node --trace-warnings ...` to show where the warning was created)
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''web_fetch'' is not available to this agent.
+##[debug]Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 50.063674108s.
+##[debug]Suggested retry after 50s.. Retrying after 50000ms...
+##[debug]Error executing tool search_code: Error: MCP tool ''search_code'' reported an error.
+##[debug]Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 15.004071449s.
+##[debug]Suggested retry after 15s.. Retrying after 15000ms...
+##[debug]Attempt 2 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 59.847035299s.
+##[debug]Suggested retry after 59s.. Retrying after 59000ms...
+##[debug]Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 22.761947671s.
+##[debug]Suggested retry after 22s.. Retrying after 22000ms...
+##[debug]Attempt 2 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 604.288321ms.
+##[debug]Suggested retry after 60s.. Retrying after 60000ms...
+##[debug]Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 50.094732779s.
+##[debug]Suggested retry after 50s.. Retrying after 50000ms...
+##[debug]{
+##[debug]  "session_id": "5dfde3bc-c135-4bb1-a0cf-c3dea26a4a01",
+##[debug]  "error": {
+##[debug]    "type": "FatalTurnLimitedError",
+##[debug]    "message": "Reached max session turns for this session. Increase the number of turns by specifying maxSessionTurns in settings.json.",
+##[debug]    "code": 53
+##[debug]  }
+Error: }[ERROR] {
+##[debug]  "session_id": "5dfde3bc-c135-4bb1-a0cf-c3dea26a4a01",
+##[debug]  "error": {
+##[debug]    "type": "FatalTurnLimitedError",
+##[debug]    "message": "Reached max session turns for this session. Increase the number of turns by specifying maxSessionTurns in settings.json.",
+##[debug]    "code": 53
+##[debug]  }
+##[debug]}'
+##[debug]Result: 'Prompts updated for server: githubResources updated for server: githubTools updated for server: githubEOF
+##[debug]gemini_errors<<EOF
+##[debug]Timeout of 30000 exceeds the interval of 10000. Clamping timeout to interval duration.
+##[debug]YOLO mode is enabled. All tool calls will be automatically approved.
+##[debug]YOLO mode is enabled. All tool calls will be automatically approved.
+##[debug]Server ''github'' supports tool updates. Listening for changes...
+##[debug]Server ''github'' supports resource updates. Listening for changes...
+##[debug]Server ''github'' supports prompt updates. Listening for changes...
+##[debug]🔔 Received prompt update notification from ''github''
+##[debug]🔔 Received tool update notification from ''github''
+##[debug]🔔 Received resource update notification from ''github''
+##[debug]Prompt with name "AssignCodingAgent" is already registered. Renaming to "github_AssignCodingAgent".
+##[debug]Prompt with name "issue_to_fix_workflow" is already registered. Renaming to "github_issue_to_fix_workflow".
+##[debug]Tools changed, updating Gemini context...
+##[debug]Hook registry initialized with 0 hook entries
+##[debug][INFO] Tools updated for server: github
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''list_files'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''run_shell_command'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''ls'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''grep'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''code_analysis:ls'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''ls'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''web_fetch'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''read_file'' is not available to this agent.
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''ls'' is not available to this agent.
+##[debug](node:2312) MaxListenersExceededWarning: Possible EventTarget memory leak detected. 11 abort listeners added to [AbortSignal]. MaxListeners is 10. Use events.setMaxListeners() to increase limit
+##[debug](Use `node --trace-warnings ...` to show where the warning was created)
+##[debug][LocalAgentExecutor] Blocked call: Unauthorized tool call: ''web_fetch'' is not available to this agent.
+##[debug]Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 50.063674108s.
+##[debug]Suggested retry after 50s.. Retrying after 50000ms...
+##[debug]Error executing tool search_code: Error: MCP tool ''search_code'' reported an error.
+##[debug]Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 15.004071449s.
+##[debug]Suggested retry after 15s.. Retrying after 15000ms...
+##[debug]Attempt 2 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 59.847035299s.
+##[debug]Suggested retry after 59s.. Retrying after 59000ms...
+##[debug]Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 22.761947671s.
+##[debug]Suggested retry after 22s.. Retrying after 22000ms...
+##[debug]Attempt 2 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 604.288321ms.
+##[debug]Suggested retry after 60s.. Retrying after 60000ms...
+##[debug]Attempt 1 failed: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+##[debug]* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_paid_tier_input_token_count, limit: 1000000, model: gemini-3-flash
+##[debug]Please retry in 50.094732779s.
+##[debug]Suggested retry after 50s.. Retrying after 50000ms...
+##[debug]{
+##[debug]  "session_id": "5dfde3bc-c135-4bb1-a0cf-c3dea26a4a01",
+##[debug]  "error": {
+##[debug]    "type": "FatalTurnLimitedError",
+##[debug]    "message": "Reached max session turns for this session. Increase the number of turns by specifying maxSessionTurns in settings.json.",
+##[debug]    "code": 53
+##[debug]  }
+Error: }[ERROR] {
+##[debug]  "session_id": "5dfde3bc-c135-4bb1-a0cf-c3dea26a4a01",
+##[debug]  "error": {
+##[debug]    "type": "FatalTurnLimitedError",
+##[debug]    "message": "Reached max session turns for this session. Increase the number of turns by specifying maxSessionTurns in settings.json.",
+##[debug]    "code": 53
+##[debug]  }
+##[debug]}'
+##[debug]Evaluating: steps.gemini_run.outputs.gemini_errors
+##[debug]Evaluating Index:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating steps:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'gemini_run'
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'outputs'
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'gemini_errors'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Finishing: Run Gemini CLI
+0s
+##[debug]Evaluating: (github.event.pull_request.title || github.event.issue.title)
+##[debug]Evaluating Or:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'pull_request'
+##[debug]....=> null
+##[debug]..=> null
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'issue'
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'title'
+##[debug]..=> 'Remove the "AI OK" button from the Homescreen'
+##[debug]=> 'Remove the "AI OK" button from the Homescreen'
+##[debug]Expanded: (null || 'Remove the "AI OK" button from the Homescreen')
+##[debug]Result: 'Remove the "AI OK" button from the Homescreen'
+##[debug]Evaluating: (github.event.pull_request.body || github.event.issue.body)
+##[debug]Evaluating Or:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'pull_request'
+##[debug]....=> null
+##[debug]..=> null
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'issue'
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'body'
+##[debug]..=> 'The AI functionality is now working, so we no longer need the temporary "AI OK" button located on the top left of the Homescreen. Please remove this button and its associated code from the UI.'
+##[debug]=> 'The AI functionality is now working, so we no longer need the temporary "AI OK" button located on the top left of the Homescreen. Please remove this button and its associated code from the UI.'
+##[debug]Expanded: (null || 'The AI functionality is now working, so we no longer need the temporary "AI OK" button located on the top left of the Homescreen. Please remove this button and its associated code from the UI.')
+##[debug]Result: 'The AI functionality is now working, so we no longer need the temporary "AI OK" button located on the top left of the Homescreen. Please remove this button and its associated code from the UI.'
+##[debug]Evaluating: github.event_name
+##[debug]Evaluating Index:
+##[debug]..Evaluating github:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'event_name'
+##[debug]=> 'issue_comment'
+##[debug]Result: 'issue_comment'
+##[debug]Evaluating: (steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token)
+##[debug]Evaluating Or:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating steps:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'mint_identity_token'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'outputs'
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'token'
+##[debug]..=> null
+##[debug]..Evaluating Index:
+##[debug]....Evaluating secrets:
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'GITHUB_TOKEN'
+##[debug]..=> '***'
+##[debug]=> '***'
+##[debug]Expanded: (null || '***' || github['token'])
+##[debug]Result: '***'
+##[debug]Evaluating: !!github.event.pull_request
+##[debug]Evaluating Not:
+##[debug]..Evaluating Not:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'pull_request'
+##[debug]....=> null
+##[debug]..=> true
+##[debug]=> false
+##[debug]Expanded: !!null
+##[debug]Result: false
+##[debug]Evaluating: (github.event.pull_request.number || github.event.issue.number)
+##[debug]Evaluating Or:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'pull_request'
+##[debug]....=> null
+##[debug]..=> null
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating Index:
+##[debug]........Evaluating github:
+##[debug]........=> Object
+##[debug]........Evaluating String:
+##[debug]........=> 'event'
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'issue'
+##[debug]....=> Object
+##[debug]....Evaluating String:
+##[debug]....=> 'number'
+##[debug]..=> 839
+##[debug]=> 839
+##[debug]Expanded: (null || 839)
+##[debug]Result: 839
+##[debug]Evaluating: github.repository
+##[debug]Evaluating Index:
+##[debug]..Evaluating github:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'repository'
+##[debug]=> 'rpeters1430/Cinefin'
+##[debug]Result: 'rpeters1430/Cinefin'
+##[debug]Evaluating: inputs.additional_context
+##[debug]Evaluating Index:
+##[debug]..Evaluating inputs:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'additional_context'
+##[debug]=> 'fix this issue'
+##[debug]Result: 'fix this issue'
+##[debug]Evaluating condition for step: 'Post Run Gemini CLI'
+##[debug]Evaluating: always()
+##[debug]Evaluating always:
+##[debug]=> true
+##[debug]Result: true
+##[debug]Starting: Post Run Gemini CLI
+##[debug]Loading inputs
+##[debug]Evaluating: vars.GOOGLE_CLOUD_LOCATION
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GOOGLE_CLOUD_LOCATION'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: vars.GOOGLE_CLOUD_PROJECT
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GOOGLE_CLOUD_PROJECT'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: vars.SERVICE_ACCOUNT_EMAIL
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'SERVICE_ACCOUNT_EMAIL'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: vars.GCP_WIF_PROVIDER
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GCP_WIF_PROVIDER'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: secrets.GEMINI_API_KEY
+##[debug]Evaluating Index:
+##[debug]..Evaluating secrets:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GEMINI_API_KEY'
+##[debug]=> '***'
+##[debug]Result: '***'
+##[debug]Evaluating: vars.GEMINI_CLI_VERSION
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GEMINI_CLI_VERSION'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: fromJSON((vars.GEMINI_DEBUG || vars.ACTIONS_STEP_DEBUG || false))
+##[debug]Evaluating fromJSON:
+##[debug]..Evaluating Or:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating vars:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'GEMINI_DEBUG'
+##[debug]....=> null
+##[debug]....Evaluating Index:
+##[debug]......Evaluating vars:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'ACTIONS_STEP_DEBUG'
+##[debug]....=> null
+##[debug]....Evaluating Boolean:
+##[debug]....=> false
+##[debug]..=> false
+##[debug]=> false
+##[debug]Result: false
+##[debug]Evaluating: vars.GEMINI_MODEL
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GEMINI_MODEL'
+##[debug]=> 'gemini-3-flash-preview'
+##[debug]Result: 'gemini-3-flash-preview'
+##[debug]Evaluating: secrets.GOOGLE_API_KEY
+##[debug]Evaluating Index:
+##[debug]..Evaluating secrets:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GOOGLE_API_KEY'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: vars.GOOGLE_GENAI_USE_GCA
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GOOGLE_GENAI_USE_GCA'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: vars.GOOGLE_GENAI_USE_VERTEXAI
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'GOOGLE_GENAI_USE_VERTEXAI'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: vars.UPLOAD_ARTIFACTS
+##[debug]Evaluating Index:
+##[debug]..Evaluating vars:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'UPLOAD_ARTIFACTS'
+##[debug]=> null
+##[debug]Result: null
+##[debug]Loading env
+Post job cleanup.
+##[debug]Evaluating: steps.gemini_run.outputs.gemini_response
+##[debug]Evaluating Index:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating steps:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'gemini_run'
+##[debug]....=> null
+##[debug]..=> null
+##[debug]=> null
+##[debug]Result: null
+##[debug]Evaluating: steps.gemini_run.outputs.gemini_errors
+##[debug]Evaluating Index:
+##[debug]..Evaluating Index:
+##[debug]....Evaluating Index:
+##[debug]......Evaluating steps:
+##[debug]......=> Object
+##[debug]......Evaluating String:
+##[debug]......=> 'gemini_run'
+##[debug]....=> null
+##[debug]..=> null
+##[debug]=> null
+##[debug]Result: null
+##[debug]Finishing: Post Run Gemini CLI
+0s
+##[debug]Starting: Complete job
+Uploading runner diagnostic logs
+##[debug]Starting diagnostic file upload.
+##[debug]Setting up diagnostic log folders.
+##[debug]Creating diagnostic log files folder.
+##[debug]Copying 1 worker diagnostic logs.
+##[debug]Copying 1 runner diagnostic logs.
+##[debug]Zipping diagnostic files.
+##[debug]Uploading diagnostic metadata file.
+##[debug]Diagnostic file upload complete.
+Completed runner diagnostic log upload
+Cleaning up orphan processes
+##[debug]Finishing: Complete job
