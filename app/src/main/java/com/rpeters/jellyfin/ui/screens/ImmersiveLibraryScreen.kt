@@ -279,7 +279,7 @@ fun ImmersiveLibraryScreen(
                         contentDescription = stringResource(id = R.string.ai_assistant),
                     )
                 }
-                
+
                 // Search FAB
                 FloatingActionButton(
                     onClick = onSearchClick,

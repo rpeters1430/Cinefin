@@ -62,9 +62,9 @@ import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.isWatched
-import kotlin.math.roundToInt
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * Immersive TV Episode Detail screen.
@@ -491,7 +491,7 @@ private fun EpisodeOverviewSection(
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Surface(
                             shape = CircleShape,
@@ -519,7 +519,7 @@ private fun EpisodeOverviewSection(
                                     iconSize = 20.dp,
                                 )
                             }
-                            stream.bitDepth?.let { MetadataTag(text = "${it}-bit") }
+                            stream.bitDepth?.let { MetadataTag(text = "$it-bit") }
                             stream.averageFrameRate?.let { MetadataTag(text = "${it.roundToInt()} FPS") }
                         }
                     }
@@ -548,7 +548,7 @@ private fun EpisodeOverviewSection(
 
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Surface(
                             shape = CircleShape,
@@ -580,7 +580,7 @@ private fun EpisodeOverviewSection(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     episode.premiereDate?.let { date ->
                         // Input format is typically 2024-01-23T00:00:00Z
@@ -595,7 +595,7 @@ private fun EpisodeOverviewSection(
                             )
                         }
                     }
-                    
+
                     episode.runTimeTicks?.let { ticks ->
                         val minutes = (ticks / 10_000_000 / 60).toInt()
                         DetailInfoRow(
@@ -621,26 +621,26 @@ private fun MetadataTag(
         shape = RoundedCornerShape(4.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
         ) {
             if (icon != null) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(iconSize),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Text(
                 text = text,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
