@@ -136,7 +136,9 @@ fun ImmersiveTVShowsScreen(
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(ImmersiveDimens.HeroHeightPhone)
+                                            .offset(x = -ImmersiveDimens.SpacingRowTight)
+                                            .width(androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp)
+                                            .height(ImmersiveDimens.HeroHeightPhone + 60.dp)
                                             .clipToBounds(),
                                     ) {
                                         ImmersiveHeroCarousel(

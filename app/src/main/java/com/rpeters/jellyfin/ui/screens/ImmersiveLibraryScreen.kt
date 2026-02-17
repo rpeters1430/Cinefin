@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Movie
@@ -89,6 +90,7 @@ fun ImmersiveLibraryScreen(
     getImageUrl: (BaseItemDto) -> String?,
     onLibraryClick: (BaseItemDto) -> Unit = {},
     onSearchClick: () -> Unit = {},
+    onAiAssistantClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onNowPlayingClick: () -> Unit = {},
@@ -203,7 +205,8 @@ fun ImmersiveLibraryScreen(
             exit = fadeOut() + slideOutVertically(targetOffsetY = { -it }),
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(16.dp),
+                .statusBarsPadding()
+                .padding(top = 16.dp, end = 16.dp),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -252,24 +255,42 @@ fun ImmersiveLibraryScreen(
             }
         }
 
-        // Search FAB (bottom-right)
+        // Search and AI FABs (bottom-right)
         AnimatedVisibility(
             visible = showFabs,
             enter = scaleIn() + fadeIn(),
             exit = scaleOut() + fadeOut(),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 64.dp), // ✅ Moved lower (was 96dp)
+                .padding(end = 16.dp, bottom = 64.dp),
         ) {
-            FloatingActionButton(
-                onClick = onSearchClick,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.End,
             ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = stringResource(id = R.string.search),
-                )
+                // AI Assistant FAB
+                FloatingActionButton(
+                    onClick = onAiAssistantClick,
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = stringResource(id = R.string.ai_assistant),
+                    )
+                }
+                
+                // Search FAB
+                FloatingActionButton(
+                    onClick = onSearchClick,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = stringResource(id = R.string.search),
+                    )
+                }
             }
         }
 

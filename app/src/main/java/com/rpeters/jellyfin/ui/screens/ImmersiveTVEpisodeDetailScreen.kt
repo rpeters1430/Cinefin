@@ -208,11 +208,11 @@ fun ImmersiveTVEpisodeDetailScreen(
                                 ImmersiveMediaCard(
                                     title = item.name ?: "Episode ${item.indexNumber}",
                                     subtitle = "Episode ${item.indexNumber}",
-                                    imageUrl = getImageUrl(item) ?: "",
+                                    imageUrl = getBackdropUrl(item) ?: getImageUrl(item) ?: "",
                                     onCardClick = { if (!isCurrent) onEpisodeClick(item) },
-                                    cardSize = ImmersiveCardSize.SMALL,
+                                    cardSize = ImmersiveCardSize.MEDIUM_HORIZONTAL,
                                     isWatched = item.isWatched(),
-                                    modifier = Modifier.width(200.dp).then(
+                                    modifier = Modifier.width(280.dp).then(
                                         if (isCurrent) {
                                             Modifier.background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
                                         } else {

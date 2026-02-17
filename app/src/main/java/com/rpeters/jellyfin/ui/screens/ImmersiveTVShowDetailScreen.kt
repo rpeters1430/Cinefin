@@ -428,7 +428,11 @@ private fun ShowHeroContent(
             ) {
                 Icon(Icons.Default.PlayArrow, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = if (series.isCompletelyWatched()) "Rewatch" else "Watch Next")
+                Text(text = when {
+                    series.isCompletelyWatched() -> "Rewatch"
+                    series.userData?.playedPercentage != null && series.userData.playedPercentage!! > 0 -> "Watch Next"
+                    else -> "Start Watching Series"
+                })
             }
         }
     }
