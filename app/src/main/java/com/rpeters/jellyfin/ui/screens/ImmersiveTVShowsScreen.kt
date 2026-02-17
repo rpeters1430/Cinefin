@@ -235,7 +235,6 @@ fun ImmersiveTVShowsScreen(
     }
 }
 
-
 private enum class TvShowSortOption(val labelRes: Int) {
     ALPHABETICAL(R.string.sort_title_asc_shows),
     RECENTLY_ADDED(R.string.sort_date_added_desc_shows),

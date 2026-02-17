@@ -225,7 +225,6 @@ fun ImmersiveMoviesScreen(
     }
 }
 
-
 private enum class MovieSortOption(val labelRes: Int) {
     ALPHABETICAL(R.string.sort_title_asc),
     RECENTLY_ADDED(R.string.sort_date_added_desc),
