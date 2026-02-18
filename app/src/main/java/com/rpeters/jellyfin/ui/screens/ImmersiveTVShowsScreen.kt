@@ -156,6 +156,7 @@ fun ImmersiveTVShowsScreen(
                                             items = carouselItems,
                                             onItemClick = { item -> onTVShowClick(item.id) },
                                             onPlayClick = { item -> onTVShowClick(item.id) },
+                                            pageSpacing = 0.dp, // ✅ No spacing for edge-to-edge layout
                                         )
                                     }
                                 }
