@@ -19,8 +19,9 @@ defaults:
 jobs:
   invoke:
     runs-on: 'ubuntu-latest'
+    timeout-minutes: 20
     permissions:
-      contents: 'read'
+      contents: 'write'
       id-token: 'write'
       issues: 'write'
       pull-requests: 'write'
@@ -33,7 +34,7 @@ jobs:
         with:
           app-id: '${{ vars.APP_ID }}'
           private-key: '${{ secrets.APP_PRIVATE_KEY }}'
-          permission-contents: 'read'
+          permission-contents: 'write'
           permission-issues: 'write'
           permission-pull-requests: 'write'
 
@@ -66,7 +67,7 @@ jobs:
           settings: |-
             {
               "model": {
-                "maxSessionTurns": 25
+                "maxSessionTurns": 60
               },
               "telemetry": {
                 "enabled": true,
@@ -114,7 +115,9 @@ jobs:
                   "run_shell_command(echo)",
                   "run_shell_command(grep)",
                   "run_shell_command(head)",
-                  "run_shell_command(tail)"
+                  "run_shell_command(tail)",
+                  "run_shell_command(find)",
+                  "run_shell_command(ls)"
                 ]
               }
             }
