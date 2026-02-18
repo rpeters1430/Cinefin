@@ -325,4 +325,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
+**Last Edited:** February 18, 2026
+
 **Made with ❤️ for the Jellyfin community**
