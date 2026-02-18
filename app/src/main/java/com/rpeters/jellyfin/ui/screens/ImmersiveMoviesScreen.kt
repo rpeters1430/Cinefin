@@ -147,6 +147,7 @@ fun ImmersiveMoviesScreen(
                                         onPlayClick = { item ->
                                             featuredMovies.find { it.id.toString() == item.id }?.let(onMovieClick)
                                         },
+                                        pageSpacing = 0.dp, // ✅ No spacing for edge-to-edge layout
                                     )
                                 }
                             }
