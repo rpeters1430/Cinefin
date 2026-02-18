@@ -26,9 +26,6 @@ import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.HdrOn
 import androidx.compose.material.icons.outlined.SurroundSound
 import androidx.compose.material.icons.outlined.VideoFile
-import androidx.compose.material.icons.rounded.Hd
-import androidx.compose.material.icons.rounded.HighQuality
-import androidx.compose.material.icons.rounded.SdCard
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -44,10 +41,12 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rpeters.jellyfin.R
 
 /**
  * Material 3 Expressive media quality badge with gradient background
@@ -86,7 +85,7 @@ fun QualityBadge(
             ) {
                 if (showIcon) {
                     Icon(
-                        imageVector = resolution.icon,
+                        painter = painterResource(id = resolution.iconRes),
                         contentDescription = resolution.label,
                         modifier = Modifier.size(20.dp),
                         tint = resolution.iconTint
@@ -221,13 +220,25 @@ fun CodecBadge(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
         ) {
-            icon?.let {
-                Icon(
-                    imageVector = it,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                )
+            val mappedIcon = codecBadgeIconRes(text)
+            when {
+                mappedIcon != null -> {
+                    Icon(
+                        painter = painterResource(id = mappedIcon),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    )
+                }
+
+                icon != null -> {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    )
+                }
             }
             Text(
                 text = text,
@@ -349,9 +360,12 @@ fun VideoInfoCard(
             }
 
             frameRate?.let {
-                CodecBadge(
-                    text = "${it.toInt()} FPS"
-                )
+                val fpsBadge = when {
+                    it >= 59.0 -> "60fps"
+                    it >= 29.0 -> "30fps"
+                    else -> "${it.toInt()}fps"
+                }
+                CodecBadge(text = fpsBadge)
             }
 
             if (is3D) {
@@ -413,14 +427,14 @@ fun AudioInfoCard(
  */
 enum class ResolutionQuality(
     val label: String,
-    val icon: ImageVector,
+    val iconRes: Int,
     val gradientColors: List<Color>,
     val textColor: Color,
     val iconTint: Color,
 ) {
     UHD_8K(
         label = "8K",
-        icon = Icons.Rounded.HighQuality,
+        iconRes = R.drawable.ic_8k_24,
         gradientColors = listOf(
             Color(0xFFFFD700), // Gold
             Color(0xFFFFA500)  // Orange
@@ -430,7 +444,7 @@ enum class ResolutionQuality(
     ),
     UHD_4K(
         label = "4K",
-        icon = Icons.Rounded.HighQuality,
+        iconRes = R.drawable.ic_4k_24,
         gradientColors = listOf(
             Color(0xFFFF6B6B), // Coral red
             Color(0xFFEE5A6F)  // Rose
@@ -440,7 +454,7 @@ enum class ResolutionQuality(
     ),
     QHD_1440P(
         label = "1440P",
-        icon = Icons.Rounded.HighQuality,
+        iconRes = R.drawable.ic_high_quality_24,
         gradientColors = listOf(
             Color(0xFF667EEA), // Purple blue
             Color(0xFF764BA2)  // Purple
@@ -450,7 +464,7 @@ enum class ResolutionQuality(
     ),
     FHD_1080P(
         label = "FHD",
-        icon = Icons.Rounded.Hd,
+        iconRes = R.drawable.ic_full_hd_24,
         gradientColors = listOf(
             Color(0xFF4FACFE), // Light blue
             Color(0xFF00F2FE)  // Cyan
@@ -460,7 +474,7 @@ enum class ResolutionQuality(
     ),
     HD_720P(
         label = "HD",
-        icon = Icons.Rounded.Hd,
+        iconRes = R.drawable.ic_hd_24,
         gradientColors = listOf(
             Color(0xFF43E97B), // Green
             Color(0xFF38F9D7)  // Teal
@@ -470,7 +484,7 @@ enum class ResolutionQuality(
     ),
     SD(
         label = "SD",
-        icon = Icons.Rounded.SdCard,
+        iconRes = R.drawable.ic_sd_24,
         gradientColors = listOf(
             Color(0xFFBDBDBD), // Gray
             Color(0xFF9E9E9E)  // Darker gray
@@ -492,6 +506,18 @@ enum class ResolutionQuality(
                 else -> SD
             }
         }
+    }
+}
+
+
+private fun codecBadgeIconRes(text: String): Int? {
+    return when (text.trim().uppercase()) {
+        "AV1" -> R.drawable.ic_av1_24
+        "AVC", "H264 AVC", "H.264", "H264" -> R.drawable.ic_avc_24
+        "3D" -> R.drawable.ic_3d_24
+        "60FPS", "60 FPS" -> R.drawable.ic_60fps_24
+        "30FPS", "30 FPS" -> R.drawable.ic_30fps_24
+        else -> null
     }
 }
 

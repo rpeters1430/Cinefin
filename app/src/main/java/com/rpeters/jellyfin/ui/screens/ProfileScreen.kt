@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -132,6 +133,19 @@ fun ProfileScreen(
                 .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_launcher_fg),
+                    contentDescription = stringResource(id = R.string.app_name),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(72.dp),
+                )
+            }
+
             // Profile Header
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -162,40 +176,32 @@ fun ProfileScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        stringResource(id = R.string.version),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        serverVersion,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        stringResource(id = R.string.app_version_label),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        appVersion,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = stringResource(id = R.string.app_updated_label, appUpdatedDate),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = displayName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        AssistChip(
+                            onClick = {},
+                            enabled = false,
+                            label = { Text("${stringResource(id = R.string.version)}: $serverVersion") },
+                        )
+                        AssistChip(
+                            onClick = {},
+                            enabled = false,
+                            label = { Text("${stringResource(id = R.string.app_version_label)}: $appVersion") },
+                        )
+                        AssistChip(
+                            onClick = {},
+                            enabled = false,
+                            label = { Text(stringResource(id = R.string.app_updated_label, appUpdatedDate)) },
+                        )
+                        AssistChip(
+                            onClick = {},
+                            enabled = false,
+                            label = { Text(displayName) },
+                        )
+                    }
                 }
             }
 
@@ -253,7 +259,6 @@ fun ProfileScreen(
                                 null
                             },
                         )
-                        ProfileInfoRow(stringResource(id = R.string.user_id_label), server.userId ?: stringResource(id = R.string.unknown))
                     }
                 }
             }

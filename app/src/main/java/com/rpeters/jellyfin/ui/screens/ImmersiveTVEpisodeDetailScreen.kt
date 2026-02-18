@@ -116,10 +116,9 @@ fun ImmersiveTVEpisodeDetailScreen(
         // Static Hero Background (Fixed - doesn't scroll) - Extended to edges
         StaticHeroSection(
             imageUrl = heroImage.takeIf { it.isNotBlank() },
-            height = ImmersiveDimens.HeroHeightPhone + 60.dp, // ✅ Increased height
+            height = ImmersiveDimens.HeroHeightPhone,
             modifier = Modifier
-                .fillMaxWidth()
-                .offset(y = (-60).dp), // ✅ Top bleed
+                .fillMaxWidth(),
             contentScale = ContentScale.Crop,
             content = {}, // Content moved to LazyColumn
         )

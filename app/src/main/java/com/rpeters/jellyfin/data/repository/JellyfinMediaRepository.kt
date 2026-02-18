@@ -129,15 +129,12 @@ class JellyfinMediaRepository @Inject constructor(
                 // Choose sensible defaults per collection for sorting and fields
                 val coll = validatedParams.collectionType?.lowercase()
                 val sortBy = when (coll) {
-                    "movies" -> listOf(ItemSortBy.PREMIERE_DATE, ItemSortBy.SORT_NAME)
+                    "movies" -> listOf(ItemSortBy.SORT_NAME)
                     "tvshows" -> listOf(ItemSortBy.SORT_NAME)
                     "music" -> listOf(ItemSortBy.SORT_NAME)
                     else -> emptyList()
                 }
-                val sortOrder = when (coll) {
-                    "movies" -> listOf(SortOrder.DESCENDING)
-                    else -> listOf(SortOrder.ASCENDING)
-                }
+                val sortOrder = listOf(SortOrder.ASCENDING)
                 val fields = listOf(
                     org.jellyfin.sdk.model.api.ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
                     org.jellyfin.sdk.model.api.ItemFields.OVERVIEW,
