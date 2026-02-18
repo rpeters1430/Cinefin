@@ -248,6 +248,21 @@ When implementing fixes, Gemini follows these Cinefin project conventions:
 - The `prompt` field must use triple-quoted strings: `"""`
 - Validate with: `python3 -c "import tomli; tomli.loads(open('file.toml').read())"`
 
+### "Reached max session turns" error
+- This error occurs when a workflow exhausts its conversation turn limit
+- **Primary cause**: Missing tools in `includeTools` causing failures and retries
+- **Secondary cause**: Complex workflows requiring many legitimate tool calls
+- Check the workflow logs for underlying tool errors (e.g., `pull_request_read` failures)
+- Verify that all tools used in the prompt file are included in the workflow's `mcpServers.github.includeTools` list
+- If persistent after tool verification, contact maintainers to adjust the `maxSessionTurns` configuration
+
+### GitHub MCP tool errors ("MCP tool 'tool_name' reported an error")
+- This error occurs when the AI agent tries to use a tool that isn't in the `includeTools` list
+- The agent will retry failed tool calls, consuming additional turns
+- **Solution**: Add the missing tool to the workflow's `mcpServers.github.includeTools` configuration
+- **Prevention**: When updating prompt files (`.github/commands/*.toml`), ensure the workflow includes all referenced tools
+- Example: If prompt uses `github__get_file_contents`, workflow must include `"get_file_contents"` in `includeTools`
+
 ---
 
 ## Examples
