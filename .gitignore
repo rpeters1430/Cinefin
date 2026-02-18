@@ -103,10 +103,10 @@ session_log_*
 .aider*
 
 # Gemini CLI
-.gemini/*
-!.gemini/commands/
-!.gemini/commands/**
-.gemini/telemetry.log
+# gemini-cli settings
+.gemini/
+
+# GitHub App credentials
 gha-creds-*.json
 
 .gemini/
