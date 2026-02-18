@@ -22,6 +22,20 @@ The following files are created at runtime by the Gemini CLI and are ignored by 
 
 Gemini CLI workflows are configured in `.github/workflows/gemini-*.yml` files. Each workflow provides its settings inline via the `settings:` parameter, which may be written to `settings.json` during execution.
 
+## Validation
+
+To validate all Gemini CLI workflow configurations, run:
+
+```bash
+python3 scripts/validate-gemini-config.py
+```
+
+This script checks:
+- YAML syntax in workflow files
+- JSON validity in settings configurations
+- Presence of required configuration fields
+- Tool counts and session limits
+
 ## Note
 
 All files in this directory except for `commands/` and this README are git-ignored to prevent committing runtime artifacts.
