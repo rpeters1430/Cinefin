@@ -103,6 +103,10 @@ jobs:
               core.setOutput('additional_context', additionalContext);
             } else if (request.startsWith("@gemini-cli /triage")) {
               core.setOutput('command', 'triage');
+            } else if (request.startsWith("@gemini-cli /fix") || request.startsWith("@gemini-cli /implement")) {
+              core.setOutput('command', 'fix');
+              const additionalContext = request.replace(/^@gemini-cli \/(fix|implement)/, '').trim();
+              core.setOutput('additional_context', additionalContext);
             } else if (request.startsWith("@gemini-cli")) {
               const additionalContext = request.replace(/^@gemini-cli/, '').trim();
               core.setOutput('command', 'invoke');
@@ -157,7 +161,21 @@ jobs:
       ${{ needs.dispatch.outputs.command == 'invoke' }}
     uses: './.github/workflows/gemini-invoke.yml'
     permissions:
-      contents: 'read'
+      contents: 'write'
+      id-token: 'write'
+      issues: 'write'
+      pull-requests: 'write'
+    with:
+      additional_context: '${{ needs.dispatch.outputs.additional_context }}'
+    secrets: 'inherit'
+
+  fix:
+    needs: 'dispatch'
+    if: |-
+      ${{ needs.dispatch.outputs.command == 'fix' }}
+    uses: './.github/workflows/gemini-fix.yml'
+    permissions:
+      contents: 'write'
       id-token: 'write'
       issues: 'write'
       pull-requests: 'write'
@@ -171,6 +189,7 @@ jobs:
       - 'review'
       - 'triage'
       - 'invoke'
+      - 'fix'
     if: |-
       ${{ always() && !cancelled() && (failure() || needs.dispatch.outputs.command == 'fallthrough') }}
     runs-on: 'ubuntu-latest'
