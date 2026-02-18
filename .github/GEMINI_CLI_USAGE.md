@@ -248,6 +248,12 @@ When implementing fixes, Gemini follows these Cinefin project conventions:
 - The `prompt` field must use triple-quoted strings: `"""`
 - Validate with: `python3 -c "import tomli; tomli.loads(open('file.toml').read())"`
 
+### "Reached max session turns" error
+- This error occurs when a workflow exhausts its conversation turn limit
+- Usually caused by tool failures that require multiple retries
+- Check the workflow logs for underlying tool errors (e.g., `pull_request_read` failures)
+- If persistent, contact maintainers to adjust the `maxSessionTurns` configuration
+
 ---
 
 ## Examples
