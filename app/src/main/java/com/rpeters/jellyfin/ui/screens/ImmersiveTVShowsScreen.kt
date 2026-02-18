@@ -118,7 +118,7 @@ fun ImmersiveTVShowsScreen(
                     )
                 } else {
                     LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 152.dp),
+                        columns = GridCells.Adaptive(minSize = ImmersiveDimens.CardWidthSmall),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
                             top = 0.dp,

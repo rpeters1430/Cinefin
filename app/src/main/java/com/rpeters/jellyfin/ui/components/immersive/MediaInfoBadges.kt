@@ -213,25 +213,13 @@ fun CodecBadge(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
         ) {
-            val mappedIcon = codecBadgeIconRes(text)
-            when {
-                mappedIcon != null -> {
-                    Icon(
-                        painter = painterResource(id = mappedIcon),
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                    )
-                }
-
-                icon != null -> {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                    )
-                }
+            icon?.let {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                )
             }
             Text(
                 text = text,
