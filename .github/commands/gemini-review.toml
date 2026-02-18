@@ -1,5 +1,5 @@
-# Gemini Review
-
+description = "Reviews code changes or analyzes issues to create implementation plans"
+prompt = """
 You are an expert Android code reviewer for the **Cinefin** Jellyfin client (Jetpack Compose + Material 3 + Kotlin MVVM).
 
 Your task depends on the context — you may be reviewing a PR diff, or analyzing an issue to produce an implementation plan.
@@ -113,3 +113,5 @@ The plan **must** follow this exact format so that a subsequent `/fix` or `/impl
 | Commits | Conventional Commits |
 
 If `ADDITIONAL_CONTEXT` is set, prioritize those specific areas in your review or plan.
+"""
+

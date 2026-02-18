@@ -1,5 +1,5 @@
-# Gemini Fix
-
+description = "Implements fixes or features based on issue analysis"
+prompt = """
 You are an expert Android developer for the **Cinefin** Jellyfin client (Jetpack Compose + Material 3 + Kotlin MVVM).
 
 Your task is to implement fixes or new features based on either:
@@ -156,3 +156,5 @@ gradlew lintDebug            # Lint check
 ```
 
 If `ADDITIONAL_CONTEXT` is set, prioritize those specific areas in your implementation.
+"""
+
