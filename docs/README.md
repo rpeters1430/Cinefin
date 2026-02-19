@@ -48,6 +48,8 @@ Welcome to the central documentation repository for the Jellyfin Android client.
 - [Agents Configuration](development/AGENTS.md)
 - [AI Quickstart](development/AI_QUICKSTART.md)
 - [AI Setup](development/AI_SETUP.md)
+- [Claude Context](development/CLAUDE.md)
+- [Gemini Context](development/GEMINI.md)
 - [Contributing Guidelines](development/CONTRIBUTING.md)
 - [Crash Investigation Report](development/CRASH_INVESTIGATION_REPORT.md)
 - [Device Compatibility](development/DEVICE_COMPATIBILITY.md)
@@ -60,10 +62,11 @@ Welcome to the central documentation repository for the Jellyfin Android client.
 ## 🔒 Security & Privacy
 *Privacy policies and security audit summaries.*
 
-- [Privacy Policy (MD)](../privacy-policy.md)
-- [Privacy Policy (HTML)](../privacy-policy.html)
+- [Privacy Policy (MD)](legal/privacy-policy.md)
+- [Privacy Policy (HTML)](legal/privacy-policy.html)
 - [TLS Fix Summary](security/TLS_FIX_SUMMARY.md)
 - [TLS Troubleshooting](security/TLS_TROUBLESHOOTING.md)
 
 ---
 *For archived documentation, see the [Archive folder](archive/).*
+- [Bugfix Summary](archive/BUGFIX_SUMMARY.md)

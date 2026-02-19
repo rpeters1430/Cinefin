@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Privacy Policy for Cinefin - Unofficial Jellyfin Android Client">
+    <meta name="author" content="Ryan Peters">
+    <title>Privacy Policy - Cinefin</title>
+    <style>
+        :root {
+            --primary-color: #6200EE;
+            --primary-light: #7c4dff;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --bg-color: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --border-color: #e0e0e0;
+            --link-color: #2962FF;
+            --success-color: #00695C;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.7;
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: var(--bg-color);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .meta {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-top: 40px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 15px;
+        }
+
+        h3 {
+            color: var(--text-primary);
+            font-size: 1.3rem;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        a:hover {
+            border-bottom-color: var(--link-color);
+        }
+
+        .highlight-box {
+            background-color: #E8EAF6;
+            border-left: 4px solid var(--primary-color);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .highlight-box strong {
+            color: var(--primary-color);
+        }
+
+        .important {
+            background-color: #FFF3E0;
+            border-left: 4px solid #FF6F00;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .contact-section {
+            background-color: var(--bg-secondary);
+            padding: 25px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+
+        .contact-section h2 {
+            margin-top: 0;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .contact-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            min-width: 120px;
+        }
+
+        footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .toc {
+            background-color: var(--bg-secondary);
+            padding: 20px 25px;
+            border-radius: 8px;
+            margin: 25px 0;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        .toc ul {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .toc li {
+            margin-bottom: 6px;
+        }
+
+        .toc a {
+            color: var(--text-primary);
+        }
+
+        .toc a:hover {
+            color: var(--primary-color);
+        }
+
+        strong {
+            font-weight: 600;
+        }
+
+        code {
+            background-color: var(--bg-secondary);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 30px 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            h3 {
+                font-size: 1.2rem;
+            }
+
+            body {
+                padding: 10px;
+            }
+        }
+
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+
+            a {
+                color: var(--text-primary);
+                border-bottom: 1px solid var(--text-primary);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Privacy Policy for Cinefin</h1>
+            <p class="subtitle">Unofficial Jellyfin Android Client</p>
+            <p class="meta">
+                <strong>Effective Date:</strong> February 14, 2026<br>
+                <strong>Last Updated:</strong> February 14, 2026
+            </p>
+        </header>
+
+        <p>This Privacy Policy describes how Cinefin ("the App", "we", "us", or "our") collects, uses, shares, and protects information when you use our Android application. By using the App, you agree to the collection and use of information in accordance with this policy.</p>
+
+        <div class="important">
+            <strong>Application Scope:</strong> This Privacy Policy applies to the Cinefin application distributed on Google Play. Cinefin is an unofficial, third-party Jellyfin Android client and is not affiliated with or endorsed by the Jellyfin project.
+        </div>
+
+        <div class="toc">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#overview">1. Overview</a></li>
+                <li><a href="#information-collected">2. Information We Collect</a></li>
+                <li><a href="#how-we-use">3. How We Use Information</a></li>
+                <li><a href="#how-we-share">4. How We Share Information</a></li>
+                <li><a href="#data-security">5. Data Security</a></li>
+                <li><a href="#data-retention">6. Data Retention</a></li>
+                <li><a href="#your-rights">7. Your Privacy Rights and Choices</a></li>
+                <li><a href="#childrens-privacy">8. Children's Privacy</a></li>
+                <li><a href="#international-transfers">9. International Data Transfers</a></li>
+                <li><a href="#third-party-links">10. Third-Party Links and Services</a></li>
+                <li><a href="#policy-changes">11. Changes to This Privacy Policy</a></li>
+                <li><a href="#contact">12. Contact Us</a></li>
+                <li><a href="#governing-law">13. Governing Law</a></li>
+            </ul>
+        </div>
+
+        <section id="overview">
+            <h2>1. Overview</h2>
+            <p>Cinefin is an unofficial third-party client for Jellyfin media servers. The App operates as a bridge between your device and your personal Jellyfin server. We are committed to protecting your privacy and being transparent about our data practices.</p>
+
+            <div class="highlight-box">
+                <p><strong>Key Privacy Principles:</strong></p>
+                <ul>
+                    <li>We do <strong>not</strong> collect, store, or have access to your personal information</li>
+                    <li>We do <strong>not</strong> collect, store, or have access to your Jellyfin server credentials</li>
+                    <li>We do <strong>not</strong> sell or share your data with third parties for advertising or marketing purposes</li>
+                    <li>We collect only anonymous diagnostic data to improve app stability and performance</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="information-collected">
+            <h2>2. Information We Collect</h2>
+
+            <h3>2.1 Information We Do NOT Collect</h3>
+            <p>The App does <strong>not</strong> collect:</p>
+            <ul>
+                <li>Personal identification information (names, email addresses, phone numbers)</li>
+                <li>Jellyfin server URLs or addresses</li>
+                <li>Authentication tokens or login credentials</li>
+                <li>User IDs or account information</li>
+                <li>Media viewing history or preferences</li>
+                <li>Payment information</li>
+                <li>Location data</li>
+                <li>Contact lists or other device data</li>
+            </ul>
+
+            <h3>2.2 Automatically Collected Anonymous Data</h3>
+            <p>To maintain and improve the App's performance, we collect limited anonymous technical data through Google Firebase services:</p>
+
+            <p><strong>Crash Reports (via Firebase Crashlytics):</strong></p>
+            <ul>
+                <li>Stack traces and error logs when the app crashes</li>
+                <li>Device model and manufacturer</li>
+                <li>Android OS version</li>
+                <li>App version code and name</li>
+                <li>Timestamp of the crash</li>
+                <li>Device state at time of crash (memory usage, orientation, etc.)</li>
+            </ul>
+
+            <p><strong>Performance Metrics (via Firebase Performance Monitoring):</strong></p>
+            <ul>
+                <li>App startup time</li>
+                <li>Screen rendering performance</li>
+                <li>Network request latency</li>
+                <li>HTTP response codes</li>
+                <li>App foreground/background duration</li>
+            </ul>
+
+            <p><strong>Anonymous Usage Analytics (via Firebase Analytics):</strong></p>
+            <ul>
+                <li>Screen views and navigation patterns</li>
+                <li>Feature usage frequency</li>
+                <li>Session duration</li>
+                <li>Device characteristics (screen size, language, timezone)</li>
+                <li>App installation and update events</li>
+            </ul>
+
+            <div class="important">
+                <strong>Important:</strong> All data collected is anonymous and cannot be used to personally identify individual users. Firebase automatically assigns a random identifier to your app installation, which is not linked to your identity.
+            </div>
+
+            <h3>2.3 Data Stored Locally on Your Device</h3>
+            <p>The following information is stored <strong>only on your device</strong> and is <strong>never transmitted to us</strong>:</p>
+            <ul>
+                <li>Jellyfin server connection details (URLs, ports)</li>
+                <li>Authentication tokens and session credentials (encrypted using Android Keystore)</li>
+                <li>User preferences and app settings</li>
+                <li>Downloaded media files (if offline mode is used)</li>
+                <li>Playback position and watch history (synced with your Jellyfin server only)</li>
+            </ul>
+            <p>This data remains on your device until you clear app data, uninstall the App, or manually delete it.</p>
+        </section>
+
+        <section id="how-we-use">
+            <h2>3. How We Use Information</h2>
+            <p>Anonymous data collected through Firebase is used exclusively to:</p>
+            <ul>
+                <li><strong>Diagnose and fix crashes</strong> to improve app stability</li>
+                <li><strong>Monitor performance issues</strong> to optimize speed and responsiveness</li>
+                <li><strong>Understand feature usage</strong> to prioritize development efforts</li>
+                <li><strong>Ensure device compatibility</strong> across different Android versions and device models</li>
+                <li><strong>Track app installation trends</strong> to understand user growth (anonymous only)</li>
+            </ul>
+
+            <p>We do <strong>not</strong> use collected data to:</p>
+            <ul>
+                <li>Track individual users across apps or services</li>
+                <li>Build user profiles or behavioral patterns</li>
+                <li>Serve advertisements or marketing content</li>
+                <li>Sell or rent data to third parties</li>
+            </ul>
+        </section>
+
+        <section id="how-we-share">
+            <h2>4. How We Share Information</h2>
+
+            <h3>4.1 Third-Party Service Providers</h3>
+            <p>The App uses the following third-party services that may collect and process anonymous data:</p>
+
+            <p><strong>Google Firebase (Crashlytics, Performance Monitoring, Analytics)</strong></p>
+            <ul>
+                <li><strong>Purpose:</strong> Crash reporting, performance diagnostics, anonymous usage analytics</li>
+                <li><strong>Data Collected:</strong> As described in Section 2.2</li>
+                <li><strong>Privacy Policy:</strong> <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">https://policies.google.com/privacy</a></li>
+                <li><strong>Data Processing:</strong> Google processes data in accordance with their privacy policy and is certified under privacy frameworks</li>
+            </ul>
+
+            <p><strong>Jellyfin Server (User-Operated)</strong></p>
+            <ul>
+                <li><strong>Purpose:</strong> Media streaming and playback</li>
+                <li><strong>Data Shared:</strong> Authentication tokens, playback requests, media metadata requests</li>
+                <li><strong>Important:</strong> Your Jellyfin server is operated by you or a third party you trust. We do not operate, control, or have access to any Jellyfin servers. All communication with your server is direct between your device and the server. Please review your server administrator's privacy policy.</li>
+            </ul>
+
+            <h3>4.2 Legal Requirements</h3>
+            <p>We may disclose information if required to do so by law or in response to valid requests by public authorities (e.g., court orders, government agencies), including to meet national security or law enforcement requirements. However, given that we do not collect personally identifiable information, such disclosures would be limited to anonymous diagnostic data.</p>
+
+            <h3>4.3 Business Transfers</h3>
+            <p>In the event of a merger, acquisition, or sale of assets, anonymous usage data may be transferred to the acquiring entity. You will be notified via this Privacy Policy of any such change.</p>
+        </section>
+
+        <section id="data-security">
+            <h2>5. Data Security</h2>
+            <p>We take data security seriously and implement industry-standard measures to protect information:</p>
+
+            <h3>5.1 Local Data Protection</h3>
+            <ul>
+                <li><strong>Android Keystore Encryption:</strong> All server credentials and authentication tokens are encrypted using the Android Keystore system, providing hardware-backed encryption on supported devices</li>
+                <li><strong>Secure Storage:</strong> Sensitive data is stored in encrypted shared preferences</li>
+                <li><strong>Certificate Pinning:</strong> Dynamic Trust-on-First-Use (TOFU) model protects server communications from man-in-the-middle attacks</li>
+                <li><strong>HTTPS Only:</strong> All network communications use encrypted HTTPS connections</li>
+            </ul>
+
+            <h3>5.2 Anonymous Data Protection</h3>
+            <ul>
+                <li>Firebase data is transmitted over encrypted connections (TLS/SSL)</li>
+                <li>Data is stored securely on Google's infrastructure with industry-standard security measures</li>
+                <li>Access to Firebase data is restricted to authorized developers only</li>
+            </ul>
+
+            <h3>5.3 Your Responsibilities</h3>
+            <ul>
+                <li>Keep your device secure with lock screen protection</li>
+                <li>Only connect to Jellyfin servers you trust</li>
+                <li>Do not share your Jellyfin server credentials with untrusted parties</li>
+                <li>Keep the App updated to receive security patches</li>
+            </ul>
+
+            <div class="important">
+                <strong>Note:</strong> While we implement strong security measures, no method of electronic storage or transmission is 100% secure. We cannot guarantee absolute security.
+            </div>
+        </section>
+
+        <section id="data-retention">
+            <h2>6. Data Retention</h2>
+
+            <h3>6.1 Anonymous Diagnostic Data</h3>
+            <ul>
+                <li><strong>Crash Reports:</strong> Retained for up to 90 days by Firebase Crashlytics</li>
+                <li><strong>Performance Metrics:</strong> Retained for up to 90 days by Firebase Performance Monitoring</li>
+                <li><strong>Analytics Data:</strong> Retained for up to 14 months by Firebase Analytics (configurable)</li>
+                <li>Data is automatically deleted after retention periods expire</li>
+            </ul>
+
+            <h3>6.2 Locally Stored Data</h3>
+            <p>Data stored on your device (server credentials, preferences, downloads) is retained until:</p>
+            <ul>
+                <li>You manually clear app data in Android settings</li>
+                <li>You uninstall the App</li>
+                <li>You use the App's logout or clear data features</li>
+            </ul>
+            <p>You have full control over when to delete this data.</p>
+        </section>
+
+        <section id="your-rights">
+            <h2>7. Your Privacy Rights and Choices</h2>
+
+            <h3>7.1 Control Over Local Data</h3>
+            <ul>
+                <li><strong>Access:</strong> You can view your stored server connections and preferences within the App's settings</li>
+                <li><strong>Delete:</strong> You can remove server connections, clear preferences, or delete all app data through Android settings</li>
+                <li><strong>Export:</strong> You can manually record your server connection details before uninstalling</li>
+            </ul>
+
+            <h3>7.2 Control Over Anonymous Analytics</h3>
+            <p>While we do not offer an in-app opt-out (as data is already anonymous), you can:</p>
+            <ul>
+                <li><strong>Disable Crashlytics:</strong> Firebase Crashlytics respects the Android opt-out settings</li>
+                <li><strong>Use Privacy-Focused Alternatives:</strong> Consider using open-source builds without Firebase integration</li>
+                <li><strong>Contact Us:</strong> Request information about your anonymous data (though we cannot identify individual users)</li>
+            </ul>
+
+            <h3>7.3 Regional Privacy Rights</h3>
+
+            <p><strong>For Users in the European Economic Area (EEA), UK, and Switzerland (GDPR):</strong></p>
+            <ul>
+                <li>Right to access: Request information about anonymous data we collect</li>
+                <li>Right to erasure: Request deletion of anonymous data (where technically feasible)</li>
+                <li>Right to object: Object to data processing (can uninstall app or use builds without Firebase)</li>
+                <li>Right to data portability: Limited applicability due to anonymous nature of data</li>
+                <li>Right to withdraw consent: Uninstall the App to cease data collection</li>
+            </ul>
+
+            <p><strong>For California Residents (CCPA):</strong></p>
+            <ul>
+                <li>Right to know what personal information is collected (see Section 2)</li>
+                <li>Right to delete personal information (we do not collect personal information)</li>
+                <li>Right to opt-out of sale of personal information (we do not sell data)</li>
+                <li>Right to non-discrimination (we do not discriminate based on privacy rights)</li>
+            </ul>
+
+            <p><strong>For Other Regions:</strong></p>
+            <ul>
+                <li>We respect all applicable data protection laws and regulations</li>
+                <li>Contact us to exercise any rights available under your local laws</li>
+            </ul>
+
+            <p>To exercise any of these rights, please contact us at the email address listed in Section 12.</p>
+        </section>
+
+        <section id="childrens-privacy">
+            <h2>8. Children's Privacy</h2>
+            <p>The App is not directed to children under the age of 13 (or the applicable age of digital consent in your jurisdiction).</p>
+
+            <p>We do <strong>not</strong> knowingly collect personal information from children under 13. The anonymous diagnostic data we collect through Firebase does not include age information and cannot be used to identify children.</p>
+
+            <p>If you are a parent or guardian and believe your child has provided us with personal information, please contact us immediately at <a href="mailto:rpeters1430@gmail.com">rpeters1430@gmail.com</a>, and we will take steps to investigate and address the issue.</p>
+        </section>
+
+        <section id="international-transfers">
+            <h2>9. International Data Transfers</h2>
+            <p>The anonymous data collected through Firebase may be transferred to and processed in countries other than your country of residence, including the United States, where Google operates data centers.</p>
+
+            <p>These countries may have data protection laws different from those in your jurisdiction. By using the App, you consent to the transfer of anonymous information to these countries. Google Firebase complies with applicable data protection frameworks, including:</p>
+            <ul>
+                <li>EU-U.S. Data Privacy Framework</li>
+                <li>Standard Contractual Clauses (SCCs) for GDPR compliance</li>
+                <li>Security measures equivalent to those required in your jurisdiction</li>
+            </ul>
+
+            <p>Your Jellyfin server communication is direct and does not pass through our systems. The location of data processing depends on where your Jellyfin server is hosted.</p>
+        </section>
+
+        <section id="third-party-links">
+            <h2>10. Third-Party Links and Services</h2>
+            <p>The App may contain links to third-party websites, services, or content (e.g., links within your Jellyfin media library, external movie databases).</p>
+
+            <div class="important">
+                <strong>Important:</strong> We are not responsible for the privacy practices of third-party services. This Privacy Policy applies only to the App. We encourage you to review the privacy policies of any third-party services you access.
+            </div>
+
+            <p>Specifically:</p>
+            <ul>
+                <li><strong>Jellyfin Server:</strong> Operated independently; review your server administrator's privacy policy</li>
+                <li><strong>External Links:</strong> May be present in media descriptions; we do not control these destinations</li>
+                <li><strong>Third-Party SDKs:</strong> Firebase is the only third-party SDK; see Section 4.1</li>
+            </ul>
+        </section>
+
+        <section id="policy-changes">
+            <h2>11. Changes to This Privacy Policy</h2>
+            <p>We may update this Privacy Policy from time to time to reflect changes in our practices, legal requirements, or app functionality.</p>
+
+            <p><strong>We will notify you of material changes by:</strong></p>
+            <ul>
+                <li>Updating the "Last Updated" date at the top of this policy</li>
+                <li>Posting the new Privacy Policy at this URL</li>
+                <li>Displaying an in-app notice upon first launch after an update (for significant changes)</li>
+            </ul>
+
+            <p><strong>Your continued use of the App after changes become effective constitutes acceptance of the updated Privacy Policy.</strong> We encourage you to review this policy periodically.</p>
+
+            <p><strong>Policy Version History:</strong></p>
+            <ul>
+                <li>v1.1 - February 14, 2026: Updated for rebranding and updated repository URLs</li>
+                <li>v1.0 - January 27, 2026: Initial privacy policy for Google Play submission</li>
+            </ul>
+        </section>
+
+        <section id="contact">
+            <div class="contact-section">
+                <h2>12. Contact Us</h2>
+                <p>If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:</p>
+
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <span class="contact-label">Email:</span>
+                        <a href="mailto:rpeters1430@gmail.com">rpeters1430@gmail.com</a>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-label">GitHub:</span>
+                        <a href="https://github.com/rpeters1430/Cinefin" target="_blank" rel="noopener">rpeters1430/Cinefin</a>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-label">Privacy Policy URL:</span>
+                        <a href="https://rpeters1430.github.io/Cinefin/privacy-policy.html" target="_blank" rel="noopener">rpeters1430.github.io/Cinefin/privacy-policy.html</a>
+                    </div>
+                </div>
+
+                <p style="margin-top: 15px;">We will respond to privacy inquiries within 30 days.</p>
+            </div>
+        </section>
+
+        <section id="governing-law">
+            <h2>13. Governing Law</h2>
+            <p>This Privacy Policy is governed by and construed in accordance with the laws of the United States, without regard to conflict of law principles.</p>
+
+            <p>For users in the European Economic Area, UK, or Switzerland, GDPR and local data protection laws also apply.</p>
+        </section>
+
+        <hr>
+
+        <div class="highlight-box">
+            <p><strong>Acknowledgment:</strong> By installing, accessing, or using Cinefin, you acknowledge that you have read, understood, and agree to be bound by this Privacy Policy.</p>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 Cinefin. This is an unofficial third-party client and is not affiliated with the official Jellyfin project.</p>
+            <p>Last updated: February 14, 2026</p>
+        </footer>
+    </div>
+</body>
+</html>
