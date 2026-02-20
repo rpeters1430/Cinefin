@@ -213,12 +213,17 @@ private fun ExpressiveTopControls(
                         )
 
                         // Transcoding Information Display
-                        if (playerState.isTranscoding || playerState.isDirectPlaying) {
+                        if (playerState.isTranscoding || playerState.isDirectPlaying || playerState.isDirectStreaming) {
                             val (icon, color, text) = when {
                                 playerState.isDirectPlaying -> Triple(
                                     Icons.Default.PlayArrow,
                                     Color.Green,
                                     "Direct Play",
+                                )
+                                playerState.isDirectStreaming -> Triple(
+                                    Icons.Default.PlayArrow,
+                                    Color(0xFF00BCD4), // Cyan — video copied, audio transcoded
+                                    "Direct Stream",
                                 )
                                 playerState.isTranscoding -> Triple(
                                     Icons.Default.Settings,

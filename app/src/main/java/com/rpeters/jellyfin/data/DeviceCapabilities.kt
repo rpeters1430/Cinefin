@@ -99,6 +99,8 @@ class DeviceCapabilities @Inject constructor(
     /**
      * Check if audio codec is supported with the given channel count.
      * Many devices report EAC3/AC3/DTS support for stereo but fail on surround (5.1/7.1).
+     * Uses stereo fallback: if the device has a stereo decoder, we consider the codec
+     * "supported" because ExoPlayer can downmix in a transcoding/direct-stream context.
      */
     fun canPlayAudioCodec(codec: String?, channels: Int): Boolean {
         if (codec.isNullOrBlank()) return true // Video-only content
@@ -106,7 +108,21 @@ class DeviceCapabilities @Inject constructor(
         val normalizedCodec = normalizeAudioCodec(codec.lowercase())
         if (!SUPPORTED_AUDIO_CODECS.contains(normalizedCodec)) return false
 
-        return isAudioCodecSupported(normalizedCodec, channels)
+        return isAudioCodecSupported(normalizedCodec, channels, strict = false)
+    }
+
+    /**
+     * Strict audio codec check — no stereo downmix fallback.
+     * Use this when determining if a file can be truly direct-played without any
+     * audio conversion. If this returns false, Direct Stream (audio transcode) is needed.
+     */
+    fun canPlayAudioCodecStrict(codec: String?, channels: Int): Boolean {
+        if (codec.isNullOrBlank()) return true // Video-only content
+
+        val normalizedCodec = normalizeAudioCodec(codec.lowercase())
+        if (!SUPPORTED_AUDIO_CODECS.contains(normalizedCodec)) return false
+
+        return isAudioCodecSupported(normalizedCodec, channels, strict = true)
     }
 
     /**
@@ -381,16 +397,13 @@ class DeviceCapabilities @Inject constructor(
 
     /**
      * Check if an audio codec is supported with the given channel count.
-     * This is more accurate than [isCodecSupported] for audio because many devices
-     * report support for surround codecs (EAC3, AC3, DTS) at stereo but fail at 5.1/7.1.
      *
-     * For surround sound codecs (>2 channels), if the device doesn't explicitly support
-     * the requested channel count, we fall back to checking stereo (2-channel) support.
-     * ExoPlayer can decode multi-channel audio and downmix to stereo automatically,
-     * so this prevents unnecessary transcoding on devices that support the codec
-     * but don't report multi-channel output capability.
+     * @param strict When true, skip the stereo downmix fallback. Use strict=true for
+     *               direct play decisions where ExoPlayer won't perform downmixing.
+     *               Use strict=false (default) for direct stream / transcoding decisions
+     *               where ExoPlayer CAN downmix multi-channel to stereo in software.
      */
-    private fun isAudioCodecSupported(codec: String, channels: Int): Boolean {
+    private fun isAudioCodecSupported(codec: String, channels: Int, strict: Boolean = false): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             try {
                 val mimeType = codecToMimeType(codec, false) ?: return false
@@ -405,9 +418,10 @@ class DeviceCapabilities @Inject constructor(
                     return true
                 }
 
-                // For surround sound codecs (>2 channels), fall back to checking stereo support
-                // ExoPlayer can decode multi-channel and downmix to stereo automatically
-                if (channels > 2 && isSurroundSoundCodec(codec)) {
+                // For surround sound codecs (>2 channels), optionally fall back to stereo.
+                // Stereo fallback is only appropriate when ExoPlayer will downmix in software
+                // (i.e., during Direct Stream / transcoding). NOT for Direct Play decisions.
+                if (!strict && channels > 2 && isSurroundSoundCodec(codec)) {
                     val stereoFormat = android.media.MediaFormat.createAudioFormat(mimeType, 48_000, 2)
                     val stereoDecoderName = codecList.findDecoderForFormat(stereoFormat)
 
@@ -418,7 +432,7 @@ class DeviceCapabilities @Inject constructor(
                         SecureLogger.d(TAG, "No decoder found for $codec (tried $channels ch and stereo fallback)")
                     }
                 } else {
-                    SecureLogger.d(TAG, "No decoder found for $codec with $channels channels")
+                    SecureLogger.d(TAG, "No decoder found for $codec with $channels channels (strict=$strict)")
                 }
 
                 false

@@ -113,8 +113,10 @@ class EnhancedPlaybackManager @Inject constructor(
     }
 
     /**
-     * Force transcoding for an item, bypassing direct play checks.
-     * Used as a fallback when Direct Play fails at runtime.
+     * Fallback URL when Direct Play fails at runtime.
+     * First attempts Direct Stream (video copy + audio transcode) — far more efficient than
+     * full transcoding when only the audio codec is incompatible. Falls back to full
+     * transcoding only if the video codec itself cannot be copied.
      */
     suspend fun getTranscodingPlaybackUrl(
         item: BaseItemDto,
@@ -124,13 +126,31 @@ class EnhancedPlaybackManager @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val itemId = item.id.toString()
-                SecureLogger.d(TAG, "Forcing transcoding for: ${item.name} (fallback from Direct Play failure)")
+                SecureLogger.d(TAG, "Getting fallback URL for: ${item.name} (Direct Play failed)")
 
                 val playbackInfo = getPlaybackInfo(itemId, audioStreamIndex, subtitleStreamIndex)
                 if (playbackInfo == null) {
-                    return@withContext PlaybackResult.Error("Failed to get playback info for transcoding fallback")
+                    return@withContext PlaybackResult.Error("Failed to get playback info for fallback")
                 }
 
+                val anySource = playbackInfo.mediaSources.firstOrNull()
+                    ?: return@withContext PlaybackResult.Error("No media sources available for fallback")
+
+                // Try Direct Stream first — copies video, only transcodes audio.
+                // This avoids unnecessary video re-encoding when only the audio was the problem.
+                if (canDirectStreamMediaSource(anySource, item, null)) {
+                    SecureLogger.d(TAG, "Direct Play fallback → trying Direct Stream (video copy, audio transcode)")
+                    val directStreamResult = getDirectStreamWithAudioTranscode(
+                        item, anySource, playbackInfo, audioStreamIndex, subtitleStreamIndex,
+                    )
+                    if (directStreamResult !is PlaybackResult.Error) {
+                        return@withContext directStreamResult
+                    }
+                    SecureLogger.w(TAG, "Direct Stream also failed, falling back to full transcoding")
+                }
+
+                // Full transcoding fallback
+                SecureLogger.d(TAG, "Using full transcoding fallback for: ${item.name}")
                 getOptimalTranscodingUrl(item, playbackInfo, audioStreamIndex, subtitleStreamIndex)
             } catch (e: CancellationException) {
                 throw e
@@ -163,25 +183,39 @@ class EnhancedPlaybackManager @Inject constructor(
         val reasons = mutableListOf<String>()
         val anySource = mediaSources.firstOrNull() ?: return PlaybackResult.Error("Empty source list")
 
-        // WORKAROUND: Force Direct Play if server incorrectly rejects (e.g. 10-bit HEVC)
-        if (!anySource.supportsDirectPlay && canDirectPlayMediaSource(anySource, item, reasons, bypassServerDecision = true)) {
-            val container = anySource.container ?: "mkv"
-            val url = buildDirectPlayUrl(serverUrl, itemId, anySource.id, container, playSessionId)
-            
-            reasons.add(ReasonCodes.SERVER_INCORRECT_10BIT_REJECTION)
-            val trace = createTrace(sessionId, "DIRECT_PLAY", "FORCE_BYPASS_SERVER", reasons, anySource, deviceCaps, networkClass)
-            
-            return PlaybackResult.DirectPlay(
-                url = url ?: "",
-                container = container,
-                videoCodec = getVideoCodec(anySource),
-                audioCodec = getAudioCodec(anySource),
-                bitrate = anySource.bitrate ?: 0,
-                reason = "Forcing direct play: server rejection bypassed",
-                reasonCodes = reasons,
-                playSessionId = playSessionId,
-                decisionTrace = trace
-            )
+        // WORKAROUND: Force Direct Play if server incorrectly rejects (e.g. 10-bit HEVC).
+        // IMPORTANT: Only bypass when audio passes a strict check (no stereo-downmix fallback).
+        // If the server rejected because the audio codec needs transcoding (e.g. EAC3 5.1, DTS),
+        // we must NOT force direct play — instead let it fall through to Direct Stream below.
+        if (!anySource.supportsDirectPlay) {
+            val audioStream = anySource.mediaStreams.findDefaultAudioStream()
+            val audioCodec = audioStream?.codec
+            val audioChannels = audioStream?.channels ?: 2
+            val audioCanBeDirectPlayed = if (audioCodec != null) {
+                deviceCapabilities.canPlayAudioCodecStrict(audioCodec, audioChannels)
+            } else true
+
+            if (audioCanBeDirectPlayed && canDirectPlayMediaSource(anySource, item, reasons, bypassServerDecision = true)) {
+                // Audio is fine — server likely incorrectly rejected (e.g. 10-bit HEVC profile)
+                val container = anySource.container ?: "mkv"
+                val url = buildDirectPlayUrl(serverUrl, itemId, anySource.id, container, playSessionId)
+
+                reasons.add(ReasonCodes.SERVER_INCORRECT_10BIT_REJECTION)
+                val trace = createTrace(sessionId, "DIRECT_PLAY", "FORCE_BYPASS_SERVER", reasons, anySource, deviceCaps, networkClass)
+
+                return PlaybackResult.DirectPlay(
+                    url = url ?: "",
+                    container = container,
+                    videoCodec = getVideoCodec(anySource),
+                    audioCodec = getAudioCodec(anySource),
+                    bitrate = anySource.bitrate ?: 0,
+                    reason = "Forcing direct play: server rejection bypassed",
+                    reasonCodes = reasons,
+                    playSessionId = playSessionId,
+                    decisionTrace = trace
+                )
+            }
+            // If audio failed strict check, fall through — Direct Stream will handle it below.
         }
 
         // Try standard Direct Play
@@ -320,13 +354,15 @@ class EnhancedPlaybackManager @Inject constructor(
             }
         }
 
-        // Check audio codec support with actual channel count
+        // Check audio codec support with actual channel count.
+        // Use strict check (no stereo fallback): Direct Play requires the device to fully
+        // decode the audio at the source channel count without downmixing.
         val audioStream = mediaSource.mediaStreams.findDefaultAudioStream()
         if (audioStream != null) {
             val audioCodec = audioStream.codec
             val audioChannels = audioStream.channels ?: 2
-            if (!deviceCapabilities.canPlayAudioCodec(audioCodec, audioChannels)) {
-                SecureLogger.d(TAG, "❌ Audio codec '$audioCodec' ($audioChannels ch) not supported for Direct Play")
+            if (!deviceCapabilities.canPlayAudioCodecStrict(audioCodec, audioChannels)) {
+                SecureLogger.d(TAG, "❌ Audio codec '$audioCodec' ($audioChannels ch) not supported for Direct Play (strict check)")
                 reasons?.add(ReasonCodes.AUDIO_CODEC_UNSUPPORTED)
                 return false
             }
@@ -472,11 +508,12 @@ class EnhancedPlaybackManager @Inject constructor(
             url = directStreamUrl,
             targetBitrate = mediaSource.bitrate ?: 20_000_000,
             targetResolution = "${sourceVideoStream?.width ?: 1920}x${sourceVideoStream?.height ?: 1080}",
-            targetVideoCodec = sourceVideoStream?.codec ?: "h264", // Original codec
+            targetVideoCodec = sourceVideoStream?.codec ?: "h264", // Original codec (video is copied)
             targetAudioCodec = "aac",
             targetContainer = "ts",
             reason = "Direct Stream: Original video (${sourceVideoStream?.codec}), audio transcoded (${sourceAudioStream?.codec} → aac)",
             playSessionId = playSessionId,
+            isDirectStream = true,
         )
     }
 
@@ -740,6 +777,8 @@ sealed class PlaybackResult {
         val reasonCodes: List<String> = emptyList(),
         val playSessionId: String? = null,
         val decisionTrace: PlaybackDecisionTrace? = null,
+        /** True when the video stream is copied without re-encoding (only audio is transcoded). */
+        val isDirectStream: Boolean = false,
     ) : PlaybackResult()
 
     data class Error(val message: String) : PlaybackResult()

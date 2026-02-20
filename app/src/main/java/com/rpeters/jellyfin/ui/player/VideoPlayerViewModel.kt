@@ -714,15 +714,16 @@ class VideoPlayerViewModel @Inject constructor(
                         )
                     }
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> {
-                        val transcodingMsg = "Transcoding: ${playbackResult.targetResolution} ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} @ ${playbackResult.targetBitrate / 1_000_000}Mbps - ${playbackResult.reason}"
+                        val methodLabel = if (playbackResult.isDirectStream) "Direct Stream" else "Transcoding"
+                        val transcodingMsg = "$methodLabel: ${playbackResult.targetResolution} ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec} @ ${playbackResult.targetBitrate / 1_000_000}Mbps - ${playbackResult.reason}"
                         SecureLogger.d("VideoPlayer", transcodingMsg)
                         Log.d("VideoPlayer", transcodingMsg) // Direct log bypass SecureLogger
                         streamUrl = playbackResult.url
                         sessionId = playbackResult.playSessionId ?: java.util.UUID.randomUUID().toString()
 
                         analytics.logPlaybackEvent(
-                            method = "Transcoding",
-                            container = "HLS/DASH",
+                            method = methodLabel,
+                            container = if (playbackResult.isDirectStream) "TS (direct stream)" else "HLS/DASH",
                             resolution = playbackResult.targetResolution,
                         )
 
@@ -739,18 +740,18 @@ class VideoPlayerViewModel @Inject constructor(
                             }
                             else -> {
                                 // Let ExoPlayer auto-detect for progressive formats
-                                SecureLogger.d("VideoPlayer", "Using auto-detection for transcoded stream")
+                                SecureLogger.d("VideoPlayer", "Using auto-detection for transcoded/direct-stream content")
                                 null
                             }
                         }
 
-                        // Update state with transcoding info
+                        // Update state — distinguish Direct Stream (video copy) from full transcoding
                         _playerState.value = _playerState.value.copy(
                             isDirectPlaying = false,
-                            isDirectStreaming = false,
-                            isTranscoding = true,
-                            transcodingReason = playbackResult.reason,
-                            playbackMethod = "Transcoding",
+                            isDirectStreaming = playbackResult.isDirectStream,
+                            isTranscoding = !playbackResult.isDirectStream,
+                            transcodingReason = if (playbackResult.isDirectStream) null else playbackResult.reason,
+                            playbackMethod = methodLabel,
                         )
                     }
                     is com.rpeters.jellyfin.data.playback.PlaybackResult.Error -> {
@@ -974,7 +975,8 @@ class VideoPlayerViewModel @Inject constructor(
 
             when (playbackResult) {
                 is com.rpeters.jellyfin.data.playback.PlaybackResult.Transcoding -> {
-                    SecureLogger.d("VideoPlayer", "Transcoding fallback: ${playbackResult.targetResolution} ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec}")
+                    val methodLabel = if (playbackResult.isDirectStream) "Direct Stream" else "Transcoding"
+                    SecureLogger.d("VideoPlayer", "$methodLabel fallback: ${playbackResult.targetResolution} ${playbackResult.targetVideoCodec}/${playbackResult.targetAudioCodec}")
                     streamUrl = playbackResult.url
                     sessionId = playbackResult.playSessionId ?: java.util.UUID.randomUUID().toString()
 
@@ -987,10 +989,10 @@ class VideoPlayerViewModel @Inject constructor(
 
                     _playerState.value = _playerState.value.copy(
                         isDirectPlaying = false,
-                        isDirectStreaming = false,
-                        isTranscoding = true,
-                        transcodingReason = "Fallback: Direct Play audio codec not supported",
-                        playbackMethod = "Transcoding",
+                        isDirectStreaming = playbackResult.isDirectStream,
+                        isTranscoding = !playbackResult.isDirectStream,
+                        transcodingReason = if (playbackResult.isDirectStream) null else "Fallback: Direct Play audio codec not supported",
+                        playbackMethod = methodLabel,
                     )
                 }
                 is com.rpeters.jellyfin.data.playback.PlaybackResult.DirectPlay -> {
