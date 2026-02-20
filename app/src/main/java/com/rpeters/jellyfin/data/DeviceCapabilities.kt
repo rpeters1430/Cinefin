@@ -22,6 +22,7 @@ class DeviceCapabilities @Inject constructor(
         val SUPPORTED_CONTAINERS = setOf(
             "mp4", "m4v", "3gp", "3gpp", "3g2", "3gpp2",
             "webm", "mkv", "avi", "mov", "flv", "asf", "wmv",
+            "ts", "mpegts", "m2ts",
         )
 
         // Supported video codecs
@@ -122,7 +123,72 @@ class DeviceCapabilities @Inject constructor(
             maxBitrate = getMaxSupportedBitrate(),
             networkCapabilities = getNetworkCapabilities(),
             hardwareAcceleration = getHardwareAccelerationInfo(),
+            deviceTier = getDevicePerformanceProfile(),
+            maxVideoBitDepth = getMaxVideoBitDepth(),
+            hevc10BitSupported = isHevc10BitSupported(),
+            hdrTypes = getSupportedHdrTypes(),
+            maxAudioChannelsByCodec = getMaxAudioChannelsByCodec(),
         )
+    }
+
+    private fun getMaxVideoBitDepth(): Int {
+        return if (isHevc10BitSupported()) 10 else 8
+    }
+
+    private fun isHevc10BitSupported(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return false
+
+        return try {
+            val mimeType = "video/hevc"
+            val codecList = MediaCodecList(MediaCodecList.REGULAR_CODECS)
+            
+            // Check all decoders for HEVC 10-bit profiles
+            for (codecInfo in codecList.codecInfos) {
+                if (codecInfo.isEncoder) continue
+                
+                try {
+                    val capabilities = codecInfo.getCapabilitiesForType(mimeType)
+                    val supportsMain10 = capabilities.profileLevels.any { 
+                        it.profile == android.media.MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10 ||
+                        it.profile == android.media.MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10 ||
+                        it.profile == android.media.MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10Plus
+                    }
+                    if (supportsMain10) return true
+                } catch (e: Exception) {
+                    // Ignore codecs that don't support the mime type
+                }
+            }
+            false
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun getSupportedHdrTypes(): List<Int> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return emptyList()
+
+        val displayManager = context.getSystemService(DisplayManager::class.java)
+        val display = displayManager?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
+
+        @Suppress("DEPRECATION")
+        return display?.hdrCapabilities?.supportedHdrTypes?.toList() ?: emptyList()
+    }
+
+    private fun getMaxAudioChannelsByCodec(): Map<String, Int> {
+        val result = mutableMapOf<String, Int>()
+        for (codec in SUPPORTED_AUDIO_CODECS) {
+            // Check common channel counts: 8 (7.1), 6 (5.1), 2 (stereo)
+            val channels = when {
+                canPlayAudioCodec(codec, 8) -> 8
+                canPlayAudioCodec(codec, 6) -> 6
+                canPlayAudioCodec(codec, 2) -> 2
+                else -> 0
+            }
+            if (channels > 0) {
+                result[codec] = channels
+            }
+        }
+        return result
     }
 
     /**
@@ -777,6 +843,11 @@ data class DirectPlayCapabilities(
     val maxBitrate: Int,
     val networkCapabilities: NetworkCapabilityInfo,
     val hardwareAcceleration: HardwareAccelerationInfo,
+    val deviceTier: DevicePerformanceProfile = DevicePerformanceProfile.LOW_END,
+    val maxVideoBitDepth: Int = 8,
+    val hevc10BitSupported: Boolean = false,
+    val hdrTypes: List<Int> = emptyList(),
+    val maxAudioChannelsByCodec: Map<String, Int> = emptyMap(),
 )
 
 /**
