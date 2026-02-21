@@ -476,8 +476,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     },
                     onFavoriteClick = { mainViewModel.toggleFavorite(it) },
                     onMarkWatchedClick = { mainViewModel.toggleWatchedStatus(it) },
-                    onRefresh = { 
-                        episode?.let { ep -> viewModel.loadEpisodeDetails(ep, series) }
+                    onRefresh = {
+                        episode.let { ep -> viewModel.loadEpisodeDetails(ep, series) }
                     },
                     onDeleteClick = { episodeItem ->
                         mainViewModel.deleteItem(episodeItem) { success, error ->

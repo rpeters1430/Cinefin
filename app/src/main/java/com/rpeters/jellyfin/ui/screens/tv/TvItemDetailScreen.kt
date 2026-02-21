@@ -159,7 +159,7 @@ fun TvItemDetailScreen(
                 val cardWidth = if (isVideo) 390.dp else 260.dp
                 val cardHeight = if (isVideo) 220.dp else 390.dp
                 val cardImageUrl = if (isVideo) {
-                    item?.let { viewModel.getBackdropUrl(it) ?: viewModel.getImageUrl(it) }
+                    item.let { viewModel.getBackdropUrl(it) ?: viewModel.getImageUrl(it) }
                 } else {
                     item?.let { viewModel.getImageUrl(it) }
                 }

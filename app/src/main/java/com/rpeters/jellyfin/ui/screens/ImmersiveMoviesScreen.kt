@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -200,7 +201,7 @@ fun ImmersiveMoviesScreen(
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Sort,
+                        imageVector = Icons.AutoMirrored.Filled.Sort,
                         contentDescription = stringResource(id = R.string.sort),
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(12.dp).size(24.dp),
