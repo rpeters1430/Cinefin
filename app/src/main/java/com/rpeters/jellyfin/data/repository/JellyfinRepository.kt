@@ -800,6 +800,13 @@ class JellyfinRepository @Inject constructor(
         return getItemDetailsById(episodeId, "episode")
     }
 
+    /**
+     * Fetches a single item by ID without requiring knowledge of its type.
+     */
+    suspend fun getItemDetails(itemId: String): ApiResult<BaseItemDto> {
+        return getItemDetailsById(itemId, "item")
+    }
+
     // ===== SEARCH METHODS - Simplified implementation =====
 
     suspend fun searchItems(

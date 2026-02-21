@@ -94,6 +94,7 @@ data class MainAppState(
     val libraryPaginationState: Map<String, LibraryPaginationState> = emptyMap(),
 
     val errorMessage: String? = null,
+    val selectedItem: BaseItemDto? = null,
 )
 
 /**
@@ -402,6 +403,24 @@ class MainAppViewModel @Inject constructor(
                     aiHealthCheckPassed = result.isHealthy,
                     aiHealthStatusMessage = result.message,
                 )
+            }
+        }
+    }
+
+    /**
+     * Fetches a single item by ID and stores it in [MainAppState.selectedItem].
+     * Called when navigating to a detail screen for an item not already in local state.
+     */
+    fun loadItemById(itemId: String) {
+        viewModelScope.launch {
+            when (val result = repository.getItemDetails(itemId)) {
+                is ApiResult.Success -> {
+                    _appState.value = _appState.value.copy(selectedItem = result.data)
+                }
+                is ApiResult.Error -> {
+                    // Leave selectedItem null; screen will show error/empty state
+                }
+                is ApiResult.Loading -> { /* no-op */ }
             }
         }
     }
