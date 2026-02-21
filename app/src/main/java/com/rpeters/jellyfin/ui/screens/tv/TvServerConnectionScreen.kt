@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -60,6 +63,7 @@ fun TvServerConnectionScreen(
     var username by remember { mutableStateOf(savedUsername ?: "") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
+    var passwordFocused by remember { mutableStateOf(false) }
 
     val serverUrlFocusRequester = remember { FocusRequester() }
     val usernameFocusRequester = remember { FocusRequester() }
@@ -95,7 +99,7 @@ fun TvServerConnectionScreen(
                     .wrapContentHeight()
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 TvText(
                     text = "Cinefin",
@@ -123,9 +127,10 @@ fun TvServerConnectionScreen(
                     keyboardActions = KeyboardActions(
                         onNext = { usernameFocusRequester.requestFocus() },
                     ),
+                    colors = tvLoginTextFieldColors(),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
+                        .height(72.dp)
                         .focusRequester(serverUrlFocusRequester),
                     enabled = !isConnecting,
                 )
@@ -142,9 +147,10 @@ fun TvServerConnectionScreen(
                     keyboardActions = KeyboardActions(
                         onNext = { passwordFocusRequester.requestFocus() },
                     ),
+                    colors = tvLoginTextFieldColors(),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
+                        .height(72.dp)
                         .focusRequester(usernameFocusRequester),
                     enabled = !isConnecting,
                 )
@@ -159,6 +165,7 @@ fun TvServerConnectionScreen(
                             Icon(
                                 imageVector = if (showPassword) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                                 contentDescription = if (showPassword) "Hide password" else "Show password",
+                                tint = if (passwordFocused) TvMaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.7f),
                             )
                         }
                     },
@@ -170,10 +177,12 @@ fun TvServerConnectionScreen(
                     keyboardActions = KeyboardActions(
                         onDone = { connectButtonFocusRequester.requestFocus() },
                     ),
+                    colors = tvLoginTextFieldColors(),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
-                        .focusRequester(passwordFocusRequester),
+                        .height(72.dp)
+                        .focusRequester(passwordFocusRequester)
+                        .onFocusChanged { passwordFocused = it.isFocused },
                     enabled = !isConnecting,
                 )
 
@@ -216,7 +225,7 @@ fun TvServerConnectionScreen(
                             password.isNotBlank() && !isConnecting,
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
+                            .height(56.dp)
                             .focusRequester(connectButtonFocusRequester),
                     ) {
                         if (isConnecting) {
@@ -244,7 +253,7 @@ fun TvServerConnectionScreen(
                         enabled = !isConnecting,
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
+                            .height(56.dp)
                             .focusRequester(quickConnectButtonFocusRequester),
                     ) {
                         TvText("Quick Connect", style = TvMaterialTheme.typography.labelLarge)
@@ -262,3 +271,18 @@ fun TvServerConnectionScreen(
         }
     }
 }
+
+@Composable
+private fun tvLoginTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedTextColor = Color.White,
+    unfocusedTextColor = Color.White,
+    focusedLabelColor = TvMaterialTheme.colorScheme.primary,
+    unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+    focusedBorderColor = TvMaterialTheme.colorScheme.primary,
+    unfocusedBorderColor = Color.White.copy(alpha = 0.4f),
+    focusedContainerColor = Color.White.copy(alpha = 0.15f),
+    unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
+    cursorColor = TvMaterialTheme.colorScheme.primary,
+    focusedPlaceholderColor = Color.White.copy(alpha = 0.5f),
+    unfocusedPlaceholderColor = Color.White.copy(alpha = 0.3f),
+)
