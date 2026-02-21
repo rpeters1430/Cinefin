@@ -32,8 +32,8 @@ import com.rpeters.jellyfin.ui.components.tv.TvFullScreenLoading
 import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
 import com.rpeters.jellyfin.ui.tv.TvFocusableGrid
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
-import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.screens.LibraryType
+import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import org.jellyfin.sdk.model.api.CollectionType
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
@@ -54,15 +54,18 @@ fun TvLibraryScreen(
     val appState by viewModel.appState.collectAsState()
     val library = appState.libraries.firstOrNull { it.id.toString() == libraryId }
         ?: when (libraryId) {
-            "movies"  -> appState.libraries.firstOrNull {
+            "movies"     -> appState.libraries.firstOrNull {
                 it.collectionType == CollectionType.MOVIES
             }
-            "tvshows" -> appState.libraries.firstOrNull {
+            "tvshows"    -> appState.libraries.firstOrNull {
                 it.collectionType == CollectionType.TVSHOWS
             }
-            "music"   -> appState.libraries.firstOrNull {
+            "music"      -> appState.libraries.firstOrNull {
                 it.collectionType == CollectionType.MUSIC
             }
+            "homevideos" -> appState.libraries.firstOrNull {
+                it.collectionType == CollectionType.HOMEVIDEOS
+            } ?: appState.libraries.firstOrNull { it.collectionType == null }
             else -> null
         }
     
@@ -105,7 +108,8 @@ fun TvLibraryScreen(
                 CollectionType.MOVIES -> viewModel.loadLibraryTypeData(lib, LibraryType.MOVIES)
                 CollectionType.TVSHOWS -> viewModel.loadLibraryTypeData(lib, LibraryType.TV_SHOWS)
                 CollectionType.MUSIC -> viewModel.loadLibraryTypeData(lib, LibraryType.MUSIC)
-                else -> viewModel.loadHomeVideos(lib.id.toString())
+                CollectionType.HOMEVIDEOS -> viewModel.loadLibraryTypeData(lib, LibraryType.STUFF)
+                else -> viewModel.loadLibraryTypeData(lib, LibraryType.STUFF)
             }
         }
     }
