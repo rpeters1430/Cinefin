@@ -18,6 +18,7 @@ import androidx.navigation.navArgument
 import com.rpeters.jellyfin.ui.player.tv.TvAudioPlayerScreen
 import com.rpeters.jellyfin.ui.player.tv.TvVideoPlayerRoute
 import com.rpeters.jellyfin.ui.screens.tv.TvHomeScreen
+import com.rpeters.jellyfin.ui.screens.tv.TvServerConnectionScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvItemDetailScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvLibraryScreen
 import com.rpeters.jellyfin.ui.screens.tv.TvQuickConnectScreen
