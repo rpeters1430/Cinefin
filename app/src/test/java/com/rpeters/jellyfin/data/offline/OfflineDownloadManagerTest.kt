@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import com.rpeters.jellyfin.data.common.TestDispatcherProvider
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import io.mockk.clearMocks
@@ -232,6 +233,38 @@ class OfflineDownloadManagerTest {
         assertEquals("Download should be COMPLETED", DownloadStatus.COMPLETED, download?.status)
         assertTrue("Progress should be tracked", manager.downloadProgress.value.containsKey(downloadId))
         assertEquals("Final progress should be 100%", 100f, manager.downloadProgress.value[downloadId]?.progressPercent)
+    }
+
+    @Test
+    fun `corrupt DataStore JSON results in empty downloads not a crash`() = runTest(testDispatcher) {
+        // Pre-seed a separate DataStore with invalid JSON
+        val corruptDataStore = PreferenceDataStoreFactory.create(
+            scope = kotlinx.coroutines.CoroutineScope(testDispatcher + kotlinx.coroutines.SupervisorJob()),
+            produceFile = { File(tempDir, "corrupt_test.preferences_pb") }
+        )
+        corruptDataStore.edit { prefs ->
+            prefs[androidx.datastore.preferences.core.stringPreferencesKey("offline_downloads")] =
+                "{{not valid json at all}}"
+        }
+        advanceUntilIdle()
+
+        val mockEncryptedPreferences = mockk<com.rpeters.jellyfin.data.security.EncryptedPreferences>(relaxed = true)
+        every { mockEncryptedPreferences.getEncryptedString(any()) } returns MutableStateFlow("http://test.com/decrypted")
+
+        val corruptManager = OfflineDownloadManager(
+            context = context,
+            repository = repository,
+            okHttpClient = okHttpClient,
+            encryptedPreferences = mockEncryptedPreferences,
+            dispatchers = testDispatchers,
+            dataStore = corruptDataStore,
+            deviceCapabilities = deviceCapabilities,
+        )
+        advanceUntilIdle()
+
+        val downloads = corruptManager.downloads.value
+        assertTrue("Downloads should be empty after corrupt data, not crash", downloads.isEmpty())
+        corruptManager.cleanup()
     }
 
     // Helper functions

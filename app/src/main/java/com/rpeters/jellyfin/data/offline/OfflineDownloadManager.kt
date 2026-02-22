@@ -618,7 +618,12 @@ class OfflineDownloadManager @Inject constructor(
             var initialized = false
             dataStore.data.collect { preferences ->
                 val downloadsJson = preferences[androidx.datastore.preferences.core.stringPreferencesKey(DOWNLOADS_KEY)] ?: "[]"
-                val downloads = json.decodeFromString<List<OfflineDownload>>(downloadsJson)
+                val downloads = try {
+                    json.decodeFromString<List<OfflineDownload>>(downloadsJson)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to deserialize downloads — resetting to empty list", e)
+                    emptyList()
+                }
                 _downloads.update { downloads }
                 if (!initialized) {
                     initialized = true
