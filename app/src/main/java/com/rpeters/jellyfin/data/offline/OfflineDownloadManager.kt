@@ -27,6 +27,7 @@ import com.rpeters.jellyfin.data.worker.OfflineDownloadWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
@@ -48,6 +49,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -61,6 +63,7 @@ class OfflineDownloadManager @Inject constructor(
     private val encryptedPreferences: com.rpeters.jellyfin.data.security.EncryptedPreferences,
     private val dispatchers: com.rpeters.jellyfin.data.common.DispatcherProvider,
     private val dataStore: androidx.datastore.core.DataStore<androidx.datastore.preferences.core.Preferences>,
+    private val deviceCapabilities: com.rpeters.jellyfin.data.DeviceCapabilities,
 ) {
 
     private val _downloads = MutableStateFlow<List<OfflineDownload>>(emptyList())
@@ -85,6 +88,7 @@ class OfflineDownloadManager @Inject constructor(
         private const val CHUNK_SIZE = 8192
         private const val ENCRYPTED_URL_PREFIX = "encrypted_url_"
         private const val OFFLINE_DOWNLOAD_WORK_TAG = "offline_download"
+        private const val TRANSCODING_POLL_INTERVAL_MS = 3000L
     }
 
     enum class DownloadExecutionResult {
@@ -349,42 +353,103 @@ class OfflineDownloadManager @Inject constructor(
         // Create parent directories if they don't exist
         outputFile.parentFile?.mkdirs()
 
-        body.byteStream().use { inputStream ->
-            FileOutputStream(outputFile, append).use { outputStream ->
+        // Start transcoding progress poller for non-original quality downloads
+        val transcodingRef = AtomicReference<com.rpeters.jellyfin.data.repository.TranscodingProgressInfo?>(null)
+        val pollerJob = downloadScope.launchTranscodingPoller(download, transcodingRef)
 
-                val buffer = ByteArray(CHUNK_SIZE)
-                var totalBytesRead = startByte
-                var bytesRead: Int
-                val startTime = System.currentTimeMillis()
+        try {
+            body.byteStream().use { inputStream ->
+                FileOutputStream(outputFile, append).use { outputStream ->
 
-                while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                    if (!currentCoroutineContext().isActive) break // Check for cancellation
+                    val buffer = ByteArray(CHUNK_SIZE)
+                    var totalBytesRead = startByte
+                    var bytesRead: Int
+                    val startTime = System.currentTimeMillis()
 
-                    outputStream.write(buffer, 0, bytesRead)
-                    totalBytesRead += bytesRead
+                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                        if (!currentCoroutineContext().isActive) break
 
-                    // Update progress
-                    val currentTime = System.currentTimeMillis()
-                    val elapsedTime = currentTime - startTime
-                    val speed = if (elapsedTime > 0) ((totalBytesRead - startByte) * 1000L) / elapsedTime else 0L
-                    val remainingBytes = totalBytesExpected - totalBytesRead
-                    val remainingTime = if (speed > 0) (remainingBytes * 1000L) / speed else null
+                        outputStream.write(buffer, 0, bytesRead)
+                        totalBytesRead += bytesRead
 
-                    val progress = DownloadProgress(
-                        downloadId = download.id,
-                        downloadedBytes = totalBytesRead,
-                        totalBytes = totalBytesExpected,
-                        progressPercent = if (totalBytesExpected > 0) (totalBytesRead.toFloat() / totalBytesExpected * 100f) else 0f,
-                        downloadSpeedBps = speed,
-                        remainingTimeMs = remainingTime,
-                        isTranscoding = totalBytesExpected <= 0L && download.quality != null && download.quality.id != "original",
-                    )
+                        // Update progress
+                        val currentTime = System.currentTimeMillis()
+                        val elapsedTime = currentTime - startTime
+                        val speed = if (elapsedTime > 0) ((totalBytesRead - startByte) * 1000L) / elapsedTime else 0L
+                        val remainingBytes = totalBytesExpected - totalBytesRead
+                        val remainingTime = if (speed > 0) (remainingBytes * 1000L) / speed else null
 
-                    updateDownloadProgress(progress)
-                    onProgress?.invoke(download, progress)
-                    updateDownloadBytes(download.id, totalBytesRead)
+                        // Read latest transcoding progress
+                        val transcodingInfo = transcodingRef.get()
+                        val isNonOriginal = download.quality != null && download.quality.id != "original"
+                        val transcodingActive = isNonOriginal &&
+                            (transcodingInfo == null || transcodingInfo.completionPercentage < 100.0)
+                        val isTranscoding = totalBytesExpected <= 0L && transcodingActive
+
+                        val progress = DownloadProgress(
+                            downloadId = download.id,
+                            downloadedBytes = totalBytesRead,
+                            totalBytes = totalBytesExpected,
+                            progressPercent = if (totalBytesExpected > 0) {
+                                (totalBytesRead.toFloat() / totalBytesExpected * 100f)
+                            } else {
+                                // Use transcoding progress as the displayed percentage when no content length
+                                transcodingInfo?.completionPercentage?.toFloat() ?: 0f
+                            },
+                            downloadSpeedBps = speed,
+                            remainingTimeMs = remainingTime,
+                            isTranscoding = isTranscoding,
+                            transcodingProgress = transcodingInfo?.completionPercentage?.toFloat(),
+                        )
+
+                        updateDownloadProgress(progress)
+                        onProgress?.invoke(download, progress)
+                        updateDownloadBytes(download.id, totalBytesRead)
+                    }
+                    return totalBytesRead
                 }
-                return totalBytesRead
+            }
+        } finally {
+            pollerJob?.cancel()
+        }
+    }
+
+    /**
+     * Poll server for transcoding progress in a background coroutine.
+     * Updates the provided AtomicReference with the latest progress.
+     * Stops when transcoding completes or coroutine is cancelled.
+     */
+    private fun CoroutineScope.launchTranscodingPoller(
+        download: OfflineDownload,
+        progressRef: AtomicReference<com.rpeters.jellyfin.data.repository.TranscodingProgressInfo?>,
+    ): Job? {
+        // Only poll for non-original quality downloads
+        val quality = download.quality ?: return null
+        if (quality.id == "original") return null
+
+        val deviceId = deviceCapabilities.getDeviceId()
+
+        return launch {
+            try {
+                while (isActive) {
+                    delay(TRANSCODING_POLL_INTERVAL_MS)
+                    val progress = repository.getTranscodingProgress(
+                        deviceId = deviceId,
+                        jellyfinItemId = download.jellyfinItemId,
+                    )
+                    progressRef.set(progress)
+
+                    // Stop polling once transcoding is complete
+                    if (progress != null && progress.completionPercentage >= 100.0) {
+                        break
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "Transcoding poller stopped: ${e.message}")
+                }
             }
         }
     }
@@ -413,8 +478,21 @@ class OfflineDownloadManager @Inject constructor(
             localFilePath = localPath,
             fileSize = 0L, // Will be updated during download
             quality = quality,
+            playSessionId = extractPlaySessionId(url),
             downloadStartTime = System.currentTimeMillis(),
         )
+    }
+
+    /**
+     * Extract PlaySessionId from a Jellyfin transcoded stream URL.
+     * URLs contain PlaySessionId as a query parameter.
+     */
+    private fun extractPlaySessionId(url: String): String? {
+        return try {
+            android.net.Uri.parse(url).getQueryParameter("PlaySessionId")
+        } catch (e: Exception) {
+            null
+        }
     }
 
     private fun getOfflineDirectory(): File {

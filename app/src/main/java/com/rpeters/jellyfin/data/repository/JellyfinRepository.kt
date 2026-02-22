@@ -33,6 +33,7 @@ import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.mediaInfoApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.userApi
+import org.jellyfin.sdk.api.client.extensions.sessionApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.AuthenticationResult
@@ -59,6 +60,8 @@ class JellyfinRepository @Inject constructor(
     val connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker,
 ) {
     companion object {
+        private const val TAG = "JellyfinRepository"
+
         // ✅ PHASE 4: Use centralized constants
         private const val TOKEN_VALIDITY_DURATION_MS = Constants.TOKEN_VALIDITY_DURATION_MS
 
@@ -1302,6 +1305,54 @@ class JellyfinRepository @Inject constructor(
     fun getDownloadUrl(itemId: String): String? =
         streamRepository.getDownloadUrl(itemId)
 
+    /**
+     * Get transcoding progress for active sessions on this device.
+     * Polls the Sessions API to get TranscodingInfo.completionPercentage.
+     *
+     * @param deviceId The device ID to filter sessions by
+     * @param jellyfinItemId Optional item ID to match specific transcoding session
+     * @return TranscodingProgressInfo if an active transcoding session is found, null otherwise
+     */
+    suspend fun getTranscodingProgress(
+        deviceId: String,
+        jellyfinItemId: String? = null,
+    ): TranscodingProgressInfo? {
+        return try {
+            val client = getCurrentAuthenticatedClient() ?: return null
+            val response = withIo {
+                client.sessionApi.getSessions(deviceId = deviceId)
+            }
+            val sessions = response.content
+
+            // Find session with active transcoding
+            val session = if (jellyfinItemId != null) {
+                sessions.find { session ->
+                    session.transcodingInfo != null &&
+                        session.nowPlayingItem?.id?.toString() == jellyfinItemId
+                }
+            } else {
+                sessions.find { it.transcodingInfo != null }
+            }
+
+            session?.transcodingInfo?.let { info ->
+                TranscodingProgressInfo(
+                    completionPercentage = info.completionPercentage ?: 0.0,
+                    isActive = true,
+                    bitrate = info.bitrate,
+                    width = info.width,
+                    height = info.height,
+                )
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Failed to get transcoding progress: ${e.message}")
+            }
+            null
+        }
+    }
+
     fun getDirectStreamUrl(itemId: String, container: String? = null): String? =
         streamRepository.getDirectStreamUrl(itemId, container)
 
@@ -1340,3 +1391,11 @@ class JellyfinRepository @Inject constructor(
     private fun validateServer(): JellyfinServer = RepositoryUtils.validateServer(authRepository.getCurrentServer())
     private fun parseUuid(id: String, idType: String): UUID = RepositoryUtils.parseUuid(id, idType)
 }
+
+data class TranscodingProgressInfo(
+    val completionPercentage: Double,
+    val isActive: Boolean,
+    val bitrate: Int? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+)

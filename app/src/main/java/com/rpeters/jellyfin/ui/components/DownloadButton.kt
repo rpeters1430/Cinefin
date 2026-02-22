@@ -51,6 +51,8 @@ fun DownloadButton(
             DownloadStatus.DOWNLOADING -> {
                 DownloadingButton(
                     progress = progress?.progressPercent ?: 0f,
+                    isTranscoding = progress?.isTranscoding == true,
+                    transcodingProgress = progress?.transcodingProgress,
                     onPause = { downloadsViewModel.pauseDownload(currentDownload.id) },
                     showText = showText,
                 )
@@ -118,9 +120,24 @@ private fun StartDownloadButton(
 @Composable
 private fun DownloadingButton(
     progress: Float,
+    isTranscoding: Boolean = false,
+    transcodingProgress: Float? = null,
     onPause: () -> Unit,
     showText: Boolean,
 ) {
+    val displayText = when {
+        isTranscoding && transcodingProgress != null ->
+            "Transcoding... ${transcodingProgress.roundToInt()}%"
+        isTranscoding ->
+            "Transcoding..."
+        else ->
+            "Downloading... ${progress.roundToInt()}%"
+    }
+    val displayProgress = when {
+        isTranscoding && transcodingProgress != null -> transcodingProgress / 100f
+        else -> progress / 100f
+    }
+
     if (showText) {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -132,7 +149,7 @@ private fun DownloadingButton(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "Downloading... ${progress.roundToInt()}%",
+                    displayText,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                 )
@@ -148,14 +165,14 @@ private fun DownloadingButton(
                 }
             }
             LinearProgressIndicator(
-                progress = { progress / 100f },
+                progress = { displayProgress },
                 modifier = Modifier.fillMaxWidth(),
             )
         }
     } else {
         Box(contentAlignment = Alignment.Center) {
             CircularProgressIndicator(
-                progress = { progress / 100f },
+                progress = { displayProgress },
                 modifier = Modifier.size(40.dp),
                 strokeWidth = 3.dp,
             )

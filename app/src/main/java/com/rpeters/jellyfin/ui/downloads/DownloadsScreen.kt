@@ -294,7 +294,14 @@ fun DownloadProgressIndicator(progress: DownloadProgress) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                if (progress.isTranscoding) "Transcoding..." else "${progress.progressPercent.roundToInt()}%",
+                when {
+                    progress.isTranscoding && progress.transcodingProgress != null ->
+                        "Server transcoding: ${progress.transcodingProgress.roundToInt()}%"
+                    progress.isTranscoding ->
+                        "Transcoding..."
+                    else ->
+                        "${progress.progressPercent.roundToInt()}%"
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -309,15 +316,27 @@ fun DownloadProgressIndicator(progress: DownloadProgress) {
             )
         }
 
-        if (progress.isTranscoding || progress.totalBytes <= 0L) {
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth(),
-            )
-        } else {
-            LinearProgressIndicator(
-                progress = { progress.progressPercent / 100f },
-                modifier = Modifier.fillMaxWidth(),
-            )
+        when {
+            progress.isTranscoding && progress.transcodingProgress != null -> {
+                // Determinate progress bar using transcoding percentage
+                LinearProgressIndicator(
+                    progress = { progress.transcodingProgress / 100f },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            progress.isTranscoding || progress.totalBytes <= 0L -> {
+                // Indeterminate fallback
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            else -> {
+                // Normal download progress
+                LinearProgressIndicator(
+                    progress = { progress.progressPercent / 100f },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
 
         Row(

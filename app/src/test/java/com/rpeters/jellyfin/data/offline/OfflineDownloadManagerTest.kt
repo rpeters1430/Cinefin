@@ -51,6 +51,7 @@ class OfflineDownloadManagerTest {
     private lateinit var repository: JellyfinRepository
     private lateinit var okHttpClient: OkHttpClient
     private lateinit var dataStore: DataStore<Preferences>
+    private lateinit var deviceCapabilities: com.rpeters.jellyfin.data.DeviceCapabilities
     private lateinit var tempDir: File
     private val testDispatcher = StandardTestDispatcher()
     private val testDispatchers = TestDispatcherProvider(testDispatcher)
@@ -73,13 +74,17 @@ class OfflineDownloadManagerTest {
         val mockEncryptedPreferences = mockk<com.rpeters.jellyfin.data.security.EncryptedPreferences>(relaxed = true)
         every { mockEncryptedPreferences.getEncryptedString(any()) } returns MutableStateFlow("http://test.com/decrypted")
 
+        deviceCapabilities = mockk(relaxed = true)
+        every { deviceCapabilities.getDeviceId() } returns "test-device-id"
+
         manager = OfflineDownloadManager(
             context = context,
             repository = repository,
             okHttpClient = okHttpClient,
             encryptedPreferences = mockEncryptedPreferences,
             dispatchers = testDispatchers,
-            dataStore = dataStore
+            dataStore = dataStore,
+            deviceCapabilities = deviceCapabilities,
         )
     }
 

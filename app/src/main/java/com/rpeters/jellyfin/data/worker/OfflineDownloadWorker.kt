@@ -78,7 +78,9 @@ class OfflineDownloadWorker @AssistedInject constructor(
                             progressPercent = percent,
                             downloadedBytes = progress.downloadedBytes,
                             totalBytes = progress.totalBytes,
-                            indeterminate = progress.totalBytes <= 0L,
+                            indeterminate = progress.totalBytes <= 0L && !progress.isTranscoding,
+                            isTranscoding = progress.isTranscoding,
+                            transcodingProgress = progress.transcodingProgress,
                         ),
                     )
                 }
@@ -113,6 +115,8 @@ class OfflineDownloadWorker @AssistedInject constructor(
         downloadedBytes: Long,
         totalBytes: Long,
         indeterminate: Boolean,
+        isTranscoding: Boolean = false,
+        transcodingProgress: Float? = null,
     ): ForegroundInfo {
         val pauseIntent = Intent(applicationContext, DownloadActionReceiver::class.java).apply {
             action = DownloadActionReceiver.ACTION_PAUSE
@@ -144,14 +148,22 @@ class OfflineDownloadWorker @AssistedInject constructor(
             .setOngoing(true)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setProgress(100, progressPercent, indeterminate)
-            .setSubText(
-                if (totalBytes > 0L) {
-                    "${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}"
+            .apply {
+                if (isTranscoding && transcodingProgress != null) {
+                    // Phase 1: Server is transcoding
+                    val tcPercent = transcodingProgress.toInt().coerceIn(0, 100)
+                    setProgress(100, tcPercent, false)
+                    setSubText("Server transcoding: $tcPercent% \u00b7 Downloaded: ${formatBytes(downloadedBytes)}")
+                } else if (totalBytes > 0L) {
+                    // Phase 2: Normal download with known size
+                    setProgress(100, progressPercent, false)
+                    setSubText("${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}")
                 } else {
-                    "Preparing download"
-                },
-            )
+                    // Fallback: indeterminate
+                    setProgress(100, 0, true)
+                    setSubText("Preparing download")
+                }
+            }
             .addAction(R.drawable.ic_launcher_monochrome, "Pause", pausePendingIntent)
             .addAction(R.drawable.ic_launcher_monochrome, "Cancel", cancelPendingIntent)
             .build()
