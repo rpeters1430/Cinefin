@@ -208,6 +208,12 @@ class OfflineDownloadManagerTest {
     }
 
     @Test
+    fun `getTotalStorage returns a positive value`() = runTest(testDispatcher) {
+        val total = manager.getTotalStorage()
+        assertTrue("Total storage should be greater than zero", total > 0)
+    }
+
+    @Test
     fun `download completes correctly with throttled DataStore writes`() = runTest(testDispatcher) {
         val item = buildBaseItem(id = UUID.randomUUID(), name = "Throttle Test")
         val downloadUrl = "https://server/stream/video.mp4"

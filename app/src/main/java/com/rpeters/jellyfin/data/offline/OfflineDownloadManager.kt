@@ -227,6 +227,11 @@ class OfflineDownloadManager @Inject constructor(
         return offlineDir.freeSpace
     }
 
+    fun getTotalStorage(): Long {
+        val offlineDir = getOfflineDirectory()
+        return offlineDir.totalSpace
+    }
+
     fun getUsedStorage(): Long {
         val offlineDir = getOfflineDirectory()
         return calculateDirectorySize(offlineDir)

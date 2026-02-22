@@ -101,14 +101,15 @@ class OfflinePlaybackManager @Inject constructor(
     }
 
     fun getOfflineStorageInfo(): OfflineStorageInfo {
-        val totalSpace = downloadManager.getAvailableStorage()
+        val totalSpace = downloadManager.getTotalStorage()
+        val freeSpace = downloadManager.getAvailableStorage()
         val usedSpace = downloadManager.getUsedStorage()
         val completedDownloads = downloads.value.filter { it.status == DownloadStatus.COMPLETED }
 
         return OfflineStorageInfo(
             totalSpaceBytes = totalSpace,
             usedSpaceBytes = usedSpace,
-            availableSpaceBytes = totalSpace - usedSpace,
+            availableSpaceBytes = freeSpace,
             downloadCount = completedDownloads.size,
             totalDownloadSizeBytes = completedDownloads.sumOf { it.fileSize },
         )
