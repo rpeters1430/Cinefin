@@ -78,21 +78,23 @@ class DownloadsViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             val itemId = item.id.toString()
-            val url = if (quality != null && quality.id != "original") {
-                // Use H.264 for offline transcoded downloads for maximum Jellyfin server/device compatibility.
-                repository.getTranscodedStreamUrl(
-                    itemId = itemId,
-                    maxBitrate = quality.bitrate,
-                    maxWidth = quality.width,
-                    maxHeight = quality.height,
-                    videoCodec = "h264",
-                    audioCodec = "aac",
-                    audioBitrate = quality.audioBitrate,
-                    audioChannels = quality.audioChannels ?: 2,
-                    container = "mp4",
-                ) ?: repository.getDownloadUrl(itemId)
-            } else {
-                downloadUrl ?: repository.getDownloadUrl(itemId)
+            val url = withContext(Dispatchers.IO) {
+                if (quality != null && quality.id != "original") {
+                    // Use H.264 for offline transcoded downloads for maximum Jellyfin server/device compatibility.
+                    repository.getTranscodedStreamUrl(
+                        itemId = itemId,
+                        maxBitrate = quality.bitrate,
+                        maxWidth = quality.width,
+                        maxHeight = quality.height,
+                        videoCodec = "h264",
+                        audioCodec = "aac",
+                        audioBitrate = quality.audioBitrate,
+                        audioChannels = quality.audioChannels ?: 2,
+                        container = "mp4",
+                    ) ?: repository.getDownloadUrl(itemId)
+                } else {
+                    downloadUrl ?: repository.getDownloadUrl(itemId)
+                }
             }
 
             downloadManager.startDownload(item, quality, url)

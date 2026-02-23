@@ -260,7 +260,19 @@ class OfflineDownloadManager @Inject constructor(
 
             val outputFile = File(download.localFilePath)
             outputFile.parentFile?.mkdirs()
-            val existingSize = if (outputFile.exists()) outputFile.length() else 0L
+
+            // Transcoded streams (any quality other than original) are served with
+            // Accept-Ranges: none — the server starts a fresh transcode on every request
+            // and cannot seek into a live stream. Sending a Range header would be silently
+            // ignored, so we proactively delete any stale partial file and reset the
+            // stored byte count so the UI doesn't show stale progress.
+            val isTranscoded = download.quality != null && download.quality.id != "original"
+            if (isTranscoded && outputFile.exists()) {
+                outputFile.delete()
+                updateDownloadBytes(download.id, 0L)
+            }
+
+            val existingSize = if (!isTranscoded && outputFile.exists()) outputFile.length() else 0L
 
             val requestBuilder = Request.Builder().url(actualUrl)
             if (existingSize > 0L) {

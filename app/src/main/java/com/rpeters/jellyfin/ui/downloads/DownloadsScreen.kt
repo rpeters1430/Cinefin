@@ -209,7 +209,7 @@ fun DownloadItem(
 
             // Progress indicator for active downloads
             if (download.status == DownloadStatus.DOWNLOADING && progress != null) {
-                DownloadProgressIndicator(progress)
+                DownloadProgressIndicator(progress, download.quality?.label)
             }
 
             // Action buttons
@@ -286,7 +286,7 @@ fun DownloadStatusChip(status: DownloadStatus) {
 }
 
 @Composable
-fun DownloadProgressIndicator(progress: DownloadProgress) {
+fun DownloadProgressIndicator(progress: DownloadProgress, qualityLabel: String? = null) {
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.Spacing4)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -296,11 +296,13 @@ fun DownloadProgressIndicator(progress: DownloadProgress) {
             Text(
                 when {
                     progress.isTranscoding && progress.transcodingProgress != null ->
-                        "Transcoding: ${progress.transcodingProgress.roundToInt()}%"
+                        if (qualityLabel != null) "$qualityLabel · Transcoding: ${progress.transcodingProgress.roundToInt()}%"
+                        else "Transcoding: ${progress.transcodingProgress.roundToInt()}%"
                     progress.isTranscoding ->
-                        "Transcoding..."
+                        if (qualityLabel != null) "$qualityLabel · Transcoding..." else "Transcoding..."
                     else ->
-                        "${progress.progressPercent.roundToInt()}%"
+                        if (qualityLabel != null) "$qualityLabel · ${progress.progressPercent.roundToInt()}%"
+                        else "${progress.progressPercent.roundToInt()}%"
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
