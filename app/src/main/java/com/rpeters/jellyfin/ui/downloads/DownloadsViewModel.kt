@@ -22,6 +22,7 @@ import com.rpeters.jellyfin.ui.player.VideoPlayerActivity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -138,7 +139,17 @@ class DownloadsViewModel @Inject constructor(
                 }
             }
 
-            downloadManager.startDownload(item, selectedQuality, url)
+            try {
+                downloadManager.startDownload(item, selectedQuality, url)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: IllegalArgumentException) {
+                Toast.makeText(
+                    context,
+                    "Unable to start download for this item right now.",
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
         }
     }
 

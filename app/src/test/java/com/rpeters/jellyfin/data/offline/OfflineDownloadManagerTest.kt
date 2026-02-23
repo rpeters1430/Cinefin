@@ -33,6 +33,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -271,6 +272,23 @@ class OfflineDownloadManagerTest {
         val downloads = corruptManager.downloads.value
         assertTrue("Downloads should be empty after corrupt data, not crash", downloads.isEmpty())
         corruptManager.cleanup()
+    }
+
+    @Test
+    fun `startDownload fails fast when no download URL can be resolved`() = runTest(testDispatcher) {
+        val item = buildBaseItem(id = UUID.randomUUID(), name = "No URL")
+
+        every { repository.getDownloadUrl(item.id.toString()) } returns null
+        every { repository.getStreamUrl(item.id.toString()) } returns null
+
+        try {
+            manager.startDownload(item)
+            fail("Expected IllegalArgumentException")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(expected.message?.contains("Unable to resolve a download URL") == true)
+        }
+
+        assertTrue(manager.downloads.value.isEmpty())
     }
 
     // Helper functions

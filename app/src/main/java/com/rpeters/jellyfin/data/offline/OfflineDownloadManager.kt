@@ -601,7 +601,9 @@ class OfflineDownloadManager @Inject constructor(
         val url = downloadUrl
             ?: repository.getDownloadUrl(itemId)
             ?: repository.getStreamUrl(itemId)
-            ?: ""
+
+        require(!url.isNullOrBlank()) { "Unable to resolve a download URL for item $itemId" }
+
         val fileName = "${item.name?.replace(Regex("[^a-zA-Z0-9.-]"), "_")}_${System.currentTimeMillis()}.mp4"
         val localPath = File(getOfflineDirectory(), fileName).absolutePath
 
@@ -851,6 +853,15 @@ class OfflineDownloadManager @Inject constructor(
                 job.cancel(CancellationException("Download cancelled by user"))
             }
             downloadJobs.remove(downloadId)
+        }
+
+        val cancelledDownload = _downloads.value.find { it.id == downloadId }
+        cancelledDownload?.let {
+            deleteDownloadFile(it)
+            deleteThumbnailFile(it)
+            if (it.downloadUrl.startsWith(ENCRYPTED_URL_PREFIX)) {
+                encryptedPreferences.removeKey(it.downloadUrl)
+            }
         }
 
         // Remove from progress tracking

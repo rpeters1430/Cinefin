@@ -161,7 +161,9 @@ class OfflinePlaybackManager @Inject constructor(
             usedSpaceBytes = usedSpace,
             availableSpaceBytes = freeSpace,
             downloadCount = completedDownloads.size,
-            totalDownloadSizeBytes = completedDownloads.sumOf { it.fileSize },
+            totalDownloadSizeBytes = completedDownloads.sumOf { download ->
+                download.fileSize.takeIf { it > 0L } ?: download.downloadedBytes
+            },
         )
     }
 }
