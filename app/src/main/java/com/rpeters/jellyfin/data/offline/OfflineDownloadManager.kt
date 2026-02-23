@@ -34,7 +34,9 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -220,6 +222,29 @@ class OfflineDownloadManager @Inject constructor(
         return _downloads.value.any {
             it.jellyfinItemId == itemId && it.status == DownloadStatus.COMPLETED
         }
+    }
+
+    fun observeIsDownloaded(itemId: String): kotlinx.coroutines.flow.Flow<Boolean> {
+        return downloads
+            .map { items ->
+                items.any { it.jellyfinItemId == itemId && it.status == DownloadStatus.COMPLETED }
+            }
+            .distinctUntilChanged()
+    }
+
+    fun observeDownloadInfo(itemId: String): kotlinx.coroutines.flow.Flow<OfflineDownload?> {
+        return downloads
+            .map { items ->
+                items.firstOrNull { it.jellyfinItemId == itemId && it.status == DownloadStatus.COMPLETED }
+            }
+            .distinctUntilChanged()
+    }
+
+    fun deleteOfflineCopy(itemId: String) {
+        val downloadId = _downloads.value.firstOrNull {
+            it.jellyfinItemId == itemId && it.status == DownloadStatus.COMPLETED
+        }?.id ?: return
+        deleteDownload(downloadId)
     }
 
     fun getAvailableStorage(): Long {

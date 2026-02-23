@@ -349,6 +349,10 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onDownloadClick = { movieItem, quality ->
                     downloadsViewModel.startDownload(movieItem, quality)
                 },
+                isDownloaded = detailState.isDownloaded,
+                isOffline = detailState.isOffline,
+                downloadInfo = detailState.downloadInfo,
+                onDeleteOfflineCopy = { detailViewModel.deleteOfflineCopy() },
                 onRelatedMovieClick = { relatedMovieId ->
                     navController.navigate(Screen.MovieDetail.createRoute(relatedMovieId))
                 },
@@ -503,6 +507,9 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     onGenerateAiSummary = { viewModel.generateAiSummary() },
                     aiSummary = detailState.aiSummary,
                     isLoadingAiSummary = detailState.isLoadingAiSummary,
+                    isDownloaded = detailState.isDownloaded,
+                    isOffline = detailState.isOffline,
+                    onDeleteOfflineCopy = { viewModel.deleteOfflineCopy() },
                 )
 
                 LaunchedEffect(episode.id) {

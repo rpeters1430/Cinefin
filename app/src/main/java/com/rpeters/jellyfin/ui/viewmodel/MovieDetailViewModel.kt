@@ -2,14 +2,18 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.offline.OfflineDownload
+import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +34,9 @@ data class MovieDetailState(
     val isLoadingAiSummary: Boolean = false,
     val whyYoullLoveThis: String? = null,
     val isLoadingWhyYoullLoveThis: Boolean = false,
+    val isDownloaded: Boolean = false,
+    val downloadInfo: OfflineDownload? = null,
+    val isOffline: Boolean = false,
 )
 
 @HiltViewModel
@@ -38,15 +45,28 @@ class MovieDetailViewModel @Inject constructor(
     private val mediaRepository: JellyfinMediaRepository,
     private val enhancedPlaybackUtils: EnhancedPlaybackUtils,
     private val generativeAiRepository: GenerativeAiRepository,
+    private val offlineDownloadManager: OfflineDownloadManager,
+    private val connectivityChecker: ConnectivityChecker,
     private val playbackProgressManager: com.rpeters.jellyfin.ui.player.PlaybackProgressManager,
     private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MovieDetailState())
     val state: StateFlow<MovieDetailState> = _state.asStateFlow()
+    private var observeDownloadedJob: Job? = null
+    private var observeDownloadInfoJob: Job? = null
 
     init {
         observePlaybackProgress()
+        observeConnectivity()
+    }
+
+    private fun observeConnectivity() {
+        viewModelScope.launch {
+            connectivityChecker.observeNetworkConnectivity().collect { isOnline ->
+                _state.value = _state.value.copy(isOffline = !isOnline)
+            }
+        }
     }
 
     private fun observePlaybackProgress() {
@@ -95,6 +115,8 @@ class MovieDetailViewModel @Inject constructor(
                         playbackProgress = initialProgress?.takeIf { it.itemId == movieId },
                         isLoading = false,
                     )
+
+                    observeDownloadState(movieId)
 
                     // Load similar movies in background (uses Jellyfin's built-in recommendations)
                     loadSimilarMovies(movieId)
@@ -184,6 +206,28 @@ class MovieDetailViewModel @Inject constructor(
 
     fun clearError() {
         _state.value = _state.value.copy(errorMessage = null)
+    }
+
+    private fun observeDownloadState(movieId: String) {
+        observeDownloadedJob?.cancel()
+        observeDownloadInfoJob?.cancel()
+
+        observeDownloadedJob = viewModelScope.launch {
+            offlineDownloadManager.observeIsDownloaded(movieId).collect { downloaded ->
+                _state.value = _state.value.copy(isDownloaded = downloaded)
+            }
+        }
+
+        observeDownloadInfoJob = viewModelScope.launch {
+            offlineDownloadManager.observeDownloadInfo(movieId).collect { info ->
+                _state.value = _state.value.copy(downloadInfo = info)
+            }
+        }
+    }
+
+    fun deleteOfflineCopy() {
+        val itemId = _state.value.movie?.id?.toString() ?: return
+        offlineDownloadManager.deleteOfflineCopy(itemId)
     }
 
     /**

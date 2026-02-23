@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -36,6 +37,8 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -118,6 +121,9 @@ fun ImmersiveTVEpisodeDetailScreen(
     onGenerateAiSummary: () -> Unit = {},
     aiSummary: String? = null,
     isLoadingAiSummary: Boolean = false,
+    isDownloaded: Boolean = false,
+    isOffline: Boolean = false,
+    onDeleteOfflineCopy: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
@@ -126,6 +132,7 @@ fun ImmersiveTVEpisodeDetailScreen(
     val context = LocalContext.current
     val mainAppViewModel: MainAppViewModel = hiltViewModel()
     var showQualityDialog by remember { mutableStateOf(false) }
+    var showDeleteOfflineConfirmation by remember { mutableStateOf(false) }
 
     if (showQualityDialog) {
         QualitySelectionDialog(
@@ -136,6 +143,28 @@ fun ImmersiveTVEpisodeDetailScreen(
                 showQualityDialog = false
             },
             downloadsViewModel = downloadsViewModel,
+        )
+    }
+
+
+    if (showDeleteOfflineConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteOfflineConfirmation = false },
+            title = { Text("Remove offline copy?") },
+            text = { Text("This only removes the local downloaded file from this device.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteOfflineConfirmation = false
+                    onDeleteOfflineCopy()
+                }) {
+                    Text("Remove")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteOfflineConfirmation = false }) {
+                    Text("Cancel")
+                }
+            },
         )
     }
 
@@ -232,7 +261,43 @@ fun ImmersiveTVEpisodeDetailScreen(
 
                 // 3. Quick Actions
                 item(key = "actions") {
-                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.background)
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (isDownloaded) {
+                                AssistChip(
+                                    onClick = {},
+                                    label = { Text("Downloaded") },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Download, contentDescription = null)
+                                    },
+                                )
+                            }
+                            if (isOffline) {
+                                AssistChip(
+                                    onClick = {},
+                                    label = { Text("Offline") },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.WifiOff, contentDescription = null)
+                                    },
+                                )
+                            }
+                        }
+
+                        if (isDownloaded) {
+                            TextButton(
+                                onClick = { showDeleteOfflineConfirmation = true },
+                                contentPadding = PaddingValues(0.dp),
+                            ) {
+                                Text("Delete offline copy")
+                            }
+                        }
+
                         EpisodeActionRow(
                             episode = episode,
                             onFavoriteClick = { onFavoriteClick(episode) },

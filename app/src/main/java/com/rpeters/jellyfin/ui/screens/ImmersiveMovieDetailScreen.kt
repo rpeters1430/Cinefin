@@ -46,7 +46,9 @@ import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.RateReview
 import androidx.compose.material.icons.rounded.Sd
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -146,6 +148,10 @@ fun ImmersiveMovieDetailScreen(
     isLoadingWhyYoullLoveThis: Boolean = false,
     isRefreshing: Boolean = false,
     serverUrl: String? = null,
+    isDownloaded: Boolean = false,
+    isOffline: Boolean = false,
+    downloadInfo: com.rpeters.jellyfin.data.offline.OfflineDownload? = null,
+    onDeleteOfflineCopy: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
@@ -155,6 +161,7 @@ fun ImmersiveMovieDetailScreen(
     var selectedSubtitleIndex by remember { mutableStateOf<Int?>(null) }
     var showMoreOptions by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showDeleteOfflineConfirmation by remember { mutableStateOf(false) }
     var showQualityDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -364,6 +371,48 @@ fun ImmersiveMovieDetailScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimary,
                                 )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (isDownloaded) {
+                                AssistChip(
+                                    onClick = {},
+                                    label = {
+                                        val quality = downloadInfo?.quality?.label
+                                        Text(if (quality.isNullOrBlank()) "Downloaded" else "Downloaded · $quality")
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.FileDownload,
+                                            contentDescription = null,
+                                        )
+                                    },
+                                )
+                            }
+                            if (isOffline) {
+                                AssistChip(
+                                    onClick = {},
+                                    label = { Text("Offline") },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.WifiOff,
+                                            contentDescription = null,
+                                        )
+                                    },
+                                )
+                            }
+                        }
+
+                        if (isDownloaded) {
+                            TextButton(
+                                onClick = { showDeleteOfflineConfirmation = true },
+                                contentPadding = PaddingValues(0.dp),
+                            ) {
+                                Text("Delete offline copy")
                             }
                         }
 
@@ -640,6 +689,29 @@ fun ImmersiveMovieDetailScreen(
                 }
             }
         }
+    }
+
+    if (showDeleteOfflineConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteOfflineConfirmation = false },
+            title = { Text("Remove offline copy?") },
+            text = { Text("This only removes the local downloaded file from this device.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteOfflineConfirmation = false
+                        onDeleteOfflineCopy()
+                    },
+                ) {
+                    Text("Remove")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteOfflineConfirmation = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 
     if (showDeleteConfirmation) {
