@@ -669,32 +669,44 @@ private fun EpisodeOverviewSection(
                     }
                 }
 
-                // Air Date & Runtime (MM - DD - YYYY)
-                Row(
+                // Air Date, Runtime, File Size
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    episode.premiereDate?.let { date ->
-                        // Input format is typically 2024-01-23T00:00:00Z
-                        val dateStr = date.toString().substringBefore('T')
-                        val parts = dateStr.split("-")
-                        if (parts.size == 3) {
-                            val formattedDate = "${parts[1]} - ${parts[2]} - ${parts[0]}" // MM - DD - YYYY
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        episode.premiereDate?.let { date ->
+                            // Input format is typically 2024-01-23T00:00:00Z
+                            val dateStr = date.toString().substringBefore('T')
+                            val parts = dateStr.split("-")
+                            if (parts.size == 3) {
+                                val formattedDate = "${parts[1]} - ${parts[2]} - ${parts[0]}" // MM - DD - YYYY
+                                DetailInfoRow(
+                                    label = "Aired",
+                                    value = formattedDate,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                        }
+
+                        episode.runTimeTicks?.let { ticks ->
+                            val minutes = (ticks / 10_000_000 / 60).toInt()
                             DetailInfoRow(
-                                label = "Aired",
-                                value = formattedDate,
+                                label = "Duration",
+                                value = "${minutes}m",
                                 modifier = Modifier.weight(1f),
                             )
                         }
                     }
 
-                    episode.runTimeTicks?.let { ticks ->
-                        val minutes = (ticks / 10_000_000 / 60).toInt()
+                    episode.mediaSources?.firstOrNull()?.size?.takeIf { it > 0 }?.let { fileSizeBytes ->
                         DetailInfoRow(
-                            label = "Duration",
-                            value = "${minutes}m",
-                            modifier = Modifier.weight(1f),
+                            label = "File Size",
+                            value = formatFileSize(fileSizeBytes),
                         )
                     }
                 }
@@ -765,6 +777,23 @@ private fun DetailInfoRow(
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.End,
         )
+    }
+}
+
+private fun formatFileSize(bytes: Long): String {
+    val units = listOf("B", "KB", "MB", "GB", "TB")
+    var size = bytes.toDouble()
+    var unitIndex = 0
+
+    while (size >= 1024 && unitIndex < units.lastIndex) {
+        size /= 1024
+        unitIndex++
+    }
+
+    return if (unitIndex == 0) {
+        "${size.toInt()} ${units[unitIndex]}"
+    } else {
+        String.format(Locale.US, "%.2f %s", size, units[unitIndex])
     }
 }
 

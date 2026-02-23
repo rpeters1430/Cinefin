@@ -132,6 +132,7 @@ class DownloadsViewModel @Inject constructor(
                         audioBitrate = selectedQuality.audioBitrate,
                         audioChannels = selectedQuality.audioChannels ?: 2,
                         container = "mp4",
+                        allowVideoStreamCopy = false,
                     ) ?: repository.getDownloadUrl(itemId)
                 } else {
                     downloadUrl ?: repository.getDownloadUrl(itemId)

@@ -206,6 +206,7 @@ class JellyfinStreamRepository @Inject constructor(
         subtitleStreamIndex: Int? = null,
         audioChannels: Int = DEFAULT_MAX_AUDIO_CHANNELS,
         audioBitrate: Int? = null,
+        allowVideoStreamCopy: Boolean = true,
         allowAudioStreamCopy: Boolean = true,
     ): String? {
         val server = authRepository.getCurrentServer() ?: return null
@@ -246,7 +247,7 @@ class JellyfinStreamRepository @Inject constructor(
             params.add("DeviceId=${deviceCapabilities.getDeviceId()}")
             params.add("BreakOnNonKeyFrames=true")
             // Allow Direct Stream - keep video quality, only transcode audio if needed
-            params.add("AllowVideoStreamCopy=true")
+            params.add("AllowVideoStreamCopy=$allowVideoStreamCopy")
             params.add("AllowAudioStreamCopy=$allowAudioStreamCopy")
 
             // Add stream indices for multilingual content
