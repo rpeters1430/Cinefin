@@ -1,5 +1,9 @@
 package com.rpeters.jellyfin.ui.player
 
+import android.graphics.PixelFormat
+import android.os.Build
+import android.view.SurfaceView
+import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -25,10 +29,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import kotlin.math.roundToInt
-import android.graphics.PixelFormat
-import android.os.Build
-import android.view.SurfaceView
-import android.view.View
 
 @UnstableApi
 @Composable
@@ -369,7 +369,7 @@ private fun configureHdrSupport(playerView: PlayerView, isHdrContent: Boolean) {
 
             com.rpeters.jellyfin.utils.SecureLogger.d(
                 "VideoPlayerScreen",
-                "Configured SurfaceView for HDR content with RGBA_1010102 format"
+                "Configured SurfaceView for HDR content with RGBA_1010102 format",
             )
         } else {
             // Use default format for SDR content
@@ -378,7 +378,7 @@ private fun configureHdrSupport(playerView: PlayerView, isHdrContent: Boolean) {
     } catch (e: Exception) {
         com.rpeters.jellyfin.utils.SecureLogger.w(
             "VideoPlayerScreen",
-            "Failed to configure HDR support: ${e.message}"
+            "Failed to configure HDR support: ${e.message}",
         )
     }
 }

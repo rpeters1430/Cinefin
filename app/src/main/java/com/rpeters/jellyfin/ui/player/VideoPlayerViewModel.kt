@@ -847,10 +847,14 @@ class VideoPlayerViewModel @Inject constructor(
                     // Configure load control for better buffering on high-bitrate content
                     val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
                         .setBufferDurationsMs(
-                            /* minBufferMs = */ 15_000, // Minimum buffer before playback can start (15s)
-                            /* maxBufferMs = */ 50_000, // Maximum buffer duration (50s for smooth playback)
-                            /* bufferForPlaybackMs = */ 2_500, // Buffer required to start playback (2.5s)
-                            /* bufferForPlaybackAfterRebufferMs = */ 5_000, // Buffer required after rebuffering (5s)
+                            /* minBufferMs = */
+                            15_000, // Minimum buffer before playback can start (15s)
+                            /* maxBufferMs = */
+                            50_000, // Maximum buffer duration (50s for smooth playback)
+                            /* bufferForPlaybackMs = */
+                            2_500, // Buffer required to start playback (2.5s)
+                            /* bufferForPlaybackAfterRebufferMs = */
+                            5_000, // Buffer required after rebuffering (5s)
                         )
                         .setPrioritizeTimeOverSizeThresholds(true) // Better for streaming
                         .build()
@@ -870,7 +874,8 @@ class VideoPlayerViewModel @Inject constructor(
                                 .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE)
                                 .setUsage(androidx.media3.common.C.USAGE_MEDIA)
                                 .build(),
-                            /* handleAudioFocus = */ true
+                            /* handleAudioFocus = */
+                            true,
                         )
                         .build()
 
