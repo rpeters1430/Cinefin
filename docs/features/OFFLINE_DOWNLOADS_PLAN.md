@@ -330,5 +330,5 @@ To browse posters and metadata offline:
 Use this section to record decisions:
 - Offline played threshold: ____%
 - Progress update interval: ____ seconds
-- Storage location: app-specific storage (`getExternalFilesDir(Environment.DIRECTORY_MOVIES)/jellyfin_offline`, fallback to `filesDir`)
+- Storage location: app-specific storage (`getExternalFilesDir(Environment.DIRECTORY_MOVIES)/JellyfinOffline`, fallback to `filesDir/JellyfinOffline`)
 - Conflict strategy: ____
