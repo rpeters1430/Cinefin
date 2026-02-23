@@ -175,20 +175,17 @@ class TVEpisodeDetailViewModel @Inject constructor(
     }
 
     private fun observeDownloadState(episodeId: String) {
-        observeDownloadedJob?.cancel()
         observeDownloadInfoJob?.cancel()
-
-        observeDownloadedJob = viewModelScope.launch {
-            offlineDownloadManager.observeIsDownloaded(episodeId).collect { downloaded ->
-                _state.value = _state.value.copy(isDownloaded = downloaded)
-            }
-        }
 
         observeDownloadInfoJob = viewModelScope.launch {
             offlineDownloadManager.observeDownloadInfo(episodeId).collect { info ->
-                _state.value = _state.value.copy(downloadInfo = info)
+                _state.value = _state.value.copy(
+                    downloadInfo = info,
+                    isDownloaded = info != null
+                )
             }
         }
+    }
     }
 
     fun deleteOfflineCopy() {
