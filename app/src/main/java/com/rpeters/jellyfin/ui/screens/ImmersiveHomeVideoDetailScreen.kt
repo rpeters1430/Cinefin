@@ -26,6 +26,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
+import com.rpeters.jellyfin.ui.components.WatchStatusBanner
 import com.rpeters.jellyfin.ui.components.getQualityLabel
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
@@ -143,6 +144,15 @@ fun ImmersiveHomeVideoDetailScreen(
                             .height(1.dp)
                             .background(MaterialTheme.colorScheme.background),
                     )
+                }
+
+                item(key = "watch_status") {
+                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                        WatchStatusBanner(
+                            item = item,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
                 }
 
                 // Live Playback Progress Indicator

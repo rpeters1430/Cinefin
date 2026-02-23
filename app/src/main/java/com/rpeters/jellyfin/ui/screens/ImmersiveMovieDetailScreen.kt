@@ -94,6 +94,7 @@ import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
+import com.rpeters.jellyfin.ui.components.WatchStatusBanner
 import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
 import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.HdrType
@@ -233,6 +234,16 @@ fun ImmersiveMovieDetailScreen(
                             .background(MaterialTheme.colorScheme.background),
                     )
                 }
+
+                item(key = "watch_status") {
+                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                        WatchStatusBanner(
+                            item = movie,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
+                }
+
                 // Overview and AI Summary Section
                 item {
                     Column(

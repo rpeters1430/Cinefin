@@ -73,6 +73,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
+import com.rpeters.jellyfin.ui.components.WatchStatusBanner
 import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
 import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.HdrType
@@ -230,6 +231,15 @@ fun ImmersiveTVEpisodeDetailScreen(
                             .height(1.dp)
                             .background(MaterialTheme.colorScheme.background),
                     )
+                }
+
+                item(key = "watch_status") {
+                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                        WatchStatusBanner(
+                            item = episode,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
                 }
 
                 // Live Playback Progress Indicator
