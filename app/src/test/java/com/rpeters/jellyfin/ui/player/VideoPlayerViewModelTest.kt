@@ -28,10 +28,8 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -96,7 +94,7 @@ class VideoPlayerViewModelTest {
         mockExoPlayer = mockk(relaxed = true)
         mockkConstructor(ExoPlayer.Builder::class)
         every { anyConstructed<ExoPlayer.Builder>().build() } returns mockExoPlayer
-        
+
         // Mock common player properties
         every { mockExoPlayer.playWhenReady } returns true
         every { mockExoPlayer.isPlaying } returns true
@@ -113,7 +111,7 @@ class VideoPlayerViewModelTest {
             audioCodec = "aac",
             bitrate = 5000000,
             reason = "Direct play supported",
-            playSessionId = "session123"
+            playSessionId = "session123",
         )
 
         viewModel = VideoPlayerViewModel(
@@ -153,11 +151,11 @@ class VideoPlayerViewModelTest {
             id = UUID.fromString(itemId),
             name = itemName,
             type = BaseItemKind.MOVIE,
-            runTimeTicks = 36_000_000_000L // 1 hour = 3600s = 36,000,000,000 ticks
+            runTimeTicks = 36_000_000_000L, // 1 hour = 3600s = 36,000,000,000 ticks
         )
 
         coEvery { repository.getMovieDetails(itemId) } returns ApiResult.Success(item)
-        
+
         // Act
         viewModel.initializePlayer(itemId, itemName, 0L)
         advanceUntilIdle()
@@ -210,15 +208,15 @@ class VideoPlayerViewModelTest {
 
         // Assert
         verify { mockExoPlayer.pause() }
-        
+
         // Mock state change after pause
         every { mockExoPlayer.isPlaying } returns false
         every { mockExoPlayer.playWhenReady } returns false
-        
+
         // Act - Resume
         viewModel.togglePlayPause() // This will now call play() because isPlaying is false
         advanceUntilIdle()
-        
+
         // Assert
         verify { mockExoPlayer.play() }
     }
@@ -263,7 +261,7 @@ class VideoPlayerViewModelTest {
 
         // Act
         viewModel.changeAspectRatio(AspectRatioMode.FILL)
-        
+
         // Assert
         assertEquals(AspectRatioMode.FILL, viewModel.playerState.value.selectedAspectRatio)
     }

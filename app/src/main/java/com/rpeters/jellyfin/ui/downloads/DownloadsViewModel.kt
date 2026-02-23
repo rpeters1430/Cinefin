@@ -65,9 +65,9 @@ class DownloadsViewModel @Inject constructor(
         val originalWidth = videoStream?.width ?: 0
 
         return QUALITY_PRESETS.filter { preset ->
-            preset.id == "original" || 
-            (preset.height < originalHeight && originalHeight > 0) ||
-            (preset.width < originalWidth && originalWidth > 0)
+            preset.id == "original" ||
+                (preset.height < originalHeight && originalHeight > 0) ||
+                (preset.width < originalWidth && originalWidth > 0)
         }
     }
 

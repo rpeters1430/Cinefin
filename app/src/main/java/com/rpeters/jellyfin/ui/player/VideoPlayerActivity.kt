@@ -16,7 +16,6 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Rational
 import android.view.WindowManager
-import java.util.Locale
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
@@ -41,6 +40,7 @@ import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 @androidx.media3.common.util.UnstableApi
@@ -509,7 +509,7 @@ class VideoPlayerActivity : FragmentActivity() {
      */
     private fun updatePipParams() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        
+
         if (isInPipMode) {
             try {
                 val playerState = playerViewModel.playerState.value
