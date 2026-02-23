@@ -144,6 +144,7 @@ class DownloadsViewModel @Inject constructor(
                     startPosition = withContext(Dispatchers.IO) {
                         com.rpeters.jellyfin.data.PlaybackPositionStore.getPlaybackPosition(context, download.jellyfinItemId)
                     },
+                    forceOffline = true,
                 )
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)

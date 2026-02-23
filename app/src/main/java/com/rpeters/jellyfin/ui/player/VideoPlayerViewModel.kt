@@ -1,6 +1,8 @@
 package com.rpeters.jellyfin.ui.player
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -138,6 +140,7 @@ class VideoPlayerViewModel @Inject constructor(
     private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
     private val okHttpClient: okhttp3.OkHttpClient,
     private val playbackPreferencesRepository: com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository,
+    private val offlinePlaybackManager: com.rpeters.jellyfin.data.offline.OfflinePlaybackManager,
 ) : ViewModel() {
 
     // Initialize state flows before init block to prevent race condition where
@@ -550,8 +553,18 @@ class VideoPlayerViewModel @Inject constructor(
         repository.getPlaybackInfo(itemId)
     }
 
-    suspend fun initializePlayer(itemId: String, itemName: String, startPosition: Long, subtitleIndex: Int? = null, audioIndex: Int? = null) {
-        SecureLogger.d("VideoPlayer", "Initializing player for: $itemName, requestedSubtitle: $subtitleIndex, requestedAudio: $audioIndex")
+    suspend fun initializePlayer(
+        itemId: String,
+        itemName: String,
+        startPosition: Long,
+        subtitleIndex: Int? = null,
+        audioIndex: Int? = null,
+        forceOffline: Boolean = false,
+    ) {
+        SecureLogger.d(
+            "VideoPlayer",
+            "Initializing player for: $itemName, requestedSubtitle: $subtitleIndex, requestedAudio: $audioIndex, forceOffline: $forceOffline",
+        )
 
         // If player already exists for the same item, just seek to position instead of recreating
         if (exoPlayer != null && currentItemId == itemId) {
@@ -606,6 +619,102 @@ class VideoPlayerViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
+                val isDownloaded = offlinePlaybackManager.isOfflinePlaybackAvailable(itemId)
+                val isOnline = isDeviceOnline()
+                val shouldUseOfflineSource = isDownloaded && (!isOnline || forceOffline)
+
+                if (shouldUseOfflineSource) {
+                    val offlineMediaItem = offlinePlaybackManager.getOfflineMediaItem(itemId)
+                        ?: throw IllegalStateException("Offline copy is unavailable for this item")
+                    val initialStartPosition = startPosition.coerceAtLeast(0L)
+
+                    SecureLogger.i(
+                        "VideoPlayer",
+                        "Using offline source for itemId=$itemId (isOnline=$isOnline, forceOffline=$forceOffline)",
+                    )
+
+                    analytics.logPlaybackEvent(
+                        method = "Offline",
+                        container = "Local file",
+                        resolution = "Original",
+                    )
+
+                    _playerState.value = _playerState.value.copy(
+                        isDirectPlaying = false,
+                        isDirectStreaming = false,
+                        isTranscoding = false,
+                        transcodingReason = null,
+                        playbackMethod = "Offline",
+                    )
+
+                    withContext(Dispatchers.Main) {
+                        val renderersFactory = DefaultRenderersFactory(context)
+                            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+                            .setEnableDecoderFallback(true)
+                            .forceEnableMediaCodecAsynchronousQueueing()
+                            .setAllowedVideoJoiningTimeMs(5000)
+
+                        val dataSourceFactory = androidx.media3.datasource.DefaultDataSource.Factory(context)
+                        val mediaSourceFactory =
+                            androidx.media3.exoplayer.source.DefaultMediaSourceFactory(dataSourceFactory)
+
+                        trackSelector = DefaultTrackSelector(context).apply {
+                            val params = buildUponParameters()
+                                .setAllowVideoMixedMimeTypeAdaptiveness(true)
+                                .setAllowVideoNonSeamlessAdaptiveness(true)
+                                .setMaxVideoSizeSd()
+                                .clearVideoSizeConstraints()
+                                .setAllowVideoMixedDecoderSupportAdaptiveness(true)
+
+                            val displayMetrics = this@VideoPlayerViewModel.context.resources.displayMetrics
+                            params.setMaxVideoSize(displayMetrics.widthPixels, displayMetrics.heightPixels)
+                            setParameters(params.build())
+                        }
+
+                        val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
+                            .setBufferDurationsMs(
+                                15_000,
+                                50_000,
+                                2_500,
+                                5_000,
+                            )
+                            .setPrioritizeTimeOverSizeThresholds(true)
+                            .build()
+
+                        exoPlayer = ExoPlayer.Builder(context)
+                            .setSeekBackIncrementMs(10_000)
+                            .setSeekForwardIncrementMs(10_000)
+                            .setMediaSourceFactory(mediaSourceFactory)
+                            .setRenderersFactory(renderersFactory)
+                            .setTrackSelector(trackSelector!!)
+                            .setLoadControl(loadControl)
+                            .setVideoScalingMode(androidx.media3.common.C.VIDEO_SCALING_MODE_SCALE_TO_FIT)
+                            .setAudioAttributes(
+                                androidx.media3.common.AudioAttributes.Builder()
+                                    .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE)
+                                    .setUsage(androidx.media3.common.C.USAGE_MEDIA)
+                                    .build(),
+                                true,
+                            )
+                            .build()
+
+                        exoPlayer?.addListener(playerListener)
+                        currentMediaItem = offlineMediaItem
+
+                        exoPlayer?.setMediaItem(offlineMediaItem)
+                        exoPlayer?.prepare()
+                        exoPlayer?.play()
+
+                        _playerState.value = _playerState.value.copy(isPlaying = true)
+
+                        if (initialStartPosition > 0) {
+                            exoPlayer?.seekTo(initialStartPosition)
+                        }
+                    }
+
+                    return@launch
+                }
+
                 // Get resume position from server
                 val resumePosition = playbackProgressManager.getResumePosition(itemId)
 
@@ -931,6 +1040,14 @@ class VideoPlayerViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    private fun isDeviceOnline(): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return false
+        val activeNetwork = connectivityManager.activeNetwork ?: return false
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+        return networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
     /**

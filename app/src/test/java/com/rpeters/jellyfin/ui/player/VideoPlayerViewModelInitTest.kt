@@ -2,6 +2,7 @@ package com.rpeters.jellyfin.ui.player
 
 import android.content.Context
 import androidx.media3.common.util.UnstableApi
+import com.rpeters.jellyfin.data.offline.OfflinePlaybackManager
 import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import io.mockk.every
@@ -43,6 +44,7 @@ class VideoPlayerViewModelInitTest {
     private lateinit var mockAnalyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper
     private lateinit var mockOkHttpClient: okhttp3.OkHttpClient
     private lateinit var mockPlaybackPreferencesRepository: com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
+    private lateinit var mockOfflinePlaybackManager: OfflinePlaybackManager
     private lateinit var castStateFlow: MutableStateFlow<CastState>
     private lateinit var playbackProgressFlow: MutableStateFlow<PlaybackProgress>
 
@@ -59,6 +61,7 @@ class VideoPlayerViewModelInitTest {
         mockAnalyticsHelper = mockk(relaxed = true)
         mockOkHttpClient = mockk(relaxed = true)
         mockPlaybackPreferencesRepository = mockk(relaxed = true)
+        mockOfflinePlaybackManager = mockk(relaxed = true)
 
         // Create flows that CastManager and PlaybackProgressManager will expose
         castStateFlow = MutableStateFlow(CastState())
@@ -73,6 +76,7 @@ class VideoPlayerViewModelInitTest {
         every { mockCastManager.castState } returns castStateFlow
         every { mockPlaybackProgressManager.playbackProgress } returns playbackProgressFlow
         every { mockPlaybackPreferencesRepository.preferences } returns MutableStateFlow(com.rpeters.jellyfin.data.preferences.PlaybackPreferences.DEFAULT)
+        every { mockOfflinePlaybackManager.isOfflinePlaybackAvailable(any()) } returns false
 
         // Mock initialize method
         every { mockCastManager.initialize() } returns Unit
@@ -107,6 +111,7 @@ class VideoPlayerViewModelInitTest {
             analytics = mockAnalyticsHelper,
             okHttpClient = mockOkHttpClient,
             playbackPreferencesRepository = mockPlaybackPreferencesRepository,
+            offlinePlaybackManager = mockOfflinePlaybackManager,
         )
 
         // Allow coroutines to process
@@ -137,6 +142,7 @@ class VideoPlayerViewModelInitTest {
             analytics = mockAnalyticsHelper,
             okHttpClient = mockOkHttpClient,
             playbackPreferencesRepository = mockPlaybackPreferencesRepository,
+            offlinePlaybackManager = mockOfflinePlaybackManager,
         )
 
         advanceUntilIdle()
@@ -164,6 +170,7 @@ class VideoPlayerViewModelInitTest {
             analytics = mockAnalyticsHelper,
             okHttpClient = mockOkHttpClient,
             playbackPreferencesRepository = mockPlaybackPreferencesRepository,
+            offlinePlaybackManager = mockOfflinePlaybackManager,
         )
 
         advanceUntilIdle()

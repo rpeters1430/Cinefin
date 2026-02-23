@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.test.core.app.ApplicationProvider
+import com.rpeters.jellyfin.data.offline.OfflinePlaybackManager
 import com.rpeters.jellyfin.data.playback.AdaptiveBitrateMonitor
 import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
 import com.rpeters.jellyfin.data.playback.PlaybackResult
@@ -69,6 +70,9 @@ class VideoPlayerViewModelTest {
     @MockK
     private lateinit var playbackPreferencesRepository: PlaybackPreferencesRepository
 
+    @MockK
+    private lateinit var offlinePlaybackManager: OfflinePlaybackManager
+
     private lateinit var mockExoPlayer: ExoPlayer
 
     private lateinit var context: Context
@@ -86,6 +90,7 @@ class VideoPlayerViewModelTest {
         every { playbackProgressManager.playbackProgress } returns MutableStateFlow(PlaybackProgress("", 0L))
         every { adaptiveBitrateMonitor.qualityRecommendation } returns MutableStateFlow(null)
         every { playbackPreferencesRepository.preferences } returns MutableStateFlow(PlaybackPreferences.DEFAULT)
+        every { offlinePlaybackManager.isOfflinePlaybackAvailable(any()) } returns false
 
         // Mock ExoPlayer and its Builder
         mockExoPlayer = mockk(relaxed = true)
@@ -121,6 +126,7 @@ class VideoPlayerViewModelTest {
             analytics = analytics,
             okHttpClient = okHttpClient,
             playbackPreferencesRepository = playbackPreferencesRepository,
+            offlinePlaybackManager = offlinePlaybackManager,
         )
     }
 
