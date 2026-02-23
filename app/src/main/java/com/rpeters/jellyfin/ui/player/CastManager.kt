@@ -20,7 +20,9 @@ import com.rpeters.jellyfin.data.preferences.CastPreferencesRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
+import com.rpeters.jellyfin.data.repository.RemoteConfigRepository
 import com.rpeters.jellyfin.utils.AppResources
+import com.rpeters.jellyfin.core.FeatureFlags
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -40,6 +42,7 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
 import java.util.Locale
 import java.util.concurrent.Executors
+import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.google.android.gms.cast.MediaMetadata as CastMediaMetadata
@@ -67,6 +70,7 @@ class CastManager @Inject constructor(
     private val castPreferencesRepository: CastPreferencesRepository,
     private val authRepository: JellyfinAuthRepository,
     private val repository: JellyfinRepository,
+    private val remoteConfigRepository: RemoteConfigRepository,
 ) {
 
     private val _castState = MutableStateFlow(CastState())
@@ -474,6 +478,17 @@ class CastManager @Inject constructor(
         val url: String,
         val mimeType: String,
         val playSessionId: String?,
+        val mediaSourceId: String?,
+        val urlType: String,
+    )
+
+    private data class CastDiagnosticsPayload(
+        val routeId: String?,
+        val routeName: String?,
+        val receiverAppId: String?,
+        val urlType: String,
+        val authMode: String,
+        val loadStatusCode: Int? = null,
     )
 
     /**
@@ -571,6 +586,8 @@ class CastManager @Inject constructor(
                 url = fullUrl,
                 mimeType = mimeType,
                 playSessionId = playbackInfo.playSessionId,
+                mediaSourceId = mediaSource.id?.toString(),
+                urlType = if (!mediaSource.transcodingUrl.isNullOrBlank()) "transcode" else "direct",
             )
         } catch (e: Exception) {
             if (e is CancellationException) throw e
@@ -615,6 +632,22 @@ class CastManager @Inject constructor(
         }
         builder.setSubtype(subtype)
         return builder.build()
+    }
+
+    private fun getAuthModeForUrl(url: String): String =
+        if (url.contains("api_key=", ignoreCase = true) || url.contains("token=", ignoreCase = true)) {
+            "tokenized_url"
+        } else {
+            "none"
+        }
+
+    private fun logCastDiagnostics(payload: CastDiagnosticsPayload) {
+        SecureLogger.i(
+            "CastManager",
+            "Cast diagnostics: routeId=${payload.routeId ?: "unknown"}, routeName=${payload.routeName ?: "unknown"}, " +
+                "receiverAppId=${payload.receiverAppId ?: "unknown"}, urlType=${payload.urlType}, authMode=${payload.authMode}, " +
+                "loadStatusCode=${payload.loadStatusCode ?: -1}",
+        )
     }
 
     fun startCasting(
@@ -706,11 +739,26 @@ class CastManager @Inject constructor(
                             pendingSeekPosition = -1L
                         }
 
+                        val useCastFixPath = remoteConfigRepository.getBoolean(FeatureFlags.Experimental.ENABLE_CAST_FIX_PATH)
+                        val effectivePlaySessionId = playSessionId ?: playbackData.playSessionId
+                        val effectiveMediaSourceId = mediaSourceId ?: playbackData.mediaSourceId
+
                         // Load media on Cast device
-                        val request = MediaLoadRequestData.Builder()
+                        val requestBuilder = MediaLoadRequestData.Builder()
                             .setMediaInfo(mediaInfo)
                             .setAutoplay(true)
-                            .build()
+
+                        if (useCastFixPath) {
+                            val customData = JSONObject().apply {
+                                effectivePlaySessionId?.takeIf { it.isNotBlank() }?.let { put("playSessionId", it) }
+                                effectiveMediaSourceId?.takeIf { it.isNotBlank() }?.let { put("mediaSourceId", it) }
+                            }
+                            if (customData.length() > 0) {
+                                requestBuilder.setCustomData(customData)
+                            }
+                        }
+
+                        val request = requestBuilder.build()
 
                         Log.i(
                             "CastManager",
@@ -723,6 +771,17 @@ class CastManager @Inject constructor(
                             val totalTime = System.currentTimeMillis() - startTime
                             val status = result.status
                             Log.i("CastManager", "Cast load result: status=$status statusCode=${status.statusCode} (load took ${loadTime}ms, total ${totalTime}ms)")
+
+                            logCastDiagnostics(
+                                CastDiagnosticsPayload(
+                                    routeId = castSession.castDevice?.deviceId,
+                                    routeName = castSession.castDevice?.friendlyName,
+                                    receiverAppId = castSession.applicationMetadata?.applicationId,
+                                    urlType = playbackData.urlType,
+                                    authMode = getAuthModeForUrl(mediaUrl),
+                                    loadStatusCode = status.statusCode,
+                                ),
+                            )
 
                             if (status.isSuccess) {
                                 val rmc = castSession.remoteMediaClient

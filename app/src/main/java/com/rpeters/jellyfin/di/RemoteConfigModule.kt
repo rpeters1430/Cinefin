@@ -65,6 +65,7 @@ object RemoteConfigModule {
             "ai_smart_recommendations_prompt_template" to "You are a smart content recommendation engine. Find %d titles from the library that the user would enjoy based on thematic similarities, mood, and tone.\n\nCurrent item: %s\nGenres: %s\nOverview: %s\n\nUser's recent viewing history: %s\n\nAvailable library (sample):\n%s\n\nFind items that match:\n1. Thematic elements (e.g., similar character arcs, moral dilemmas, storytelling style)\n2. Mood and tone (not just genre)\n3. User's demonstrated preferences from history\n\nDO NOT recommend the current item itself.\n\nReturn ONLY a JSON array of title strings, in priority order:\n[\"Title 1\", \"Title 2\", \"Title 3\", ...]\n\nInclude ONLY titles that exist in the library above.",
 
             // Experimental & Utility Flags
+            "enable_cast_fix_path" to true,
             "enable_video_player_gestures" to true,
             "enable_quality_recommendations" to true,
             "video_player_seek_interval_ms" to 10000L,
