@@ -1025,6 +1025,7 @@ class JellyfinRepository @Inject constructor(
         container: String = DEFAULT_CONTAINER,
         audioBitrate: Int? = null,
         audioChannels: Int = DEFAULT_MAX_AUDIO_CHANNELS,
+        allowVideoStreamCopy: Boolean = true,
     ): String? =
         streamRepository.getTranscodedStreamUrl(
             itemId = itemId,
@@ -1036,6 +1037,7 @@ class JellyfinRepository @Inject constructor(
             container = container,
             audioBitrate = audioBitrate,
             audioChannels = audioChannels,
+            allowVideoStreamCopy = allowVideoStreamCopy,
         )
 
     fun getHlsStreamUrl(itemId: String): String? =

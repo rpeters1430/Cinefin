@@ -122,6 +122,8 @@ class DownloadsViewModel @Inject constructor(
             val url = withContext(Dispatchers.IO) {
                 if (selectedQuality != null && selectedQuality.id != "original") {
                     // Use H.264 for offline transcoded downloads for maximum Jellyfin server/device compatibility.
+                    // Force actual video transcoding (AllowVideoStreamCopy=false) so the server
+                    // respects MaxWidth/MaxHeight/VideoBitrate instead of copying the original stream.
                     repository.getTranscodedStreamUrl(
                         itemId = itemId,
                         maxBitrate = selectedQuality.bitrate,
@@ -132,6 +134,7 @@ class DownloadsViewModel @Inject constructor(
                         audioBitrate = selectedQuality.audioBitrate,
                         audioChannels = selectedQuality.audioChannels ?: 2,
                         container = "mp4",
+                        allowVideoStreamCopy = false,
                     ) ?: repository.getDownloadUrl(itemId)
                 } else {
                     downloadUrl ?: repository.getDownloadUrl(itemId)

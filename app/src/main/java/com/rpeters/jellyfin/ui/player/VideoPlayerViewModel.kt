@@ -258,6 +258,7 @@ class VideoPlayerViewModel @Inject constructor(
     private var countdownJob: kotlinx.coroutines.Job? = null
     private var requestedSubtitleIndex: Int? = null
     private var hasAttemptedTranscodingFallback: Boolean = false
+    private var hasAttemptedOfflineFallback: Boolean = false
 
     // Position preservation for codec flushes and route changes
     private var savedPositionBeforeFlush: Long? = null
@@ -409,6 +410,26 @@ class VideoPlayerViewModel @Inject constructor(
                     )
                     hasAttemptedTranscodingFallback = true
                     viewModelScope.launch { retryWithTranscoding() }
+                    return
+                }
+            }
+
+            // Fallback to offline copy on network/IO errors when a downloaded copy is available
+            val itemId = currentItemId
+            if (!hasAttemptedOfflineFallback && itemId != null) {
+                val isNetworkError = error.errorCode in setOf(
+                    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+                    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
+                    PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS,
+                )
+                if (isNetworkError && offlinePlaybackManager.isOfflinePlaybackAvailable(itemId)) {
+                    SecureLogger.i("VideoPlayer", "Network error (${error.errorCode}) - falling back to offline copy for $itemId")
+                    _playerState.value = _playerState.value.copy(
+                        error = null,
+                        isLoading = true,
+                    )
+                    hasAttemptedOfflineFallback = true
+                    viewModelScope.launch { retryWithOfflineFallback() }
                     return
                 }
             }
@@ -602,6 +623,7 @@ class VideoPlayerViewModel @Inject constructor(
         lastRestoreAttemptTime = 0L
         requestedSubtitleIndex = subtitleIndex
         hasAttemptedTranscodingFallback = false
+        hasAttemptedOfflineFallback = false
 
         // Note: We'll set the sessionId from PlaybackResult later to use server's playSessionId
         playbackSessionId = null
@@ -633,10 +655,11 @@ class VideoPlayerViewModel @Inject constructor(
                         "Using offline source for itemId=$itemId (isOnline=$isOnline, forceOffline=$forceOffline)",
                     )
 
+                    val offlineQualityLabel = offlinePlaybackManager.getOfflineDownload(itemId)?.quality?.label ?: "Original"
                     analytics.logPlaybackEvent(
                         method = "Offline",
                         container = "Local file",
-                        resolution = "Original",
+                        resolution = offlineQualityLabel,
                     )
 
                     _playerState.value = _playerState.value.copy(
@@ -1217,6 +1240,55 @@ class VideoPlayerViewModel @Inject constructor(
             }
         } catch (e: Exception) {
             SecureLogger.e("VideoPlayer", "Transcoding fallback failed: ${e.message}", e)
+            _playerState.value = _playerState.value.copy(
+                error = "Playback failed: ${e.message}",
+                isLoading = false,
+            )
+        }
+    }
+
+    /**
+     * Retry playback using a locally downloaded copy after a network/IO error.
+     * Releases the current online player, then initializes from the offline file at the same
+     * playback position so the user experiences seamless continuation (e.g. after airplane mode).
+     */
+    private suspend fun retryWithOfflineFallback() {
+        val itemId = currentItemId ?: return
+        val itemName = currentItemName ?: return
+
+        try {
+            // Capture the position the online player had reached
+            val positionMs = maxOf(
+                savedPositionBeforeFlush ?: 0L,
+                withContext(Dispatchers.Main) { exoPlayer?.currentPosition ?: 0L },
+            )
+
+            // Release the failing online player
+            withContext(Dispatchers.Main) {
+                exoPlayer?.let { p ->
+                    try {
+                        p.removeListener(playerListener)
+                        p.stop()
+                        p.clearVideoSurface()
+                        p.release()
+                    } catch (_: Exception) {}
+                }
+                exoPlayer = null
+                trackSelector = null
+            }
+
+            SecureLogger.i("VideoPlayer", "Offline fallback: re-initialising at ${positionMs}ms for $itemId")
+            // Re-initialize with forceOffline=true; currentItemId is still set so we intentionally
+            // reset it here to force a fresh player build inside initializePlayer.
+            currentItemId = null
+            initializePlayer(
+                itemId = itemId,
+                itemName = itemName,
+                startPosition = positionMs,
+                forceOffline = true,
+            )
+        } catch (e: Exception) {
+            SecureLogger.e("VideoPlayer", "Offline fallback failed: ${e.message}", e)
             _playerState.value = _playerState.value.copy(
                 error = "Playback failed: ${e.message}",
                 isLoading = false,

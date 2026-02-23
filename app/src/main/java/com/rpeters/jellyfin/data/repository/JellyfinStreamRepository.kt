@@ -190,6 +190,9 @@ class JellyfinStreamRepository @Inject constructor(
     /**
      * Get transcoded stream URL with specific quality parameters.
      * Uses progressive streaming endpoint for better compatibility and immediate playback.
+     * @param allowVideoStreamCopy When false, forces real video transcoding (required for offline
+     *   quality presets so the server honours MaxWidth/MaxHeight/VideoBitrate instead of copying
+     *   the original stream).
      * @param allowAudioStreamCopy When false, forces audio transcoding for compatibility.
      */
     fun getTranscodedStreamUrl(
@@ -206,6 +209,7 @@ class JellyfinStreamRepository @Inject constructor(
         subtitleStreamIndex: Int? = null,
         audioChannels: Int = DEFAULT_MAX_AUDIO_CHANNELS,
         audioBitrate: Int? = null,
+        allowVideoStreamCopy: Boolean = true,
         allowAudioStreamCopy: Boolean = true,
     ): String? {
         val server = authRepository.getCurrentServer() ?: return null
@@ -245,8 +249,7 @@ class JellyfinStreamRepository @Inject constructor(
             audioBitrate?.let { params.add("AudioBitRate=$it") }
             params.add("DeviceId=${deviceCapabilities.getDeviceId()}")
             params.add("BreakOnNonKeyFrames=true")
-            // Allow Direct Stream - keep video quality, only transcode audio if needed
-            params.add("AllowVideoStreamCopy=true")
+            params.add("AllowVideoStreamCopy=$allowVideoStreamCopy")
             params.add("AllowAudioStreamCopy=$allowAudioStreamCopy")
 
             // Add stream indices for multilingual content
