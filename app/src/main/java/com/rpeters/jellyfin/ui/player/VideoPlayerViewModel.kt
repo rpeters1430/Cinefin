@@ -877,18 +877,18 @@ class VideoPlayerViewModel @Inject constructor(
                     // Add listener
                     exoPlayer?.addListener(playerListener)
 
-                    // Create media item with proper MIME type for transcoded content
-                    val mediaItem = if (mimeType != null) {
-                        MediaItem.Builder()
-                            .setUri(streamUrl)
-                            .setMimeType(mimeType)
-                            .build()
-                    } else {
-                        MediaItem.fromUri(streamUrl)
-                    }
+                    // Create media item using MediaItemFactory to include side-loaded subtitle tracks.
+                    // This ensures subtitles from the Jellyfin server are available in ExoPlayer,
+                    // which is especially important for home video ("stuff") content.
+                    val mediaItem = MediaItemFactory.build(
+                        videoUrl = streamUrl,
+                        title = currentItemMetadata?.name,
+                        sideLoadedSubs = currentSubtitleSpecs,
+                        mimeTypeHint = mimeType,
+                    )
                     currentMediaItem = mediaItem
 
-                    SecureLogger.d("VideoPlayer", "Created MediaItem with MIME type: $mimeType")
+                    SecureLogger.d("VideoPlayer", "Created MediaItem with MIME type: $mimeType, subtitles: ${currentSubtitleSpecs.size}")
 
                     // Set media and prepare
                     exoPlayer?.setMediaItem(mediaItem)
@@ -1065,14 +1065,12 @@ class VideoPlayerViewModel @Inject constructor(
 
                 exoPlayer?.addListener(playerListener)
 
-                val mediaItem = if (mimeType != null) {
-                    MediaItem.Builder()
-                        .setUri(streamUrl)
-                        .setMimeType(mimeType)
-                        .build()
-                } else {
-                    MediaItem.fromUri(streamUrl)
-                }
+                val mediaItem = MediaItemFactory.build(
+                    videoUrl = streamUrl,
+                    title = currentItemMetadata?.name,
+                    sideLoadedSubs = emptyList(), // Transcoding handles subtitles server-side
+                    mimeTypeHint = mimeType,
+                )
                 currentMediaItem = mediaItem
 
                 exoPlayer?.setMediaItem(mediaItem)
