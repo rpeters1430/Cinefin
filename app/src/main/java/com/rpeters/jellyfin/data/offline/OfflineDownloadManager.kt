@@ -92,6 +92,10 @@ class OfflineDownloadManager @Inject constructor(
         private const val ENCRYPTED_URL_PREFIX = "encrypted_url_"
         private const val OFFLINE_DOWNLOAD_WORK_TAG = "offline_download"
         private const val TRANSCODING_POLL_INTERVAL_MS = 3000L
+
+        private val KNOWN_VIDEO_CONTAINERS = setOf(
+            "mkv", "mp4", "avi", "mov", "wmv", "flv", "webm", "m4v", "ts", "m2ts", "mpg", "mpeg",
+        )
     }
 
     enum class DownloadExecutionResult {
@@ -602,7 +606,17 @@ class OfflineDownloadManager @Inject constructor(
             ?: repository.getDownloadUrl(itemId)
             ?: repository.getStreamUrl(itemId)
             ?: ""
-        val fileName = "${item.name?.replace(Regex("[^a-zA-Z0-9.-]"), "_")}_${System.currentTimeMillis()}.mp4"
+        val fileExtension = if (quality == null || quality.id == "original") {
+            // Derive extension from the item's original container so files are correctly labelled
+            // (e.g. "mkv", "avi") when the user downloads at Original quality.
+            val container = item.mediaSources?.firstOrNull()?.container
+                ?.lowercase()
+                ?.trimStart('.')
+            if (container != null && container in KNOWN_VIDEO_CONTAINERS) ".$container" else ".mp4"
+        } else {
+            ".mp4" // Transcoded downloads are always MP4
+        }
+        val fileName = "${item.name?.replace(Regex("[^a-zA-Z0-9.-]"), "_")}_${System.currentTimeMillis()}$fileExtension"
         val localPath = File(getOfflineDirectory(), fileName).absolutePath
 
         // SECURITY: Store download URL encrypted

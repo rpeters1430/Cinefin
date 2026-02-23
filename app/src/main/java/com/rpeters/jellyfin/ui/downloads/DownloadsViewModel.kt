@@ -14,8 +14,8 @@ import com.rpeters.jellyfin.data.offline.OfflineStorageInfo
 import com.rpeters.jellyfin.data.offline.VideoQuality
 import com.rpeters.jellyfin.data.preferences.DownloadPreferences
 import com.rpeters.jellyfin.data.preferences.DownloadPreferencesRepository
-import com.rpeters.jellyfin.data.repository.OfflineProgressRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.OfflineProgressRepository
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.network.NetworkType
 import com.rpeters.jellyfin.ui.player.VideoPlayerActivity
@@ -23,7 +23,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -122,6 +121,8 @@ class DownloadsViewModel @Inject constructor(
             val url = withContext(Dispatchers.IO) {
                 if (selectedQuality != null && selectedQuality.id != "original") {
                     // Use H.264 for offline transcoded downloads for maximum Jellyfin server/device compatibility.
+                    // Force actual video transcoding (AllowVideoStreamCopy=false) so the server
+                    // respects MaxWidth/MaxHeight/VideoBitrate instead of copying the original stream.
                     repository.getTranscodedStreamUrl(
                         itemId = itemId,
                         maxBitrate = selectedQuality.bitrate,
@@ -132,6 +133,7 @@ class DownloadsViewModel @Inject constructor(
                         audioBitrate = selectedQuality.audioBitrate,
                         audioChannels = selectedQuality.audioChannels ?: 2,
                         container = "mp4",
+                        allowVideoStreamCopy = false,
                     ) ?: repository.getDownloadUrl(itemId)
                 } else {
                     downloadUrl ?: repository.getDownloadUrl(itemId)

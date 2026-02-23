@@ -31,9 +31,9 @@ import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.mediaInfoApi
+import org.jellyfin.sdk.api.client.extensions.sessionApi
 import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.api.client.extensions.userApi
-import org.jellyfin.sdk.api.client.extensions.sessionApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.AuthenticationResult
@@ -1025,6 +1025,7 @@ class JellyfinRepository @Inject constructor(
         container: String = DEFAULT_CONTAINER,
         audioBitrate: Int? = null,
         audioChannels: Int = DEFAULT_MAX_AUDIO_CHANNELS,
+        allowVideoStreamCopy: Boolean = true,
     ): String? =
         streamRepository.getTranscodedStreamUrl(
             itemId = itemId,
@@ -1036,6 +1037,7 @@ class JellyfinRepository @Inject constructor(
             container = container,
             audioBitrate = audioBitrate,
             audioChannels = audioChannels,
+            allowVideoStreamCopy = allowVideoStreamCopy,
         )
 
     fun getHlsStreamUrl(itemId: String): String? =
