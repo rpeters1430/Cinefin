@@ -22,13 +22,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.repeatOnLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
+import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
+import com.rpeters.jellyfin.ui.components.WatchStatusBanner
 import com.rpeters.jellyfin.ui.components.getQualityLabel
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
+import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.findDefaultAudioStream
@@ -36,20 +40,6 @@ import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.utils.getFormattedDuration
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.util.Locale
-
-/**
- * Immersive home video detail screen with Netflix/Disney+ inspired design.
- * Features:
- * - Full-bleed parallax backdrop (480dp height)
- * - Title and metadata overlaid on gradient
- * - Cinematic technical details presentation
- * - Large action buttons in grid layout
- * - Floating back button
- * - Material 3 animations
- */
-import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
-import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @OptInAppExperimentalApis
@@ -145,6 +135,15 @@ fun ImmersiveHomeVideoDetailScreen(
                     )
                 }
 
+                item(key = "watch_status") {
+                    Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                        WatchStatusBanner(
+                            item = item,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
+                }
+
                 // Live Playback Progress Indicator
                 playbackProgress?.let { progress ->
                     item(key = "playback_progress") {
@@ -161,9 +160,9 @@ fun ImmersiveHomeVideoDetailScreen(
                 item(key = "play_button", contentType = "action") {
                     Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
                         Button(
-                            onClick = { 
+                            onClick = {
                                 val resumePos = playbackProgress?.positionMs
-                                onPlayClick(item, resumePos) 
+                                onPlayClick(item, resumePos)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
