@@ -19,8 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.utils.getWatchedPercentage
 import com.rpeters.jellyfin.utils.isPartiallyWatched
 import com.rpeters.jellyfin.utils.isWatched
-import kotlin.math.roundToInt
 import org.jellyfin.sdk.model.api.BaseItemDto
+import kotlin.math.roundToInt
 
 @Composable
 fun WatchStatusBanner(
