@@ -124,7 +124,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                             context = navController.context,
                             streamUrl = streamUrl,
                             item = video,
-                            startPosition = startPosition
+                            startPosition = startPosition,
                         )
                     }
                 },
@@ -152,7 +152,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onMarkWatchedClick = { video ->
                     mainViewModel.toggleWatchedStatus(video)
                 },
-                onRefresh = { 
+                onRefresh = {
                     // Refresh current item
                     item?.id?.toString()?.let { detailViewModel.load(it) }
                 },
@@ -208,7 +208,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                             context = navController.context,
                             streamUrl = streamUrl,
                             item = video,
-                            startPosition = startPosition
+                            startPosition = startPosition,
                         )
                     }
                 },
@@ -236,7 +236,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 onMarkWatchedClick = { video ->
                     mainViewModel.toggleWatchedStatus(video)
                 },
-                onRefresh = { 
+                onRefresh = {
                     // Refresh current item
                     item?.id?.toString()?.let { detailViewModel.load(it) }
                 },
@@ -322,7 +322,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                             streamUrl = streamUrl,
                             item = movieItem,
                             subtitleIndex = subtitleIndex,
-                            startPosition = startPosition
+                            startPosition = startPosition,
                         )
                     }
                 },
@@ -470,7 +470,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                                 streamUrl = streamUrl,
                                 item = episodeItem,
                                 subtitleIndex = subtitleIndex,
-                                startPosition = startPosition
+                                startPosition = startPosition,
                             )
                         }
                     },
@@ -590,8 +590,8 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
         route = Screen.PersonDetail.route,
         arguments = listOf(
             navArgument("personId") { type = NavType.StringType },
-            navArgument("personName") { type = NavType.StringType }
-        )
+            navArgument("personName") { type = NavType.StringType },
+        ),
     ) {
         val mainViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
         com.rpeters.jellyfin.ui.screens.PersonDetailScreen(
@@ -609,7 +609,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                     }
                 }
             },
-            getImageUrl = { item -> mainViewModel.getImageUrl(item) }
+            getImageUrl = { item -> mainViewModel.getImageUrl(item) },
         )
     }
 }

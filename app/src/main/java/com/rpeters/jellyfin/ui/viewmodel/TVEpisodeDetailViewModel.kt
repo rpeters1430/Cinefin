@@ -174,7 +174,6 @@ class TVEpisodeDetailViewModel @Inject constructor(
         }
     }
 
-
     private fun observeDownloadState(episodeId: String) {
         observeDownloadedJob?.cancel()
         observeDownloadInfoJob?.cancel()

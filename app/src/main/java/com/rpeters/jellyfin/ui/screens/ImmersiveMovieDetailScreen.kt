@@ -33,6 +33,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.Hd
 import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.MoreVert
@@ -81,8 +82,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.repeatOnLifecycle
 import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -92,6 +94,7 @@ import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
+import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
 import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.HdrType
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
@@ -100,6 +103,7 @@ import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
+import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
 import com.rpeters.jellyfin.ui.theme.Quality1440
@@ -113,11 +117,6 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
 import kotlin.math.roundToInt
-
-import androidx.compose.material.icons.rounded.FileDownload
-import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
-import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @OptInAppExperimentalApis
@@ -344,10 +343,10 @@ fun ImmersiveMovieDetailScreen(
                     ) {
                         // Primary Play Button
                         Surface(
-                            onClick = { 
+                            onClick = {
                                 // Use the latest position from playbackProgress if available
                                 val resumePos = playbackProgress?.positionMs
-                                onPlayClick(movie, selectedSubtitleIndex, resumePos) 
+                                onPlayClick(movie, selectedSubtitleIndex, resumePos)
                             },
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.primary,

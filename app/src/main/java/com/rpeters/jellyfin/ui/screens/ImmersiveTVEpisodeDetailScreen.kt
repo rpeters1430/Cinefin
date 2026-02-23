@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -36,6 +35,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -62,9 +62,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.repeatOnLifecycle
 import coil3.request.crossfade
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
@@ -73,6 +73,7 @@ import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
+import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
 import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.HdrType
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
@@ -82,6 +83,7 @@ import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
+import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
@@ -90,9 +92,6 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.isWatched
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.util.Locale
-
-import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
-import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 
 /**
  * Immersive TV Episode Detail screen.
@@ -145,7 +144,6 @@ fun ImmersiveTVEpisodeDetailScreen(
             downloadsViewModel = downloadsViewModel,
         )
     }
-
 
     if (showDeleteOfflineConfirmation) {
         AlertDialog(
@@ -217,9 +215,9 @@ fun ImmersiveTVEpisodeDetailScreen(
                     EpisodeHeroContent(
                         episode = episode,
                         seriesInfo = seriesInfo,
-                        onPlayClick = { 
+                        onPlayClick = {
                             val resumePos = playbackProgress?.positionMs
-                            onPlayClick(episode, null, resumePos) 
+                            onPlayClick(episode, null, resumePos)
                         },
                     )
                 }

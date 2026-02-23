@@ -8,7 +8,6 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.datastore.core.DataStore
-import com.rpeters.jellyfin.data.worker.DownloadActionReceiver
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -23,14 +22,15 @@ import androidx.work.workDataOf
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.worker.DownloadActionReceiver
 import com.rpeters.jellyfin.data.worker.OfflineDownloadWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -51,9 +51,9 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -404,8 +404,11 @@ class OfflineDownloadManager @Inject constructor(
         val pollerJob = downloadScope.launchTranscodingPoller(download, transcodingRef)
 
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Download starting: contentLength=$bodyLength, " +
-                "estimatedTotal=$totalBytesExpected, quality=${download.quality?.label}")
+            Log.d(
+                TAG,
+                "Download starting: contentLength=$bodyLength, " +
+                    "estimatedTotal=$totalBytesExpected, quality=${download.quality?.label}",
+            )
         }
 
         try {
@@ -568,13 +571,15 @@ class OfflineDownloadManager @Inject constructor(
         val estimatedBytes = (totalBitrate * durationSeconds / 8.0 * 1.05).toLong()
 
         if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Estimated download size: ${estimatedBytes / (1024 * 1024)}MB " +
-                "(${durationSeconds.toLong()}s @ ${totalBitrate / 1000}kbps)")
+            Log.d(
+                TAG,
+                "Estimated download size: ${estimatedBytes / (1024 * 1024)}MB " +
+                    "(${durationSeconds.toLong()}s @ ${totalBitrate / 1000}kbps)",
+            )
         }
 
         return if (estimatedBytes > 0L) estimatedBytes else -1L
     }
-
 
     private suspend fun createDownload(
         item: BaseItemDto,
@@ -624,7 +629,7 @@ class OfflineDownloadManager @Inject constructor(
 
     private fun getOfflineDirectory(): File {
         val baseDir = context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-            ?: context.filesDir  // fallback to internal storage if external unavailable
+            ?: context.filesDir // fallback to internal storage if external unavailable
         val offlineDir = File(baseDir, JELLYFIN_OFFLINE_DIR)
         if (!offlineDir.exists()) {
             offlineDir.mkdirs()

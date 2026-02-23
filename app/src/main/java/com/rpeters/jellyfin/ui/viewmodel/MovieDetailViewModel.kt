@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.BaseItemKind
 import javax.inject.Inject
 
 data class MovieDetailState(
@@ -78,8 +77,8 @@ class MovieDetailViewModel @Inject constructor(
                     if (progress.positionMs > 0 || progress.isWatched) {
                         _state.value = _state.value.copy(playbackProgress = progress)
                     }
-                    
-                    // If progress was updated externally (e.g. finished playing), 
+
+                    // If progress was updated externally (e.g. finished playing),
                     // we might want to refresh the movie metadata to get updated 'played' status
                     if (progress.isWatched && currentMovie.userData?.played != true) {
                         refresh()
@@ -93,7 +92,7 @@ class MovieDetailViewModel @Inject constructor(
         analytics.logUiEvent("MovieDetail", "view_movie")
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, errorMessage = null, playbackAnalysis = null)
-            
+
             // Also fetch initial progress from server
             val initialProgress = try {
                 val resumePos = playbackProgressManager.getResumePosition(movieId)
@@ -177,24 +176,24 @@ class MovieDetailViewModel @Inject constructor(
                 if (viewingHistory.isNotEmpty()) {
                     val pitch = generativeAiRepository.generateWhyYoullLoveThis(
                         item = movie,
-                        viewingHistory = viewingHistory
+                        viewingHistory = viewingHistory,
                     )
                     _state.value = _state.value.copy(
                         whyYoullLoveThis = pitch.takeIf { it.isNotBlank() },
-                        isLoadingWhyYoullLoveThis = false
+                        isLoadingWhyYoullLoveThis = false,
                     )
                 } else {
                     // No viewing history, skip
                     _state.value = _state.value.copy(
                         whyYoullLoveThis = null,
-                        isLoadingWhyYoullLoveThis = false
+                        isLoadingWhyYoullLoveThis = false,
                     )
                 }
             } catch (e: Exception) {
                 // Personalized pitch is non-critical
                 _state.value = _state.value.copy(
                     whyYoullLoveThis = null,
-                    isLoadingWhyYoullLoveThis = false
+                    isLoadingWhyYoullLoveThis = false,
                 )
             }
         }
