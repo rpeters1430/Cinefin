@@ -16,7 +16,6 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Rational
 import android.view.WindowManager
-import java.util.Locale
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
@@ -41,6 +40,7 @@ import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 @androidx.media3.common.util.UnstableApi
@@ -84,6 +84,7 @@ class VideoPlayerActivity : FragmentActivity() {
         private const val EXTRA_ITEM_NAME = "extra_item_name"
         private const val EXTRA_START_POSITION = "extra_start_position"
         private const val EXTRA_SUBTITLE_INDEX = "extra_subtitle_index"
+        private const val EXTRA_FORCE_OFFLINE = "extra_force_offline"
 
         @JvmStatic
         @VisibleForTesting
@@ -114,11 +115,13 @@ class VideoPlayerActivity : FragmentActivity() {
             itemName: String,
             startPosition: Long = 0L,
             subtitleIndex: Int? = null,
+            forceOffline: Boolean = false,
         ): Intent {
             return Intent(context, VideoPlayerActivity::class.java).apply {
                 putExtra(EXTRA_ITEM_ID, itemId)
                 putExtra(EXTRA_ITEM_NAME, itemName)
                 putExtra(EXTRA_START_POSITION, startPosition)
+                putExtra(EXTRA_FORCE_OFFLINE, forceOffline)
                 if (subtitleIndex != null) {
                     putExtra(EXTRA_SUBTITLE_INDEX, subtitleIndex)
                 }
@@ -152,6 +155,7 @@ class VideoPlayerActivity : FragmentActivity() {
             } else {
                 null
             }
+            val forceOffline = intent.getBooleanExtra(EXTRA_FORCE_OFFLINE, false)
 
             // Store item name for PiP title
             currentItemName = itemName
@@ -174,7 +178,13 @@ class VideoPlayerActivity : FragmentActivity() {
             // Initialize player with error handling
             lifecycleScope.launch {
                 try {
-                    playerViewModel.initializePlayer(itemId, itemName, startPosition, subtitleIndex)
+                    playerViewModel.initializePlayer(
+                        itemId = itemId,
+                        itemName = itemName,
+                        startPosition = startPosition,
+                        subtitleIndex = subtitleIndex,
+                        forceOffline = forceOffline,
+                    )
                 } catch (e: CancellationException) {
                     throw e
                 }
@@ -499,7 +509,7 @@ class VideoPlayerActivity : FragmentActivity() {
      */
     private fun updatePipParams() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        
+
         if (isInPipMode) {
             try {
                 val playerState = playerViewModel.playerState.value

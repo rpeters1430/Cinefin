@@ -1,6 +1,8 @@
 package com.rpeters.jellyfin.data.offline
 
 import android.content.Context
+import android.net.Uri
+import android.os.Environment
 import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -12,6 +14,7 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,7 +31,7 @@ class OfflinePlaybackManager @Inject constructor(
         return downloads.value.any { download ->
             download.jellyfinItemId == itemId &&
                 download.status == DownloadStatus.COMPLETED &&
-                File(download.localFilePath).exists()
+                resolveReadableOfflineFile(download, logWarnings = false) != null
         }
     }
 
@@ -38,11 +41,7 @@ class OfflinePlaybackManager @Inject constructor(
                 download.status == DownloadStatus.COMPLETED
         } ?: return null
 
-        val file = File(download.localFilePath)
-        if (!file.exists()) {
-            Log.w("OfflinePlaybackManager", "Offline file not found: ${download.localFilePath}")
-            return null
-        }
+        val file = resolveReadableOfflineFile(download) ?: return null
 
         val metadata = MediaMetadata.Builder()
             .setTitle(download.itemName)
@@ -50,7 +49,7 @@ class OfflinePlaybackManager @Inject constructor(
             .build()
 
         return MediaItem.Builder()
-            .setUri(file.toURI().toString())
+            .setUri(Uri.fromFile(file))
             .setMediaMetadata(metadata)
             .build()
     }
@@ -61,16 +60,12 @@ class OfflinePlaybackManager @Inject constructor(
                 download.status == DownloadStatus.COMPLETED
         } ?: return null
 
-        val file = File(download.localFilePath)
-        if (!file.exists()) {
-            Log.w("OfflinePlaybackManager", "Offline file not found: ${download.localFilePath}")
-            return null
-        }
+        val file = resolveReadableOfflineFile(download) ?: return null
 
         val dataSourceFactory = DefaultDataSource.Factory(context)
 
         return ProgressiveMediaSource.Factory(dataSourceFactory)
-            .createMediaSource(MediaItem.fromUri(file.toURI().toString()))
+            .createMediaSource(MediaItem.fromUri(Uri.fromFile(file)))
     }
 
     fun getOfflineDownload(itemId: String): OfflineDownload? {
@@ -89,8 +84,7 @@ class OfflinePlaybackManager @Inject constructor(
 
         downloads.value.forEach { download ->
             if (download.status == DownloadStatus.COMPLETED) {
-                val file = File(download.localFilePath)
-                if (!file.exists()) {
+                if (resolveReadableOfflineFile(download, logWarnings = false) == null) {
                     invalidDownloads.add(download.id)
                     Log.w("OfflinePlaybackManager", "Missing offline file for download: ${download.id}")
                 }
@@ -98,6 +92,62 @@ class OfflinePlaybackManager @Inject constructor(
         }
 
         return invalidDownloads
+    }
+
+    private fun resolveReadableOfflineFile(
+        download: OfflineDownload,
+        logWarnings: Boolean = true,
+    ): File? {
+        val file = try {
+            File(download.localFilePath).canonicalFile
+        } catch (e: IOException) {
+            if (logWarnings) {
+                Log.w("OfflinePlaybackManager", "Invalid offline file path: ${download.localFilePath}", e)
+            }
+            return null
+        }
+
+        if (!file.exists() || !file.isFile() || !file.canRead()) {
+            if (logWarnings) {
+                Log.w("OfflinePlaybackManager", "Offline file unavailable: ${download.localFilePath}")
+            }
+            return null
+        }
+
+        if (!isInAppSpecificStorage(file)) {
+            if (logWarnings) {
+                Log.w(
+                    "OfflinePlaybackManager",
+                    "Rejected non-app-specific offline path: ${download.localFilePath}",
+                )
+            }
+            return null
+        }
+
+        return file
+    }
+
+    private fun isInAppSpecificStorage(file: File): Boolean {
+        val filePath = file.path
+        return appSpecificStorageRoots().any { root ->
+            val rootPath = root.path
+            filePath == rootPath || filePath.startsWith("$rootPath${File.separator}")
+        }
+    }
+
+    private fun appSpecificStorageRoots(): List<File> {
+        val roots = mutableListOf<File>()
+        context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)?.let(roots::add)
+        context.getExternalFilesDir(null)?.let(roots::add)
+        roots.add(context.filesDir)
+
+        return roots.mapNotNull { root ->
+            try {
+                root.canonicalFile
+            } catch (_: IOException) {
+                null
+            }
+        }
     }
 
     fun getOfflineStorageInfo(): OfflineStorageInfo {
