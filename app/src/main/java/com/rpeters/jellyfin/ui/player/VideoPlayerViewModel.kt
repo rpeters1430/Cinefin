@@ -847,10 +847,14 @@ class VideoPlayerViewModel @Inject constructor(
                     // Configure load control for better buffering on high-bitrate content
                     val loadControl = androidx.media3.exoplayer.DefaultLoadControl.Builder()
                         .setBufferDurationsMs(
-                            /* minBufferMs = */ 15_000, // Minimum buffer before playback can start (15s)
-                            /* maxBufferMs = */ 50_000, // Maximum buffer duration (50s for smooth playback)
-                            /* bufferForPlaybackMs = */ 2_500, // Buffer required to start playback (2.5s)
-                            /* bufferForPlaybackAfterRebufferMs = */ 5_000, // Buffer required after rebuffering (5s)
+                            /* minBufferMs = */
+                            15_000, // Minimum buffer before playback can start (15s)
+                            /* maxBufferMs = */
+                            50_000, // Maximum buffer duration (50s for smooth playback)
+                            /* bufferForPlaybackMs = */
+                            2_500, // Buffer required to start playback (2.5s)
+                            /* bufferForPlaybackAfterRebufferMs = */
+                            5_000, // Buffer required after rebuffering (5s)
                         )
                         .setPrioritizeTimeOverSizeThresholds(true) // Better for streaming
                         .build()
@@ -870,25 +874,26 @@ class VideoPlayerViewModel @Inject constructor(
                                 .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE)
                                 .setUsage(androidx.media3.common.C.USAGE_MEDIA)
                                 .build(),
-                            /* handleAudioFocus = */ true
+                            /* handleAudioFocus = */
+                            true,
                         )
                         .build()
 
                     // Add listener
                     exoPlayer?.addListener(playerListener)
 
-                    // Create media item with proper MIME type for transcoded content
-                    val mediaItem = if (mimeType != null) {
-                        MediaItem.Builder()
-                            .setUri(streamUrl)
-                            .setMimeType(mimeType)
-                            .build()
-                    } else {
-                        MediaItem.fromUri(streamUrl)
-                    }
+                    // Create media item using MediaItemFactory to include side-loaded subtitle tracks.
+                    // This ensures subtitles from the Jellyfin server are available in ExoPlayer,
+                    // which is especially important for home video ("stuff") content.
+                    val mediaItem = MediaItemFactory.build(
+                        videoUrl = streamUrl,
+                        title = currentItemMetadata?.name,
+                        sideLoadedSubs = currentSubtitleSpecs,
+                        mimeTypeHint = mimeType,
+                    )
                     currentMediaItem = mediaItem
 
-                    SecureLogger.d("VideoPlayer", "Created MediaItem with MIME type: $mimeType")
+                    SecureLogger.d("VideoPlayer", "Created MediaItem with MIME type: $mimeType, subtitles: ${currentSubtitleSpecs.size}")
 
                     // Set media and prepare
                     exoPlayer?.setMediaItem(mediaItem)
@@ -1065,14 +1070,12 @@ class VideoPlayerViewModel @Inject constructor(
 
                 exoPlayer?.addListener(playerListener)
 
-                val mediaItem = if (mimeType != null) {
-                    MediaItem.Builder()
-                        .setUri(streamUrl)
-                        .setMimeType(mimeType)
-                        .build()
-                } else {
-                    MediaItem.fromUri(streamUrl)
-                }
+                val mediaItem = MediaItemFactory.build(
+                    videoUrl = streamUrl,
+                    title = currentItemMetadata?.name,
+                    sideLoadedSubs = emptyList(), // Transcoding handles subtitles server-side
+                    mimeTypeHint = mimeType,
+                )
                 currentMediaItem = mediaItem
 
                 exoPlayer?.setMediaItem(mediaItem)

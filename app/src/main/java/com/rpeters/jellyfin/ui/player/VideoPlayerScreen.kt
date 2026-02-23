@@ -1,5 +1,9 @@
 package com.rpeters.jellyfin.ui.player
 
+import android.graphics.PixelFormat
+import android.os.Build
+import android.view.SurfaceView
+import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -19,14 +23,12 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import kotlin.math.roundToInt
-import android.graphics.PixelFormat
-import android.os.Build
-import android.view.SurfaceView
-import android.view.View
 
 @UnstableApi
 @Composable
@@ -112,13 +114,27 @@ fun VideoPlayerScreen(
     var seekFeedbackIcon by remember { mutableStateOf(Icons.Default.FastForward) }
     var lastPlayerViewBounds by remember { mutableStateOf<android.graphics.Rect?>(null) }
 
-    // Control visibility timers
-    LaunchedEffect(showSeekFeedback) {
-        if (showSeekFeedback) {
-            delay(1500)
-            showSeekFeedback = false
+    // Coroutine scope for managing the gesture feedback dismiss timer.
+    // Using a cancellable Job ensures the timer resets on every new gesture event, preventing
+    // the indicator from sticking or dismissing prematurely during a continuous drag.
+    val feedbackScope = rememberCoroutineScope()
+    val feedbackDismissJobRef = remember { java.util.concurrent.atomic.AtomicReference<Job?>(null) }
+
+    // Memoize the showFeedback lambda so it is not recreated on every recomposition.
+    val showFeedback: () -> Unit = remember(feedbackScope) {
+        {
+            showSeekFeedback = true
+            feedbackDismissJobRef.getAndSet(null)?.cancel()
+            feedbackDismissJobRef.set(
+                feedbackScope.launch {
+                    delay(1500)
+                    showSeekFeedback = false
+                },
+            )
         }
     }
+
+    // Control visibility timers
     LaunchedEffect(controlsVisible, playerState.isPlaying) {
         if (controlsVisible && playerState.isPlaying) {
             delay(5000)
@@ -157,9 +173,9 @@ fun VideoPlayerScreen(
                 onDoubleTap = { isRightSide ->
                     val seekAmount = if (isRightSide) 10_000L else -10_000L
                     onSeek((currentPosMs + seekAmount).coerceIn(0L, playerState.duration))
-                    showSeekFeedback = true
                     seekFeedbackIcon = if (isRightSide) Icons.Default.FastForward else Icons.Default.FastRewind
                     seekFeedbackText = if (isRightSide) "+10s" else "-10s"
+                    showFeedback()
                     controlsVisible = false
                 },
                 onVerticalDrag = { isLeftSide, deltaY ->
@@ -171,17 +187,17 @@ fun VideoPlayerScreen(
                         val next = (current + brightnessChange).coerceIn(0f, 1f)
                         activity.window.attributes = activity.window.attributes.apply { screenBrightness = next }
                         currentBrightness = next
-                        showSeekFeedback = true
                         seekFeedbackIcon = Icons.Default.Brightness6
                         seekFeedbackText = "${(next * 100).toInt()}%"
+                        showFeedback()
                     } else {
                         val volumeChange = (deltaY / (screenHeight * 0.5f) * maxVolume).toInt()
                         val next = (currentVolume + volumeChange).coerceIn(0, maxVolume)
                         audioManager.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, next, 0)
                         currentVolume = next
-                        showSeekFeedback = true
                         seekFeedbackIcon = if (next == 0) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp
                         seekFeedbackText = "${(next * 100 / maxVolume)}%"
+                        showFeedback()
                     }
                 },
             ),
@@ -267,7 +283,6 @@ fun VideoPlayerScreen(
                 onAspectRatioChange = onAspectRatioChange,
                 onPlaybackSpeedChange = onPlaybackSpeedChange,
                 onBackClick = onClose,
-                onFullscreenToggle = onOrientationToggle,
                 onPictureInPictureClick = onPictureInPictureClick,
                 supportsPip = supportsPip,
                 isVisible = controlsVisible,
@@ -354,7 +369,7 @@ private fun configureHdrSupport(playerView: PlayerView, isHdrContent: Boolean) {
 
             com.rpeters.jellyfin.utils.SecureLogger.d(
                 "VideoPlayerScreen",
-                "Configured SurfaceView for HDR content with RGBA_1010102 format"
+                "Configured SurfaceView for HDR content with RGBA_1010102 format",
             )
         } else {
             // Use default format for SDR content
@@ -363,7 +378,7 @@ private fun configureHdrSupport(playerView: PlayerView, isHdrContent: Boolean) {
     } catch (e: Exception) {
         com.rpeters.jellyfin.utils.SecureLogger.w(
             "VideoPlayerScreen",
-            "Failed to configure HDR support: ${e.message}"
+            "Failed to configure HDR support: ${e.message}",
         )
     }
 }

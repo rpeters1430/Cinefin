@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.CastConnected
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ClosedCaption
-import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Hd
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Movie
@@ -86,7 +85,6 @@ fun ExpressiveVideoControls(
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onPlaybackSpeedChange: (Float) -> Unit,
     onBackClick: () -> Unit,
-    onFullscreenToggle: () -> Unit,
     onPictureInPictureClick: () -> Unit,
     supportsPip: Boolean,
     isVisible: Boolean,
@@ -123,8 +121,6 @@ fun ExpressiveVideoControls(
                     playerState = playerState,
                     onBackClick = onBackClick,
                     onCastClick = onCastClick,
-                    onPictureInPictureClick = onPictureInPictureClick,
-                    supportsPip = supportsPip,
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -139,7 +135,8 @@ fun ExpressiveVideoControls(
                     onSubtitlesClick = onSubtitlesClick,
                     onAspectRatioChange = onAspectRatioChange,
                     onPlaybackSpeedChange = onPlaybackSpeedChange,
-                    onFullscreenToggle = onFullscreenToggle,
+                    onPictureInPictureClick = onPictureInPictureClick,
+                    supportsPip = supportsPip,
                 )
             }
 
@@ -168,8 +165,6 @@ private fun ExpressiveTopControls(
     playerState: VideoPlayerState,
     onBackClick: () -> Unit,
     onCastClick: () -> Unit,
-    onPictureInPictureClick: () -> Unit,
-    supportsPip: Boolean,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -269,32 +264,17 @@ private fun ExpressiveTopControls(
                     }
                 }
 
-                // Right side - PiP and Cast buttons
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    // PiP button (only show if supported)
-                    if (supportsPip) {
-                        ExpressiveIconButton(
-                            icon = Icons.Default.PictureInPictureAlt,
-                            contentDescription = "Picture in Picture",
-                            onClick = onPictureInPictureClick,
-                        )
-                    }
-
-                    // Cast button (click to disconnect when connected)
-                    AnimatedContent(
-                        targetState = playerState.isCastConnected,
-                        label = "cast_button",
-                    ) { isConnected ->
-                        ExpressiveIconButton(
-                            icon = if (isConnected) Icons.Default.CastConnected else Icons.Default.Cast,
-                            contentDescription = if (isConnected) "Disconnect from ${playerState.castDeviceName ?: "Cast Device"}" else "Cast to Device",
-                            onClick = onCastClick,
-                            isActive = isConnected,
-                        )
-                    }
+                // Right side - Cast button only (PiP moved to bottom controls)
+                AnimatedContent(
+                    targetState = playerState.isCastConnected,
+                    label = "cast_button",
+                ) { isConnected ->
+                    ExpressiveIconButton(
+                        icon = if (isConnected) Icons.Default.CastConnected else Icons.Default.Cast,
+                        contentDescription = if (isConnected) "Disconnect from ${playerState.castDeviceName ?: "Cast Device"}" else "Cast to Device",
+                        onClick = onCastClick,
+                        isActive = isConnected,
+                    )
                 }
             }
         }
@@ -312,8 +292,8 @@ private fun ExpressiveBottomControls(
     onSubtitlesClick: () -> Unit,
     onAspectRatioChange: (AspectRatioMode) -> Unit,
     onPlaybackSpeedChange: (Float) -> Unit,
-    onFullscreenToggle: () -> Unit,
-
+    onPictureInPictureClick: () -> Unit,
+    supportsPip: Boolean,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -331,11 +311,82 @@ private fun ExpressiveBottomControls(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
-                // Main controls row with play button, progress, and action buttons
+                // Progress bar row (full width) — kept on its own row so it never gets
+                // squeezed by the action buttons, even in portrait/vertical-video mode.
+                if (playerState.duration > 0) {
+                    var sliderPosition by remember { mutableFloatStateOf(0f) }
+                    var isDragging by remember { mutableStateOf(false) }
+
+                    LaunchedEffect(playerState.currentPosition, playerState.duration, isDragging) {
+                        if (playerState.duration > 0 && !isDragging) {
+                            sliderPosition =
+                                playerState.currentPosition.toFloat() / playerState.duration.toFloat()
+                        }
+                    }
+
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        // Buffer indicator (background layer) - subtle and less prominent
+                        val bufferedProgress = (playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()).coerceIn(0f, 1f)
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(bufferedProgress)
+                                .height(4.dp)
+                                .align(Alignment.CenterStart)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)),
+                        )
+
+                        // Main progress slider (foreground layer)
+                        Slider(
+                            value = sliderPosition,
+                            onValueChange = { progress ->
+                                sliderPosition = progress
+                                isDragging = true
+                            },
+                            onValueChangeFinished = {
+                                val newPosition =
+                                    (sliderPosition * playerState.duration).toLong()
+                                onSeek(newPosition)
+                                isDragging = false
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
+                            ),
+                        )
+                    }
+
+                    // Time indicators directly below the progress bar
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = formatTime(playerState.currentPosition),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.Medium,
+                            ),
+                        )
+
+                        Text(
+                            text = formatTime(playerState.duration),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+
+                // Play/Pause and action buttons row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     // Play/Pause button (left side)
                     AnimatedContent(
@@ -348,56 +399,6 @@ private fun ExpressiveBottomControls(
                             onClick = onPlayPause,
                             isLoading = playerState.isLoading,
                         )
-                    }
-
-                    // Progress bar (center, expandable)
-                    if (playerState.duration > 0) {
-                        var sliderPosition by remember { mutableFloatStateOf(0f) }
-                        var isDragging by remember { mutableStateOf(false) }
-
-                        LaunchedEffect(playerState.currentPosition, playerState.duration, isDragging) {
-                            if (playerState.duration > 0 && !isDragging) {
-                                sliderPosition =
-                                    playerState.currentPosition.toFloat() / playerState.duration.toFloat()
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            // Buffer indicator (background layer) - subtle and less prominent
-                            val bufferedProgress = (playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()).coerceIn(0f, 1f)
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(bufferedProgress)
-                                    .height(4.dp)
-                                    .align(Alignment.CenterStart)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)),
-                            )
-
-                            // Main progress slider (foreground layer)
-                            Slider(
-                                value = sliderPosition,
-                                onValueChange = { progress ->
-                                    sliderPosition = progress
-                                    isDragging = true
-                                },
-                                onValueChangeFinished = {
-                                    val newPosition =
-                                        (sliderPosition * playerState.duration).toLong()
-                                    onSeek(newPosition)
-                                    isDragging = false
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = SliderDefaults.colors(
-                                    thumbColor = MaterialTheme.colorScheme.primary,
-                                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                                    inactiveTrackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
-                                ),
-                            )
-                        }
                     }
 
                     // Action buttons (right side)
@@ -486,36 +487,14 @@ private fun ExpressiveBottomControls(
                             onClick = onSubtitlesClick,
                         )
 
-                        // Fullscreen button
-                        ExpressiveIconButton(
-                            icon = Icons.Default.Fullscreen,
-                            contentDescription = "Fullscreen",
-                            onClick = onFullscreenToggle,
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Time indicators
-                if (playerState.duration > 0) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            text = formatTime(playerState.currentPosition),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = FontWeight.Medium,
-                            ),
-                        )
-
-                        Text(
-                            text = formatTime(playerState.duration),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+                        // PiP button replaces the non-functional fullscreen button
+                        if (supportsPip) {
+                            ExpressiveIconButton(
+                                icon = Icons.Default.PictureInPictureAlt,
+                                contentDescription = "Picture in Picture",
+                                onClick = onPictureInPictureClick,
+                            )
+                        }
                     }
                 }
             }
