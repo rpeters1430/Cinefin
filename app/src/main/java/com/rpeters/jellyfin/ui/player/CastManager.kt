@@ -16,13 +16,13 @@ import com.google.android.gms.cast.framework.SessionManagerListener
 import com.google.android.gms.common.images.WebImage
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.core.FeatureFlags
 import com.rpeters.jellyfin.data.preferences.CastPreferencesRepository
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.data.repository.RemoteConfigRepository
 import com.rpeters.jellyfin.utils.AppResources
-import com.rpeters.jellyfin.core.FeatureFlags
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -40,9 +40,9 @@ import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
+import org.json.JSONObject
 import java.util.Locale
 import java.util.concurrent.Executors
-import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.google.android.gms.cast.MediaMetadata as CastMediaMetadata
