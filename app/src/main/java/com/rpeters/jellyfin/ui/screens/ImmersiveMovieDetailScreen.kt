@@ -33,6 +33,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.Hd
 import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.MoreVert
@@ -46,7 +47,9 @@ import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.RateReview
 import androidx.compose.material.icons.rounded.Sd
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -79,8 +82,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.repeatOnLifecycle
 import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -90,6 +94,7 @@ import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.PerformanceOptimizedLazyRow
 import com.rpeters.jellyfin.ui.components.PlaybackStatusBadge
+import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
 import com.rpeters.jellyfin.ui.components.immersive.AudioInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.HdrType
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveCardSize
@@ -98,6 +103,7 @@ import com.rpeters.jellyfin.ui.components.immersive.ResolutionQuality
 import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
+import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
 import com.rpeters.jellyfin.ui.theme.Quality1440
@@ -111,11 +117,6 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.Locale
 import kotlin.math.roundToInt
-
-import androidx.compose.material.icons.rounded.FileDownload
-import com.rpeters.jellyfin.ui.components.QualitySelectionDialog
-import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @OptInAppExperimentalApis
@@ -146,6 +147,10 @@ fun ImmersiveMovieDetailScreen(
     isLoadingWhyYoullLoveThis: Boolean = false,
     isRefreshing: Boolean = false,
     serverUrl: String? = null,
+    isDownloaded: Boolean = false,
+    isOffline: Boolean = false,
+    downloadInfo: com.rpeters.jellyfin.data.offline.OfflineDownload? = null,
+    onDeleteOfflineCopy: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val perfConfig = rememberImmersivePerformanceConfig()
@@ -155,6 +160,7 @@ fun ImmersiveMovieDetailScreen(
     var selectedSubtitleIndex by remember { mutableStateOf<Int?>(null) }
     var showMoreOptions by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showDeleteOfflineConfirmation by remember { mutableStateOf(false) }
     var showQualityDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -337,10 +343,10 @@ fun ImmersiveMovieDetailScreen(
                     ) {
                         // Primary Play Button
                         Surface(
-                            onClick = { 
+                            onClick = {
                                 // Use the latest position from playbackProgress if available
                                 val resumePos = playbackProgress?.positionMs
-                                onPlayClick(movie, selectedSubtitleIndex, resumePos) 
+                                onPlayClick(movie, selectedSubtitleIndex, resumePos)
                             },
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.primary,
@@ -364,6 +370,48 @@ fun ImmersiveMovieDetailScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimary,
                                 )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (isDownloaded) {
+                                AssistChip(
+                                    onClick = {},
+                                    label = {
+                                        val quality = downloadInfo?.quality?.label
+                                        Text(if (quality.isNullOrBlank()) "Downloaded" else "Downloaded · $quality")
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.FileDownload,
+                                            contentDescription = null,
+                                        )
+                                    },
+                                )
+                            }
+                            if (isOffline) {
+                                AssistChip(
+                                    onClick = {},
+                                    label = { Text("Offline") },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Rounded.WifiOff,
+                                            contentDescription = null,
+                                        )
+                                    },
+                                )
+                            }
+                        }
+
+                        if (isDownloaded) {
+                            TextButton(
+                                onClick = { showDeleteOfflineConfirmation = true },
+                                contentPadding = PaddingValues(0.dp),
+                            ) {
+                                Text("Delete offline copy")
                             }
                         }
 
@@ -640,6 +688,29 @@ fun ImmersiveMovieDetailScreen(
                 }
             }
         }
+    }
+
+    if (showDeleteOfflineConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteOfflineConfirmation = false },
+            title = { Text("Remove offline copy?") },
+            text = { Text("This only removes the local downloaded file from this device.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteOfflineConfirmation = false
+                        onDeleteOfflineCopy()
+                    },
+                ) {
+                    Text("Remove")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteOfflineConfirmation = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 
     if (showDeleteConfirmation) {

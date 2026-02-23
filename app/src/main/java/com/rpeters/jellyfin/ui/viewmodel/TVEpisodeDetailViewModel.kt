@@ -2,13 +2,17 @@ package com.rpeters.jellyfin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rpeters.jellyfin.data.offline.OfflineDownload
+import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +31,9 @@ data class TVEpisodeDetailState(
     val isLoading: Boolean = false,
     val aiSummary: String? = null,
     val isLoadingAiSummary: Boolean = false,
+    val isDownloaded: Boolean = false,
+    val downloadInfo: OfflineDownload? = null,
+    val isOffline: Boolean = false,
 )
 
 @HiltViewModel
@@ -34,15 +41,28 @@ class TVEpisodeDetailViewModel @Inject constructor(
     private val mediaRepository: JellyfinMediaRepository,
     private val enhancedPlaybackUtils: EnhancedPlaybackUtils,
     private val generativeAiRepository: GenerativeAiRepository,
+    private val offlineDownloadManager: OfflineDownloadManager,
+    private val connectivityChecker: ConnectivityChecker,
     private val playbackProgressManager: com.rpeters.jellyfin.ui.player.PlaybackProgressManager,
     private val analytics: com.rpeters.jellyfin.utils.AnalyticsHelper,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TVEpisodeDetailState())
     val state: StateFlow<TVEpisodeDetailState> = _state.asStateFlow()
+    private var observeDownloadedJob: Job? = null
+    private var observeDownloadInfoJob: Job? = null
 
     init {
         observePlaybackProgress()
+        observeConnectivity()
+    }
+
+    private fun observeConnectivity() {
+        viewModelScope.launch {
+            connectivityChecker.observeNetworkConnectivity().collect { isOnline ->
+                _state.value = _state.value.copy(isOffline = !isOnline)
+            }
+        }
     }
 
     private fun observePlaybackProgress() {
@@ -91,6 +111,7 @@ class TVEpisodeDetailViewModel @Inject constructor(
                 loadAdjacentEpisodes(seasonId.toString(), episode.indexNumber)
             }
 
+            observeDownloadState(episodeId)
             _state.value = _state.value.copy(isLoading = false)
         }
     }
@@ -151,6 +172,25 @@ class TVEpisodeDetailViewModel @Inject constructor(
                 // no-op
             }
         }
+    }
+
+    private fun observeDownloadState(episodeId: String) {
+        observeDownloadInfoJob?.cancel()
+
+        observeDownloadInfoJob = viewModelScope.launch {
+            offlineDownloadManager.observeDownloadInfo(episodeId).collect { info ->
+                _state.value = _state.value.copy(
+                    downloadInfo = info,
+                    isDownloaded = info != null
+                )
+            }
+        }
+    }
+    }
+
+    fun deleteOfflineCopy() {
+        val itemId = _state.value.episode?.id?.toString() ?: return
+        offlineDownloadManager.deleteOfflineCopy(itemId)
     }
 
     /**
