@@ -125,6 +125,15 @@ Fields (suggested):
 ### Phase 0 — Ensure offline playback works end-to-end (1–2 PRs)
 ✅ Outcome: Downloads → Play works in airplane mode.
 
+Status: ✅ **Complete** (implemented and code-verified)
+
+- `VideoPlayerActivity.createIntent(...)` accepts and forwards `forceOffline`.
+- Downloads screen launch path sets `forceOffline = true` for offline playback.
+- `VideoPlayerViewModel.initializePlayer()` now branches to local playback when
+  `isDownloaded && (!isOnline || forceOffline)`.
+- Offline file validation restricts playback to readable files in app-specific storage before
+  creating `MediaItem` URIs.
+
 1. **Add a “forceOffline” flag to Player intent**
    - Update `VideoPlayerActivity.createIntent(...)` to accept `forceOffline: Boolean`
    - Pass `forceOffline = true` when launching player from Downloads screen
@@ -303,7 +312,7 @@ To browse posters and metadata offline:
 ## Suggested Task Breakdown (Tracking)
 
 ### MVP Milestones
-- [ ] P0: Offline branching in player works
+- [x] P0: Offline branching in player works
 - [ ] P1: Detail badge + delete offline copy
 - [ ] P2: Downloads settings screen
 - [ ] P3: Local watch tracking
@@ -321,6 +330,5 @@ To browse posters and metadata offline:
 Use this section to record decisions:
 - Offline played threshold: ____%
 - Progress update interval: ____ seconds
-- Storage location: ____
+- Storage location: app-specific storage (`getExternalFilesDir(Environment.DIRECTORY_MOVIES)/jellyfin_offline`, fallback to `filesDir`)
 - Conflict strategy: ____
-
