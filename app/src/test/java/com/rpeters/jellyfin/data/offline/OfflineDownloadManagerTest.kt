@@ -1,20 +1,18 @@
 package com.rpeters.jellyfin.data.offline
 
-import androidx.test.core.app.ApplicationProvider
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.test.core.app.ApplicationProvider
 import com.rpeters.jellyfin.data.common.TestDispatcherProvider
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -29,7 +27,6 @@ import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -40,7 +37,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
-import java.io.IOException
 import java.util.UUID
 import kotlin.io.path.createTempDirectory
 
@@ -71,7 +67,7 @@ class OfflineDownloadManagerTest {
         // Create a real in-memory DataStore using test scope
         dataStore = PreferenceDataStoreFactory.create(
             scope = kotlinx.coroutines.CoroutineScope(testDispatcher + kotlinx.coroutines.SupervisorJob()),
-            produceFile = { File(tempDir, "test.preferences_pb") }
+            produceFile = { File(tempDir, "test.preferences_pb") },
         )
 
         val mockEncryptedPreferences = mockk<com.rpeters.jellyfin.data.security.EncryptedPreferences>(relaxed = true)
@@ -114,7 +110,7 @@ class OfflineDownloadManagerTest {
 
         assertNotNull("Download ID should not be null", downloadId)
         assertTrue("Download ID should not be empty", downloadId.isNotEmpty())
-        
+
         val downloads = manager.downloads.value
         assertTrue(downloads.any { it.id == downloadId })
     }
@@ -247,7 +243,7 @@ class OfflineDownloadManagerTest {
         // Pre-seed a separate DataStore with invalid JSON
         val corruptDataStore = PreferenceDataStoreFactory.create(
             scope = kotlinx.coroutines.CoroutineScope(testDispatcher + kotlinx.coroutines.SupervisorJob()),
-            produceFile = { File(tempDir, "corrupt_test.preferences_pb") }
+            produceFile = { File(tempDir, "corrupt_test.preferences_pb") },
         )
         corruptDataStore.edit { prefs ->
             prefs[androidx.datastore.preferences.core.stringPreferencesKey("offline_downloads")] =
