@@ -148,32 +148,32 @@ fun DownloadsScreen(
             },
         )
 
-        // Storage info card
-        storageInfo?.let { info ->
-            StorageInfoCard(
-                storageInfo = info,
-                modifier = Modifier.padding(Dimens.Spacing16),
-            )
-        }
-
-        DownloadPreferencesCard(
-            wifiOnly = downloadPreferences.wifiOnly,
-            defaultQualityId = downloadPreferences.defaultQualityId,
-            autoCleanEnabled = downloadPreferences.autoCleanEnabled,
-            autoCleanWatchedRetentionDays = downloadPreferences.autoCleanWatchedRetentionDays,
-            autoCleanMinFreeSpaceGb = downloadPreferences.autoCleanMinFreeSpaceGb,
-            pendingOfflineSyncCount = pendingOfflineSyncCount,
-            qualities = DownloadsViewModel.QUALITY_PRESETS,
-            onWifiOnlyChanged = downloadsViewModel::setWifiOnly,
-            onDefaultQualitySelected = downloadsViewModel::setDefaultQuality,
-            onAutoCleanEnabledChanged = downloadsViewModel::setAutoCleanEnabled,
-            onAutoCleanWatchedRetentionDaysSelected = downloadsViewModel::setAutoCleanWatchedRetentionDays,
-            onAutoCleanMinFreeSpaceGbSelected = downloadsViewModel::setAutoCleanMinFreeSpaceGb,
-            onRunAutoCleanNow = downloadsViewModel::runAutoCleanNow,
-            modifier = Modifier.padding(horizontal = Dimens.Spacing16),
-        )
-
         if (downloads.isEmpty()) {
+            // Show storage/preferences cards fixed above the empty state
+            storageInfo?.let { info ->
+                StorageInfoCard(
+                    storageInfo = info,
+                    modifier = Modifier.padding(Dimens.Spacing16),
+                )
+            }
+
+            DownloadPreferencesCard(
+                wifiOnly = downloadPreferences.wifiOnly,
+                defaultQualityId = downloadPreferences.defaultQualityId,
+                autoCleanEnabled = downloadPreferences.autoCleanEnabled,
+                autoCleanWatchedRetentionDays = downloadPreferences.autoCleanWatchedRetentionDays,
+                autoCleanMinFreeSpaceGb = downloadPreferences.autoCleanMinFreeSpaceGb,
+                pendingOfflineSyncCount = pendingOfflineSyncCount,
+                qualities = DownloadsViewModel.QUALITY_PRESETS,
+                onWifiOnlyChanged = downloadsViewModel::setWifiOnly,
+                onDefaultQualitySelected = downloadsViewModel::setDefaultQuality,
+                onAutoCleanEnabledChanged = downloadsViewModel::setAutoCleanEnabled,
+                onAutoCleanWatchedRetentionDaysSelected = downloadsViewModel::setAutoCleanWatchedRetentionDays,
+                onAutoCleanMinFreeSpaceGbSelected = downloadsViewModel::setAutoCleanMinFreeSpaceGb,
+                onRunAutoCleanNow = downloadsViewModel::runAutoCleanNow,
+                modifier = Modifier.padding(horizontal = Dimens.Spacing16),
+            )
+
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -206,6 +206,36 @@ fun DownloadsScreen(
                 contentPadding = PaddingValues(Dimens.Spacing16),
                 verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
             ) {
+                // Storage info card scrolls away with the list (collapsible header)
+                storageInfo?.let { info ->
+                    item(key = "storage_info", contentType = "header") {
+                        StorageInfoCard(
+                            storageInfo = info,
+                            modifier = Modifier.padding(bottom = Dimens.Spacing8),
+                        )
+                    }
+                }
+
+                // Preferences card also scrolls away (collapsible header)
+                item(key = "download_prefs", contentType = "header") {
+                    DownloadPreferencesCard(
+                        wifiOnly = downloadPreferences.wifiOnly,
+                        defaultQualityId = downloadPreferences.defaultQualityId,
+                        autoCleanEnabled = downloadPreferences.autoCleanEnabled,
+                        autoCleanWatchedRetentionDays = downloadPreferences.autoCleanWatchedRetentionDays,
+                        autoCleanMinFreeSpaceGb = downloadPreferences.autoCleanMinFreeSpaceGb,
+                        pendingOfflineSyncCount = pendingOfflineSyncCount,
+                        qualities = DownloadsViewModel.QUALITY_PRESETS,
+                        onWifiOnlyChanged = downloadsViewModel::setWifiOnly,
+                        onDefaultQualitySelected = downloadsViewModel::setDefaultQuality,
+                        onAutoCleanEnabledChanged = downloadsViewModel::setAutoCleanEnabled,
+                        onAutoCleanWatchedRetentionDaysSelected = downloadsViewModel::setAutoCleanWatchedRetentionDays,
+                        onAutoCleanMinFreeSpaceGbSelected = downloadsViewModel::setAutoCleanMinFreeSpaceGb,
+                        onRunAutoCleanNow = downloadsViewModel::runAutoCleanNow,
+                        modifier = Modifier.padding(bottom = Dimens.Spacing8),
+                    )
+                }
+
                 items(
                     downloads,
                     key = { it.id },

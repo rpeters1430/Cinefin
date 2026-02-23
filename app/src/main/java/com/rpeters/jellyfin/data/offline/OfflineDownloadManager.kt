@@ -728,7 +728,28 @@ class OfflineDownloadManager @Inject constructor(
                     Log.e(TAG, "Failed to deserialize downloads — resetting to empty list", e)
                     emptyList()
                 }
-                _downloads.update { downloads }
+                _downloads.update { current ->
+                    val currentMap = current.associateBy { it.id }
+                    downloads.map { persisted ->
+                        val inMemory = currentMap[persisted.id]
+                        // Guard against stale intermediate DataStore saves (e.g. DOWNLOADING or
+                        // PENDING with byte-count updates) overwriting a stable status that was
+                        // already applied in memory. This prevents a race where a prior DataStore
+                        // emission arrives at the collector after the in-memory state has already
+                        // advanced to a terminal/stable status. The subsequent DataStore emission
+                        // from saveDownloads() for the stable status will resync shortly.
+                        val persistedIsTransitional = persisted.status == DownloadStatus.DOWNLOADING ||
+                            persisted.status == DownloadStatus.PENDING
+                        val inMemoryIsStable = inMemory != null &&
+                            inMemory.status != DownloadStatus.DOWNLOADING &&
+                            inMemory.status != DownloadStatus.PENDING
+                        if (inMemoryIsStable && persistedIsTransitional) {
+                            inMemory!!
+                        } else {
+                            persisted
+                        }
+                    }
+                }
                 if (!initialized) {
                     initialized = true
                     requeueIncompleteDownloads(downloads)
