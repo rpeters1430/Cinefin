@@ -225,10 +225,8 @@ class OfflineDownloadManager @Inject constructor(
     }
 
     fun observeIsDownloaded(itemId: String): kotlinx.coroutines.flow.Flow<Boolean> {
-        return downloads
-            .map { items ->
-                items.any { it.jellyfinItemId == itemId && it.status == DownloadStatus.COMPLETED }
-            }
+        return observeDownloadInfo(itemId).map { it != null }
+    }
             .distinctUntilChanged()
     }
 
