@@ -236,7 +236,7 @@ class JellyfinStreamRepository @Inject constructor(
             val params = mutableListOf<String>()
 
             // Add transcoding parameters
-            maxBitrate?.let { 
+            maxBitrate?.let {
                 params.add("MaxStreamingBitrate=$it")
                 params.add("VideoBitRate=$it")
             }
