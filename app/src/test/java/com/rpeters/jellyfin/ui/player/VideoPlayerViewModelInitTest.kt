@@ -75,6 +75,7 @@ class VideoPlayerViewModelInitTest {
         // Mock the flows
         every { mockCastManager.castState } returns castStateFlow
         every { mockPlaybackProgressManager.playbackProgress } returns playbackProgressFlow
+        every { mockAdaptiveBitrateMonitor.qualityRecommendation } returns MutableStateFlow(null)
         every { mockPlaybackPreferencesRepository.preferences } returns MutableStateFlow(com.rpeters.jellyfin.data.preferences.PlaybackPreferences.DEFAULT)
         every { mockOfflinePlaybackManager.isOfflinePlaybackAvailable(any()) } returns false
 

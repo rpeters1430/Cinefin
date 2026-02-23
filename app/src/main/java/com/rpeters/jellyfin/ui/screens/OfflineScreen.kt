@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -10,7 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -18,9 +19,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.utils.*
-import com.rpeters.jellyfin.utils.getItemKey
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import android.graphics.BitmapFactory
+import java.io.File
+import java.text.DateFormat
+import java.util.Date
 
 /**
  * Screen for managing offline content and displaying offline status.
@@ -32,11 +36,10 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 fun OfflineScreen(
     offlineManager: OfflineManager,
     onPlayOfflineContent: (BaseItemDto) -> Unit = {},
-    onDeleteOfflineContent: (BaseItemDto) -> Unit = {},
+    onDeleteOfflineContent: ((BaseItemDto) -> Unit)? = null,
     onBackClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
     val isOnline by offlineManager.isOnline.collectAsStateWithLifecycle()
     val networkType by offlineManager.networkType.collectAsStateWithLifecycle()
     val offlineContent by offlineManager.offlineContent.collectAsStateWithLifecycle()
@@ -88,7 +91,9 @@ fun OfflineScreen(
         OfflineContentSection(
             offlineContent = offlineContent,
             onPlayContent = onPlayOfflineContent,
-            onDeleteContent = onDeleteOfflineContent,
+            onDeleteContent = { item ->
+                onDeleteOfflineContent?.invoke(item) ?: offlineManager.deleteOfflineCopy(item.id.toString())
+            },
         )
     }
 
@@ -243,7 +248,7 @@ private fun StorageInfoCard(
 
 @Composable
 private fun OfflineContentSection(
-    offlineContent: List<BaseItemDto>,
+    offlineContent: List<OfflineLibraryItem>,
     onPlayContent: (BaseItemDto) -> Unit,
     onDeleteContent: (BaseItemDto) -> Unit,
     modifier: Modifier = Modifier,
@@ -300,12 +305,12 @@ private fun OfflineContentSection(
                 ) {
                     items(
                         items = offlineContent,
-                        key = { item -> item.getItemKey().ifEmpty { item.name ?: item.toString() } },
-                    ) { item ->
+                        key = { libraryItem -> libraryItem.item.id.toString() },
+                    ) { libraryItem ->
                         OfflineContentItem(
-                            item = item,
-                            onPlay = { onPlayContent(item) },
-                            onDelete = { onDeleteContent(item) },
+                            libraryItem = libraryItem,
+                            onPlay = { onPlayContent(libraryItem.item) },
+                            onDelete = { onDeleteContent(libraryItem.item) },
                         )
                     }
                 }
@@ -316,11 +321,12 @@ private fun OfflineContentSection(
 
 @Composable
 private fun OfflineContentItem(
-    item: BaseItemDto,
+    libraryItem: OfflineLibraryItem,
     onPlay: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val item = libraryItem.item
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -339,16 +345,29 @@ private fun OfflineContentItem(
                 horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing12),
                 modifier = Modifier.weight(1f),
             ) {
-                Icon(
-                    imageVector = when (item.type) {
-                        BaseItemKind.MOVIE -> Icons.Default.Movie
-                        BaseItemKind.EPISODE -> Icons.Default.Tv
-                        BaseItemKind.AUDIO -> Icons.Default.AudioFile
-                        else -> Icons.Default.FilePresent
-                    },
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                val posterBitmap = remember(libraryItem.posterLocalPath) {
+                    libraryItem.posterLocalPath
+                        ?.takeIf { File(it).exists() }
+                        ?.let { BitmapFactory.decodeFile(it) }
+                }
+                if (posterBitmap != null) {
+                    Image(
+                        bitmap = posterBitmap.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                    )
+                } else {
+                    Icon(
+                        imageVector = when (item.type) {
+                            BaseItemKind.MOVIE -> Icons.Default.Movie
+                            BaseItemKind.EPISODE -> Icons.Default.Tv
+                            BaseItemKind.AUDIO -> Icons.Default.AudioFile
+                            else -> Icons.Default.FilePresent
+                        },
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
 
                 Column {
                     Text(
@@ -365,6 +384,23 @@ private fun OfflineContentItem(
                             )
                         }
                     }
+                    Text(
+                        text = buildString {
+                            libraryItem.qualityLabel?.let {
+                                append(it)
+                            }
+                            if (libraryItem.fileSizeBytes > 0L) {
+                                if (isNotEmpty()) append(" • ")
+                                append(formatBytes(libraryItem.fileSizeBytes))
+                            }
+                            libraryItem.downloadDateMs?.let { timestamp ->
+                                if (isNotEmpty()) append(" • ")
+                                append(DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(timestamp)))
+                            }
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 
@@ -389,4 +425,17 @@ private fun OfflineContentItem(
             }
         }
     }
+}
+
+private fun formatBytes(bytes: Long): String {
+    val units = arrayOf("B", "KB", "MB", "GB", "TB")
+    var size = bytes.toDouble()
+    var unitIndex = 0
+
+    while (size >= 1024 && unitIndex < units.size - 1) {
+        size /= 1024
+        unitIndex++
+    }
+
+    return "%.1f %s".format(size, units[unitIndex])
 }

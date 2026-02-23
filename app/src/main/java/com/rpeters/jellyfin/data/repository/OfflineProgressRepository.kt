@@ -19,7 +19,16 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Serializable
+enum class OfflinePlaybackEventType {
+    PROGRESS,
+    STOPPED,
+    MARK_PLAYED,
+    MARK_UNPLAYED,
+}
+
+@Serializable
 data class QueuedProgressUpdate(
+    val eventType: OfflinePlaybackEventType = OfflinePlaybackEventType.PROGRESS,
     val itemId: String,
     val sessionId: String,
     val positionTicks: Long?,
@@ -38,6 +47,11 @@ private val Context.offlineProgressDataStore: DataStore<Preferences> by preferen
 class OfflineProgressRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+    companion object {
+        private const val MAX_QUEUED_UPDATES = 200
+        private const val MAX_EVENT_AGE_MS = 30L * 24L * 60L * 60L * 1000L // 30 days
+    }
+
     private val dataStore = context.offlineProgressDataStore
     private val QUEUED_UPDATES_KEY = stringPreferencesKey("queued_updates")
     private val json = Json { ignoreUnknownKeys = true }
@@ -50,21 +64,36 @@ class OfflineProgressRepository @Inject constructor(
     suspend fun addUpdate(update: QueuedProgressUpdate) {
         dataStore.edit { preferences ->
             val currentJson = preferences[QUEUED_UPDATES_KEY] ?: "[]"
-            val currentList = try {
-                json.decodeFromString<List<QueuedProgressUpdate>>(currentJson).toMutableList()
-            } catch (e: Exception) {
-                mutableListOf()
-            }
+            val now = System.currentTimeMillis()
+            val currentList = decodeQueueOrNull(currentJson)?.toMutableList() ?: mutableListOf()
+            currentList.removeAll { now - it.timestamp > MAX_EVENT_AGE_MS }
 
-            // Remove existing update for this item if it exists
-            currentList.removeAll { it.itemId == update.itemId }
+            // Coalesce queue to avoid duplicate backlog:
+            // - keep latest PROGRESS/STOPPED per item
+            // - keep only the latest watched-state event per item
+            when (update.eventType) {
+                OfflinePlaybackEventType.PROGRESS,
+                OfflinePlaybackEventType.STOPPED,
+                -> currentList.removeAll { it.itemId == update.itemId && it.eventType == update.eventType }
+
+                OfflinePlaybackEventType.MARK_PLAYED,
+                OfflinePlaybackEventType.MARK_UNPLAYED,
+                -> currentList.removeAll {
+                    it.itemId == update.itemId &&
+                        (it.eventType == OfflinePlaybackEventType.MARK_PLAYED ||
+                            it.eventType == OfflinePlaybackEventType.MARK_UNPLAYED)
+                }
+            }
             currentList.add(update)
 
-            // Keep only last 50 updates to prevent unbounded growth
-            val limitedList = currentList.takeLast(50)
+            // Keep only last MAX_QUEUED_UPDATES updates to prevent unbounded growth.
+            val limitedList = currentList.takeLast(MAX_QUEUED_UPDATES)
             preferences[QUEUED_UPDATES_KEY] = json.encodeToString(limitedList)
 
-            SecureLogger.d("OfflineProgress", "Queued progress for item ${update.itemId} at ${update.positionTicks} ticks")
+            SecureLogger.d(
+                "OfflineProgress",
+                "Queued ${update.eventType} for item ${update.itemId} at ${update.positionTicks} ticks",
+            )
         }
     }
 
@@ -74,16 +103,15 @@ class OfflineProgressRepository @Inject constructor(
     suspend fun getAndClearUpdates(): List<QueuedProgressUpdate> {
         val preferences = dataStore.data.first()
         val currentJson = preferences[QUEUED_UPDATES_KEY] ?: "[]"
+        val now = System.currentTimeMillis()
 
-        val updates = try {
-            json.decodeFromString<List<QueuedProgressUpdate>>(currentJson)
-        } catch (e: Exception) {
-            emptyList()
-        }
+        val updates = decodeQueueOrNull(currentJson)
+            ?.filter { now - it.timestamp <= MAX_EVENT_AGE_MS }
+            .orEmpty()
 
-        if (updates.isNotEmpty()) {
+        if (updates.isNotEmpty() || currentJson != "[]") {
             dataStore.edit { it.remove(QUEUED_UPDATES_KEY) }
-            SecureLogger.d("OfflineProgress", "Cleared ${updates.size} queued updates")
+            SecureLogger.d("OfflineProgress", "Cleared ${updates.size} queued updates from DataStore")
         }
 
         return updates
@@ -94,6 +122,25 @@ class OfflineProgressRepository @Inject constructor(
      */
     fun hasPendingUpdates(): Flow<Boolean> = dataStore.data.map { preferences ->
         val currentJson = preferences[QUEUED_UPDATES_KEY] ?: "[]"
-        currentJson != "[]"
+        decodeQueueOrNull(currentJson)?.isNotEmpty() == true
+    }
+
+    fun pendingCount(): Flow<Int> = dataStore.data.map { preferences ->
+        val currentJson = preferences[QUEUED_UPDATES_KEY] ?: "[]"
+        decodeQueueOrNull(currentJson)?.size ?: 0
+    }
+
+    suspend fun pendingCountSnapshot(): Int {
+        val currentJson = dataStore.data.first()[QUEUED_UPDATES_KEY] ?: "[]"
+        return decodeQueueOrNull(currentJson)?.size ?: 0
+    }
+
+    private fun decodeQueueOrNull(raw: String): List<QueuedProgressUpdate>? {
+        return try {
+            json.decodeFromString<List<QueuedProgressUpdate>>(raw)
+        } catch (e: Exception) {
+            SecureLogger.w("OfflineProgress", "Failed to decode queued updates payload, resetting queue: ${e.message}")
+            null
+        }
     }
 }

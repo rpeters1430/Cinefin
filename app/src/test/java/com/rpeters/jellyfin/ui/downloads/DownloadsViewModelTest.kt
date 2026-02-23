@@ -5,7 +5,12 @@ import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.data.offline.OfflinePlaybackManager
+import com.rpeters.jellyfin.data.preferences.DownloadPreferences
+import com.rpeters.jellyfin.data.preferences.DownloadPreferencesRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.data.repository.OfflineProgressRepository
+import com.rpeters.jellyfin.network.ConnectivityChecker
+import com.rpeters.jellyfin.network.NetworkType
 import io.mockk.MockKAnnotations
 import io.mockk.coVerify
 import io.mockk.every
@@ -33,6 +38,15 @@ class DownloadsViewModelTest {
     @MockK(relaxUnitFun = true)
     lateinit var repository: JellyfinRepository
 
+    @MockK(relaxUnitFun = true)
+    lateinit var downloadPreferencesRepository: DownloadPreferencesRepository
+
+    @MockK(relaxUnitFun = true)
+    lateinit var connectivityChecker: ConnectivityChecker
+
+    @MockK(relaxUnitFun = true)
+    lateinit var offlineProgressRepository: OfflineProgressRepository
+
     @MockK
     lateinit var context: Context
 
@@ -48,7 +62,18 @@ class DownloadsViewModelTest {
         downloadsFlow = MutableStateFlow(emptyList())
         every { downloadManager.downloads } returns downloadsFlow
         every { downloadManager.downloadProgress } returns MutableStateFlow(emptyMap())
-        viewModel = DownloadsViewModel(context, downloadManager, playbackManager, repository)
+        every { connectivityChecker.getNetworkType() } returns NetworkType.WIFI
+        every { downloadPreferencesRepository.preferences } returns MutableStateFlow(DownloadPreferences.DEFAULT)
+        every { offlineProgressRepository.pendingCount() } returns MutableStateFlow(0)
+        viewModel = DownloadsViewModel(
+            context,
+            downloadManager,
+            playbackManager,
+            repository,
+            downloadPreferencesRepository,
+            connectivityChecker,
+            offlineProgressRepository,
+        )
     }
 
     @After

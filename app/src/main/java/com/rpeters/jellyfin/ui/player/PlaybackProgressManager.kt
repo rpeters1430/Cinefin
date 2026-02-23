@@ -3,9 +3,12 @@ package com.rpeters.jellyfin.ui.player
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import com.rpeters.jellyfin.data.worker.OfflineProgressSyncWorker
+import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +21,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.PlayMethod
+import android.content.Context
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -32,6 +36,8 @@ data class PlaybackProgress(
 
 @Singleton
 class PlaybackProgressManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val connectivityChecker: ConnectivityChecker,
     private val userRepository: JellyfinUserRepository,
 ) : DefaultLifecycleObserver {
 
@@ -50,9 +56,11 @@ class PlaybackProgressManager @Inject constructor(
     private var mediaSourceId: String? = null
     private var playMethod: PlayMethod = PlayMethod.DIRECT_PLAY
     private var hasReportedStart: Boolean = false
+    private var hasReportedWatched: Boolean = false
+    private var hasReportedStop: Boolean = false
 
     companion object {
-        private const val PROGRESS_SYNC_INTERVAL = 10_000L // 10 seconds
+        private const val PROGRESS_SYNC_INTERVAL = 15_000L // 15 seconds
         private const val WATCHED_THRESHOLD = 0.90f // 90% watched
         private const val MIN_POSITION_CHANGE = 5_000L // 5 seconds minimum change
         private const val STATE_UPDATE_THROTTLE_MS = 500L // Throttle UI state updates to max 2 per second
@@ -71,6 +79,8 @@ class PlaybackProgressManager @Inject constructor(
         this.mediaSourceId = mediaSourceId
         this.playMethod = playMethod
         this.hasReportedStart = false
+        this.hasReportedWatched = false
+        this.hasReportedStop = false
         this.lastReportedPosition = 0L
 
         _playbackProgress.update { PlaybackProgress(itemId = itemId) }
@@ -90,6 +100,12 @@ class PlaybackProgressManager @Inject constructor(
 
     fun updateProgress(positionMs: Long, durationMs: Long) {
         if (currentItemId.isEmpty() || durationMs <= 0) return
+
+        if (hasReportedStop) {
+            // Playback resumed after background/stop event, start a fresh report session.
+            hasReportedStop = false
+            hasReportedStart = false
+        }
 
         val percentageWatched = (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
         val isWatched = percentageWatched >= WATCHED_THRESHOLD
@@ -118,6 +134,13 @@ class PlaybackProgressManager @Inject constructor(
             // Use managed scope for fire-and-forget reporting
             managerScope.launch {
                 reportPlaybackStart(positionMs, durationMs)
+            }
+        }
+
+        if (isWatched && !hasReportedWatched) {
+            hasReportedWatched = true
+            managerScope.launch {
+                markAsWatched()
             }
         }
 
@@ -185,8 +208,9 @@ class PlaybackProgressManager @Inject constructor(
         val progress = _playbackProgress.value
         if (progress.itemId.isNotEmpty()) {
             reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
-            if (reportStop) {
+            if (reportStop && !hasReportedStop) {
                 reportPlaybackStop(progress.positionMs, progress.durationMs)
+                hasReportedStop = true
             }
         }
 
@@ -195,9 +219,15 @@ class PlaybackProgressManager @Inject constructor(
         lastStateUpdateTime = 0L
         sessionId = ""
         hasReportedStart = false
+        hasReportedWatched = false
+        hasReportedStop = false
         _playbackProgress.update { PlaybackProgress() }
         if (BuildConfig.DEBUG) {
             Log.d("PlaybackProgressManager", "Stopped tracking")
+        }
+
+        if (reportStop) {
+            scheduleOfflineSyncIfOnline()
         }
     }
 
@@ -219,11 +249,15 @@ class PlaybackProgressManager @Inject constructor(
 
     override fun onPause(owner: LifecycleOwner) {
         super.onPause(owner)
-        // Report current progress when app is paused using managed scope
+        // On backgrounding, emit both PROGRESS and STOPPED once so offline queue captures pause/stop transitions.
         managerScope.launch {
             val progress = _playbackProgress.value
             if (progress.itemId.isNotEmpty()) {
                 reportProgress(progress.positionMs, progress.durationMs, progress.isWatched)
+                if (!hasReportedStop) {
+                    reportPlaybackStop(progress.positionMs, progress.durationMs)
+                    hasReportedStop = true
+                }
             }
         }
     }
@@ -362,6 +396,17 @@ class PlaybackProgressManager @Inject constructor(
             }
         } catch (e: CancellationException) {
             throw e
+        }
+    }
+
+    private suspend fun scheduleOfflineSyncIfOnline() {
+        if (!connectivityChecker.isOnline()) return
+        val pending = userRepository.pendingOfflineProgressCount()
+        if (pending > 0) {
+            OfflineProgressSyncWorker.schedule(context)
+            if (BuildConfig.DEBUG) {
+                Log.d("PlaybackProgressManager", "Scheduled offline sync after stop; pending=$pending")
+            }
         }
     }
 

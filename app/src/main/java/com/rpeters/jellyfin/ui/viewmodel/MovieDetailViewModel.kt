@@ -219,7 +219,6 @@ class MovieDetailViewModel @Inject constructor(
             }
         }
     }
-    }
 
     fun deleteOfflineCopy() {
         val itemId = _state.value.movie?.id?.toString() ?: return

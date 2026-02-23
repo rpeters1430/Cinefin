@@ -7,27 +7,44 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
+import com.rpeters.jellyfin.data.offline.DownloadStatus
+import com.rpeters.jellyfin.data.offline.OfflineDownload
+import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import java.io.File
+import java.util.UUID
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Manages offline capabilities for the Jellyfin Android app.
  *
- * Provides connectivity monitoring, offline content management,
- * and intelligent fallback strategies for when the app is used without internet.
+ * Provides connectivity monitoring, offline library browsing data,
+ * and fallback behavior when the app is used without internet.
  */
-class OfflineManager(private val context: Context) {
+@Singleton
+class OfflineManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val offlineDownloadManager: OfflineDownloadManager,
+) {
 
     companion object {
         private const val TAG = "OfflineManager"
-        private const val OFFLINE_CACHE_DIR = "offline_cache"
     }
 
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // Network state tracking
     private val _isOnline = MutableStateFlow(isCurrentlyOnline())
@@ -36,9 +53,9 @@ class OfflineManager(private val context: Context) {
     private val _networkType = MutableStateFlow(getCurrentNetworkType())
     val networkType: StateFlow<NetworkType> = _networkType.asStateFlow()
 
-    // Offline content tracking
-    private val _offlineContent = MutableStateFlow<List<BaseItemDto>>(emptyList())
-    val offlineContent: StateFlow<List<BaseItemDto>> = _offlineContent.asStateFlow()
+    // Offline library tracking
+    private val _offlineContent = MutableStateFlow<List<OfflineLibraryItem>>(emptyList())
+    val offlineContent: StateFlow<List<OfflineLibraryItem>> = _offlineContent.asStateFlow()
 
     // Network callback for monitoring connectivity changes
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -70,15 +87,32 @@ class OfflineManager(private val context: Context) {
     }
 
     init {
-        // Register for network connectivity changes
         val networkRequest = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
 
         connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
 
-        // Load offline content on initialization
-        refreshOfflineContent()
+        scope.launch {
+            offlineDownloadManager.downloads.collect { downloads ->
+                _offlineContent.value = downloads
+                    .filter { it.status == DownloadStatus.COMPLETED && hasReadableFile(it.localFilePath) }
+                    .map { download ->
+                        OfflineLibraryItem(
+                            item = toBaseItem(download),
+                            localFilePath = download.localFilePath,
+                            posterLocalPath = download.thumbnailLocalPath,
+                            qualityLabel = download.quality?.label,
+                            fileSizeBytes = download.fileSize.takeIf { it > 0L } ?: download.downloadedBytes,
+                            downloadDateMs = download.downloadCompleteTime ?: download.downloadStartTime,
+                        )
+                    }
+
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "Offline library refreshed: ${_offlineContent.value.size} items")
+                }
+            }
+        }
     }
 
     /**
@@ -111,57 +145,67 @@ class OfflineManager(private val context: Context) {
      * Checks if an item is available offline.
      */
     fun isAvailableOffline(item: BaseItemDto): Boolean {
-        return MediaDownloadManager.isDownloaded(context, item)
+        return offlineDownloadManager.isItemDownloaded(item.id.toString())
     }
 
     /**
      * Gets the local file path for an offline item.
      */
     fun getOfflineFilePath(item: BaseItemDto): String? {
-        return MediaDownloadManager.getLocalFilePath(context, item)
+        return _offlineContent.value.firstOrNull { it.item.id == item.id }?.localFilePath
+    }
+
+    /**
+     * Gets the cached poster path for an offline item.
+     */
+    fun getOfflinePosterPath(item: BaseItemDto): String? {
+        return _offlineContent.value.firstOrNull { it.item.id == item.id }?.posterLocalPath
+    }
+
+    fun deleteOfflineCopy(itemId: String) {
+        offlineDownloadManager.deleteOfflineCopy(itemId)
     }
 
     /**
      * Refreshes the list of offline content.
      */
     fun refreshOfflineContent() {
-        try {
-            val offlineItems = mutableListOf<BaseItemDto>()
-
-            // This is a simplified implementation - in a real app, you would:
-            // 1. Scan the download directory for media files
-            // 2. Parse metadata to reconstruct BaseItemDto objects
-            // 3. Validate that files are still accessible
-
-            // For now, return empty list as we would need to store metadata
-            // alongside downloaded files to properly reconstruct BaseItemDto objects
-            _offlineContent.value = offlineItems
-
-            if (BuildConfig.DEBUG) {
-                Log.d(TAG, "Refreshed offline content: ${offlineItems.size} items available")
+        _offlineContent.value = offlineDownloadManager.getCompletedDownloads()
+            .map { download ->
+                OfflineLibraryItem(
+                    item = toBaseItem(download),
+                    localFilePath = download.localFilePath,
+                    posterLocalPath = download.thumbnailLocalPath,
+                    qualityLabel = download.quality?.label,
+                    fileSizeBytes = download.fileSize.takeIf { it > 0L } ?: download.downloadedBytes,
+                    downloadDateMs = download.downloadCompleteTime ?: download.downloadStartTime,
+                )
             }
-        } catch (e: CancellationException) {
-            throw e
-        }
     }
 
     /**
      * Gets offline content filtered by type.
      */
-    fun getOfflineContentByType(itemType: BaseItemKind): List<BaseItemDto> {
-        return _offlineContent.value.filter { it.type == itemType }
+    fun getOfflineContentByType(itemType: BaseItemKind): List<OfflineLibraryItem> {
+        return _offlineContent.value.filter { it.item.type == itemType }
     }
 
     /**
      * Calculates storage usage for offline content.
      */
     fun getOfflineStorageUsage(): OfflineStorageInfo {
-        val totalSize = MediaDownloadManager.getTotalDownloadSize(context)
-        val itemCount = _offlineContent.value.size
+        val completedDownloads = offlineDownloadManager.getCompletedDownloads()
+        val totalSize = completedDownloads.sumOf { download ->
+            download.fileSize
+                .takeIf { it > 0L }
+                ?: download.downloadedBytes.takeIf { it > 0L }
+                ?: File(download.localFilePath).takeIf { it.exists() }?.length()
+                ?: 0L
+        }
 
         return OfflineStorageInfo(
             totalSizeBytes = totalSize,
-            itemCount = itemCount,
+            itemCount = _offlineContent.value.size,
             formattedSize = formatBytes(totalSize),
         )
     }
@@ -171,16 +215,13 @@ class OfflineManager(private val context: Context) {
      */
     fun clearOfflineContent(): Boolean {
         return try {
-            val cleared = MediaDownloadManager.clearAllDownloads(context)
-            if (cleared) {
-                _offlineContent.value = emptyList()
-                if (BuildConfig.DEBUG) {
-                    Log.i(TAG, "Cleared all offline content")
-                }
-            }
-            cleared
+            val downloads = offlineDownloadManager.getCompletedDownloads()
+            downloads.forEach { offlineDownloadManager.deleteDownload(it.id) }
+            true
         } catch (e: CancellationException) {
             throw e
+        } catch (_: Exception) {
+            false
         }
     }
 
@@ -192,12 +233,8 @@ class OfflineManager(private val context: Context) {
 
         return when (networkType.value) {
             NetworkType.WIFI, NetworkType.ETHERNET -> true
-            NetworkType.CELLULAR -> {
-                // In a real app, you might check user preferences for cellular streaming
-                // For now, allow cellular streaming but could be made configurable
-                true
-            }
-            NetworkType.OTHER -> true // Assume other connection types are suitable
+            NetworkType.CELLULAR -> true
+            NetworkType.OTHER -> true
             NetworkType.NONE -> false
         }
     }
@@ -210,13 +247,8 @@ class OfflineManager(private val context: Context) {
         val isOnlineAvailable = isNetworkSuitableForStreaming()
 
         return when {
-            // Always prefer local files when available and reliable
             isOfflineAvailable -> PlaybackSource.LOCAL
-
-            // Fall back to streaming if network is good
             isOnlineAvailable -> PlaybackSource.STREAM
-
-            // No good options available
             else -> PlaybackSource.UNAVAILABLE
         }
     }
@@ -244,15 +276,43 @@ class OfflineManager(private val context: Context) {
     fun cleanup() {
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
+            scope.cancel()
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "Cleanup completed")
             }
         } catch (e: CancellationException) {
             throw e
+        } catch (_: Exception) {
         }
     }
 
-    // Helper functions
+    private fun toBaseItem(download: OfflineDownload): BaseItemDto {
+        val itemUuid = runCatching { UUID.fromString(download.jellyfinItemId) }
+            .getOrElse { UUID.nameUUIDFromBytes(download.jellyfinItemId.toByteArray()) }
+        val itemType = runCatching { BaseItemKind.valueOf(download.itemType) }
+            .getOrElse { BaseItemKind.VIDEO }
+
+        return BaseItemDto(
+            id = itemUuid,
+            name = download.itemName,
+            type = itemType,
+            seriesName = download.seriesName,
+            parentIndexNumber = download.seasonNumber,
+            indexNumber = download.episodeNumber,
+            overview = download.overview,
+            productionYear = download.productionYear,
+            runTimeTicks = download.runtimeTicks,
+        )
+    }
+
+    private fun hasReadableFile(path: String): Boolean {
+        return try {
+            val file = File(path)
+            file.exists() && file.isFile && file.canRead()
+        } catch (_: Exception) {
+            false
+        }
+    }
 
     private fun formatBytes(bytes: Long): String {
         val units = arrayOf("B", "KB", "MB", "GB", "TB")
@@ -283,10 +343,22 @@ enum class NetworkType {
  * Enum representing playback source options.
  */
 enum class PlaybackSource {
-    LOCAL, // Play from downloaded file
-    STREAM, // Stream from server
-    UNAVAILABLE, // No playback option available
+    LOCAL,
+    STREAM,
+    UNAVAILABLE,
 }
+
+/**
+ * Offline browse model for library-style listing while disconnected.
+ */
+data class OfflineLibraryItem(
+    val item: BaseItemDto,
+    val localFilePath: String,
+    val posterLocalPath: String?,
+    val qualityLabel: String?,
+    val fileSizeBytes: Long,
+    val downloadDateMs: Long?,
+)
 
 /**
  * Data class for offline storage information.
@@ -297,20 +369,10 @@ data class OfflineStorageInfo(
     val formattedSize: String,
 )
 
-/**
- * Extension functions for offline capabilities.
- */
-
-/**
- * Extension to easily check if content should use offline mode.
- */
 fun BaseItemDto.shouldUseOfflineMode(offlineManager: OfflineManager): Boolean {
     return !offlineManager.isCurrentlyOnline() && offlineManager.isAvailableOffline(this)
 }
 
-/**
- * Extension to get the best playback URL based on offline capabilities.
- */
 fun BaseItemDto.getBestPlaybackUrl(
     offlineManager: OfflineManager,
     onlineStreamUrl: String?,

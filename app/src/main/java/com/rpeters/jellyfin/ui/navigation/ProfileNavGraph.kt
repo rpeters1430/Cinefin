@@ -10,6 +10,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.downloads.DownloadsScreen
 import com.rpeters.jellyfin.ui.screens.AiDiagnosticsScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveFavoritesScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveSearchScreen
@@ -230,11 +231,21 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
     }
 
     composable(Screen.DownloadsSettings.route) {
-        SettingsSectionScreen(
-            titleRes = R.string.settings_downloads_title,
-            descriptionRes = R.string.settings_downloads_description,
-            optionRes = SettingsRecommendationOptions.downloads,
+        DownloadsScreen(
             onNavigateBack = { navController.popBackStack() },
+            onOpenItemDetail = { download ->
+                when (download.itemType.uppercase()) {
+                    org.jellyfin.sdk.model.api.BaseItemKind.MOVIE.name -> {
+                        navController.navigate(Screen.MovieDetail.createRoute(download.jellyfinItemId))
+                    }
+                    org.jellyfin.sdk.model.api.BaseItemKind.EPISODE.name -> {
+                        navController.navigate(Screen.TVEpisodeDetail.createRoute(download.jellyfinItemId))
+                    }
+                    else -> {
+                        navController.navigate(Screen.ItemDetail.createRoute(download.jellyfinItemId))
+                    }
+                }
+            },
         )
     }
 

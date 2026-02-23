@@ -186,7 +186,6 @@ class TVEpisodeDetailViewModel @Inject constructor(
             }
         }
     }
-    }
 
     fun deleteOfflineCopy() {
         val itemId = _state.value.episode?.id?.toString() ?: return

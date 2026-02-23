@@ -3,11 +3,15 @@ package com.rpeters.jellyfin.ui.viewmodel
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -29,14 +33,31 @@ class MovieDetailViewModelTest {
     private val mediaRepository: JellyfinMediaRepository = mockk()
     private val playbackUtils: EnhancedPlaybackUtils = mockk()
     private val generativeAiRepository: com.rpeters.jellyfin.data.repository.GenerativeAiRepository = mockk(relaxed = true)
+    private val offlineDownloadManager: com.rpeters.jellyfin.data.offline.OfflineDownloadManager = mockk(relaxed = true)
+    private val connectivityChecker: ConnectivityChecker = mockk()
     private val playbackProgressManager: com.rpeters.jellyfin.ui.player.PlaybackProgressManager = mockk(relaxed = true)
     private val analyticsHelper: com.rpeters.jellyfin.utils.AnalyticsHelper = mockk(relaxed = true)
     private val dispatcher = StandardTestDispatcher()
-    private val viewModel by lazy { MovieDetailViewModel(repository, mediaRepository, playbackUtils, generativeAiRepository, playbackProgressManager, analyticsHelper) }
+    private val viewModel by lazy {
+        MovieDetailViewModel(
+            repository,
+            mediaRepository,
+            playbackUtils,
+            generativeAiRepository,
+            offlineDownloadManager,
+            connectivityChecker,
+            playbackProgressManager,
+            analyticsHelper,
+        )
+    }
 
     @Before
     fun setup() {
         Dispatchers.setMain(dispatcher)
+        every { connectivityChecker.observeNetworkConnectivity() } returns flowOf(true)
+        every { playbackProgressManager.playbackProgress } returns MutableStateFlow(
+            com.rpeters.jellyfin.ui.player.PlaybackProgress(),
+        )
     }
 
     @After

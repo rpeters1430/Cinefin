@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,7 +22,10 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.data.offline.DownloadProgress
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
+import com.rpeters.jellyfin.data.offline.VideoQuality
 import com.rpeters.jellyfin.ui.theme.Dimens
+import java.text.DateFormat
+import java.util.Date
 import kotlin.math.roundToInt
 
 @androidx.media3.common.util.UnstableApi
@@ -29,11 +33,90 @@ import kotlin.math.roundToInt
 @Composable
 fun DownloadsScreen(
     onNavigateBack: () -> Unit,
+    onOpenItemDetail: (OfflineDownload) -> Unit = {},
     downloadsViewModel: DownloadsViewModel = hiltViewModel(),
 ) {
     val downloads by downloadsViewModel.downloads.collectAsState()
     val downloadProgress by downloadsViewModel.downloadProgress.collectAsState()
     val storageInfo by downloadsViewModel.storageInfo.collectAsState()
+    val downloadPreferences by downloadsViewModel.downloadPreferences.collectAsState()
+    val pendingOfflineSyncCount by downloadsViewModel.pendingOfflineSyncCount.collectAsState()
+    var showDeleteAllConfirmation by remember { mutableStateOf(false) }
+    var showClearWatchedConfirmation by remember { mutableStateOf(false) }
+    var redownloadTarget by remember { mutableStateOf<OfflineDownload?>(null) }
+
+    if (showDeleteAllConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAllConfirmation = false },
+            title = { Text("Delete all downloads?") },
+            text = { Text("This removes all local offline copies from this device.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteAllConfirmation = false
+                        downloadsViewModel.deleteAllDownloads()
+                    },
+                ) {
+                    Text("Delete all")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAllConfirmation = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
+    if (showClearWatchedConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showClearWatchedConfirmation = false },
+            title = { Text("Clear watched downloads?") },
+            text = { Text("Removes completed downloads watched at least 90%.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showClearWatchedConfirmation = false
+                        downloadsViewModel.clearWatchedDownloads()
+                    },
+                ) {
+                    Text("Clear watched")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearWatchedConfirmation = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
+    redownloadTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = { redownloadTarget = null },
+            title = { Text("Redownload in different quality") },
+            text = {
+                Column {
+                    DownloadsViewModel.QUALITY_PRESETS.forEach { quality ->
+                        TextButton(
+                            onClick = {
+                                downloadsViewModel.redownloadDownload(target.id, quality)
+                                redownloadTarget = null
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(quality.label)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { redownloadTarget = null }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -50,6 +133,18 @@ fun DownloadsScreen(
                 IconButton(onClick = { downloadsViewModel.pauseAllDownloads() }) {
                     Icon(Icons.Default.Pause, contentDescription = "Pause all")
                 }
+                IconButton(
+                    onClick = { showClearWatchedConfirmation = true },
+                    enabled = downloads.any { it.status == DownloadStatus.COMPLETED },
+                ) {
+                    Icon(Icons.Default.DoneAll, contentDescription = "Clear watched downloads")
+                }
+                IconButton(
+                    onClick = { showDeleteAllConfirmation = true },
+                    enabled = downloads.isNotEmpty(),
+                ) {
+                    Icon(Icons.Default.DeleteForever, contentDescription = "Delete all downloads")
+                }
             },
         )
 
@@ -60,6 +155,23 @@ fun DownloadsScreen(
                 modifier = Modifier.padding(Dimens.Spacing16),
             )
         }
+
+        DownloadPreferencesCard(
+            wifiOnly = downloadPreferences.wifiOnly,
+            defaultQualityId = downloadPreferences.defaultQualityId,
+            autoCleanEnabled = downloadPreferences.autoCleanEnabled,
+            autoCleanWatchedRetentionDays = downloadPreferences.autoCleanWatchedRetentionDays,
+            autoCleanMinFreeSpaceGb = downloadPreferences.autoCleanMinFreeSpaceGb,
+            pendingOfflineSyncCount = pendingOfflineSyncCount,
+            qualities = DownloadsViewModel.QUALITY_PRESETS,
+            onWifiOnlyChanged = downloadsViewModel::setWifiOnly,
+            onDefaultQualitySelected = downloadsViewModel::setDefaultQuality,
+            onAutoCleanEnabledChanged = downloadsViewModel::setAutoCleanEnabled,
+            onAutoCleanWatchedRetentionDaysSelected = downloadsViewModel::setAutoCleanWatchedRetentionDays,
+            onAutoCleanMinFreeSpaceGbSelected = downloadsViewModel::setAutoCleanMinFreeSpaceGb,
+            onRunAutoCleanNow = downloadsViewModel::runAutoCleanNow,
+            modifier = Modifier.padding(horizontal = Dimens.Spacing16),
+        )
 
         if (downloads.isEmpty()) {
             Box(
@@ -106,6 +218,8 @@ fun DownloadsScreen(
                         onResume = { downloadsViewModel.resumeDownload(download.id) },
                         onCancel = { downloadsViewModel.cancelDownload(download.id) },
                         onDelete = { downloadsViewModel.deleteDownload(download.id) },
+                        onRedownload = { redownloadTarget = download },
+                        onOpenDetail = { onOpenItemDetail(download) },
                         onPlay = { downloadsViewModel.playOfflineContent(download.jellyfinItemId) },
                     )
                 }
@@ -175,10 +289,20 @@ fun DownloadItem(
     onResume: () -> Unit,
     onCancel: () -> Unit,
     onDelete: () -> Unit,
+    onRedownload: () -> Unit,
+    onOpenDetail: () -> Unit,
     onPlay: () -> Unit,
 ) {
+    val openDetailEnabled = download.status == DownloadStatus.COMPLETED
+    val detailHint = detailAvailabilityHint(download.status)
     Card(
         modifier = Modifier.fillMaxWidth(),
+        enabled = openDetailEnabled,
+        onClick = {
+            if (openDetailEnabled) {
+                onOpenDetail()
+            }
+        },
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(
@@ -202,6 +326,19 @@ fun DownloadItem(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Text(
+                        text = buildString {
+                            val sizeBytes = download.fileSize.takeIf { it > 0L } ?: download.downloadedBytes
+                            append(formatBytes(sizeBytes))
+                            val timestamp = download.downloadCompleteTime ?: download.downloadStartTime
+                            if (timestamp != null) {
+                                append(" • ")
+                                append(formatTimestamp(timestamp))
+                            }
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
 
                 DownloadStatusChip(download.status)
@@ -210,6 +347,13 @@ fun DownloadItem(
             // Progress indicator for active downloads
             if (download.status == DownloadStatus.DOWNLOADING && progress != null) {
                 DownloadProgressIndicator(progress, download.quality?.label)
+            }
+            detailHint?.let { hint ->
+                Text(
+                    text = hint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             // Action buttons
@@ -238,6 +382,12 @@ fun DownloadItem(
                         IconButton(onClick = onPlay) {
                             Icon(Icons.Default.PlayArrow, contentDescription = "Play")
                         }
+                        IconButton(onClick = onRedownload) {
+                            Icon(Icons.Default.CloudDownload, contentDescription = "Redownload")
+                        }
+                        IconButton(onClick = onOpenDetail) {
+                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open detail")
+                        }
                         IconButton(onClick = onDelete) {
                             Icon(Icons.Default.Delete, contentDescription = "Delete")
                         }
@@ -256,6 +406,199 @@ fun DownloadItem(
                         }
                     }
                 }
+                if (!openDetailEnabled) {
+                    IconButton(
+                        onClick = {},
+                        enabled = false,
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open detail (unavailable)")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DownloadPreferencesCard(
+    wifiOnly: Boolean,
+    defaultQualityId: String,
+    autoCleanEnabled: Boolean,
+    autoCleanWatchedRetentionDays: Int,
+    autoCleanMinFreeSpaceGb: Int,
+    pendingOfflineSyncCount: Int,
+    qualities: List<VideoQuality>,
+    onWifiOnlyChanged: (Boolean) -> Unit,
+    onDefaultQualitySelected: (String) -> Unit,
+    onAutoCleanEnabledChanged: (Boolean) -> Unit,
+    onAutoCleanWatchedRetentionDaysSelected: (Int) -> Unit,
+    onAutoCleanMinFreeSpaceGbSelected: (Int) -> Unit,
+    onRunAutoCleanNow: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var qualityMenuExpanded by remember { mutableStateOf(false) }
+    var retentionMenuExpanded by remember { mutableStateOf(false) }
+    var minSpaceMenuExpanded by remember { mutableStateOf(false) }
+    val selectedQuality = qualities.firstOrNull { it.id == defaultQualityId }
+        ?: qualities.firstOrNull()
+    val retentionOptions = listOf(7, 14, 30, 60)
+    val minSpaceOptionsGb = listOf(2, 5, 10, 20)
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimens.Spacing16),
+            verticalArrangement = Arrangement.spacedBy(Dimens.Spacing12),
+        ) {
+            Text(
+                text = "Download Preferences",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            if (pendingOfflineSyncCount > 0) {
+                Text(
+                    text = "Pending watch sync: $pendingOfflineSyncCount update(s). They will sync automatically when online.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Wi-Fi only")
+                    Text(
+                        text = "Allow downloads only on Wi-Fi/Ethernet",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = wifiOnly,
+                    onCheckedChange = onWifiOnlyChanged,
+                )
+            }
+
+            ExposedDropdownMenuBox(
+                expanded = qualityMenuExpanded,
+                onExpandedChange = { qualityMenuExpanded = !qualityMenuExpanded },
+            ) {
+                OutlinedTextField(
+                    value = selectedQuality?.label ?: "Original Quality",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Default quality") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = qualityMenuExpanded) },
+                    modifier = Modifier
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                        .fillMaxWidth(),
+                )
+                ExposedDropdownMenu(
+                    expanded = qualityMenuExpanded,
+                    onDismissRequest = { qualityMenuExpanded = false },
+                ) {
+                    qualities.forEach { quality ->
+                        DropdownMenuItem(
+                            text = { Text(quality.label) },
+                            onClick = {
+                                onDefaultQualitySelected(quality.id)
+                                qualityMenuExpanded = false
+                            },
+                        )
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Auto-clean watched downloads")
+                    Text(
+                        text = "Automatically removes watched items based on retention and free-space target",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = autoCleanEnabled,
+                    onCheckedChange = onAutoCleanEnabledChanged,
+                )
+            }
+
+            ExposedDropdownMenuBox(
+                expanded = retentionMenuExpanded,
+                onExpandedChange = { retentionMenuExpanded = !retentionMenuExpanded },
+            ) {
+                OutlinedTextField(
+                    value = "$autoCleanWatchedRetentionDays days",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Watched retention") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = retentionMenuExpanded) },
+                    modifier = Modifier
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                        .fillMaxWidth(),
+                    enabled = autoCleanEnabled,
+                )
+                ExposedDropdownMenu(
+                    expanded = retentionMenuExpanded,
+                    onDismissRequest = { retentionMenuExpanded = false },
+                ) {
+                    retentionOptions.forEach { days ->
+                        DropdownMenuItem(
+                            text = { Text("$days days") },
+                            onClick = {
+                                onAutoCleanWatchedRetentionDaysSelected(days)
+                                retentionMenuExpanded = false
+                            },
+                        )
+                    }
+                }
+            }
+
+            ExposedDropdownMenuBox(
+                expanded = minSpaceMenuExpanded,
+                onExpandedChange = { minSpaceMenuExpanded = !minSpaceMenuExpanded },
+            ) {
+                OutlinedTextField(
+                    value = "$autoCleanMinFreeSpaceGb GB",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Min free space target") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = minSpaceMenuExpanded) },
+                    modifier = Modifier
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                        .fillMaxWidth(),
+                    enabled = autoCleanEnabled,
+                )
+                ExposedDropdownMenu(
+                    expanded = minSpaceMenuExpanded,
+                    onDismissRequest = { minSpaceMenuExpanded = false },
+                ) {
+                    minSpaceOptionsGb.forEach { gb ->
+                        DropdownMenuItem(
+                            text = { Text("$gb GB") },
+                            onClick = {
+                                onAutoCleanMinFreeSpaceGbSelected(gb)
+                                minSpaceMenuExpanded = false
+                            },
+                        )
+                    }
+                }
+            }
+
+            TextButton(
+                onClick = onRunAutoCleanNow,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Run Auto-clean Now")
             }
         }
     }
@@ -393,5 +736,20 @@ private fun formatDuration(milliseconds: Long): String {
         hours > 0 -> "${hours}h ${minutes % 60}m"
         minutes > 0 -> "${minutes}m ${seconds % 60}s"
         else -> "${seconds}s"
+    }
+}
+
+private fun formatTimestamp(timestampMs: Long): String {
+    return DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(timestampMs))
+}
+
+private fun detailAvailabilityHint(status: DownloadStatus): String? {
+    return when (status) {
+        DownloadStatus.COMPLETED -> null
+        DownloadStatus.DOWNLOADING -> "Item details open when the download is completed."
+        DownloadStatus.PAUSED -> "Resume download to open item details when complete."
+        DownloadStatus.FAILED -> "Retry download to open item details when complete."
+        DownloadStatus.CANCELLED -> "Restart download to open item details when complete."
+        DownloadStatus.PENDING -> "Item details open when the download is completed."
     }
 }

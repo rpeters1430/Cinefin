@@ -161,6 +161,14 @@ Acceptance checks:
 ### Phase 1 — Detail screen “Downloaded” badge + delete offline copy (1–2 PRs)
 ✅ Outcome: Detail screen shows offline availability and can delete local-only.
 
+Status: ✅ **Complete** (implemented and code-verified)
+
+- Detail view models observe download state and expose delete-offline-copy actions.
+- Movie and episode detail screens show **Downloaded** and **Offline** chips plus a
+  confirmed **Delete offline copy** action.
+- Downloaded state now only reports `true` when the local file is still valid/readable in
+  app-specific storage (stale files no longer show as downloaded).
+
 4. **Expose download state to detail ViewModel**
    - Add:
      - `observeIsDownloaded(itemId): Flow<Boolean>`
@@ -185,7 +193,20 @@ Acceptance checks:
 ---
 
 ### Phase 2 — Downloads settings screen (2–3 PRs)
-✅ Outcome: Manage all downloads in one place.
+🚧 Outcome: Manage all downloads in one place.
+
+Status: ✅ **Complete** (implemented and code-verified)
+
+Implemented in this phase:
+- Settings route now opens the real Downloads screen.
+- Downloads list shows title, quality, size, and timestamp.
+- Added bulk **Delete all downloads** action with confirmation.
+- Added optional **Clear watched downloads** action with confirmation.
+- Added open-detail action per completed download (routes to movie/episode/generic detail).
+- Added status hint for non-completed downloads so users know detail view opens after completion.
+- Added download preferences backed by DataStore:
+  - Download over Wi-Fi only
+  - Default download quality
 
 7. **Create Downloads screen (Settings → Downloads)**
    - Display total size used by downloads
@@ -211,6 +232,18 @@ Acceptance checks:
 ### Phase 3 — Offline watch tracking (2–4 PRs)
 ✅ Outcome: Offline playback updates local watch state.
 
+Status: ✅ **Complete** (implemented and code-verified)
+
+Implemented in this phase:
+- Offline queue now supports typed events: `PROGRESS`, `STOPPED`, `MARK_PLAYED`, `MARK_UNPLAYED`.
+- Playback progress sync interval is throttled to ~15 seconds.
+- `MARK_PLAYED` is emitted automatically once playback crosses the watched threshold (90%).
+- Queue coalescing avoids duplicates:
+  - latest `PROGRESS` / `STOPPED` per item is kept
+  - only latest watched-state event per item is kept
+- Queue includes timestamps and is visible via a UI hint in Downloads settings:
+  - “Pending watch sync: X update(s) ...”
+
 10. **Record offline playback progress locally**
    - During offline playback:
      - Write PROGRESS every ~15 seconds (throttle)
@@ -229,8 +262,41 @@ Acceptance checks:
 
 ---
 
+### Phase 3.5 — Reliability hardening (recommended)
+✅ Outcome: Offline event queue survives edge cases and sync remains resilient.
+
+Status: ✅ **Complete** (implemented and code-verified)
+
+Implemented in this phase:
+- Sessionless replay fallback:
+  - If queued `sessionId` is empty, replay uses a deterministic generated session ID.
+- Queue durability and corruption recovery:
+  - Invalid/corrupt queue payloads are treated as recoverable and reset safely.
+- Stale-event pruning:
+  - Events older than 30 days are dropped to avoid syncing obsolete playback history.
+- Expanded observability:
+  - Worker logs include run attempt, pending queue depth before/after sync, and sync summary.
+- Explicit STOPPED semantics:
+  - STOPPED is emitted on app background / playback release paths.
+  - Duplicate STOPPED reports per tracking session are suppressed.
+
+---
+
 ### Phase 4 — Sync to Jellyfin when online (2–4 PRs)
 ✅ Outcome: Watch state syncs reliably when connectivity returns.
+
+Status: ✅ **Complete** (implemented and code-verified)
+
+Implemented in this phase:
+- `OfflineProgressSyncWorker` runs with `NetworkType.CONNECTED` and exponential backoff.
+- Sync is triggered:
+  - on app startup when online (initial connectivity emission)
+  - on connectivity change back to online
+  - after playback stop/release when online and queue has pending events
+- Replay handles event types: `PROGRESS`, `STOPPED`, `MARK_PLAYED`, `MARK_UNPLAYED`.
+- Replay ordering uses timestamp with tie-breaker priority:
+  - `MARK_PLAYED` > `MARK_UNPLAYED` > `STOPPED` > `PROGRESS`
+- Worker/repository logs now include queue depth and per-run sync summary.
 
 12. **Create `OfflineSyncWorker` (WorkManager)**
    - Constraints: `NetworkType.CONNECTED`
@@ -246,9 +312,11 @@ Acceptance checks:
    - After playback ends if online
 
 14. **Conflict strategy (MVP)**
-   - Simple: “last update wins” using timestamps
-   - Optional improvement:
-     - compare server’s last playback update time with local event timestamp
+ - Simple: “last update wins” using timestamps
+ - Tie-breaker when timestamps are equal:
+   - `MARK_PLAYED` > `MARK_UNPLAYED` > `STOPPED` > `PROGRESS`
+ - Optional improvement:
+   - compare server’s last playback update time with local event timestamp
 
 Acceptance checks:
 - Go offline, watch part of a download
@@ -287,13 +355,38 @@ To browse posters and metadata offline:
 - Store posters/backdrops in persistent storage (not cacheDir)
 - Implement an “Offline mode” home that shows cached sections
 
+Current implementation status:
+- ✅ Downloaded-item offline browsing is implemented:
+  - Offline library list is now driven from completed downloads (not a placeholder list)
+  - Download snapshots store metadata needed for browsing (series/season/episode, overview, year)
+  - Poster thumbnails are cached to app-local storage and rendered offline when available
+- 🚧 Full library-wide offline browsing (including non-downloaded items) remains future work
+
 ### Multiple qualities and redownload
 - Allow selecting quality per download
 - Provide “Redownload in different quality” action on detail screen
 
+Current implementation status:
+- ✅ Quality selection for new downloads is implemented.
+- ✅ Redownload in different quality is implemented:
+  - Detail-screen completed download controls support quality-based redownload.
+  - Downloads list completed rows include a redownload action with quality picker.
+
 ### Auto-clean policy
 - Keep downloads for X days
 - Remove downloads when storage low (prompt user)
+
+Current implementation status:
+- ✅ Auto-clean policy is implemented for watched downloads:
+  - Configurable settings in Downloads preferences:
+    - Enable/disable auto-clean
+    - Watched retention days (7/14/30/60)
+    - Minimum free-space target (2/5/10/20 GB)
+  - Auto-clean runs automatically before starting new downloads when enabled.
+  - Manual "Run Auto-clean Now" action is available in Downloads settings.
+  - Cleanup behavior:
+    - Deletes watched downloads older than retention window
+    - If free space is still below target, deletes additional watched downloads (oldest first)
 
 ---
 
@@ -306,6 +399,10 @@ To browse posters and metadata offline:
 - [ ] Offline playback creates local progress/played events
 - [ ] Sync worker uploads events when online and clears queue
 - [ ] No crashes when local file missing (graceful error message)
+- [ ] Airplane mode toggled mid-playback preserves queue integrity
+- [ ] App kill/restart while offline preserves queued events
+- [ ] Token expiry during sync re-queues recoverable events
+- [ ] Connectivity flapping (online/offline) does not duplicate queue events
 
 ---
 
@@ -313,22 +410,25 @@ To browse posters and metadata offline:
 
 ### MVP Milestones
 - [x] P0: Offline branching in player works
-- [ ] P1: Detail badge + delete offline copy
-- [ ] P2: Downloads settings screen
-- [ ] P3: Local watch tracking
-- [ ] P4: Sync worker
+- [x] P1: Detail badge + delete offline copy
+- [x] P2: Downloads settings screen
+- [x] P3: Local watch tracking
+- [x] P4: Sync worker
 
 ### Future Milestones
-- [ ] Offline library browsing (metadata + images)
-- [ ] Redownload quality selection
-- [ ] Auto-clean & storage management
+- [x] Offline library browsing for downloaded items (metadata + local posters)
+- [ ] Full library-wide offline browsing (metadata + images)
+- [x] Redownload quality selection
+- [x] Auto-clean & storage management
 
 ---
 
 ## Notes / Decisions Log
 
 Use this section to record decisions:
-- Offline played threshold: ____%
-- Progress update interval: ____ seconds
+- Offline played threshold: 90%
+- Progress update interval: 15 seconds
 - Storage location: app-specific storage (`getExternalFilesDir(Environment.DIRECTORY_MOVIES)/JellyfinOffline`, fallback to `filesDir/JellyfinOffline`)
-- Conflict strategy: ____
+- Conflict strategy: Last update wins (timestamp ordering during replay)
+- Sessionless sync fallback: Deterministic generated session ID when missing
+- Queue retention: 200 events max, stale events pruned after 30 days

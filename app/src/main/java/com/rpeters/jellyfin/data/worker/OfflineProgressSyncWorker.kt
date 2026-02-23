@@ -18,12 +18,20 @@ class OfflineProgressSyncWorker @AssistedInject constructor(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
-        SecureLogger.d("OfflineProgressWorker", "Starting offline progress sync")
+        val pendingBefore = userRepository.pendingOfflineProgressCount()
+        SecureLogger.d(
+            "OfflineProgressWorker",
+            "Starting offline progress sync (attempt=${runAttemptCount + 1}, pendingBefore=$pendingBefore)",
+        )
 
         return try {
             val result = userRepository.syncOfflineProgress()
             if (result is ApiResult.Success) {
-                SecureLogger.i("OfflineProgressWorker", "Successfully synced ${result.data} updates")
+                val pendingAfter = userRepository.pendingOfflineProgressCount()
+                SecureLogger.i(
+                    "OfflineProgressWorker",
+                    "Offline sync finished: synced=${result.data}, pendingAfter=$pendingAfter",
+                )
                 Result.success()
             } else {
                 SecureLogger.w("OfflineProgressWorker", "Sync failed, will retry later")

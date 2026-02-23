@@ -17,7 +17,13 @@ data class OfflineDownload(
     val quality: VideoQuality? = null,
     val playSessionId: String? = null,
     val runtimeTicks: Long? = null,  // Item runtime in ticks (10,000,000 ticks = 1 second)
+    val seriesName: String? = null,
+    val seasonNumber: Int? = null,
+    val episodeNumber: Int? = null,
+    val overview: String? = null,
+    val productionYear: Int? = null,
     val thumbnailUrl: String? = null,
+    val thumbnailLocalPath: String? = null,
     val downloadStartTime: Long? = null,
     val downloadCompleteTime: Long? = null,
     val lastModified: Long = System.currentTimeMillis(),

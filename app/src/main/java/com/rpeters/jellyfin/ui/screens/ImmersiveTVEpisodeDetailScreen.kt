@@ -271,7 +271,7 @@ fun ImmersiveTVEpisodeDetailScreen(
                                 AssistChip(
                                     onClick = {},
                                     label = { Text("Downloaded") },
-                                        Icon(Icons.Rounded.FileDownload, contentDescription = null)
+                                    leadingIcon = {
                                         Icon(Icons.Default.Download, contentDescription = null)
                                     },
                                 )

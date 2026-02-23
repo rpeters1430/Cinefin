@@ -30,6 +30,7 @@ fun DownloadButton(
     val downloads by downloadsViewModel.downloads.collectAsState()
     val downloadProgress by downloadsViewModel.downloadProgress.collectAsState()
     var showQualityDialog by remember { mutableStateOf(false) }
+    var redownloadMode by remember { mutableStateOf(false) }
 
     val currentDownload = downloads.find { it.jellyfinItemId == item.id.toString() }
     val progress = currentDownload?.let { downloadProgress[it.id] }
@@ -39,8 +40,13 @@ fun DownloadButton(
             item = item,
             onDismiss = { showQualityDialog = false },
             onQualitySelected = { quality ->
-                downloadsViewModel.startDownload(item, quality)
+                if (redownloadMode) {
+                    downloadsViewModel.redownloadByItem(item, quality)
+                } else {
+                    downloadsViewModel.startDownload(item, quality)
+                }
                 showQualityDialog = false
+                redownloadMode = false
             },
             downloadsViewModel = downloadsViewModel,
         )
@@ -67,6 +73,10 @@ fun DownloadButton(
             DownloadStatus.COMPLETED -> {
                 CompletedDownloadButton(
                     onPlay = { downloadsViewModel.playOfflineContent(item.id.toString()) },
+                    onRedownload = {
+                        redownloadMode = true
+                        showQualityDialog = true
+                    },
                     onDelete = { downloadsViewModel.deleteDownload(currentDownload.id) },
                     showText = showText,
                 )
@@ -81,7 +91,10 @@ fun DownloadButton(
             else -> {
                 // No download in progress or pending
                 StartDownloadButton(
-                    onDownload = { showQualityDialog = true },
+                    onDownload = {
+                        redownloadMode = false
+                        showQualityDialog = true
+                    },
                     showText = showText,
                 )
             }
@@ -242,6 +255,7 @@ private fun PausedDownloadButton(
 @Composable
 private fun CompletedDownloadButton(
     onPlay: () -> Unit,
+    onRedownload: () -> Unit,
     onDelete: () -> Unit,
     showText: Boolean,
 ) {
@@ -261,6 +275,18 @@ private fun CompletedDownloadButton(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Play Offline")
+            }
+            OutlinedButton(
+                onClick = onRedownload,
+                modifier = Modifier.weight(1f),
+            ) {
+                Icon(
+                    Icons.Default.CloudDownload,
+                    contentDescription = "Redownload",
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Redownload")
             }
             OutlinedButton(
                 onClick = onDelete,
@@ -297,6 +323,9 @@ private fun CompletedDownloadButton(
                         )
                     }
                 }
+            }
+            IconButton(onClick = onRedownload) {
+                Icon(Icons.Default.CloudDownload, contentDescription = "Redownload")
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Delete")

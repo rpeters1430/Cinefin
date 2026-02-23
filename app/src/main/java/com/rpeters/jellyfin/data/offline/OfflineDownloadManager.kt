@@ -87,6 +87,7 @@ class OfflineDownloadManager @Inject constructor(
         private const val TAG = "OfflineDownloadManager"
         private const val DOWNLOADS_KEY = "offline_downloads"
         private const val JELLYFIN_OFFLINE_DIR = "JellyfinOffline"
+        private const val JELLYFIN_OFFLINE_THUMBNAIL_DIR = "JellyfinOfflineThumbs"
         private const val CHUNK_SIZE = 8192
         private const val ENCRYPTED_URL_PREFIX = "encrypted_url_"
         private const val OFFLINE_DOWNLOAD_WORK_TAG = "offline_download"
@@ -201,6 +202,7 @@ class OfflineDownloadManager @Inject constructor(
 
                 // Delete file
                 deleteDownloadFile(it)
+                deleteThumbnailFile(it)
 
                 // SECURITY: Delete encrypted URL from storage
                 if (it.downloadUrl.startsWith(ENCRYPTED_URL_PREFIX)) {
@@ -215,25 +217,36 @@ class OfflineDownloadManager @Inject constructor(
 
     fun getDownloadFile(downloadId: String): File? {
         val download = _downloads.value.find { it.id == downloadId }
-        return download?.let { File(it.localFilePath) }
+        return download?.takeIf { hasValidLocalFile(it) }?.let { File(it.localFilePath) }
     }
 
     fun isItemDownloaded(itemId: String): Boolean {
         return _downloads.value.any {
-            it.jellyfinItemId == itemId && it.status == DownloadStatus.COMPLETED
+            it.jellyfinItemId == itemId &&
+                it.status == DownloadStatus.COMPLETED &&
+                hasValidLocalFile(it)
+        }
+    }
+
+    fun getCompletedDownloads(): List<OfflineDownload> {
+        return _downloads.value.filter {
+            it.status == DownloadStatus.COMPLETED && hasValidLocalFile(it)
         }
     }
 
     fun observeIsDownloaded(itemId: String): kotlinx.coroutines.flow.Flow<Boolean> {
         return observeDownloadInfo(itemId).map { it != null }
-    }
             .distinctUntilChanged()
     }
 
     fun observeDownloadInfo(itemId: String): kotlinx.coroutines.flow.Flow<OfflineDownload?> {
         return downloads
             .map { items ->
-                items.firstOrNull { it.jellyfinItemId == itemId && it.status == DownloadStatus.COMPLETED }
+                items.firstOrNull { download ->
+                    download.jellyfinItemId == itemId &&
+                        download.status == DownloadStatus.COMPLETED &&
+                        hasValidLocalFile(download)
+                }
             }
             .distinctUntilChanged()
     }
@@ -597,6 +610,8 @@ class OfflineDownloadManager @Inject constructor(
         val downloadId = java.util.UUID.randomUUID().toString()
         val encryptedUrlKey = "$ENCRYPTED_URL_PREFIX$downloadId"
         encryptedPreferences.putEncryptedString(encryptedUrlKey, url)
+        val thumbnailUrl = repository.getSeriesImageUrl(item) ?: repository.getImageUrl(itemId)
+        val thumbnailLocalPath = cacheThumbnailLocally(itemId, thumbnailUrl)
 
         return OfflineDownload(
             id = downloadId,
@@ -609,8 +624,41 @@ class OfflineDownloadManager @Inject constructor(
             quality = quality,
             playSessionId = extractPlaySessionId(url),
             runtimeTicks = item.runTimeTicks,
+            seriesName = item.seriesName,
+            seasonNumber = item.parentIndexNumber,
+            episodeNumber = item.indexNumber,
+            overview = item.overview,
+            productionYear = item.productionYear,
+            thumbnailUrl = thumbnailUrl,
+            thumbnailLocalPath = thumbnailLocalPath,
             downloadStartTime = System.currentTimeMillis(),
         )
+    }
+
+    private suspend fun cacheThumbnailLocally(itemId: String, imageUrl: String?): String? {
+        if (imageUrl.isNullOrBlank()) return null
+        return withContext(dispatchers.io) {
+            try {
+                val thumbnailDir = File(context.filesDir, JELLYFIN_OFFLINE_THUMBNAIL_DIR).apply { mkdirs() }
+                val destination = File(thumbnailDir, "$itemId.jpg")
+                val request = Request.Builder()
+                    .url(imageUrl)
+                    .build()
+                okHttpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        return@withContext null
+                    }
+                    response.body.byteStream().use { input ->
+                        FileOutputStream(destination).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                }
+                destination.absolutePath
+            } catch (_: Exception) {
+                null
+            }
+        }
     }
 
     /**
@@ -655,6 +703,17 @@ class OfflineDownloadManager @Inject constructor(
             }
         } catch (e: IOException) {
             Log.e("OfflineDownloadManager", "Failed to delete file: ${download.localFilePath}", e)
+        }
+    }
+
+    private fun deleteThumbnailFile(download: OfflineDownload) {
+        val thumbnailPath = download.thumbnailLocalPath ?: return
+        try {
+            val file = File(thumbnailPath)
+            if (file.exists()) {
+                file.delete()
+            }
+        } catch (_: Exception) {
         }
     }
 
@@ -849,4 +908,41 @@ class OfflineDownloadManager @Inject constructor(
     private fun downloadWorkName(downloadId: String): String = "offline-download-$downloadId"
 
     private fun downloadTag(downloadId: String): String = "offline-download-tag-$downloadId"
+
+    private fun hasValidLocalFile(download: OfflineDownload): Boolean {
+        val file = try {
+            File(download.localFilePath).canonicalFile
+        } catch (_: IOException) {
+            return false
+        }
+
+        if (!file.exists() || !file.isFile() || !file.canRead()) {
+            return false
+        }
+
+        return isInAppSpecificStorage(file)
+    }
+
+    private fun isInAppSpecificStorage(file: File): Boolean {
+        val filePath = file.path
+        return appSpecificStorageRoots().any { root ->
+            val rootPath = root.path
+            filePath == rootPath || filePath.startsWith("$rootPath${File.separator}")
+        }
+    }
+
+    private fun appSpecificStorageRoots(): List<File> {
+        val roots = mutableListOf<File>()
+        context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)?.let(roots::add)
+        context.getExternalFilesDir(null)?.let(roots::add)
+        roots.add(context.filesDir)
+
+        return roots.mapNotNull { root ->
+            try {
+                root.canonicalFile
+            } catch (_: IOException) {
+                null
+            }
+        }
+    }
 }
