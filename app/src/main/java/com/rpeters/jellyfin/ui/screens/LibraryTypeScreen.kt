@@ -400,7 +400,20 @@ private fun LibraryTypeLoadingPlaceholder(libraryType: LibraryType) {
 @Composable
 private fun GridContent(
     items: List<BaseItemDto>,
+private fun GridContent(
+    items: List<BaseItemDto>,
     recentlyAddedItems: List<BaseItemDto>,
+    libraryType: LibraryType,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    onTVShowClick: ((String) -> Unit)?,
+    onItemLongPress: (BaseItemDto) -> Unit,
+    gridState: LazyGridState,
+    isLoadingMore: Boolean,
+    hasMoreItems: Boolean,
+    onLoadMore: () -> Unit,
+    isTablet: Boolean = false,
+) {
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
