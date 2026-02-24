@@ -520,7 +520,16 @@ private fun ListContent(
                     libraryType = libraryType,
                     getImageUrl = getImageUrl,
                     onItemClick = onItemClick,
+                RecentlyAddedSection(
+                    items = recentlyAddedItems,
+                    libraryType = libraryType,
+                    getImageUrl = getImageUrl,
+                    onItemClick = onItemClick,
                     onTVShowClick = onTVShowClick,
+                    onItemLongPress = onItemLongPress,
+                    onMoreClick = onItemLongPress,
+                    isTablet = isTablet,
+                )
                 )
             }
         }
