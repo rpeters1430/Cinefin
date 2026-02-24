@@ -1,3 +1,6 @@
+> [!WARNING]
+> This document is **deprecated** and kept for historical context only. Use `docs/features/CAST_SYSTEM_UNIFIED_PLAN.md` as the canonical Cast plan.
+
 # Chromecast System Rebuild - Detailed Implementation Plan
 
 ## Executive Summary
