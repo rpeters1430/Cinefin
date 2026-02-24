@@ -560,7 +560,17 @@ private fun RecentlyAddedSection(
                     libraryType = libraryType,
                     getImageUrl = getImageUrl,
                     onItemClick = onItemClick,
+                LibraryItemCard(
+                    item = item,
+                    libraryType = libraryType,
+                    getImageUrl = getImageUrl,
+                    onItemClick = onItemClick,
                     onTVShowClick = onTVShowClick,
+                    onItemLongPress = onItemLongPress,
+                    onMoreClick = onMoreClick,
+                    isCompact = true,
+                    isTablet = isTablet,
+                )
                     isCompact = true,
                 )
             }
