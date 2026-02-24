@@ -12,6 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.ui.screens.OfflineLibraryScreen
 import com.rpeters.jellyfin.ui.screens.QuickConnectScreen
 import com.rpeters.jellyfin.ui.screens.ServerConnectionScreen
 import com.rpeters.jellyfin.ui.viewmodel.ServerConnectionViewModel
@@ -36,10 +37,14 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
             connectionState.savedUsername,
         ) { androidx.compose.runtime.mutableStateOf(false) }
 
-        // Navigate to Home when successfully connected
-        LaunchedEffect(connectionState.isConnected) {
+        // Navigate to Home when successfully connected.
+        LaunchedEffect(connectionState.isConnected, connectionState.isOfflineSession) {
             if (connectionState.isConnected) {
                 navController.navigate(Screen.Home.route) {
+                    popUpTo(Screen.ServerConnection.route) { inclusive = true }
+                }
+            } else if (connectionState.isOfflineSession) {
+                navController.navigate(Screen.OfflineLibrary.route) {
                     popUpTo(Screen.ServerConnection.route) { inclusive = true }
                 }
             }
@@ -93,6 +98,36 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
             onTemporarilyTrustPin = { viewModel.temporarilyTrustPin() },
             onDismissPinningAlert = { viewModel.dismissPinningAlert() },
             onRequireStrongBiometricChange = { viewModel.setRequireStrongBiometric(it) },
+            onContinueOffline = { viewModel.enterOfflineMode() },
+        )
+    }
+
+    composable(Screen.OfflineLibrary.route) {
+        val viewModel: ServerConnectionViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel()
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val connectionState by viewModel.connectionState.collectAsStateWithLifecycle(
+            lifecycle = lifecycleOwner.lifecycle,
+            minActiveState = Lifecycle.State.STARTED,
+        )
+
+        LaunchedEffect(connectionState.isConnected) {
+            if (connectionState.isConnected) {
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(Screen.OfflineLibrary.route) { inclusive = true }
+                }
+            }
+        }
+
+        OfflineLibraryScreen(
+            isReconnecting = connectionState.isConnecting,
+            isOnline = connectionState.isNetworkAvailable,
+            onReconnect = { viewModel.autoLogin() },
+            onBackToLogin = {
+                viewModel.exitOfflineMode()
+                navController.navigate(Screen.ServerConnection.route) {
+                    popUpTo(Screen.OfflineLibrary.route) { inclusive = true }
+                }
+            },
         )
     }
 

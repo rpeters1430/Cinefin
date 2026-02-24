@@ -1,5 +1,10 @@
 package com.rpeters.jellyfin.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -65,6 +70,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -83,6 +89,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.repeatOnLifecycle
 import coil3.compose.SubcomposeAsyncImage
@@ -113,6 +120,7 @@ import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
+import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.normalizeOfficialRating
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
@@ -163,14 +171,61 @@ fun ImmersiveMovieDetailScreen(
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var showDeleteOfflineConfirmation by remember { mutableStateOf(false) }
     var showQualityDialog by remember { mutableStateOf(false) }
+    var pendingQuality by remember { mutableStateOf<com.rpeters.jellyfin.data.offline.VideoQuality?>(null) }
     val context = LocalContext.current
+    val downloads by downloadsViewModel.downloads.collectAsState()
+    val downloadProgressMap by downloadsViewModel.downloadProgress.collectAsState()
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        SecureLogger.i(
+            "DownloadsFlow",
+            "POST_NOTIFICATIONS result via ImmersiveMovieDetail: granted=$granted, itemId=${movie.id}",
+        )
+        val quality = pendingQuality
+        if (quality != null) {
+            SecureLogger.i(
+                "DownloadsFlow",
+                "Proceeding with download after permission result via ImmersiveMovieDetail: itemId=${movie.id}, quality=${quality.id}",
+            )
+            onDownloadClick(movie, quality)
+            pendingQuality = null
+        }
+    }
+
+    val movieDownload = remember(downloads, movie.id) {
+        selectPreferredDownloadForItem(downloads, movie.id.toString())
+    }
+    val activeProgress = movieDownload?.let { downloadProgressMap[it.id] }
+
+    fun requestPermissionAndDownload(quality: com.rpeters.jellyfin.data.offline.VideoQuality) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            SecureLogger.i(
+                "DownloadsFlow",
+                "Requesting POST_NOTIFICATIONS via ImmersiveMovieDetail: itemId=${movie.id}, quality=${quality.id}",
+            )
+            pendingQuality = quality
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            SecureLogger.i(
+                "DownloadsFlow",
+                "POST_NOTIFICATIONS already granted (or not required) via ImmersiveMovieDetail: itemId=${movie.id}, quality=${quality.id}",
+            )
+            onDownloadClick(movie, quality)
+        }
+    }
 
     if (showQualityDialog) {
         QualitySelectionDialog(
             item = movie,
             onDismiss = { showQualityDialog = false },
             onQualitySelected = { quality ->
-                onDownloadClick(movie, quality)
+                requestPermissionAndDownload(quality)
                 showQualityDialog = false
             },
             downloadsViewModel = downloadsViewModel,
@@ -596,6 +651,89 @@ fun ImmersiveMovieDetailScreen(
             }
         }
 
+        // Download Progress Overlay — show as soon as the download is queued, before bytes flow
+        val downloadStatus = movieDownload?.status
+        if (downloadStatus == com.rpeters.jellyfin.data.offline.DownloadStatus.DOWNLOADING ||
+            downloadStatus == com.rpeters.jellyfin.data.offline.DownloadStatus.PENDING) {
+
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 80.dp)
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.9f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+                tonalElevation = 4.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (activeProgress?.isTranscoding == true) Icons.Default.AutoAwesome else Icons.Rounded.FileDownload,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = when {
+                                    activeProgress?.isTranscoding == true -> "Transcoding for download..."
+                                    downloadStatus == com.rpeters.jellyfin.data.offline.DownloadStatus.PENDING -> "Download queued..."
+                                    else -> "Downloading..."
+                                },
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                        }
+
+                        if (activeProgress != null) {
+                            Text(
+                                text = if (activeProgress.isTranscoding) {
+                                    "${(activeProgress.transcodingProgress ?: 0f).roundToInt()}%"
+                                } else {
+                                    "${activeProgress.progressPercent.roundToInt()}%"
+                                },
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+
+                    if (activeProgress != null) {
+                        val displayProgress = if (activeProgress.isTranscoding) {
+                            (activeProgress.transcodingProgress ?: 0f) / 100f
+                        } else {
+                            activeProgress.progressPercent / 100f
+                        }
+                        LinearProgressIndicator(
+                            progress = { displayProgress },
+                            modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        )
+                    } else {
+                        // No byte-level progress yet (pending / waiting for server to start stream)
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        )
+                    }
+                }
+            }
+        }
+
         // Floating Back and More Options Buttons
         Row(
             modifier = Modifier
@@ -754,6 +892,33 @@ fun ImmersiveMovieDetailScreen(
             },
         )
     }
+}
+
+private fun selectPreferredDownloadForItem(
+    downloads: List<com.rpeters.jellyfin.data.offline.OfflineDownload>,
+    itemId: String,
+): com.rpeters.jellyfin.data.offline.OfflineDownload? {
+    fun statusPriority(status: com.rpeters.jellyfin.data.offline.DownloadStatus): Int {
+        return when (status) {
+            com.rpeters.jellyfin.data.offline.DownloadStatus.DOWNLOADING -> 6
+            com.rpeters.jellyfin.data.offline.DownloadStatus.PENDING -> 5
+            com.rpeters.jellyfin.data.offline.DownloadStatus.PAUSED -> 4
+            com.rpeters.jellyfin.data.offline.DownloadStatus.FAILED -> 3
+            com.rpeters.jellyfin.data.offline.DownloadStatus.COMPLETED -> 2
+            com.rpeters.jellyfin.data.offline.DownloadStatus.CANCELLED -> 1
+        }
+    }
+
+    return downloads
+        .asSequence()
+        .filter { it.jellyfinItemId == itemId }
+        .maxWithOrNull(
+            compareBy<com.rpeters.jellyfin.data.offline.OfflineDownload>(
+                { statusPriority(it.status) },
+                { it.downloadStartTime ?: 0L },
+                { it.downloadCompleteTime ?: 0L },
+            ),
+        )
 }
 
 @Composable

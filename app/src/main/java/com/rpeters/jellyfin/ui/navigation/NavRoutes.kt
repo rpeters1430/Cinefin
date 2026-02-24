@@ -10,6 +10,7 @@ sealed class Screen(val route: String) {
     // Authentication flow
     object ServerConnection : Screen("server_connection")
     object QuickConnect : Screen("quick_connect")
+    object OfflineLibrary : Screen("offline_library")
 
     // Parent route for main application screens
     object Main : Screen("main")

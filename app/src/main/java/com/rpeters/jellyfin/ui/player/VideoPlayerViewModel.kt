@@ -17,6 +17,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.mediarouter.media.MediaRouter
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.ui.player.cast.CastState
+import com.rpeters.jellyfin.ui.player.cast.DiscoveryState
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -30,6 +32,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.model.api.BaseItemDto
+import java.io.File
 import java.util.Locale
 import javax.inject.Inject
 
@@ -89,6 +92,7 @@ data class VideoPlayerState(
     val showSubtitleDialog: Boolean = false,
     val showCastDialog: Boolean = false,
     val availableCastDevices: List<String> = emptyList(),
+    val castDiscoveryState: DiscoveryState = DiscoveryState.IDLE,
     val availableQualities: List<VideoQuality> = emptyList(),
     val selectedQuality: VideoQuality? = null,
     val isCastAvailable: Boolean = false,
@@ -485,6 +489,10 @@ class VideoPlayerViewModel @Inject constructor(
                 selectedSubtitleTrack = text.firstOrNull { it.isSelected },
                 isHdrContent = isHdr,
             )
+            SecureLogger.d(
+                "VideoPlayer",
+                "Tracks discovered: playbackMethod=${_playerState.value.playbackMethod}, audio=${audio.size}, subtitles=${text.size}, selectedAudio=${audio.firstOrNull { it.isSelected }?.displayName}, selectedSubtitle=${text.firstOrNull { it.isSelected }?.displayName}",
+            )
 
             // Apply one-time defaults: preferred audio language if available; subtitles off OR requested
             if (!defaultsApplied) {
@@ -642,17 +650,24 @@ class VideoPlayerViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val isDownloaded = offlinePlaybackManager.isOfflinePlaybackAvailable(itemId)
+                val offlineDownload = if (isDownloaded) offlinePlaybackManager.getOfflineDownload(itemId) else null
+                val cid = offlineDownload?.id?.take(8)
                 val isOnline = isDeviceOnline()
-                val shouldUseOfflineSource = isDownloaded && (!isOnline || forceOffline)
+                val shouldUseOfflineSource = isDownloaded
+                SecureLogger.i(
+                    "VideoPlayer",
+                    "Playback source decision: itemId=$itemId, cid=$cid, isDownloaded=$isDownloaded, isOnline=$isOnline, forceOffline=$forceOffline, useOffline=$shouldUseOfflineSource",
+                )
 
                 if (shouldUseOfflineSource) {
                     val offlineMediaItem = offlinePlaybackManager.getOfflineMediaItem(itemId)
                         ?: throw IllegalStateException("Offline copy is unavailable for this item")
                     val initialStartPosition = startPosition.coerceAtLeast(0L)
+                    val initialDuration = offlineDownload?.runtimeTicks?.let { it / 10_000 } ?: 0L
 
                     SecureLogger.i(
                         "VideoPlayer",
-                        "Using offline source for itemId=$itemId (isOnline=$isOnline, forceOffline=$forceOffline)",
+                        "Using offline source for itemId=$itemId (offline copy exists; preferred by policy)",
                     )
 
                     val offlineQualityLabel = offlinePlaybackManager.getOfflineDownload(itemId)?.quality?.label ?: "Original"
@@ -669,10 +684,81 @@ class VideoPlayerViewModel @Inject constructor(
                         transcodingReason = null,
                         playbackMethod = "Offline",
                     )
+                    if (initialDuration > 0) {
+                        _playerState.value = _playerState.value.copy(duration = initialDuration)
+                        SecureLogger.d(
+                            "VideoPlayer",
+                            "Offline initial duration set from download metadata: ${initialDuration}ms (${initialDuration / 60000}min), cid=$cid",
+                        )
+                    } else {
+                        SecureLogger.w(
+                            "VideoPlayer",
+                            "Offline initial duration unavailable in download metadata for itemId=$itemId, cid=$cid",
+                        )
+                    }
+
+                    currentItemMetadata = if (isOnline) {
+                        try {
+                            loadSkipMarkers(itemId)
+                        } catch (e: Exception) {
+                            SecureLogger.w(
+                                "VideoPlayer",
+                                "Failed to load metadata for offline playback (continuing local-only): ${e.message}",
+                            )
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                    if (currentItemMetadata != null) {
+                        loadNextEpisodeIfAvailable(currentItemMetadata)
+                    }
+                    val playbackInfoForSubs = if (isOnline) {
+                        try {
+                            repository.getPlaybackInfo(itemId)
+                        } catch (_: Exception) {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                    currentMediaSourceId = playbackInfoForSubs?.mediaSources?.firstOrNull()?.id
+                    val serverSubtitleSpecs = extractSubtitleSpecs(currentItemMetadata, playbackInfoForSubs)
+                    val localSubtitleSpecs = offlineDownload
+                        ?.offlineSubtitles
+                        ?.mapNotNull { subtitle ->
+                            val subtitleFile = runCatching { File(subtitle.localFilePath) }.getOrNull() ?: return@mapNotNull null
+                            if (!subtitleFile.exists() || !subtitleFile.isFile() || !subtitleFile.canRead() || subtitleFile.length() <= 0L) {
+                                return@mapNotNull null
+                            }
+                            SubtitleSpec.fromUrl(
+                                url = subtitleFile.toURI().toString(),
+                                language = subtitle.language,
+                                label = subtitle.label,
+                                isForced = subtitle.isForced,
+                            )
+                        }
+                        .orEmpty()
+                    currentSubtitleSpecs = (localSubtitleSpecs + serverSubtitleSpecs)
+                        .distinctBy { it.url }
+                    SecureLogger.d(
+                        "VideoPlayer",
+                        "Offline subtitle setup: itemId=$itemId, cid=$cid, localSpecs=${localSubtitleSpecs.size}, serverSpecs=${serverSubtitleSpecs.size}, sideLoadedSpecs=${currentSubtitleSpecs.size}, metadataLoaded=${currentItemMetadata != null}",
+                    )
+
+                    // Track progress even for offline files so they can be resumed and synced
+                    playbackProgressManager.startTracking(
+                        itemId = itemId,
+                        scope = viewModelScope,
+                        sessionId = java.util.UUID.randomUUID().toString(),
+                        playMethod = org.jellyfin.sdk.model.api.PlayMethod.DIRECT_PLAY,
+                    )
 
                     withContext(Dispatchers.Main) {
                         val renderersFactory = DefaultRenderersFactory(context)
-                            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+                            // Prefer FFmpeg extension decoders for offline local playback to avoid
+                            // device-specific MediaCodec EAC3 decoder crashes.
+                            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
                             .setEnableDecoderFallback(true)
                             .forceEnableMediaCodecAsynchronousQueueing()
                             .setAllowedVideoJoiningTimeMs(5000)
@@ -722,9 +808,23 @@ class VideoPlayerViewModel @Inject constructor(
                             .build()
 
                         exoPlayer?.addListener(playerListener)
-                        currentMediaItem = offlineMediaItem
+                        val offlineUri = offlineMediaItem.localConfiguration?.uri?.toString()
+                        currentMediaItem = if (!offlineUri.isNullOrBlank()) {
+                            MediaItemFactory.build(
+                                videoUrl = offlineUri,
+                                title = currentItemMetadata?.name ?: itemName,
+                                sideLoadedSubs = currentSubtitleSpecs,
+                                mimeTypeHint = null,
+                            )
+                        } else {
+                            offlineMediaItem
+                        }
+                        SecureLogger.d(
+                            "VideoPlayer",
+                            "Offline media item prepared: itemId=$itemId, cid=$cid, reusedOfflineItem=${offlineUri.isNullOrBlank()}, sideLoadedSubs=${currentSubtitleSpecs.size}",
+                        )
 
-                        exoPlayer?.setMediaItem(offlineMediaItem)
+                        exoPlayer?.setMediaItem(currentMediaItem ?: offlineMediaItem)
                         exoPlayer?.prepare()
                         exoPlayer?.play()
 
@@ -737,6 +837,11 @@ class VideoPlayerViewModel @Inject constructor(
 
                     return@launch
                 }
+
+                SecureLogger.i(
+                    "VideoPlayer",
+                    "No offline copy available, falling back to network source for itemId=$itemId",
+                )
 
                 // Get resume position from server
                 val resumePosition = playbackProgressManager.getResumePosition(itemId)
@@ -1456,6 +1561,8 @@ class VideoPlayerViewModel @Inject constructor(
             castPosition = castState.currentPosition,
             castDuration = castState.duration,
             castVolume = castState.volume,
+            availableCastDevices = castState.availableDevices,
+            castDiscoveryState = castState.discoveryState,
             showCastDialog = if (hideDialog) false else currentState.showCastDialog,
             error = castState.error ?: currentState.error, // Propagate Cast errors to UI
         )
@@ -1879,16 +1986,10 @@ class VideoPlayerViewModel @Inject constructor(
                 return@launch
             }
 
-            val devices = castManager.discoverDevices()
-            if (devices.isEmpty()) {
-                _playerState.value = _playerState.value.copy(
-                    error = "No Cast devices found. Make sure your device is on the same network.",
-                )
-                return@launch
-            }
+            // Start async discovery
+            castManager.startDiscovery()
 
             _playerState.value = _playerState.value.copy(
-                availableCastDevices = devices,
                 showCastDialog = true,
             )
         }
@@ -2045,6 +2146,8 @@ class VideoPlayerViewModel @Inject constructor(
                 return@launch
             }
             castManager.connectToDevice(deviceName)
+            // Stop discovery once a device is selected
+            castManager.stopDiscovery()
             // Note: Connection result will come through castState updates
             // Success: onSessionStarted callback → handleCastState() → starts casting
             // Failure: error set in CastManager → propagated to playerState.error → shown in Snackbar
@@ -2052,6 +2155,7 @@ class VideoPlayerViewModel @Inject constructor(
     }
 
     fun hideCastDialog() {
+        castManager.stopDiscovery()
         _playerState.value = _playerState.value.copy(showCastDialog = false)
     }
 

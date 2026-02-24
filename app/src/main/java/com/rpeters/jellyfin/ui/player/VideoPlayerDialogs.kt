@@ -1,11 +1,13 @@
 package com.rpeters.jellyfin.ui.player
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -14,6 +16,7 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
+import com.rpeters.jellyfin.ui.player.cast.DiscoveryState
 
 @UnstableApi
 @Composable
@@ -124,23 +128,61 @@ fun SubtitleTrackSelectionDialog(
 @Composable
 fun CastDeviceSelectionDialog(
     availableDevices: List<String>,
+    discoveryState: DiscoveryState,
     onDeviceSelect: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Cast to Device") },
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Cast to Device")
+                if (discoveryState == DiscoveryState.DISCOVERING) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        },
         text = {
             Column {
-                if (availableDevices.isEmpty()) {
-                    Text("No Cast devices found. Make sure your Chromecast or other Cast-enabled device is on the same network.")
-                } else {
-                    availableDevices.forEach { device ->
-                        TextButton(
-                            onClick = { onDeviceSelect(device) },
-                            modifier = Modifier.fillMaxWidth(),
+                when {
+                    discoveryState == DiscoveryState.DISCOVERING && availableDevices.isEmpty() -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Text(device)
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    "Scanning for devices...",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            }
+                        }
+                    }
+                    availableDevices.isEmpty() && discoveryState == DiscoveryState.TIMEOUT -> {
+                        Text("No Cast devices found. Make sure your Chromecast or other Cast-enabled device is on the same network.")
+                    }
+                    availableDevices.isEmpty() && discoveryState == DiscoveryState.IDLE -> {
+                        Text("No devices found.")
+                    }
+                    else -> {
+                        availableDevices.forEach { device ->
+                            TextButton(
+                                onClick = { onDeviceSelect(device) },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(
+                                    text = device,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Start,
+                                )
+                            }
                         }
                     }
                 }

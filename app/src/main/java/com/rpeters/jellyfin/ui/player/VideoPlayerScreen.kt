@@ -309,6 +309,7 @@ fun VideoPlayerScreen(
         if (playerState.showCastDialog) {
             CastDeviceSelectionDialog(
                 availableDevices = playerState.availableCastDevices,
+                discoveryState = playerState.castDiscoveryState,
                 onDeviceSelect = onCastDeviceSelect,
                 onDismiss = onCastDialogDismiss,
             )

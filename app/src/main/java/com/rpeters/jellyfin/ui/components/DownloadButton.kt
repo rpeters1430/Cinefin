@@ -1,5 +1,10 @@
 package com.rpeters.jellyfin.ui.components
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -10,11 +15,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.data.offline.DownloadStatus
+import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
+import com.rpeters.jellyfin.utils.SecureLogger
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.MediaStreamType
 import kotlin.math.roundToInt
@@ -29,24 +38,74 @@ fun DownloadButton(
 ) {
     val downloads by downloadsViewModel.downloads.collectAsState()
     val downloadProgress by downloadsViewModel.downloadProgress.collectAsState()
+    val context = LocalContext.current
     var showQualityDialog by remember { mutableStateOf(false) }
     var redownloadMode by remember { mutableStateOf(false) }
+    var pendingQuality by remember { mutableStateOf<com.rpeters.jellyfin.data.offline.VideoQuality?>(null) }
 
-    val currentDownload = downloads.find { it.jellyfinItemId == item.id.toString() }
+    // Deferred permission launcher
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        SecureLogger.i(
+            "DownloadsFlow",
+            "POST_NOTIFICATIONS result via DownloadButton: granted=$granted, itemId=${item.id}",
+        )
+        // After permission choice, proceed with the pending download if any
+        val quality = pendingQuality
+        if (quality != null) {
+            if (redownloadMode) {
+                downloadsViewModel.redownloadByItem(item, quality)
+            } else {
+                downloadsViewModel.startDownload(item, quality)
+            }
+            pendingQuality = null
+            redownloadMode = false
+        }
+    }
+
+    fun requestPermissionAndStartDownload(quality: com.rpeters.jellyfin.data.offline.VideoQuality) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            SecureLogger.i(
+                "DownloadsFlow",
+                "Requesting POST_NOTIFICATIONS via DownloadButton for itemId=${item.id}, quality=${quality.id}",
+            )
+            pendingQuality = quality
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            SecureLogger.i(
+                "DownloadsFlow",
+                "POST_NOTIFICATIONS already granted (or not required) via DownloadButton for itemId=${item.id}, quality=${quality.id}",
+            )
+            if (redownloadMode) {
+                downloadsViewModel.redownloadByItem(item, quality)
+            } else {
+                downloadsViewModel.startDownload(item, quality)
+            }
+            redownloadMode = false
+        }
+    }
+
+    val currentDownload = remember(downloads, item.id) {
+        selectPreferredDownloadForItem(downloads, item.id.toString())
+    }
     val progress = currentDownload?.let { downloadProgress[it.id] }
 
     if (showQualityDialog) {
         QualitySelectionDialog(
             item = item,
-            onDismiss = { showQualityDialog = false },
-            onQualitySelected = { quality ->
-                if (redownloadMode) {
-                    downloadsViewModel.redownloadByItem(item, quality)
-                } else {
-                    downloadsViewModel.startDownload(item, quality)
-                }
+            onDismiss = {
                 showQualityDialog = false
                 redownloadMode = false
+            },
+            onQualitySelected = { quality ->
+                showQualityDialog = false
+                requestPermissionAndStartDownload(quality)
             },
             downloadsViewModel = downloadsViewModel,
         )
@@ -54,6 +113,9 @@ fun DownloadButton(
 
     Box(modifier = modifier) {
         when (currentDownload?.status) {
+            DownloadStatus.PENDING -> {
+                PendingDownloadButton(showText = showText)
+            }
             DownloadStatus.DOWNLOADING -> {
                 DownloadingButton(
                     progress = progress?.progressPercent ?: 0f,
@@ -98,6 +160,48 @@ fun DownloadButton(
                     showText = showText,
                 )
             }
+        }
+    }
+}
+
+private fun selectPreferredDownloadForItem(
+    downloads: List<OfflineDownload>,
+    itemId: String,
+): OfflineDownload? {
+    fun statusPriority(status: DownloadStatus): Int {
+        return when (status) {
+            DownloadStatus.DOWNLOADING -> 6
+            DownloadStatus.PENDING -> 5
+            DownloadStatus.PAUSED -> 4
+            DownloadStatus.FAILED -> 3
+            DownloadStatus.COMPLETED -> 2
+            DownloadStatus.CANCELLED -> 1
+        }
+    }
+
+    return downloads
+        .asSequence()
+        .filter { it.jellyfinItemId == itemId }
+        .maxWithOrNull(
+            compareBy<OfflineDownload>(
+                { statusPriority(it.status) },
+                { it.downloadStartTime ?: 0L },
+                { it.downloadCompleteTime ?: 0L },
+            ),
+        )
+}
+
+@Composable
+private fun PendingDownloadButton(showText: Boolean) {
+    if (showText) {
+        OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
+            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Queued...")
+        }
+    } else {
+        Box(contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(modifier = Modifier.size(40.dp), strokeWidth = 3.dp)
         }
     }
 }

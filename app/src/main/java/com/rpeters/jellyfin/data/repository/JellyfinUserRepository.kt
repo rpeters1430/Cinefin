@@ -44,7 +44,7 @@ class JellyfinUserRepository @Inject constructor(
      * Flushes all queued offline progress updates to the server.
      */
     suspend fun syncOfflineProgress(): ApiResult<Int> {
-        val updates = offlineProgressRepository.getAndClearUpdates()
+        val updates = offlineProgressRepository.getQueuedUpdates()
             .sortedWith(compareBy<QueuedProgressUpdate> { it.timestamp }.thenByDescending { eventPriority(it.eventType) })
         if (updates.isEmpty()) return ApiResult.Success(0)
 
@@ -52,6 +52,7 @@ class JellyfinUserRepository @Inject constructor(
         var successCount = 0
         var networkRetryCount = 0
         var nonRetryFailureCount = 0
+        val syncedIds = mutableSetOf<String>()
 
         for (update in updates) {
             try {
@@ -114,20 +115,25 @@ class JellyfinUserRepository @Inject constructor(
                 }
                 if (result is ApiResult.Success) {
                     successCount++
+                    syncedIds.add(update.id)
                 } else {
-                    // Re-queue if sync fails due to network (not auth error)
+                    // Item remains in queue for next sync attempt
                     if (result is ApiResult.Error && result.errorType == ErrorType.NETWORK) {
                         networkRetryCount++
-                        offlineProgressRepository.addUpdate(update)
                     } else {
+                        // Non-network failures (e.g. 404) are still removed to prevent blocking the queue
                         nonRetryFailureCount++
+                        syncedIds.add(update.id)
                     }
                 }
             } catch (e: Exception) {
-                nonRetryFailureCount++
+                // Unexpected error - keep in queue for one retry then likely prune on age
                 SecureLogger.e("JellyfinUserRepository", "Failed to sync progress for ${update.itemId}", e)
             }
         }
+
+        // Only remove the ones that actually synced (or failed permanently)
+        offlineProgressRepository.removeUpdates(syncedIds)
 
         SecureLogger.i(
             "JellyfinUserRepository",

@@ -4,12 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
+import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.repository.GenerativeAiRepository
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.ui.utils.EnhancedPlaybackUtils
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
+import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -178,10 +180,15 @@ class TVEpisodeDetailViewModel @Inject constructor(
         observeDownloadInfoJob?.cancel()
 
         observeDownloadInfoJob = viewModelScope.launch {
-            offlineDownloadManager.observeDownloadInfo(episodeId).collect { info ->
+            offlineDownloadManager.observeCurrentDownload(episodeId).collect { info ->
+                val completedInfo = info?.takeIf { it.status == DownloadStatus.COMPLETED }
+                SecureLogger.i(
+                    "EpisodeDetailDownload",
+                    "Observed download state: itemId=$episodeId, currentStatus=${info?.status}, isDownloaded=${completedInfo != null}, downloadId=${info?.id}, cid=${info?.id?.take(8)}",
+                )
                 _state.value = _state.value.copy(
-                    downloadInfo = info,
-                    isDownloaded = info != null
+                    downloadInfo = completedInfo,
+                    isDownloaded = completedInfo != null
                 )
             }
         }

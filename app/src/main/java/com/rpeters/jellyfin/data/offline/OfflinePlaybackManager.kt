@@ -12,6 +12,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.rpeters.jellyfin.utils.SecureLogger
 import kotlinx.coroutines.flow.StateFlow
 import java.io.File
 import java.io.IOException
@@ -28,20 +29,32 @@ class OfflinePlaybackManager @Inject constructor(
     private val downloads: StateFlow<List<OfflineDownload>> = downloadManager.downloads
 
     fun isOfflinePlaybackAvailable(itemId: String): Boolean {
-        return downloads.value.any { download ->
+        val available = downloads.value.any { download ->
             download.jellyfinItemId == itemId &&
                 download.status == DownloadStatus.COMPLETED &&
                 resolveReadableOfflineFile(download, logWarnings = false) != null
         }
+        SecureLogger.i("OfflinePlayback", "Availability check: itemId=$itemId, available=$available")
+        return available
     }
 
     fun getOfflineMediaItem(itemId: String): MediaItem? {
         val download = downloads.value.find { download ->
             download.jellyfinItemId == itemId &&
                 download.status == DownloadStatus.COMPLETED
-        } ?: return null
+        } ?: run {
+            SecureLogger.i("OfflinePlayback", "No completed download record for itemId=$itemId")
+            return null
+        }
 
-        val file = resolveReadableOfflineFile(download) ?: return null
+        val file = resolveReadableOfflineFile(download) ?: run {
+            SecureLogger.w(
+                "OfflinePlayback",
+                "Completed download record exists but file is unreadable: itemId=$itemId, downloadId=${download.id}",
+            )
+            return null
+        }
+        SecureLogger.i("OfflinePlayback", "Resolved offline media item: itemId=$itemId, downloadId=${download.id}")
 
         val metadata = MediaMetadata.Builder()
             .setTitle(download.itemName)
@@ -69,10 +82,15 @@ class OfflinePlaybackManager @Inject constructor(
     }
 
     fun getOfflineDownload(itemId: String): OfflineDownload? {
-        return downloads.value.find { download ->
+        val download = downloads.value.find { download ->
             download.jellyfinItemId == itemId &&
                 download.status == DownloadStatus.COMPLETED
         }
+        SecureLogger.i(
+            "OfflinePlayback",
+            "getOfflineDownload: itemId=$itemId, found=${download != null}, cid=${download?.id?.take(8)}",
+        )
+        return download
     }
 
     fun getAllOfflineDownloads(): List<OfflineDownload> {

@@ -1,5 +1,10 @@
 package com.rpeters.jellyfin.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -63,6 +68,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.repeatOnLifecycle
 import coil3.request.crossfade
@@ -90,6 +96,7 @@ import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.isWatched
 import org.jellyfin.sdk.model.api.BaseItemDto
 import java.util.Locale
@@ -133,13 +140,53 @@ fun ImmersiveTVEpisodeDetailScreen(
     val mainAppViewModel: MainAppViewModel = hiltViewModel()
     var showQualityDialog by remember { mutableStateOf(false) }
     var showDeleteOfflineConfirmation by remember { mutableStateOf(false) }
+    var pendingQuality by remember { mutableStateOf<com.rpeters.jellyfin.data.offline.VideoQuality?>(null) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        SecureLogger.i(
+            "DownloadsFlow",
+            "POST_NOTIFICATIONS result via ImmersiveEpisodeDetail: granted=$granted, itemId=${episode.id}",
+        )
+        val quality = pendingQuality
+        if (quality != null) {
+            SecureLogger.i(
+                "DownloadsFlow",
+                "Proceeding with download after permission result via ImmersiveEpisodeDetail: itemId=${episode.id}, quality=${quality.id}",
+            )
+            onDownloadClick(episode, quality)
+            pendingQuality = null
+        }
+    }
+
+    fun requestPermissionAndDownload(quality: com.rpeters.jellyfin.data.offline.VideoQuality) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            SecureLogger.i(
+                "DownloadsFlow",
+                "Requesting POST_NOTIFICATIONS via ImmersiveEpisodeDetail: itemId=${episode.id}, quality=${quality.id}",
+            )
+            pendingQuality = quality
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            SecureLogger.i(
+                "DownloadsFlow",
+                "POST_NOTIFICATIONS already granted (or not required) via ImmersiveEpisodeDetail: itemId=${episode.id}, quality=${quality.id}",
+            )
+            onDownloadClick(episode, quality)
+        }
+    }
 
     if (showQualityDialog) {
         QualitySelectionDialog(
             item = episode,
             onDismiss = { showQualityDialog = false },
             onQualitySelected = { quality ->
-                onDownloadClick(episode, quality)
+                requestPermissionAndDownload(quality)
                 showQualityDialog = false
             },
             downloadsViewModel = downloadsViewModel,

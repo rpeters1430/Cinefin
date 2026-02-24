@@ -24,9 +24,19 @@ data class OfflineDownload(
     val productionYear: Int? = null,
     val thumbnailUrl: String? = null,
     val thumbnailLocalPath: String? = null,
+    val offlineSubtitles: List<OfflineSubtitle> = emptyList(),
     val downloadStartTime: Long? = null,
     val downloadCompleteTime: Long? = null,
+    val lastPlaybackPositionMs: Long? = null,
     val lastModified: Long = System.currentTimeMillis(),
+)
+
+@Serializable
+data class OfflineSubtitle(
+    val localFilePath: String,
+    val language: String? = null,
+    val label: String? = null,
+    val isForced: Boolean = false,
 )
 
 @Serializable

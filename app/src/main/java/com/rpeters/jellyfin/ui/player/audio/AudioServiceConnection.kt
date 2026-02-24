@@ -23,9 +23,11 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import java.util.concurrent.CancellationException as FutureCancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 @UnstableApi
 @Singleton
@@ -353,10 +355,14 @@ private suspend fun <T> ListenableFuture<T>.await(context: Context): T =
     suspendCancellableCoroutine { continuation ->
         addListener(
             {
+                if (!continuation.isActive) return@addListener
                 try {
                     continuation.resume(get())
-                } catch (e: CancellationException) {
-                    throw e
+                } catch (e: FutureCancellationException) {
+                    // Future cancellation is expected during shutdown/navigation. Do not crash.
+                    continuation.cancel(CancellationException("ListenableFuture was cancelled", e))
+                } catch (e: Exception) {
+                    continuation.resumeWithException(e)
                 }
             },
             ContextCompat.getMainExecutor(context),

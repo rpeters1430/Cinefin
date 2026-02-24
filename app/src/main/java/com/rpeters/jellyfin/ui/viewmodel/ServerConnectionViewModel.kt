@@ -14,6 +14,8 @@ import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.constants.Constants
 import com.rpeters.jellyfin.data.SecureCredentialManager
+import com.rpeters.jellyfin.data.offline.DownloadStatus
+import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
@@ -39,6 +41,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import java.io.File
 
 // Use the enhanced ConnectionState from ConnectionProgress.kt
 // This data class is now defined in the ConnectionProgress.kt file
@@ -59,6 +62,7 @@ class ServerConnectionViewModel @Inject constructor(
     private val secureCredentialManager: SecureCredentialManager,
     private val certificatePinningManager: CertificatePinningManager,
     private val connectivityChecker: ConnectivityChecker,
+    private val offlineDownloadManager: OfflineDownloadManager,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -111,6 +115,7 @@ class ServerConnectionViewModel @Inject constructor(
                 isBiometricAuthAvailable = isBiometricAuthEnabled && biometricCapability.isAvailable,
                 isUsingWeakBiometric = isBiometricAuthEnabled && biometricCapability.isWeakOnly && biometricCapability.isAvailable,
                 requireStrongBiometric = requireStrongBiometric,
+                isNetworkAvailable = connectivityChecker.isOnline(),
                 // We don't set biometric auth enabled here because we want to check it separately
             )
 
@@ -119,9 +124,14 @@ class ServerConnectionViewModel @Inject constructor(
                 // Check network connectivity before attempting auto-login
                 if (!connectivityChecker.isOnline()) {
                     SecureLogger.w("ServerConnectionVM", "Auto-login skipped: no internet connection")
+                    val hasOfflineMedia = hasPlayableOfflineMedia()
                     _connectionState.value = _connectionState.value.copy(
                         errorMessage = "No internet connection. Please check your network and try again.",
+                        canEnterOffline = hasOfflineMedia,
                     )
+                    if (hasOfflineMedia) {
+                        SecureLogger.i("ServerConnectionVM", "Offline entry available: playable downloads detected")
+                    }
 
                     // Observe network connectivity and retry auto-login when online
                     viewModelScope.launch {
@@ -183,6 +193,14 @@ class ServerConnectionViewModel @Inject constructor(
             }
         }
 
+        viewModelScope.launch {
+            connectivityChecker.observeNetworkConnectivity().collect { isOnline ->
+                _connectionState.value = _connectionState.value.copy(
+                    isNetworkAvailable = isOnline,
+                )
+            }
+        }
+
         // Observe repository connection state
         viewModelScope.launch {
             repository.isConnected.collect { isConnected ->
@@ -233,6 +251,8 @@ class ServerConnectionViewModel @Inject constructor(
             connectionPhase = ConnectionPhase.Testing,
             currentUrl = serverUrl,
             pinningAlert = null,
+            canEnterOffline = false,
+            isOfflineSession = false,
         )
 
         viewModelScope.launch {
@@ -308,11 +328,16 @@ class ServerConnectionViewModel @Inject constructor(
                 }
                 is ApiResult.Error -> {
                     if (!handlePinningError(serverResult)) {
+                        val hasOfflineMedia = hasPlayableOfflineMedia()
                         _connectionState.value = _connectionState.value.copy(
                             isConnecting = false,
                             errorMessage = "Cannot connect to server: ${serverResult.message}",
                             connectionPhase = ConnectionPhase.Error,
+                            canEnterOffline = hasOfflineMedia,
                         )
+                        if (hasOfflineMedia) {
+                            SecureLogger.i("ServerConnectionVM", "Server unreachable, offering offline entry")
+                        }
                     }
                 }
                 is ApiResult.Loading -> {
@@ -551,6 +576,15 @@ class ServerConnectionViewModel @Inject constructor(
         val currentState = _connectionState.value
         if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
             viewModelScope.launch {
+                if (!connectivityChecker.isOnline()) {
+                    if (hasPlayableOfflineMedia()) {
+                        SecureLogger.i("ServerConnectionVM", "Auto-login tapped while offline; entering offline mode")
+                        enterOfflineMode()
+                    } else {
+                        showError("No internet connection and no downloaded media found.")
+                    }
+                    return@launch
+                }
                 val savedPassword = getSavedPassword()
                 if (savedPassword != null) {
                     connectToServer(
@@ -561,6 +595,30 @@ class ServerConnectionViewModel @Inject constructor(
                     )
                 }
             }
+        }
+    }
+
+    fun enterOfflineMode() {
+        _connectionState.value = _connectionState.value.copy(
+            isConnecting = false,
+            errorMessage = null,
+            connectionPhase = ConnectionPhase.Idle,
+            isOfflineSession = true,
+            canEnterOffline = true,
+        )
+    }
+
+    fun exitOfflineMode() {
+        _connectionState.value = _connectionState.value.copy(
+            isOfflineSession = false,
+        )
+    }
+
+    private suspend fun hasPlayableOfflineMedia(): Boolean = withContext(Dispatchers.IO) {
+        offlineDownloadManager.downloads.value.any { download ->
+            if (download.status != DownloadStatus.COMPLETED) return@any false
+            val file = runCatching { File(download.localFilePath) }.getOrNull() ?: return@any false
+            file.exists() && file.isFile && file.canRead() && file.length() > 0L
         }
     }
 

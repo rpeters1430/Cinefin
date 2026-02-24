@@ -104,22 +104,6 @@ fun JellyfinApp(
         val isOnline by connectivityChecker.observeNetworkConnectivity()
             .collectAsStateWithLifecycle(initialValue = connectivityChecker.isOnline())
 
-        // Request POST_NOTIFICATIONS permission on Android 13+ so download notifications work
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val notificationPermissionLauncher = rememberLauncherForActivityResult(
-                ActivityResultContracts.RequestPermission()
-            ) { /* user choice respected; downloads proceed regardless */ }
-            LaunchedEffect(Unit) {
-                if (ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.POST_NOTIFICATIONS,
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            }
-        }
-
         // Log network state changes
         LaunchedEffect(isOnline) {
             SecureLogger.i("JellyfinApp", "Network state changed: ${if (isOnline) "ONLINE" else "OFFLINE"}")

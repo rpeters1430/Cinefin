@@ -145,18 +145,24 @@ Key pattern: Use `Provider<T>` for circular dependencies (e.g., `Provider<Jellyf
 - **PlaybackProgressManager**: Tracks and reports playback position to server
 
 ### Google Cast / Chromecast Integration
-- **CastManager** (ui/player/CastManager.kt): Manages all Cast functionality
-  - Session management with auto-reconnect support
-  - Media loading with authentication token injection
-  - Subtitle track support
-  - Preview loading (artwork + metadata without playback)
+The Cast system is split into dedicated controllers in `ui/player/cast/`:
+- **CastStateStore**: Singleton `StateFlow<CastState>` — single source of truth for all Cast state
+- **CastSessionController**: SDK session lifecycle (start/end/reconnect)
+- **CastDiscoveryController**: Device discovery with timeout/error states
+- **CastPlaybackController**: Remote media client callbacks and playback tracking
+- **CastMediaLoadBuilder**: Constructs `MediaLoadRequestData` with HLS URLs and auth
+- **CastState** / **DiscoveryState**: Immutable state data classes
+
+**CastManager** (ui/player/CastManager.kt) delegates to the controllers above and is the entry point for the rest of the app.
+
 - **CastOptionsProvider** (ui/player/CastOptionsProvider.kt): Cast configuration
   - **Current receiver**: `CC1AD845` (Google Default Media Receiver)
   - **Why not Jellyfin's official receiver?** The Jellyfin Cast receivers (`F007D354` stable, `6F511C87` unstable) require implementing the full Jellyfin Cast protocol with custom data payloads containing server info, authentication, and media source selection. This app uses a simplified URL-based approach - sending HLS transcoded stream URLs with auth tokens as query parameters - which works reliably with Google's Default Media Receiver without requiring custom protocol implementation.
   - Source: https://github.com/jellyfin/jellyfin-chromecast
-- **Cast preferences**: Stored via CastPreferencesRepository for auto-reconnect
+- **Cast preferences**: Stored via `CastPreferencesRepository` for auto-reconnect
 - **Authentication**: Cast URLs no longer include tokens; casting protected media requires a local proxy or unauthenticated endpoint
 - **Stream optimization**: Prefers HLS transcoding (`container=hls`) for maximum compatibility with adaptive streaming fallback
+- **Feature flag**: `ENABLE_CAST_FIX_PATH` gates cast reliability fixes for gradual rollout
 
 ### Image Loading & Performance
 - Custom `ImageLoadingOptimizer` (ui/image/OptimizedImageLoader.kt) configures Coil based on device performance
@@ -447,7 +453,7 @@ Example: `feat: add movie detail screen`, `fix: prevent crash on empty library`
 - **Repositories**: `data/repository/` (includes GenerativeAiRepository, RemoteConfigRepository)
 - **AI infrastructure**: `data/ai/` (AiBackendStateHolder, AiTextModel interface)
 - **ViewModels**: `ui/viewmodel/`
-- **Reusable components**: `ui/components/`
+- **Reusable components**: `ui/components/` (includes `WatchStatusBanner` for watched/partial-watched state display)
 - **Immersive UI components**: `ui/components/immersive/`
 - **Immersive screens**: `ui/screens/Immersive*.kt`
 - **Feature flags**: `core/FeatureFlags.kt`

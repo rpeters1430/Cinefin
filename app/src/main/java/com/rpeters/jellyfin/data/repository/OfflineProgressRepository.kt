@@ -15,6 +15,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.jellyfin.sdk.model.api.PlayMethod
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,6 +29,7 @@ enum class OfflinePlaybackEventType {
 
 @Serializable
 data class QueuedProgressUpdate(
+    val id: String = UUID.randomUUID().toString(),
     val eventType: OfflinePlaybackEventType = OfflinePlaybackEventType.PROGRESS,
     val itemId: String,
     val sessionId: String,
@@ -92,29 +94,41 @@ class OfflineProgressRepository @Inject constructor(
 
             SecureLogger.d(
                 "OfflineProgress",
-                "Queued ${update.eventType} for item ${update.itemId} at ${update.positionTicks} ticks",
+                "Queued ${update.eventType} for item ${update.itemId} at ${update.positionTicks} ticks (id=${update.id})",
             )
         }
     }
 
     /**
-     * Gets all queued updates and clears the queue.
+     * Gets all queued updates.
      */
-    suspend fun getAndClearUpdates(): List<QueuedProgressUpdate> {
+    suspend fun getQueuedUpdates(): List<QueuedProgressUpdate> {
         val preferences = dataStore.data.first()
         val currentJson = preferences[QUEUED_UPDATES_KEY] ?: "[]"
         val now = System.currentTimeMillis()
 
-        val updates = decodeQueueOrNull(currentJson)
+        return decodeQueueOrNull(currentJson)
             ?.filter { now - it.timestamp <= MAX_EVENT_AGE_MS }
             .orEmpty()
+    }
 
-        if (updates.isNotEmpty() || currentJson != "[]") {
-            dataStore.edit { it.remove(QUEUED_UPDATES_KEY) }
-            SecureLogger.d("OfflineProgress", "Cleared ${updates.size} queued updates from DataStore")
+    /**
+     * Removes specified updates from the queue by their IDs.
+     * Use this after successful sync to clear only processed items.
+     */
+    suspend fun removeUpdates(updateIds: Set<String>) {
+        if (updateIds.isEmpty()) return
+
+        dataStore.edit { preferences ->
+            val currentJson = preferences[QUEUED_UPDATES_KEY] ?: "[]"
+            val currentList = decodeQueueOrNull(currentJson) ?: return@edit
+            val newList = currentList.filterNot { it.id in updateIds }
+
+            if (newList.size != currentList.size) {
+                preferences[QUEUED_UPDATES_KEY] = json.encodeToString(newList)
+                SecureLogger.d("OfflineProgress", "Removed ${currentList.size - newList.size} synced updates from DataStore")
+            }
         }
-
-        return updates
     }
 
     /**

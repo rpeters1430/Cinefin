@@ -40,18 +40,22 @@ class OfflineDownloadWorker @AssistedInject constructor(
             SecureLogger.w(TAG, "Skipping orphan offline download work: $downloadId")
             return Result.failure()
         }
+        val cid = cid(downloadId)
+        SecureLogger.i(TAG, "cid=$cid worker starting for downloadId=$downloadId, itemName=${existingDownload.itemName}")
 
         ensureNotificationChannel()
         val initialName = existingDownload.itemName
-        val notificationsEnabled = NotificationManagerCompat.from(applicationContext).areNotificationsEnabled()
-        if (notificationsEnabled) {
-            try {
-                setForeground(createForegroundInfo(downloadId, initialName, 0, 0L, 0L, true))
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-                SecureLogger.w(TAG, "Could not promote download to foreground", e)
-            }
+        // Always promote to a foreground service so the download survives while backgrounded.
+        // The OS silently drops the notification if POST_NOTIFICATIONS is not granted — that is
+        // fine. What matters is that the WorkManager service itself stays alive.
+        try {
+            setForeground(createForegroundInfo(downloadId, initialName, 0, 0L, 0L, true))
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            SecureLogger.w(TAG, "Could not promote download to foreground: ${e.message}")
         }
+        val notificationsEnabled = NotificationManagerCompat.from(applicationContext).areNotificationsEnabled()
+        SecureLogger.i(TAG, "cid=$cid notification state for downloadId=$downloadId: enabled=$notificationsEnabled")
         var lastForegroundUpdateAtMs = System.currentTimeMillis()
         var lastForegroundPercent = 0
 
@@ -71,6 +75,10 @@ class OfflineDownloadWorker @AssistedInject constructor(
 
                     lastForegroundUpdateAtMs = now
                     lastForegroundPercent = percent
+                    SecureLogger.d(
+                        TAG,
+                        "cid=$cid foreground progress update: downloadId=$downloadId, percent=$percent, bytes=${progress.downloadedBytes}, total=${progress.totalBytes}, transcoding=${progress.isTranscoding}",
+                    )
                     setForeground(
                         createForegroundInfo(
                             downloadId = downloadId,
@@ -87,19 +95,27 @@ class OfflineDownloadWorker @AssistedInject constructor(
                 }
             ) {
                 OfflineDownloadManager.DownloadExecutionResult.SUCCESS -> {
+                    SecureLogger.i(TAG, "cid=$cid worker finished SUCCESS for downloadId=$downloadId")
                     if (notificationsEnabled) {
                         showCompletionNotification(downloadId, success = true)
                     }
                     Result.success()
                 }
-                OfflineDownloadManager.DownloadExecutionResult.RETRY -> Result.retry()
+                OfflineDownloadManager.DownloadExecutionResult.RETRY -> {
+                    SecureLogger.w(TAG, "cid=$cid worker requested RETRY for downloadId=$downloadId")
+                    Result.retry()
+                }
                 OfflineDownloadManager.DownloadExecutionResult.FAILURE -> {
+                    SecureLogger.e(TAG, "cid=$cid worker finished FAILURE for downloadId=$downloadId")
                     if (notificationsEnabled) {
                         showCompletionNotification(downloadId, success = false)
                     }
                     Result.failure()
                 }
-                OfflineDownloadManager.DownloadExecutionResult.CANCELLED -> Result.failure()
+                OfflineDownloadManager.DownloadExecutionResult.CANCELLED -> {
+                    SecureLogger.w(TAG, "cid=$cid worker cancelled for downloadId=$downloadId")
+                    Result.failure()
+                }
             }
         } catch (e: CancellationException) {
             throw e
@@ -206,6 +222,10 @@ class OfflineDownloadWorker @AssistedInject constructor(
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
 
+        SecureLogger.i(
+            TAG,
+            "cid=${cid(downloadId)} posting completion notification: downloadId=$downloadId, success=$success, notificationId=$notificationId",
+        )
         NotificationManagerCompat.from(applicationContext).notify(notificationId, notification)
     }
 
@@ -269,6 +289,8 @@ class OfflineDownloadWorker @AssistedInject constructor(
         val seconds = totalSeconds % 60
         return if (minutes > 0) "${minutes}m ${seconds}s" else "${seconds}s"
     }
+
+    private fun cid(downloadId: String): String = downloadId.take(8)
 
     companion object {
         private const val TAG = "OfflineDownloadWorker"

@@ -24,6 +24,7 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.worker.DownloadActionReceiver
 import com.rpeters.jellyfin.data.worker.OfflineDownloadWorker
+import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -88,6 +89,7 @@ class OfflineDownloadManager @Inject constructor(
         private const val DOWNLOADS_KEY = "offline_downloads"
         private const val JELLYFIN_OFFLINE_DIR = "JellyfinOffline"
         private const val JELLYFIN_OFFLINE_THUMBNAIL_DIR = "JellyfinOfflineThumbs"
+        private const val JELLYFIN_OFFLINE_SUBTITLE_DIR = "JellyfinOfflineSubs"
         private const val CHUNK_SIZE = 8192
         private const val ENCRYPTED_URL_PREFIX = "encrypted_url_"
         private const val OFFLINE_DOWNLOAD_WORK_TAG = "offline_download"
@@ -119,8 +121,14 @@ class OfflineDownloadManager @Inject constructor(
     ): String {
         return withContext(dispatchers.io) {
             val download = createDownload(item, quality, downloadUrl)
+            val cid = cid(download.id)
+            SecureLogger.i(
+                TAG,
+                "cid=$cid creating offline download: itemId=${download.jellyfinItemId}, downloadId=${download.id}, quality=${quality?.id ?: "original"}, hasDirectUrl=${!downloadUrl.isNullOrBlank()}",
+            )
             addDownload(download)
             scheduleDownload(download.id, ExistingWorkPolicy.REPLACE)
+            SecureLogger.i(TAG, "cid=$cid scheduled offline download work: downloadId=${download.id}")
             download.id
         }
     }
@@ -199,6 +207,11 @@ class OfflineDownloadManager @Inject constructor(
         downloadScope.launch {
             val download = _downloads.value.find { it.id == downloadId }
             download?.let {
+                val cid = cid(downloadId)
+                SecureLogger.i(
+                    TAG,
+                    "cid=$cid deleteDownload requested: downloadId=$downloadId, itemId=${it.jellyfinItemId}, status=${it.status}, path=${it.localFilePath}",
+                )
                 // Cancel if downloading
                 downloadJobs[downloadId]?.cancel()
                 downloadJobs.remove(downloadId)
@@ -207,6 +220,7 @@ class OfflineDownloadManager @Inject constructor(
                 // Delete file
                 deleteDownloadFile(it)
                 deleteThumbnailFile(it)
+                deleteSubtitleFiles(it)
 
                 // SECURITY: Delete encrypted URL from storage
                 if (it.downloadUrl.startsWith(ENCRYPTED_URL_PREFIX)) {
@@ -215,6 +229,7 @@ class OfflineDownloadManager @Inject constructor(
 
                 // Remove from list
                 removeDownload(downloadId)
+                SecureLogger.i(TAG, "cid=$cid deleteDownload completed: downloadId=$downloadId removed from DataStore")
             }
         }
     }
@@ -246,12 +261,21 @@ class OfflineDownloadManager @Inject constructor(
     fun observeDownloadInfo(itemId: String): kotlinx.coroutines.flow.Flow<OfflineDownload?> {
         return downloads
             .map { items ->
-                items.firstOrNull { download ->
-                    download.jellyfinItemId == itemId &&
-                        download.status == DownloadStatus.COMPLETED &&
-                        hasValidLocalFile(download)
-                }
+                items
+                    .asSequence()
+                    .filter { download ->
+                        download.jellyfinItemId == itemId &&
+                            download.status == DownloadStatus.COMPLETED &&
+                            hasValidLocalFile(download)
+                    }
+                    .maxByOrNull { it.downloadCompleteTime ?: it.downloadStartTime ?: 0L }
             }
+            .distinctUntilChanged()
+    }
+
+    fun observeCurrentDownload(itemId: String): kotlinx.coroutines.flow.Flow<OfflineDownload?> {
+        return downloads
+            .map { items -> selectCurrentDownloadForItem(items, itemId) }
             .distinctUntilChanged()
     }
 
@@ -259,6 +283,7 @@ class OfflineDownloadManager @Inject constructor(
         val downloadId = _downloads.value.firstOrNull {
             it.jellyfinItemId == itemId && it.status == DownloadStatus.COMPLETED
         }?.id ?: return
+        SecureLogger.i(TAG, "deleteOfflineCopy requested: itemId=$itemId, resolvedDownloadId=$downloadId, cid=${cid(downloadId)}")
         deleteDownload(downloadId)
     }
 
@@ -333,6 +358,9 @@ class OfflineDownloadManager @Inject constructor(
                 val canAppend = existingSize > 0L && it.code == 206
                 val startByte = if (canAppend) existingSize else 0L
                 val totalBytes = downloadFile(it, download, startByte, canAppend, onProgress)
+                if (totalBytes <= 0L) {
+                    throw IOException("Download produced no data")
+                }
 
                 if (currentCoroutineContext().isActive) {
                     updateDownloadBytes(download.id, totalBytes)
@@ -626,6 +654,7 @@ class OfflineDownloadManager @Inject constructor(
         encryptedPreferences.putEncryptedString(encryptedUrlKey, url)
         val thumbnailUrl = repository.getSeriesImageUrl(item) ?: repository.getImageUrl(itemId)
         val thumbnailLocalPath = cacheThumbnailLocally(itemId, thumbnailUrl)
+        val offlineSubtitles = downloadExternalSubtitles(itemId)
 
         return OfflineDownload(
             id = downloadId,
@@ -645,6 +674,7 @@ class OfflineDownloadManager @Inject constructor(
             productionYear = item.productionYear,
             thumbnailUrl = thumbnailUrl,
             thumbnailLocalPath = thumbnailLocalPath,
+            offlineSubtitles = offlineSubtitles,
             downloadStartTime = System.currentTimeMillis(),
         )
     }
@@ -673,6 +703,72 @@ class OfflineDownloadManager @Inject constructor(
                 null
             }
         }
+    }
+
+    private suspend fun downloadExternalSubtitles(itemId: String): List<OfflineSubtitle> {
+        val serverUrl = repository.getCurrentServer()?.url ?: return emptyList()
+        val playbackInfo = runCatching { repository.getPlaybackInfo(itemId) }.getOrNull() ?: return emptyList()
+        val mediaSource = playbackInfo.mediaSources.firstOrNull() ?: return emptyList()
+        val streams = mediaSource.mediaStreams
+            ?.filter { stream ->
+                stream.type == org.jellyfin.sdk.model.api.MediaStreamType.SUBTITLE &&
+                    stream.isExternal == true
+            }
+            .orEmpty()
+        if (streams.isEmpty()) return emptyList()
+
+        return withContext(dispatchers.io) {
+            val subtitleDir = File(context.filesDir, JELLYFIN_OFFLINE_SUBTITLE_DIR).apply { mkdirs() }
+            streams.mapNotNull { stream ->
+                val deliveryPath = stream.deliveryUrl?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val absoluteUrl = buildServerUrl(serverUrl, deliveryPath)
+                val extension = subtitleExtension(stream.codec)
+                val subtitleFile = File(
+                    subtitleDir,
+                    "${itemId}_${stream.index}_${System.currentTimeMillis()}.$extension",
+                )
+
+                val downloaded = runCatching {
+                    okHttpClient.newCall(Request.Builder().url(absoluteUrl).build()).execute().use { response ->
+                        if (!response.isSuccessful) return@use false
+                        response.body.byteStream().use { input ->
+                            FileOutputStream(subtitleFile).use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        true
+                    }
+                }.getOrDefault(false)
+
+                if (!downloaded || !subtitleFile.exists() || subtitleFile.length() <= 0L) {
+                    runCatching { subtitleFile.delete() }
+                    return@mapNotNull null
+                }
+
+                OfflineSubtitle(
+                    localFilePath = subtitleFile.absolutePath,
+                    language = stream.language,
+                    label = stream.displayTitle ?: stream.title ?: stream.language?.uppercase(),
+                    isForced = stream.isForced == true,
+                )
+            }
+        }
+    }
+
+    private fun subtitleExtension(codec: String?): String = when (codec?.lowercase()) {
+        "srt", "subrip" -> "srt"
+        "ass", "ssa" -> "ass"
+        "ttml" -> "ttml"
+        else -> "vtt"
+    }
+
+    private fun buildServerUrl(serverUrl: String, path: String): String {
+        if (path.startsWith("http://") || path.startsWith("https://")) {
+            return path
+        }
+        val normalizedServer = serverUrl.removeSuffix("/")
+        val normalizedPath = if (path.startsWith("/")) path else "/$path"
+        return normalizedServer + normalizedPath
     }
 
     /**
@@ -712,9 +808,12 @@ class OfflineDownloadManager @Inject constructor(
     private fun deleteDownloadFile(download: OfflineDownload) {
         try {
             val file = File(download.localFilePath)
-            if (file.exists()) {
-                file.delete()
-            }
+            val existed = file.exists()
+            val deleted = if (existed) file.delete() else false
+            SecureLogger.i(
+                TAG,
+                "cid=${cid(download.id)} deleteDownloadFile: path=${download.localFilePath}, existed=$existed, deleted=$deleted",
+            )
         } catch (e: IOException) {
             Log.e("OfflineDownloadManager", "Failed to delete file: ${download.localFilePath}", e)
         }
@@ -728,6 +827,18 @@ class OfflineDownloadManager @Inject constructor(
                 file.delete()
             }
         } catch (_: Exception) {
+        }
+    }
+
+    private fun deleteSubtitleFiles(download: OfflineDownload) {
+        download.offlineSubtitles.forEach { subtitle ->
+            try {
+                val file = File(subtitle.localFilePath)
+                if (file.exists()) {
+                    file.delete()
+                }
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -758,7 +869,7 @@ class OfflineDownloadManager @Inject constructor(
                             inMemory.status != DownloadStatus.DOWNLOADING &&
                             inMemory.status != DownloadStatus.PENDING
                         if (inMemoryIsStable && persistedIsTransitional) {
-                            inMemory!!
+                            inMemory
                         } else {
                             persisted
                         }
@@ -796,6 +907,8 @@ class OfflineDownloadManager @Inject constructor(
     }
 
     private suspend fun updateDownloadStatus(downloadId: String, status: DownloadStatus) {
+        val previousStatus = _downloads.value.firstOrNull { it.id == downloadId }?.status
+        SecureLogger.i(TAG, "cid=${cid(downloadId)} status transition: downloadId=$downloadId, from=$previousStatus, to=$status")
         _downloads.update { currentDownloads ->
             currentDownloads.map { download ->
                 if (download.id == downloadId) {
@@ -811,11 +924,32 @@ class OfflineDownloadManager @Inject constructor(
         saveDownloads()
     }
 
-    private suspend fun updateDownloadBytes(downloadId: String, downloadedBytes: Long) {
+    suspend fun updateDownloadBytes(downloadId: String, downloadedBytes: Long) {
+        SecureLogger.d(TAG, "cid=${cid(downloadId)} persisting byte progress: downloadId=$downloadId, downloadedBytes=$downloadedBytes")
         _downloads.update { currentDownloads ->
             currentDownloads.map { download ->
                 if (download.id == downloadId) {
                     download.copy(downloadedBytes = downloadedBytes)
+                } else {
+                    download
+                }
+            }
+        }
+        saveDownloads()
+    }
+
+    /**
+     * Updates the last known playback position for an offline item.
+     * This allows for resuming playback even when fully offline.
+     */
+    suspend fun updatePlaybackPosition(itemId: String, positionMs: Long) {
+        _downloads.update { currentDownloads ->
+            currentDownloads.map { download ->
+                if (download.jellyfinItemId == itemId) {
+                    download.copy(
+                        lastPlaybackPositionMs = positionMs,
+                        lastModified = System.currentTimeMillis(),
+                    )
                 } else {
                     download
                 }
@@ -891,8 +1025,10 @@ class OfflineDownloadManager @Inject constructor(
     }
 
     private fun scheduleDownload(downloadId: String, policy: ExistingWorkPolicy) {
+        SecureLogger.d(TAG, "cid=${cid(downloadId)} scheduleDownload: downloadId=$downloadId, policy=$policy")
         val enqueued = enqueueDownloadWork(downloadId, policy)
         if (!enqueued) {
+            SecureLogger.w(TAG, "cid=${cid(downloadId)} WorkManager unavailable; falling back to in-process execution for $downloadId")
             executeDownloadInProcess(downloadId)
         }
     }
@@ -916,6 +1052,10 @@ class OfflineDownloadManager @Inject constructor(
             .build()
 
         workManager.enqueueUniqueWork(downloadWorkName(downloadId), policy, request)
+        SecureLogger.i(
+            TAG,
+            "cid=${cid(downloadId)} enqueueUniqueWork submitted: downloadId=$downloadId, workName=${downloadWorkName(downloadId)}, requestId=${request.id}",
+        )
         return true
     }
 
@@ -944,6 +1084,8 @@ class OfflineDownloadManager @Inject constructor(
 
     private fun downloadTag(downloadId: String): String = "offline-download-tag-$downloadId"
 
+    private fun cid(downloadId: String): String = downloadId.take(8)
+
     private fun hasValidLocalFile(download: OfflineDownload): Boolean {
         val file = try {
             File(download.localFilePath).canonicalFile
@@ -954,8 +1096,41 @@ class OfflineDownloadManager @Inject constructor(
         if (!file.exists() || !file.isFile() || !file.canRead()) {
             return false
         }
+        if (file.length() <= 0L) {
+            return false
+        }
 
         return isInAppSpecificStorage(file)
+    }
+
+    private fun selectCurrentDownloadForItem(
+        items: List<OfflineDownload>,
+        itemId: String,
+    ): OfflineDownload? {
+        return items
+            .asSequence()
+            .filter { it.jellyfinItemId == itemId }
+            .filter {
+                if (it.status == DownloadStatus.COMPLETED) hasValidLocalFile(it) else true
+            }
+            .maxWithOrNull(
+                compareBy<OfflineDownload>(
+                    { statusPriority(it.status) },
+                    { it.downloadStartTime ?: 0L },
+                    { it.downloadCompleteTime ?: 0L },
+                ),
+            )
+    }
+
+    private fun statusPriority(status: DownloadStatus): Int {
+        return when (status) {
+            DownloadStatus.DOWNLOADING -> 6
+            DownloadStatus.PENDING -> 5
+            DownloadStatus.PAUSED -> 4
+            DownloadStatus.FAILED -> 3
+            DownloadStatus.COMPLETED -> 2
+            DownloadStatus.CANCELLED -> 1
+        }
     }
 
     private fun isInAppSpecificStorage(file: File): Boolean {

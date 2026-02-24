@@ -227,6 +227,9 @@ data class ConnectionState(
     val loadedCount: Int = 0,
     val totalCount: Int = 0,
     val pinningAlert: PinningAlertState? = null,
+    val canEnterOffline: Boolean = false,
+    val isOfflineSession: Boolean = false,
+    val isNetworkAvailable: Boolean = true,
 )
 
 /**

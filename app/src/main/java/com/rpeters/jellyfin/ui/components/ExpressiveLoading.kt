@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +42,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.rpeters.jellyfin.utils.DeviceTypeUtils
 import kotlin.math.sin
 
 /**
@@ -50,6 +52,8 @@ import kotlin.math.sin
 
 /**
  * Expressive circular loading indicator using Material 3 Expressive wavy animation
+ *
+ * FALLBACK: Uses standard CircularProgressIndicator on emulators to avoid shader ANRs.
  */
 @Composable
 fun ExpressiveCircularLoading(
@@ -59,14 +63,23 @@ fun ExpressiveCircularLoading(
     showPulse: Boolean = true, // Restored for compatibility
     color: Color = MaterialTheme.colorScheme.primary,
 ) {
-    CircularWavyProgressIndicator(
-        modifier = modifier.size(size),
-        color = color,
-        trackColor = color.copy(alpha = 0.2f),
-        amplitude = 0.12f,
-        wavelength = 32.dp,
-        waveSpeed = 16.dp,
-    )
+    if (DeviceTypeUtils.isEmulator()) {
+        CircularProgressIndicator(
+            modifier = modifier.size(size),
+            color = color,
+            trackColor = color.copy(alpha = 0.2f),
+            strokeWidth = strokeWidth,
+        )
+    } else {
+        CircularWavyProgressIndicator(
+            modifier = modifier.size(size),
+            color = color,
+            trackColor = color.copy(alpha = 0.2f),
+            amplitude = 0.12f,
+            wavelength = 32.dp,
+            waveSpeed = 16.dp,
+        )
+    }
 }
 
 /**

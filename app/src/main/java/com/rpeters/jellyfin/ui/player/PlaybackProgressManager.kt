@@ -39,6 +39,7 @@ class PlaybackProgressManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val connectivityChecker: ConnectivityChecker,
     private val userRepository: JellyfinUserRepository,
+    private val offlineDownloadManager: com.rpeters.jellyfin.data.offline.OfflineDownloadManager,
 ) : DefaultLifecycleObserver {
 
     private val _playbackProgress = MutableStateFlow(PlaybackProgress())
@@ -296,6 +297,10 @@ class PlaybackProgressManager @Inject constructor(
 
     private suspend fun reportProgress(positionMs: Long, durationMs: Long, isWatched: Boolean) {
         if (currentItemId.isEmpty()) return
+
+        // Always save to offline manager for local resume support
+        offlineDownloadManager.updatePlaybackPosition(currentItemId, positionMs)
+
         try {
             val ticks = positionMs.toTicks()
             val result = userRepository.reportPlaybackProgress(
@@ -438,13 +443,28 @@ class PlaybackProgressManager @Inject constructor(
                     resumeMs
                 }
                 is ApiResult.Error -> {
-                    Log.e("PlaybackProgressManager", "Failed to load resume position: ${result.message}")
-                    0L
+                    Log.e("PlaybackProgressManager", "Failed to load resume position: ${result.message} - falling back to offline copy")
+                    val offlinePos = offlineDownloadManager.downloads.value
+                        .find { it.jellyfinItemId == itemId }?.lastPlaybackPositionMs ?: 0L
+                    
+                    if (offlinePos > 0) {
+                        _playbackProgress.update {
+                            it.copy(
+                                itemId = itemId,
+                                positionMs = offlinePos,
+                                lastSyncTime = System.currentTimeMillis(),
+                            )
+                        }
+                    }
+                    offlinePos
                 }
                 else -> 0L
             }
-        } catch (e: CancellationException) {
-            throw e
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Log.e("PlaybackProgressManager", "Error loading resume position: ${e.message} - falling back to offline copy")
+            offlineDownloadManager.downloads.value
+                .find { it.jellyfinItemId == itemId }?.lastPlaybackPositionMs ?: 0L
         }
     }
 

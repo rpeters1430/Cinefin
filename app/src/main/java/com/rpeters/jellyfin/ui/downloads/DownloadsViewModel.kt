@@ -14,11 +14,13 @@ import com.rpeters.jellyfin.data.offline.OfflineStorageInfo
 import com.rpeters.jellyfin.data.offline.VideoQuality
 import com.rpeters.jellyfin.data.preferences.DownloadPreferences
 import com.rpeters.jellyfin.data.preferences.DownloadPreferencesRepository
+import com.rpeters.jellyfin.data.DeviceCapabilities
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.OfflineProgressRepository
 import com.rpeters.jellyfin.network.ConnectivityChecker
 import com.rpeters.jellyfin.network.NetworkType
 import com.rpeters.jellyfin.ui.player.VideoPlayerActivity
+import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.MediaStreamType
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.max
@@ -46,6 +49,7 @@ class DownloadsViewModel @Inject constructor(
     private val downloadPreferencesRepository: DownloadPreferencesRepository,
     private val connectivityChecker: ConnectivityChecker,
     private val offlineProgressRepository: OfflineProgressRepository,
+    private val deviceCapabilities: DeviceCapabilities,
 ) : ViewModel() {
 
     val downloads: StateFlow<List<OfflineDownload>> = downloadManager.downloads
@@ -81,6 +85,13 @@ class DownloadsViewModel @Inject constructor(
         )
     }
 
+    private data class OriginalCompatibilityDecision(
+        val requiresCompatibilityTranscode: Boolean = false,
+        val audioOnlyTranscode: Boolean = false,
+        val reason: String = "",
+        val sourceBitrate: Int? = null,
+    )
+
     fun getAvailableQualityPresets(item: BaseItemDto): List<VideoQuality> {
         val mediaSource = item.mediaSources?.firstOrNull()
         val videoStream = mediaSource?.mediaStreams?.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
@@ -100,6 +111,7 @@ class DownloadsViewModel @Inject constructor(
         downloadUrl: String? = null,
     ) {
         viewModelScope.launch {
+            val reqId = UUID.randomUUID().toString().take(8)
             val prefs = downloadPreferencesRepository.preferences.first()
             val networkType = connectivityChecker.getNetworkType()
             val hasWifiLikeConnection = networkType == NetworkType.WIFI || networkType == NetworkType.ETHERNET
@@ -117,31 +129,133 @@ class DownloadsViewModel @Inject constructor(
             }
 
             val selectedQuality = quality ?: QUALITY_PRESETS.firstOrNull { it.id == prefs.defaultQualityId }
+            val originalCompatibility = if (selectedQuality?.id == "original") {
+                evaluateOriginalDownloadCompatibility(item)
+            } else {
+                OriginalCompatibilityDecision()
+            }
+
+            val effectiveQuality = when {
+                selectedQuality?.id != "original" -> selectedQuality
+                !originalCompatibility.requiresCompatibilityTranscode -> selectedQuality
+                originalCompatibility.audioOnlyTranscode -> VideoQuality(
+                    id = "compat_audio",
+                    label = "Compatibility (Original video + AAC audio)",
+                    bitrate = originalCompatibility.sourceBitrate ?: 12_000_000,
+                    width = 0,
+                    height = 0,
+                    audioBitrate = 192_000,
+                    audioChannels = 2,
+                )
+                else -> VideoQuality(
+                    id = "compat_video",
+                    label = "Compatibility (H.264/AAC 1080p)",
+                    bitrate = 6_000_000,
+                    width = 1920,
+                    height = 1080,
+                    audioBitrate = 192_000,
+                    audioChannels = 2,
+                )
+            }
+
+            if (originalCompatibility.requiresCompatibilityTranscode) {
+                Toast.makeText(
+                    context,
+                    "Original may not direct play on this device. Downloading a compatible version.",
+                    Toast.LENGTH_LONG,
+                ).show()
+                SecureLogger.i(
+                    "DownloadsFlow",
+                    "Compatibility fallback enabled for item=${item.name}: ${originalCompatibility.reason}",
+                )
+            }
+
             val itemId = item.id.toString()
+            SecureLogger.i(
+                "DownloadsFlow",
+                "req=$reqId startDownload requested: itemId=$itemId, itemName=${item.name}, quality=${effectiveQuality?.id ?: "default"}, wifiOnly=${prefs.wifiOnly}, networkType=$networkType",
+            )
             val url = withContext(Dispatchers.IO) {
-                if (selectedQuality != null && selectedQuality.id != "original") {
+                if (effectiveQuality != null && effectiveQuality.id != "original") {
                     // Use H.264 for offline transcoded downloads for maximum Jellyfin server/device compatibility.
                     // Force actual video transcoding (AllowVideoStreamCopy=false) so the server
                     // respects MaxWidth/MaxHeight/VideoBitrate instead of copying the original stream.
+                    val compatibilityAudioOnly = originalCompatibility.requiresCompatibilityTranscode &&
+                        originalCompatibility.audioOnlyTranscode &&
+                        quality?.id != "original"
                     repository.getTranscodedStreamUrl(
                         itemId = itemId,
-                        maxBitrate = selectedQuality.bitrate,
-                        maxWidth = selectedQuality.width,
-                        maxHeight = selectedQuality.height,
+                        maxBitrate = if (compatibilityAudioOnly) {
+                            originalCompatibility.sourceBitrate
+                        } else {
+                            effectiveQuality.bitrate
+                        },
+                        maxWidth = effectiveQuality.width.takeIf { it > 0 },
+                        maxHeight = effectiveQuality.height.takeIf { it > 0 },
                         videoCodec = "h264",
                         audioCodec = "aac",
-                        audioBitrate = selectedQuality.audioBitrate,
-                        audioChannels = selectedQuality.audioChannels ?: 2,
+                        audioBitrate = effectiveQuality.audioBitrate,
+                        audioChannels = effectiveQuality.audioChannels ?: 2,
                         container = "mp4",
-                        allowVideoStreamCopy = false,
+                        allowVideoStreamCopy = compatibilityAudioOnly,
                     ) ?: repository.getDownloadUrl(itemId)
                 } else {
                     downloadUrl ?: repository.getDownloadUrl(itemId)
                 }
             }
 
-            downloadManager.startDownload(item, selectedQuality, url)
+            SecureLogger.i(
+                "DownloadsFlow",
+                "req=$reqId resolved source: itemId=$itemId, hasUrl=${!url.isNullOrBlank()}, quality=${effectiveQuality?.id ?: "null"}",
+            )
+            val downloadId = downloadManager.startDownload(item, effectiveQuality, url)
+            val cid = downloadId.take(8)
+            SecureLogger.i(
+                "DownloadsFlow",
+                "req=$reqId mapped to cid=$cid: itemId=$itemId, downloadId=$downloadId, quality=${effectiveQuality?.id ?: "null"}",
+            )
         }
+    }
+
+    private suspend fun evaluateOriginalDownloadCompatibility(item: BaseItemDto): OriginalCompatibilityDecision {
+        val itemMediaSource = item.mediaSources?.firstOrNull()
+        val mediaSource = itemMediaSource ?: runCatching {
+            repository.getPlaybackInfo(item.id.toString()).mediaSources.firstOrNull()
+        }.getOrNull()
+
+        mediaSource ?: return OriginalCompatibilityDecision()
+
+        val videoStream = mediaSource.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+        val audioStream = mediaSource.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }
+
+        val container = mediaSource.container
+        val videoCodec = videoStream?.codec
+        val audioCodec = audioStream?.codec
+        val width = videoStream?.width ?: 0
+        val height = videoStream?.height ?: 0
+        val audioChannels = audioStream?.channels ?: 2
+
+        val containerOk = deviceCapabilities.canPlayContainer(container)
+        val videoOk = deviceCapabilities.canPlayVideoCodec(videoCodec, width, height)
+        val audioOk = deviceCapabilities.canPlayAudioCodecStrict(audioCodec, audioChannels)
+
+        if (containerOk && videoOk && audioOk) {
+            return OriginalCompatibilityDecision()
+        }
+
+        val audioOnlyTranscode = containerOk && videoOk && !audioOk && !audioCodec.isNullOrBlank()
+        val reason = buildString {
+            if (!containerOk) append("container=$container unsupported; ")
+            if (!videoOk) append("video=$videoCodec ${width}x$height unsupported; ")
+            if (!audioOk) append("audio=$audioCodec ${audioChannels}ch unsupported")
+        }.trim().trimEnd(';')
+
+        return OriginalCompatibilityDecision(
+            requiresCompatibilityTranscode = true,
+            audioOnlyTranscode = audioOnlyTranscode,
+            reason = reason,
+            sourceBitrate = mediaSource.bitrate,
+        )
     }
 
     fun pauseDownload(downloadId: String) {
@@ -248,13 +362,24 @@ class DownloadsViewModel @Inject constructor(
         viewModelScope.launch {
             val download = playbackManager.getOfflineDownload(itemId)
             if (download != null) {
+                val storedPositionMs = withContext(Dispatchers.IO) {
+                    com.rpeters.jellyfin.data.PlaybackPositionStore.getPlaybackPosition(context, download.jellyfinItemId)
+                }
+                val fallbackPositionMs = download.lastPlaybackPositionMs ?: 0L
+                val runtimeMs = (download.runtimeTicks ?: 0L) / 10_000L
+                val resumePositionMs = max(storedPositionMs, fallbackPositionMs).coerceAtLeast(0L).let { position ->
+                    if (runtimeMs > 5_000L) {
+                        // Avoid seeking beyond the last few seconds of content.
+                        position.coerceAtMost(runtimeMs - 2_000L)
+                    } else {
+                        position
+                    }
+                }
                 val intent = VideoPlayerActivity.createIntent(
                     context = context,
                     itemId = download.jellyfinItemId,
                     itemName = download.itemName,
-                    startPosition = withContext(Dispatchers.IO) {
-                        com.rpeters.jellyfin.data.PlaybackPositionStore.getPlaybackPosition(context, download.jellyfinItemId)
-                    },
+                    startPosition = resumePositionMs,
                     forceOffline = true,
                 )
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

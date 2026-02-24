@@ -100,6 +100,7 @@ fun ServerConnectionScreen(
     onTemporarilyTrustPin: () -> Unit = {},
     onDismissPinningAlert: () -> Unit = {},
     onRequireStrongBiometricChange: (Boolean) -> Unit = {},
+    onContinueOffline: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var serverUrl by remember { mutableStateOf(savedServerUrl) }
@@ -171,8 +172,10 @@ fun ServerConnectionScreen(
                     isConnecting = connectionState.isConnecting,
                     isBiometricAuthEnabled = isBiometricAuthEnabled,
                     isBiometricAuthAvailable = isBiometricAuthAvailable,
+                    canEnterOffline = connectionState.canEnterOffline,
                     onAutoLogin = onAutoLogin,
                     onBiometricLogin = onBiometricLogin,
+                    onContinueOffline = onContinueOffline,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -238,6 +241,21 @@ fun ServerConnectionScreen(
                     message = connectionState.errorMessage,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                if (connectionState.canEnterOffline) {
+                    ExpressiveTonalButton(
+                        onClick = onContinueOffline,
+                        enabled = !connectionState.isConnecting,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = ShapeTokens.ExtraLarge,
+                    ) {
+                        Text(
+                            text = "Continue Offline",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -349,8 +367,10 @@ private fun AutoLoginCard(
     isConnecting: Boolean,
     isBiometricAuthEnabled: Boolean,
     isBiometricAuthAvailable: Boolean,
+    canEnterOffline: Boolean,
     onAutoLogin: () -> Unit,
     onBiometricLogin: () -> Unit,
+    onContinueOffline: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ElevatedCard(
@@ -399,12 +419,14 @@ private fun AutoLoginCard(
                 }
 
                 ExpressiveTonalButton(
-                    onClick = onAutoLogin,
+                    onClick = if (canEnterOffline) onContinueOffline else onAutoLogin,
                     enabled = !isConnecting,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = ShapeTokens.ExtraLarge,
                 ) {
-                    Text(stringResource(id = R.string.auto_login))
+                    Text(
+                        if (canEnterOffline) "Continue Offline" else stringResource(id = R.string.auto_login),
+                    )
                 }
             }
         }
