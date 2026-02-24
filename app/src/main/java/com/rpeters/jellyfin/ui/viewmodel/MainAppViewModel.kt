@@ -908,6 +908,9 @@ class MainAppViewModel @Inject constructor(
         return getLibraryTypeData(library)
     }
 
+    fun getLibraryIdForType(libraryType: LibraryType): String? =
+        findLibraryForType(libraryType)?.id?.toString()
+
     private fun findLibraryForType(libraryType: LibraryType): BaseItemDto? {
         val libraries = _appState.value.libraries
         val targetCollection = when (libraryType) {
