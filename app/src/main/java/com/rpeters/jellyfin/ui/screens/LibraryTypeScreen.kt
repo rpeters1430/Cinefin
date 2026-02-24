@@ -521,7 +521,18 @@ private fun RecentlyAddedSection(
     items: List<BaseItemDto>,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
+@Composable
+private fun RecentlyAddedSection(
+    items: List<BaseItemDto>,
+    libraryType: LibraryType,
+    getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
+    onTVShowClick: ((String) -> Unit)?,
+    onItemLongPress: ((BaseItemDto) -> Unit)? = null,
+    onMoreClick: ((BaseItemDto) -> Unit)? = null,
+    isTablet: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
     onTVShowClick: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
