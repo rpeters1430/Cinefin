@@ -473,7 +473,20 @@ private fun GridContent(
 
 @Composable
 private fun ListContent(
+private fun ListContent(
     items: List<BaseItemDto>,
+    recentlyAddedItems: List<BaseItemDto>,
+    libraryType: LibraryType,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    onTVShowClick: ((String) -> Unit)?,
+    onItemLongPress: (BaseItemDto) -> Unit,
+    listState: LazyListState,
+    isLoadingMore: Boolean,
+    hasMoreItems: Boolean,
+    onLoadMore: () -> Unit,
+    isTablet: Boolean = false,
+) {
     recentlyAddedItems: List<BaseItemDto>,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
