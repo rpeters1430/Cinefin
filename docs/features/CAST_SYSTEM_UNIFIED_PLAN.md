@@ -5,9 +5,6 @@
 **Replaces:**
 - `docs/features/CAST_REBUILD_SUMMARY.md`
 - `docs/features/CAST_ISSUE_TEMPLATE.md`
-**Replaces:**
-- `docs/features/CAST_REBUILD_SUMMARY.md`
-- `docs/features/CAST_ISSUE_TEMPLATE.md`
 - `docs/features/CAST_IMPLEMENTATION_STATUS_REVIEW_2026-02-23.md`
 - `docs/plans/CHROMECAST_REBUILD_PLAN.md`
 
