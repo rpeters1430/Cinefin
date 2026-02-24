@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -55,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -137,6 +139,23 @@ fun LibraryTypeScreen(
 
     val displayItems = remember(libraryItems, selectedFilter) {
         applyFilter(libraryItems, selectedFilter)
+    }
+
+    // Resolve library ID so we can use per-library pagination state
+    val libraryId = remember(libraryType, appState.libraries) {
+        viewModel.getLibraryIdForType(libraryType)
+    }
+
+    // Per-library pagination state (replaces global appState.isLoadingMore / hasMoreItems).
+    // When libraryId is null (library not yet resolved), both flags are false so the
+    // PaginationFooter is hidden and onLoadMore is never invoked.
+    val libraryPagination = libraryId?.let { appState.libraryPaginationState[it] }
+    val isLibraryLoadingMore = libraryPagination?.isLoadingMore ?: false
+    val hasMoreLibraryItems = libraryPagination?.hasMore ?: false
+
+    // Recently added: top 20 items from the loaded set sorted by creation date
+    val recentlyAddedItems = remember(libraryItems) {
+        libraryItems.sortedByDescending { it.dateCreated }.take(20)
     }
 
     LaunchedEffect(selectedFilter, libraryType) {
@@ -231,27 +250,29 @@ fun LibraryTypeScreen(
                     when (viewMode) {
                         ViewMode.GRID -> GridContent(
                             items = displayItems,
+                            recentlyAddedItems = recentlyAddedItems,
                             libraryType = libraryType,
                             getImageUrl = { viewModel.getImageUrl(it) },
                             onItemClick = onItemClick,
                             onTVShowClick = onTVShowClick,
                             onItemLongPress = handleItemLongPress,
                             gridState = gridState,
-                            isLoadingMore = appState.isLoadingMore,
-                            hasMoreItems = appState.hasMoreItems,
-                            onLoadMore = { viewModel.loadMoreItems() },
+                            isLoadingMore = isLibraryLoadingMore,
+                            hasMoreItems = hasMoreLibraryItems,
+                            onLoadMore = { libraryId?.let { viewModel.loadMoreLibraryItems(it) } },
                         )
                         ViewMode.LIST -> ListContent(
                             items = displayItems,
+                            recentlyAddedItems = recentlyAddedItems,
                             libraryType = libraryType,
                             getImageUrl = { viewModel.getImageUrl(it) },
                             onItemClick = onItemClick,
                             onTVShowClick = onTVShowClick,
                             onItemLongPress = handleItemLongPress,
                             listState = listState,
-                            isLoadingMore = appState.isLoadingMore,
-                            hasMoreItems = appState.hasMoreItems,
-                            onLoadMore = { viewModel.loadMoreItems() },
+                            isLoadingMore = isLibraryLoadingMore,
+                            hasMoreItems = hasMoreLibraryItems,
+                            onLoadMore = { libraryId?.let { viewModel.loadMoreLibraryItems(it) } },
                         )
                         ViewMode.CAROUSEL -> CarouselContent(
                             items = displayItems,
@@ -379,6 +400,7 @@ private fun LibraryTypeLoadingPlaceholder(libraryType: LibraryType) {
 @Composable
 private fun GridContent(
     items: List<BaseItemDto>,
+    recentlyAddedItems: List<BaseItemDto>,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
@@ -397,6 +419,21 @@ private fun GridContent(
         modifier = Modifier.fillMaxSize(),
         state = gridState,
     ) {
+        if (recentlyAddedItems.size >= 3) {
+            item(
+                span = { GridItemSpan(maxLineSpan) },
+                key = "recently_added_header",
+                contentType = "recently_added_header",
+            ) {
+                RecentlyAddedSection(
+                    items = recentlyAddedItems,
+                    libraryType = libraryType,
+                    getImageUrl = getImageUrl,
+                    onItemClick = onItemClick,
+                    onTVShowClick = onTVShowClick,
+                )
+            }
+        }
         items(
             items = items,
             key = { item -> item.getItemKey() },
@@ -424,6 +461,7 @@ private fun GridContent(
 @Composable
 private fun ListContent(
     items: List<BaseItemDto>,
+    recentlyAddedItems: List<BaseItemDto>,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
@@ -440,6 +478,17 @@ private fun ListContent(
         modifier = Modifier.fillMaxSize(),
         state = listState,
     ) {
+        if (recentlyAddedItems.size >= 3) {
+            item(key = "recently_added_header", contentType = "recently_added_header") {
+                RecentlyAddedSection(
+                    items = recentlyAddedItems,
+                    libraryType = libraryType,
+                    getImageUrl = getImageUrl,
+                    onItemClick = onItemClick,
+                    onTVShowClick = onTVShowClick,
+                )
+            }
+        }
         items(
             items = items,
             key = { item -> item.getItemKey() },
@@ -459,6 +508,50 @@ private fun ListContent(
         if (hasMoreItems || isLoadingMore) {
             item {
                 PaginationFooter(isLoadingMore, hasMoreItems, onLoadMore, libraryType)
+            }
+        }
+    }
+}
+
+/**
+ * Horizontal carousel of recently added items shown at the top of Grid and List views.
+ */
+@Composable
+private fun RecentlyAddedSection(
+    items: List<BaseItemDto>,
+    libraryType: LibraryType,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    onTVShowClick: ((String) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = stringResource(id = R.string.library_recently_added_section),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(
+                horizontal = LibraryScreenDefaults.ContentPadding,
+                vertical = LibraryScreenDefaults.FilterChipSpacing,
+            ),
+        )
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = LibraryScreenDefaults.ContentPadding),
+            horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
+        ) {
+            items(
+                items = items,
+                key = { item -> "recent_${item.getItemKey()}" },
+                contentType = { "recently_added_card" },
+            ) { item ->
+                LibraryItemCard(
+                    item = item,
+                    libraryType = libraryType,
+                    getImageUrl = getImageUrl,
+                    onItemClick = onItemClick,
+                    onTVShowClick = onTVShowClick,
+                    isCompact = true,
+                )
             }
         }
     }
