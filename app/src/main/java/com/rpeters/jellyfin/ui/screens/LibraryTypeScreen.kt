@@ -261,7 +261,20 @@ fun LibraryTypeScreen(
                             hasMoreItems = hasMoreLibraryItems,
                             onLoadMore = { libraryId?.let { viewModel.loadMoreLibraryItems(it) } },
                         )
-                        ViewMode.LIST -> ListContent(
+                        ViewMode.GRID -> GridContent(
+                            items = displayItems,
+                            recentlyAddedItems = recentlyAddedItems,
+                            libraryType = libraryType,
+                            getImageUrl = { viewModel.getImageUrl(it) },
+                            onItemClick = onItemClick,
+                            onTVShowClick = onTVShowClick,
+                            onItemLongPress = handleItemLongPress,
+                            gridState = gridState,
+                            isLoadingMore = isLibraryLoadingMore,
+                            hasMoreItems = hasMoreLibraryItems,
+                            onLoadMore = { libraryId?.let { viewModel.loadMoreLibraryItems(it) } },
+                            isTablet = adaptiveConfig.isTablet,
+                        )
                             items = displayItems,
                             recentlyAddedItems = recentlyAddedItems,
                             libraryType = libraryType,
