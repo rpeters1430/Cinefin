@@ -41,7 +41,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
@@ -52,6 +51,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -74,10 +74,6 @@ import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 
-/**
- * Generic library screen used by multiple library types.
- * ✅ FIX: Uses on-demand loading to prevent double refresh issue
- */
 @Composable
 fun LibraryTypeScreen(
     libraryType: LibraryType,
@@ -90,7 +86,15 @@ fun LibraryTypeScreen(
 ) {
     val appState by viewModel.appState.collectAsState()
     val libraryActionPrefs by libraryActionsPreferencesViewModel.preferences.collectAsStateWithLifecycle()
-    var viewMode by remember { mutableStateOf(ViewMode.GRID) }
+    var viewMode by remember(libraryType) {
+        mutableStateOf(if (libraryType == LibraryType.STUFF) ViewMode.LIST else ViewMode.GRID)
+    }
+    val availableViewModes = remember(libraryType) {
+        when (libraryType) {
+            LibraryType.MOVIES, LibraryType.TV_SHOWS -> listOf(ViewMode.GRID, ViewMode.LIST)
+            else -> ViewMode.entries
+        }
+    }
     var selectedFilter by remember { mutableStateOf(FilterType.getDefault()) }
     var hasRequestedData by remember(libraryType) { mutableStateOf(false) }
     val gridState = rememberLazyGridState()
@@ -99,7 +103,6 @@ fun LibraryTypeScreen(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    // Calculate adaptive layout config for responsive sizing
     val windowSizeClass = calculateWindowSizeClass(activity = context as Activity)
     val adaptiveConfig = rememberAdaptiveLayoutConfig(windowSizeClass)
     var selectedItem by remember { mutableStateOf<BaseItemDto?>(null) }
@@ -125,50 +128,34 @@ fun LibraryTypeScreen(
         if (streamUrl != null) {
             MediaPlayerUtils.playMedia(context, streamUrl, item)
         } else {
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar("Unable to start playback")
-            }
+            coroutineScope.launch { snackbarHostState.showSnackbar("Unable to start playback") }
         }
     }
 
-    // ✅ FIX: Use library-specific data from itemsByLibrary map
-    // The remember() must depend on itemsByLibrary since getLibraryTypeData() reads from that map
     val libraryItems = remember(libraryType, appState.itemsByLibrary) {
         viewModel.getLibraryTypeData(libraryType)
     }
-
     val displayItems = remember(libraryItems, selectedFilter) {
         applyFilter(libraryItems, selectedFilter)
     }
-
-    // Resolve library ID so we can use per-library pagination state
-    val libraryId = remember(libraryType, appState.libraries) {
-        viewModel.getLibraryIdForType(libraryType)
-    }
-
-    // Per-library pagination state (replaces global appState.isLoadingMore / hasMoreItems).
-    // When libraryId is null (library not yet resolved), both flags are false so the
-    // PaginationFooter is hidden and onLoadMore is never invoked.
-    val libraryPagination = libraryId?.let { appState.libraryPaginationState[it] }
-    val isLibraryLoadingMore = libraryPagination?.isLoadingMore ?: false
-    val hasMoreLibraryItems = libraryPagination?.hasMore ?: false
-
-    // Recently added: top 20 items from the loaded set sorted by creation date
     val recentlyAddedItems = remember(libraryItems) {
         libraryItems.sortedByDescending { it.dateCreated }.take(20)
     }
+
+    val libraryId = remember(libraryType, appState.libraries) {
+        viewModel.getLibraryIdForType(libraryType)
+    }
+    val libraryPagination = libraryId?.let { appState.libraryPaginationState[it] }
+    val isLibraryLoadingMore = libraryPagination?.isLoadingMore ?: false
+    val hasMoreLibraryItems = libraryPagination?.hasMore ?: false
 
     LaunchedEffect(selectedFilter, libraryType) {
         gridState.scrollToItem(0)
         listState.scrollToItem(0)
     }
 
-    // ✅ FIX: Load data on-demand when screen is first composed
-    // Wait for libraries to be loaded before attempting to load library content
     LaunchedEffect(libraryType, appState.libraries) {
-        if (appState.libraries.isEmpty()) {
-            return@LaunchedEffect
-        }
+        if (appState.libraries.isEmpty()) return@LaunchedEffect
         hasRequestedData = true
         viewModel.loadLibraryTypeData(libraryType, forceRefresh = false)
     }
@@ -196,9 +183,9 @@ fun LibraryTypeScreen(
                 },
                 actions = {
                     SingleChoiceSegmentedButtonRow {
-                        ViewMode.entries.forEachIndexed { index, mode ->
+                        availableViewModes.forEachIndexed { index, mode ->
                             SegmentedButton(
-                                shape = SegmentedButtonDefaults.itemShape(index, ViewMode.entries.size),
+                                shape = SegmentedButtonDefaults.itemShape(index, availableViewModes.size),
                                 onClick = { viewMode = mode },
                                 selected = viewMode == mode,
                                 colors = SegmentedButtonDefaults.colors(
@@ -218,10 +205,7 @@ fun LibraryTypeScreen(
                             }
                         }
                     }
-                    IconButton(onClick = {
-                        // ✅ FIX: Use library-type specific refresh
-                        viewModel.loadLibraryTypeData(libraryType, forceRefresh = true)
-                    }) {
+                    IconButton(onClick = { viewModel.loadLibraryTypeData(libraryType, forceRefresh = true) }) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 },
@@ -244,7 +228,10 @@ fun LibraryTypeScreen(
 
             when {
                 isInitialLoading -> {
-                    LibraryTypeLoadingPlaceholder(libraryType = libraryType)
+                    LibraryTypeLoadingPlaceholder(
+                        libraryType = libraryType,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
                 displayItems.isNotEmpty() -> {
                     when (viewMode) {
@@ -259,33 +246,9 @@ fun LibraryTypeScreen(
                             gridState = gridState,
                             isLoadingMore = isLibraryLoadingMore,
                             hasMoreItems = hasMoreLibraryItems,
-                            onLoadMore = { libraryId?.let { viewModel.loadMoreLibraryItems(it) } },
-                        )
-                        ViewMode.GRID -> GridContent(
-                            items = displayItems,
-                            recentlyAddedItems = recentlyAddedItems,
-                            libraryType = libraryType,
-                            getImageUrl = { viewModel.getImageUrl(it) },
-                            onItemClick = onItemClick,
-                            onTVShowClick = onTVShowClick,
-                            onItemLongPress = handleItemLongPress,
-                            gridState = gridState,
-                            isLoadingMore = isLibraryLoadingMore,
-                            hasMoreItems = hasMoreLibraryItems,
-                            onLoadMore = { libraryId?.let { viewModel.loadMoreLibraryItems(it) } },
+                            onLoadMore = { libraryId?.let(viewModel::loadMoreLibraryItems) },
                             isTablet = adaptiveConfig.isTablet,
-                        )
-                            items = displayItems,
-                            recentlyAddedItems = recentlyAddedItems,
-                            libraryType = libraryType,
-                            getImageUrl = { viewModel.getImageUrl(it) },
-                            onItemClick = onItemClick,
-                            onTVShowClick = onTVShowClick,
-                            onItemLongPress = handleItemLongPress,
-                            listState = listState,
-                            isLoadingMore = isLibraryLoadingMore,
-                            hasMoreItems = hasMoreLibraryItems,
-                            onLoadMore = { libraryId?.let { viewModel.loadMoreLibraryItems(it) } },
+                            modifier = Modifier.weight(1f),
                         )
                         ViewMode.LIST -> ListContent(
                             items = displayItems,
@@ -298,21 +261,36 @@ fun LibraryTypeScreen(
                             listState = listState,
                             isLoadingMore = isLibraryLoadingMore,
                             hasMoreItems = hasMoreLibraryItems,
-                            onLoadMore = { libraryId?.let { viewModel.loadMoreLibraryItems(it) } },
+                            onLoadMore = { libraryId?.let(viewModel::loadMoreLibraryItems) },
                             isTablet = adaptiveConfig.isTablet,
+                            modifier = Modifier.weight(1f),
                         )
-                            items = displayItems,
-                            libraryType = libraryType,
-                            getImageUrl = { viewModel.getImageUrl(it) },
-                            onItemClick = onItemClick,
-                            onTVShowClick = onTVShowClick,
-                            onItemLongPress = handleItemLongPress,
-                            isTablet = adaptiveConfig.isTablet,
-                        )
+                        ViewMode.CAROUSEL -> {
+                            // Carousel is intentionally disabled for Movies and TV Shows.
+                            // Fall back to list for any stale in-memory selection.
+                            ListContent(
+                                items = displayItems,
+                                recentlyAddedItems = recentlyAddedItems,
+                                libraryType = libraryType,
+                                getImageUrl = { viewModel.getImageUrl(it) },
+                                onItemClick = onItemClick,
+                                onTVShowClick = onTVShowClick,
+                                onItemLongPress = handleItemLongPress,
+                                listState = listState,
+                                isLoadingMore = isLibraryLoadingMore,
+                                hasMoreItems = hasMoreLibraryItems,
+                                onLoadMore = { libraryId?.let(viewModel::loadMoreLibraryItems) },
+                                isTablet = adaptiveConfig.isTablet,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                 }
                 displayItems.isEmpty() && !appState.isLoading && appState.errorMessage == null -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
                         Text(
                             text = "No items found",
                             style = MaterialTheme.typography.bodyMedium,
@@ -323,13 +301,19 @@ fun LibraryTypeScreen(
             }
 
             if (appState.isLoading && displayItems.isNotEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
                     ExpressiveCircularLoading(color = libraryType.color)
                 }
             }
 
             appState.errorMessage?.let { error ->
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
                         Text(
                             text = error,
@@ -341,7 +325,6 @@ fun LibraryTypeScreen(
         }
     }
 
-    // Show media actions sheet when item is long-pressed
     selectedItem?.let { item ->
         if (showManageSheet) {
             val itemName = item.name ?: stringResource(id = R.string.unknown)
@@ -357,12 +340,8 @@ fun LibraryTypeScreen(
                     showManageSheet = false
                     selectedItem = null
                 },
-                onPlay = {
-                    handlePlay(item)
-                },
-                onDownload = {
-                    downloadsViewModel.startDownload(item)
-                },
+                onPlay = { handlePlay(item) },
+                onDownload = { downloadsViewModel.startDownload(item) },
                 onDelete = { _, _ ->
                     viewModel.deleteItem(item) { success, message ->
                         coroutineScope.launch {
@@ -387,9 +366,7 @@ fun LibraryTypeScreen(
                         }
                     }
                 },
-                onToggleWatched = {
-                    viewModel.toggleWatchedStatus(item)
-                },
+                onToggleWatched = { viewModel.toggleWatchedStatus(item) },
                 managementEnabled = managementEnabled,
                 showDownload = true,
             )
@@ -398,13 +375,16 @@ fun LibraryTypeScreen(
 }
 
 @Composable
-private fun LibraryTypeLoadingPlaceholder(libraryType: LibraryType) {
+private fun LibraryTypeLoadingPlaceholder(
+    libraryType: LibraryType,
+    modifier: Modifier = Modifier,
+) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = LibraryScreenDefaults.GridMinItemSize),
         contentPadding = PaddingValues(LibraryScreenDefaults.ContentPadding),
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ContentPadding),
         horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
     ) {
         items(
             count = LibraryScreenDefaults.LibraryTypePlaceholderCount,
@@ -418,14 +398,14 @@ private fun LibraryTypeLoadingPlaceholder(libraryType: LibraryType) {
                 colors = CardDefaults.cardColors(
                     containerColor = libraryType.color.copy(alpha = LibraryScreenDefaults.PlaceholderContainerAlpha),
                 ),
-            ) {}
+            ) {
+                Box(modifier = Modifier.fillMaxSize())
+            }
         }
     }
 }
 
 @Composable
-private fun GridContent(
-    items: List<BaseItemDto>,
 private fun GridContent(
     items: List<BaseItemDto>,
     recentlyAddedItems: List<BaseItemDto>,
@@ -439,23 +419,28 @@ private fun GridContent(
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
     isTablet: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
-    libraryType: LibraryType,
-    getImageUrl: (BaseItemDto) -> String?,
-    onItemClick: (BaseItemDto) -> Unit,
-    onTVShowClick: ((String) -> Unit)?,
-    onItemLongPress: (BaseItemDto) -> Unit,
-    gridState: LazyGridState,
-    isLoadingMore: Boolean,
-    hasMoreItems: Boolean,
-    onLoadMore: () -> Unit,
-) {
+    LaunchedEffect(gridState, items.size, hasMoreItems, isLoadingMore) {
+        snapshotFlow { gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+            .collect { lastVisibleIndex ->
+                if (hasMoreItems && !isLoadingMore && lastVisibleIndex >= items.size - 8) {
+                    onLoadMore()
+                }
+            }
+    }
+
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = LibraryScreenDefaults.GridMinItemSize),
-        contentPadding = PaddingValues(LibraryScreenDefaults.ContentPadding),
+        contentPadding = PaddingValues(
+            start = LibraryScreenDefaults.ContentPadding,
+            top = LibraryScreenDefaults.FilterChipSpacing,
+            end = LibraryScreenDefaults.ContentPadding,
+            bottom = 96.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ContentPadding),
         horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         state = gridState,
     ) {
         if (recentlyAddedItems.size >= 3) {
@@ -469,16 +454,10 @@ private fun GridContent(
                     libraryType = libraryType,
                     getImageUrl = getImageUrl,
                     onItemClick = onItemClick,
-                RecentlyAddedSection(
-                    items = recentlyAddedItems,
-                    libraryType = libraryType,
-                    getImageUrl = getImageUrl,
-                    onItemClick = onItemClick,
                     onTVShowClick = onTVShowClick,
                     onItemLongPress = onItemLongPress,
                     onMoreClick = onItemLongPress,
                     isTablet = isTablet,
-                )
                 )
             }
         }
@@ -496,6 +475,7 @@ private fun GridContent(
                 onItemLongPress = onItemLongPress,
                 onMoreClick = onItemLongPress,
                 isCompact = true,
+                isTablet = isTablet,
             )
         }
         if (hasMoreItems || isLoadingMore) {
@@ -507,7 +487,6 @@ private fun GridContent(
 }
 
 @Composable
-private fun ListContent(
 private fun ListContent(
     items: List<BaseItemDto>,
     recentlyAddedItems: List<BaseItemDto>,
@@ -521,22 +500,26 @@ private fun ListContent(
     hasMoreItems: Boolean,
     onLoadMore: () -> Unit,
     isTablet: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
-    recentlyAddedItems: List<BaseItemDto>,
-    libraryType: LibraryType,
-    getImageUrl: (BaseItemDto) -> String?,
-    onItemClick: (BaseItemDto) -> Unit,
-    onTVShowClick: ((String) -> Unit)?,
-    onItemLongPress: (BaseItemDto) -> Unit,
-    listState: LazyListState,
-    isLoadingMore: Boolean,
-    hasMoreItems: Boolean,
-    onLoadMore: () -> Unit,
-) {
+    LaunchedEffect(listState, items.size, hasMoreItems, isLoadingMore) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+            .collect { lastVisibleIndex ->
+                if (hasMoreItems && !isLoadingMore && lastVisibleIndex >= items.size - 8) {
+                    onLoadMore()
+                }
+            }
+    }
+
     LazyColumn(
-        contentPadding = PaddingValues(LibraryScreenDefaults.ContentPadding),
+        contentPadding = PaddingValues(
+            start = LibraryScreenDefaults.ContentPadding,
+            top = LibraryScreenDefaults.FilterChipSpacing,
+            end = LibraryScreenDefaults.ContentPadding,
+            bottom = 96.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         state = listState,
     ) {
         if (recentlyAddedItems.size >= 3) {
@@ -546,16 +529,10 @@ private fun ListContent(
                     libraryType = libraryType,
                     getImageUrl = getImageUrl,
                     onItemClick = onItemClick,
-                RecentlyAddedSection(
-                    items = recentlyAddedItems,
-                    libraryType = libraryType,
-                    getImageUrl = getImageUrl,
-                    onItemClick = onItemClick,
                     onTVShowClick = onTVShowClick,
                     onItemLongPress = onItemLongPress,
                     onMoreClick = onItemLongPress,
                     isTablet = isTablet,
-                )
                 )
             }
         }
@@ -572,25 +549,16 @@ private fun ListContent(
                 onTVShowClick = onTVShowClick,
                 onItemLongPress = onItemLongPress,
                 onMoreClick = onItemLongPress,
-                isCompact = false,
+                isCompact = libraryType != LibraryType.STUFF,
+                isTablet = isTablet,
             )
         }
         if (hasMoreItems || isLoadingMore) {
-            item {
-                PaginationFooter(isLoadingMore, hasMoreItems, onLoadMore, libraryType)
-            }
+            item { PaginationFooter(isLoadingMore, hasMoreItems, onLoadMore, libraryType) }
         }
     }
 }
 
-/**
- * Horizontal carousel of recently added items shown at the top of Grid and List views.
- */
-@Composable
-private fun RecentlyAddedSection(
-    items: List<BaseItemDto>,
-    libraryType: LibraryType,
-    getImageUrl: (BaseItemDto) -> String?,
 @Composable
 private fun RecentlyAddedSection(
     items: List<BaseItemDto>,
@@ -601,9 +569,6 @@ private fun RecentlyAddedSection(
     onItemLongPress: ((BaseItemDto) -> Unit)? = null,
     onMoreClick: ((BaseItemDto) -> Unit)? = null,
     isTablet: Boolean = false,
-    modifier: Modifier = Modifier,
-) {
-    onTVShowClick: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -630,18 +595,11 @@ private fun RecentlyAddedSection(
                     libraryType = libraryType,
                     getImageUrl = getImageUrl,
                     onItemClick = onItemClick,
-                LibraryItemCard(
-                    item = item,
-                    libraryType = libraryType,
-                    getImageUrl = getImageUrl,
-                    onItemClick = onItemClick,
                     onTVShowClick = onTVShowClick,
                     onItemLongPress = onItemLongPress,
                     onMoreClick = onMoreClick,
                     isCompact = true,
                     isTablet = isTablet,
-                )
-                    isCompact = true,
                 )
             }
         }
@@ -656,25 +614,43 @@ private fun CarouselContent(
     onItemClick: (BaseItemDto) -> Unit,
     onTVShowClick: ((String) -> Unit)?,
     onItemLongPress: (BaseItemDto) -> Unit,
+    isLoadingMore: Boolean,
+    hasMoreItems: Boolean,
+    onLoadMore: () -> Unit,
     isTablet: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     val categories = remember(items) { organizeItemsForCarousel(items, libraryType) }
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(listState, categories.size, hasMoreItems, isLoadingMore) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+            .collect { lastVisibleIndex ->
+                if (hasMoreItems && !isLoadingMore && lastVisibleIndex >= categories.size - 2) {
+                    onLoadMore()
+                }
+            }
+    }
+
     LazyColumn(
-        contentPadding = PaddingValues(vertical = LibraryScreenDefaults.ContentPadding),
+        state = listState,
+        contentPadding = PaddingValues(
+            start = 0.dp,
+            top = LibraryScreenDefaults.FilterChipSpacing,
+            end = 0.dp,
+            bottom = 96.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.SectionSpacing),
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
     ) {
         items(
-            count = categories.size,
-            key = { index -> "${categories[index].title}_$index" },
+            items = categories,
+            key = { category -> category.title },
             contentType = { "library_carousel_section" },
-        ) { index ->
-            val category = categories[index]
-            val carouselState = rememberCarouselState { category.items.size }
+        ) { category ->
             CarouselSection(
                 title = category.title,
                 items = category.items,
-                carouselState = carouselState,
                 libraryType = libraryType,
                 getImageUrl = getImageUrl,
                 onItemClick = onItemClick,
@@ -682,6 +658,12 @@ private fun CarouselContent(
                 onItemLongPress = onItemLongPress,
                 isTablet = isTablet,
             )
+        }
+
+        if (hasMoreItems || isLoadingMore) {
+            item(key = "carousel_footer") {
+                PaginationFooter(isLoadingMore, hasMoreItems, onLoadMore, libraryType)
+            }
         }
     }
 }

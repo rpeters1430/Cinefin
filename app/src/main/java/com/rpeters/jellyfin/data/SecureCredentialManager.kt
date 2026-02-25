@@ -6,6 +6,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import android.util.Log
+import android.security.keystore.UserNotAuthenticatedException
 import androidx.annotation.VisibleForTesting
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -293,6 +294,12 @@ class SecureCredentialManager @Inject constructor(
             String(cipher.doFinal(cipherData))
         } catch (e: CancellationException) {
             throw e
+        } catch (e: UserNotAuthenticatedException) {
+            logDebug { "decrypt: user authentication required before key use" }
+            null
+        } catch (e: Exception) {
+            SecureLogger.w(TAG, "decrypt: failed to decrypt saved credential", e)
+            null
         }
     }
 
@@ -421,82 +428,85 @@ class SecureCredentialManager @Inject constructor(
     ): String? {
         logDebug { "🔵 getPassword: CALLED - Retrieving password for user='$username', serverUrl='$serverUrl'" }
 
-        // If activity is provided and biometric auth is available, request auth
-        if (activity != null && biometricAuthManager.isBiometricAuthAvailable()) {
-            logDebug { "getPassword: Requesting biometric authentication" }
-            val authSuccess = biometricAuthManager.requestBiometricAuth(
-                activity = activity,
-                title = "Access Credentials",
-                subtitle = "Authenticate to access your saved credentials",
-                description = "Confirm your identity to retrieve saved login information",
-                requireStrongBiometric = requireStrongBiometric,
-            )
+        return try {
+            // If activity is provided and biometric auth is available, request auth
+            if (activity != null && biometricAuthManager.isBiometricAuthAvailable()) {
+                logDebug { "getPassword: Requesting biometric authentication" }
+                val authSuccess = biometricAuthManager.requestBiometricAuth(
+                    activity = activity,
+                    title = "Access Credentials",
+                    subtitle = "Authenticate to access your saved credentials",
+                    description = "Confirm your identity to retrieve saved login information",
+                    requireStrongBiometric = requireStrongBiometric,
+                )
 
-            // If biometric auth failed, return null
-            if (!authSuccess) {
-                SecureLogger.w(TAG, "getPassword: Biometric authentication failed")
-                return null
-            }
-        }
-
-        val keys = generateKeys(serverUrl, username)
-        logDebug { "getPassword: Generated key='${keys.newKey}'" }
-
-        val preferences = secureCredentialsDataStore.data.first()
-        logDebug { "getPassword: DataStore contains ${preferences.asMap().size} entries" }
-        var encryptedPassword = preferences[stringPreferencesKey(keys.newKey)]
-
-        if (encryptedPassword == null) {
-            logDebug { "getPassword: Password not found with new key='${keys.newKey}', checking legacy keys" }
-            val legacySearchOrder = listOf(keys.legacyNormalizedKey, keys.legacyRawKey)
-            var matchedKey: String? = null
-            for (legacyKey in legacySearchOrder) {
-                logDebug { "getPassword: Checking legacy key='$legacyKey'" }
-                encryptedPassword = preferences[stringPreferencesKey(legacyKey)]
-                if (encryptedPassword != null) {
-                    matchedKey = legacyKey
-                    logDebug { "getPassword: Found password with legacy key='$legacyKey'" }
-                    break
+                // If biometric auth failed, return null
+                if (!authSuccess) {
+                    SecureLogger.w(TAG, "getPassword: Biometric authentication failed")
+                    return null
                 }
             }
 
-            // FIX: If still not found, try with the raw (non-normalized) server URL
-            // This handles the case where credentials were saved before URL normalization was fixed
+            val keys = generateKeys(serverUrl, username)
+            logDebug { "getPassword: Generated key='${keys.newKey}'" }
+
+            val preferences = secureCredentialsDataStore.data.first()
+            logDebug { "getPassword: DataStore contains ${preferences.asMap().size} entries" }
+            var encryptedPassword = preferences[stringPreferencesKey(keys.newKey)]
+
             if (encryptedPassword == null) {
-                logDebug { "getPassword: Checking with raw server URL (pre-normalization fix)" }
-                val rawKey = generateKey(serverUrl, username)
-                if (rawKey != keys.newKey) { // Don't check the same key twice
-                    logDebug { "getPassword: Trying raw URL key='$rawKey'" }
-                    encryptedPassword = preferences[stringPreferencesKey(rawKey)]
+                logDebug { "getPassword: Password not found with new key='${keys.newKey}', checking legacy keys" }
+                val legacySearchOrder = listOf(keys.legacyNormalizedKey, keys.legacyRawKey)
+                var matchedKey: String? = null
+                for (legacyKey in legacySearchOrder) {
+                    logDebug { "getPassword: Checking legacy key='$legacyKey'" }
+                    encryptedPassword = preferences[stringPreferencesKey(legacyKey)]
                     if (encryptedPassword != null) {
-                        matchedKey = rawKey
-                        logDebug { "getPassword: Found password with raw URL key='$rawKey'" }
+                        matchedKey = legacyKey
+                        logDebug { "getPassword: Found password with legacy key='$legacyKey'" }
+                        break
                     }
                 }
+
+                // FIX: If still not found, try with the raw (non-normalized) server URL
+                // This handles the case where credentials were saved before URL normalization was fixed
+                if (encryptedPassword == null) {
+                    logDebug { "getPassword: Checking with raw server URL (pre-normalization fix)" }
+                    val rawKey = generateKey(serverUrl, username)
+                    if (rawKey != keys.newKey) { // Don't check the same key twice
+                        logDebug { "getPassword: Trying raw URL key='$rawKey'" }
+                        encryptedPassword = preferences[stringPreferencesKey(rawKey)]
+                        if (encryptedPassword != null) {
+                            matchedKey = rawKey
+                            logDebug { "getPassword: Found password with raw URL key='$rawKey'" }
+                        }
+                    }
+                }
+
+                if (encryptedPassword != null && matchedKey != null) {
+                    logDebug { "getPassword: Migrating legacy credential from key='$matchedKey' to key='${keys.newKey}'" }
+                    migrateLegacyCredential(matchedKey, keys.newKey, encryptedPassword)
+                }
+            } else {
+                logDebug { "getPassword: Found password with new key" }
             }
 
-            if (encryptedPassword != null && matchedKey != null) {
-                logDebug { "getPassword: Migrating legacy credential from key='$matchedKey' to key='${keys.newKey}'" }
-                migrateLegacyCredential(matchedKey, keys.newKey, encryptedPassword)
+            val result = encryptedPassword?.let { decrypt(it) }
+            if (result != null) {
+                logDebug { "🟢 getPassword: SUCCESS - Password retrieved and decrypted" }
+            } else {
+                SecureLogger.e(
+                    TAG,
+                    "🔴 getPassword: FAILED - Password is NULL (encryptedPassword was ${if (encryptedPassword != null) "found but decrypt failed" else "not found in DataStore"})",
+                )
             }
-        } else {
-            logDebug { "getPassword: Found password with new key" }
-        }
-
-        val result = try {
-            encryptedPassword?.let { decrypt(it) }
+            result
         } catch (e: CancellationException) {
             throw e
+        } catch (e: Exception) {
+            SecureLogger.e(TAG, "getPassword: Unexpected error while retrieving saved password", e)
+            null
         }
-        if (result != null) {
-            logDebug { "🟢 getPassword: SUCCESS - Password retrieved and decrypted" }
-        } else {
-            SecureLogger.e(
-                TAG,
-                "🔴 getPassword: FAILED - Password is NULL (encryptedPassword was ${if (encryptedPassword != null) "found but decrypt failed" else "not found in DataStore"})",
-            )
-        }
-        return result
     }
 
     /**

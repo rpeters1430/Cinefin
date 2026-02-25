@@ -247,15 +247,8 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
         // Use ImmersiveHomeVideosScreenContainer by default
         ImmersiveHomeVideosScreenContainer(
             onBackClick = { navController.popBackStack() },
-            onItemClick = { id ->
-                val item = appState.itemsByLibrary.values.flatten()
-                    .find { it.id.toString() == id }
-                if (item?.type == org.jellyfin.sdk.model.api.BaseItemKind.VIDEO) {
-                    navController.navigate(Screen.HomeVideoDetail.createRoute(id))
-                } else {
-                    navController.navigate(Screen.ItemDetail.createRoute(id))
-                }
-            },
+            onVideoClick = { id -> navController.navigate(Screen.HomeVideoDetail.createRoute(id)) },
+            onItemClick = { id -> navController.navigate(Screen.ItemDetail.createRoute(id)) },
             viewModel = viewModel,
         )
     }

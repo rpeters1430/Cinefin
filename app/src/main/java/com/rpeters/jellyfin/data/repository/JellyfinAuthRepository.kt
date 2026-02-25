@@ -62,6 +62,11 @@ class JellyfinAuthRepository @Inject constructor(
     // TokenProvider implementation
     override suspend fun token(): String? = _tokenState.value
 
+    private fun throwableMessageOrFallback(prefix: String, throwable: Throwable): String {
+        val detail = throwable.message?.takeIf { it.isNotBlank() } ?: throwable.javaClass.simpleName
+        return "$prefix: $detail"
+    }
+
     private fun saveNewToken(token: String?) {
         // SECURITY: Never log actual token values, even partially
         // Tokens should only be logged in extreme debugging scenarios using secure logging
@@ -83,7 +88,7 @@ class JellyfinAuthRepository @Inject constructor(
             if (e is kotlinx.coroutines.CancellationException) throw e
             Log.e(TAG, "testServerConnection: Error connecting to server", e)
             val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("Connection error: ${e.message}", e, errorType)
+            ApiResult.Error(throwableMessageOrFallback("Connection error", e), e, errorType)
         }
     }
 
@@ -130,7 +135,7 @@ class JellyfinAuthRepository @Inject constructor(
             if (e is kotlinx.coroutines.CancellationException) throw e
             Log.e(TAG, "authenticateUser: Error authenticating", e)
             val errorType = RepositoryUtils.getErrorType(e)
-            return ApiResult.Error("Authentication failed: ${e.message}", e, errorType)
+            return ApiResult.Error(throwableMessageOrFallback("Authentication failed", e), e, errorType)
         } finally {
             _isAuthenticating.update { false }
         }
@@ -220,6 +225,7 @@ class JellyfinAuthRepository @Inject constructor(
     fun seedCurrentServer(server: JellyfinServer?) {
         _currentServer.update { server }
         _isConnected.update { server?.isConnected == true }
+        _tokenState.update { server?.accessToken }
     }
 
     suspend fun logout() {
@@ -282,7 +288,30 @@ class JellyfinAuthRepository @Inject constructor(
             if (e is kotlinx.coroutines.CancellationException) throw e
             Log.e(TAG, "initiateQuickConnect: Error", e)
             val errorType = RepositoryUtils.getErrorType(e)
-            ApiResult.Error("Quick Connect error: ${e.message}", e, errorType)
+            ApiResult.Error(throwableMessageOrFallback("Quick Connect error", e), e, errorType)
+        }
+    }
+
+    suspend fun isQuickConnectEnabled(serverUrl: String): ApiResult<Boolean> {
+        return try {
+            val client = createApiClient(serverUrl)
+            val response = client.quickConnectApi.getQuickConnectEnabled()
+            ApiResult.Success(response.content)
+        } catch (e: InvalidStatusException) {
+            // Disabled quick connect may return unauthorized on some server versions.
+            // Older servers may also not expose this endpoint.
+            if (e.status == 401 || e.status == 403 || e.status == 404) {
+                ApiResult.Success(false)
+            } else {
+                Log.e(TAG, "isQuickConnectEnabled: Failed with status ${e.status}", e)
+                val errorType = RepositoryUtils.getErrorType(e)
+                ApiResult.Error(throwableMessageOrFallback("Failed to check Quick Connect availability", e), e, errorType)
+            }
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            Log.e(TAG, "isQuickConnectEnabled: Error", e)
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error(throwableMessageOrFallback("Failed to check Quick Connect availability", e), e, errorType)
         }
     }
 
@@ -303,7 +332,7 @@ class JellyfinAuthRepository @Inject constructor(
                 else -> {
                     Log.e(TAG, "getQuickConnectState: Failed with unexpected status", e)
                     val errorType = RepositoryUtils.getErrorType(e)
-                    ApiResult.Error("Failed to check Quick Connect state: ${e.message}", e, errorType)
+                    ApiResult.Error(throwableMessageOrFallback("Failed to check Quick Connect state", e), e, errorType)
                 }
             }
         }
@@ -330,7 +359,7 @@ class JellyfinAuthRepository @Inject constructor(
             } catch (e: InvalidStatusException) {
                 Log.e(TAG, "authenticateWithQuickConnect: Server returned error status", e)
                 val errorType = RepositoryUtils.getErrorType(e)
-                ApiResult.Error("Quick Connect authentication failed: ${e.message}", e, errorType)
+                ApiResult.Error(throwableMessageOrFallback("Quick Connect authentication failed", e), e, errorType)
             } finally {
                 _isAuthenticating.update { false }
             }

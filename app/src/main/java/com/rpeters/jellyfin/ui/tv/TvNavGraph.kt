@@ -83,6 +83,7 @@ fun TvNavGraph(
                     connectionViewModel.connectToServer(serverUrl, username, password)
                 },
                 onQuickConnect = {
+                    connectionViewModel.startQuickConnect()
                     navController.navigate(TvRoutes.QuickConnect)
                 },
                 isConnecting = connectionState.isConnecting,

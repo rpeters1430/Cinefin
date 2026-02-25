@@ -89,6 +89,36 @@ class JellyfinAuthRepositoryTest {
     }
 
     @Test
+    fun `isQuickConnectEnabled returns true when enabled`() = runTest {
+        coEvery { quickConnectApi.getQuickConnectEnabled() } returns sdkResponse(true)
+
+        val result = repository.isQuickConnectEnabled(SERVER_URL)
+
+        assertTrue(result is ApiResult.Success)
+        assertTrue((result as ApiResult.Success).data)
+    }
+
+    @Test
+    fun `isQuickConnectEnabled returns false for unsupported endpoint`() = runTest {
+        coEvery { quickConnectApi.getQuickConnectEnabled() } throws InvalidStatusException(404)
+
+        val result = repository.isQuickConnectEnabled(SERVER_URL)
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals(false, (result as ApiResult.Success).data)
+    }
+
+    @Test
+    fun `isQuickConnectEnabled returns false when unauthorized`() = runTest {
+        coEvery { quickConnectApi.getQuickConnectEnabled() } throws InvalidStatusException(401)
+
+        val result = repository.isQuickConnectEnabled(SERVER_URL)
+
+        assertTrue(result is ApiResult.Success)
+        assertEquals(false, (result as ApiResult.Success).data)
+    }
+
+    @Test
     fun `getQuickConnectState returns pending when not yet approved`() = runTest {
         coEvery { quickConnectApi.getQuickConnectState(any()) } returns sdkResponse(
             buildQuickConnectResult(authenticated = false),

@@ -98,7 +98,7 @@ class OptimizedClientFactory @Inject constructor(
         val key = "$serverUrl|${token ?: ""}"
         return synchronized(clientLock) {
             clients.getOrPut(key) {
-                logDebug("Creating new optimized client for: $serverUrl (token tail: ${token?.takeLast(6) ?: "null"})")
+                logDebug("Creating new optimized client for: $serverUrl")
                 createOptimizedClient(serverUrl, token)
             }
         }

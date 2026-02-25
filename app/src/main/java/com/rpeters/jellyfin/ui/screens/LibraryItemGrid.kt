@@ -9,14 +9,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
@@ -74,7 +76,6 @@ fun PaginationFooter(
 fun CarouselSection(
     title: String,
     items: List<BaseItemDto>,
-    carouselState: androidx.compose.material3.carousel.CarouselState,
     libraryType: LibraryType,
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit = {},
@@ -88,13 +89,12 @@ fun CarouselSection(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(
-                horizontal = LibraryScreenDefaults.ContentPadding,
+                horizontal = 0.dp,
                 vertical = LibraryScreenDefaults.FilterChipSpacing,
             ),
         )
 
-        HorizontalMultiBrowseCarousel(
-            state = carouselState,
+        LazyRow(
             modifier = Modifier.height(
                 if (isTablet) {
                     LibraryScreenDefaults.TabletCarouselHeight
@@ -102,24 +102,24 @@ fun CarouselSection(
                     LibraryScreenDefaults.CarouselHeight
                 },
             ),
-            preferredItemWidth = if (isTablet) {
-                LibraryScreenDefaults.TabletCarouselPreferredItemWidth
-            } else {
-                LibraryScreenDefaults.CarouselPreferredItemWidth
-            },
-            itemSpacing = LibraryScreenDefaults.CarouselItemSpacing,
-            contentPadding = PaddingValues(horizontal = LibraryScreenDefaults.ContentPadding),
-        ) { index ->
-            LibraryItemCard(
-                item = items[index],
-                libraryType = libraryType,
-                getImageUrl = getImageUrl,
-                onItemClick = onItemClick,
-                onTVShowClick = onTVShowClick,
-                onItemLongPress = onItemLongPress,
-                isCompact = true,
-                isTablet = isTablet,
-            )
+            contentPadding = PaddingValues(horizontal = 0.dp),
+            horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.CarouselItemSpacing),
+        ) {
+            items(
+                items = items,
+                key = { it.id.toString() },
+            ) { item ->
+                LibraryItemCard(
+                    item = item,
+                    libraryType = libraryType,
+                    getImageUrl = getImageUrl,
+                    onItemClick = onItemClick,
+                    onTVShowClick = onTVShowClick,
+                    onItemLongPress = onItemLongPress,
+                    isCompact = true,
+                    isTablet = isTablet,
+                )
+            }
         }
     }
 }

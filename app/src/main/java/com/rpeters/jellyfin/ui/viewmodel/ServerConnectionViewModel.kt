@@ -6,6 +6,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.fragment.app.FragmentActivity
@@ -13,6 +14,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.constants.Constants
+import com.rpeters.jellyfin.data.JellyfinServer
 import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
@@ -28,6 +30,7 @@ import com.rpeters.jellyfin.ui.components.PinningAlertReason
 import com.rpeters.jellyfin.ui.components.PinningAlertState
 import com.rpeters.jellyfin.utils.SecureLogger
 import com.rpeters.jellyfin.utils.ServerUrlValidator
+import com.rpeters.jellyfin.utils.normalizeServerUrl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -51,6 +54,11 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "lo
 object PreferencesKeys {
     val SERVER_URL = stringPreferencesKey("server_url")
     val USERNAME = stringPreferencesKey("username")
+    val SESSION_TOKEN = stringPreferencesKey("session_token")
+    val SESSION_USER_ID = stringPreferencesKey("session_user_id")
+    val SESSION_SERVER_ID = stringPreferencesKey("session_server_id")
+    val SESSION_SERVER_NAME = stringPreferencesKey("session_server_name")
+    val SESSION_LOGIN_TIMESTAMP = longPreferencesKey("session_login_timestamp")
     val REMEMBER_LOGIN = booleanPreferencesKey("remember_login")
     val BIOMETRIC_AUTH_ENABLED = booleanPreferencesKey("biometric_auth_enabled") // New preference
     val BIOMETRIC_REQUIRE_STRONG = booleanPreferencesKey("biometric_require_strong")
@@ -85,6 +93,11 @@ class ServerConnectionViewModel @Inject constructor(
             val preferences = context.dataStore.data.first()
             val savedServerUrl = preferences[PreferencesKeys.SERVER_URL] ?: ""
             val savedUsername = preferences[PreferencesKeys.USERNAME] ?: ""
+            val savedSessionToken = preferences[PreferencesKeys.SESSION_TOKEN]
+            val savedSessionUserId = preferences[PreferencesKeys.SESSION_USER_ID]
+            val savedSessionServerId = preferences[PreferencesKeys.SESSION_SERVER_ID] ?: ""
+            val savedSessionServerName = preferences[PreferencesKeys.SESSION_SERVER_NAME]
+            val savedSessionLoginTimestamp = preferences[PreferencesKeys.SESSION_LOGIN_TIMESTAMP]
             val rememberPreference = preferences[PreferencesKeys.REMEMBER_LOGIN]
             var rememberLogin = rememberPreference ?: true
             val biometricPreference = preferences[PreferencesKeys.BIOMETRIC_AUTH_ENABLED]
@@ -118,6 +131,47 @@ class ServerConnectionViewModel @Inject constructor(
                 isNetworkAvailable = connectivityChecker.isOnline(),
                 // We don't set biometric auth enabled here because we want to check it separately
             )
+
+            val hasSavedSessionToken =
+                savedServerUrl.isNotBlank() &&
+                    savedUsername.isNotBlank() &&
+                    !savedSessionToken.isNullOrBlank()
+
+            // Restore persisted token-based session even when no saved password exists.
+            // Also migrate older records that have a token but no login timestamp.
+            if (rememberLogin && hasSavedSessionToken) {
+                val restoredLoginTimestamp = savedSessionLoginTimestamp ?: System.currentTimeMillis()
+                if (savedSessionLoginTimestamp == null) {
+                    context.dataStore.edit { preferences ->
+                        preferences[PreferencesKeys.SESSION_LOGIN_TIMESTAMP] = restoredLoginTimestamp
+                    }
+                }
+
+                val restoredServer = JellyfinServer(
+                    id = savedSessionServerId,
+                    name = savedSessionServerName ?: savedUsername,
+                    url = savedServerUrl,
+                    isConnected = true,
+                    userId = savedSessionUserId,
+                    username = savedUsername,
+                    accessToken = savedSessionToken,
+                    loginTimestamp = restoredLoginTimestamp,
+                    normalizedUrl = normalizeServerUrl(savedServerUrl),
+                )
+                repository.restorePersistedSession(restoredServer)
+
+                if (repository.isSessionTokenExpired()) {
+                    clearPersistedSessionToken()
+                } else {
+                    _connectionState.value = _connectionState.value.copy(
+                        isConnected = true,
+                        isConnecting = false,
+                        errorMessage = null,
+                        connectionPhase = ConnectionPhase.Connected,
+                    )
+                    return@launch
+                }
+            }
 
             // Auto-login if we have saved credentials and remember login is enabled
             if (rememberLogin && savedServerUrl.isNotBlank() && savedUsername.isNotBlank() && hasSavedPassword) {
@@ -156,6 +210,11 @@ class ServerConnectionViewModel @Inject constructor(
                                                 savedPassword,
                                                 isAutoLogin = true,
                                             )
+                                        } else {
+                                            handleUnreadableSavedPassword(
+                                                currentState.savedServerUrl,
+                                                currentState.savedUsername,
+                                            )
                                         }
                                     }
                                 }
@@ -188,6 +247,7 @@ class ServerConnectionViewModel @Inject constructor(
                         connectToServer(savedServerUrl, savedUsername, savedPassword, isAutoLogin = true)
                     } else {
                         SecureLogger.w("ServerConnectionVM", "Auto-login failed: saved password could not be retrieved")
+                        handleUnreadableSavedPassword(savedServerUrl, savedUsername)
                     }
                 }
             }
@@ -280,6 +340,7 @@ class ServerConnectionViewModel @Inject constructor(
                             // for extra protection, but proper ordering is still best practice)
                             if (_connectionState.value.rememberLogin) {
                                 saveCredentials(normalizedServerUrl, username, password)
+                                saveCurrentSessionToken()
                             } else {
                                 // Best-effort cleanup: older versions could have persisted credentials
                                 // even when the user opted out of "Remember Login".
@@ -483,6 +544,11 @@ class ServerConnectionViewModel @Inject constructor(
         context.dataStore.edit { preferences ->
             preferences.remove(PreferencesKeys.SERVER_URL)
             preferences.remove(PreferencesKeys.USERNAME)
+            preferences.remove(PreferencesKeys.SESSION_TOKEN)
+            preferences.remove(PreferencesKeys.SESSION_USER_ID)
+            preferences.remove(PreferencesKeys.SESSION_SERVER_ID)
+            preferences.remove(PreferencesKeys.SESSION_SERVER_NAME)
+            preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
         }
         if (currentState.savedServerUrl.isNotBlank() && currentState.savedUsername.isNotBlank()) {
             secureCredentialManager.clearPassword(currentState.savedServerUrl, currentState.savedUsername)
@@ -492,6 +558,33 @@ class ServerConnectionViewModel @Inject constructor(
             savedUsername = "",
             hasSavedPassword = false,
         )
+    }
+
+    private suspend fun clearPersistedSessionToken() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(PreferencesKeys.SESSION_TOKEN)
+            preferences.remove(PreferencesKeys.SESSION_USER_ID)
+            preferences.remove(PreferencesKeys.SESSION_SERVER_ID)
+            preferences.remove(PreferencesKeys.SESSION_SERVER_NAME)
+            preferences.remove(PreferencesKeys.SESSION_LOGIN_TIMESTAMP)
+        }
+    }
+
+    private suspend fun saveCurrentSessionToken() {
+        val server = repository.currentServer.first { it != null } ?: return
+        if (server.url.isBlank() || server.username.isNullOrBlank() || server.accessToken.isNullOrBlank()) {
+            return
+        }
+
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SERVER_URL] = normalizeServerUrl(server.url)
+            preferences[PreferencesKeys.USERNAME] = server.username
+            preferences[PreferencesKeys.SESSION_TOKEN] = server.accessToken
+            server.userId?.let { preferences[PreferencesKeys.SESSION_USER_ID] = it }
+            preferences[PreferencesKeys.SESSION_SERVER_ID] = server.id
+            preferences[PreferencesKeys.SESSION_SERVER_NAME] = server.name
+            preferences[PreferencesKeys.SESSION_LOGIN_TIMESTAMP] = server.loginTimestamp ?: System.currentTimeMillis()
+        }
     }
 
     fun setRememberLogin(remember: Boolean) {
@@ -565,6 +658,16 @@ class ServerConnectionViewModel @Inject constructor(
         }
     }
 
+    private suspend fun handleUnreadableSavedPassword(serverUrl: String, username: String) {
+        runCatching {
+            secureCredentialManager.clearPassword(serverUrl, username)
+        }
+        _connectionState.value = _connectionState.value.copy(
+            hasSavedPassword = false,
+            errorMessage = "Saved password is no longer available. Please enter your password once to re-save login.",
+        )
+    }
+
     /**
      * Gets a saved password without biometric authentication (for backward compatibility)
      */
@@ -592,6 +695,11 @@ class ServerConnectionViewModel @Inject constructor(
                         currentState.savedUsername,
                         savedPassword,
                         isAutoLogin = true,
+                    )
+                } else {
+                    handleUnreadableSavedPassword(
+                        currentState.savedServerUrl,
+                        currentState.savedUsername,
                     )
                 }
             }
@@ -660,9 +768,15 @@ class ServerConnectionViewModel @Inject constructor(
     }
 
     fun startQuickConnect() {
+        val currentState = _connectionState.value
+        val initialUrl = currentState.quickConnectServerUrl.ifBlank {
+            currentState.savedServerUrl
+        }
         _connectionState.value = _connectionState.value.copy(
             isQuickConnectActive = true,
+            quickConnectServerUrl = initialUrl,
             errorMessage = null,
+            quickConnectStatus = "",
         )
     }
 
@@ -674,8 +788,10 @@ class ServerConnectionViewModel @Inject constructor(
             quickConnectCode = "",
             quickConnectServerUrl = "",
             quickConnectSecret = "",
+            isConnecting = false,
             isQuickConnectPolling = false,
             quickConnectStatus = "",
+            errorMessage = null,
         )
     }
 
@@ -705,6 +821,8 @@ class ServerConnectionViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            quickConnectPollingJob?.cancel()
+            quickConnectPollingJob = null
             _connectionState.value = _connectionState.value.copy(
                 isConnecting = true,
                 errorMessage = null,
@@ -712,14 +830,42 @@ class ServerConnectionViewModel @Inject constructor(
             )
 
             // First test server connection
-            when (val serverResult = repository.testServerConnection(normalizedServerUrl)) {
+            when (val serverResult = withContext(Dispatchers.IO) {
+                repository.testServerConnection(normalizedServerUrl)
+            }) {
                 is ApiResult.Success -> {
-                    _connectionState.value = _connectionState.value.copy(
-                        quickConnectStatus = "Initiating Quick Connect...",
-                    )
+                    when (val enabledResult = withContext(Dispatchers.IO) {
+                        repository.isQuickConnectEnabled(normalizedServerUrl)
+                    }) {
+                        is ApiResult.Success -> {
+                            if (!enabledResult.data) {
+                                _connectionState.value = _connectionState.value.copy(
+                                    isConnecting = false,
+                                    quickConnectStatus = "",
+                                    errorMessage = context.getString(R.string.quick_connect_not_enabled),
+                                )
+                                return@launch
+                            }
+                        }
+                        is ApiResult.Error -> {
+                            _connectionState.value = _connectionState.value.copy(
+                                isConnecting = false,
+                                quickConnectStatus = "",
+                                errorMessage = "Failed to check Quick Connect availability: ${enabledResult.message}",
+                            )
+                            return@launch
+                        }
+                        is ApiResult.Loading -> {
+                            // This shouldn't happen for this call
+                        }
+                    }
+
+                    _connectionState.value = _connectionState.value.copy(quickConnectStatus = "Initiating Quick Connect...")
 
                     // Now initiate Quick Connect
-                    when (val quickConnectResult = repository.initiateQuickConnect(normalizedServerUrl)) {
+                    when (val quickConnectResult = withContext(Dispatchers.IO) {
+                        repository.initiateQuickConnect(normalizedServerUrl)
+                    }) {
                         is ApiResult.Success -> {
                             val result = quickConnectResult.data
                             _connectionState.value = _connectionState.value.copy(
@@ -738,6 +884,7 @@ class ServerConnectionViewModel @Inject constructor(
                         is ApiResult.Error -> {
                             _connectionState.value = _connectionState.value.copy(
                                 isConnecting = false,
+                                quickConnectStatus = "",
                                 errorMessage = "Quick Connect initiation failed: ${quickConnectResult.message}",
                             )
                         }
@@ -749,6 +896,7 @@ class ServerConnectionViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     _connectionState.value = _connectionState.value.copy(
                         isConnecting = false,
+                        quickConnectStatus = "",
                         errorMessage = "Cannot connect to server: ${serverResult.message}",
                     )
                 }
@@ -775,27 +923,45 @@ class ServerConnectionViewModel @Inject constructor(
                 return
             }
 
-            when (val stateResult = repository.getQuickConnectState(serverUrl, secret)) {
+            when (val stateResult = withContext(Dispatchers.IO) {
+                repository.getQuickConnectState(serverUrl, secret)
+            }) {
                 is ApiResult.Success -> {
                     val state = stateResult.data
                     when (state.state) {
                         "Approved" -> {
                             // User approved the connection, authenticate
-                            when (val authResult = repository.authenticateWithQuickConnect(serverUrl, secret)) {
+                            when (val authResult = withContext(Dispatchers.IO) {
+                                repository.authenticateWithQuickConnect(serverUrl, secret)
+                            }) {
                                 is ApiResult.Success -> {
+                                    if (_connectionState.value.rememberLogin) {
+                                        saveCurrentSessionToken()
+                                    } else {
+                                        clearPersistedSessionToken()
+                                    }
                                     _connectionState.value = _connectionState.value.copy(
                                         isConnected = true,
                                         isQuickConnectActive = false,
                                         isQuickConnectPolling = false,
+                                        isConnecting = false,
+                                        quickConnectCode = "",
+                                        quickConnectSecret = "",
                                         quickConnectStatus = "Connected successfully!",
                                     )
+                                    quickConnectPollingJob = null
                                     return
                                 }
                                 is ApiResult.Error -> {
                                     _connectionState.value = _connectionState.value.copy(
                                         isQuickConnectPolling = false,
+                                        isConnecting = false,
+                                        quickConnectStatus = "",
+                                        quickConnectCode = "",
+                                        quickConnectSecret = "",
                                         errorMessage = "Authentication failed: ${authResult.message}",
                                     )
+                                    quickConnectPollingJob = null
                                     return
                                 }
                                 is ApiResult.Loading -> {
@@ -806,16 +972,26 @@ class ServerConnectionViewModel @Inject constructor(
                         "Expired" -> {
                             _connectionState.value = _connectionState.value.copy(
                                 isQuickConnectPolling = false,
+                                isConnecting = false,
+                                quickConnectStatus = "",
+                                quickConnectCode = "",
+                                quickConnectSecret = "",
                                 errorMessage = "Quick Connect code has expired",
                             )
+                            quickConnectPollingJob = null
                             return
                         }
                         "Denied" -> {
                             _connectionState.value = _connectionState.value.copy(
                                 isQuickConnectActive = false,
                                 isQuickConnectPolling = false,
+                                isConnecting = false,
+                                quickConnectStatus = "",
+                                quickConnectCode = "",
+                                quickConnectSecret = "",
                                 errorMessage = "Quick Connect request was denied",
                             )
+                            quickConnectPollingJob = null
                             return
                         }
                         else -> {
@@ -829,8 +1005,13 @@ class ServerConnectionViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     _connectionState.value = _connectionState.value.copy(
                         isQuickConnectPolling = false,
+                        isConnecting = false,
+                        quickConnectStatus = "",
+                        quickConnectCode = "",
+                        quickConnectSecret = "",
                         errorMessage = "Failed to check Quick Connect state: ${stateResult.message}",
                     )
+                    quickConnectPollingJob = null
                     return
                 }
                 is ApiResult.Loading -> {
@@ -845,6 +1026,10 @@ class ServerConnectionViewModel @Inject constructor(
         if (attempts >= maxAttempts) {
             _connectionState.value = _connectionState.value.copy(
                 isQuickConnectPolling = false,
+                isConnecting = false,
+                quickConnectStatus = "",
+                quickConnectCode = "",
+                quickConnectSecret = "",
                 errorMessage = "Quick Connect timed out. Please try again.",
             )
         }

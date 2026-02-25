@@ -81,11 +81,17 @@ object NetworkModule {
             .connectionSpecs(listOf(modernTls, compatibleTls, ConnectionSpec.CLEARTEXT))
 
         if (BuildConfig.DEBUG) {
+            val loggingInterceptor = HttpLoggingInterceptor().apply {
+                // Keep header visibility for debugging, but redact sensitive auth data.
+                level = HttpLoggingInterceptor.Level.HEADERS
+                redactHeader("Authorization")
+                redactHeader("X-Emby-Token")
+                redactHeader("X-Emby-Authorization")
+                redactHeader("Cookie")
+                redactHeader("Set-Cookie")
+            }
             builder.addInterceptor(
-                HttpLoggingInterceptor().apply {
-                    // Use HEADERS level in debug to capture TLS handshake details
-                    level = HttpLoggingInterceptor.Level.HEADERS
-                },
+                loggingInterceptor,
             )
         }
 

@@ -17,7 +17,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +36,7 @@ import com.rpeters.jellyfin.ui.tv.TvFocusableGrid
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
 import com.rpeters.jellyfin.ui.screens.LibraryType
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
+import kotlin.math.min
 import org.jellyfin.sdk.model.api.CollectionType
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text as TvText
@@ -50,6 +53,7 @@ fun TvLibraryScreen(
     val windowSizeClass = calculateWindowSizeClass(context as android.app.Activity)
     val windowLayoutInfo = rememberWindowLayoutInfo()
     val layoutConfig = rememberAdaptiveLayoutConfig(windowSizeClass, windowLayoutInfo)
+    val configuration = LocalConfiguration.current
     val focusManager = rememberTvFocusManager()
     val appState by viewModel.appState.collectAsState()
     val library = appState.libraries.firstOrNull { it.id.toString() == libraryId }
@@ -84,6 +88,10 @@ fun TvLibraryScreen(
     } else {
         appState.itemsByLibrary[library?.id?.toString() ?: libraryId] ?: emptyList()
     }
+    val paginationKey = library?.id?.toString() ?: libraryId
+    val paginationState = paginationKey?.let { appState.libraryPaginationState[it] }
+    val hasMoreItems = paginationState?.hasMore == true
+    val isLoadingMoreItems = paginationState?.isLoadingMore == true
 
     // Determine if this specific library is loading
     val isLibraryLoading = when (library?.collectionType) {
@@ -149,7 +157,27 @@ fun TvLibraryScreen(
                 )
             } else {
                 val gridState = rememberLazyGridState()
-                val columns = layoutConfig.gridColumns.coerceAtLeast(4)
+                val horizontalScreenPadding = 56.dp * 2
+                val gridSpacing = 24.dp
+                val availableWidth = (configuration.screenWidthDp.dp - horizontalScreenPadding).coerceAtLeast(0.dp)
+                val maxColumnsForCardWidth =
+                    ((availableWidth + gridSpacing) / (layoutConfig.carouselItemWidth + gridSpacing))
+                        .toInt()
+                        .coerceAtLeast(2)
+                val columns = min(layoutConfig.gridColumns.coerceAtLeast(4), maxColumnsForCardWidth)
+
+                LaunchedEffect(gridState, paginationKey, hasMoreItems, isLoadingMoreItems, items.size) {
+                    val key = paginationKey ?: return@LaunchedEffect
+                    if (key == "favorites") return@LaunchedEffect
+
+                    snapshotFlow { gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1 }
+                        .collect { lastVisibleIndex ->
+                            val nearEnd = lastVisibleIndex >= (items.lastIndex - 8).coerceAtLeast(0)
+                            if (nearEnd && hasMoreItems && !isLoadingMoreItems) {
+                                viewModel.loadMoreLibraryItems(key)
+                            }
+                        }
+                }
                 
                 TvFocusableGrid(
                     gridId = "library_${libraryId ?: "all"}",

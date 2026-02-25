@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
@@ -45,6 +46,7 @@ import com.rpeters.jellyfin.ui.tv.TvFocusableGrid
 import com.rpeters.jellyfin.ui.tv.rememberTvFocusManager
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.ui.viewmodel.SearchViewModel
+import kotlin.math.min
 import org.jellyfin.sdk.model.api.BaseItemKind
 import androidx.tv.material3.FilterChip
 import androidx.tv.material3.Icon as TvIcon
@@ -67,6 +69,7 @@ fun TvSearchScreen(
     val windowSizeClass = calculateWindowSizeClass(context as android.app.Activity)
     val windowLayoutInfo = rememberWindowLayoutInfo()
     val layoutConfig = rememberAdaptiveLayoutConfig(windowSizeClass, windowLayoutInfo)
+    val configuration = LocalConfiguration.current
     
     var focusedBackdrop by remember { mutableStateOf<String?>(null) }
 
@@ -140,7 +143,14 @@ fun TvSearchScreen(
                 )
             } else if (searchState.searchResults.isNotEmpty()) {
                 val gridState = rememberLazyGridState()
-                val columns = layoutConfig.gridColumns.coerceAtLeast(4)
+                val horizontalScreenPadding = 56.dp * 2
+                val gridSpacing = 24.dp
+                val availableWidth = (configuration.screenWidthDp.dp - horizontalScreenPadding).coerceAtLeast(0.dp)
+                val maxColumnsForCardWidth =
+                    ((availableWidth + gridSpacing) / (layoutConfig.carouselItemWidth + gridSpacing))
+                        .toInt()
+                        .coerceAtLeast(2)
+                val columns = min(layoutConfig.gridColumns.coerceAtLeast(4), maxColumnsForCardWidth)
 
                 TvFocusableGrid(
                     gridId = "search_results",

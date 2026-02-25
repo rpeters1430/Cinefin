@@ -1,6 +1,7 @@
 package com.rpeters.jellyfin.ui.components.immersive
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,7 +46,9 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -108,22 +112,41 @@ fun ImmersiveMediaCard(
         animationSpec = MotionTokens.expressiveEnter,
         label = "immersive_card_scale",
     )
+    val density = LocalDensity.current
+    val shadowElevationPx by animateFloatAsState(
+        targetValue = with(density) { if (isPressed) 8.dp.toPx() else 22.dp.toPx() },
+        animationSpec = tween(durationMillis = 220),
+        label = "immersive_card_shadow",
+    )
+    val liftOffset by animateFloatAsState(
+        targetValue = with(density) { if (isPressed) (-1).dp.toPx() else (-6).dp.toPx() },
+        animationSpec = tween(durationMillis = 220),
+        label = "immersive_card_lift",
+    )
 
     val (width, height) = when (cardSize) {
         ImmersiveCardSize.SMALL -> ImmersiveDimens.CardWidthSmall to ImmersiveDimens.CardHeightSmall
         ImmersiveCardSize.MEDIUM -> ImmersiveDimens.CardWidthMedium to ImmersiveDimens.CardHeightMedium
         ImmersiveCardSize.LARGE -> ImmersiveDimens.CardWidthLarge to ImmersiveDimens.CardHeightLarge
     }
+    val cardShape = RoundedCornerShape(ImmersiveDimens.CornerRadiusCinematic)
 
     Card(
         modifier = modifier
             .width(width)
             .height(height)
+            .graphicsLayer {
+                translationY = liftOffset
+                shadowElevation = shadowElevationPx
+                shape = cardShape
+                clip = false
+            }
             .scale(scale),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent,
         ),
-        shape = RoundedCornerShape(ImmersiveDimens.CornerRadiusCinematic),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+        shape = cardShape,
     ) {
         ImmersiveCardContent(
             title = title,

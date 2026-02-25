@@ -33,6 +33,7 @@ private val homeVideosSortOptions = listOf(
 @OptInAppExperimentalApis
 @Composable
 fun ImmersiveHomeVideosScreenContainer(
+    onVideoClick: (String) -> Unit,
     onItemClick: (String) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -69,6 +70,14 @@ fun ImmersiveHomeVideosScreenContainer(
     }
 
     val featuredVideos = remember(sortedVideos) { sortedVideos.take(5) }
+    val routeHomeVideoItemClick: (String) -> Unit = remember(homeVideosItems, onVideoClick, onItemClick) {
+        { id ->
+            when (homeVideosItems.firstOrNull { it.id.toString() == id }?.type) {
+                BaseItemKind.VIDEO -> onVideoClick(id)
+                else -> onItemClick(id)
+            }
+        }
+    }
 
     val isLoadingMore = remember(appState.libraryPaginationState, homeVideosLibraryIds) {
         homeVideosLibraryIds.any { appState.libraryPaginationState[it]?.isLoadingMore == true }
@@ -96,8 +105,8 @@ fun ImmersiveHomeVideosScreenContainer(
         selectedSortIndex = selectedSortIndex,
         onSortSelected = { selectedSortIndex = it },
         onLoadMore = { viewModel.loadMoreHomeVideos(homeVideosLibraries) },
-        onItemClick = onItemClick,
-        onCarouselItemClick = onItemClick,
+        onItemClick = routeHomeVideoItemClick,
+        onCarouselItemClick = routeHomeVideoItemClick,
         onRefresh = { viewModel.loadInitialData() },
         onSearchClick = { /* Home videos screen does not have a dedicated search action */ },
         onBackClick = onBackClick,

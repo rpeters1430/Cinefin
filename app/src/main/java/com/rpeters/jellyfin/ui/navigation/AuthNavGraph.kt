@@ -74,6 +74,7 @@ fun androidx.navigation.NavGraphBuilder.authNavGraph(
                 viewModel.connectToServer(serverUrl, username, password)
             },
             onQuickConnect = {
+                viewModel.startQuickConnect()
                 navController.navigate(Screen.QuickConnect.route)
             },
             connectionState = connectionState,

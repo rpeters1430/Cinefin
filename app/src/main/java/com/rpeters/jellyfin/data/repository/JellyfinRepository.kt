@@ -223,6 +223,9 @@ class JellyfinRepository @Inject constructor(
     suspend fun initiateQuickConnect(serverUrl: String): ApiResult<QuickConnectResult> =
         authRepository.initiateQuickConnect(serverUrl)
 
+    suspend fun isQuickConnectEnabled(serverUrl: String): ApiResult<Boolean> =
+        authRepository.isQuickConnectEnabled(serverUrl)
+
     suspend fun getQuickConnectState(serverUrl: String, secret: String): ApiResult<QuickConnectState> =
         authRepository.getQuickConnectState(serverUrl, secret)
 
@@ -231,6 +234,12 @@ class JellyfinRepository @Inject constructor(
         secret: String,
     ): ApiResult<AuthenticationResult> =
         authRepository.authenticateWithQuickConnect(serverUrl, secret)
+
+    fun restorePersistedSession(server: JellyfinServer) {
+        authRepository.seedCurrentServer(server.copy(isConnected = true))
+    }
+
+    fun isSessionTokenExpired(): Boolean = authRepository.isTokenExpired()
 
     // ===== LIBRARY METHODS - Simplified for better maintainability =====
 

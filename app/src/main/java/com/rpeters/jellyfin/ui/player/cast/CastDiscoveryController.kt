@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.media3.common.util.UnstableApi
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.framework.CastContext
-import com.rpeters.jellyfin.ui.player.DiscoveryState
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope

@@ -180,6 +180,7 @@ class JellyfinMediaRepository @Inject constructor(
                         "JellyfinMediaRepository",
                         "HTTP 400 error detected, attempting fallback strategies for parentId=$parentId, collectionType=$collectionType",
                     )
+                    val allowBroadFallback = isHomeVideos || isPhotos || itemKinds.isNullOrEmpty()
 
                     // Strategy 1: Try collection-type defaults if we had explicit types
                     if (!collectionType.isNullOrBlank() && !itemTypes.isNullOrBlank()) {
@@ -212,30 +213,33 @@ class JellyfinMediaRepository @Inject constructor(
                     }
 
                     // Strategy 2: Try without any includeItemTypes (let server decide)
-                    try {
-                        SecureLogger.v(
-                            "JellyfinMediaRepository",
-                            "Fallback strategy 2: Requesting without includeItemTypes filter",
-                        )
+                    // Only use this broad fallback for libraries that intentionally support mixed content.
+                    if (allowBroadFallback) {
+                        try {
+                            SecureLogger.v(
+                                "JellyfinMediaRepository",
+                                "Fallback strategy 2: Requesting without includeItemTypes filter",
+                            )
 
-                        val response = client.itemsApi.getItems(
-                            userId = userUuid,
-                            parentId = parent,
-                            recursive = true,
-                            includeItemTypes = null, // Let server return all types
-                            startIndex = validatedParams.startIndex,
-                            limit = validatedParams.limit,
-                        )
-                        SecureLogger.v(
-                            "JellyfinMediaRepository",
-                            "Fallback strategy 2 succeeded: ${response.content.items.size} items",
-                        )
-                        return@withServerClient response.content.items
-                    } catch (fallbackException2: Exception) {
-                        SecureLogger.w(
-                            "JellyfinMediaRepository",
-                            "Fallback strategy 2 also failed: ${fallbackException2.message}",
-                        )
+                            val response = client.itemsApi.getItems(
+                                userId = userUuid,
+                                parentId = parent,
+                                recursive = true,
+                                includeItemTypes = null, // Let server return all types
+                                startIndex = validatedParams.startIndex,
+                                limit = validatedParams.limit,
+                            )
+                            SecureLogger.v(
+                                "JellyfinMediaRepository",
+                                "Fallback strategy 2 succeeded: ${response.content.items.size} items",
+                            )
+                            return@withServerClient response.content.items
+                        } catch (fallbackException2: Exception) {
+                            SecureLogger.w(
+                                "JellyfinMediaRepository",
+                                "Fallback strategy 2 also failed: ${fallbackException2.message}",
+                            )
+                        }
                     }
 
                     // Strategy 3: Try without parentId (library-wide search)

@@ -1228,6 +1228,23 @@ class MainAppViewModel @Inject constructor(
 
             val currentItems = _appState.value.itemsByLibrary[libraryId] ?: emptyList()
             val startIndex = currentItems.size
+            val library = _appState.value.libraries.firstOrNull { it.id.toString() == libraryId }
+            val normalizedCollectionType = library?.collectionType?.toString()?.lowercase()?.replace(" ", "")
+            val collectionTypeForApi = when (normalizedCollectionType) {
+                "movies" -> "movies"
+                "tvshows" -> "tvshows"
+                "music" -> "music"
+                "homevideos" -> "homevideos"
+                "books" -> "books"
+                else -> null
+            }
+            val itemTypesForApi = when (collectionTypeForApi) {
+                "movies" -> "Movie"
+                "tvshows" -> "Series"
+                "music" -> "MusicAlbum,Audio,MusicArtist"
+                "books" -> "Book,AudioBook,Video"
+                else -> null
+            }
 
             SecureLogger.v("MainAppViewModel", "Loading more items for library $libraryId, startIndex=$startIndex")
 
@@ -1243,12 +1260,18 @@ class MainAppViewModel @Inject constructor(
             when (
                 val result = mediaRepository.getLibraryItems(
                     parentId = libraryId,
+                    itemTypes = itemTypesForApi,
                     startIndex = startIndex,
                     limit = API_DEFAULT_LIMIT,
+                    collectionType = collectionTypeForApi,
                 )
             ) {
                 is ApiResult.Success -> {
-                    val newItems = result.data
+                    val newItems = when (collectionTypeForApi) {
+                        "tvshows" -> result.data.filter { it.type == BaseItemKind.SERIES }
+                        "movies" -> result.data.filter { it.type == BaseItemKind.MOVIE }
+                        else -> result.data
+                    }
                     val hasMore = newItems.size >= API_DEFAULT_LIMIT
 
                     SecureLogger.v("MainAppViewModel", "Loaded ${newItems.size} more items, hasMore=$hasMore")

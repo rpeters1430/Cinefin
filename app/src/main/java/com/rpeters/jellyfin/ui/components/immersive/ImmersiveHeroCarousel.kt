@@ -13,14 +13,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.carousel.CarouselDefaults
-import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
-import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -73,6 +72,7 @@ import com.rpeters.jellyfin.utils.SecureLogger
  * @param autoScrollIntervalMillis Time between auto-scroll transitions (default 15s)
  */
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 fun ImmersiveHeroCarousel(
     items: List<CarouselItem>,
     onItemClick: (CarouselItem) -> Unit,
@@ -103,28 +103,23 @@ fun ImmersiveHeroCarousel(
         autoScrollEnabled && performanceConfig.enableAutoScroll
     }
 
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    // Full-screen items for immersive experience
-    val itemWidth = remember(screenWidth) { screenWidth }
-
-    val carouselState = rememberCarouselState { optimizedItems.size }
+    val pagerState = rememberPagerState(pageCount = { optimizedItems.size })
 
     // Track current item for indicators
     val currentItem by remember {
         derivedStateOf {
-            carouselState.currentItem
+            pagerState.currentPage
         }
     }
 
     // ✅ Performance: Auto-scroll effect (disabled on LOW tier devices)
-    LaunchedEffect(carouselState, effectiveAutoScroll, autoScrollIntervalMillis, optimizedItems.size) {
+    LaunchedEffect(pagerState, effectiveAutoScroll, autoScrollIntervalMillis, optimizedItems.size) {
         if (!effectiveAutoScroll || optimizedItems.size <= 1) return@LaunchedEffect
 
         while (true) {
             kotlinx.coroutines.delay(autoScrollIntervalMillis)
-            val nextPage = (carouselState.currentItem + 1) % optimizedItems.size
-            carouselState.scrollToItem(nextPage)
+            val nextPage = (pagerState.currentPage + 1) % optimizedItems.size
+            pagerState.animateScrollToPage(nextPage)
         }
     }
 
@@ -132,13 +127,14 @@ fun ImmersiveHeroCarousel(
         modifier = modifier.fillMaxWidth(),
     ) {
         Box {
-            HorizontalUncontainedCarousel(
-                state = carouselState,
-                itemWidth = itemWidth,
-                itemSpacing = pageSpacing,
+            HorizontalPager(
+                state = pagerState,
+                key = { optimizedItems[it].id },
+                pageSpacing = pageSpacing,
                 contentPadding = PaddingValues(0.dp),
-                flingBehavior = CarouselDefaults.singleAdvanceFlingBehavior(state = carouselState),
-                modifier = Modifier.height(heroHeight),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(heroHeight),
             ) { index ->
                 // ✅ Performance: Use optimized items list
                 val item = optimizedItems[index]
