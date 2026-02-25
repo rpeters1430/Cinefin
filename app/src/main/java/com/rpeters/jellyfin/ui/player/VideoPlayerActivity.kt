@@ -16,6 +16,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Rational
 import android.view.WindowManager
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
@@ -131,6 +132,7 @@ class VideoPlayerActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        onBackPressedDispatcher.addCallback(this, backPressedCallback)
 
         try {
             // Set up full screen mode and allow sensor-based orientation
@@ -265,23 +267,25 @@ class VideoPlayerActivity : FragmentActivity() {
         return packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        val playerState = playerViewModel.playerState.value
-        if (playerState.showCastDialog) {
-            // Close cast dialog instead of navigating back
-            playerViewModel.hideCastDialog()
-            return
-        }
+    private val backPressedCallback = object : OnBackPressedCallback(true) {
+        override fun handleOnBackPressed() {
+            val playerState = playerViewModel.playerState.value
+            if (playerState.showCastDialog) {
+                // Close cast dialog instead of navigating back
+                playerViewModel.hideCastDialog()
+                return
+            }
 
-        // Release player immediately without blocking navigation.
-        // Network progress reporting is handled asynchronously by PlaybackProgressManager.
-        if (!isPlayerReleased) {
-            isPlayerReleased = true
-            playerViewModel.releasePlayerImmediate()
+            // Release player immediately without blocking navigation.
+            // Network progress reporting is handled asynchronously by PlaybackProgressManager.
+            if (!isPlayerReleased) {
+                isPlayerReleased = true
+                playerViewModel.releasePlayerImmediate()
+            }
+            // Disable this callback and dispatch back to finish the activity
+            isEnabled = false
+            onBackPressedDispatcher.onBackPressed()
         }
-        @Suppress("DEPRECATION")
-        super.onBackPressed()
     }
 
     override fun onResume() {
