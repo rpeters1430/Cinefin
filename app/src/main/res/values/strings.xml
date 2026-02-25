@@ -58,6 +58,7 @@
     <string name="error_loading_episodes">Error loading episodes</string>
     <string name="error_loading_tv_show">Error loading TV show</string>
     <string name="error">Error</string>
+    <string name="library_error_loading_title">Error Loading Library</string>
     <string name="error_loading_data">Error loading data</string>
     <string name="unknown_error">An unknown error occurred</string>
     <string name="no_data_available">No data available</string>
@@ -296,6 +297,7 @@
     <string name="quick_connect_waiting">Waiting for approval…</string>
     <string name="quick_connect_get_code">Get Quick Connect Code</string>
     <string name="quick_connect_help">To use Quick Connect:\n1. Enter your server URL above\n2. Click %1$s\n3. Go to your Jellyfin server dashboard\n4. Navigate to Users &gt; Quick Connect\n5. Enter the code shown above</string>
+    <string name="quick_connect_not_enabled">Quick Connect is not enabled on this server. Enable it in Jellyfin Dashboard settings and try again.</string>
     
     <!-- Logging and Debug Messages -->
     <string name="no_access_token_available">No access token available</string>

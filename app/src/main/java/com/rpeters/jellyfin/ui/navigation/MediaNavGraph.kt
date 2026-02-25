@@ -12,7 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.rpeters.jellyfin.ui.screens.AudioQueueScreen
 import com.rpeters.jellyfin.ui.screens.BooksScreen
-import com.rpeters.jellyfin.ui.screens.ImmersiveHomeVideosScreen
+import com.rpeters.jellyfin.ui.screens.ImmersiveHomeVideosScreenContainer
 import com.rpeters.jellyfin.ui.screens.ImmersiveMoviesScreenContainer
 import com.rpeters.jellyfin.ui.screens.ImmersiveTVShowDetailScreen
 import com.rpeters.jellyfin.ui.screens.ImmersiveTVShowsScreenContainer
@@ -38,10 +38,8 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
     composable(Screen.Movies.route) {
         // Use ImmersiveMoviesScreenContainer by default
         ImmersiveMoviesScreenContainer(
-            onMovieClick = { item ->
-                item.id.let { movieId ->
-                    navController.navigate(Screen.MovieDetail.createRoute(movieId.toString()))
-                }
+            onMovieClick = { movieId ->
+                navController.navigate(Screen.MovieDetail.createRoute(movieId))
             },
             onSearchClick = { navController.navigate(Screen.Search.route) },
             onBackClick = { navController.popBackStack() },
@@ -246,8 +244,8 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             }
         }
 
-        // Use ImmersiveHomeVideosScreen by default
-        ImmersiveHomeVideosScreen(
+        // Use ImmersiveHomeVideosScreenContainer by default
+        ImmersiveHomeVideosScreenContainer(
             onBackClick = { navController.popBackStack() },
             onItemClick = { id ->
                 val item = appState.itemsByLibrary.values.flatten()
