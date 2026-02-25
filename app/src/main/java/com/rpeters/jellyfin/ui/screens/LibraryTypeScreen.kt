@@ -71,6 +71,7 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.CollectionType
 
 /**
  * Generic library screen used by multiple library types.
@@ -134,6 +135,26 @@ fun LibraryTypeScreen(
     val libraryItems = remember(libraryType, appState.itemsByLibrary) {
         viewModel.getLibraryTypeData(libraryType)
     }
+
+    val activeLibraryId = remember(libraryType, appState.libraries) {
+        val library = when (libraryType) {
+            LibraryType.MOVIES -> appState.libraries.firstOrNull { it.collectionType == CollectionType.MOVIES }
+            LibraryType.TV_SHOWS -> appState.libraries.firstOrNull { it.collectionType == CollectionType.TVSHOWS }
+            LibraryType.MUSIC -> appState.libraries.firstOrNull { it.collectionType == CollectionType.MUSIC }
+            LibraryType.STUFF -> appState.libraries.firstOrNull {
+                it.collectionType !in setOf(CollectionType.MOVIES, CollectionType.TVSHOWS, CollectionType.MUSIC)
+            } ?: appState.libraries.firstOrNull()
+        }
+
+        library?.id?.toString()
+    }
+
+    val paginationState = remember(activeLibraryId, appState.libraryPaginationState) {
+        activeLibraryId?.let { appState.libraryPaginationState[it] }
+    }
+
+    val isLoadingMore = paginationState?.isLoadingMore == true
+    val hasMoreItems = paginationState?.hasMore == true
 
     val displayItems = remember(libraryItems, selectedFilter) {
         applyFilter(libraryItems, selectedFilter)
@@ -237,9 +258,11 @@ fun LibraryTypeScreen(
                             onTVShowClick = onTVShowClick,
                             onItemLongPress = handleItemLongPress,
                             gridState = gridState,
-                            isLoadingMore = appState.isLoadingMore,
-                            hasMoreItems = appState.hasMoreItems,
-                            onLoadMore = { viewModel.loadMoreItems() },
+                            isLoadingMore = isLoadingMore,
+                            hasMoreItems = hasMoreItems,
+                            onLoadMore = {
+                                activeLibraryId?.let { viewModel.loadMoreLibraryItems(it) }
+                            },
                         )
                         ViewMode.LIST -> ListContent(
                             items = displayItems,
@@ -249,9 +272,11 @@ fun LibraryTypeScreen(
                             onTVShowClick = onTVShowClick,
                             onItemLongPress = handleItemLongPress,
                             listState = listState,
-                            isLoadingMore = appState.isLoadingMore,
-                            hasMoreItems = appState.hasMoreItems,
-                            onLoadMore = { viewModel.loadMoreItems() },
+                            isLoadingMore = isLoadingMore,
+                            hasMoreItems = hasMoreItems,
+                            onLoadMore = {
+                                activeLibraryId?.let { viewModel.loadMoreLibraryItems(it) }
+                            },
                         )
                         ViewMode.CAROUSEL -> CarouselContent(
                             items = displayItems,
