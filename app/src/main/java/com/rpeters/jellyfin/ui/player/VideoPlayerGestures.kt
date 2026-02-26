@@ -20,7 +20,7 @@ object VideoPlayerGestureConstants {
  * Modifier extension to handle video player gestures (tap, double-tap, vertical drag).
  */
 fun Modifier.videoPlayerGestures(
-    onTap: () -> Unit,
+    onTap: (isCenterTap: Boolean) -> Unit,
     onDoubleTap: (isRightSide: Boolean) -> Unit,
     onVerticalDrag: (isLeftSide: Boolean, deltaY: Float) -> Unit,
 ): Modifier = this
@@ -32,7 +32,10 @@ fun Modifier.videoPlayerGestures(
                 if (currentTime - lastTapTime <= VideoPlayerGestureConstants.DOUBLE_TAP_THRESHOLD_MS) {
                     onDoubleTap(offset.x > size.width / 2)
                 } else {
-                    onTap()
+                    val isCenterTap =
+                        offset.x in (size.width * 0.33f)..(size.width * 0.67f) &&
+                            offset.y in (size.height * 0.33f)..(size.height * 0.67f)
+                    onTap(isCenterTap)
                 }
                 lastTapTime = currentTime
             },
