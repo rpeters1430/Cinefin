@@ -169,7 +169,16 @@ fun VideoPlayerScreen(
             .fillMaxSize()
             .background(playerColors.background)
             .videoPlayerGestures(
-                onTap = { controlsVisible = !controlsVisible },
+                onTap = { isCenterTap ->
+                    if (isCenterTap) {
+                        onPlayPause()
+                        seekFeedbackIcon = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow
+                        seekFeedbackText = if (playerState.isPlaying) "Pause" else "Play"
+                        showFeedback()
+                    } else {
+                        controlsVisible = !controlsVisible
+                    }
+                },
                 onDoubleTap = { isRightSide ->
                     val seekAmount = if (isRightSide) 10_000L else -10_000L
                     onSeek((currentPosMs + seekAmount).coerceIn(0L, playerState.duration))
