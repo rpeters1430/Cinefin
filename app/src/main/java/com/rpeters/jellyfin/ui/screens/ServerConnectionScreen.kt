@@ -137,6 +137,32 @@ fun ServerConnectionScreen(
         username = savedUsername
     }
 
+    val uiFlags by remember(
+        hasSavedPassword,
+        rememberLogin,
+        savedServerUrl,
+        savedUsername,
+        isBiometricAuthEnabled,
+        isBiometricAuthAvailable,
+        requireStrongBiometric,
+        isUsingWeakBiometric,
+    ) {
+        derivedStateOf {
+            LoginScreenUiFlags(
+                showAutoLoginCard = hasSavedPassword &&
+                    rememberLogin &&
+                    savedServerUrl.isNotBlank() &&
+                    savedUsername.isNotBlank(),
+                showBiometricSecurityNotice = isBiometricAuthEnabled &&
+                    (isBiometricAuthAvailable || requireStrongBiometric || isUsingWeakBiometric),
+                showSavedCredentialsHint = savedServerUrl.isNotBlank() &&
+                    savedUsername.isNotBlank() &&
+                    rememberLogin &&
+                    !hasSavedPassword,
+            )
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -161,12 +187,7 @@ fun ServerConnectionScreen(
         ) {
             LoginHeaderCard(modifier = Modifier.fillMaxWidth())
 
-            // Auto-login button if we have saved credentials
-            val showAutoLoginCard = hasSavedPassword &&
-                rememberLogin &&
-                savedServerUrl.isNotBlank() &&
-                savedUsername.isNotBlank()
-            if (showAutoLoginCard) {
+            if (uiFlags.showAutoLoginCard) {
                 AutoLoginCard(
                     savedServerUrl = savedServerUrl,
                     savedUsername = savedUsername,
@@ -180,29 +201,7 @@ fun ServerConnectionScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                // Expressive Divider
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    HorizontalDivider(
-                        modifier = Modifier.weight(1f),
-                        thickness = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    )
-                    Text(
-                        text = stringResource(id = R.string.login_or_divider),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.weight(1f),
-                        thickness = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    )
-                }
+                LoginOptionDivider(modifier = Modifier.fillMaxWidth())
             }
 
             LoginFormCard(
@@ -219,7 +218,7 @@ fun ServerConnectionScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            if (isBiometricAuthEnabled && (isBiometricAuthAvailable || requireStrongBiometric || isUsingWeakBiometric)) {
+            if (uiFlags.showBiometricSecurityNotice) {
                 BiometricSecurityNotice(
                     requireStrongBiometric = requireStrongBiometric,
                     isUsingWeakBiometric = isUsingWeakBiometric,
@@ -227,12 +226,7 @@ fun ServerConnectionScreen(
                 )
             }
 
-            // Show helper text when saved credentials are available but no password
-            val showSavedCredentialsHint = savedServerUrl.isNotBlank() &&
-                savedUsername.isNotBlank() &&
-                rememberLogin &&
-                !hasSavedPassword
-            if (showSavedCredentialsHint) {
+            if (uiFlags.showSavedCredentialsHint) {
                 SavedCredentialsHintCard(modifier = Modifier.fillMaxWidth())
             }
 
@@ -260,55 +254,99 @@ fun ServerConnectionScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Connect button - Expressive
-            ExpressiveFilledButton(
-                onClick = submitIfValid,
-                enabled = canSubmit && !connectionState.isConnecting,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp),
-                shape = ShapeTokens.ExtraLarge,
-            ) {
-                if (connectionState.isConnecting) {
-                    ExpressiveWavyCircularLoading(
-                        modifier = Modifier.size(28.dp),
-                        amplitude = 0.12f,
-                        wavelength = 20.dp,
-                        waveSpeed = 10.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        stringResource(id = R.string.connecting),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                } else {
-                    Text(
-                        stringResource(id = R.string.connect),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                }
-            }
-
-            // Quick Connect button - Expressive
-            ExpressiveOutlinedButton(
-                onClick = onQuickConnect,
-                enabled = !connectionState.isConnecting,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp),
-                shape = ShapeTokens.ExtraLarge,
-            ) {
-                Text(
-                    stringResource(id = R.string.quick_connect_title),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
+            LoginActionButtons(
+                isConnecting = connectionState.isConnecting,
+                canSubmit = canSubmit,
+                onConnect = submitIfValid,
+                onQuickConnect = onQuickConnect,
+            )
 
             Spacer(modifier = Modifier.height(48.dp))
         }
+    }
+}
+
+private data class LoginScreenUiFlags(
+    val showAutoLoginCard: Boolean,
+    val showBiometricSecurityNotice: Boolean,
+    val showSavedCredentialsHint: Boolean,
+)
+
+@Composable
+private fun LoginOptionDivider(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            thickness = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+        )
+        Text(
+            text = stringResource(id = R.string.login_or_divider),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            thickness = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+        )
+    }
+}
+
+@Composable
+private fun LoginActionButtons(
+    isConnecting: Boolean,
+    canSubmit: Boolean,
+    onConnect: () -> Unit,
+    onQuickConnect: () -> Unit,
+) {
+    ExpressiveFilledButton(
+        onClick = onConnect,
+        enabled = canSubmit && !isConnecting,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp),
+        shape = ShapeTokens.ExtraLarge,
+    ) {
+        if (isConnecting) {
+            ExpressiveWavyCircularLoading(
+                modifier = Modifier.size(28.dp),
+                amplitude = 0.12f,
+                wavelength = 20.dp,
+                waveSpeed = 10.dp,
+                color = MaterialTheme.colorScheme.onPrimary,
+                trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                stringResource(id = R.string.connecting),
+                style = MaterialTheme.typography.titleMedium,
+            )
+        } else {
+            Text(
+                stringResource(id = R.string.connect),
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+    }
+
+    ExpressiveOutlinedButton(
+        onClick = onQuickConnect,
+        enabled = !isConnecting,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp),
+        shape = ShapeTokens.ExtraLarge,
+    ) {
+        Text(
+            stringResource(id = R.string.quick_connect_title),
+            style = MaterialTheme.typography.titleMedium,
+        )
     }
 }
 
