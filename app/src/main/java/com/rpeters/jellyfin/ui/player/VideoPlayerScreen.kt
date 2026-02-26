@@ -173,7 +173,7 @@ fun VideoPlayerScreen(
                     if (isCenterTap) {
                         onPlayPause()
                         seekFeedbackIcon = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow
-                        seekFeedbackText = if (playerState.isPlaying) "Paused" else "Playing"
+                        seekFeedbackText = if (playerState.isPlaying) "Pause" else "Play"
                         showFeedback()
                     } else {
                         controlsVisible = !controlsVisible
