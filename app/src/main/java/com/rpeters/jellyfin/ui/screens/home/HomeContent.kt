@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
@@ -395,175 +396,195 @@ private fun TabletHomeLayout(
         // Continue Watching Grid
         if (contentLists.continueWatching.isNotEmpty()) {
             item(key = "continue_watching_header", contentType = "section_header") {
-                Text(
-                    text = "Continue Watching",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
+                SectionHeader(title = "Continue Watching")
             }
             item(key = "continue_watching_grid", contentType = "grid") {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(gridColumns),
-                    modifier = Modifier
-                        .height((200.dp * ((contentLists.continueWatching.size + gridColumns - 1) / gridColumns)))
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    userScrollEnabled = false,
-                ) {
-                    items(
-                        items = contentLists.continueWatching,
-                        key = { it.getItemKey() },
-                    ) { item ->
-                        PosterMediaCard(
-                            item = item,
-                            getImageUrl = { getSeriesImageUrl(item) ?: getImageUrl(item) },
-                            onClick = onItemClick,
-                            onLongPress = onItemLongPress,
-                        )
-                    }
-                }
+                NonScrollablePosterGrid(
+                    items = contentLists.continueWatching,
+                    columns = gridColumns,
+                    rows = calculateGridRows(itemCount = contentLists.continueWatching.size, columns = gridColumns),
+                    getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
+                    onItemClick = onItemClick,
+                    onItemLongPress = onItemLongPress,
+                )
             }
         }
 
         // Next Up Grid
         if (contentLists.recentEpisodes.isNotEmpty()) {
             item(key = "next_up_header", contentType = "section_header") {
-                Text(
-                    text = stringResource(id = R.string.home_next_up),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
+                SectionHeader(title = stringResource(id = R.string.home_next_up))
             }
             item(key = "next_up_grid", contentType = "grid") {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(gridColumns),
-                    modifier = Modifier
-                        .height((200.dp * ((contentLists.recentEpisodes.size.coerceAtMost(gridColumns * 2) + gridColumns - 1) / gridColumns)))
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    userScrollEnabled = false,
-                ) {
-                    items(
-                        items = contentLists.recentEpisodes.take(gridColumns * 2),
-                        key = { it.getItemKey() },
-                    ) { item ->
-                        PosterMediaCard(
-                            item = item,
-                            getImageUrl = { getSeriesImageUrl(item) ?: getImageUrl(item) },
-                            onClick = onItemClick,
-                            onLongPress = onItemLongPress,
-                        )
-                    }
-                }
+                val nextUpItems = contentLists.recentEpisodes.take(gridColumns * 2)
+                NonScrollablePosterGrid(
+                    items = nextUpItems,
+                    columns = gridColumns,
+                    rows = 2,
+                    getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
+                    onItemClick = onItemClick,
+                    onItemLongPress = onItemLongPress,
+                )
             }
         }
 
         // Recently Added Movies Row
         if (contentLists.recentMovies.isNotEmpty()) {
             item(key = "recent_movies_header", contentType = "section_header") {
-                Text(
-                    text = stringResource(id = R.string.home_recently_added_movies),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
+                SectionHeader(title = stringResource(id = R.string.home_recently_added_movies))
             }
             item(key = "recent_movies_row", contentType = "row") {
-                val rowState = rememberLazyListState()
-                LazyRow(
-                    state = rowState,
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(
-                        items = contentLists.recentMovies,
-                        key = { it.getItemKey() },
-                    ) { item ->
-                        PosterMediaCard(
-                            item = item,
-                            getImageUrl = getImageUrl,
-                            onClick = onItemClick,
-                            onLongPress = onItemLongPress,
-                            cardWidth = adaptiveConfig.posterCardWidth,
-                        )
-                    }
-                }
+                PosterCardRow(
+                    items = contentLists.recentMovies,
+                    getImageUrl = getImageUrl,
+                    onItemClick = onItemClick,
+                    onItemLongPress = onItemLongPress,
+                    cardWidth = adaptiveConfig.posterCardWidth,
+                )
             }
         }
 
         // Recently Added TV Shows Row
         if (contentLists.recentTVShows.isNotEmpty()) {
             item(key = "recent_tv_header", contentType = "section_header") {
-                Text(
-                    text = stringResource(id = R.string.home_recently_added_tv_shows),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
+                SectionHeader(title = stringResource(id = R.string.home_recently_added_tv_shows))
             }
             item(key = "recent_tv_row", contentType = "row") {
-                val rowState = rememberLazyListState()
-                LazyRow(
-                    state = rowState,
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(
-                        items = contentLists.recentTVShows,
-                        key = { it.getItemKey() },
-                    ) { item ->
-                        PosterMediaCard(
-                            item = item,
-                            getImageUrl = getImageUrl,
-                            onClick = onItemClick,
-                            onLongPress = onItemLongPress,
-                            cardWidth = adaptiveConfig.posterCardWidth,
-                        )
-                    }
-                }
+                PosterCardRow(
+                    items = contentLists.recentTVShows,
+                    getImageUrl = getImageUrl,
+                    onItemClick = onItemClick,
+                    onItemLongPress = onItemLongPress,
+                    cardWidth = adaptiveConfig.posterCardWidth,
+                )
             }
         }
 
         // Recently Added Videos (Horizontal cards row)
         if (contentLists.recentVideos.isNotEmpty()) {
             item(key = "recent_videos_header", contentType = "section_header") {
-                Text(
-                    text = stringResource(id = R.string.home_recently_added_stuff),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
+                SectionHeader(title = stringResource(id = R.string.home_recently_added_stuff))
             }
             item(key = "recent_videos_row", contentType = "row") {
-                val rowState = rememberLazyListState()
-                LazyRow(
-                    state = rowState,
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    items(
-                        items = contentLists.recentVideos,
-                        key = { it.getItemKey() },
-                    ) { item ->
-                        MediaCard(
-                            item = item,
-                            getImageUrl = { getBackdropUrl(item) ?: getImageUrl(item) },
-                            onClick = onItemClick,
-                            onLongPress = onItemLongPress,
-                            cardWidth = adaptiveConfig.mediaCardWidth,
-                        )
-                    }
-                }
+                MediaCardRow(
+                    items = contentLists.recentVideos,
+                    getImageUrl = { item -> getBackdropUrl(item) ?: getImageUrl(item) },
+                    onItemClick = onItemClick,
+                    onItemLongPress = onItemLongPress,
+                    cardWidth = adaptiveConfig.mediaCardWidth,
+                )
             }
         }
 
         item { Spacer(modifier = Modifier.height(80.dp)) }
     }
 }
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+    )
+}
+
+@Composable
+private fun NonScrollablePosterGrid(
+    items: List<BaseItemDto>,
+    columns: Int,
+    rows: Int,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    onItemLongPress: (BaseItemDto) -> Unit,
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(columns),
+        modifier = Modifier
+            .height(POSTER_GRID_ROW_HEIGHT * rows)
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        userScrollEnabled = false,
+    ) {
+        items(
+            items = items,
+            key = { it.getItemKey() },
+        ) { item ->
+            PosterMediaCard(
+                item = item,
+                getImageUrl = { getImageUrl(item) },
+                onClick = onItemClick,
+                onLongPress = onItemLongPress,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PosterCardRow(
+    items: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    onItemLongPress: (BaseItemDto) -> Unit,
+    cardWidth: Dp,
+) {
+    val rowState = rememberLazyListState()
+    LazyRow(
+        state = rowState,
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(
+            items = items,
+            key = { it.getItemKey() },
+        ) { item ->
+            PosterMediaCard(
+                item = item,
+                getImageUrl = getImageUrl,
+                onClick = onItemClick,
+                onLongPress = onItemLongPress,
+                cardWidth = cardWidth,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MediaCardRow(
+    items: List<BaseItemDto>,
+    getImageUrl: (BaseItemDto) -> String?,
+    onItemClick: (BaseItemDto) -> Unit,
+    onItemLongPress: (BaseItemDto) -> Unit,
+    cardWidth: Dp,
+) {
+    val rowState = rememberLazyListState()
+    LazyRow(
+        state = rowState,
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(
+            items = items,
+            key = { it.getItemKey() },
+        ) { item ->
+            MediaCard(
+                item = item,
+                getImageUrl = { getImageUrl(item) },
+                onClick = onItemClick,
+                onLongPress = onItemLongPress,
+                cardWidth = cardWidth,
+            )
+        }
+    }
+}
+
+private fun calculateGridRows(itemCount: Int, columns: Int): Int {
+    return (itemCount + columns - 1) / columns
+}
+
+private val POSTER_GRID_ROW_HEIGHT = 200.dp
 
 // Internal data structures and helper methods moved from HomeScreen.kt
 
