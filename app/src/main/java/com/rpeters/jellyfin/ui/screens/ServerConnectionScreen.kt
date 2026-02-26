@@ -41,11 +41,11 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,6 +63,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.net.Uri
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ConnectionPhase
@@ -104,8 +105,8 @@ fun ServerConnectionScreen(
     onContinueOffline: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    var serverUrl by remember { mutableStateOf(savedServerUrl) }
-    var username by remember { mutableStateOf(savedUsername) }
+    var serverUrl by rememberSaveable(savedServerUrl) { mutableStateOf(savedServerUrl) }
+    var username by rememberSaveable(savedUsername) { mutableStateOf(savedUsername) }
     val passwordState = rememberTextFieldState()
 
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -113,13 +114,23 @@ fun ServerConnectionScreen(
     val passwordText by remember {
         derivedStateOf { passwordState.text.toString() }
     }
+    val isServerUrlValid by remember(serverUrl) {
+        derivedStateOf { isValidServerUrl(serverUrl) }
+    }
     val canSubmit by remember {
-        derivedStateOf { serverUrl.isNotBlank() && username.isNotBlank() && passwordText.isNotBlank() }
+        derivedStateOf {
+            isServerUrlValid &&
+                username.isNotBlank() &&
+                passwordText.isNotBlank()
+        }
+    }
+    val showInvalidUrlError by remember(serverUrl, isServerUrlValid) {
+        derivedStateOf { serverUrl.isNotBlank() && !isServerUrlValid }
     }
     val submitIfValid: () -> Unit = {
         keyboardController?.hide()
         if (canSubmit) {
-            onConnect(serverUrl, username, passwordText)
+            onConnect(serverUrl.trim(), username.trim(), passwordText)
         }
     }
 
@@ -131,11 +142,6 @@ fun ServerConnectionScreen(
         )
     }
 
-    // Update local state when saved values change
-    LaunchedEffect(savedServerUrl, savedUsername) {
-        serverUrl = savedServerUrl
-        username = savedUsername
-    }
 
     val uiFlags by remember(
         hasSavedPassword,
@@ -215,6 +221,7 @@ fun ServerConnectionScreen(
                 focusRequester = focusRequester,
                 onRememberLoginChange = onRememberLoginChange,
                 onPasswordSubmit = submitIfValid,
+                showInvalidUrlError = showInvalidUrlError,
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -348,6 +355,17 @@ private fun LoginActionButtons(
             style = MaterialTheme.typography.titleMedium,
         )
     }
+}
+
+private fun isValidServerUrl(serverUrl: String): Boolean {
+    val normalizedUrl = serverUrl.trim()
+    if (normalizedUrl.isBlank()) {
+        return false
+    }
+
+    val uri = Uri.parse(normalizedUrl)
+    val scheme = uri.scheme?.lowercase()
+    return (scheme == "http" || scheme == "https") && !uri.host.isNullOrBlank()
 }
 
 @Composable
@@ -484,6 +502,7 @@ private fun LoginFormCard(
     focusRequester: FocusRequester,
     onRememberLoginChange: (Boolean) -> Unit,
     onPasswordSubmit: () -> Unit,
+    showInvalidUrlError: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -501,6 +520,12 @@ private fun LoginFormCard(
                 imeAction = ImeAction.Next,
             ),
             singleLine = true,
+            isError = showInvalidUrlError,
+            supportingText = if (showInvalidUrlError) {
+                { Text(stringResource(id = R.string.invalid_server_url)) }
+            } else {
+                null
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .focusRequester(focusRequester),
@@ -751,7 +776,7 @@ private fun BiometricSecurityNotice(
             elevation = CardDefaults.elevatedCardElevation(
                 defaultElevation = 0.dp,
             ),
-            shape = MaterialTheme.shapes.large,
+            shape = ShapeTokens.ExtraLarge,
             modifier = modifier.fillMaxWidth(),
         ) {
             Row(
@@ -791,7 +816,7 @@ private fun BiometricSecurityNotice(
             elevation = CardDefaults.elevatedCardElevation(
                 defaultElevation = 0.dp,
             ),
-            shape = MaterialTheme.shapes.extraLarge,
+            shape = ShapeTokens.ExtraLarge,
             modifier = modifier.fillMaxWidth(),
         ) {
             Column(
@@ -955,7 +980,7 @@ fun QuickConnectScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !connectionState.isConnecting && !isPolling,
-                shape = MaterialTheme.shapes.large,
+                shape = ShapeTokens.ExtraLarge,
             )
 
             // Status message
@@ -971,7 +996,7 @@ fun QuickConnectScreen(
                     elevation = CardDefaults.elevatedCardElevation(
                         defaultElevation = 0.dp,
                     ),
-                    shape = MaterialTheme.shapes.large,
+                    shape = ShapeTokens.ExtraLarge,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
@@ -997,7 +1022,7 @@ fun QuickConnectScreen(
                     elevation = CardDefaults.elevatedCardElevation(
                         defaultElevation = 0.dp,
                     ),
-                    shape = MaterialTheme.shapes.extraLarge,
+                    shape = ShapeTokens.ExtraLarge,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(
@@ -1039,7 +1064,7 @@ fun QuickConnectScreen(
                     elevation = CardDefaults.elevatedCardElevation(
                         defaultElevation = 2.dp,
                     ),
-                    shape = MaterialTheme.shapes.large,
+                    shape = ShapeTokens.ExtraLarge,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
@@ -1065,7 +1090,7 @@ fun QuickConnectScreen(
                     },
                     enabled = !connectionState.isConnecting && !isPolling && serverUrl.isNotBlank(),
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = MaterialTheme.shapes.large,
+                    shape = ShapeTokens.ExtraLarge,
                 ) {
                     if (connectionState.isConnecting) {
                         ExpressiveWavyCircularLoading(
@@ -1090,7 +1115,7 @@ fun QuickConnectScreen(
                     onClick = onCancel,
                     enabled = !connectionState.isConnecting,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = MaterialTheme.shapes.large,
+                    shape = ShapeTokens.ExtraLarge,
                 ) {
                     Text(stringResource(id = R.string.cancel))
                 }
