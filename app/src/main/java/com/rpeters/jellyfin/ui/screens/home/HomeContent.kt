@@ -402,7 +402,7 @@ private fun TabletHomeLayout(
                 NonScrollablePosterGrid(
                     items = contentLists.continueWatching,
                     columns = gridColumns,
-                    rows = calculateGridRows(itemCount = contentLists.continueWatching.size, columns = gridColumns),
+                    rows = calculateRequiredRows(itemCount = contentLists.continueWatching.size, columns = gridColumns),
                     getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
                     onItemClick = onItemClick,
                     onItemLongPress = onItemLongPress,
@@ -416,11 +416,11 @@ private fun TabletHomeLayout(
                 SectionHeader(title = stringResource(id = R.string.home_next_up))
             }
             item(key = "next_up_grid", contentType = "grid") {
-                val nextUpItems = contentLists.recentEpisodes.take(gridColumns * 2)
+                val nextUpItems = contentLists.recentEpisodes.take(gridColumns * MAX_NEXT_UP_ROWS)
                 NonScrollablePosterGrid(
                     items = nextUpItems,
                     columns = gridColumns,
-                    rows = 2,
+                    rows = MAX_NEXT_UP_ROWS,
                     getImageUrl = { item -> getSeriesImageUrl(item) ?: getImageUrl(item) },
                     onItemClick = onItemClick,
                     onItemLongPress = onItemLongPress,
@@ -480,6 +480,7 @@ private fun TabletHomeLayout(
     }
 }
 
+/** Renders a consistent section title for tablet home content blocks. */
 @Composable
 private fun SectionHeader(title: String) {
     Text(
@@ -490,6 +491,9 @@ private fun SectionHeader(title: String) {
     )
 }
 
+/**
+ * Shows a fixed-height poster grid inside the parent [LazyColumn] without nested scrolling.
+ */
 @Composable
 private fun NonScrollablePosterGrid(
     items: List<BaseItemDto>,
@@ -517,11 +521,15 @@ private fun NonScrollablePosterGrid(
                 getImageUrl = { getImageUrl(item) },
                 onClick = onItemClick,
                 onLongPress = onItemLongPress,
+                showTitle = true,
+                showMetadata = true,
+                titleMinLines = DEFAULT_POSTER_TITLE_MIN_LINES,
             )
         }
     }
 }
 
+/** Displays a horizontally scrollable row of poster cards with shared spacing and padding. */
 @Composable
 private fun PosterCardRow(
     items: List<BaseItemDto>,
@@ -545,12 +553,16 @@ private fun PosterCardRow(
                 getImageUrl = getImageUrl,
                 onClick = onItemClick,
                 onLongPress = onItemLongPress,
+                showTitle = true,
+                showMetadata = true,
+                titleMinLines = DEFAULT_POSTER_TITLE_MIN_LINES,
                 cardWidth = cardWidth,
             )
         }
     }
 }
 
+/** Displays a horizontally scrollable row of landscape media cards. */
 @Composable
 private fun MediaCardRow(
     items: List<BaseItemDto>,
@@ -580,10 +592,12 @@ private fun MediaCardRow(
     }
 }
 
-private fun calculateGridRows(itemCount: Int, columns: Int): Int {
+private fun calculateRequiredRows(itemCount: Int, columns: Int): Int {
     return (itemCount + columns - 1) / columns
 }
 
+private const val MAX_NEXT_UP_ROWS = 2
+private const val DEFAULT_POSTER_TITLE_MIN_LINES = 2
 private val POSTER_GRID_ROW_HEIGHT = 200.dp
 
 // Internal data structures and helper methods moved from HomeScreen.kt
