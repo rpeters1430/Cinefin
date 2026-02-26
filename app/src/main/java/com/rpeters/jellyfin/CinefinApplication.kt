@@ -28,7 +28,7 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltAndroidApp
-class JellyfinApplication : Application(), SingletonImageLoader.Factory, Configuration.Provider {
+class CinefinApplication : Application(), SingletonImageLoader.Factory, Configuration.Provider {
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
@@ -57,7 +57,7 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory, Configu
     private var lastAuthRecoveryAttemptMs = 0L
 
     companion object {
-        private const val TAG = "JellyfinApplication"
+        private const val TAG = "CinefinApplication"
         private const val AUTH_RECOVERY_COOLDOWN_MS = 30_000L
     }
 
@@ -182,7 +182,7 @@ class JellyfinApplication : Application(), SingletonImageLoader.Factory, Configu
         applicationScope.launch {
             try {
                 // Initialize network optimizations off the main thread
-                NetworkOptimizer.initialize(this@JellyfinApplication)
+                NetworkOptimizer.initialize(this@CinefinApplication)
 
                 // Configure StrictMode on the main thread to ensure it applies correctly
                 withContext(Dispatchers.Main) {

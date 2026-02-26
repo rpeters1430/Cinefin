@@ -44,9 +44,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.FeatureFlags
+import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
+import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
+import com.rpeters.jellyfin.ui.theme.ShapeTokens
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
 import com.rpeters.jellyfin.ui.viewmodel.RemoteConfigViewModel
 
@@ -141,6 +144,10 @@ private fun SettingsScreenContent(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             item {
                 LibraryManagementCard(
                     enabled = enableManagementActions,
@@ -263,19 +270,27 @@ private fun LibraryManagementCard(
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SettingsSectionCard(modifier = modifier) {
-        Text(
-            text = stringResource(id = R.string.settings_library_management_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
-        )
-        ExpressiveSwitchListItem(
-            title = stringResource(id = R.string.settings_library_management_toggle),
-            subtitle = stringResource(id = R.string.settings_library_management_description),
-            checked = enabled,
-            onCheckedChange = onToggle,
-            leadingIcon = Icons.Default.Settings,
-        )
+    ExpressiveContentCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = ShapeTokens.Large,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(id = R.string.settings_library_management_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            ExpressiveSwitchListItem(
+                title = stringResource(id = R.string.settings_library_management_toggle),
+                subtitle = stringResource(id = R.string.settings_library_management_description),
+                checked = enabled,
+                onCheckedChange = onToggle,
+                leadingIcon = Icons.Default.Settings,
+            )
+        }
     }
 }
 
@@ -284,61 +299,31 @@ private fun PinningManagementCard(
     onManagePinsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SettingsSectionContainer(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = stringResource(id = R.string.settings_pinning_title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = stringResource(id = R.string.settings_pinning_description),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Button(
-            onClick = onManagePinsClick,
-            modifier = Modifier.fillMaxWidth(),
+    ExpressiveContentCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = ShapeTokens.Large,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(text = stringResource(id = R.string.settings_pinning_manage))
+            Text(
+                text = stringResource(id = R.string.settings_pinning_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(id = R.string.settings_pinning_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            ExpressiveFilledButton(
+                onClick = onManagePinsClick,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(text = stringResource(id = R.string.settings_pinning_manage))
+            }
         }
-    }
-}
-
-@Composable
-private fun SettingsSectionContainer(
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 4.dp,
-        shape = MaterialTheme.shapes.large,
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            content = content,
-        )
-    }
-}
-
-@Composable
-private fun SettingsSectionCard(
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = MaterialTheme.shapes.large,
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            content = content,
-        )
     }
 }
 

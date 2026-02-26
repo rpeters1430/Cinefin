@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -138,11 +139,10 @@ fun ProfileScreen(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_launcher_fg),
+                Image(
+                    painter = painterResource(id = R.drawable.app_logo),
                     contentDescription = stringResource(id = R.string.app_name),
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(72.dp),
+                    modifier = Modifier.size(80.dp),
                 )
             }
 

@@ -9,6 +9,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -470,6 +471,65 @@ fun ExpressiveCompactCard(
             trailingContent?.invoke()
         }
     }
+}
+
+/**
+ * Material 3 Expressive Content Card for generic content like settings, widgets, and info blocks.
+ *
+ * @param onClick Optional click handler for the card
+ * @param modifier Optional modifier
+ * @param containerColor Background color of the card
+ * @param contentColor Content color for the card
+ * @param shape Card shape
+ * @param elevation Card elevation
+ * @param content Card content
+ */
+@Composable
+fun ExpressiveContentCard(
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp),
+    elevation: androidx.compose.material3.CardElevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed && onClick != null) 0.98f else 1.0f,
+        animationSpec = MotionTokens.expressiveEnter,
+        label = "content_card_scale",
+    )
+
+    val interactionSource = remember { MutableInteractionSource() }
+    val isInteractionPressed by interactionSource.collectIsPressedAsState()
+
+    LaunchedEffect(isInteractionPressed) {
+        isPressed = isInteractionPressed
+    }
+
+    ElevatedCard(
+        modifier = modifier
+            .scale(scale)
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = onClick,
+                    )
+                } else {
+                    Modifier
+                },
+            ),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = containerColor,
+            contentColor = contentColor,
+        ),
+        elevation = elevation,
+        shape = shape,
+        content = content,
+    )
 }
 
 enum class ExpressiveCardType {

@@ -128,15 +128,18 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideJellyfinSdk(@ApplicationContext context: Context): Jellyfin {
+    fun provideJellyfinSdk(
+        @ApplicationContext context: Context,
+        deviceIdentityProvider: DeviceIdentityProvider,
+    ): Jellyfin {
         return createJellyfin {
             clientInfo = ClientInfo(
-                name = "Cinefin Android",
-                version = "1.0.0",
+                name = deviceIdentityProvider.clientName(),
+                version = deviceIdentityProvider.clientVersion(),
             )
             deviceInfo = DeviceInfo(
-                id = "android-jellyfin-client",
-                name = "Android Device",
+                id = deviceIdentityProvider.deviceId(),
+                name = deviceIdentityProvider.deviceName(),
             )
             this.context = context
         }

@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -320,18 +321,17 @@ private fun LoginHeaderCard(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // App logo - wrapped in an expressive surface
+        // App logo - actual branding
         androidx.compose.material3.Surface(
             shape = ShapeTokens.ExtraLarge,
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-            modifier = Modifier.size(120.dp),
+            color = Color.Transparent, // Logo already has its own container
+            modifier = Modifier.size(160.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_launcher_fg),
+                Image(
+                    painter = painterResource(id = R.drawable.app_logo),
                     contentDescription = stringResource(id = R.string.app_name),
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(90.dp),
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
         }

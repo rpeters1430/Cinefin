@@ -176,6 +176,7 @@ fun ImmersiveHomeScreen(
                     onItemClick = onItemClick,
                     onItemLongPress = handleItemLongPress,
                     onLibraryClick = onLibraryClick,
+                    onGenerateViewingMood = onGenerateViewingMood,
                     listState = listState,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -269,6 +270,7 @@ private fun ImmersiveHomeContent(
     onItemClick: (BaseItemDto) -> Unit = {},
     onItemLongPress: (BaseItemDto) -> Unit = {},
     onLibraryClick: (BaseItemDto) -> Unit = {},
+    onGenerateViewingMood: () -> Unit = {},
     listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
@@ -389,6 +391,7 @@ private fun ImmersiveHomeContent(
                 item(key = "viewing_mood", contentType = "ai_widget") {
                     ViewingMoodWidget(
                         viewingMood = viewingMood,
+                        onMoodClick = onGenerateViewingMood,
                         modifier = Modifier
                             .padding(horizontal = ImmersiveDimens.SpacingContentPadding)
                             .padding(top = ImmersiveDimens.SpacingRowTight),
@@ -475,15 +478,16 @@ private fun ImmersiveHomeContent(
 @Composable
 private fun ViewingMoodWidget(
     viewingMood: String,
+    onMoodClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    ElevatedCard(
+    ExpressiveContentCard(
+        onClick = onMoodClick,
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = Dimens.Spacing8),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-        ),
+        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
     ) {
         Row(
             modifier = Modifier.padding(ImmersiveDimens.SpacingContentPadding),

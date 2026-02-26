@@ -39,10 +39,13 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Sd
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Forward10
+import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearWavyProgressIndicator
@@ -53,6 +56,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import com.rpeters.jellyfin.ui.components.ExpressiveSelectableMenuItem
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -311,8 +315,7 @@ private fun ExpressiveBottomControls(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
-                // Progress bar row (full width) — kept on its own row so it never gets
-                // squeezed by the action buttons, even in portrait/vertical-video mode.
+                // Progress bar row (full width)
                 if (playerState.duration > 0) {
                     var sliderPosition by remember { mutableFloatStateOf(0f) }
                     var isDragging by remember { mutableStateOf(false) }
@@ -324,44 +327,24 @@ private fun ExpressiveBottomControls(
                         }
                     }
 
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        // Buffer indicator (background layer) - subtle and less prominent
-                        val bufferedProgress = (playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()).coerceIn(0f, 1f)
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(bufferedProgress)
-                                .height(4.dp)
-                                .align(Alignment.CenterStart)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)),
-                        )
-
-                        // Main progress slider (foreground layer)
-                        Slider(
-                            value = sliderPosition,
-                            onValueChange = { progress ->
-                                sliderPosition = progress
-                                isDragging = true
-                            },
-                            onValueChangeFinished = {
-                                val newPosition =
-                                    (sliderPosition * playerState.duration).toLong()
-                                onSeek(newPosition)
-                                isDragging = false
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = SliderDefaults.colors(
-                                thumbColor = MaterialTheme.colorScheme.primary,
-                                activeTrackColor = MaterialTheme.colorScheme.primary,
-                                inactiveTrackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f),
-                            ),
-                        )
-                    }
+                    ExpressiveWavySlider(
+                        progress = sliderPosition,
+                        bufferedProgress = (playerState.bufferedPosition.toFloat() / playerState.duration.toFloat()).coerceIn(0f, 1f),
+                        onValueChange = { progress ->
+                            sliderPosition = progress
+                            isDragging = true
+                        },
+                        onValueChangeFinished = {
+                            val newPosition = (sliderPosition * playerState.duration).toLong()
+                            onSeek(newPosition)
+                            isDragging = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
 
                     // Time indicators directly below the progress bar
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(
@@ -379,7 +362,7 @@ private fun ExpressiveBottomControls(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
                 // Play/Pause and action buttons row
@@ -388,16 +371,36 @@ private fun ExpressiveBottomControls(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    // Play/Pause button (left side)
-                    AnimatedContent(
-                        targetState = playerState.isPlaying,
-                        label = "play_pause_button",
-                    ) { playing ->
-                        ExpressivePlayButton(
-                            icon = if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (playing) "Pause" else "Play",
-                            onClick = onPlayPause,
-                            isLoading = playerState.isLoading,
+                    // Left side: Play/Pause and Skip buttons
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        // Play/Pause button
+                        AnimatedContent(
+                            targetState = playerState.isPlaying,
+                            label = "play_pause_button",
+                        ) { playing ->
+                            ExpressivePlayButton(
+                                icon = if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = if (playing) "Pause" else "Play",
+                                onClick = onPlayPause,
+                                isLoading = playerState.isLoading,
+                            )
+                        }
+
+                        // Skip Backward 10s
+                        ExpressiveIconButton(
+                            icon = Icons.Default.Replay10,
+                            contentDescription = "Skip Backward 10s",
+                            onClick = { onSeek((playerState.currentPosition - 10000L).coerceAtLeast(0L)) },
+                        )
+
+                        // Skip Forward 10s
+                        ExpressiveIconButton(
+                            icon = Icons.Default.Forward10,
+                            contentDescription = "Skip Forward 10s",
+                            onClick = { onSeek((playerState.currentPosition + 10000L).coerceAtMost(playerState.duration)) },
                         )
                     }
 
@@ -419,17 +422,19 @@ private fun ExpressiveBottomControls(
                                 expanded = showAspectRatioMenu,
                                 onDismissRequest = { showAspectRatioMenu = false },
                             ) {
+                                Text(
+                                    text = "Aspect Ratio",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                )
                                 playerState.availableAspectRatios.forEach { mode ->
-                                    DropdownMenuItem(
-                                        text = { Text(mode.label) },
-                                        onClick = {
+                                    ExpressiveSelectableMenuItem(
+                                        text = mode.label,
+                                        selected = mode == playerState.selectedAspectRatio,
+                                        onSelectedChange = {
                                             onAspectRatioChange(mode)
                                             showAspectRatioMenu = false
-                                        },
-                                        leadingIcon = {
-                                            if (mode == playerState.selectedAspectRatio) {
-                                                Icon(Icons.Default.Check, contentDescription = null)
-                                            }
                                         },
                                     )
                                 }
@@ -449,17 +454,19 @@ private fun ExpressiveBottomControls(
                                 expanded = showSpeedMenu,
                                 onDismissRequest = { showSpeedMenu = false },
                             ) {
+                                Text(
+                                    text = "Playback Speed",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                )
                                 listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f).forEach { speed ->
-                                    DropdownMenuItem(
-                                        text = { Text("${speed}x") },
-                                        onClick = {
+                                    ExpressiveSelectableMenuItem(
+                                        text = "${speed}x",
+                                        selected = speed == playerState.playbackSpeed,
+                                        onSelectedChange = {
                                             onPlaybackSpeedChange(speed)
                                             showSpeedMenu = false
-                                        },
-                                        leadingIcon = {
-                                            if (speed == playerState.playbackSpeed) {
-                                                Icon(Icons.Default.Check, contentDescription = null)
-                                            }
                                         },
                                     )
                                 }
@@ -487,7 +494,7 @@ private fun ExpressiveBottomControls(
                             onClick = onSubtitlesClick,
                         )
 
-                        // PiP button replaces the non-functional fullscreen button
+                        // PiP button
                         if (supportsPip) {
                             ExpressiveIconButton(
                                 icon = Icons.Default.PictureInPictureAlt,
@@ -499,6 +506,71 @@ private fun ExpressiveBottomControls(
                 }
             }
         }
+    }
+}
+
+/**
+ * Custom Wavy Slider for an expressive video playback experience.
+ * Combines LinearWavyProgressIndicator for the track with a standard Slider for interaction.
+ */
+@Composable
+private fun ExpressiveWavySlider(
+    progress: Float,
+    bufferedProgress: Float,
+    onValueChange: (Float) -> Unit,
+    onValueChangeFinished: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .height(44.dp)
+            .fillMaxWidth(),
+        contentAlignment = Alignment.Center,
+    ) {
+        // Track Background
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)),
+        )
+
+        // Buffer Indicator
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(bufferedProgress)
+                .height(4.dp)
+                .align(Alignment.CenterStart)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)),
+        )
+
+        // Wavy Progress Track
+        LinearWavyProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(12.dp),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = Color.Transparent,
+            amplitude = { 0.2f },
+            wavelength = 40.dp,
+            waveSpeed = 20.dp,
+        )
+
+        // Invisible slider for interaction
+        Slider(
+            value = progress,
+            onValueChange = onValueChange,
+            onValueChangeFinished = onValueChangeFinished,
+            modifier = Modifier.fillMaxWidth(),
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = Color.Transparent,
+                inactiveTrackColor = Color.Transparent,
+            ),
+        )
     }
 }
 
@@ -571,7 +643,7 @@ internal fun ExpressivePlayButton(
     FilledIconButton(
         onClick = onClick,
         modifier = modifier
-            .size(48.dp) // Smaller than the original main button
+            .size(64.dp)
             .scale(scale),
         colors = IconButtonDefaults.filledIconButtonColors(
             containerColor = MaterialTheme.colorScheme.primary,
@@ -584,7 +656,7 @@ internal fun ExpressivePlayButton(
         ) { loading ->
             if (loading) {
                 CircularWavyProgressIndicator(
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(40.dp),
                     color = MaterialTheme.colorScheme.onPrimary,
                     amplitude = 0.15f,
                     wavelength = 24.dp,
@@ -593,7 +665,7 @@ internal fun ExpressivePlayButton(
                 Icon(
                     imageVector = icon,
                     contentDescription = contentDescription,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(32.dp),
                 )
             }
         }

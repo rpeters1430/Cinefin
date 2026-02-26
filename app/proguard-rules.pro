@@ -261,7 +261,7 @@
 # APPLICATION SPECIFIC
 # ================================
 # Keep Application class
--keep class com.rpeters.jellyfin.JellyfinApplication { *; }
+-keep class com.rpeters.jellyfin.CinefinApplication { *; }
 
 # Keep main activity
 -keep class com.rpeters.jellyfin.MainActivity { *; }
