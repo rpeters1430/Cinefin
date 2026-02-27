@@ -2,16 +2,20 @@ package com.rpeters.jellyfin.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Accessibility
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ClosedCaption
@@ -22,21 +26,21 @@ import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -44,10 +48,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.FeatureFlags
+import com.rpeters.jellyfin.data.JellyfinServer
+import com.rpeters.jellyfin.data.model.CurrentUserDetails
 import com.rpeters.jellyfin.ui.components.ExpressiveContentCard
 import com.rpeters.jellyfin.ui.components.ExpressiveFilledButton
 import com.rpeters.jellyfin.ui.components.ExpressiveMediaListItem
 import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
+import com.rpeters.jellyfin.ui.components.MiniPlayer
+import com.rpeters.jellyfin.ui.image.AvatarImage
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
 import com.rpeters.jellyfin.ui.theme.ShapeTokens
 import com.rpeters.jellyfin.ui.viewmodel.LibraryActionsPreferencesViewModel
@@ -58,6 +66,11 @@ import com.rpeters.jellyfin.ui.viewmodel.RemoteConfigViewModel
 fun SettingsScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    currentServer: JellyfinServer? = null,
+    currentUser: CurrentUserDetails? = null,
+    userAvatarUrl: String? = null,
+    onLogout: () -> Unit = {},
+    onNowPlayingClick: () -> Unit = {},
     onManagePinsClick: () -> Unit = {},
     onSubtitleSettingsClick: () -> Unit = {},
     onPrivacyPolicyClick: () -> Unit = {},
@@ -80,6 +93,11 @@ fun SettingsScreen(
         onToggleManagementActions = libraryActionsPreferencesViewModel::setManagementActionsEnabled,
         onBackClick = onBackClick,
         modifier = modifier,
+        currentServer = currentServer,
+        currentUser = currentUser,
+        userAvatarUrl = userAvatarUrl,
+        onLogout = onLogout,
+        onNowPlayingClick = onNowPlayingClick,
         onManagePinsClick = onManagePinsClick,
         onSubtitleSettingsClick = onSubtitleSettingsClick,
         onPrivacyPolicyClick = onPrivacyPolicyClick,
@@ -102,6 +120,11 @@ private fun SettingsScreenContent(
     onToggleManagementActions: (Boolean) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    currentServer: JellyfinServer? = null,
+    currentUser: CurrentUserDetails? = null,
+    userAvatarUrl: String? = null,
+    onLogout: () -> Unit = {},
+    onNowPlayingClick: () -> Unit = {},
     onManagePinsClick: () -> Unit = {},
     onSubtitleSettingsClick: () -> Unit = {},
     onPrivacyPolicyClick: () -> Unit = {},
@@ -135,6 +158,9 @@ private fun SettingsScreenContent(
                 ),
             )
         },
+        bottomBar = {
+            MiniPlayer(onExpandClick = onNowPlayingClick)
+        },
         modifier = modifier,
     ) { paddingValues ->
         LazyColumn(
@@ -146,6 +172,17 @@ private fun SettingsScreenContent(
         ) {
             item {
                 Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (currentUser != null || currentServer != null) {
+                item {
+                    AccountCard(
+                        currentUser = currentUser,
+                        userAvatarUrl = userAvatarUrl,
+                        currentServer = currentServer,
+                        onLogout = onLogout,
+                    )
+                }
             }
 
             item {
@@ -337,6 +374,80 @@ private fun SettingsScreenPreview() {
             onToggleManagementActions = {},
             onBackClick = {},
         )
+    }
+}
+
+@Composable
+private fun AccountCard(
+    currentUser: CurrentUserDetails?,
+    userAvatarUrl: String?,
+    currentServer: JellyfinServer?,
+    onLogout: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val displayName = currentUser?.name?.takeIf(String::isNotBlank) ?: stringResource(R.string.default_username)
+    ExpressiveContentCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = ShapeTokens.Large,
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (userAvatarUrl != null) {
+                AvatarImage(
+                    imageUrl = userAvatarUrl,
+                    userName = displayName,
+                    modifier = Modifier.size(48.dp),
+                    size = 48.dp,
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.AccountBox,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (currentServer != null) {
+                    Text(
+                        text = currentServer.name,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Button(
+                onClick = onLogout,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                ),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = stringResource(id = R.string.sign_out))
+            }
+        }
     }
 }
 

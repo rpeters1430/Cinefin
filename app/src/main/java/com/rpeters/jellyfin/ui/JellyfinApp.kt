@@ -1,15 +1,9 @@
 package com.rpeters.jellyfin.ui
 
-import android.Manifest
 import android.app.Activity
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.core.content.ContextCompat
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material.icons.filled.Menu
@@ -309,7 +303,7 @@ private fun shouldShowNavigation(destination: NavDestination?): Boolean {
         Screen.Library.route,
         Screen.Search.route,
         Screen.Favorites.route,
-        Screen.Profile.route,
+        Screen.Settings.route,
         -> true
         else -> false
     }

@@ -202,8 +202,37 @@ fun androidx.navigation.NavGraphBuilder.profileNavGraph(
     }
 
     composable(Screen.Settings.route) {
+        val viewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<MainAppViewModel>()
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val currentServer by viewModel.currentServer.collectAsStateWithLifecycle(
+            lifecycle = lifecycleOwner.lifecycle,
+            initialValue = null,
+        )
+        val appState by viewModel.appState.collectAsStateWithLifecycle(
+            lifecycle = lifecycleOwner.lifecycle,
+            minActiveState = Lifecycle.State.STARTED,
+        )
+
+        LaunchedEffect(Unit) {
+            viewModel.loadCurrentUser()
+        }
+
         SettingsScreen(
             onBackClick = { navController.popBackStack() },
+            currentServer = currentServer,
+            currentUser = appState.currentUser,
+            userAvatarUrl = viewModel.getUserAvatarUrl(
+                currentServer?.userId,
+                appState.currentUser?.primaryImageTag,
+            ),
+            onLogout = {
+                viewModel.logout()
+                onLogout()
+                navController.navigate(Screen.ServerConnection.route) {
+                    popUpTo(0) { inclusive = true }
+                }
+            },
+            onNowPlayingClick = { navController.navigate(Screen.NowPlaying.route) },
             onManagePinsClick = { navController.navigate(Screen.PinSettings.route) },
             onSubtitleSettingsClick = { navController.navigate(Screen.SubtitleSettings.route) },
             onPrivacyPolicyClick = { navController.navigate(Screen.PrivacyPolicy.route) },
