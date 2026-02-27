@@ -24,12 +24,12 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import java.util.concurrent.CancellationException as FutureCancellationException
 import java.util.concurrent.ExecutionException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import java.util.concurrent.CancellationException as FutureCancellationException
 
 @UnstableApi
 @Singleton
