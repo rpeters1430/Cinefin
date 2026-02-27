@@ -2,7 +2,6 @@ package com.rpeters.jellyfin.ui.player.audio
 
 import android.content.ComponentName
 import android.content.Context
-import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -11,8 +10,10 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.rpeters.jellyfin.ui.player.PlaybackProgressManager
+import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -36,7 +37,13 @@ class AudioServiceConnection @Inject constructor(
     private val playbackProgressManager: PlaybackProgressManager,
 ) {
 
-    private val controllerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        if (throwable !is CancellationException) {
+            SecureLogger.e(TAG, "Unhandled exception in AudioServiceConnection scope", throwable)
+        }
+    }
+
+    private val controllerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate + exceptionHandler)
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var mediaController: MediaController? = null
     private var progressUpdateJob: Job? = null
@@ -218,7 +225,12 @@ class AudioServiceConnection @Inject constructor(
                 updatePlaybackState(controller)
                 updateQueue(controller)
                 controller
+            } catch (e: CancellationException) {
+                // Cancellation is normal during shutdown or navigation
+                controllerFuture = null
+                throw e
             } catch (exception: Exception) {
+                SecureLogger.e(TAG, "Failed to connect to AudioService", exception)
                 controllerFuture = null
                 throw exception
             }
@@ -246,8 +258,8 @@ class AudioServiceConnection @Inject constructor(
             try {
                 controller.removeListener(controllerListener)
                 controller.release()
-            } catch (e: CancellationException) {
-                throw e
+            } catch (e: Exception) {
+                SecureLogger.w(TAG, "Error releasing MediaController", e)
             }
         }
         mediaController = null
@@ -299,7 +311,7 @@ class AudioServiceConnection @Inject constructor(
         if (!itemId.isNullOrBlank()) {
             currentTrackingItemId = itemId
             playbackProgressManager.startTracking(itemId, controllerScope)
-            Log.d(TAG, "Started tracking audio progress for item: $itemId")
+            SecureLogger.d(TAG, "Started tracking audio progress for item: $itemId")
         } else {
             currentTrackingItemId = null
         }
@@ -359,10 +371,16 @@ private suspend fun <T> ListenableFuture<T>.await(context: Context): T =
                 try {
                     continuation.resume(get())
                 } catch (e: FutureCancellationException) {
-                    // Future cancellation is expected during shutdown/navigation. Do not crash.
-                    continuation.cancel(CancellationException("ListenableFuture was cancelled", e))
+                    // Future cancellation is expected during shutdown/navigation.
+                    // We call continuation.cancel(e) which is the correct way to propagate 
+                    // cancellation in coroutines. On JVM, FutureCancellationException 
+                    // is a CancellationException.
+                    continuation.cancel(e)
                 } catch (e: Exception) {
                     continuation.resumeWithException(e)
+                } catch (e: Throwable) {
+                    // Catch extra throwables to prevent crash in the listener runnable
+                    continuation.resumeWithException(RuntimeException(e))
                 }
             },
             ContextCompat.getMainExecutor(context),
