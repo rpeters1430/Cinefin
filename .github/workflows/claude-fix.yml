@@ -1,0 +1,118 @@
+name: Claude Fix
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude-fix:
+    # Only trigger on /fix or /claude-fix comments from repo owners/collaborators
+    if: |
+      github.event.sender.type == 'User' &&
+      (
+        startsWith(github.event.comment.body, '/fix') ||
+        startsWith(github.event.comment.body, '/claude-fix')
+      ) &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # Safety cap to prevent runaway costs
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Extract additional context from comment
+        id: extract_context
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.comment.body;
+            // Strip the /fix or /claude-fix command and get the rest as context
+            const context_text = body.replace(/^\/(claude-fix|fix)\s*/, '').trim();
+            core.setOutput('additional_context', context_text);
+
+      - name: Acknowledge request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.issue.number;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `🤖 On it! I'm working on a fix now. You can track progress [in the logs](${runUrl}).`
+            });
+
+      - name: Run Claude Fix
+        id: claude-fix
+        uses: anthropics/claude-code-action@v1
+        with:
+          # API key billing - separate from your Pro subscription
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          claude_args: |
+            --max-turns 20
+
+          direct_prompt: |
+            You are fixing an issue in the Cinefin Jellyfin Android client (Jetpack Compose + Material 3 + Kotlin MVVM).
+
+            ## Your Task
+
+            1. Read the current issue to understand what needs to be fixed
+            2. Explore the relevant source files to understand the existing code
+            3. Implement a focused, minimal fix
+            4. Create a pull request with your changes
+
+            ## Additional Context from User
+            ${{ steps.extract_context.outputs.additional_context }}
+
+            ## Cinefin Architecture (MUST follow)
+
+            - **MVVM**: ViewModels expose `StateFlow`, Compose UI collects with `collectAsStateWithLifecycle()`
+            - **Data layer**: All Jellyfin SDK calls through Repositories (`data/repository/`), never from ViewModels directly
+            - **Error handling**: Repositories return `ApiResult<T>` sealed class (Success/Error/Loading)
+            - **DI**: Hilt with constructor injection only — no field injection
+            - **Coroutines**: `viewModelScope` in ViewModels, `StandardTestDispatcher` in tests
+            - **Logging**: `SecureLogger` only — never `android.util.Log` or `println`
+            - **Security**: Auth via `Authorization` header, NEVER in URL parameters
+
+            ## Code Style
+            - Kotlin 2.3.x, JDK 21
+            - Compose BOM 2026.01.01, Material 3 Expressive
+            - Coil 3.x for images
+            - Media3 1.9.x for playback
+            - Jellyfin SDK 1.8.x
+            - 4-space indent, 120 char line limit
+            - Conventional Commits: `fix:`, `feat:`, `refactor:`, etc.
+
+            ## Key File Locations
+            - App entry: `app/src/main/java/com/rpeters/jellyfin/`
+            - Navigation: `ui/navigation/NavGraph.kt`
+            - Repositories: `data/repository/`
+            - ViewModels: `ui/viewmodel/`
+            - Screens: `ui/screens/`
+            - DI modules: `di/`
+            - Theme: `ui/theme/`
+
+            ## What to do
+            1. Read the issue body and comments to understand the problem
+            2. Use code search to find the relevant files
+            3. Read the affected files carefully before making changes
+            4. Make the minimal fix needed — don't refactor unrelated code
+            5. Add or update unit tests if the fix involves ViewModel or Repository logic
+            6. Create a branch named `fix/issue-{issue_number}-{short-description}`
+            7. Commit with a conventional commit message
+            8. Open a pull request that references the issue with "Fixes #{issue_number}"
+            9. Post a comment on the issue summarizing what was done and linking to the PR
+
+            If the issue is unclear or you need more information to fix it safely, post a comment asking for clarification instead of guessing.
