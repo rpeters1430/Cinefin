@@ -123,9 +123,13 @@
         </provider>
 
         <!-- Required when workers call setForeground(ForegroundInfo(..., FOREGROUND_SERVICE_TYPE_DATA_SYNC)) -->
+        <!-- tools:node="merge" ensures the foregroundServiceType attribute is applied onto WorkManager's
+             own library manifest declaration of SystemForegroundService, preventing the
+             IllegalArgumentException: foregroundServiceType 0x00000001 is not a subset of 0x00000000 crash -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
     </application>
 
 </manifest>
