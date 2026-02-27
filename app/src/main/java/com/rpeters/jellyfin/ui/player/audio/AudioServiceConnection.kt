@@ -13,6 +13,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.rpeters.jellyfin.ui.player.PlaybackProgressManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.util.concurrent.CancellationException as FutureCancellationException
+import java.util.concurrent.ExecutionException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -36,7 +38,15 @@ class AudioServiceConnection @Inject constructor(
     private val playbackProgressManager: PlaybackProgressManager,
 ) {
 
-    private val controllerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val controllerScope = CoroutineScope(
+        SupervisorJob() +
+            Dispatchers.Main.immediate +
+            CoroutineExceptionHandler { _, throwable ->
+                // Prevent non-cancellation exceptions from reaching the thread's
+                // UncaughtExceptionHandler and crashing the app.
+                Log.e(TAG, "Unhandled exception in audio controller scope", throwable)
+            },
+    )
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var mediaController: MediaController? = null
     private var progressUpdateJob: Job? = null
@@ -359,8 +369,18 @@ private suspend fun <T> ListenableFuture<T>.await(context: Context): T =
                 try {
                     continuation.resume(get())
                 } catch (e: FutureCancellationException) {
-                    // Future cancellation is expected during shutdown/navigation. Do not crash.
+                    // Direct CancellationException from the future – treat as cancellation.
                     continuation.cancel(CancellationException("ListenableFuture was cancelled", e))
+                } catch (e: ExecutionException) {
+                    // Unwrap ExecutionException: if the cause is a CancellationException
+                    // (e.g. "Task was cancelled." from MediaController.buildAsync), treat it as
+                    // cancellation rather than a failure so it doesn't crash the app.
+                    val cause = e.cause
+                    if (cause is FutureCancellationException) {
+                        continuation.cancel(CancellationException("ListenableFuture was cancelled", cause))
+                    } else {
+                        continuation.resumeWithException(cause ?: e)
+                    }
                 } catch (e: Exception) {
                     continuation.resumeWithException(e)
                 }
