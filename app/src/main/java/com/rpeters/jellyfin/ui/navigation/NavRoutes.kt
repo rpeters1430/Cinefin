@@ -121,9 +121,9 @@ sealed class BottomNavItem(val route: String, val title: String, val icon: AppDe
     )
 
     object Profile : BottomNavItem(
-        route = Screen.Profile.route,
-        title = "Profile",
-        icon = AppDestinations.PROFILE,
+        route = Screen.Settings.route,
+        title = "Settings",
+        icon = AppDestinations.SETTINGS,
     )
 
     companion object {

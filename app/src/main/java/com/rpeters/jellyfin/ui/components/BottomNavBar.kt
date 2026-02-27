@@ -95,7 +95,7 @@ private fun shouldShowBottomNav(destination: NavDestination?): Boolean {
         "library",
         "search",
         "favorites",
-        "profile",
+        "settings",
         -> true
         else -> false
     }

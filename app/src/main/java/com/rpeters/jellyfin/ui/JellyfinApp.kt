@@ -309,7 +309,7 @@ private fun shouldShowNavigation(destination: NavDestination?): Boolean {
         Screen.Library.route,
         Screen.Search.route,
         Screen.Favorites.route,
-        Screen.Profile.route,
+        Screen.Settings.route,
         -> true
         else -> false
     }
