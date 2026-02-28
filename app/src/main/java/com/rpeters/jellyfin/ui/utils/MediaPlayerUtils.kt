@@ -11,6 +11,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.R
+import com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
 import com.rpeters.jellyfin.ui.player.VideoPlayerActivity
 import com.rpeters.jellyfin.ui.player.audio.AudioService
 import com.rpeters.jellyfin.ui.player.audio.AudioServiceConnection
@@ -19,6 +20,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -40,6 +43,19 @@ object MediaPlayerUtils {
     ) {
         if (item.type == BaseItemKind.AUDIO || item.type == BaseItemKind.MUSIC_ALBUM) {
             playAudio(context, streamUrl, item)
+            return
+        }
+
+        val applicationContext = context.applicationContext
+        val preferencesRepository = EntryPointAccessors.fromApplication(
+            applicationContext,
+            PlaybackPreferencesEntryPoint::class.java,
+        ).playbackPreferencesRepository()
+
+        val useExternal = runBlocking { preferencesRepository.preferences.first().useExternalPlayer }
+
+        if (useExternal) {
+            playMediaExternal(context, streamUrl, item)
             return
         }
 
@@ -148,6 +164,19 @@ object MediaPlayerUtils {
         quality: String? = null,
         startPosition: Long = 0L,
     ) {
+        val applicationContext = context.applicationContext
+        val preferencesRepository = EntryPointAccessors.fromApplication(
+            applicationContext,
+            PlaybackPreferencesEntryPoint::class.java,
+        ).playbackPreferencesRepository()
+
+        val useExternal = runBlocking { preferencesRepository.preferences.first().useExternalPlayer }
+
+        if (useExternal) {
+            playMediaExternal(context, streamUrl, item)
+            return
+        }
+
         try {
             if (BuildConfig.DEBUG) {
                 Log.d("MediaPlayerUtils", "Launching video player with quality $quality for: ${item.name}")
@@ -225,4 +254,10 @@ class MediaPlayerException(message: String, cause: Throwable? = null) : Exceptio
 @InstallIn(SingletonComponent::class)
 interface AudioServiceConnectionEntryPoint {
     fun audioServiceConnection(): AudioServiceConnection
+}
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface PlaybackPreferencesEntryPoint {
+    fun playbackPreferencesRepository(): PlaybackPreferencesRepository
 }

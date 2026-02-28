@@ -55,6 +55,7 @@ data class PlaybackPreferences(
     val preferredAudioLanguage: String?,
     val autoPlayNextEpisode: Boolean,
     val resumePlaybackMode: ResumePlaybackMode,
+    val useExternalPlayer: Boolean,
 ) {
     companion object {
         val DEFAULT = PlaybackPreferences(
@@ -65,6 +66,7 @@ data class PlaybackPreferences(
             preferredAudioLanguage = null, // null = no preference
             autoPlayNextEpisode = true, // enabled by default
             resumePlaybackMode = ResumePlaybackMode.ALWAYS, // always resume by default
+            useExternalPlayer = false, // disabled by default
         )
     }
 }
@@ -107,6 +109,7 @@ class PlaybackPreferencesRepository(
                 resumePlaybackMode = runCatching {
                     ResumePlaybackMode.valueOf(prefs[PreferencesKeys.RESUME_PLAYBACK_MODE] ?: "")
                 }.getOrDefault(PlaybackPreferences.DEFAULT.resumePlaybackMode),
+                useExternalPlayer = prefs[PreferencesKeys.USE_EXTERNAL_PLAYER] ?: PlaybackPreferences.DEFAULT.useExternalPlayer,
             )
         }
 
@@ -144,6 +147,10 @@ class PlaybackPreferencesRepository(
         dataStore.edit { it[PreferencesKeys.RESUME_PLAYBACK_MODE] = mode.name }
     }
 
+    suspend fun setUseExternalPlayer(enabled: Boolean) {
+        dataStore.edit { it[PreferencesKeys.USE_EXTERNAL_PLAYER] = enabled }
+    }
+
     private object PreferencesKeys {
         val MAX_BITRATE_WIFI = intPreferencesKey("max_bitrate_wifi")
         val MAX_BITRATE_CELLULAR = intPreferencesKey("max_bitrate_cellular")
@@ -152,6 +159,7 @@ class PlaybackPreferencesRepository(
         val PREFERRED_AUDIO_LANGUAGE = stringPreferencesKey("preferred_audio_language")
         val AUTO_PLAY_NEXT_EPISODE = booleanPreferencesKey("auto_play_next_episode")
         val RESUME_PLAYBACK_MODE = stringPreferencesKey("resume_playback_mode")
+        val USE_EXTERNAL_PLAYER = booleanPreferencesKey("use_external_player")
     }
 
     companion object {

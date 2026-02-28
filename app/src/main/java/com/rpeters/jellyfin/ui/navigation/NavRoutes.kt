@@ -120,13 +120,13 @@ sealed class BottomNavItem(val route: String, val title: String, val icon: AppDe
         icon = AppDestinations.FAVORITES,
     )
 
-    object Profile : BottomNavItem(
+    object SettingsItem : BottomNavItem(
         route = Screen.Settings.route,
         title = "Settings",
         icon = AppDestinations.SETTINGS,
     )
 
     companion object {
-        val bottomNavItems = listOf(Home, Library, Search, Favorites, Profile)
+        val bottomNavItems = listOf(Home, Library, Search, Favorites, SettingsItem)
     }
 }

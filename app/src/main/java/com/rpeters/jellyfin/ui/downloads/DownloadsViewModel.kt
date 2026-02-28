@@ -375,15 +375,16 @@ class DownloadsViewModel @Inject constructor(
                         position
                     }
                 }
-                val intent = VideoPlayerActivity.createIntent(
+
+                val mediaItem = playbackManager.getOfflineMediaItem(itemId)
+                val localUri = mediaItem?.localConfiguration?.uri?.toString() ?: download.localFilePath
+
+                com.rpeters.jellyfin.ui.utils.MediaPlayerUtils.playMedia(
                     context = context,
-                    itemId = download.jellyfinItemId,
-                    itemName = download.itemName,
+                    streamUrl = localUri,
+                    item = download.toBaseItem(),
                     startPosition = resumePositionMs,
-                    forceOffline = true,
                 )
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
             } else {
                 // Keep offline records honest if the file was removed externally.
                 downloadManager.deleteOfflineCopy(itemId)

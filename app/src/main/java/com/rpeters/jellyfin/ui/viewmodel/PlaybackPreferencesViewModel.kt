@@ -70,4 +70,10 @@ class PlaybackPreferencesViewModel @Inject constructor(
             repository.setResumePlaybackMode(mode)
         }
     }
+
+    fun setUseExternalPlayer(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setUseExternalPlayer(enabled)
+        }
+    }
 }

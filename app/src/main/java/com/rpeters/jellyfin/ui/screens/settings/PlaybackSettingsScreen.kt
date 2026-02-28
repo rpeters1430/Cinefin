@@ -166,6 +166,19 @@ fun PlaybackSettingsScreen(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                 )
 
+                ExpressiveSwitchListItem(
+                    title = "Use External Player",
+                    subtitle = "Play videos in external apps like VLC or MX Player",
+                    checked = prefs.useExternalPlayer,
+                    onCheckedChange = viewModel::setUseExternalPlayer,
+                    leadingIcon = Icons.AutoMirrored.Filled.OpenInNew
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+
                 Text(
                     text = "Resume Playback",
                     style = MaterialTheme.typography.labelMedium,
