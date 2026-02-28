@@ -38,6 +38,7 @@ class OfflineManagerTest {
     private var currentCapabilities: NetworkCapabilities? = null
 
     private lateinit var offlineManager: OfflineManager
+    private val offlineDownloadManager: com.rpeters.jellyfin.data.offline.OfflineDownloadManager = mockk(relaxed = true)
 
     @Before
     fun setUp() {
@@ -76,7 +77,7 @@ class OfflineManagerTest {
         } answers { }
         justRun { connectivityManager.unregisterNetworkCallback(any<ConnectivityManager.NetworkCallback>()) }
 
-        offlineManager = OfflineManager(context)
+        offlineManager = OfflineManager(context, offlineDownloadManager)
     }
 
     @After

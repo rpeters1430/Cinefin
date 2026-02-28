@@ -32,6 +32,7 @@ class ServerConnectionViewModelOfflineTest {
     private lateinit var secureCredentialManager: SecureCredentialManager
     private lateinit var certificatePinningManager: CertificatePinningManager
     private lateinit var connectivityChecker: ConnectivityChecker
+    private lateinit var offlineDownloadManager: com.rpeters.jellyfin.data.offline.OfflineDownloadManager
     private lateinit var context: Context
     private lateinit var viewModel: ServerConnectionViewModel
 
@@ -45,6 +46,7 @@ class ServerConnectionViewModelOfflineTest {
         secureCredentialManager = mockk(relaxed = true)
         certificatePinningManager = mockk(relaxed = true)
         connectivityChecker = mockk(relaxed = true)
+        offlineDownloadManager = mockk(relaxed = true)
         context = mockk(relaxed = true)
 
         // Setup default mocks
@@ -77,6 +79,7 @@ class ServerConnectionViewModelOfflineTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
+            offlineDownloadManager,
             context,
         )
         advanceUntilIdle()
@@ -118,6 +121,7 @@ class ServerConnectionViewModelOfflineTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
+            offlineDownloadManager,
             context,
         )
         advanceUntilIdle()
@@ -163,6 +167,7 @@ class ServerConnectionViewModelOfflineTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
+            offlineDownloadManager,
             context,
         )
         advanceUntilIdle()
@@ -188,6 +193,7 @@ class ServerConnectionViewModelOfflineTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
+            offlineDownloadManager,
             context,
         )
         advanceUntilIdle()

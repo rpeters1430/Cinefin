@@ -49,6 +49,7 @@ class ServerConnectionViewModelTest {
     private lateinit var secureCredentialManager: SecureCredentialManager
     private lateinit var certificatePinningManager: CertificatePinningManager
     private lateinit var connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker
+    private lateinit var offlineDownloadManager: com.rpeters.jellyfin.data.offline.OfflineDownloadManager
     private lateinit var context: Context
 
     @Before
@@ -58,6 +59,7 @@ class ServerConnectionViewModelTest {
         secureCredentialManager = mockk(relaxed = true)
         certificatePinningManager = mockk(relaxed = true)
         connectivityChecker = mockk(relaxed = true)
+        offlineDownloadManager = mockk(relaxed = true)
 
         every { repository.isConnected } returns MutableStateFlow(false)
         val strongCapability = BiometricCapability(
@@ -107,6 +109,7 @@ class ServerConnectionViewModelTest {
                 secureCredentialManager,
                 certificatePinningManager,
                 connectivityChecker,
+                offlineDownloadManager,
                 context,
             )
 
@@ -142,6 +145,7 @@ class ServerConnectionViewModelTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
+            offlineDownloadManager,
             context,
         )
 
@@ -172,6 +176,7 @@ class ServerConnectionViewModelTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
+            offlineDownloadManager,
             context,
         )
 
@@ -215,6 +220,7 @@ class ServerConnectionViewModelTest {
                 secureCredentialManager,
                 certificatePinningManager,
                 connectivityChecker,
+                offlineDownloadManager,
                 context,
             )
 
@@ -258,6 +264,7 @@ class ServerConnectionViewModelTest {
             secureCredentialManager,
             certificatePinningManager,
             connectivityChecker,
+            offlineDownloadManager,
             context,
         )
 

@@ -1,12 +1,16 @@
 package com.rpeters.jellyfin.ui.player
 
+import android.content.Context
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.network.ConnectivityChecker
+import com.rpeters.jellyfin.data.offline.OfflineDownloadManager
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -22,12 +26,17 @@ import java.util.UUID
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlaybackProgressManagerTest {
 
+    private val context: Context = mockk(relaxed = true)
+    private val connectivityChecker: ConnectivityChecker = mockk(relaxed = true)
     private val repository: JellyfinUserRepository = mockk()
+    private val offlineDownloadManager: OfflineDownloadManager = mockk(relaxed = true)
+    private val testDispatcher = UnconfinedTestDispatcher()
+    
     private lateinit var manager: PlaybackProgressManager
 
     @Before
     fun setUp() {
-        manager = PlaybackProgressManager(repository)
+        manager = PlaybackProgressManager(context, connectivityChecker, repository, offlineDownloadManager)
     }
 
     @After
@@ -36,7 +45,7 @@ class PlaybackProgressManagerTest {
     }
 
     @Test
-    fun `updateProgress reports playback on interval`() = runTest {
+    fun `updateProgress reports playback on interval`() = runTest(testDispatcher) {
         val itemId = "item123"
         val sessionId = "session"
         coEvery { repository.getItemUserData(itemId) } returns ApiResult.Success(userData())
@@ -64,7 +73,7 @@ class PlaybackProgressManagerTest {
     }
 
     @Test
-    fun `reportProgress error does not update last sync`() = runTest {
+    fun `reportProgress error does not update last sync`() = runTest(testDispatcher) {
         val itemId = "itemError"
         coEvery { repository.getItemUserData(itemId) } returns ApiResult.Success(userData())
         coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
@@ -83,7 +92,7 @@ class PlaybackProgressManagerTest {
     }
 
     @Test
-    fun `markAsWatched updates state on success`() = runTest {
+    fun `markAsWatched updates state on success`() = runTest(testDispatcher) {
         val itemId = "watched"
         coEvery { repository.getItemUserData(itemId) } returns ApiResult.Success(userData())
         coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)
@@ -103,7 +112,7 @@ class PlaybackProgressManagerTest {
     }
 
     @Test
-    fun `markAsUnwatched updates state on success`() = runTest {
+    fun `markAsUnwatched updates state on success`() = runTest(testDispatcher) {
         val itemId = "unwatched"
         coEvery { repository.getItemUserData(itemId) } returns ApiResult.Success(userData())
         coEvery { repository.reportPlaybackStart(any(), any(), any(), any(), any(), any(), any()) } returns ApiResult.Success(Unit)

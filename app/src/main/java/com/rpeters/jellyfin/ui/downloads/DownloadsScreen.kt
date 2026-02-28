@@ -1,9 +1,14 @@
 package com.rpeters.jellyfin.ui.downloads
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -15,14 +20,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.offline.DownloadProgress
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.data.offline.VideoQuality
+import com.rpeters.jellyfin.ui.components.ExpressiveSwitchListItem
 import com.rpeters.jellyfin.ui.theme.Dimens
 import java.text.DateFormat
 import java.util.Date
@@ -47,13 +57,12 @@ fun DownloadsScreen(
 
     if (showDeleteAllConfirmation) {
         AlertDialog(
-            onDismissRequest = { showDeleteAllConfirmation = false },
+            onDismissRequest = { },
             title = { Text("Delete all downloads?") },
             text = { Text("This removes all local offline copies from this device.") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showDeleteAllConfirmation = false
                         downloadsViewModel.deleteAllDownloads()
                     },
                 ) {
@@ -61,7 +70,7 @@ fun DownloadsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteAllConfirmation = false }) {
+                TextButton(onClick = { }) {
                     Text("Cancel")
                 }
             },
@@ -70,13 +79,12 @@ fun DownloadsScreen(
 
     if (showClearWatchedConfirmation) {
         AlertDialog(
-            onDismissRequest = { showClearWatchedConfirmation = false },
+            onDismissRequest = { },
             title = { Text("Clear watched downloads?") },
             text = { Text("Removes completed downloads watched at least 90%.") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showClearWatchedConfirmation = false
                         downloadsViewModel.clearWatchedDownloads()
                     },
                 ) {
@@ -84,7 +92,7 @@ fun DownloadsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showClearWatchedConfirmation = false }) {
+                TextButton(onClick = { }) {
                     Text("Cancel")
                 }
             },
@@ -93,7 +101,7 @@ fun DownloadsScreen(
 
     redownloadTarget?.let { target ->
         AlertDialog(
-            onDismissRequest = { redownloadTarget = null },
+            onDismissRequest = { },
             title = { Text("Redownload in different quality") },
             text = {
                 Column {
@@ -101,7 +109,6 @@ fun DownloadsScreen(
                         TextButton(
                             onClick = {
                                 downloadsViewModel.redownloadDownload(target.id, quality)
-                                redownloadTarget = null
                             },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
@@ -111,208 +118,216 @@ fun DownloadsScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { redownloadTarget = null }) {
+                TextButton(onClick = { }) {
                     Text("Cancel")
                 }
             },
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text("Downloads") },
-            navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-            },
-            actions = {
-                IconButton(onClick = { downloadsViewModel.clearCompletedDownloads() }) {
-                    Icon(Icons.Default.Clear, contentDescription = "Clear completed")
-                }
-                IconButton(onClick = { downloadsViewModel.pauseAllDownloads() }) {
-                    Icon(Icons.Default.Pause, contentDescription = "Pause all")
-                }
-                IconButton(
-                    onClick = { showClearWatchedConfirmation = true },
-                    enabled = downloads.any { it.status == DownloadStatus.COMPLETED },
-                ) {
-                    Icon(Icons.Default.DoneAll, contentDescription = "Clear watched downloads")
-                }
-                IconButton(
-                    onClick = { showDeleteAllConfirmation = true },
-                    enabled = downloads.isNotEmpty(),
-                ) {
-                    Icon(Icons.Default.DeleteForever, contentDescription = "Delete all downloads")
-                }
-            },
-        )
-
-        if (downloads.isEmpty()) {
-            // Show storage/preferences cards fixed above the empty state
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Downloads", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { downloadsViewModel.clearCompletedDownloads() }) {
+                        Icon(Icons.Default.ClearAll, contentDescription = "Clear completed")
+                    }
+                    IconButton(onClick = { downloadsViewModel.pauseAllDownloads() }) {
+                        Icon(Icons.Default.PauseCircle, contentDescription = "Pause all")
+                    }
+                    IconButton(
+                        onClick = { },
+                        enabled = downloads.any { it.status == DownloadStatus.COMPLETED },
+                    ) {
+                        Icon(Icons.Default.DoneAll, contentDescription = "Clear watched downloads")
+                    }
+                    IconButton(
+                        onClick = { },
+                        enabled = downloads.isNotEmpty(),
+                    ) {
+                        Icon(Icons.Default.DeleteSweep, contentDescription = "Delete all downloads")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                )
+            )
+        }
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(paddingValues),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            // Storage Usage Section
             storageInfo?.let { info ->
-                StorageInfoCard(
-                    storageInfo = info,
-                    modifier = Modifier.padding(Dimens.Spacing16),
+                item(key = "storage_info") {
+                    ExpressiveStorageCard(storageInfo = info)
+                }
+            }
+
+            // Preferences Section
+            item(key = "download_prefs") {
+                ExpressiveDownloadPreferencesCard(
+                    wifiOnly = downloadPreferences.wifiOnly,
+                    defaultQualityId = downloadPreferences.defaultQualityId,
+                    autoCleanEnabled = downloadPreferences.autoCleanEnabled,
+                    autoCleanWatchedRetentionDays = downloadPreferences.autoCleanWatchedRetentionDays,
+                    autoCleanMinFreeSpaceGb = downloadPreferences.autoCleanMinFreeSpaceGb,
+                    pendingOfflineSyncCount = pendingOfflineSyncCount,
+                    qualities = DownloadsViewModel.QUALITY_PRESETS,
+                    onWifiOnlyChanged = downloadsViewModel::setWifiOnly,
+                    onDefaultQualitySelected = downloadsViewModel::setDefaultQuality,
+                    onAutoCleanEnabledChanged = downloadsViewModel::setAutoCleanEnabled,
+                    onAutoCleanWatchedRetentionDaysSelected = downloadsViewModel::setAutoCleanWatchedRetentionDays,
+                    onAutoCleanMinFreeSpaceGbSelected = downloadsViewModel::setAutoCleanMinFreeSpaceGb,
+                    onRunAutoCleanNow = downloadsViewModel::runAutoCleanNow,
                 )
             }
 
-            DownloadPreferencesCard(
-                wifiOnly = downloadPreferences.wifiOnly,
-                defaultQualityId = downloadPreferences.defaultQualityId,
-                autoCleanEnabled = downloadPreferences.autoCleanEnabled,
-                autoCleanWatchedRetentionDays = downloadPreferences.autoCleanWatchedRetentionDays,
-                autoCleanMinFreeSpaceGb = downloadPreferences.autoCleanMinFreeSpaceGb,
-                pendingOfflineSyncCount = pendingOfflineSyncCount,
-                qualities = DownloadsViewModel.QUALITY_PRESETS,
-                onWifiOnlyChanged = downloadsViewModel::setWifiOnly,
-                onDefaultQualitySelected = downloadsViewModel::setDefaultQuality,
-                onAutoCleanEnabledChanged = downloadsViewModel::setAutoCleanEnabled,
-                onAutoCleanWatchedRetentionDaysSelected = downloadsViewModel::setAutoCleanWatchedRetentionDays,
-                onAutoCleanMinFreeSpaceGbSelected = downloadsViewModel::setAutoCleanMinFreeSpaceGb,
-                onRunAutoCleanNow = downloadsViewModel::runAutoCleanNow,
-                modifier = Modifier.padding(horizontal = Dimens.Spacing16),
-            )
-
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(Dimens.Spacing16),
-                ) {
-                    Icon(
-                        Icons.Default.CloudDownload,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            // Downloads List Header
+            if (downloads.isNotEmpty()) {
+                item {
                     Text(
-                        "No downloads yet",
+                        text = "Active & Completed Downloads",
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        "Downloaded content will appear here",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 4.dp)
                     )
                 }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(Dimens.Spacing16),
-                verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
-            ) {
-                // Storage info card scrolls away with the list (collapsible header)
-                storageInfo?.let { info ->
-                    item(key = "storage_info", contentType = "header") {
-                        StorageInfoCard(
-                            storageInfo = info,
-                            modifier = Modifier.padding(bottom = Dimens.Spacing8),
-                        )
+
+            items(
+                downloads,
+                key = { it.id },
+                contentType = { "download_item" },
+            ) { download ->
+                ExpressiveDownloadItem(
+                    download = download,
+                    progress = downloadProgress[download.id],
+                    onPause = { downloadsViewModel.pauseDownload(download.id) },
+                    onResume = { downloadsViewModel.resumeDownload(download.id) },
+                    onCancel = { downloadsViewModel.cancelDownload(download.id) },
+                    onDelete = { downloadsViewModel.deleteDownload(download.id) },
+                    onRedownload = { },
+                    onOpenDetail = { onOpenItemDetail(download) },
+                    onPlay = { downloadsViewModel.playOfflineContent(download.jellyfinItemId) },
+                )
+            }
+
+            if (downloads.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            Icon(
+                                Icons.Default.CloudDownload,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                            )
+                            Text(
+                                "No active downloads",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
-
-                // Preferences card also scrolls away (collapsible header)
-                item(key = "download_prefs", contentType = "header") {
-                    DownloadPreferencesCard(
-                        wifiOnly = downloadPreferences.wifiOnly,
-                        defaultQualityId = downloadPreferences.defaultQualityId,
-                        autoCleanEnabled = downloadPreferences.autoCleanEnabled,
-                        autoCleanWatchedRetentionDays = downloadPreferences.autoCleanWatchedRetentionDays,
-                        autoCleanMinFreeSpaceGb = downloadPreferences.autoCleanMinFreeSpaceGb,
-                        pendingOfflineSyncCount = pendingOfflineSyncCount,
-                        qualities = DownloadsViewModel.QUALITY_PRESETS,
-                        onWifiOnlyChanged = downloadsViewModel::setWifiOnly,
-                        onDefaultQualitySelected = downloadsViewModel::setDefaultQuality,
-                        onAutoCleanEnabledChanged = downloadsViewModel::setAutoCleanEnabled,
-                        onAutoCleanWatchedRetentionDaysSelected = downloadsViewModel::setAutoCleanWatchedRetentionDays,
-                        onAutoCleanMinFreeSpaceGbSelected = downloadsViewModel::setAutoCleanMinFreeSpaceGb,
-                        onRunAutoCleanNow = downloadsViewModel::runAutoCleanNow,
-                        modifier = Modifier.padding(bottom = Dimens.Spacing8),
-                    )
-                }
-
-                items(
-                    downloads,
-                    key = { it.id },
-                    contentType = { "download_item" },
-                ) { download ->
-                    DownloadItem(
-                        download = download,
-                        progress = downloadProgress[download.id],
-                        onPause = { downloadsViewModel.pauseDownload(download.id) },
-                        onResume = { downloadsViewModel.resumeDownload(download.id) },
-                        onCancel = { downloadsViewModel.cancelDownload(download.id) },
-                        onDelete = { downloadsViewModel.deleteDownload(download.id) },
-                        onRedownload = { redownloadTarget = download },
-                        onOpenDetail = { onOpenItemDetail(download) },
-                        onPlay = { downloadsViewModel.playOfflineContent(download.jellyfinItemId) },
-                    )
-                }
             }
+            
+            item { Spacer(modifier = Modifier.height(16.dp)) }
         }
     }
 }
 
 @Composable
-fun StorageInfoCard(
+private fun ExpressiveStorageCard(
     storageInfo: com.rpeters.jellyfin.data.offline.OfflineStorageInfo,
-    modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = MaterialTheme.shapes.extraLarge,
     ) {
         Column(
-            modifier = Modifier.padding(Dimens.Spacing16),
-            verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    "Storage Usage",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    "${storageInfo.downloadCount} downloads",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Storage,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Column {
+                    Text(
+                        "Storage Usage",
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold),
+                    )
+                    Text(
+                        "${storageInfo.downloadCount} items downloaded",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
-            LinearProgressIndicator(
-                progress = { storageInfo.usedSpacePercentage / 100f },
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                LinearProgressIndicator(
+                    progress = { storageInfo.usedSpacePercentage / 100f },
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    color = MaterialTheme.colorScheme.primary
+                )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    formatBytes(storageInfo.usedSpaceBytes),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    formatBytes(storageInfo.totalSpaceBytes),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        "Used: ${formatBytes(storageInfo.usedSpaceBytes)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "Total: ${formatBytes(storageInfo.totalSpaceBytes)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun DownloadItem(
+private fun ExpressiveDownloadItem(
     download: OfflineDownload,
     progress: DownloadProgress?,
     onPause: () -> Unit,
@@ -323,125 +338,90 @@ fun DownloadItem(
     onOpenDetail: () -> Unit,
     onPlay: () -> Unit,
 ) {
-    val openDetailEnabled = download.status == DownloadStatus.COMPLETED
-    val detailHint = detailAvailabilityHint(download.status)
+    val isCompleted = download.status == DownloadStatus.COMPLETED
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
-        enabled = openDetailEnabled,
-        onClick = {
-            if (openDetailEnabled) {
-                onOpenDetail()
-            }
-        },
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isCompleted) MaterialTheme.colorScheme.surfaceContainerLow 
+                            else MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isCompleted) 0.dp else 2.dp),
+        border = if (isCompleted) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)) else null
     ) {
         Column(
-            modifier = Modifier.padding(Dimens.Spacing16),
-            verticalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         download.itemName,
                         style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Text(
-                        download.quality?.label ?: "Original Quality",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = buildString {
-                            val sizeBytes = download.fileSize.takeIf { it > 0L } ?: download.downloadedBytes
-                            append(formatBytes(sizeBytes))
-                            val timestamp = download.downloadCompleteTime ?: download.downloadStartTime
-                            if (timestamp != null) {
-                                append(" • ")
-                                append(formatTimestamp(timestamp))
-                            }
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = MaterialTheme.shapes.extraSmall
+                        ) {
+                            Text(
+                                download.quality?.label ?: "Original",
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Text(
+                            text = formatBytes(download.fileSize.takeIf { it > 0L } ?: download.downloadedBytes),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
 
-                DownloadStatusChip(download.status)
+                DownloadStatusChipEnhanced(download.status)
             }
 
-            // Progress indicator for active downloads
             if (download.status == DownloadStatus.DOWNLOADING && progress != null) {
-                DownloadProgressIndicator(progress, download.quality?.label)
-            }
-            detailHint?.let { hint ->
-                Text(
-                    text = hint,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                DownloadProgressIndicatorEnhanced(progress)
             }
 
-            // Action buttons
+            // Actions
             Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
-                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 when (download.status) {
                     DownloadStatus.DOWNLOADING -> {
-                        IconButton(onClick = onPause) {
-                            Icon(Icons.Default.Pause, contentDescription = "Pause")
-                        }
-                        IconButton(onClick = onCancel) {
-                            Icon(Icons.Default.Cancel, contentDescription = "Cancel")
-                        }
+                        ActionIconButton(Icons.Default.Pause, "Pause", onPause)
+                        ActionIconButton(Icons.Default.Close, "Cancel", onCancel)
                     }
                     DownloadStatus.PAUSED -> {
-                        IconButton(onClick = onResume) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = "Resume")
-                        }
-                        IconButton(onClick = onCancel) {
-                            Icon(Icons.Default.Cancel, contentDescription = "Cancel")
-                        }
+                        ActionIconButton(Icons.Default.PlayArrow, "Resume", onResume)
+                        ActionIconButton(Icons.Default.Close, "Cancel", onCancel)
                     }
                     DownloadStatus.COMPLETED -> {
-                        IconButton(onClick = onPlay) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = "Play")
-                        }
-                        IconButton(onClick = onRedownload) {
-                            Icon(Icons.Default.CloudDownload, contentDescription = "Redownload")
-                        }
-                        IconButton(onClick = onOpenDetail) {
-                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open detail")
-                        }
-                        IconButton(onClick = onDelete) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete")
-                        }
+                        ActionIconButton(Icons.Default.PlayArrow, "Play", onPlay, containerColor = MaterialTheme.colorScheme.primaryContainer)
+                        ActionIconButton(Icons.Default.Info, "Details", onOpenDetail)
+                        ActionIconButton(Icons.Default.Delete, "Delete", onDelete, contentColor = MaterialTheme.colorScheme.error)
                     }
                     DownloadStatus.FAILED -> {
-                        IconButton(onClick = onResume) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Retry")
-                        }
-                        IconButton(onClick = onDelete) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete")
-                        }
+                        ActionIconButton(Icons.Default.Refresh, "Retry", onResume)
+                        ActionIconButton(Icons.Default.Delete, "Delete", onDelete, contentColor = MaterialTheme.colorScheme.error)
                     }
                     else -> {
-                        IconButton(onClick = onCancel) {
-                            Icon(Icons.Default.Cancel, contentDescription = "Cancel")
-                        }
-                    }
-                }
-                if (!openDetailEnabled) {
-                    IconButton(
-                        onClick = {},
-                        enabled = false,
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open detail (unavailable)")
+                        ActionIconButton(Icons.Default.Close, "Cancel", onCancel)
                     }
                 }
             }
@@ -450,7 +430,27 @@ fun DownloadItem(
 }
 
 @Composable
-fun DownloadPreferencesCard(
+private fun ActionIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    containerColor: Color = Color.Transparent,
+    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
+) {
+    FilledIconButton(
+        onClick = onClick,
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = containerColor,
+            contentColor = contentColor
+        ),
+        modifier = Modifier.size(40.dp)
+    ) {
+        Icon(icon, contentDescription, modifier = Modifier.size(20.dp))
+    }
+}
+
+@Composable
+private fun ExpressiveDownloadPreferencesCard(
     wifiOnly: Boolean,
     defaultQualityId: String,
     autoCleanEnabled: Boolean,
@@ -464,282 +464,200 @@ fun DownloadPreferencesCard(
     onAutoCleanWatchedRetentionDaysSelected: (Int) -> Unit,
     onAutoCleanMinFreeSpaceGbSelected: (Int) -> Unit,
     onRunAutoCleanNow: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    var qualityMenuExpanded by remember { mutableStateOf(false) }
-    var retentionMenuExpanded by remember { mutableStateOf(false) }
-    var minSpaceMenuExpanded by remember { mutableStateOf(false) }
-    val selectedQuality = qualities.firstOrNull { it.id == defaultQualityId }
-        ?: qualities.firstOrNull()
-    val retentionOptions = listOf(7, 14, 30, 60)
-    val minSpaceOptionsGb = listOf(2, 5, 10, 20)
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = MaterialTheme.shapes.extraLarge,
     ) {
         Column(
-            modifier = Modifier.padding(Dimens.Spacing16),
-            verticalArrangement = Arrangement.spacedBy(Dimens.Spacing12),
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                text = "Download Preferences",
-                style = MaterialTheme.typography.titleMedium,
-            )
-            if (pendingOfflineSyncCount > 0) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
                 Text(
-                    text = "Pending watch sync: $pendingOfflineSyncCount update(s). They will sync automatically when online.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    "Download Settings",
+                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold),
                 )
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Wi-Fi only")
+            if (pendingOfflineSyncCount > 0) {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(Icons.Default.Sync, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.secondary)
+                        Text(
+                            "Pending sync: $pendingOfflineSyncCount updates",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            }
+
+            ExpressiveSwitchListItem(
+                title = "Wi-Fi Only",
+                subtitle = "Only download over Wi-Fi networks",
+                checked = wifiOnly,
+                onCheckedChange = onWifiOnlyChanged,
+                leadingIcon = Icons.Default.Wifi
+            )
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+            QualitySelector(
+                currentQualityId = defaultQualityId,
+                qualities = qualities,
+                onQualitySelected = onDefaultQualitySelected
+            )
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+            ExpressiveSwitchListItem(
+                title = "Auto-clean",
+                subtitle = "Remove watched items automatically",
+                checked = autoCleanEnabled,
+                onCheckedChange = onAutoCleanEnabledChanged,
+                leadingIcon = Icons.Default.AutoDelete
+            )
+
+            AnimatedVisibility(visible = autoCleanEnabled) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "Allow downloads only on Wi-Fi/Ethernet",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        "Keep watched for $autoCleanWatchedRetentionDays days",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
                     )
-                }
-                Switch(
-                    checked = wifiOnly,
-                    onCheckedChange = onWifiOnlyChanged,
-                )
-            }
-
-            ExposedDropdownMenuBox(
-                expanded = qualityMenuExpanded,
-                onExpandedChange = { qualityMenuExpanded = !qualityMenuExpanded },
-            ) {
-                OutlinedTextField(
-                    value = selectedQuality?.label ?: "Original Quality",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Default quality") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = qualityMenuExpanded) },
-                    modifier = Modifier
-                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                        .fillMaxWidth(),
-                )
-                ExposedDropdownMenu(
-                    expanded = qualityMenuExpanded,
-                    onDismissRequest = { qualityMenuExpanded = false },
-                ) {
-                    qualities.forEach { quality ->
-                        DropdownMenuItem(
-                            text = { Text(quality.label) },
-                            onClick = {
-                                onDefaultQualitySelected(quality.id)
-                                qualityMenuExpanded = false
-                            },
-                        )
+                    // Simplified row for retention
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(7, 14, 30).forEach { days ->
+                            FilterChip(
+                                selected = autoCleanWatchedRetentionDays == days,
+                                onClick = { onAutoCleanWatchedRetentionDaysSelected(days) },
+                                label = { Text("$days d") }
+                            )
+                        }
+                    }
+                    
+                    Button(
+                        onClick = onRunAutoCleanNow,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Icon(Icons.Default.CleaningServices, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Clean Up Now")
                     }
                 }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Auto-clean watched downloads")
-                    Text(
-                        text = "Automatically removes watched items based on retention and free-space target",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Switch(
-                    checked = autoCleanEnabled,
-                    onCheckedChange = onAutoCleanEnabledChanged,
-                )
-            }
-
-            ExposedDropdownMenuBox(
-                expanded = retentionMenuExpanded,
-                onExpandedChange = { retentionMenuExpanded = !retentionMenuExpanded },
-            ) {
-                OutlinedTextField(
-                    value = "$autoCleanWatchedRetentionDays days",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Watched retention") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = retentionMenuExpanded) },
-                    modifier = Modifier
-                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                        .fillMaxWidth(),
-                    enabled = autoCleanEnabled,
-                )
-                ExposedDropdownMenu(
-                    expanded = retentionMenuExpanded,
-                    onDismissRequest = { retentionMenuExpanded = false },
-                ) {
-                    retentionOptions.forEach { days ->
-                        DropdownMenuItem(
-                            text = { Text("$days days") },
-                            onClick = {
-                                onAutoCleanWatchedRetentionDaysSelected(days)
-                                retentionMenuExpanded = false
-                            },
-                        )
-                    }
-                }
-            }
-
-            ExposedDropdownMenuBox(
-                expanded = minSpaceMenuExpanded,
-                onExpandedChange = { minSpaceMenuExpanded = !minSpaceMenuExpanded },
-            ) {
-                OutlinedTextField(
-                    value = "$autoCleanMinFreeSpaceGb GB",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Min free space target") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = minSpaceMenuExpanded) },
-                    modifier = Modifier
-                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                        .fillMaxWidth(),
-                    enabled = autoCleanEnabled,
-                )
-                ExposedDropdownMenu(
-                    expanded = minSpaceMenuExpanded,
-                    onDismissRequest = { minSpaceMenuExpanded = false },
-                ) {
-                    minSpaceOptionsGb.forEach { gb ->
-                        DropdownMenuItem(
-                            text = { Text("$gb GB") },
-                            onClick = {
-                                onAutoCleanMinFreeSpaceGbSelected(gb)
-                                minSpaceMenuExpanded = false
-                            },
-                        )
-                    }
-                }
-            }
-
-            TextButton(
-                onClick = onRunAutoCleanNow,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Run Auto-clean Now")
             }
         }
     }
 }
 
 @Composable
-fun DownloadStatusChip(status: DownloadStatus) {
-    val (color, text) = when (status) {
-        DownloadStatus.PENDING -> MaterialTheme.colorScheme.secondary to "Pending"
-        DownloadStatus.DOWNLOADING -> MaterialTheme.colorScheme.primary to "Downloading"
-        DownloadStatus.PAUSED -> MaterialTheme.colorScheme.outline to "Paused"
-        DownloadStatus.COMPLETED -> Color(0xFF4CAF50) to "Completed"
-        DownloadStatus.FAILED -> MaterialTheme.colorScheme.error to "Failed"
-        DownloadStatus.CANCELLED -> MaterialTheme.colorScheme.outline to "Cancelled"
+private fun QualitySelector(
+    currentQualityId: String,
+    qualities: List<VideoQuality>,
+    onQualitySelected: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            "Default Quality",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(qualities) { quality ->
+                val isSelected = quality.id == currentQualityId
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { onQualitySelected(quality.id) },
+                    label = { Text(quality.label) },
+                    leadingIcon = if (isSelected) {
+                        { Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp)) }
+                    } else null
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun DownloadStatusChipEnhanced(status: DownloadStatus) {
+    val color = when (status) {
+        DownloadStatus.PENDING -> MaterialTheme.colorScheme.secondary
+        DownloadStatus.DOWNLOADING -> MaterialTheme.colorScheme.primary
+        DownloadStatus.PAUSED -> MaterialTheme.colorScheme.outline
+        DownloadStatus.COMPLETED -> Color(0xFF4CAF50)
+        DownloadStatus.FAILED -> MaterialTheme.colorScheme.error
+        DownloadStatus.CANCELLED -> MaterialTheme.colorScheme.outline
     }
 
     Surface(
-        modifier = Modifier.clip(RoundedCornerShape(12.dp)),
         color = color.copy(alpha = 0.1f),
+        shape = CircleShape,
+        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
     ) {
         Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = Dimens.Spacing8, vertical = Dimens.Spacing4),
-            style = MaterialTheme.typography.labelSmall,
+            text = status.name.lowercase().replaceFirstChar { it.uppercase() },
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
             color = color,
         )
     }
 }
 
 @Composable
-fun DownloadProgressIndicator(progress: DownloadProgress, qualityLabel: String? = null) {
-    Column(verticalArrangement = Arrangement.spacedBy(Dimens.Spacing4)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                when {
-                    progress.isTranscoding && progress.transcodingProgress != null ->
-                        if (qualityLabel != null) "$qualityLabel · Transcoding: ${progress.transcodingProgress.roundToInt()}%"
-                        else "Transcoding: ${progress.transcodingProgress.roundToInt()}%"
-                    progress.isTranscoding ->
-                        if (qualityLabel != null) "$qualityLabel · Transcoding..." else "Transcoding..."
-                    else ->
-                        if (qualityLabel != null) "$qualityLabel · ${progress.progressPercent.roundToInt()}%"
-                        else "${progress.progressPercent.roundToInt()}%"
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                if (progress.isTranscoding) {
-                    progress.transcodingEtaMs?.let { "ETA ${formatDuration(it)}" } ?: "Preparing stream..."
-                } else if (progress.totalBytes > 0L) {
-                    "${formatBytes(progress.downloadedBytes)} / ~${formatBytes(progress.totalBytes)}"
-                } else {
-                    formatBytes(progress.downloadedBytes)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        if (progress.isTranscoding && progress.transcodingProgress != null) {
-            LinearProgressIndicator(
-                progress = { progress.transcodingProgress / 100f },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        } else if (progress.isTranscoding || progress.totalBytes <= 0L) {
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth(),
-            )
-        } else if (progress.totalBytes > 0L) {
-            LinearProgressIndicator(
-                progress = { progress.progressPercent / 100f },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        } else {
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
+fun DownloadProgressIndicatorEnhanced(progress: DownloadProgress) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        LinearProgressIndicator(
+            progress = { if (progress.isTranscoding) (progress.transcodingProgress ?: 0f) / 100f else progress.progressPercent / 100f },
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
+        )
+        
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                "${formatBytes(progress.downloadSpeedBps)}/s",
-                style = MaterialTheme.typography.bodySmall,
+                text = if (progress.isTranscoding) "Transcoding..." else "${formatBytes(progress.downloadSpeedBps)}/s",
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (!progress.isTranscoding) {
-                progress.remainingTimeMs?.let { remaining ->
-                    Text(
-                        formatDuration(remaining),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            if (progress.isTranscoding) {
-                progress.transcodingEtaMs?.let { remaining ->
-                    Text(
-                        formatDuration(remaining),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            Text(
+                text = "${progress.progressPercent.roundToInt()}%",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }
@@ -748,38 +666,9 @@ private fun formatBytes(bytes: Long): String {
     val units = arrayOf("B", "KB", "MB", "GB", "TB")
     var size = bytes.toDouble()
     var unitIndex = 0
-
     while (size >= 1024 && unitIndex < units.size - 1) {
         size /= 1024
         unitIndex++
     }
-
     return "%.1f %s".format(size, units[unitIndex])
-}
-
-private fun formatDuration(milliseconds: Long): String {
-    val seconds = milliseconds / 1000
-    val minutes = seconds / 60
-    val hours = minutes / 60
-
-    return when {
-        hours > 0 -> "${hours}h ${minutes % 60}m"
-        minutes > 0 -> "${minutes}m ${seconds % 60}s"
-        else -> "${seconds}s"
-    }
-}
-
-private fun formatTimestamp(timestampMs: Long): String {
-    return DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(timestampMs))
-}
-
-private fun detailAvailabilityHint(status: DownloadStatus): String? {
-    return when (status) {
-        DownloadStatus.COMPLETED -> null
-        DownloadStatus.DOWNLOADING -> "Item details open when the download is completed."
-        DownloadStatus.PAUSED -> "Resume download to open item details when complete."
-        DownloadStatus.FAILED -> "Retry download to open item details when complete."
-        DownloadStatus.CANCELLED -> "Restart download to open item details when complete."
-        DownloadStatus.PENDING -> "Item details open when the download is completed."
-    }
 }

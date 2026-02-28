@@ -142,7 +142,7 @@ fun ProfileScreen(
                 Image(
                     painter = painterResource(id = R.drawable.app_logo),
                     contentDescription = stringResource(id = R.string.app_name),
-                    modifier = Modifier.size(80.dp),
+                    modifier = Modifier.size(120.dp),
                 )
             }
 

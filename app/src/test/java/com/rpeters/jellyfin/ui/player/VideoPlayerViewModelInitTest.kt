@@ -5,6 +5,7 @@ import androidx.media3.common.util.UnstableApi
 import com.rpeters.jellyfin.data.offline.OfflinePlaybackManager
 import com.rpeters.jellyfin.data.playback.EnhancedPlaybackManager
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
+import com.rpeters.jellyfin.ui.player.cast.CastState
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers

@@ -12,6 +12,7 @@ import com.rpeters.jellyfin.data.preferences.PlaybackPreferences
 import com.rpeters.jellyfin.data.preferences.PlaybackPreferencesRepository
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.common.ApiResult
+import com.rpeters.jellyfin.ui.player.cast.CastState
 import com.rpeters.jellyfin.utils.AnalyticsHelper
 import io.mockk.*
 import io.mockk.impl.annotations.MockK

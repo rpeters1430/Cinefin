@@ -12,6 +12,7 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.coEvery
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -63,6 +64,10 @@ class OfflineDownloadManagerTest {
         context = ApplicationProvider.getApplicationContext()
         repository = mockk(relaxed = true)
         okHttpClient = mockk(relaxed = true)
+
+        // Mock repository explicitly to avoid ClassCastException from relaxed mock
+        every { repository.getCurrentServer() } returns null
+        coEvery { repository.getPlaybackInfo(any()) } returns mockk(relaxed = true)
 
         // Create a temporary directory for test downloads and datastore
         tempDir = createTempDirectory("jellyfin_test").toFile()

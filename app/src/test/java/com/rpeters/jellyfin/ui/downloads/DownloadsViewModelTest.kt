@@ -47,6 +47,9 @@ class DownloadsViewModelTest {
     @MockK(relaxUnitFun = true)
     lateinit var offlineProgressRepository: OfflineProgressRepository
 
+    @MockK(relaxUnitFun = true)
+    lateinit var deviceCapabilities: com.rpeters.jellyfin.data.DeviceCapabilities
+
     @MockK
     lateinit var context: Context
 
@@ -73,6 +76,7 @@ class DownloadsViewModelTest {
             downloadPreferencesRepository,
             connectivityChecker,
             offlineProgressRepository,
+            deviceCapabilities,
         )
     }
 

@@ -22,6 +22,7 @@ This is a modern Android client for Jellyfin media servers (branded as Cinefin),
 
 | Task | Command (Windows) | Notes |
 |------|-------------------|-------|
+| **Setup Project** | `powershell scripts/setup-windows.ps1` | Installs SDK components & configures paths |
 | **Build Debug APK** | `gradlew assembleDebug` | Outputs to `app/build/outputs/apk/debug` |
 | **Install on Device** | `gradlew installDebug` | Requires connected device/emulator |
 | **Unit Tests (JVM)** | `gradlew testDebugUnitTest` | **Preferred** for logic verification |
