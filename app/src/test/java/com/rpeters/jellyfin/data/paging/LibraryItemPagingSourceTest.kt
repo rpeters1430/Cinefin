@@ -75,7 +75,7 @@ class LibraryItemPagingSourceTest {
         assertEquals("Movie 1", pageResult.data[0].name)
         assertEquals("Movie 2", pageResult.data[1].name)
         assertNull(pageResult.prevKey)
-        assertEquals(1, pageResult.nextKey)
+        assertNull(pageResult.nextKey)
     }
 
     @Test
@@ -129,7 +129,7 @@ class LibraryItemPagingSourceTest {
         // When
         val result = pagingSource.load(
             PagingSource.LoadParams.Append(
-                key = 1,
+                key = 20,
                 loadSize = 20,
                 placeholdersEnabled = false,
             ),
@@ -139,8 +139,8 @@ class LibraryItemPagingSourceTest {
         assertTrue(result is PagingSource.LoadResult.Page<Int, BaseItemDto>)
         val pageResult = result as PagingSource.LoadResult.Page<Int, BaseItemDto>
         assertEquals(20, pageResult.data.size)
-        assertEquals(0, pageResult.prevKey) // Previous page key
-        assertEquals(2, pageResult.nextKey) // Next page key
+        assertEquals(0, pageResult.prevKey) // Previous start index
+        assertEquals(40, pageResult.nextKey) // Next start index
     }
 
     @Test
@@ -243,7 +243,7 @@ class LibraryItemPagingSourceTest {
         val pageResult = result as PagingSource.LoadResult.Page<Int, BaseItemDto>
         assertEquals(1, pageResult.data.size)
         assertNull(pageResult.prevKey) // First page
-        assertEquals(1, pageResult.nextKey)
+        assertNull(pageResult.nextKey)
     }
 
     @Test
@@ -253,7 +253,8 @@ class LibraryItemPagingSourceTest {
             coEvery { anchorPosition } returns 25 // Item at position 25
             coEvery { closestPageToPosition(25) } returns mockk {
                 coEvery { prevKey } returns 0
-                coEvery { nextKey } returns 2
+                coEvery { data } returns List(20) { mockk<BaseItemDto>() }
+                coEvery { nextKey } returns 40
             }
         }
 
@@ -261,7 +262,7 @@ class LibraryItemPagingSourceTest {
         val refreshKey = pagingSource.getRefreshKey(mockState)
 
         // Then
-        assertEquals(1, refreshKey) // prevKey + 1
+        assertEquals(20, refreshKey) // prevKey + page size
     }
 
     @Test

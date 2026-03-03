@@ -23,16 +23,15 @@ class LibraryItemPagingSource(
 
     companion object {
         private const val TAG = "LibraryItemPagingSource"
-        private const val STARTING_PAGE_INDEX = 0
+        private const val STARTING_START_INDEX = 0
     }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, BaseItemDto> {
         return try {
-            val pageIndex = params.key ?: STARTING_PAGE_INDEX
-            val startIndex = pageIndex * pageSize
+            val startIndex = params.key ?: STARTING_START_INDEX
 
             if (BuildConfig.DEBUG) {
-                Log.d(TAG, "Loading page $pageIndex, startIndex=$startIndex, loadSize=${params.loadSize}")
+                Log.d(TAG, "Loading startIndex=$startIndex, loadSize=${params.loadSize}")
             }
 
             val itemTypesString = itemTypes?.joinToString(",") { type ->
@@ -62,18 +61,30 @@ class LibraryItemPagingSource(
                     val items = result.data
 
                     if (BuildConfig.DEBUG) {
-                        Log.d(TAG, "Loaded ${items.size} items for page $pageIndex")
+                        Log.d(TAG, "Loaded ${items.size} items for startIndex=$startIndex")
+                    }
+
+                    val previousKey = if (startIndex == STARTING_START_INDEX) {
+                        null
+                    } else {
+                        maxOf(STARTING_START_INDEX, startIndex - params.loadSize)
+                    }
+
+                    val nextKey = if (items.isEmpty() || items.size < params.loadSize) {
+                        null
+                    } else {
+                        startIndex + items.size
                     }
 
                     LoadResult.Page(
                         data = items,
-                        prevKey = if (pageIndex == STARTING_PAGE_INDEX) null else pageIndex - 1,
-                        nextKey = if (items.isEmpty() || items.size < params.loadSize) null else pageIndex + 1,
+                        prevKey = previousKey,
+                        nextKey = nextKey,
                     )
                 }
                 is ApiResult.Error -> {
                     if (BuildConfig.DEBUG) {
-                        Log.w(TAG, "Failed to load page $pageIndex: ${result.message}")
+                        Log.w(TAG, "Failed to load startIndex=$startIndex: ${result.message}")
                     }
                     LoadResult.Error(Exception(result.message))
                 }
@@ -97,7 +108,8 @@ class LibraryItemPagingSource(
         //    just return null.
         return state.anchorPosition?.let { anchorPosition ->
             val anchorPage = state.closestPageToPosition(anchorPosition)
-            anchorPage?.prevKey?.plus(1) ?: anchorPage?.nextKey?.minus(1)
+            anchorPage?.prevKey?.plus(anchorPage.data.size)
+                ?: anchorPage?.nextKey?.minus(pageSize)
         }
     }
 }
