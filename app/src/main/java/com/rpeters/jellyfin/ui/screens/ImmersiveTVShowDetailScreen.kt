@@ -121,6 +121,7 @@ fun ImmersiveTVShowDetailScreen(
     onEpisodeClick: (BaseItemDto) -> Unit,
     onPlayEpisode: (BaseItemDto) -> Unit,
     onPersonClick: (String, String) -> Unit = { _, _ -> },
+    onGenreClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: TVSeasonViewModel = hiltViewModel(),
 ) {
@@ -185,6 +186,7 @@ fun ImmersiveTVShowDetailScreen(
                         onPlayEpisode = onPlayEpisode,
                         onRefresh = { viewModel.refresh() },
                         onPersonClick = onPersonClick,
+                        onGenreClick = onGenreClick,
                         onGenerateAiSummary = { viewModel.generateAiSummary() },
                         aiSummary = state.aiSummary,
                         isLoadingAiSummary = state.isLoadingAiSummary,
@@ -230,6 +232,7 @@ private fun ImmersiveShowDetailContent(
     onPlayEpisode: (BaseItemDto) -> Unit,
     onRefresh: () -> Unit,
     onPersonClick: (String, String) -> Unit,
+    onGenreClick: (String) -> Unit,
     onGenerateAiSummary: () -> Unit = {},
     aiSummary: String? = null,
     isLoadingAiSummary: Boolean = false,
@@ -285,6 +288,7 @@ private fun ImmersiveShowDetailContent(
                     Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
                         ShowMetadataSection(
                             series = series,
+                            onGenreClick = onGenreClick,
                             onGenerateAiSummary = onGenerateAiSummary,
                             aiSummary = aiSummary,
                             isLoadingAiSummary = isLoadingAiSummary,
@@ -484,6 +488,7 @@ private fun ShowHeroContent(
 @Composable
 private fun ShowMetadataSection(
     series: BaseItemDto,
+    onGenreClick: (String) -> Unit = {},
     onGenerateAiSummary: () -> Unit = {},
     aiSummary: String? = null,
     isLoadingAiSummary: Boolean = false,
@@ -678,7 +683,7 @@ private fun ShowMetadataSection(
             ) {
                 genres.forEach { genre ->
                     SuggestionChip(
-                        onClick = { /* TODO: Filter by genre */ },
+                        onClick = { onGenreClick(genre) },
                         label = {
                             Text(
                                 text = genre,
