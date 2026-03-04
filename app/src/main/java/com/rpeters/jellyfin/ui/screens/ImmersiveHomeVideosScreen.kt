@@ -86,7 +86,8 @@ fun ImmersiveHomeVideosScreenContainer(
         sortedVideos.filter { it.type != BaseItemKind.FOLDER }.take(5)
     }
     val routeHomeVideoItemClick: (String) -> Unit = remember(homeVideosItems, itemToLibraryId, onVideoClick, onItemClick, onFolderClick) {
-        { id ->
+        {
+                id ->
             when (homeVideosItems.firstOrNull { it.id.toString() == id }?.type) {
                 BaseItemKind.VIDEO -> onVideoClick(id)
                 BaseItemKind.FOLDER -> {

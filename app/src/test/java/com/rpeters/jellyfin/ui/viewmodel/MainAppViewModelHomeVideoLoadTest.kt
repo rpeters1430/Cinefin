@@ -126,7 +126,7 @@ class MainAppViewModelHomeVideoLoadTest {
         coEvery {
             mediaRepository.getLibraryItems(
                 parentId = libraryId.toString(),
-                itemTypes = null,         // HOMEVIDEOS must NOT filter by item type
+                itemTypes = null, // HOMEVIDEOS must NOT filter by item type
                 collectionType = "homevideos",
             )
         } returns ApiResult.Success(LibraryItemsResult(emptyList(), 0))
