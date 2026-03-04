@@ -18,7 +18,6 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,7 +26,7 @@ import javax.inject.Singleton
  */
 data class LibraryItemsResult(
     val items: List<BaseItemDto>,
-    val totalCount: Int
+    val totalCount: Int,
 )
 
 /**
@@ -145,7 +144,7 @@ class JellyfinMediaRepository @Inject constructor(
                 val response = client.itemsApi.getItems(
                     userId = userUuid,
                     parentId = parent,
-                    recursive = true,
+                    recursive = !isHomeVideos,
                     includeItemTypes = itemKinds,
                     sortBy = sortBy,
                     sortOrder = sortOrder,
@@ -153,7 +152,7 @@ class JellyfinMediaRepository @Inject constructor(
                     startIndex = validatedParams.startIndex,
                     limit = validatedParams.limit,
                 )
-                
+
                 // Report success to health checker
                 validatedParams.parentId?.let { libraryId ->
                     healthChecker.reportSuccess(libraryId)
@@ -161,7 +160,7 @@ class JellyfinMediaRepository @Inject constructor(
 
                 LibraryItemsResult(
                     items = response.content.items,
-                    totalCount = response.content.totalRecordCount
+                    totalCount = response.content.totalRecordCount,
                 )
             } catch (e: org.jellyfin.sdk.api.client.exception.InvalidStatusException) {
                 // Fallback logic remains, but needs to return LibraryItemsResult
@@ -181,14 +180,14 @@ class JellyfinMediaRepository @Inject constructor(
                             return@withServerClient LibraryItemsResult(response.content.items, response.content.totalRecordCount)
                         } catch (_: Exception) {}
                     }
-                    
+
                     // Strategy 2 Fallback
                     if (isHomeVideos || isPhotos || itemKinds.isNullOrEmpty()) {
                         try {
                             val response = client.itemsApi.getItems(
                                 userId = userUuid,
                                 parentId = parent,
-                                recursive = true,
+                                recursive = !isHomeVideos,
                                 includeItemTypes = null,
                                 startIndex = validatedParams.startIndex,
                                 limit = validatedParams.limit,
@@ -196,7 +195,7 @@ class JellyfinMediaRepository @Inject constructor(
                             return@withServerClient LibraryItemsResult(response.content.items, response.content.totalRecordCount)
                         } catch (_: Exception) {}
                     }
-                    
+
                     return@withServerClient LibraryItemsResult(emptyList(), 0)
                 }
                 throw e

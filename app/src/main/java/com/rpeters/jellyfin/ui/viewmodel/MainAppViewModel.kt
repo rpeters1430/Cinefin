@@ -118,8 +118,10 @@ data class LibraryPaginationState(
  */
 @OptInAppExperimentalApis
 @HiltViewModel
-class MainAppViewModel @androidx.annotation.OptIn(UnstableApi::class)
-@Inject constructor(
+class MainAppViewModel
+@androidx.annotation.OptIn(UnstableApi::class)
+@Inject
+constructor(
     @ApplicationContext private val context: Context,
     private val repository: JellyfinRepository,
     private val authRepository: JellyfinAuthRepository,
@@ -784,14 +786,14 @@ class MainAppViewModel @androidx.annotation.OptIn(UnstableApi::class)
                     itemTypes = itemTypesArg,
                     collectionType = collectionTypeStr,
                     startIndex = 0,
-                    limit = API_DEFAULT_LIMIT
+                    limit = API_DEFAULT_LIMIT,
                 )
             ) {
                 is ApiResult.Success -> {
                     val itemsResult = result.data
                     var items = itemsResult.items
                     val totalCount = itemsResult.totalCount
-                    
+
                     if (items.isEmpty() && libraryType == LibraryType.TV_SHOWS) {
                         SecureLogger.v(
                             "MainAppViewModel-Load",
@@ -803,7 +805,7 @@ class MainAppViewModel @androidx.annotation.OptIn(UnstableApi::class)
                                 itemTypes = null,
                                 collectionType = collectionTypeStr,
                                 startIndex = 0,
-                                limit = API_DEFAULT_LIMIT
+                                limit = API_DEFAULT_LIMIT,
                             )
                         ) {
                             is ApiResult.Success -> items = fallback.data.items.filter { it.type == BaseItemKind.SERIES }
@@ -1059,7 +1061,7 @@ class MainAppViewModel @androidx.annotation.OptIn(UnstableApi::class)
                     val itemsResult = result.data
                     val newMovies = itemsResult.items
                     val totalCount = itemsResult.totalCount
-                    
+
                     val allMovies = if (reset) newMovies else currentState.allMovies + newMovies
                     _appState.value = _appState.value.copy(
                         allMovies = allMovies,
@@ -1297,13 +1299,13 @@ class MainAppViewModel @androidx.annotation.OptIn(UnstableApi::class)
                     val itemsResult = result.data
                     val rawItems = itemsResult.items
                     val totalCount = itemsResult.totalCount
-                    
+
                     val newItems = when (collectionTypeForApi) {
                         "tvshows" -> rawItems.filter { it.type == BaseItemKind.SERIES }
                         "movies" -> rawItems.filter { it.type == BaseItemKind.MOVIE }
                         else -> rawItems
                     }
-                    
+
                     val nextStartIndex = startIndex + rawItems.size
                     val hasMore = nextStartIndex < totalCount && rawItems.isNotEmpty()
 
@@ -1416,7 +1418,7 @@ class MainAppViewModel @androidx.annotation.OptIn(UnstableApi::class)
     }
 
     fun loadHomeVideos(libraryId: String) {
-        val library = BaseItemDto(id = UUID.fromString(libraryId), type = BaseItemKind.VIDEO)
+        val library = BaseItemDto(id = UUID.fromString(libraryId), type = BaseItemKind.COLLECTION_FOLDER, collectionType = CollectionType.HOMEVIDEOS)
         loadLibraryTypeData(library, LibraryType.STUFF)
     }
 

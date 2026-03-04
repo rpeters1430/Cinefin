@@ -9,6 +9,7 @@ import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinSearchRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
+import com.rpeters.jellyfin.data.repository.LibraryItemsResult
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.ui.player.CastManager
 import com.rpeters.jellyfin.ui.screens.LibraryType
@@ -125,10 +126,10 @@ class MainAppViewModelHomeVideoLoadTest {
         coEvery {
             mediaRepository.getLibraryItems(
                 parentId = libraryId.toString(),
-                itemTypes = null,         // HOMEVIDEOS must NOT filter by item type
+                itemTypes = null, // HOMEVIDEOS must NOT filter by item type
                 collectionType = "homevideos",
             )
-        } returns ApiResult.Success(emptyList())
+        } returns ApiResult.Success(LibraryItemsResult(emptyList(), 0))
 
         // When
         viewModel.loadLibraryTypeData(homeVideoLibrary, LibraryType.STUFF)
@@ -160,17 +161,17 @@ class MainAppViewModelHomeVideoLoadTest {
                 itemTypes = any(),
                 collectionType = null,
             )
-        } returns ApiResult.Success(emptyList())
+        } returns ApiResult.Success(LibraryItemsResult(emptyList(), 0))
 
         // When
         viewModel.loadLibraryTypeData(unknownLibrary, LibraryType.STUFF)
         advanceUntilIdle()
 
-        // Then - API was called with itemTypes filter (not null)
+        // Then - API was called with itemTypes filter (not null), including Folder for browsing
         coVerify(exactly = 1) {
             mediaRepository.getLibraryItems(
                 parentId = libraryId.toString(),
-                itemTypes = "Book,AudioBook,Video",
+                itemTypes = "Book,AudioBook,Video,Folder",
                 collectionType = null,
             )
         }

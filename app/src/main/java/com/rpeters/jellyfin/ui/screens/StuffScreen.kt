@@ -163,7 +163,7 @@ private fun buildStuffItems(
         "books" -> items.filter {
             it.type == BaseItemKind.BOOK || it.type == BaseItemKind.AUDIO_BOOK
         }
-        "homevideos" -> items.filter { it.type == BaseItemKind.VIDEO }
+        "homevideos" -> items.filter { it.type == BaseItemKind.VIDEO || it.type == BaseItemKind.FOLDER }
         else -> {
             // For "stuff" or "mixed" libraries, show all items
             // This is more permissive than the previous filtering

@@ -252,6 +252,9 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
             onBackClick = { navController.popBackStack() },
             onVideoClick = { id -> navController.navigate(Screen.HomeVideoDetail.createRoute(id)) },
             onItemClick = { id -> navController.navigate(Screen.ItemDetail.createRoute(id)) },
+            onFolderClick = { folderId, libraryId ->
+                navController.navigate(Screen.Stuff.createRoute(libraryId, "homevideos") + "?folderId=$folderId")
+            },
             viewModel = viewModel,
         )
     }

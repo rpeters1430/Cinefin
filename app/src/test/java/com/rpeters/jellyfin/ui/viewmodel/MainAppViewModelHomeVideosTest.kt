@@ -10,6 +10,7 @@ import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinSearchRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
+import com.rpeters.jellyfin.data.repository.LibraryItemsResult
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -115,21 +116,21 @@ class MainAppViewModelHomeVideosTest {
         coEvery {
             mediaRepository.getLibraryItems(
                 parentId = libraryA,
-                itemTypes = "Book,AudioBook,Video",
+                itemTypes = null,
                 startIndex = 0,
                 limit = 100,
-                collectionType = null,
+                collectionType = "homevideos",
             )
-        } returns ApiResult.Success(listOf(itemA))
+        } returns ApiResult.Success(LibraryItemsResult(listOf(itemA), 1))
         coEvery {
             mediaRepository.getLibraryItems(
                 parentId = libraryB,
-                itemTypes = "Book,AudioBook,Video",
+                itemTypes = null,
                 startIndex = 0,
                 limit = 100,
-                collectionType = null,
+                collectionType = "homevideos",
             )
-        } returns ApiResult.Success(listOf(itemB))
+        } returns ApiResult.Success(LibraryItemsResult(listOf(itemB), 1))
 
         viewModel.loadHomeVideos(libraryA)
         viewModel.loadHomeVideos(libraryB)

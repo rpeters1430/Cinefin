@@ -35,6 +35,7 @@ private val homeVideosSortOptions = listOf(
 fun ImmersiveHomeVideosScreenContainer(
     onVideoClick: (String) -> Unit,
     onItemClick: (String) -> Unit,
+    onFolderClick: (folderId: String, libraryId: String) -> Unit = { _, _ -> },
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
@@ -58,10 +59,22 @@ fun ImmersiveHomeVideosScreenContainer(
         homeVideosLibraries.map { it.id.toString() }
     }
 
+    // Build a map from item ID to library ID for folder navigation
+    val itemToLibraryId = remember(appState.itemsByLibrary, homeVideosLibraries) {
+        buildMap<String, String> {
+            homeVideosLibraries.forEach { library ->
+                val libraryId = library.id.toString()
+                appState.itemsByLibrary[libraryId]?.forEach { item ->
+                    put(item.id.toString(), libraryId)
+                }
+            }
+        }
+    }
+
     val homeVideosItems = remember(appState.itemsByLibrary, homeVideosLibraries) {
         homeVideosLibraries
             .flatMap { appState.itemsByLibrary[it.id.toString()] ?: emptyList() }
-            .filter { it.type == BaseItemKind.VIDEO || it.type == BaseItemKind.MOVIE }
+            .filter { it.type == BaseItemKind.VIDEO || it.type == BaseItemKind.MOVIE || it.type == BaseItemKind.FOLDER }
     }
 
     var selectedSortIndex by remember { mutableIntStateOf(0) }
@@ -69,11 +82,18 @@ fun ImmersiveHomeVideosScreenContainer(
         sortHomeVideosByIndex(homeVideosItems, selectedSortIndex)
     }
 
-    val featuredVideos = remember(sortedVideos) { sortedVideos.take(5) }
-    val routeHomeVideoItemClick: (String) -> Unit = remember(homeVideosItems, onVideoClick, onItemClick) {
-        { id ->
+    val featuredVideos = remember(sortedVideos) {
+        sortedVideos.filter { it.type != BaseItemKind.FOLDER }.take(5)
+    }
+    val routeHomeVideoItemClick: (String) -> Unit = remember(homeVideosItems, itemToLibraryId, onVideoClick, onItemClick, onFolderClick) {
+        {
+                id ->
             when (homeVideosItems.firstOrNull { it.id.toString() == id }?.type) {
                 BaseItemKind.VIDEO -> onVideoClick(id)
+                BaseItemKind.FOLDER -> {
+                    val libraryId = itemToLibraryId[id] ?: homeVideosLibraries.firstOrNull()?.id?.toString()
+                    if (libraryId != null) onFolderClick(id, libraryId)
+                }
                 else -> onItemClick(id)
             }
         }
