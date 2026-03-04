@@ -43,8 +43,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 import java.io.File
+import javax.inject.Inject
 
 // Use the enhanced ConnectionState from ConnectionProgress.kt
 // This data class is now defined in the ConnectionProgress.kt file
@@ -837,13 +837,17 @@ class ServerConnectionViewModel @Inject constructor(
             )
 
             // First test server connection
-            when (val serverResult = withContext(Dispatchers.IO) {
-                repository.testServerConnection(normalizedServerUrl)
-            }) {
+            when (
+                val serverResult = withContext(Dispatchers.IO) {
+                    repository.testServerConnection(normalizedServerUrl)
+                }
+            ) {
                 is ApiResult.Success -> {
-                    when (val enabledResult = withContext(Dispatchers.IO) {
-                        repository.isQuickConnectEnabled(normalizedServerUrl)
-                    }) {
+                    when (
+                        val enabledResult = withContext(Dispatchers.IO) {
+                            repository.isQuickConnectEnabled(normalizedServerUrl)
+                        }
+                    ) {
                         is ApiResult.Success -> {
                             if (!enabledResult.data) {
                                 _connectionState.value = _connectionState.value.copy(
@@ -870,9 +874,11 @@ class ServerConnectionViewModel @Inject constructor(
                     _connectionState.value = _connectionState.value.copy(quickConnectStatus = "Initiating Quick Connect...")
 
                     // Now initiate Quick Connect
-                    when (val quickConnectResult = withContext(Dispatchers.IO) {
-                        repository.initiateQuickConnect(normalizedServerUrl)
-                    }) {
+                    when (
+                        val quickConnectResult = withContext(Dispatchers.IO) {
+                            repository.initiateQuickConnect(normalizedServerUrl)
+                        }
+                    ) {
                         is ApiResult.Success -> {
                             val result = quickConnectResult.data
                             _connectionState.value = _connectionState.value.copy(
@@ -937,17 +943,21 @@ class ServerConnectionViewModel @Inject constructor(
                 return
             }
 
-            when (val stateResult = withContext(Dispatchers.IO) {
-                repository.getQuickConnectState(serverUrl, secret)
-            }) {
+            when (
+                val stateResult = withContext(Dispatchers.IO) {
+                    repository.getQuickConnectState(serverUrl, secret)
+                }
+            ) {
                 is ApiResult.Success -> {
                     val state = stateResult.data
                     when (state.state) {
                         "Approved" -> {
                             // User approved the connection, authenticate
-                            when (val authResult = withContext(Dispatchers.IO) {
-                                repository.authenticateWithQuickConnect(serverUrl, secret)
-                            }) {
+                            when (
+                                val authResult = withContext(Dispatchers.IO) {
+                                    repository.authenticateWithQuickConnect(serverUrl, secret)
+                                }
+                            ) {
                                 is ApiResult.Success -> {
                                     if (_connectionState.value.rememberLogin) {
                                         saveCurrentSessionToken()
