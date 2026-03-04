@@ -101,9 +101,9 @@ fun OfflineScreen(
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("Clear All Downloads") },
+            title = { Text(stringResource(id = R.string.clear_all_downloads)) },
             text = {
-                Text("This will delete all downloaded content and free up storage space. This action cannot be undone.")
+                Text(stringResource(id = R.string.clear_all_downloads_message))
             },
             confirmButton = {
                 Button(
@@ -116,12 +116,12 @@ fun OfflineScreen(
                         containerColor = MaterialTheme.colorScheme.error,
                     ),
                 ) {
-                    Text("Clear All")
+                    Text(stringResource(id = R.string.clear_all))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.cancel))
                 }
             },
         )
@@ -221,7 +221,7 @@ private fun StorageInfoCard(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(Dimens.Spacing4))
-                        Text("Clear All")
+                        Text(stringResource(id = R.string.clear_all))
                     }
                 }
             }

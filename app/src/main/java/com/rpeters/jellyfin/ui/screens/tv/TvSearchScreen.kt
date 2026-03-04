@@ -32,10 +32,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
 import com.rpeters.jellyfin.ui.adaptive.rememberWindowLayoutInfo
 import com.rpeters.jellyfin.ui.components.tv.TvContentCard
@@ -92,7 +94,7 @@ fun TvSearchScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp),
-                placeholder = { TvText("Search movies, TV shows, and more...", color = Color.Gray) },
+                placeholder = { TvText(stringResource(id = R.string.tv_search_placeholder), color = Color.Gray) },
                 leadingIcon = { TvIcon(Icons.Default.Search, contentDescription = null, tint = Color.White) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),

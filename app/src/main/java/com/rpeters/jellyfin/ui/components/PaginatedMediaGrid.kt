@@ -229,7 +229,7 @@ private fun ErrorItem(
                 onClick = onRetry,
                 modifier = Modifier.padding(top = 8.dp),
             ) {
-                Text("Retry")
+                Text(stringResource(id = R.string.retry))
             }
         }
     }
@@ -262,7 +262,7 @@ private fun InitialErrorState(
             onClick = onRetry,
             modifier = Modifier.padding(top = 16.dp),
         ) {
-            Text("Retry")
+            Text(stringResource(id = R.string.retry))
         }
     }
 }

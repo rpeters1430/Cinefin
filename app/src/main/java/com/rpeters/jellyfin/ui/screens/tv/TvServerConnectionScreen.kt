@@ -41,6 +41,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.tv.TvImmersiveBackground
 import androidx.tv.material3.Button as TvButton
@@ -117,8 +119,8 @@ fun TvServerConnectionScreen(
                 OutlinedTextField(
                     value = serverUrl,
                     onValueChange = { serverUrl = it },
-                    label = { TvText("Server URL") },
-                    placeholder = { TvText("https://jellyfin.example.com") },
+                    label = { TvText(stringResource(id = R.string.server_url_label)) },
+                    placeholder = { TvText(stringResource(id = R.string.server_url_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Uri,
@@ -138,7 +140,7 @@ fun TvServerConnectionScreen(
                 OutlinedTextField(
                     value = username,
                     onValueChange = { username = it },
-                    label = { TvText("Username") },
+                    label = { TvText(stringResource(id = R.string.username_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
@@ -158,7 +160,7 @@ fun TvServerConnectionScreen(
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { TvText("Password") },
+                    label = { TvText(stringResource(id = R.string.password_label)) },
                     visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { showPassword = !showPassword }) {
@@ -238,10 +240,10 @@ fun TvServerConnectionScreen(
                                     color = TvMaterialTheme.colorScheme.onPrimary,
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                TvText("Connecting...", style = TvMaterialTheme.typography.labelLarge)
+                                TvText(stringResource(id = R.string.connecting_dots), style = TvMaterialTheme.typography.labelLarge)
                             }
                         } else {
-                            TvText("Sign In", style = TvMaterialTheme.typography.labelLarge)
+                            TvText(stringResource(id = R.string.sign_in), style = TvMaterialTheme.typography.labelLarge)
                         }
                     }
 
@@ -256,7 +258,7 @@ fun TvServerConnectionScreen(
                             .height(56.dp)
                             .focusRequester(quickConnectButtonFocusRequester),
                     ) {
-                        TvText("Quick Connect", style = TvMaterialTheme.typography.labelLarge)
+                        TvText(stringResource(id = R.string.quick_connect), style = TvMaterialTheme.typography.labelLarge)
                     }
                 }
 

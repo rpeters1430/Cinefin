@@ -13,7 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.media3.common.util.UnstableApi
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 import org.jellyfin.sdk.model.api.BaseItemDto
 
@@ -193,7 +195,7 @@ fun NextEpisodeCountdownOverlay(
                             contentColor = overlayContent,
                         ),
                     ) {
-                        Text("Close")
+                        Text(stringResource(id = R.string.close))
                     }
                     Button(
                         onClick = onPlayNow,
@@ -201,7 +203,7 @@ fun NextEpisodeCountdownOverlay(
                             containerColor = MaterialTheme.colorScheme.primary,
                         ),
                     ) {
-                        Text("Play Now")
+                        Text(stringResource(id = R.string.play_now))
                     }
                 }
             }

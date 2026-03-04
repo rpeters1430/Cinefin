@@ -58,6 +58,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -68,6 +69,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.preferences.SubtitleAppearancePreferences
 import com.rpeters.jellyfin.ui.player.TrackInfo
 import com.rpeters.jellyfin.ui.player.VideoPlayerState
@@ -613,7 +615,7 @@ fun TvQuickSettingsDrawer(
                     Modifier.fillMaxWidth()
                 },
             ) {
-                TvText("Close")
+                TvText(stringResource(id = R.string.close))
             }
         }
     }

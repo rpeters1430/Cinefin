@@ -37,8 +37,10 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.ui.components.ConnectedIndicatorBanner
@@ -103,7 +105,7 @@ fun OfflineLibraryScreen(
                 onClick = onBackToLogin,
                 modifier = Modifier.weight(1f),
             ) {
-                Text("Login Screen")
+                Text(stringResource(id = R.string.login_screen))
             }
         }
 
@@ -220,10 +222,10 @@ private fun OfflineDownloadRow(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onPlay) {
                     Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
-                    Text("Play")
+                    Text(stringResource(id = R.string.play))
                 }
                 OutlinedButton(onClick = onDelete) {
-                    Text("Delete")
+                    Text(stringResource(id = R.string.delete))
                 }
             }
         }

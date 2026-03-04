@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -46,6 +47,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 
@@ -134,7 +136,7 @@ fun TvQuickConnectScreen(
                     localServerUrl = it
                     onServerUrlChange(it)
                 },
-                label = { Text("Server URL", style = TvMaterialTheme.typography.bodyLarge) },
+                label = { Text(stringResource(id = R.string.server_url_label), style = TvMaterialTheme.typography.bodyLarge) },
                 placeholder = {
                     Text(
                         "https://jellyfin.example.com",

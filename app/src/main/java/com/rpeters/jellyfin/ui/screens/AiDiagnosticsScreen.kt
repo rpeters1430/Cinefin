@@ -58,7 +58,7 @@ private fun AiDiagnosticsScreenContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("AI Backend Diagnostics") },
+                title = { Text(stringResource(id = R.string.ai_backend_diagnostics)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -326,7 +326,7 @@ private fun RetryCard(
                     modifier = Modifier.size(20.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Retry Download")
+                Text(stringResource(id = R.string.retry_download))
             }
         }
     }

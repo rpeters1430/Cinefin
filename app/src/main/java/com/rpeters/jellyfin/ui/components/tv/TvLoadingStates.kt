@@ -26,6 +26,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.appShimmer
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import androidx.tv.material3.Button as TvButton
@@ -192,7 +194,7 @@ fun TvErrorBanner(
                         TvButton(
                             onClick = it,
                         ) {
-                            TvText("Retry")
+                            TvText(stringResource(id = R.string.retry))
                         }
                     }
 
@@ -204,7 +206,7 @@ fun TvErrorBanner(
                                 contentColor = TvMaterialTheme.colorScheme.onSurfaceVariant,
                             ),
                         ) {
-                            TvText("Dismiss")
+                            TvText(stringResource(id = R.string.dismiss))
                         }
                     }
                 }

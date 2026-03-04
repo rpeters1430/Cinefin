@@ -383,9 +383,9 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                Text("Movie not found or failed to load")
+                Text(stringResource(id = R.string.movie_not_found_or_failed))
                 Button(onClick = { navController.popBackStack() }) {
-                    Text("Go Back")
+                    Text(stringResource(id = R.string.go_back))
                 }
             }
         }
@@ -556,7 +556,7 @@ fun androidx.navigation.NavGraphBuilder.detailNavGraph(
                                 navController.popBackStack()
                             },
                         ) {
-                            Text("Go Back")
+                            Text(stringResource(id = R.string.go_back))
                         }
                     }
                 }

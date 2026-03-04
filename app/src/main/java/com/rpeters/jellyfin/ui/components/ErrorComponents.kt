@@ -11,6 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.ui.utils.ProcessedError
 
@@ -83,7 +85,7 @@ fun ErrorDisplay(
             ) {
                 onDismiss?.let { dismiss ->
                     TextButton(onClick = dismiss) {
-                        Text("Dismiss")
+                        Text(stringResource(id = R.string.dismiss))
                     }
                 }
 
@@ -100,7 +102,7 @@ fun ErrorDisplay(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Retry")
+                        Text(stringResource(id = R.string.retry))
                     }
                 }
             }
@@ -236,7 +238,7 @@ fun ErrorScreen(
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Try Again")
+                    Text(stringResource(id = R.string.try_again))
                 }
             }
         }

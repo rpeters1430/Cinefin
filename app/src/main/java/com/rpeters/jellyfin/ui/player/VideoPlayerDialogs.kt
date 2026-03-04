@@ -28,7 +28,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.media3.common.util.UnstableApi
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.player.cast.DiscoveryState
 
 @UnstableApi
@@ -41,7 +43,7 @@ fun AudioTrackSelectionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select Audio Track") },
+        title = { Text(stringResource(id = R.string.select_audio_track)) },
         text = {
             Column(
                 modifier = Modifier
@@ -66,7 +68,7 @@ fun AudioTrackSelectionDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.close)) }
         },
     )
 }
@@ -82,7 +84,7 @@ fun SubtitleTrackSelectionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Subtitles") },
+        title = { Text(stringResource(id = R.string.subtitles)) },
         text = {
             Column(
                 modifier = Modifier
@@ -120,7 +122,7 @@ fun SubtitleTrackSelectionDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.close)) }
         },
     )
 }
@@ -136,7 +138,7 @@ fun CastDeviceSelectionDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Cast to Device")
+                Text(stringResource(id = R.string.cast_to_device))
                 if (discoveryState == DiscoveryState.DISCOVERING) {
                     Spacer(modifier = Modifier.width(12.dp))
                     CircularProgressIndicator(
@@ -166,10 +168,10 @@ fun CastDeviceSelectionDialog(
                         }
                     }
                     availableDevices.isEmpty() && discoveryState == DiscoveryState.TIMEOUT -> {
-                        Text("No Cast devices found. Make sure your Chromecast or other Cast-enabled device is on the same network.")
+                        Text(stringResource(id = R.string.no_cast_devices_found_detailed))
                     }
                     availableDevices.isEmpty() && discoveryState == DiscoveryState.IDLE -> {
-                        Text("No devices found.")
+                        Text(stringResource(id = R.string.no_devices_found))
                     }
                     else -> {
                         availableDevices.forEach { device ->
@@ -190,7 +192,7 @@ fun CastDeviceSelectionDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(id = R.string.cancel))
             }
         },
     )
@@ -251,11 +253,11 @@ fun QualityRecommendationNotification(
             ) {
                 Spacer(modifier = Modifier.weight(1f))
                 TextButton(onClick = onDismiss) {
-                    Text("Not Now")
+                    Text(stringResource(id = R.string.not_now))
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 TextButton(onClick = onAccept) {
-                    Text("Switch Quality", fontWeight = FontWeight.Bold)
+                    Text(stringResource(id = R.string.switch_quality), fontWeight = FontWeight.Bold)
                 }
             }
         }

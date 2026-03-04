@@ -12,8 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.components.ExpressiveWavyCircularLoading
 import com.rpeters.jellyfin.ui.viewmodel.TranscodingDiagnosticsViewModel
 
@@ -33,7 +35,7 @@ fun TranscodingDiagnosticsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Transcoding Diagnostics") },
+                title = { Text(stringResource(id = R.string.transcoding_diagnostics)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -129,9 +131,9 @@ private fun SummaryCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
-                    Text("Total Videos:", style = MaterialTheme.typography.bodyMedium)
-                    Text("Direct Play:", style = MaterialTheme.typography.bodyMedium)
-                    Text("Needs Transcoding:", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(id = R.string.total_videos_label), style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(id = R.string.direct_play_label), style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(id = R.string.needs_transcoding_label), style = MaterialTheme.typography.bodyMedium)
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text("$totalVideos", fontWeight = FontWeight.Bold)
@@ -157,10 +159,10 @@ private fun LegendCard() {
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text("Test Scenarios:", style = MaterialTheme.typography.labelLarge)
-            Text("• Video Codec: H.264 ✓ | H.265/VP9/AV1 ✗", style = MaterialTheme.typography.bodySmall)
-            Text("• Audio Codec: AAC ✓ | AC3/DTS/TrueHD ✗", style = MaterialTheme.typography.bodySmall)
-            Text("• Container: MP4/TS ✓ | MKV/AVI ✗", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(id = R.string.test_scenarios), style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(id = R.string.test_scenario_video_codec), style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(id = R.string.test_scenario_audio_codec), style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(id = R.string.test_scenario_container), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -239,17 +241,17 @@ private fun VideoAnalysisCard(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Video:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    Text(stringResource(id = R.string.video_label), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     Text(video.videoCodec, style = MaterialTheme.typography.bodySmall)
 
-                    Text("Audio:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    Text(stringResource(id = R.string.audio_label), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     Text(video.audioCodec, style = MaterialTheme.typography.bodySmall)
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Container:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    Text(stringResource(id = R.string.container_label), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     Text(video.container, style = MaterialTheme.typography.bodySmall)
 
-                    Text("Resolution:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    Text(stringResource(id = R.string.resolution_label), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                     Text(video.resolution, style = MaterialTheme.typography.bodySmall)
                 }
             }
@@ -267,7 +269,7 @@ private fun VideoAnalysisCard(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Text("•", style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(id = R.string.bullet), style = MaterialTheme.typography.bodySmall)
                         Text(reason, style = MaterialTheme.typography.bodySmall)
                     }
                 }

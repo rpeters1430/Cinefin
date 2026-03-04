@@ -24,6 +24,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.tv.material3.Button
 import androidx.tv.material3.Carousel
 import androidx.tv.material3.CarouselDefaults
@@ -32,6 +33,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import androidx.tv.material3.rememberCarouselState
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -138,14 +140,14 @@ fun TvHeroCarousel(
                         onClick = { onPlayClick(item) },
                         modifier = Modifier.width(120.dp)
                     ) {
-                        Text("Play")
+                        Text(stringResource(id = R.string.play))
                     }
 
                     Button(
                         onClick = { onItemClick(item) },
                         modifier = Modifier.width(140.dp)
                     ) {
-                        Text("More Info")
+                        Text(stringResource(id = R.string.more_info))
                     }
                 }
             }

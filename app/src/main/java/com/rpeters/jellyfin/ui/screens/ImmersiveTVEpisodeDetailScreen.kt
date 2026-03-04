@@ -62,6 +62,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -196,19 +197,19 @@ fun ImmersiveTVEpisodeDetailScreen(
     if (showDeleteOfflineConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteOfflineConfirmation = false },
-            title = { Text("Remove offline copy?") },
-            text = { Text("This only removes the local downloaded file from this device.") },
+            title = { Text(stringResource(id = R.string.remove_offline_copy_question)) },
+            text = { Text(stringResource(id = R.string.remove_offline_copy_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteOfflineConfirmation = false
                     onDeleteOfflineCopy()
                 }) {
-                    Text("Remove")
+                    Text(stringResource(id = R.string.remove))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteOfflineConfirmation = false }) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.cancel))
                 }
             },
         )
@@ -327,7 +328,7 @@ fun ImmersiveTVEpisodeDetailScreen(
                             if (isDownloaded) {
                                 AssistChip(
                                     onClick = {},
-                                    label = { Text("Downloaded") },
+                                    label = { Text(stringResource(id = R.string.downloaded)) },
                                     leadingIcon = {
                                         Icon(Icons.Default.Download, contentDescription = null)
                                     },
@@ -336,7 +337,7 @@ fun ImmersiveTVEpisodeDetailScreen(
                             if (isOffline) {
                                 AssistChip(
                                     onClick = {},
-                                    label = { Text("Offline") },
+                                    label = { Text(stringResource(id = R.string.offline)) },
                                     leadingIcon = {
                                         Icon(Icons.Default.WifiOff, contentDescription = null)
                                     },
@@ -349,7 +350,7 @@ fun ImmersiveTVEpisodeDetailScreen(
                                 onClick = { showDeleteOfflineConfirmation = true },
                                 contentPadding = PaddingValues(0.dp),
                             ) {
-                                Text("Delete offline copy")
+                                Text(stringResource(id = R.string.delete_offline_copy))
                             }
                         }
 

@@ -16,10 +16,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.offline.DownloadStatus
 import com.rpeters.jellyfin.data.offline.OfflineDownload
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
@@ -197,7 +199,7 @@ private fun PendingDownloadButton(showText: Boolean) {
         OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
             CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Queued...")
+            Text(stringResource(id = R.string.download_queued))
         }
     } else {
         Box(contentAlignment = Alignment.Center) {
@@ -222,7 +224,7 @@ private fun StartDownloadButton(
                 modifier = Modifier.size(18.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Download")
+            Text(stringResource(id = R.string.download))
         }
     } else {
         IconButton(onClick = onDownload) {
@@ -329,7 +331,7 @@ private fun PausedDownloadButton(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Resume")
+                Text(stringResource(id = R.string.resume))
             }
             OutlinedButton(
                 onClick = onCancel,
@@ -341,7 +343,7 @@ private fun PausedDownloadButton(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Cancel")
+                Text(stringResource(id = R.string.cancel))
             }
         }
     } else {
@@ -378,7 +380,7 @@ private fun CompletedDownloadButton(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Play Offline")
+                Text(stringResource(id = R.string.play_offline))
             }
             OutlinedButton(
                 onClick = onRedownload,
@@ -390,7 +392,7 @@ private fun CompletedDownloadButton(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Redownload")
+                Text(stringResource(id = R.string.redownload))
             }
             OutlinedButton(
                 onClick = onDelete,
@@ -402,7 +404,7 @@ private fun CompletedDownloadButton(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Delete")
+                Text(stringResource(id = R.string.delete))
             }
         }
     } else {
@@ -459,7 +461,7 @@ private fun FailedDownloadButton(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Retry")
+                Text(stringResource(id = R.string.retry))
             }
             OutlinedButton(
                 onClick = onDelete,
@@ -474,7 +476,7 @@ private fun FailedDownloadButton(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Delete")
+                Text(stringResource(id = R.string.delete))
             }
         }
     } else {

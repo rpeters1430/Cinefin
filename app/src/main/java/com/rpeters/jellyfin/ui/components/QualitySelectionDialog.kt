@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.offline.VideoQuality
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -26,7 +28,7 @@ fun QualitySelectionDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select Download Quality") },
+        title = { Text(stringResource(id = R.string.select_download_quality)) },
         text = {
             Column {
                 presets.forEach { quality ->
@@ -45,7 +47,7 @@ fun QualitySelectionDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(id = R.string.cancel))
             }
         },
     )

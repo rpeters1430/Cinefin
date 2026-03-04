@@ -461,7 +461,7 @@ fun ImmersiveMovieDetailScreen(
                             if (isOffline) {
                                 AssistChip(
                                     onClick = {},
-                                    label = { Text("Offline") },
+                                    label = { Text(stringResource(id = R.string.offline)) },
                                     leadingIcon = {
                                         Icon(
                                             imageVector = Icons.Rounded.WifiOff,
@@ -477,7 +477,7 @@ fun ImmersiveMovieDetailScreen(
                                 onClick = { showDeleteOfflineConfirmation = true },
                                 contentPadding = PaddingValues(0.dp),
                             ) {
-                                Text("Delete offline copy")
+                                Text(stringResource(id = R.string.delete_offline_copy))
                             }
                         }
 
@@ -779,7 +779,7 @@ fun ImmersiveMovieDetailScreen(
                     if (!serverUrl.isNullOrBlank()) {
                         val movieId = movie.id.toString()
                         DropdownMenuItem(
-                            text = { Text("Open in Browser") },
+                            text = { Text(stringResource(id = R.string.open_in_browser)) },
                             onClick = {
                                 try {
                                     val intent = android.content.Intent(
@@ -807,7 +807,7 @@ fun ImmersiveMovieDetailScreen(
 
                     // Share
                     DropdownMenuItem(
-                        text = { Text("Share") },
+                        text = { Text(stringResource(id = R.string.share)) },
                         onClick = {
                             onShareClick(movie)
                             showMoreOptions = false
@@ -822,7 +822,7 @@ fun ImmersiveMovieDetailScreen(
 
                     // Delete
                     DropdownMenuItem(
-                        text = { Text("Delete") },
+                        text = { Text(stringResource(id = R.string.delete)) },
                         onClick = {
                             showDeleteConfirmation = true
                             showMoreOptions = false
@@ -842,8 +842,8 @@ fun ImmersiveMovieDetailScreen(
     if (showDeleteOfflineConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteOfflineConfirmation = false },
-            title = { Text("Remove offline copy?") },
-            text = { Text("This only removes the local downloaded file from this device.") },
+            title = { Text(stringResource(id = R.string.remove_offline_copy_question)) },
+            text = { Text(stringResource(id = R.string.remove_offline_copy_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -851,12 +851,12 @@ fun ImmersiveMovieDetailScreen(
                         onDeleteOfflineCopy()
                     },
                 ) {
-                    Text("Remove")
+                    Text(stringResource(id = R.string.remove))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteOfflineConfirmation = false }) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.cancel))
                 }
             },
         )
@@ -865,7 +865,7 @@ fun ImmersiveMovieDetailScreen(
     if (showDeleteConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text("Delete Movie?") },
+            title = { Text(stringResource(id = R.string.delete_movie_question)) },
             text = {
                 Text(
                     "Are you sure you want to delete \"${movie.name}\"? " +
@@ -882,12 +882,12 @@ fun ImmersiveMovieDetailScreen(
                         contentColor = MaterialTheme.colorScheme.error,
                     ),
                 ) {
-                    Text("Delete")
+                    Text(stringResource(id = R.string.delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.cancel))
                 }
             },
         )
@@ -1837,7 +1837,7 @@ private fun ImmersiveSubtitleRow(
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 // None option
                 DropdownMenuItem(
-                    text = { Text("None") },
+                    text = { Text(stringResource(id = R.string.none)) },
                     onClick = {
                         onSubtitleSelect(null)
                         expanded = false

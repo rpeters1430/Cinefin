@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
@@ -58,20 +59,20 @@ fun DownloadsScreen(
     if (showDeleteAllConfirmation) {
         AlertDialog(
             onDismissRequest = { },
-            title = { Text("Delete all downloads?") },
-            text = { Text("This removes all local offline copies from this device.") },
+            title = { Text(stringResource(id = R.string.downloads_delete_all_title)) },
+            text = { Text(stringResource(id = R.string.downloads_delete_all_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         downloadsViewModel.deleteAllDownloads()
                     },
                 ) {
-                    Text("Delete all")
+                    Text(stringResource(id = R.string.downloads_delete_all_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { }) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.cancel))
                 }
             },
         )
@@ -80,20 +81,20 @@ fun DownloadsScreen(
     if (showClearWatchedConfirmation) {
         AlertDialog(
             onDismissRequest = { },
-            title = { Text("Clear watched downloads?") },
-            text = { Text("Removes completed downloads watched at least 90%.") },
+            title = { Text(stringResource(id = R.string.downloads_clear_watched_title)) },
+            text = { Text(stringResource(id = R.string.downloads_clear_watched_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         downloadsViewModel.clearWatchedDownloads()
                     },
                 ) {
-                    Text("Clear watched")
+                    Text(stringResource(id = R.string.downloads_clear_watched_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { }) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.cancel))
                 }
             },
         )
@@ -102,7 +103,7 @@ fun DownloadsScreen(
     redownloadTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { },
-            title = { Text("Redownload in different quality") },
+            title = { Text(stringResource(id = R.string.downloads_redownload_quality_title)) },
             text = {
                 Column {
                     DownloadsViewModel.QUALITY_PRESETS.forEach { quality ->
@@ -119,7 +120,7 @@ fun DownloadsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { }) {
-                    Text("Cancel")
+                    Text(stringResource(id = R.string.cancel))
                 }
             },
         )
@@ -128,7 +129,7 @@ fun DownloadsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Downloads", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(id = R.string.downloads), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -574,7 +575,7 @@ private fun ExpressiveDownloadPreferencesCard(
                     ) {
                         Icon(Icons.Default.CleaningServices, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Clean Up Now")
+                        Text(stringResource(id = R.string.clean_up_now))
                     }
                 }
             }

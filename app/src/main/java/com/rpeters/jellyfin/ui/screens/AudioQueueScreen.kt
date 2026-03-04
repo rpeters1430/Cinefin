@@ -46,8 +46,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.MediaItem
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.components.EmptyStateComposable
 import com.rpeters.jellyfin.ui.components.EmptyStateType
@@ -79,7 +81,7 @@ fun AudioQueueScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Queue")
+                        Text(stringResource(id = R.string.queue))
                         Text(
                             text = "${queue.size} tracks",
                             style = MaterialTheme.typography.bodySmall,
@@ -106,7 +108,7 @@ fun AudioQueueScreen(
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Clear")
+                            Text(stringResource(id = R.string.clear))
                         }
                     }
                 },

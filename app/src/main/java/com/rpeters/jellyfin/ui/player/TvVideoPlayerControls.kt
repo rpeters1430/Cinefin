@@ -53,12 +53,14 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.media3.common.util.UnstableApi
 import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.Icon
+import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.tv.tvKeyboardHandler
@@ -623,7 +625,7 @@ fun TvPlayerSettingsDialog(
                         .fillMaxWidth()
                         .focusRequester(tabFocusRequesters[3]),
                 ) {
-                    TvText("Close")
+                    TvText(stringResource(id = R.string.close))
                 }
             }
         }
