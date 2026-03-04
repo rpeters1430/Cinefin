@@ -116,12 +116,10 @@ class JellyfinMediaRepository @Inject constructor(
 
             val isHomeVideos = collectionType?.equals("homevideos", ignoreCase = true) == true
             val isPhotos = collectionType?.equals("photos", ignoreCase = true) == true
-            if (isHomeVideos && (itemKinds == null || itemKinds.isEmpty())) {
-                itemKinds = listOf(BaseItemKind.VIDEO, BaseItemKind.PHOTO, BaseItemKind.FOLDER)
-            }
-            if (isPhotos && (itemKinds == null || itemKinds.isEmpty())) {
-                itemKinds = listOf(BaseItemKind.PHOTO, BaseItemKind.FOLDER)
-            }
+
+            // Allow all item types for home videos and photos when itemKinds is null.
+            // This ensures we don't accidentally filter out sub-folders or yt-dlp items
+            // that Jellyfin might categorize as SERIES, BOX_SET, etc.
 
             try {
                 val coll = validatedParams.collectionType?.lowercase()

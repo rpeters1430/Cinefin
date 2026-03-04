@@ -163,7 +163,7 @@ private fun buildStuffItems(
         "books" -> items.filter {
             it.type == BaseItemKind.BOOK || it.type == BaseItemKind.AUDIO_BOOK
         }
-        "homevideos" -> items.filter { it.type == BaseItemKind.VIDEO || it.type == BaseItemKind.FOLDER }
+        "homevideos" -> items // Allow all item types to pass through so yt-dlp folders/series are shown
         else -> {
             // For "stuff" or "mixed" libraries, show all items
             // This is more permissive than the previous filtering
