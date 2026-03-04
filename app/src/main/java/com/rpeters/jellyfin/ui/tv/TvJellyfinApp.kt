@@ -40,7 +40,7 @@ fun TvJellyfinApp(
     // Hosts the navigation graph for all TV screens.
     // Apply both Material You theme and TV Material Theme
     JellyfinAndroidTheme(themePreferences = themePreferences) {
-        TvMaterialTheme(colorScheme = cinefinTvColorScheme()) {
+        TvMaterialTheme(colorScheme = cinefinTvColorScheme(accentColor = themePreferences.accentColor)) {
             Surface(modifier = modifier.fillMaxSize()) {
                 val navController = rememberNavController()
                 val backStackEntry by navController.currentBackStackEntryAsState()

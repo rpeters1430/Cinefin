@@ -101,7 +101,8 @@ data class MainAppState(
  * Tracks pagination state for each library
  */
 data class LibraryPaginationState(
-    val loadedCount: Int = 0,
+    val nextStartIndex: Int = 0,
+    val totalCount: Int = 0,
     val hasMore: Boolean = false,
     val isLoadingMore: Boolean = false,
 )
@@ -117,7 +118,8 @@ data class LibraryPaginationState(
  */
 @OptInAppExperimentalApis
 @HiltViewModel
-class MainAppViewModel @Inject constructor(
+class MainAppViewModel @androidx.annotation.OptIn(UnstableApi::class)
+@Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: JellyfinRepository,
     private val authRepository: JellyfinAuthRepository,
@@ -694,15 +696,17 @@ class MainAppViewModel @Inject constructor(
         library: BaseItemDto,
         libraryType: LibraryType,
         forceRefresh: Boolean = false,
+        parentId: String? = null,
     ) {
         viewModelScope.launch {
             if (!ensureValidToken()) return@launch
 
             val libraryId = library.id.toString()
+            val effectiveParentId = parentId ?: libraryId
 
             // Skip reload if data is already loaded and no force refresh requested
-            if (!forceRefresh && _appState.value.itemsByLibrary[libraryId]?.isNotEmpty() == true) {
-                SecureLogger.v("MainAppViewModel-Load", "Skipping reload for library $libraryId - data already present")
+            if (!forceRefresh && _appState.value.itemsByLibrary[effectiveParentId]?.isNotEmpty() == true) {
+                SecureLogger.v("MainAppViewModel-Load", "Skipping reload for parent $effectiveParentId - data already present")
                 return@launch
             }
 
@@ -714,6 +718,7 @@ class MainAppViewModel @Inject constructor(
             )
             SecureLogger.v("MainAppViewModel-Load", "  LibraryType: ${libraryType.name}")
             SecureLogger.v("MainAppViewModel-Load", "  LibraryId: $libraryId")
+            SecureLogger.v("MainAppViewModel-Load", "  EffectiveParentId: $effectiveParentId")
             SecureLogger.v("MainAppViewModel-Load", "  ItemKinds: ${libraryType.itemKinds}")
             SecureLogger.v("MainAppViewModel-Load", "  ForceRefresh: $forceRefresh")
 
@@ -745,6 +750,8 @@ class MainAppViewModel @Inject constructor(
                         BaseItemKind.BOOK -> "Book"
                         BaseItemKind.AUDIO_BOOK -> "AudioBook"
                         BaseItemKind.VIDEO -> "Video"
+                        BaseItemKind.PHOTO -> "Photo"
+                        BaseItemKind.FOLDER -> "Folder"
                         else -> null
                     }
                 }.joinToString(",")
@@ -767,19 +774,24 @@ class MainAppViewModel @Inject constructor(
                 }
 
             SecureLogger.v("MainAppViewModel-Load", "  Calling API with:")
-            SecureLogger.v("MainAppViewModel-Load", "    parentId: $libraryId")
+            SecureLogger.v("MainAppViewModel-Load", "    parentId: $effectiveParentId")
             SecureLogger.v("MainAppViewModel-Load", "    itemTypes: $itemTypesArg")
             SecureLogger.v("MainAppViewModel-Load", "    collectionType: $collectionTypeStr")
 
             when (
                 val result = mediaRepository.getLibraryItems(
-                    parentId = libraryId,
+                    parentId = effectiveParentId,
                     itemTypes = itemTypesArg,
                     collectionType = collectionTypeStr,
+                    startIndex = 0,
+                    limit = API_DEFAULT_LIMIT
                 )
             ) {
                 is ApiResult.Success -> {
-                    var items = result.data
+                    val itemsResult = result.data
+                    var items = itemsResult.items
+                    val totalCount = itemsResult.totalCount
+                    
                     if (items.isEmpty() && libraryType == LibraryType.TV_SHOWS) {
                         SecureLogger.v(
                             "MainAppViewModel-Load",
@@ -787,19 +799,20 @@ class MainAppViewModel @Inject constructor(
                         )
                         when (
                             val fallback = mediaRepository.getLibraryItems(
-                                parentId = libraryId,
+                                parentId = effectiveParentId,
                                 itemTypes = null,
                                 collectionType = collectionTypeStr,
+                                startIndex = 0,
+                                limit = API_DEFAULT_LIMIT
                             )
                         ) {
-                            is ApiResult.Success -> items = fallback.data.filter { it.type == BaseItemKind.SERIES }
-                            is ApiResult.Error -> Unit
-                            is ApiResult.Loading -> Unit
+                            is ApiResult.Success -> items = fallback.data.items.filter { it.type == BaseItemKind.SERIES }
+                            else -> Unit
                         }
                     }
                     SecureLogger.v(
                         "MainAppViewModel-Load",
-                        "✅ API Success: ${result.data.size} items loaded",
+                        "✅ API Success: ${items.size} items loaded, totalCount=$totalCount",
                     )
                     items.take(3).forEach { item ->
                         SecureLogger.v(
@@ -809,15 +822,17 @@ class MainAppViewModel @Inject constructor(
                     }
 
                     // Detect if there are more items to load
-                    // If we got exactly API_DEFAULT_LIMIT items, there might be more
-                    val hasMore = items.size >= API_DEFAULT_LIMIT
+                    // Use server totalCount for accurate hasMore detection
+                    val hasMore = items.size < totalCount && items.isNotEmpty()
+                    val nextStartIndex = items.size
 
                     val updated = _appState.value.itemsByLibrary.toMutableMap()
-                    updated[libraryId] = mergeLibraryItems(emptyList(), items)
+                    updated[effectiveParentId] = mergeLibraryItems(emptyList(), items)
 
                     val updatedPagination = _appState.value.libraryPaginationState.toMutableMap()
-                    updatedPagination[libraryId] = LibraryPaginationState(
-                        loadedCount = items.size,
+                    updatedPagination[effectiveParentId] = LibraryPaginationState(
+                        nextStartIndex = nextStartIndex,
+                        totalCount = totalCount,
                         hasMore = hasMore,
                         isLoadingMore = false,
                     )
@@ -841,7 +856,7 @@ class MainAppViewModel @Inject constructor(
                     )
                     SecureLogger.v(
                         "MainAppViewModel-Load",
-                        "✅ State updated - itemsByLibrary now has ${updated.size} libraries",
+                        "✅ State updated - itemsByLibrary now has ${updated.size} libraries/folders",
                     )
                 }
 
@@ -1041,12 +1056,15 @@ class MainAppViewModel @Inject constructor(
                 )
             ) {
                 is ApiResult.Success -> {
-                    val newMovies = result.data
+                    val itemsResult = result.data
+                    val newMovies = itemsResult.items
+                    val totalCount = itemsResult.totalCount
+                    
                     val allMovies = if (reset) newMovies else currentState.allMovies + newMovies
                     _appState.value = _appState.value.copy(
                         allMovies = allMovies,
                         moviesPage = page,
-                        hasMoreMovies = newMovies.size == DEFAULT_PAGE_SIZE,
+                        hasMoreMovies = startIndex + newMovies.size < totalCount && newMovies.isNotEmpty(),
                         isLoadingMovies = false,
                     )
                 }
@@ -1058,7 +1076,7 @@ class MainAppViewModel @Inject constructor(
                     )
                 }
 
-                is ApiResult.Loading -> Unit
+                else -> {}
             }
         }
     }
@@ -1108,12 +1126,15 @@ class MainAppViewModel @Inject constructor(
                 )
             ) {
                 is ApiResult.Success -> {
-                    val newTVShows = result.data
+                    val itemsResult = result.data
+                    val newTVShows = itemsResult.items
+                    val totalCount = itemsResult.totalCount
+
                     val allTVShows = if (reset) newTVShows else currentState.allTVShows + newTVShows
                     _appState.value = _appState.value.copy(
                         allTVShows = allTVShows,
                         tvShowsPage = page,
-                        hasMoreTVShows = newTVShows.size == DEFAULT_PAGE_SIZE,
+                        hasMoreTVShows = startIndex + newTVShows.size < totalCount && newTVShows.isNotEmpty(),
                         isLoadingTVShows = false,
                     )
                 }
@@ -1125,7 +1146,7 @@ class MainAppViewModel @Inject constructor(
                     )
                 }
 
-                is ApiResult.Loading -> Unit
+                else -> {}
             }
         }
     }
@@ -1233,7 +1254,7 @@ class MainAppViewModel @Inject constructor(
             if (!ensureValidToken()) return@launch
 
             val currentItems = _appState.value.itemsByLibrary[libraryId] ?: emptyList()
-            val startIndex = currentItems.size
+            val startIndex = paginationState?.nextStartIndex ?: 0
             val library = _appState.value.libraries.firstOrNull { it.id.toString() == libraryId }
             val normalizedCollectionType = library?.collectionType?.toString()?.lowercase()?.replace(" ", "")
             val collectionTypeForApi = when (normalizedCollectionType) {
@@ -1273,21 +1294,28 @@ class MainAppViewModel @Inject constructor(
                 )
             ) {
                 is ApiResult.Success -> {
+                    val itemsResult = result.data
+                    val rawItems = itemsResult.items
+                    val totalCount = itemsResult.totalCount
+                    
                     val newItems = when (collectionTypeForApi) {
-                        "tvshows" -> result.data.filter { it.type == BaseItemKind.SERIES }
-                        "movies" -> result.data.filter { it.type == BaseItemKind.MOVIE }
-                        else -> result.data
+                        "tvshows" -> rawItems.filter { it.type == BaseItemKind.SERIES }
+                        "movies" -> rawItems.filter { it.type == BaseItemKind.MOVIE }
+                        else -> rawItems
                     }
-                    val hasMore = newItems.size >= API_DEFAULT_LIMIT
+                    
+                    val nextStartIndex = startIndex + rawItems.size
+                    val hasMore = nextStartIndex < totalCount && rawItems.isNotEmpty()
 
-                    SecureLogger.v("MainAppViewModel", "Loaded ${newItems.size} more items, hasMore=$hasMore")
+                    SecureLogger.v("MainAppViewModel", "Loaded ${rawItems.size} more items, nextStartIndex=$nextStartIndex, totalCount=$totalCount, hasMore=$hasMore")
 
                     val updated = _appState.value.itemsByLibrary.toMutableMap()
                     updated[libraryId] = mergeLibraryItems(currentItems, newItems)
 
                     val finalPagination = _appState.value.libraryPaginationState.toMutableMap()
                     finalPagination[libraryId] = LibraryPaginationState(
-                        loadedCount = currentItems.size + newItems.size,
+                        nextStartIndex = nextStartIndex,
+                        totalCount = totalCount,
                         hasMore = hasMore,
                         isLoadingMore = false,
                     )

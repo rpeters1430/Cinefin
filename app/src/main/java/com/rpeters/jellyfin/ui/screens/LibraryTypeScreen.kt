@@ -63,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.adaptive.rememberAdaptiveLayoutConfig
+import com.rpeters.jellyfin.ui.components.AlphabetScroller
 import com.rpeters.jellyfin.ui.components.ExpressiveCircularLoading
 import com.rpeters.jellyfin.ui.components.MediaItemActionsSheet
 import com.rpeters.jellyfin.ui.components.shimmer
@@ -73,12 +74,14 @@ import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
 import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
 
 @Composable
 fun LibraryTypeScreen(
     libraryType: LibraryType,
     onItemClick: (BaseItemDto) -> Unit = {},
     onTVShowClick: ((String) -> Unit)? = null,
+    folderId: String? = null,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
     libraryActionsPreferencesViewModel: LibraryActionsPreferencesViewModel = hiltViewModel(),
@@ -96,7 +99,7 @@ fun LibraryTypeScreen(
         }
     }
     var selectedFilter by remember { mutableStateOf(FilterType.getDefault()) }
-    var hasRequestedData by remember(libraryType) { mutableStateOf(false) }
+    var hasRequestedData by remember(libraryType, folderId) { mutableStateOf(false) }
     val gridState = rememberLazyGridState()
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -132,8 +135,31 @@ fun LibraryTypeScreen(
         }
     }
 
-    val libraryItems = remember(libraryType, appState.itemsByLibrary) {
-        viewModel.getLibraryTypeData(libraryType)
+    val onPlayEpisode: (BaseItemDto) -> Unit = { episodeItem ->
+        try {
+            val streamUrl = viewModel.getStreamUrl(episodeItem)
+            if (streamUrl != null) {
+                MediaPlayerUtils.playMedia(
+                    context = context,
+                    streamUrl = streamUrl,
+                    item = episodeItem,
+                )
+            } else {
+                coroutineScope.launch { snackbarHostState.showSnackbar("No stream URL available") }
+            }
+        } catch (e: Exception) {
+            coroutineScope.launch { snackbarHostState.showSnackbar("Error starting playback") }
+        }
+    }
+
+    val libraryId = remember(libraryType, appState.libraries) {
+        viewModel.getLibraryIdForType(libraryType)
+    }
+    
+    val effectiveParentId = folderId ?: libraryId
+
+    val libraryItems = remember(effectiveParentId, appState.itemsByLibrary) {
+        effectiveParentId?.let { appState.itemsByLibrary[it] } ?: emptyList()
     }
     val displayItems = remember(libraryItems, selectedFilter) {
         applyFilter(libraryItems, selectedFilter)
@@ -142,24 +168,54 @@ fun LibraryTypeScreen(
         libraryItems.sortedByDescending { it.dateCreated }.take(20)
     }
 
-    val libraryId = remember(libraryType, appState.libraries) {
-        viewModel.getLibraryIdForType(libraryType)
-    }
-    val libraryPagination = libraryId?.let { appState.libraryPaginationState[it] }
+    val libraryPagination = effectiveParentId?.let { appState.libraryPaginationState[it] }
     val isLibraryLoadingMore = libraryPagination?.isLoadingMore ?: false
     val hasMoreLibraryItems = libraryPagination?.hasMore ?: false
+
+    val scrollToLetter: (String) -> Unit = { letter ->
+        coroutineScope.launch {
+            val targetIndex = displayItems.indexOfFirst { item ->
+                val name = item.sortName ?: item.name ?: ""
+                if (letter == "#") {
+                    name.firstOrNull()?.isDigit() ?: false
+                } else {
+                    name.startsWith(letter, ignoreCase = true)
+                }
+            }
+            if (targetIndex >= 0) {
+                // Adjust for recently added header if present
+                val headerOffset = if (recentlyAddedItems.size >= 3) 1 else 0
+                if (viewMode == ViewMode.GRID) {
+                    gridState.animateScrollToItem(targetIndex + headerOffset)
+                } else {
+                    listState.animateScrollToItem(targetIndex + headerOffset)
+                }
+            }
+        }
+    }
 
     LaunchedEffect(selectedFilter, libraryType) {
         gridState.scrollToItem(0)
         listState.scrollToItem(0)
     }
 
-    LaunchedEffect(libraryType) {
-        hasRequestedData = true
-        viewModel.loadLibraryTypeData(libraryType, forceRefresh = false)
+    LaunchedEffect(libraryType, libraryId, folderId) {
+        if (!hasRequestedData && libraryId != null) {
+            val library = appState.libraries.find { it.id.toString() == libraryId }
+            if (library != null) {
+                viewModel.loadLibraryTypeData(
+                    library = library,
+                    libraryType = libraryType,
+                    forceRefresh = false,
+                    parentId = folderId
+                )
+                hasRequestedData = true
+            }
+        }
     }
 
     val isInitialLoading = (appState.isLoading || !hasRequestedData) && libraryItems.isEmpty()
+    val libraryThemeColor = libraryType.getThemedColor()
 
     Scaffold(
         topBar = {
@@ -172,7 +228,7 @@ fun LibraryTypeScreen(
                         Icon(
                             imageVector = libraryType.icon,
                             contentDescription = null,
-                            tint = libraryType.color,
+                            tint = libraryThemeColor,
                         )
                         Text(
                             text = libraryType.displayName,
@@ -188,8 +244,8 @@ fun LibraryTypeScreen(
                                 onClick = { viewMode = mode },
                                 selected = viewMode == mode,
                                 colors = SegmentedButtonDefaults.colors(
-                                    activeContainerColor = libraryType.color.copy(alpha = LibraryScreenDefaults.ColorAlpha),
-                                    activeContentColor = libraryType.color,
+                                    activeContainerColor = libraryThemeColor.copy(alpha = LibraryScreenDefaults.ColorAlpha),
+                                    activeContentColor = libraryThemeColor,
                                 ),
                             ) {
                                 Icon(
@@ -204,7 +260,17 @@ fun LibraryTypeScreen(
                             }
                         }
                     }
-                    IconButton(onClick = { viewModel.loadLibraryTypeData(libraryType, forceRefresh = true) }) {
+                    IconButton(onClick = { 
+                        val library = appState.libraries.find { it.id.toString() == libraryId }
+                        if (library != null) {
+                            viewModel.loadLibraryTypeData(
+                                library = library,
+                                libraryType = libraryType,
+                                forceRefresh = true,
+                                parentId = folderId
+                            )
+                        }
+                    }) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 },
@@ -214,112 +280,127 @@ fun LibraryTypeScreen(
         modifier = modifier,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-        ) {
-            LibraryFilterRow(
-                selectedFilter = selectedFilter,
-                onFilterSelected = { selectedFilter = it },
-                libraryType = libraryType,
-            )
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+            ) {
+                LibraryFilterRow(
+                    selectedFilter = selectedFilter,
+                    onFilterSelected = { selectedFilter = it },
+                    libraryType = libraryType,
+                )
 
-            when {
-                isInitialLoading -> {
-                    LibraryTypeLoadingPlaceholder(
-                        libraryType = libraryType,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                displayItems.isNotEmpty() -> {
-                    when (viewMode) {
-                        ViewMode.GRID -> GridContent(
-                            items = displayItems,
-                            recentlyAddedItems = recentlyAddedItems,
+                when {
+                    isInitialLoading -> {
+                        LibraryTypeLoadingPlaceholder(
                             libraryType = libraryType,
-                            getImageUrl = { viewModel.getImageUrl(it) },
-                            onItemClick = onItemClick,
-                            onTVShowClick = onTVShowClick,
-                            onItemLongPress = handleItemLongPress,
-                            gridState = gridState,
-                            isLoadingMore = isLibraryLoadingMore,
-                            hasMoreItems = hasMoreLibraryItems,
-                            onLoadMore = { libraryId?.let(viewModel::loadMoreLibraryItems) },
-                            isTablet = adaptiveConfig.isTablet,
                             modifier = Modifier.weight(1f),
                         )
-                        ViewMode.LIST -> ListContent(
-                            items = displayItems,
-                            recentlyAddedItems = recentlyAddedItems,
-                            libraryType = libraryType,
-                            getImageUrl = { viewModel.getImageUrl(it) },
-                            onItemClick = onItemClick,
-                            onTVShowClick = onTVShowClick,
-                            onItemLongPress = handleItemLongPress,
-                            listState = listState,
-                            isLoadingMore = isLibraryLoadingMore,
-                            hasMoreItems = hasMoreLibraryItems,
-                            onLoadMore = { libraryId?.let(viewModel::loadMoreLibraryItems) },
-                            isTablet = adaptiveConfig.isTablet,
-                            modifier = Modifier.weight(1f),
-                        )
-                        ViewMode.CAROUSEL -> {
-                            // Carousel is intentionally disabled for Movies and TV Shows.
-                            // Fall back to list for any stale in-memory selection.
-                            ListContent(
+                    }
+                    displayItems.isNotEmpty() -> {
+                        when (viewMode) {
+                            ViewMode.GRID -> GridContent(
                                 items = displayItems,
                                 recentlyAddedItems = recentlyAddedItems,
                                 libraryType = libraryType,
                                 getImageUrl = { viewModel.getImageUrl(it) },
                                 onItemClick = onItemClick,
                                 onTVShowClick = onTVShowClick,
+                                onPlayClick = onPlayEpisode,
+                                onDeleteClick = { viewModel.deleteItem(it) },
+                                onItemLongPress = handleItemLongPress,
+                                gridState = gridState,
+                                isLoadingMore = isLibraryLoadingMore,
+                                hasMoreItems = hasMoreLibraryItems,
+                                onLoadMore = { effectiveParentId?.let(viewModel::loadMoreLibraryItems) },
+                                isTablet = adaptiveConfig.isTablet,
+                                modifier = Modifier.weight(1f),
+                            )
+                            ViewMode.LIST -> ListContent(
+                                items = displayItems,
+                                recentlyAddedItems = recentlyAddedItems,
+                                libraryType = libraryType,
+                                getImageUrl = { viewModel.getImageUrl(it) },
+                                onItemClick = onItemClick,
+                                onTVShowClick = onTVShowClick,
+                                onPlayClick = onPlayEpisode,
+                                onDeleteClick = { viewModel.deleteItem(it) },
                                 onItemLongPress = handleItemLongPress,
                                 listState = listState,
                                 isLoadingMore = isLibraryLoadingMore,
                                 hasMoreItems = hasMoreLibraryItems,
-                                onLoadMore = { libraryId?.let(viewModel::loadMoreLibraryItems) },
+                                onLoadMore = { effectiveParentId?.let(viewModel::loadMoreLibraryItems) },
                                 isTablet = adaptiveConfig.isTablet,
                                 modifier = Modifier.weight(1f),
+                            )
+                            ViewMode.CAROUSEL -> {
+                                CarouselContent(
+                                    items = displayItems,
+                                    libraryType = libraryType,
+                                    getImageUrl = { viewModel.getImageUrl(it) },
+                                    onItemClick = onItemClick,
+                                    onTVShowClick = onTVShowClick,
+                                    onPlayClick = onPlayEpisode,
+                                    onDeleteClick = { viewModel.deleteItem(it) },
+                                    onItemLongPress = handleItemLongPress,
+                                    isLoadingMore = isLibraryLoadingMore,
+                                    hasMoreItems = hasMoreLibraryItems,
+                                    onLoadMore = { effectiveParentId?.let(viewModel::loadMoreLibraryItems) },
+                                    isTablet = adaptiveConfig.isTablet,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                        }
+                    }
+                    displayItems.isEmpty() && !appState.isLoading && appState.errorMessage == null -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "No items found",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                 }
-                displayItems.isEmpty() && !appState.isLoading && appState.errorMessage == null -> {
+
+                if (appState.isLoading && displayItems.isNotEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            text = "No items found",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        ExpressiveCircularLoading(color = libraryThemeColor)
+                    }
+                }
+
+                appState.errorMessage?.let { error ->
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                            Text(
+                                text = error,
+                                modifier = Modifier.padding(LibraryScreenDefaults.ContentPadding),
+                            )
+                        }
                     }
                 }
             }
 
-            if (appState.isLoading && displayItems.isNotEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    ExpressiveCircularLoading(color = libraryType.color)
-                }
-            }
-
-            appState.errorMessage?.let { error ->
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
-                        Text(
-                            text = error,
-                            modifier = Modifier.padding(LibraryScreenDefaults.ContentPadding),
-                        )
-                    }
-                }
+            // Add the AlphabetScroller overlay
+            if (displayItems.size > 10 && viewMode != ViewMode.CAROUSEL) {
+                AlphabetScroller(
+                    onLetterSelected = scrollToLetter,
+                    activeColor = libraryThemeColor,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(top = paddingValues.calculateTopPadding() + 64.dp, bottom = 96.dp)
+                )
             }
         }
     }
@@ -395,7 +476,7 @@ private fun LibraryTypeLoadingPlaceholder(
                     .height(LibraryScreenDefaults.LibraryTypePlaceholderHeight)
                     .shimmer(),
                 colors = CardDefaults.cardColors(
-                    containerColor = libraryType.color.copy(alpha = LibraryScreenDefaults.PlaceholderContainerAlpha),
+                    containerColor = libraryType.getThemedColor().copy(alpha = LibraryScreenDefaults.PlaceholderContainerAlpha),
                 ),
             ) {
                 Box(modifier = Modifier.fillMaxSize())
@@ -412,6 +493,8 @@ private fun GridContent(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onTVShowClick: ((String) -> Unit)?,
+    onPlayClick: (BaseItemDto) -> Unit,
+    onDeleteClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit,
     gridState: LazyGridState,
     isLoadingMore: Boolean,
@@ -454,6 +537,8 @@ private fun GridContent(
                     getImageUrl = getImageUrl,
                     onItemClick = onItemClick,
                     onTVShowClick = onTVShowClick,
+                    onPlayClick = onPlayClick,
+                    onDeleteClick = onDeleteClick,
                     onItemLongPress = onItemLongPress,
                     onMoreClick = onItemLongPress,
                     isTablet = isTablet,
@@ -471,6 +556,8 @@ private fun GridContent(
                 getImageUrl = getImageUrl,
                 onItemClick = onItemClick,
                 onTVShowClick = onTVShowClick,
+                onPlayClick = onPlayClick,
+                onDeleteClick = onDeleteClick,
                 onItemLongPress = onItemLongPress,
                 onMoreClick = onItemLongPress,
                 isCompact = true,
@@ -493,6 +580,8 @@ private fun ListContent(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onTVShowClick: ((String) -> Unit)?,
+    onPlayClick: (BaseItemDto) -> Unit,
+    onDeleteClick: (BaseItemDto) -> Unit,
     onItemLongPress: (BaseItemDto) -> Unit,
     listState: LazyListState,
     isLoadingMore: Boolean,
@@ -529,6 +618,8 @@ private fun ListContent(
                     getImageUrl = getImageUrl,
                     onItemClick = onItemClick,
                     onTVShowClick = onTVShowClick,
+                    onPlayClick = onPlayClick,
+                    onDeleteClick = onDeleteClick,
                     onItemLongPress = onItemLongPress,
                     onMoreClick = onItemLongPress,
                     isTablet = isTablet,
@@ -546,6 +637,8 @@ private fun ListContent(
                 getImageUrl = getImageUrl,
                 onItemClick = onItemClick,
                 onTVShowClick = onTVShowClick,
+                onPlayClick = onPlayClick,
+                onDeleteClick = onDeleteClick,
                 onItemLongPress = onItemLongPress,
                 onMoreClick = onItemLongPress,
                 isCompact = libraryType != LibraryType.STUFF,
@@ -565,6 +658,8 @@ private fun RecentlyAddedSection(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onTVShowClick: ((String) -> Unit)?,
+    onPlayClick: ((BaseItemDto) -> Unit)? = null,
+    onDeleteClick: ((BaseItemDto) -> Unit)? = null,
     onItemLongPress: ((BaseItemDto) -> Unit)? = null,
     onMoreClick: ((BaseItemDto) -> Unit)? = null,
     isTablet: Boolean = false,
@@ -595,6 +690,8 @@ private fun RecentlyAddedSection(
                     getImageUrl = getImageUrl,
                     onItemClick = onItemClick,
                     onTVShowClick = onTVShowClick,
+                    onPlayClick = onPlayClick,
+                    onDeleteClick = onDeleteClick,
                     onItemLongPress = onItemLongPress,
                     onMoreClick = onMoreClick,
                     isCompact = true,
@@ -612,6 +709,8 @@ private fun CarouselContent(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit,
     onTVShowClick: ((String) -> Unit)?,
+    onPlayClick: ((BaseItemDto) -> Unit)? = null,
+    onDeleteClick: ((BaseItemDto) -> Unit)? = null,
     onItemLongPress: (BaseItemDto) -> Unit,
     isLoadingMore: Boolean,
     hasMoreItems: Boolean,
@@ -654,6 +753,8 @@ private fun CarouselContent(
                 getImageUrl = getImageUrl,
                 onItemClick = onItemClick,
                 onTVShowClick = onTVShowClick,
+                onPlayClick = onPlayClick,
+                onDeleteClick = onDeleteClick,
                 onItemLongPress = onItemLongPress,
                 isTablet = isTablet,
             )

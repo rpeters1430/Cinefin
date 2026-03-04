@@ -76,35 +76,43 @@ fun standardTvFocusBorder() = Border(
 )
 
 /**
- * Returns a TV Material 3 color scheme using Cinefin brand colors.
+ * Returns a TV Material 3 color scheme based on user preferences.
  *
  * TV is always displayed in dark mode (lean-back / 10-foot environment).
  * Bright purple/blue/teal variants are chosen so they read clearly against
  * the dark [Neutral10] background at typical viewing distances.
  */
-fun cinefinTvColorScheme() = tvDarkColorScheme(
-    primary = JellyfinPurple80,
-    onPrimary = Color(0xFF000000),
-    primaryContainer = JellyfinPurple30,
-    onPrimaryContainer = JellyfinPurple80,
-    secondary = JellyfinBlue80,
-    onSecondary = Color(0xFF000000),
-    secondaryContainer = JellyfinBlue30,
-    onSecondaryContainer = JellyfinBlue80,
-    tertiary = JellyfinTeal80,
-    onTertiary = Color(0xFF000000),
-    tertiaryContainer = JellyfinTeal30,
-    onTertiaryContainer = JellyfinTeal80,
-    background = Neutral10,
-    onBackground = Color(0xFFE6E1E6),
-    surface = Neutral10,
-    onSurface = Color(0xFFE6E1E6),
-    surfaceVariant = Neutral20,
-    onSurfaceVariant = Color(0xFFCAC5CA),
-    border = Neutral30,
-    borderVariant = Neutral40,
-    error = Color(0xFFCF6679),
-    onError = Color(0xFF000000),
-    errorContainer = Color(0xFF8C1D18),
-    onErrorContainer = Color(0xFFF9DEDC),
-)
+@Composable
+fun cinefinTvColorScheme(
+    accentColor: com.rpeters.jellyfin.data.preferences.AccentColor = com.rpeters.jellyfin.data.preferences.AccentColor.JELLYFIN_PURPLE
+): androidx.tv.material3.ColorScheme {
+    // Get the base color scheme from our standard M3 schemes
+    val baseScheme = getDarkColorScheme(accentColor)
+    
+    return tvDarkColorScheme(
+        primary = baseScheme.primary,
+        onPrimary = baseScheme.onPrimary,
+        primaryContainer = baseScheme.primaryContainer,
+        onPrimaryContainer = baseScheme.onPrimaryContainer,
+        secondary = baseScheme.secondary,
+        onSecondary = baseScheme.onSecondary,
+        secondaryContainer = baseScheme.secondaryContainer,
+        onSecondaryContainer = baseScheme.onSecondaryContainer,
+        tertiary = baseScheme.tertiary,
+        onTertiary = baseScheme.onTertiary,
+        tertiaryContainer = baseScheme.tertiaryContainer,
+        onTertiaryContainer = baseScheme.onTertiaryContainer,
+        background = Neutral10, // Maintain deep dark background for TV
+        onBackground = Color(0xFFE6E1E6),
+        surface = Neutral10,
+        onSurface = Color(0xFFE6E1E6),
+        surfaceVariant = Neutral20,
+        onSurfaceVariant = Color(0xFFCAC5CA),
+        border = Neutral30,
+        borderVariant = Neutral40,
+        error = baseScheme.error,
+        onError = baseScheme.onError,
+        errorContainer = baseScheme.errorContainer,
+        onErrorContainer = baseScheme.onErrorContainer,
+    )
+}

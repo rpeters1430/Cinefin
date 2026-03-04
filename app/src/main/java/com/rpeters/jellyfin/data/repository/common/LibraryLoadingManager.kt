@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.data.repository.common
 import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.JellyfinMediaRepository
+import com.rpeters.jellyfin.data.repository.LibraryItemsResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +40,7 @@ class LibraryLoadingManager @Inject constructor(
     private val loadingScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     // Track ongoing operations to prevent duplicates
-    private val ongoingOperations = mutableMapOf<String, kotlinx.coroutines.Deferred<ApiResult<List<BaseItemDto>>>>()
+    private val ongoingOperations = mutableMapOf<String, kotlinx.coroutines.Deferred<Any>>()
     private val operationsMutex = Mutex()
 
     // Library loading state
@@ -54,11 +55,12 @@ class LibraryLoadingManager @Inject constructor(
 
         return operationsMutex.withLock {
             // Check if operation is already in progress
+            @Suppress("UNCHECKED_CAST")
             ongoingOperations[operationKey]?.let { ongoing ->
                 if (BuildConfig.DEBUG) {
                     Log.d(TAG, "Joining ongoing library loading operation")
                 }
-                return@withLock ongoing.await()
+                return@withLock ongoing.await() as ApiResult<List<BaseItemDto>>
             }
 
             // Start new operation
@@ -109,22 +111,23 @@ class LibraryLoadingManager @Inject constructor(
         startIndex: Int = 0,
         limit: Int = LOAD_BATCH_SIZE,
         forceRefresh: Boolean = false,
-    ): ApiResult<List<BaseItemDto>> {
+    ): ApiResult<com.rpeters.jellyfin.data.repository.LibraryItemsResult> {
         val operationKey = "load_library_${libraryId}_${startIndex}_$limit"
 
         return operationsMutex.withLock {
             // Check for ongoing operation
+            @Suppress("UNCHECKED_CAST")
             ongoingOperations[operationKey]?.let { ongoing ->
                 if (BuildConfig.DEBUG) {
                     Log.d(TAG, "Joining ongoing library items operation: $operationKey")
                 }
-                return@withLock ongoing.await()
+                return@withLock ongoing.await() as ApiResult<com.rpeters.jellyfin.data.repository.LibraryItemsResult>
             }
 
             // Validate and sanitize parameters
             val validatedParams = validateLibraryParams(libraryId, collectionType, itemTypes, startIndex, limit)
             if (validatedParams == null) {
-                return@withLock ApiResult.Error(
+                return@withLock ApiResult.Error<com.rpeters.jellyfin.data.repository.LibraryItemsResult>(
                     "Invalid library parameters",
                     null,
                     ErrorType.VALIDATION,
@@ -145,9 +148,9 @@ class LibraryLoadingManager @Inject constructor(
 
                     when (result) {
                         is ApiResult.Success -> {
-                            updateLoadingState(operationKey, LibraryLoadingState.Success(result.data))
+                            updateLoadingState(operationKey, LibraryLoadingState.Success(result.data.items))
                             if (BuildConfig.DEBUG) {
-                                Log.d(TAG, "Successfully loaded ${result.data.size} library items for $operationKey")
+                                Log.d(TAG, "Successfully loaded ${result.data.items.size} library items for $operationKey")
                             }
                         }
                         is ApiResult.Error -> {
@@ -169,7 +172,7 @@ class LibraryLoadingManager @Inject constructor(
                 }
             }
 
-            ongoingOperations[operationKey] = operation
+            ongoingOperations[operationKey] = operation as kotlinx.coroutines.Deferred<Any>
             operation.await()
         }
     }
@@ -179,7 +182,7 @@ class LibraryLoadingManager @Inject constructor(
      */
     suspend fun loadLibraryTypesBatch(
         requests: List<LibraryTypeLoadRequest>,
-    ): Map<String, ApiResult<List<BaseItemDto>>> {
+    ): Map<String, ApiResult<LibraryItemsResult>> {
         if (requests.isEmpty()) return emptyMap()
 
         if (BuildConfig.DEBUG) {
@@ -188,7 +191,7 @@ class LibraryLoadingManager @Inject constructor(
 
         // Limit concurrent operations
         val batches = requests.chunked(MAX_CONCURRENT_LOADS)
-        val results = mutableMapOf<String, ApiResult<List<BaseItemDto>>>()
+        val results = mutableMapOf<String, ApiResult<com.rpeters.jellyfin.data.repository.LibraryItemsResult>>()
 
         for (batch in batches) {
             val batchResults = batch.map { request ->

@@ -5,6 +5,8 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -112,8 +114,21 @@ enum class LibraryType(
         displayName = "Stuff",
         icon = Icons.Default.Widgets,
         color = BookPurple,
-        itemKinds = listOf(BaseItemKind.BOOK, BaseItemKind.AUDIO_BOOK, BaseItemKind.VIDEO),
+        itemKinds = listOf(BaseItemKind.BOOK, BaseItemKind.AUDIO_BOOK, BaseItemKind.VIDEO, BaseItemKind.FOLDER),
     ),
+}
+
+/**
+ * Returns a themed color for the library type, respecting the current MaterialTheme.
+ */
+@Composable
+fun LibraryType.getThemedColor(): Color {
+    return when (this) {
+        LibraryType.MOVIES -> MaterialTheme.colorScheme.primary
+        LibraryType.TV_SHOWS -> MaterialTheme.colorScheme.secondary
+        LibraryType.MUSIC -> MaterialTheme.colorScheme.tertiary
+        LibraryType.STUFF -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+    }
 }
 
 /** Different ways the library can be displayed. */

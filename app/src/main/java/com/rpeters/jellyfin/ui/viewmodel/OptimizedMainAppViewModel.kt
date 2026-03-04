@@ -8,6 +8,7 @@ import com.rpeters.jellyfin.data.SecureCredentialManager
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.data.repository.JellyfinUserRepository
+import com.rpeters.jellyfin.data.repository.LibraryItemsResult
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.repository.common.ErrorType
 import com.rpeters.jellyfin.data.repository.common.LibraryLoadingManager
@@ -224,26 +225,27 @@ class OptimizedMainAppViewModel @Inject constructor(
     /**
      * Processes batch loading results and updates app state.
      */
-    private fun processLibraryTypeResults(results: Map<String, ApiResult<List<BaseItemDto>>>) {
+    private fun processLibraryTypeResults(results: Map<String, ApiResult<LibraryItemsResult>>) {
         val currentState = _appState.value
         var updatedMovies = currentState.movies
         var updatedTVShows = currentState.tvShows
         var updatedMusic = currentState.music
-        var updatedOtherItems = currentState.otherItems.toMutableMap()
+        val updatedOtherItems = currentState.otherItems.toMutableMap()
 
         results.forEach { (key, result) ->
             when (result) {
                 is ApiResult.Success -> {
+                    val items = result.data.items
                     if (BuildConfig.DEBUG) {
-                        Log.d(TAG, "Successfully loaded ${result.data.size} items for $key")
+                        Log.d(TAG, "Successfully loaded ${items.size} items for $key")
                     }
 
                     when (key) {
-                        "movies" -> updatedMovies = result.data
-                        "tvshows" -> updatedTVShows = result.data
-                        "music" -> updatedMusic = result.data
+                        "movies" -> updatedMovies = items
+                        "tvshows" -> updatedTVShows = items
+                        "music" -> updatedMusic = items
                         else -> if (key.startsWith("other_")) {
-                            updatedOtherItems[key] = result.data
+                            updatedOtherItems[key] = items
                         }
                     }
                 }
@@ -318,7 +320,7 @@ class OptimizedMainAppViewModel @Inject constructor(
 
                 when (result) {
                     is ApiResult.Success -> {
-                        val newItems = result.data
+                        val newItems = result.data.items
                         if (newItems.isNotEmpty()) {
                             val updatedItems = currentItems + newItems
 

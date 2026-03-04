@@ -14,15 +14,24 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,337 +61,210 @@ fun LibraryItemCard(
     getImageUrl: (BaseItemDto) -> String?,
     onItemClick: (BaseItemDto) -> Unit = {},
     onTVShowClick: ((String) -> Unit)? = null,
+    onPlayClick: ((BaseItemDto) -> Unit)? = null,
+    onDeleteClick: ((BaseItemDto) -> Unit)? = null,
     onItemLongPress: ((BaseItemDto) -> Unit)? = null,
     onMoreClick: ((BaseItemDto) -> Unit)? = null,
     isCompact: Boolean,
     isTablet: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     // Use adaptive card dimensions
     val cardWidth = when {
         isCompact && isTablet -> LibraryScreenDefaults.TabletCompactCardWidth
         isCompact -> LibraryScreenDefaults.CompactCardWidth
         else -> null
     }
-    val cardImageHeight = when {
-        isCompact && isTablet -> LibraryScreenDefaults.TabletCompactCardImageHeight
-        isCompact -> LibraryScreenDefaults.CompactCardImageHeight
-        else -> LibraryScreenDefaults.CompactCardImageHeight
+    
+    val handleInfo = {
+        if (libraryType == LibraryType.TV_SHOWS && item.type == BaseItemKind.SERIES) {
+            val seriesId = item.id.toString()
+            onTVShowClick?.invoke(seriesId) ?: onItemClick(item)
+        } else {
+            onItemClick(item)
+        }
     }
 
-    val cardModifier = modifier
-        .fillMaxWidth()
-        .combinedClickable(
-            onClick = {
-                if (libraryType == LibraryType.TV_SHOWS && item.type == BaseItemKind.SERIES) {
-                    val seriesId = item.id.toString()
-                    onTVShowClick?.invoke(seriesId) ?: onItemClick(item)
-                } else {
-                    onItemClick(item)
-                }
-            },
-            onLongClick = { onItemLongPress?.invoke(item) },
-        )
-        .then(if (cardWidth != null) Modifier.width(cardWidth) else Modifier)
+    Box(modifier = modifier) {
+        val cardModifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = handleInfo,
+                onLongClick = { 
+                    showMenu = true
+                    onItemLongPress?.invoke(item) 
+                },
+            )
+            .then(if (cardWidth != null) Modifier.width(cardWidth) else Modifier)
 
-    Card(
-        modifier = cardModifier,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(LibraryScreenDefaults.CardCornerRadius),
-        elevation = CardDefaults.cardElevation(defaultElevation = LibraryScreenDefaults.CardElevation),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-    ) {
-        if (isCompact) {
-            Column {
-                Box {
-                    SubcomposeAsyncImage(
-                        model = getImageUrl(item),
-                        contentDescription = item.name,
-                        loading = {
-                            ShimmerBox(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(cardImageHeight),
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(
-                                    topStart = LibraryScreenDefaults.CardCornerRadius,
-                                    topEnd = LibraryScreenDefaults.CardCornerRadius,
-                                ),
-                            )
-                        },
-                        error = {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(cardImageHeight)
-                                    .clip(
-                                        androidx.compose.foundation.shape.RoundedCornerShape(
-                                            topStart = LibraryScreenDefaults.CardCornerRadius,
-                                            topEnd = LibraryScreenDefaults.CardCornerRadius,
-                                        ),
-                                    ),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    imageVector = libraryType.icon,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(LibraryScreenDefaults.CardActionIconSize),
-                                    tint = libraryType.color.copy(alpha = LibraryScreenDefaults.IconAlpha),
-                                )
-                            }
-                        },
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(cardImageHeight)
-                            .clip(
-                                androidx.compose.foundation.shape.RoundedCornerShape(
-                                    topStart = LibraryScreenDefaults.CardCornerRadius,
-                                    topEnd = LibraryScreenDefaults.CardCornerRadius,
-                                ),
-                            ),
-                    )
-
-                    if (item.userData?.isFavorite == true) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Favorite",
-                            tint = Color.Yellow,
+        Card(
+            modifier = cardModifier,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(LibraryScreenDefaults.CardCornerRadius),
+            elevation = CardDefaults.cardElevation(defaultElevation = LibraryScreenDefaults.CardElevation),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+        ) {
+            if (isCompact) {
+                Column {
+                    Box {
+                        SubcomposeAsyncImage(
+                            model = getImageUrl(item),
+                            contentDescription = item.name,
+                            contentScale = ContentScale.Crop,
                             modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(LibraryScreenDefaults.FavoriteIconPadding),
-                        )
-                    }
-
-                    // Top-right: Three-dot menu
-                    if (onMoreClick != null) {
-                        IconButton(
-                            onClick = { onMoreClick(item) },
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(LibraryScreenDefaults.FavoriteIconPadding)
-                                .size(32.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                    CircleShape,
+                                .fillMaxWidth()
+                                .height(
+                                    when {
+                                        isTablet -> LibraryScreenDefaults.TabletCompactCardImageHeight
+                                        else -> LibraryScreenDefaults.CompactCardImageHeight
+                                    }
                                 ),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "More options",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                    }
-
-                    // Bottom-left: Watched indicator
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(LibraryScreenDefaults.FavoriteIconPadding),
-                    ) {
-                        WatchedIndicatorBadge(item = item)
-                    }
-
-                    // Bottom: Watch progress bar
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(horizontal = LibraryScreenDefaults.FavoriteIconPadding, vertical = LibraryScreenDefaults.FavoriteIconPadding),
-                    ) {
-                        WatchProgressBar(item = item)
-                    }
-                }
-
-                Column(modifier = Modifier.padding(LibraryScreenDefaults.CompactCardPadding)) {
-                    MaterialText(
-                        text = item.name ?: stringResource(id = R.string.unknown),
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        autoSize = true,
-                        minFontSize = 12.sp,
-                        maxFontSize = MaterialTheme.typography.titleMedium.fontSize,
-                    )
-
-                    item.productionYear?.let { year ->
-                        Text(
-                            text = year.toString(),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-        } else {
-            Row(
-                modifier = Modifier.padding(LibraryScreenDefaults.ListCardPadding),
-                horizontalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ItemSpacing),
-            ) {
-                Box {
-                    SubcomposeAsyncImage(
-                        model = getImageUrl(item),
-                        contentDescription = item.name,
-                        loading = {
-                            ShimmerBox(
-                                modifier = Modifier
-                                    .width(LibraryScreenDefaults.ListCardImageWidth)
-                                    .height(LibraryScreenDefaults.ListCardImageHeight),
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(LibraryScreenDefaults.ListCardImageRadius),
-                            )
-                        },
-                        error = {
-                            Box(
-                                modifier = Modifier
-                                    .width(LibraryScreenDefaults.ListCardImageWidth)
-                                    .height(LibraryScreenDefaults.ListCardImageHeight)
-                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(LibraryScreenDefaults.ListCardImageRadius)),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    imageVector = libraryType.icon,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(LibraryScreenDefaults.ListCardIconSize),
-                                    tint = libraryType.color.copy(alpha = LibraryScreenDefaults.IconAlpha),
-                                )
-                            }
-                        },
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .width(LibraryScreenDefaults.ListCardImageWidth)
-                            .height(LibraryScreenDefaults.ListCardImageHeight)
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(LibraryScreenDefaults.ListCardImageRadius)),
-                    )
-
-                    if (item.userData?.isFavorite == true) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Favorite",
-                            tint = Color.Yellow,
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(LibraryScreenDefaults.ListItemFavoriteIconPadding),
-                        )
-                    }
-
-                    // Top-right: Three-dot menu
-                    if (onMoreClick != null) {
-                        IconButton(
-                            onClick = { onMoreClick(item) },
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(LibraryScreenDefaults.ListItemFavoriteIconPadding)
-                                .size(32.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                    CircleShape,
-                                ),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "More options",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                    }
-
-                    // Bottom-left: Watched indicator
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(LibraryScreenDefaults.ListItemFavoriteIconPadding),
-                    ) {
-                        WatchedIndicatorBadge(item = item)
-                    }
-
-                    // Bottom: Watch progress bar
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .padding(horizontal = LibraryScreenDefaults.ListItemFavoriteIconPadding, vertical = LibraryScreenDefaults.ListItemFavoriteIconPadding),
-                    ) {
-                        WatchProgressBar(item = item)
-                    }
-                }
-
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(LibraryScreenDefaults.ListItemFavoriteIconPadding),
-                ) {
-                    MaterialText(
-                        text = item.name ?: stringResource(id = R.string.unknown),
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        autoSize = true,
-                        minFontSize = 16.sp,
-                        maxFontSize = MaterialTheme.typography.titleLarge.fontSize,
-                    )
-
-                    item.productionYear?.let { year ->
-                        Text(
-                            text = year.toString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    item.overview?.let { overview ->
-                        Text(
-                            text = overview,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(LibraryScreenDefaults.FilterChipSpacing))
-
-                    when (libraryType) {
-                        LibraryType.MOVIES -> {
-                            item.runTimeTicks?.let { runtime ->
-                                val minutes = (runtime / LibraryScreenDefaults.TicksToMinutesDivisor).toInt()
-                                Text(
-                                    text = "$minutes min",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = libraryType.color,
-                                )
-                            }
-                        }
-                        LibraryType.TV_SHOWS -> {
-                            if (item.type == BaseItemKind.SERIES) {
-                                item.childCount?.let { count ->
-                                    Text(
-                                        text = "$count episodes",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = libraryType.color,
+                            loading = { ShimmerBox() },
+                            error = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(
+                                            when {
+                                                isTablet -> LibraryScreenDefaults.TabletCompactCardImageHeight
+                                                else -> LibraryScreenDefaults.CompactCardImageHeight
+                                            }
+                                        )
+                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = libraryType.icon,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                     )
                                 }
                             }
+                        )
+                        
+                        // Indicators
+                        if (item.userData?.isFavorite == true) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = "Favorite",
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                                    .size(20.dp)
+                            )
                         }
-                        LibraryType.MUSIC -> {
-                            item.artists?.firstOrNull()?.let { artist ->
-                                Text(
-                                    text = artist,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = libraryType.color,
-                                )
-                            }
-                        }
-                        LibraryType.STUFF -> {
+                        
+                        WatchedIndicatorBadge(item = item, modifier = Modifier.align(Alignment.TopStart))
+                        WatchProgressBar(item = item, modifier = Modifier.align(Alignment.BottomCenter))
+                    }
+                    
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        Text(
+                            text = item.name ?: "",
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (!item.productionYear.toString().isNullOrBlank() && item.productionYear != 0) {
                             Text(
-                                text = item.type.toString(),
+                                text = item.productionYear.toString(),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = libraryType.color,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
+            } else {
+                // List/Wide layout
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SubcomposeAsyncImage(
+                        model = getImageUrl(item),
+                        contentDescription = item.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(if (isTablet) 100.dp else 80.dp)
+                            .clip(MaterialTheme.shapes.small),
+                        loading = { ShimmerBox() }
+                    )
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = item.name ?: "",
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (!item.overview.isNullOrBlank()) {
+                            Text(
+                                text = item.overview ?: "",
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    
+                    IconButton(onClick = { 
+                        showMenu = true
+                        onMoreClick?.invoke(item) 
+                    }) {
+                        Icon(imageVector = Icons.Default.MoreVert, contentDescription = "More")
+                    }
+                }
+            }
+        }
+
+        // Quick Actions Popup Menu
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+            modifier = Modifier.width(180.dp)
+        ) {
+            DropdownMenuItem(
+                text = { Text("Play") },
+                onClick = {
+                    showMenu = false
+                    onPlayClick?.invoke(item)
+                },
+                leadingIcon = {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null)
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Info") },
+                onClick = {
+                    showMenu = false
+                    handleInfo()
+                },
+                leadingIcon = {
+                    Icon(Icons.Default.Info, contentDescription = null)
+                }
+            )
+            if (onDeleteClick != null) {
+                DropdownMenuItem(
+                    text = { Text("Delete") },
+                    onClick = {
+                        showMenu = false
+                        onDeleteClick(item)
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Default.Delete, contentDescription = null)
+                    }
+                )
             }
         }
     }

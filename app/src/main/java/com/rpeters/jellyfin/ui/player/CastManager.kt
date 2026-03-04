@@ -84,7 +84,7 @@ class CastManager @Inject constructor(
             val isConnected = existingSession?.isConnected == true
             
             if (isConnected) {
-                playbackController.registerCallback(existingSession?.remoteMediaClient) { updatePlaybackState() }
+                playbackController.registerCallback(existingSession.remoteMediaClient) { updatePlaybackState() }
             }
 
             stateStore.update { it.copy(

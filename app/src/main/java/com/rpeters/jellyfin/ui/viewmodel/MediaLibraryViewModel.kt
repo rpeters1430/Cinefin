@@ -216,9 +216,11 @@ class MediaLibraryViewModel @Inject constructor(
             results.forEach { (library, result) ->
                 when (result) {
                     is ApiResult.Success -> {
-                        allNewMovies.addAll(result.data)
+                        val itemsResult = result.data
+                        val items = itemsResult.items
+                        allNewMovies.addAll(items)
                         successCount++
-                        if (result.data.size < pageSize) {
+                        if (startIndex + items.size >= itemsResult.totalCount || items.isEmpty()) {
                             hasMore = false
                         }
                     }
@@ -322,9 +324,11 @@ class MediaLibraryViewModel @Inject constructor(
             results.forEach { (library, result) ->
                 when (result) {
                     is ApiResult.Success -> {
-                        allNewTVShows.addAll(result.data)
+                        val itemsResult = result.data
+                        val items = itemsResult.items
+                        allNewTVShows.addAll(items)
                         successCount++
-                        if (result.data.size < pageSize) {
+                        if (startIndex + items.size >= itemsResult.totalCount || items.isEmpty()) {
                             hasMore = false
                         }
                     }
@@ -443,7 +447,7 @@ class MediaLibraryViewModel @Inject constructor(
         var lastError: String? = null
         results.forEach { result ->
             when (result) {
-                is ApiResult.Success -> allItems.addAll(result.data)
+                is ApiResult.Success -> allItems.addAll(result.data.items)
                 is ApiResult.Error -> {
                     if (result.errorType != ErrorType.OPERATION_CANCELLED) {
                         lastError = result.message
@@ -489,7 +493,7 @@ class MediaLibraryViewModel @Inject constructor(
         var lastError: String? = null
         results.forEach { result ->
             when (result) {
-                is ApiResult.Success -> allItems.addAll(result.data)
+                is ApiResult.Success -> allItems.addAll(result.data.items)
                 is ApiResult.Error -> {
                     if (result.errorType != ErrorType.OPERATION_CANCELLED) {
                         lastError = result.message

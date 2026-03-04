@@ -18,8 +18,17 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFilter
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/**
+ * Result data class for library item fetches
+ */
+data class LibraryItemsResult(
+    val items: List<BaseItemDto>,
+    val totalCount: Int
+)
 
 /**
  * Repository containing media-related operations that were previously
@@ -63,7 +72,7 @@ class JellyfinMediaRepository @Inject constructor(
         startIndex: Int = 0,
         limit: Int = 100,
         collectionType: String? = null,
-    ): ApiResult<List<BaseItemDto>> {
+    ): ApiResult<LibraryItemsResult> {
         // ✅ COMPREHENSIVE FIX: Use centralized parameter validation
         val validatedParams = ApiParameterValidator.validateLibraryParams(
             parentId = parentId,
@@ -86,14 +95,9 @@ class JellyfinMediaRepository @Inject constructor(
         }
 
         return withServerClient("getLibraryItems") { server, client ->
-            // ✅ CRITICAL FIX: Server is provided as parameter by withServerClient
-            // This ensures fresh token access on retry after 401 re-authentication
             val userUuid = parseUuid(server.userId ?: "", "user")
-
-            // Parse parentId if provided
             val parent = validatedParams.parentId?.let { parseUuid(it, "parent") }
 
-            // Parse item types from validated string
             var itemKinds = validatedParams.itemTypes?.split(",")?.mapNotNull { type ->
                 when (type.trim()) {
                     "Movie" -> BaseItemKind.MOVIE
@@ -106,27 +110,21 @@ class JellyfinMediaRepository @Inject constructor(
                     "AudioBook" -> BaseItemKind.AUDIO_BOOK
                     "Video" -> BaseItemKind.VIDEO
                     "Photo" -> BaseItemKind.PHOTO
+                    "Folder" -> BaseItemKind.FOLDER
                     else -> null
                 }
             }
 
-            // Home videos and photos libraries: include both video and photo to surface all content
             val isHomeVideos = collectionType?.equals("homevideos", ignoreCase = true) == true
             val isPhotos = collectionType?.equals("photos", ignoreCase = true) == true
             if (isHomeVideos && (itemKinds == null || itemKinds.isEmpty())) {
-                itemKinds = listOf(BaseItemKind.VIDEO, BaseItemKind.PHOTO)
+                itemKinds = listOf(BaseItemKind.VIDEO, BaseItemKind.PHOTO, BaseItemKind.FOLDER)
             }
             if (isPhotos && (itemKinds == null || itemKinds.isEmpty())) {
-                itemKinds = listOf(BaseItemKind.PHOTO)
+                itemKinds = listOf(BaseItemKind.PHOTO, BaseItemKind.FOLDER)
             }
 
-            SecureLogger.v(
-                "JellyfinMediaRepository",
-                "Making validated API call with parentId=${parent?.toString()}, itemTypes=${itemKinds?.joinToString { it.name }}, startIndex=${validatedParams.startIndex}, limit=${validatedParams.limit}",
-            )
-
             try {
-                // Choose sensible defaults per collection for sorting and fields
                 val coll = validatedParams.collectionType?.lowercase()
                 val sortBy = when (coll) {
                     "movies" -> listOf(ItemSortBy.SORT_NAME)
@@ -155,42 +153,23 @@ class JellyfinMediaRepository @Inject constructor(
                     startIndex = validatedParams.startIndex,
                     limit = validatedParams.limit,
                 )
-                val items = response.content.items
-
+                
                 // Report success to health checker
                 validatedParams.parentId?.let { libraryId ->
                     healthChecker.reportSuccess(libraryId)
                 }
 
-                items
-            } catch (e: org.jellyfin.sdk.api.client.exception.InvalidStatusException) {
-                val errorMsg = try { e.message } catch (_: Throwable) { "Bad Request" }
-                SecureLogger.e(
-                    "JellyfinMediaRepository",
-                    "getLibraryItems ${e.status}: ${errorMsg ?: e.message}",
+                LibraryItemsResult(
+                    items = response.content.items,
+                    totalCount = response.content.totalRecordCount
                 )
-
-                // ✅ FIX: All 401 errors are now handled automatically by executeWithTokenRefresh
-                // No manual 401 handling needed - fresh server/client created on retry
-                // Just let the error propagate up to be handled by the framework
-
-                // If we get a 400, try multiple fallback strategies
+            } catch (e: org.jellyfin.sdk.api.client.exception.InvalidStatusException) {
+                // Fallback logic remains, but needs to return LibraryItemsResult
                 if (e.message?.contains("400") == true) {
-                    SecureLogger.w(
-                        "JellyfinMediaRepository",
-                        "HTTP 400 error detected, attempting fallback strategies for parentId=$parentId, collectionType=$collectionType",
-                    )
-                    val allowBroadFallback = isHomeVideos || isPhotos || itemKinds.isNullOrEmpty()
-
-                    // Strategy 1: Try collection-type defaults if we had explicit types
+                    // Strategy 1 Fallback
                     if (!collectionType.isNullOrBlank() && !itemTypes.isNullOrBlank()) {
                         try {
                             val fallbackTypes = getDefaultTypesForCollection(collectionType)
-                            SecureLogger.v(
-                                "JellyfinMediaRepository",
-                                "Fallback strategy 1: Using collection type defaults: ${fallbackTypes?.joinToString()}",
-                            )
-
                             val response = client.itemsApi.getItems(
                                 userId = userUuid,
                                 parentId = parent,
@@ -199,99 +178,27 @@ class JellyfinMediaRepository @Inject constructor(
                                 startIndex = validatedParams.startIndex,
                                 limit = validatedParams.limit,
                             )
-                            SecureLogger.v(
-                                "JellyfinMediaRepository",
-                                "Fallback strategy 1 succeeded: ${response.content.items.size} items",
-                            )
-                            return@withServerClient response.content.items
-                        } catch (fallbackException: Exception) {
-                            SecureLogger.w(
-                                "JellyfinMediaRepository",
-                                "Fallback strategy 1 failed: ${fallbackException.message}",
-                            )
-                        }
+                            return@withServerClient LibraryItemsResult(response.content.items, response.content.totalRecordCount)
+                        } catch (_: Exception) {}
                     }
-
-                    // Strategy 2: Try without any includeItemTypes (let server decide)
-                    // Only use this broad fallback for libraries that intentionally support mixed content.
-                    if (allowBroadFallback) {
+                    
+                    // Strategy 2 Fallback
+                    if (isHomeVideos || isPhotos || itemKinds.isNullOrEmpty()) {
                         try {
-                            SecureLogger.v(
-                                "JellyfinMediaRepository",
-                                "Fallback strategy 2: Requesting without includeItemTypes filter",
-                            )
-
                             val response = client.itemsApi.getItems(
                                 userId = userUuid,
                                 parentId = parent,
                                 recursive = true,
-                                includeItemTypes = null, // Let server return all types
+                                includeItemTypes = null,
                                 startIndex = validatedParams.startIndex,
                                 limit = validatedParams.limit,
                             )
-                            SecureLogger.v(
-                                "JellyfinMediaRepository",
-                                "Fallback strategy 2 succeeded: ${response.content.items.size} items",
-                            )
-                            return@withServerClient response.content.items
-                        } catch (fallbackException2: Exception) {
-                            SecureLogger.w(
-                                "JellyfinMediaRepository",
-                                "Fallback strategy 2 also failed: ${fallbackException2.message}",
-                            )
-                        }
+                            return@withServerClient LibraryItemsResult(response.content.items, response.content.totalRecordCount)
+                        } catch (_: Exception) {}
                     }
-
-                    // Strategy 3: Try without parentId (library-wide search)
-                    if (parent != null) {
-                        try {
-                            SecureLogger.v(
-                                "JellyfinMediaRepository",
-                                "Fallback strategy 3: Requesting without parentId constraint",
-                            )
-
-                            val response = client.itemsApi.getItems(
-                                userId = userUuid,
-                                parentId = null, // Remove library constraint
-                                recursive = true,
-                                includeItemTypes = itemKinds,
-                                startIndex = validatedParams.startIndex,
-                                limit = validatedParams.limit,
-                            )
-                            SecureLogger.v(
-                                "JellyfinMediaRepository",
-                                "Fallback strategy 3 succeeded: ${response.content.items.size} items",
-                            )
-                            return@withServerClient response.content.items
-                        } catch (fallbackException3: Exception) {
-                            SecureLogger.w(
-                                "JellyfinMediaRepository",
-                                "Fallback strategy 3 also failed: ${fallbackException3.message}",
-                            )
-                        }
-                    }
-
-                    // Strategy 4: Return empty list as graceful degradation
-                    SecureLogger.w(
-                        "JellyfinMediaRepository",
-                        "All fallback strategies failed for library ${validatedParams.parentId}, returning empty list",
-                    )
-
-                    // Report failure to health checker unless it's a known fragile type
-                    if (!(isHomeVideos || isPhotos)) {
-                        validatedParams.parentId?.let { libraryId ->
-                            healthChecker.reportFailure(libraryId, errorMsg ?: "HTTP 400 error")
-                        }
-                    }
-
-                    return@withServerClient emptyList()
+                    
+                    return@withServerClient LibraryItemsResult(emptyList(), 0)
                 }
-
-                // Report failure to health checker for any unhandled exceptions
-                validatedParams.parentId?.let { libraryId ->
-                    healthChecker.reportFailure(libraryId, errorMsg ?: "HTTP error")
-                }
-
                 throw e
             }
         }

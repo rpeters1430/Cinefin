@@ -83,7 +83,7 @@ class CastMediaLoadBuilder @Inject constructor(
                 url = authenticatedUrl,
                 mimeType = mimeType,
                 playSessionId = playbackInfo.playSessionId,
-                mediaSourceId = mediaSource.id?.toString(),
+                mediaSourceId = mediaSource.id,
                 urlType = if (!mediaSource.transcodingUrl.isNullOrBlank()) "transcode" else "direct",
             )
         } catch (e: Exception) {

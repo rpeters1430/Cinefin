@@ -263,16 +263,21 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
     }
 
     composable(
-        route = Screen.Stuff.route,
+        route = Screen.Stuff.route + "?folderId={folderId}",
         arguments = listOf(
             navArgument(Screen.LIBRARY_ID_ARG) { type = NavType.StringType },
             navArgument(Screen.COLLECTION_TYPE_ARG) {
                 type = NavType.StringType
                 nullable = true
             },
+            navArgument("folderId") {
+                type = NavType.StringType
+                nullable = true
+            },
         ),
     ) { backStackEntry ->
         val libraryId = backStackEntry.arguments?.getString(Screen.LIBRARY_ID_ARG)
+        val folderId = backStackEntry.arguments?.getString("folderId")
         if (libraryId.isNullOrBlank()) {
             SecureLogger.e("NavGraph", "Stuff navigation cancelled: libraryId is null or blank")
             return@composable
@@ -280,11 +285,15 @@ fun androidx.navigation.NavGraphBuilder.mediaNavGraph(
 
         LibraryTypeScreen(
             libraryType = LibraryType.STUFF,
+            folderId = folderId,
             onItemClick = { item ->
                 item.id.toString().let { id ->
                     when (item.type) {
                         BaseItemKind.VIDEO -> navController.navigate(Screen.HomeVideoDetail.createRoute(id))
                         BaseItemKind.SERIES -> navController.navigate(Screen.TVSeasons.createRoute(id))
+                        BaseItemKind.FOLDER -> {
+                            navController.navigate(Screen.Stuff.route + "?${Screen.LIBRARY_ID_ARG}=$libraryId&folderId=$id")
+                        }
                         else -> navController.navigate(Screen.ItemDetail.createRoute(id))
                     }
                 }

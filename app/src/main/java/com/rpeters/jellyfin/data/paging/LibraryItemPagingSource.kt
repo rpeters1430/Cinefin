@@ -58,10 +58,12 @@ class LibraryItemPagingSource(
                 )
             ) {
                 is ApiResult.Success -> {
-                    val items = result.data
+                    val itemsResult = result.data
+                    val items = itemsResult.items
+                    val totalCount = itemsResult.totalCount
 
                     if (BuildConfig.DEBUG) {
-                        Log.d(TAG, "Loaded ${items.size} items for startIndex=$startIndex")
+                        Log.d(TAG, "Loaded ${items.size} items for startIndex=$startIndex, totalCount=$totalCount")
                     }
 
                     val previousKey = if (startIndex == STARTING_START_INDEX) {
@@ -70,7 +72,7 @@ class LibraryItemPagingSource(
                         maxOf(STARTING_START_INDEX, startIndex - params.loadSize)
                     }
 
-                    val nextKey = if (items.isEmpty() || items.size < params.loadSize) {
+                    val nextKey = if (items.isEmpty() || startIndex + items.size >= totalCount) {
                         null
                     } else {
                         startIndex + items.size

@@ -447,11 +447,11 @@ private fun getLibraryColor(
         "movies" -> MaterialTheme.colorScheme.primary
         "tvshows" -> MaterialTheme.colorScheme.secondary
         "music" -> MaterialTheme.colorScheme.tertiary
-        "books" -> LibraryBooksAccent
-        "homevideos" -> LibraryHomeVideosAccent
-        "musicvideos" -> LibraryMusicVideosAccent
-        "playlists" -> LibraryPlaylistsAccent
-        "mixed" -> LibraryMixedAccent
+        "books" -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+        "homevideos" -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
+        "musicvideos" -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f)
+        "playlists" -> MaterialTheme.colorScheme.primaryContainer
+        "mixed" -> MaterialTheme.colorScheme.secondaryContainer
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 }
