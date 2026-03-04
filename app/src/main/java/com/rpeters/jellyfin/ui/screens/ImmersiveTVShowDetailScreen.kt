@@ -86,9 +86,13 @@ import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
+import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.MotionTokens
+import com.rpeters.jellyfin.ui.theme.OfficialRatingGreen
+import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
+import com.rpeters.jellyfin.ui.theme.getOfficialRatingColor
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import com.rpeters.jellyfin.utils.getItemKey
@@ -506,15 +510,9 @@ private fun ShowMetadataSection(
         ) {
             series.officialRating?.let { rating ->
                 val normalized = normalizeOfficialRating(rating) ?: return@let
-                val tintColor = when (normalized.uppercase()) {
-                    "G", "TV-G" -> Color(0xFF4CAF50) // Green
-                    "PG", "TV-PG" -> Color(0xFFFFC107) // Amber
-                    "PG-13", "TV-14" -> Color(0xFFFF9800) // Orange
-                    "R", "TV-MA", "NC-17" -> Color(0xFFF44336) // Red
-                    else -> Color.White.copy(alpha = 0.5f)
-                }
+                val tintColor = getOfficialRatingColor(normalized)
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
+                    shape = RoundedCornerShape(Dimens.Corner6),
                     color = tintColor.copy(alpha = 0.2f),
                     border = BorderStroke(1.dp, tintColor.copy(alpha = 0.6f)),
                 ) {
@@ -523,22 +521,22 @@ private fun ShowMetadataSection(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = Dimens.Spacing10, vertical = Dimens.Spacing6),
                     )
                 }
             }
 
             if (series.status == "Continuing") {
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = Color(0xFF4CAF50),
+                    shape = RoundedCornerShape(Dimens.Corner6),
+                    color = OfficialRatingGreen,
                 ) {
                     Text(
                         text = "Ongoing",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = Dimens.Spacing10, vertical = Dimens.Spacing6),
                     )
                 }
             }
@@ -848,7 +846,7 @@ private fun RatingBadge(rating: Float) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(16.dp))
+        Icon(Icons.Default.Star, contentDescription = null, tint = RatingGold, modifier = Modifier.size(Dimens.Size16))
         Text(
             text = String.format(Locale.ROOT, "%.1f", rating),
             style = MaterialTheme.typography.titleMedium,

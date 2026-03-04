@@ -4,12 +4,22 @@ import androidx.compose.ui.unit.dp
 
 object Dimens {
     val Spacing4 = 4.dp
+    val Spacing6 = 6.dp
     val Spacing8 = 8.dp
+    val Spacing10 = 10.dp
     val Spacing12 = 12.dp
     val Spacing16 = 16.dp
+    val Spacing18 = 18.dp
     val Spacing24 = 24.dp
     val Spacing32 = 32.dp
     val Spacing56 = 56.dp
+
+    val Size16 = 16.dp
+    val Size18 = 18.dp
+    val Size64 = 64.dp
+    val Height200 = 200.dp
+
+    val Corner6 = 6.dp
 }
 
 object ImmersiveDimens {

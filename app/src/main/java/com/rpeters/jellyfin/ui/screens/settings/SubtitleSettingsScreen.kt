@@ -1,15 +1,10 @@
 package com.rpeters.jellyfin.ui.screens.settings
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,19 +15,15 @@ import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +39,9 @@ import com.rpeters.jellyfin.data.preferences.SubtitleBackground
 import com.rpeters.jellyfin.data.preferences.SubtitleFont
 import com.rpeters.jellyfin.data.preferences.SubtitleTextSize
 import com.rpeters.jellyfin.ui.components.ExpressiveRadioListItem
+import com.rpeters.jellyfin.ui.theme.Dimens
+import com.rpeters.jellyfin.ui.theme.SubtitlePreviewGradientEnd
+import com.rpeters.jellyfin.ui.theme.SubtitlePreviewGradientStart
 import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
 
 /**
@@ -64,11 +58,11 @@ fun SubtitleSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         stringResource(R.string.settings_subtitles_title),
-                        fontWeight = FontWeight.Bold
-                    ) 
+                        fontWeight = FontWeight.Bold,
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -104,7 +98,7 @@ fun SubtitleSettingsScreen(
             ) {
                 SubtitleSizeRow(
                     selectedSize = preferences.textSize,
-                    onSizeSelect = { viewModel.setTextSize(it) }
+                    onSizeSelect = { viewModel.setTextSize(it) },
                 )
             }
 
@@ -115,7 +109,7 @@ fun SubtitleSettingsScreen(
             ) {
                 SubtitleBackgroundRow(
                     selectedBackground = preferences.background,
-                    onBackgroundSelect = { viewModel.setBackground(it) }
+                    onBackgroundSelect = { viewModel.setBackground(it) },
                 )
             }
 
@@ -132,7 +126,7 @@ fun SubtitleSettingsScreen(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -141,14 +135,14 @@ fun SubtitleSettingsScreen(
 @Composable
 private fun SubtitlePreviewCard(
     preferences: SubtitleAppearancePreferences,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(200.dp),
+            .height(Dimens.Height200),
         shape = MaterialTheme.shapes.extraLarge,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Mock Movie Background (Gradient + Icon to simulate a scene)
@@ -157,16 +151,16 @@ private fun SubtitlePreviewCard(
                     .fillMaxSize()
                     .background(
                         brush = Brush.verticalGradient(
-                            colors = listOf(Color(0xFF1A1A1A), Color(0xFF333333))
-                        )
+                            colors = listOf(SubtitlePreviewGradientStart, SubtitlePreviewGradientEnd),
+                        ),
                     ),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.Movie,
                     contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = Color.White.copy(alpha = 0.1f)
+                    modifier = Modifier.size(Dimens.Size64),
+                    tint = Color.White.copy(alpha = 0.1f),
                 )
             }
 
@@ -175,14 +169,14 @@ private fun SubtitlePreviewCard(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
-                contentAlignment = Alignment.BottomCenter
+                contentAlignment = Alignment.BottomCenter,
             ) {
                 val backgroundColor = when (preferences.background) {
                     SubtitleBackground.NONE -> Color.Transparent
                     SubtitleBackground.BLACK -> Color.Black
                     SubtitleBackground.SEMI_TRANSPARENT -> Color.Black.copy(alpha = 0.5f)
                 }
-                
+
                 val fontFamily = when (preferences.font) {
                     SubtitleFont.SERIF, SubtitleFont.ROBOTO_SERIF -> FontFamily.Serif
                     SubtitleFont.MONOSPACE, SubtitleFont.ROBOTO_MONO -> FontFamily.Monospace
@@ -191,7 +185,7 @@ private fun SubtitlePreviewCard(
 
                 Surface(
                     color = backgroundColor,
-                    shape = RoundedCornerShape(4.dp)
+                    shape = RoundedCornerShape(4.dp),
                 ) {
                     Text(
                         text = "The quick brown fox jumps over the lazy dog.",
@@ -199,7 +193,7 @@ private fun SubtitlePreviewCard(
                         fontSize = preferences.textSize.sizeSp.sp,
                         fontFamily = fontFamily,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                     )
                 }
             }
@@ -212,13 +206,13 @@ private fun SubtitlePreviewCard(
                 color = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = CircleShape,
-                tonalElevation = 4.dp
+                tonalElevation = 4.dp,
             ) {
                 Text(
                     text = "PREVIEW",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 )
             }
         }
@@ -228,20 +222,23 @@ private fun SubtitlePreviewCard(
 @Composable
 private fun SubtitleSizeRow(
     selectedSize: SubtitleTextSize,
-    onSizeSelect: (SubtitleTextSize) -> Unit
+    onSizeSelect: (SubtitleTextSize) -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         SubtitleTextSize.entries.forEach { size ->
             val isSelected = selectedSize == size
             val containerColor by animateColorAsState(
-                targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer 
-                            else MaterialTheme.colorScheme.surfaceContainerLow,
-                label = "color"
+                targetValue = if (isSelected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerLow
+                },
+                label = "color",
             )
-            
+
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -250,19 +247,25 @@ private fun SubtitleSizeRow(
                     .background(containerColor)
                     .border(
                         width = if (isSelected) 2.dp else 1.dp,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary 
-                                else MaterialTheme.colorScheme.outlineVariant,
-                        shape = MaterialTheme.shapes.medium
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outlineVariant
+                        },
+                        shape = MaterialTheme.shapes.medium,
                     )
                     .clickable { onSizeSelect(size) },
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = "A",
                     fontSize = (12 + (SubtitleTextSize.entries.indexOf(size) * 4)).sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer 
-                            else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                 )
             }
         }
@@ -272,18 +275,21 @@ private fun SubtitleSizeRow(
 @Composable
 private fun SubtitleBackgroundRow(
     selectedBackground: SubtitleBackground,
-    onBackgroundSelect: (SubtitleBackground) -> Unit
+    onBackgroundSelect: (SubtitleBackground) -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         SubtitleBackground.entries.forEach { background ->
             val isSelected = selectedBackground == background
             val containerColor by animateColorAsState(
-                targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer 
-                            else MaterialTheme.colorScheme.surfaceContainerLow,
-                label = "color"
+                targetValue = if (isSelected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerLow
+                },
+                label = "color",
             )
 
             Column(
@@ -293,14 +299,17 @@ private fun SubtitleBackgroundRow(
                     .background(containerColor)
                     .border(
                         width = if (isSelected) 2.dp else 1.dp,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary 
-                                else MaterialTheme.colorScheme.outlineVariant,
-                        shape = MaterialTheme.shapes.medium
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outlineVariant
+                        },
+                        shape = MaterialTheme.shapes.medium,
                     )
                     .clickable { onBackgroundSelect(background) }
                     .padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // Background visual representation
                 Box(
@@ -308,7 +317,7 @@ private fun SubtitleBackgroundRow(
                         .size(40.dp, 24.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .background(Color.Gray.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     val boxColor = when (background) {
                         SubtitleBackground.NONE -> Color.Transparent
@@ -319,15 +328,18 @@ private fun SubtitleBackgroundRow(
                         modifier = Modifier
                             .fillMaxWidth(0.7f)
                             .height(8.dp)
-                            .background(boxColor)
+                            .background(boxColor),
                     )
                 }
                 Text(
                     text = subtitleBackgroundLabel(background).split(" ").first(),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer 
-                            else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                 )
             }
         }
@@ -348,18 +360,18 @@ private fun ExpressiveSubtitleSection(
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(MaterialTheme.shapes.medium)
                         .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = icon,
@@ -372,7 +384,7 @@ private fun ExpressiveSubtitleSection(
                     text = title,
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     ),
                 )
             }

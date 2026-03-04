@@ -93,7 +93,9 @@ import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
+import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
+import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.theme.SeriesBlue
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.viewmodel.MainAppViewModel
@@ -523,7 +525,7 @@ private fun EpisodeHeroContent(
             ) {
                 // S# E# Badge
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
+                    shape = RoundedCornerShape(Dimens.Corner6),
                     color = SeriesBlue.copy(alpha = 0.9f),
                 ) {
                     Text(
@@ -531,14 +533,14 @@ private fun EpisodeHeroContent(
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = Dimens.Spacing8, vertical = Dimens.Spacing4),
                     )
                 }
 
                 // Rating
                 episode.communityRating?.let { rating ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(18.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing4)) {
+                        Icon(Icons.Default.Star, contentDescription = null, tint = RatingGold, modifier = Modifier.size(Dimens.Size18))
                         Text(
                             text = String.format(Locale.ROOT, "%.1f", rating),
                             style = MaterialTheme.typography.titleMedium,
@@ -598,7 +600,7 @@ private fun EpisodeOverviewSection(
             )
 
             TextButton(onClick = onGenerateAiSummary, enabled = !isLoadingAiSummary) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(Dimens.Size18))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(if (aiSummary != null) "AI Summary" else "Generate AI Summary")
             }

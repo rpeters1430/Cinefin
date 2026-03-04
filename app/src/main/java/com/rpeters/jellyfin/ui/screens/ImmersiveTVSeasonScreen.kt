@@ -85,8 +85,10 @@ import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
 import com.rpeters.jellyfin.ui.components.immersive.ParallaxHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
+import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.MotionTokens
+import com.rpeters.jellyfin.ui.theme.RatingGold
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonState
 import com.rpeters.jellyfin.ui.viewmodel.TVSeasonViewModel
 import com.rpeters.jellyfin.utils.getItemKey
@@ -523,8 +525,8 @@ private fun ImmersiveSeriesDetailsHeader(
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
-                            tint = Color(0xFFFFD700), // Gold color
-                            modifier = Modifier.size(18.dp),
+                            tint = RatingGold,
+                            modifier = Modifier.size(Dimens.Size18),
                         )
                         Text(
                             text = String.format(Locale.ROOT, "%.1f", rating),
@@ -539,7 +541,7 @@ private fun ImmersiveSeriesDetailsHeader(
                 series.officialRating?.let { rating ->
                     val normalizedRating = normalizeOfficialRating(rating) ?: return@let
                     Surface(
-                        shape = RoundedCornerShape(6.dp),
+                        shape = RoundedCornerShape(Dimens.Corner6),
                         color = Color.White.copy(alpha = 0.2f),
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
                     ) {
@@ -548,7 +550,7 @@ private fun ImmersiveSeriesDetailsHeader(
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.padding(horizontal = Dimens.Spacing8, vertical = Dimens.Spacing4),
                         )
                     }
                 }

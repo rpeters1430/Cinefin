@@ -68,6 +68,23 @@ val StatusError = Color(0xFFE53E3E)
 val StatusWarning = Color(0xFFFFA500)
 val StatusInfo = Color(0xFF3182CE)
 
+// Official content rating colors
+val OfficialRatingGreen = Color(0xFF4CAF50)
+val OfficialRatingAmber = Color(0xFFFFC107)
+val OfficialRatingOrange = Color(0xFFFF9800)
+val OfficialRatingRed = Color(0xFFF44336)
+
+// Immersive library category accents
+val LibraryBooksAccent = Color(0xFFFF6F00)
+val LibraryHomeVideosAccent = Color(0xFFC2185B)
+val LibraryMusicVideosAccent = Color(0xFF7B1FA2)
+val LibraryPlaylistsAccent = Color(0xFF0288D1)
+val LibraryMixedAccent = Color(0xFF5E35B1)
+
+// Subtitle preview backgrounds
+val SubtitlePreviewGradientStart = Color(0xFF1A1A1A)
+val SubtitlePreviewGradientEnd = Color(0xFF333333)
+
 // ============================================================================
 // EXPRESSIVE COLOR SYSTEM
 // ============================================================================
@@ -237,6 +254,16 @@ fun getStatusColor(status: String?): Color {
         "WARNING" -> StatusWarning
         "INFO" -> StatusInfo
         else -> Neutral50
+    }
+}
+
+fun getOfficialRatingColor(officialRating: String): Color {
+    return when (officialRating.uppercase(java.util.Locale.ROOT)) {
+        "G", "TV-G" -> OfficialRatingGreen
+        "PG", "TV-PG" -> OfficialRatingAmber
+        "PG-13", "TV-14" -> OfficialRatingOrange
+        "R", "TV-MA", "NC-17" -> OfficialRatingRed
+        else -> Color.White.copy(alpha = 0.5f)
     }
 }
 

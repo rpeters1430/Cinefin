@@ -112,12 +112,15 @@ import com.rpeters.jellyfin.ui.components.immersive.StaticHeroSection
 import com.rpeters.jellyfin.ui.components.immersive.VideoInfoCard
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.downloads.DownloadsViewModel
+import com.rpeters.jellyfin.ui.theme.Dimens
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import com.rpeters.jellyfin.ui.theme.JellyfinTeal80
 import com.rpeters.jellyfin.ui.theme.Quality1440
 import com.rpeters.jellyfin.ui.theme.Quality4K
 import com.rpeters.jellyfin.ui.theme.QualityHD
 import com.rpeters.jellyfin.ui.theme.QualitySD
+import com.rpeters.jellyfin.ui.theme.RatingGold
+import com.rpeters.jellyfin.ui.theme.getOfficialRatingColor
 import com.rpeters.jellyfin.ui.utils.PlaybackCapabilityAnalysis
 import com.rpeters.jellyfin.ui.utils.findDefaultVideoStream
 import com.rpeters.jellyfin.utils.SecureLogger
@@ -340,7 +343,7 @@ fun ImmersiveMovieDetailScreen(
                                                 contentDescription = null,
                                                 modifier = Modifier.size(16.dp),
                                             )
-                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Spacer(modifier = Modifier.width(Dimens.Spacing4))
                                             Text(if (aiSummary != null) "AI Summary" else "Generate AI Summary")
                                         }
 
@@ -978,10 +981,10 @@ private fun MovieHeroContent(
                         Icon(
                             imageVector = androidx.compose.material.icons.Icons.Default.Star,
                             contentDescription = "Rating",
-                            tint = Color(0xFFFFD700), // Yellow Star
-                            modifier = Modifier.size(18.dp),
+                            tint = RatingGold,
+                            modifier = Modifier.size(Dimens.Size18),
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(Dimens.Spacing4))
                         Text(
                             text = String.format(Locale.ROOT, "%.1f", rating),
                             style = MaterialTheme.typography.titleMedium,
@@ -997,10 +1000,10 @@ private fun MovieHeroContent(
                         Icon(
                             imageVector = Icons.Default.Star, // Trophy icon fallback
                             contentDescription = "Critic Rating",
-                            tint = Color(0xFFFFD700),
-                            modifier = Modifier.size(18.dp),
+                            tint = RatingGold,
+                            modifier = Modifier.size(Dimens.Size18),
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(Dimens.Spacing4))
                         Text(
                             text = "${rating.roundToInt()}%",
                             style = MaterialTheme.typography.titleMedium,
@@ -1013,13 +1016,7 @@ private fun MovieHeroContent(
                 // Official Rating Badge (Color Coded)
                 movie.officialRating?.let { rating ->
                     val normalizedRating = normalizeOfficialRating(rating) ?: return@let
-                    val tintColor = when (normalizedRating) {
-                        "G", "TV-G" -> Color(0xFF4CAF50) // Green
-                        "PG", "TV-PG" -> Color(0xFFFFC107) // Amber
-                        "PG-13", "TV-14" -> Color(0xFFFF9800) // Orange
-                        "R", "TV-MA", "NC-17" -> Color(0xFFF44336) // Red
-                        else -> Color.White.copy(alpha = 0.5f)
-                    }
+                    val tintColor = getOfficialRatingColor(normalizedRating)
                     Surface(
                         shape = RoundedCornerShape(6.dp),
                         color = tintColor.copy(alpha = 0.2f),
