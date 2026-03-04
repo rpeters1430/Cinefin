@@ -62,6 +62,12 @@ class JellyfinSystemRepository @Inject constructor(
             ApiResult.Success(response.content)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: Exception) {
+            // Catch all exceptions including DNS resolution failures (GaiException/UnknownHostException)
+            // to prevent crashes when a hostname cannot be resolved.
+            Log.e(TAG, "testServerConnection failed for $serverUrl: ${e.message}", e)
+            val jellyfinError = handleException<PublicSystemInfo>(e, "Connection failed")
+            jellyfinError
         }
     }
 

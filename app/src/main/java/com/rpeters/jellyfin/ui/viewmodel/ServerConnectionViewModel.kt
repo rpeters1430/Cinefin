@@ -43,8 +43,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 import java.io.File
+import javax.inject.Inject
 
 // Use the enhanced ConnectionState from ConnectionProgress.kt
 // This data class is now defined in the ConnectionProgress.kt file
@@ -390,9 +390,16 @@ class ServerConnectionViewModel @Inject constructor(
                 is ApiResult.Error -> {
                     if (!handlePinningError(serverResult)) {
                         val hasOfflineMedia = hasPlayableOfflineMedia()
+                        val errorMessage = when (serverResult.errorType) {
+                            ErrorType.DNS_RESOLUTION ->
+                                "Could not find an IP address for the server hostname. " +
+                                    "Please check the server address for typos, or try using " +
+                                    "an IP address directly (e.g., 192.168.1.100:8096)."
+                            else -> "Cannot connect to server: ${serverResult.message}"
+                        }
                         _connectionState.value = _connectionState.value.copy(
                             isConnecting = false,
-                            errorMessage = "Cannot connect to server: ${serverResult.message}",
+                            errorMessage = errorMessage,
                             connectionPhase = ConnectionPhase.Error,
                             canEnterOffline = hasOfflineMedia,
                         )
@@ -830,13 +837,17 @@ class ServerConnectionViewModel @Inject constructor(
             )
 
             // First test server connection
-            when (val serverResult = withContext(Dispatchers.IO) {
-                repository.testServerConnection(normalizedServerUrl)
-            }) {
+            when (
+                val serverResult = withContext(Dispatchers.IO) {
+                    repository.testServerConnection(normalizedServerUrl)
+                }
+            ) {
                 is ApiResult.Success -> {
-                    when (val enabledResult = withContext(Dispatchers.IO) {
-                        repository.isQuickConnectEnabled(normalizedServerUrl)
-                    }) {
+                    when (
+                        val enabledResult = withContext(Dispatchers.IO) {
+                            repository.isQuickConnectEnabled(normalizedServerUrl)
+                        }
+                    ) {
                         is ApiResult.Success -> {
                             if (!enabledResult.data) {
                                 _connectionState.value = _connectionState.value.copy(
@@ -863,9 +874,11 @@ class ServerConnectionViewModel @Inject constructor(
                     _connectionState.value = _connectionState.value.copy(quickConnectStatus = "Initiating Quick Connect...")
 
                     // Now initiate Quick Connect
-                    when (val quickConnectResult = withContext(Dispatchers.IO) {
-                        repository.initiateQuickConnect(normalizedServerUrl)
-                    }) {
+                    when (
+                        val quickConnectResult = withContext(Dispatchers.IO) {
+                            repository.initiateQuickConnect(normalizedServerUrl)
+                        }
+                    ) {
                         is ApiResult.Success -> {
                             val result = quickConnectResult.data
                             _connectionState.value = _connectionState.value.copy(
@@ -894,10 +907,17 @@ class ServerConnectionViewModel @Inject constructor(
                     }
                 }
                 is ApiResult.Error -> {
+                    val errorMessage = when (serverResult.errorType) {
+                        ErrorType.DNS_RESOLUTION ->
+                            "Could not find an IP address for the server hostname. " +
+                                "Please check the server address for typos, or try using " +
+                                "an IP address directly (e.g., 192.168.1.100:8096)."
+                        else -> "Cannot connect to server: ${serverResult.message}"
+                    }
                     _connectionState.value = _connectionState.value.copy(
                         isConnecting = false,
                         quickConnectStatus = "",
-                        errorMessage = "Cannot connect to server: ${serverResult.message}",
+                        errorMessage = errorMessage,
                     )
                 }
                 is ApiResult.Loading -> {
@@ -923,17 +943,21 @@ class ServerConnectionViewModel @Inject constructor(
                 return
             }
 
-            when (val stateResult = withContext(Dispatchers.IO) {
-                repository.getQuickConnectState(serverUrl, secret)
-            }) {
+            when (
+                val stateResult = withContext(Dispatchers.IO) {
+                    repository.getQuickConnectState(serverUrl, secret)
+                }
+            ) {
                 is ApiResult.Success -> {
                     val state = stateResult.data
                     when (state.state) {
                         "Approved" -> {
                             // User approved the connection, authenticate
-                            when (val authResult = withContext(Dispatchers.IO) {
-                                repository.authenticateWithQuickConnect(serverUrl, secret)
-                            }) {
+                            when (
+                                val authResult = withContext(Dispatchers.IO) {
+                                    repository.authenticateWithQuickConnect(serverUrl, secret)
+                                }
+                            ) {
                                 is ApiResult.Success -> {
                                     if (_connectionState.value.rememberLogin) {
                                         saveCurrentSessionToken()

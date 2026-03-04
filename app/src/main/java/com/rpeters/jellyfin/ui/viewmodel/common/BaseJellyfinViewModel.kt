@@ -106,6 +106,15 @@ abstract class BaseJellyfinViewModel : ViewModel() {
                 }
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: Exception) {
+                // Catch unexpected exceptions that escaped from operation() to prevent app crashes.
+                // All repository methods should return ApiResult.Error, but this is a safety net
+                // for cases like DNS resolution failures (GaiException/UnknownHostException) that
+                // may propagate if a code path doesn't have its own try-catch.
+                val processedError = ErrorHandler.processError(e, operation = operationName)
+                Log.e(TAG, "Unexpected exception in operation: $operationName - ${processedError.userMessage}", e)
+                _errorState.value = processedError
+                onError(processedError)
             } finally {
                 if (showLoading) {
                     _isLoading.value = false
@@ -156,6 +165,11 @@ abstract class BaseJellyfinViewModel : ViewModel() {
                 }
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: Exception) {
+                // Catch unexpected exceptions that escaped from operation() to prevent app crashes.
+                val processedError = ErrorHandler.processError(e, operation = operationName)
+                Log.e(TAG, "Unexpected exception in refresh: $operationName - ${processedError.userMessage}", e)
+                onError(processedError)
             } finally {
                 _isRefreshing.value = false
             }

@@ -17,21 +17,48 @@ import javax.net.ssl.SSLException
 class ErrorHandlerTest {
 
     @Test
-    fun `processError handles UnknownHostException with retryable error`() {
-        // Given: UnknownHostException
+    fun `processError handles UnknownHostException as DNS resolution error`() {
+        // Given: UnknownHostException (contains "Unable to resolve host" which isDnsResolutionError detects)
         val exception = UnknownHostException("Unable to resolve host")
 
         // When: Process error
         val processedError = ErrorHandler.processError(exception)
 
-        // Then: Should be retryable network error
-        assertEquals(ErrorType.NETWORK, processedError.errorType)
-        assertTrue(processedError.isRetryable)
-        assertTrue(processedError.userMessage.contains("Unable to connect"))
+        // Then: Should be a non-retryable DNS resolution error with actionable guidance
+        assertEquals(ErrorType.DNS_RESOLUTION, processedError.errorType)
+        assertFalse(processedError.isRetryable)
+        assertTrue(
+            "Expected DNS guidance in user message but got: ${processedError.userMessage}",
+            processedError.userMessage.contains("hostname", ignoreCase = true) ||
+                processedError.userMessage.contains("DNS", ignoreCase = true) ||
+                processedError.userMessage.contains("address", ignoreCase = true),
+        )
     }
 
     @Test
-    fun `processError handles ConnectException with retryable error`() {
+    fun `processError handles EAI_NODATA message as DNS resolution error`() {
+        // Given: IOException wrapping a GaiException-like cause with EAI_NODATA message
+        // This simulates the android.system.GaiException propagated by OkHttp
+        val cause = RuntimeException("EAI_NODATA (No address associated with hostname)")
+        val exception = java.io.IOException("Failed to connect", cause)
+
+        // When: Process error
+        val processedError = ErrorHandler.processError(exception)
+
+        // Then: Should be classified as DNS_RESOLUTION and not retried
+        assertEquals(ErrorType.DNS_RESOLUTION, processedError.errorType)
+        assertFalse(processedError.isRetryable)
+    }
+
+    @Test
+    fun `shouldRetry returns false for DNS resolution errors`() {
+        // DNS errors require user action (fixing hostname or using IP), so they should not be retried
+        val shouldRetry = ErrorHandler.shouldRetry(ErrorType.DNS_RESOLUTION, attemptNumber = 1, maxAttempts = 3)
+
+        assertFalse(shouldRetry)
+    }
+
+
         // Given: ConnectException
         val exception = ConnectException("Failed to connect to server")
 

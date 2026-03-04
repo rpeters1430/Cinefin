@@ -374,6 +374,13 @@ constructor(
                 }
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: Exception) {
+                // Catch unexpected exceptions (e.g., DNS resolution failures) to prevent app crashes.
+                SecureLogger.e("MainAppViewModel-Initial", "Unexpected exception in loadInitialData", e)
+                _appState.value = _appState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Failed to load data: ${e.message ?: "Unknown error"}",
+                )
             }
         }
     }

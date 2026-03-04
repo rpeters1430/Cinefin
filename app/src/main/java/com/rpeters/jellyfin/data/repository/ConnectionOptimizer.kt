@@ -5,6 +5,7 @@ import android.util.Log
 import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.data.repository.common.ApiResult
 import com.rpeters.jellyfin.data.session.JellyfinSessionManager
+import com.rpeters.jellyfin.data.utils.RepositoryUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -219,6 +220,11 @@ class ConnectionOptimizer @Inject constructor(
             } ?: ApiResult.Error("Connection timeout for $url")
         } catch (e: CancellationException) {
             throw e
+        } catch (e: Exception) {
+            // Catch all exceptions including DNS resolution failures (GaiException/UnknownHostException)
+            // to prevent crashes when a hostname cannot be resolved.
+            val errorType = RepositoryUtils.getErrorType(e)
+            ApiResult.Error(e.message ?: "Connection failed for $url", e, errorType)
         }
     }
 
