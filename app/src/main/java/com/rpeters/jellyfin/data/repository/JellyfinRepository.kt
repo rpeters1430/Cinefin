@@ -59,6 +59,12 @@ class JellyfinRepository @Inject constructor(
     private val streamRepository: JellyfinStreamRepository,
     val connectivityChecker: com.rpeters.jellyfin.network.ConnectivityChecker,
 ) {
+    enum class CastReceiverProfile {
+        CHROMECAST_STRICT,
+        GOOGLE_TV_MODERATE,
+        SHIELD_PERMISSIVE,
+    }
+
     companion object {
         private const val TAG = "JellyfinRepository"
 
@@ -1200,7 +1206,8 @@ class JellyfinRepository @Inject constructor(
      */
     suspend fun getCastPlaybackInfo(
         itemId: String,
-        isShieldOrAndroidTV: Boolean = false,
+        castReceiverProfile: CastReceiverProfile = CastReceiverProfile.CHROMECAST_STRICT,
+        forceTranscode: Boolean = false,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
     ): PlaybackInfoResponse {
@@ -1213,19 +1220,18 @@ class JellyfinRepository @Inject constructor(
             ?: throw IllegalArgumentException("Invalid item UUID: $itemId")
 
         // Use device-specific profile based on Cast receiver capabilities
-        val deviceProfile = if (isShieldOrAndroidTV) {
-            JellyfinDeviceProfile.createShieldCastDeviceProfile()
-        } else {
-            JellyfinDeviceProfile.createChromecastDeviceProfile()
+        val deviceProfile = when (castReceiverProfile) {
+            CastReceiverProfile.SHIELD_PERMISSIVE -> JellyfinDeviceProfile.createShieldCastDeviceProfile()
+            CastReceiverProfile.GOOGLE_TV_MODERATE -> JellyfinDeviceProfile.createGoogleTvCastDeviceProfile()
+            CastReceiverProfile.CHROMECAST_STRICT -> JellyfinDeviceProfile.createChromecastDeviceProfile()
         }
-        Log.d("JellyfinRepository", "Cast: Using ${if (isShieldOrAndroidTV) "SHIELD" else "Chromecast"} device profile")
+        Log.d("JellyfinRepository", "Cast: Using $castReceiverProfile device profile")
 
         // Limit bitrate for Cast to 20 Mbps
         val maxBitrate = 20_000_000
 
-        // For SHIELD/Android TV, allow direct play for faster startup
-        // For basic Chromecast, force transcoding for compatibility
-        val allowDirectPlay = isShieldOrAndroidTV
+        // Start strict by default and only allow direct play for known-capable receivers.
+        val allowDirectPlay = !forceTranscode && castReceiverProfile != CastReceiverProfile.CHROMECAST_STRICT
 
         val playbackInfoDto = PlaybackInfoDto(
             userId = userUuid,
@@ -1248,7 +1254,7 @@ class JellyfinRepository @Inject constructor(
         if (BuildConfig.DEBUG) {
             Log.d(
                 "JellyfinRepository",
-                "Cast PlaybackInfo request for item $itemId: maxBitrate=${maxBitrate / 1_000_000}Mbps",
+                "Cast PlaybackInfo request for item $itemId: maxBitrate=${maxBitrate / 1_000_000}Mbps, profile=$castReceiverProfile, forceTranscode=$forceTranscode",
             )
         }
 

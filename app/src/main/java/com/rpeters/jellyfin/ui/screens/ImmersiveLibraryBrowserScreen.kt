@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -44,6 +45,7 @@ import com.rpeters.jellyfin.OptInAppExperimentalApis
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.core.util.PerformanceMetricsTracker
 import com.rpeters.jellyfin.ui.components.CarouselItem
+import com.rpeters.jellyfin.ui.components.AlphabetScroller
 import com.rpeters.jellyfin.ui.components.ExpressiveErrorState
 import com.rpeters.jellyfin.ui.components.ExpressivePullToRefreshBox
 import com.rpeters.jellyfin.ui.components.ExpressiveSimpleEmptyState
@@ -56,6 +58,7 @@ import com.rpeters.jellyfin.ui.components.immersive.ImmersiveMediaCard
 import com.rpeters.jellyfin.ui.components.immersive.ImmersiveScaffold
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 /** Theme and empty-state configuration for [ImmersiveLibraryBrowserScreen]. */
@@ -118,6 +121,7 @@ fun ImmersiveLibraryBrowserScreen(
     val errorTitle = stringResource(R.string.library_error_loading_title)
     var showSortMenu by remember { mutableStateOf(false) }
     val gridState = rememberLazyGridState()
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(gridState, items, hasMoreItems, isLoadingMore) {
         snapshotFlow { gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1 }
@@ -128,6 +132,23 @@ fun ImmersiveLibraryBrowserScreen(
                     onLoadMore()
                 }
             }
+    }
+
+    val scrollToLetter: (String) -> Unit = { letter ->
+        coroutineScope.launch {
+            val targetIndex = items.indexOfFirst { item ->
+                val name = item.sortName ?: item.name ?: ""
+                if (letter == "#") {
+                    name.firstOrNull()?.isDigit() ?: false
+                } else {
+                    name.startsWith(letter, ignoreCase = true)
+                }
+            }
+            if (targetIndex >= 0) {
+                val headerOffset = if (carouselItems.isNotEmpty()) 1 else 0
+                gridState.animateScrollToItem(targetIndex + headerOffset)
+            }
+        }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -278,6 +299,16 @@ fun ImmersiveLibraryBrowserScreen(
                     }
                 }
             }
+        }
+
+        if (items.size > 10) {
+            AlphabetScroller(
+                onLetterSelected = scrollToLetter,
+                activeColor = config.themeColor,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(top = 96.dp, bottom = 96.dp),
+            )
         }
     }
 }

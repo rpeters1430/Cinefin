@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -534,11 +535,16 @@ class ServerConnectionViewModel @Inject constructor(
         // CRITICAL: Normalize the URL using the same function that SecureCredentialManager uses
         // to ensure consistent key generation for password encryption/decryption
         val normalizedUrl = com.rpeters.jellyfin.utils.normalizeServerUrl(serverUrl)
-        context.dataStore.edit { preferences ->
-            preferences[PreferencesKeys.SERVER_URL] = normalizedUrl
-            preferences[PreferencesKeys.USERNAME] = username
+        // Use NonCancellable to prevent a race condition where navigation (triggered by
+        // repository.isConnected becoming true) cancels this coroutine between the DataStore
+        // write and the password save, leaving USERNAME saved but hasSavedPassword = false.
+        withContext(NonCancellable) {
+            context.dataStore.edit { preferences ->
+                preferences[PreferencesKeys.SERVER_URL] = normalizedUrl
+                preferences[PreferencesKeys.USERNAME] = username
+            }
+            secureCredentialManager.savePassword(normalizedUrl, username, password)
         }
-        secureCredentialManager.savePassword(normalizedUrl, username, password)
         _connectionState.value = _connectionState.value.copy(
             savedServerUrl = normalizedUrl,
             savedUsername = username,

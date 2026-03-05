@@ -187,12 +187,21 @@ fun LibraryItemCard(
                         .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val imageHeight = if (isTablet) 100.dp else 80.dp
+                    // Derive width from the server-reported aspect ratio so thumbnails
+                    // (e.g. 16:9 YouTube thumbs) are displayed at their natural shape.
+                    val imageWidth = item.primaryImageAspectRatio
+                        ?.toFloat()
+                        ?.let { imageHeight * it }
+                        ?: imageHeight  // fall back to square when ratio is unknown
+
                     SubcomposeAsyncImage(
                         model = getImageUrl(item),
                         contentDescription = item.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(if (isTablet) 100.dp else 80.dp)
+                            .height(imageHeight)
+                            .width(imageWidth)
                             .clip(MaterialTheme.shapes.small),
                         loading = { ShimmerBox() }
                     )

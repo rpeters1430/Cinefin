@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.media3.common.util.UnstableApi
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.framework.CastContext
+import com.rpeters.jellyfin.ui.player.dlna.DlnaDevice
+import com.rpeters.jellyfin.ui.player.dlna.DlnaDiscoveryController
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -21,9 +23,12 @@ import javax.inject.Singleton
 class CastDiscoveryController @Inject constructor(
     @ApplicationContext private val context: Context,
     private val stateStore: CastStateStore,
+    private val dlnaDiscoveryController: DlnaDiscoveryController,
 ) {
     private var routeCallbackAdded = false
     private var discoveryJob: Job? = null
+    private var castDevices: List<String> = emptyList()
+    private var dlnaDevices: List<String> = emptyList()
 
     private val routeCallback = object : MediaRouter.Callback() {
         override fun onRouteAdded(router: MediaRouter, route: MediaRouter.RouteInfo) {
@@ -47,22 +52,28 @@ class CastDiscoveryController @Inject constructor(
      * Starts discovering devices.
      */
     fun startDiscovery(scope: CoroutineScope, castContext: CastContext?) {
-        if (castContext == null) {
-            SecureLogger.w("CastDiscovery", "Cannot start discovery: CastContext is null")
-            return
-        }
-
         discoveryJob?.cancel()
+        castDevices = emptyList()
+        dlnaDevices = emptyList()
         stateStore.update { it.copy(discoveryState = DiscoveryState.DISCOVERING, availableDevices = emptyList()) }
 
-        val router = MediaRouter.getInstance(context)
-        val selector = castContext.mergedSelector
-        if (selector != null) {
-            if (!routeCallbackAdded) {
-                router.addCallback(selector, routeCallback, MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY)
-                routeCallbackAdded = true
+        if (castContext == null) {
+            SecureLogger.w("CastDiscovery", "CastContext unavailable; discovering DLNA devices only")
+        } else {
+            val router = MediaRouter.getInstance(context)
+            val selector = castContext.mergedSelector
+            if (selector != null) {
+                if (!routeCallbackAdded) {
+                    router.addCallback(selector, routeCallback, MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY)
+                    routeCallbackAdded = true
+                }
+                updateDiscoveredDevices(router)
             }
-            updateDiscoveredDevices(router)
+        }
+
+        dlnaDiscoveryController.startDiscovery(scope) { devices ->
+            dlnaDevices = devices.map { "DLNA: ${it.friendlyName}" }
+            publishMergedDevices()
         }
 
         discoveryJob = scope.launch {
@@ -90,18 +101,25 @@ class CastDiscoveryController @Inject constructor(
             MediaRouter.getInstance(context).removeCallback(routeCallback)
             routeCallbackAdded = false
         }
+        dlnaDiscoveryController.stopDiscovery()
 
         stateStore.update { it.copy(discoveryState = DiscoveryState.IDLE) }
     }
 
+    fun findDlnaDevice(displayName: String): DlnaDevice? = dlnaDiscoveryController.findByDisplayName(displayName)
+
     private fun updateDiscoveredDevices(router: MediaRouter) {
         // We can't access CastContext easily here, so we assume the router has the right routes
         // The filter is applied based on standard Cast framework behavior
-        val devices = router.routes
+        castDevices = router.routes
             .filter { !it.isDefault && it.isEnabled && it.name.isNotEmpty() }
             .map { it.name }
             .distinct()
+        publishMergedDevices()
+    }
 
+    private fun publishMergedDevices() {
+        val devices = (castDevices + dlnaDevices).distinct()
         stateStore.update { state ->
             state.copy(
                 availableDevices = devices,

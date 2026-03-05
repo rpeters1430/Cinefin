@@ -4,6 +4,8 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -252,11 +254,23 @@ fun MediaInfoCard(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val containerColor = if (isDarkTheme) {
+        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+    val iconChipColor = if (isDarkTheme) {
+        iconBackground
+    } else {
+        iconBackground.copy(alpha = 0.18f)
+    }
+
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f),
+            containerColor = containerColor,
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp,
@@ -271,9 +285,21 @@ fun MediaInfoCard(
             // Icon container with elevation
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = iconBackground,
-                tonalElevation = 4.dp,
-                modifier = Modifier.size(48.dp),
+                color = iconChipColor,
+                tonalElevation = if (isDarkTheme) 4.dp else 0.dp,
+                modifier = Modifier
+                    .size(48.dp)
+                    .then(
+                        if (isDarkTheme) {
+                            Modifier
+                        } else {
+                            Modifier.border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                                shape = RoundedCornerShape(12.dp),
+                            )
+                        },
+                    ),
             ) {
                 Box(
                     contentAlignment = Alignment.Center,

@@ -263,6 +263,92 @@ object JellyfinDeviceProfile {
      * Creates a device profile for Google Chromecast/Cast devices.
      * Chromecast is very restrictive.
      */
+    fun createGoogleTvCastDeviceProfile(): DeviceProfile {
+        Log.d("JellyfinDeviceProfile", "Creating Google TV Cast device profile (moderate)")
+
+        val googleTvAudioCodecs = "aac,ac3,eac3,mp3"
+        val subtitleProfiles = listOf(
+            SubtitleProfile(format = "srt", method = SubtitleDeliveryMethod.EXTERNAL),
+            SubtitleProfile(format = "vtt", method = SubtitleDeliveryMethod.EXTERNAL),
+        )
+
+        return DeviceProfile(
+            name = "Cinefin Google TV Cast Client",
+            maxStreamingBitrate = 25_000_000,
+            maxStaticBitrate = 25_000_000,
+            musicStreamingTranscodingBitrate = 192_000,
+            // Keep containers conservative for Cast stability, but allow modern codecs.
+            directPlayProfiles = listOf(
+                DirectPlayProfile(
+                    container = "mp4,m4v",
+                    type = DlnaProfileType.VIDEO,
+                    videoCodec = "h264,h265,hevc,vp9,av1",
+                    audioCodec = googleTvAudioCodecs,
+                ),
+            ),
+            transcodingProfiles = listOf(
+                TranscodingProfile(
+                    container = "ts",
+                    type = DlnaProfileType.VIDEO,
+                    videoCodec = "h264",
+                    audioCodec = "aac",
+                    context = EncodingContext.STREAMING,
+                    protocol = MediaStreamProtocol.HLS,
+                    enableMpegtsM2TsMode = true,
+                    minSegments = 2,
+                    segmentLength = 6,
+                    conditions = listOf(
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.HEIGHT,
+                            value = "2160",
+                            isRequired = false,
+                        ),
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.WIDTH,
+                            value = "3840",
+                            isRequired = false,
+                        ),
+                    ),
+                ),
+            ),
+            containerProfiles = listOf(
+                ContainerProfile(
+                    type = DlnaProfileType.VIDEO,
+                    container = "mp4,m4v,ts",
+                    conditions = emptyList(),
+                ),
+            ),
+            codecProfiles = listOf(
+                CodecProfile(
+                    type = CodecType.VIDEO,
+                    codec = "h264,h265,hevc,vp9,av1",
+                    applyConditions = emptyList<ProfileCondition>(),
+                    conditions = listOf(
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.HEIGHT,
+                            value = "2160",
+                            isRequired = false,
+                        ),
+                        ProfileCondition(
+                            condition = ProfileConditionType.LESS_THAN_EQUAL,
+                            property = ProfileConditionValue.WIDTH,
+                            value = "3840",
+                            isRequired = false,
+                        ),
+                    ),
+                ),
+            ),
+            subtitleProfiles = subtitleProfiles,
+        )
+    }
+
+    /**
+     * Creates a device profile for Google Chromecast/Cast devices.
+     * Chromecast is very restrictive.
+     */
     fun createChromecastDeviceProfile(): DeviceProfile {
         Log.d("JellyfinDeviceProfile", "Creating Chromecast device profile")
 

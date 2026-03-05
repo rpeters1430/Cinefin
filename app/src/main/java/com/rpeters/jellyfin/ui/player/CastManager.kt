@@ -14,6 +14,8 @@ import com.rpeters.jellyfin.BuildConfig
 import com.rpeters.jellyfin.core.FeatureFlags
 import com.rpeters.jellyfin.data.repository.RemoteConfigRepository
 import com.rpeters.jellyfin.ui.player.cast.*
+import com.rpeters.jellyfin.ui.player.dlna.DlnaDevice
+import com.rpeters.jellyfin.ui.player.dlna.DlnaPlaybackController
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CompletableDeferred
@@ -41,6 +43,7 @@ class CastManager @Inject constructor(
     private val sessionController: CastSessionController,
     private val playbackController: CastPlaybackController,
     private val mediaLoadBuilder: CastMediaLoadBuilder,
+    private val dlnaPlaybackController: DlnaPlaybackController,
     private val remoteConfigRepository: RemoteConfigRepository,
 ) {
     val castState: StateFlow<CastState> = stateStore.castState
@@ -50,6 +53,7 @@ class CastManager @Inject constructor(
     private var initializationDeferred: CompletableDeferred<Boolean>? = null
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val castExecutor by lazy { Executors.newSingleThreadExecutor() }
+    private var activeDlnaDevice: DlnaDevice? = null
 
     private val sessionListener by lazy { 
         sessionController.createSessionListener(managerScope) { updatePlaybackState() } 
@@ -105,13 +109,32 @@ class CastManager @Inject constructor(
     fun stopDiscovery() = discoveryController.stopDiscovery()
 
     fun connectToDevice(deviceName: String): Boolean {
+        discoveryController.findDlnaDevice(deviceName)?.let { dlna ->
+            activeDlnaDevice = dlna
+            discoveryController.stopDiscovery()
+            stateStore.update {
+                it.copy(
+                    isConnected = true,
+                    deviceName = dlna.friendlyName,
+                    isCasting = true,
+                    isRemotePlaying = false,
+                    error = null,
+                )
+            }
+            return true
+        }
+
         val router = MediaRouter.getInstance(context)
         val route = router.routes.firstOrNull { it.name == deviceName }
         return route?.let {
+            activeDlnaDevice = null
             router.selectRoute(it)
             discoveryController.stopDiscovery()
             true
-        } ?: false
+        } ?: run {
+            stateStore.setError("Could not connect to selected device")
+            false
+        }
     }
 
     fun startCasting(
@@ -122,38 +145,104 @@ class CastManager @Inject constructor(
         playSessionId: String? = null,
         mediaSourceId: String? = null,
     ) {
-        val session = castContext?.sessionManager?.currentCastSession ?: return
-        
         managerScope.launch {
-            val playbackData = mediaLoadBuilder.resolvePlaybackData(item.id.toString(), castContext) ?: return@launch
-            val metadata = mediaLoadBuilder.buildMetadata(item)
-            val tracks = mediaLoadBuilder.buildTracks(sideLoadedSubs)
-
-            val mediaInfo = MediaInfo.Builder(playbackData.url)
-                .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
-                .setContentType(playbackData.mimeType)
-                .setMetadata(metadata)
-                .setMediaTracks(tracks)
-                .build()
-
-            playbackController.setPendingSeek(startPositionMs)
-
-            val customData = JSONObject().apply {
-                (playSessionId ?: playbackData.playSessionId)?.let { put("playSessionId", it) }
-                (mediaSourceId ?: playbackData.mediaSourceId)?.let { put("mediaSourceId", it) }
-            }
-
-            val request = MediaLoadRequestData.Builder()
-                .setMediaInfo(mediaInfo)
-                .setAutoplay(true)
-                .setCustomData(customData)
-                .build()
-
-            session.remoteMediaClient?.load(request)?.setResultCallback { result ->
-                if (!result.status.isSuccess) {
-                    stateStore.setError("Failed to cast media (error ${result.status.statusCode})")
+            activeDlnaDevice?.let { dlna ->
+                val playbackData = mediaLoadBuilder.resolvePlaybackData(
+                    itemId = item.id.toString(),
+                    castContext = castContext,
+                    forceTranscode = true,
+                ) ?: return@launch
+                val ok = dlnaPlaybackController.loadAndPlay(
+                    device = dlna,
+                    streamUrl = playbackData.url,
+                    title = item.name ?: "Video",
+                )
+                if (ok) {
+                    stateStore.update { it.copy(isRemotePlaying = true, error = null) }
+                } else {
+                    stateStore.setError("Failed to send media via DLNA")
                 }
+                return@launch
             }
+
+            val session = castContext?.sessionManager?.currentCastSession ?: return@launch
+            loadCastMedia(
+                session = session,
+                item = item,
+                sideLoadedSubs = sideLoadedSubs,
+                startPositionMs = startPositionMs,
+                playSessionId = playSessionId,
+                mediaSourceId = mediaSourceId,
+                forceTranscode = false,
+                allowDirectRetry = true,
+            )
+        }
+    }
+
+    private suspend fun loadCastMedia(
+        session: CastSession,
+        item: BaseItemDto,
+        sideLoadedSubs: List<SubtitleSpec>,
+        startPositionMs: Long,
+        playSessionId: String?,
+        mediaSourceId: String?,
+        forceTranscode: Boolean,
+        allowDirectRetry: Boolean,
+    ) {
+        val playbackData = mediaLoadBuilder.resolvePlaybackData(
+            itemId = item.id.toString(),
+            castContext = castContext,
+            forceTranscode = forceTranscode,
+        ) ?: return
+
+        val metadata = mediaLoadBuilder.buildMetadata(item)
+        val tracks = mediaLoadBuilder.buildTracks(sideLoadedSubs)
+
+        val mediaInfo = MediaInfo.Builder(playbackData.url)
+            .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
+            .setContentType(playbackData.mimeType)
+            .setMetadata(metadata)
+            .setMediaTracks(tracks)
+            .build()
+
+        playbackController.setPendingSeek(startPositionMs)
+
+        val customData = JSONObject().apply {
+            (playSessionId ?: playbackData.playSessionId)?.let { put("playSessionId", it) }
+            (mediaSourceId ?: playbackData.mediaSourceId)?.let { put("mediaSourceId", it) }
+        }
+
+        val request = MediaLoadRequestData.Builder()
+            .setMediaInfo(mediaInfo)
+            .setAutoplay(true)
+            .setCustomData(customData)
+            .build()
+
+        session.remoteMediaClient?.load(request)?.setResultCallback { result ->
+            if (result.status.isSuccess) return@setResultCallback
+
+            val shouldRetryAsTranscode = allowDirectRetry && !forceTranscode && playbackData.urlType == "direct"
+            if (shouldRetryAsTranscode) {
+                SecureLogger.w(
+                    "CastManager",
+                    "Direct cast load failed (${result.status.statusCode}); retrying with forced transcode",
+                )
+                managerScope.launch {
+                    loadCastMedia(
+                        session = session,
+                        item = item,
+                        sideLoadedSubs = sideLoadedSubs,
+                        startPositionMs = startPositionMs,
+                        playSessionId = playSessionId,
+                        mediaSourceId = mediaSourceId,
+                        forceTranscode = true,
+                        allowDirectRetry = false,
+                    )
+                }
+                return@setResultCallback
+            }
+
+            stateStore.setError("Failed to cast media (error ${result.status.statusCode})")
         }
     }
 
@@ -183,19 +272,58 @@ class CastManager @Inject constructor(
     }
 
     // Transport Controls delegated to PlaybackController
-    fun pauseCasting() = playbackController.pause(castContext)
-    fun resumeCasting() = playbackController.resume(castContext)
-    fun stopCasting() = playbackController.stop(castContext)
-    fun seekTo(positionMs: Long) = playbackController.seekTo(castContext, positionMs)
+    fun pauseCasting() {
+        val dlna = activeDlnaDevice
+        if (dlna != null) {
+            dlnaPlaybackController.pause(dlna)
+            stateStore.update { it.copy(isRemotePlaying = false) }
+            return
+        }
+        playbackController.pause(castContext)
+    }
+
+    fun resumeCasting() {
+        val dlna = activeDlnaDevice
+        if (dlna != null) {
+            dlnaPlaybackController.play(dlna)
+            stateStore.update { it.copy(isRemotePlaying = true) }
+            return
+        }
+        playbackController.resume(castContext)
+    }
+
+    fun stopCasting() {
+        val dlna = activeDlnaDevice
+        if (dlna != null) {
+            dlnaPlaybackController.stop(dlna)
+            stateStore.update { it.copy(isRemotePlaying = false) }
+            return
+        }
+        playbackController.stop(castContext)
+    }
+
+    fun seekTo(positionMs: Long) {
+        val dlna = activeDlnaDevice
+        if (dlna != null) {
+            dlnaPlaybackController.seek(dlna, positionMs)
+            stateStore.update { it.copy(currentPosition = positionMs) }
+            return
+        }
+        playbackController.seekTo(castContext, positionMs)
+    }
+
     fun setVolume(volume: Float) = playbackController.setVolume(castContext, volume)
 
     fun disconnectCastSession() {
+        activeDlnaDevice?.let { dlnaPlaybackController.stop(it) }
+        activeDlnaDevice = null
         castContext?.sessionManager?.endCurrentSession(true)
         stateStore.update { it.copy(isConnected = false, isCasting = false, deviceName = null) }
         stateStore.clearPersistedSession(managerScope)
     }
 
     fun updatePlaybackState() {
+        if (activeDlnaDevice != null) return
         playbackController.updatePlaybackStateFromClient(castContext)
     }
 

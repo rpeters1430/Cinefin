@@ -185,11 +185,11 @@ private fun ExpressiveTopControls(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Left side - Back button and title
                 Row(
+                    modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
@@ -199,7 +199,9 @@ private fun ExpressiveTopControls(
                         onClick = onBackClick,
                     )
 
-                    Column {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                    ) {
                         Text(
                             text = playerState.itemName,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -231,6 +233,7 @@ private fun ExpressiveTopControls(
                             }
 
                             Row(
+                                modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
@@ -273,12 +276,16 @@ private fun ExpressiveTopControls(
                     targetState = playerState.isCastConnected,
                     label = "cast_button",
                 ) { isConnected ->
-                    ExpressiveIconButton(
-                        icon = if (isConnected) Icons.Default.CastConnected else Icons.Default.Cast,
-                        contentDescription = if (isConnected) "Disconnect from ${playerState.castDeviceName ?: "Cast Device"}" else "Cast to Device",
-                        onClick = onCastClick,
-                        isActive = isConnected,
-                    )
+                    Box(
+                        modifier = Modifier.padding(start = 8.dp),
+                    ) {
+                        ExpressiveIconButton(
+                            icon = if (isConnected) Icons.Default.CastConnected else Icons.Default.Cast,
+                            contentDescription = if (isConnected) "Disconnect from ${playerState.castDeviceName ?: "Cast Device"}" else "Cast to Device",
+                            onClick = onCastClick,
+                            isActive = isConnected,
+                        )
+                    }
                 }
             }
         }

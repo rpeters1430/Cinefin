@@ -72,9 +72,11 @@ fun ImmersiveHomeVideosScreenContainer(
     }
 
     val homeVideosItems = remember(appState.itemsByLibrary, homeVideosLibraries) {
+        // No type filter here — the API already returns only direct children (recursive=false).
+        // Filtering by type would hide yt-dlp creator folders that Jellyfin classifies as
+        // SERIES, BOX_SET, etc. instead of FOLDER.
         homeVideosLibraries
             .flatMap { appState.itemsByLibrary[it.id.toString()] ?: emptyList() }
-            .filter { it.type == BaseItemKind.VIDEO || it.type == BaseItemKind.MOVIE || it.type == BaseItemKind.FOLDER }
     }
 
     var selectedSortIndex by remember { mutableIntStateOf(0) }
@@ -83,14 +85,20 @@ fun ImmersiveHomeVideosScreenContainer(
     }
 
     val featuredVideos = remember(sortedVideos) {
-        sortedVideos.filter { it.type != BaseItemKind.FOLDER }.take(5)
+        // Only show directly playable items in the hero carousel — exclude all container types.
+        sortedVideos.filter { it.type == BaseItemKind.VIDEO || it.type == BaseItemKind.MOVIE }.take(5)
     }
     val routeHomeVideoItemClick: (String) -> Unit = remember(homeVideosItems, itemToLibraryId, onVideoClick, onItemClick, onFolderClick) {
-        {
-                id ->
+        { id ->
             when (homeVideosItems.firstOrNull { it.id.toString() == id }?.type) {
                 BaseItemKind.VIDEO -> onVideoClick(id)
-                BaseItemKind.FOLDER -> {
+                // Treat any container type (FOLDER, SERIES, BOX_SET, etc.) as a browsable folder.
+                // yt-dlp creator directories are often classified as SERIES by Jellyfin.
+                BaseItemKind.FOLDER,
+                BaseItemKind.SERIES,
+                BaseItemKind.BOX_SET,
+                BaseItemKind.COLLECTION_FOLDER,
+                -> {
                     val libraryId = itemToLibraryId[id] ?: homeVideosLibraries.firstOrNull()?.id?.toString()
                     if (libraryId != null) onFolderClick(id, libraryId)
                 }

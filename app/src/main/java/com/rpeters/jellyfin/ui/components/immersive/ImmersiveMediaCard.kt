@@ -132,7 +132,7 @@ fun ImmersiveMediaCard(
     val cardShape = RoundedCornerShape(ImmersiveDimens.CornerRadiusCinematic)
 
     Card(
-        modifier = modifier
+        modifier = Modifier
             .width(width)
             .height(height)
             .graphicsLayer {
@@ -141,7 +141,9 @@ fun ImmersiveMediaCard(
                 shape = cardShape
                 clip = false
             }
-            .scale(scale),
+            .scale(scale)
+            // Allow call sites to override default immersive size when needed (e.g. episode rows).
+            .then(modifier),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent,
         ),

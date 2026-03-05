@@ -10,6 +10,7 @@ import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.common.images.WebImage
 import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.data.repository.JellyfinAuthRepository
+import com.rpeters.jellyfin.data.repository.JellyfinRepository.CastReceiverProfile
 import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.data.repository.JellyfinStreamRepository
 import com.rpeters.jellyfin.ui.player.SubtitleSpec
@@ -45,19 +46,22 @@ class CastMediaLoadBuilder @Inject constructor(
     /**
      * Resolves the playback URL and configuration for a Jellyfin item.
      */
-    suspend fun resolvePlaybackData(itemId: String, castContext: CastContext?): PlaybackData? {
+    suspend fun resolvePlaybackData(
+        itemId: String,
+        castContext: CastContext?,
+        forceTranscode: Boolean = false,
+    ): PlaybackData? {
         val deviceInfo = castContext?.sessionManager?.currentCastSession?.castDevice
         val modelName = deviceInfo?.modelName ?: ""
         val friendlyName = deviceInfo?.friendlyName ?: ""
-
-        // Detect SHIELD or Android TV to allow Direct Play
-        val isShieldOrAndroidTV = modelName.lowercase(Locale.ROOT).contains("shield") ||
-            friendlyName.lowercase(Locale.ROOT).contains("shield") ||
-            modelName.lowercase(Locale.ROOT).contains("android tv") ||
-            modelName.lowercase(Locale.ROOT).contains("chromecast with google tv")
+        val receiverProfile = classifyReceiverProfile(modelName, friendlyName)
 
         return try {
-            val playbackInfo = repository.getCastPlaybackInfo(itemId, isShieldOrAndroidTV)
+            val playbackInfo = repository.getCastPlaybackInfo(
+                itemId = itemId,
+                castReceiverProfile = receiverProfile,
+                forceTranscode = forceTranscode,
+            )
             val mediaSource = playbackInfo.mediaSources.firstOrNull() ?: return null
             val serverUrl = authRepository.getCurrentServer()?.url ?: return null
             val token = authRepository.getCurrentServer()?.accessToken
@@ -131,15 +135,42 @@ class CastMediaLoadBuilder @Inject constructor(
             when {
                 streamPath.contains(".m3u8", true) -> "application/x-mpegURL"
                 streamPath.contains(".mpd", true) -> "application/dash+xml"
+                streamPath.contains(".mp4", true) -> "video/mp4"
                 else -> "application/x-mpegURL"
             }
         } else {
             when (container?.lowercase(Locale.ROOT)) {
                 "ts", "m3u8", "hls" -> "application/x-mpegURL"
                 "webm" -> "video/webm"
+                "mkv", "matroska" -> "video/x-matroska"
+                "mp4", "m4v" -> "video/mp4"
+                "mov" -> "video/quicktime"
                 else -> "video/mp4"
             }
         }
+    }
+
+    private fun classifyReceiverProfile(modelName: String, friendlyName: String): CastReceiverProfile {
+        val model = modelName.lowercase(Locale.ROOT)
+        val name = friendlyName.lowercase(Locale.ROOT)
+        val combined = "$model $name"
+
+        val profile = when {
+            combined.contains("shield") -> CastReceiverProfile.SHIELD_PERMISSIVE
+            combined.contains("chromecast with google tv") ||
+                combined.contains("google tv") ||
+                combined.contains("android tv") ||
+                combined.contains("bravia") ||
+                combined.contains("sony") ||
+                combined.contains("tcl") -> CastReceiverProfile.GOOGLE_TV_MODERATE
+            else -> CastReceiverProfile.CHROMECAST_STRICT
+        }
+
+        SecureLogger.d(
+            "CastMediaLoadBuilder",
+            "Cast receiver classified as $profile (model='$modelName', name='$friendlyName')",
+        )
+        return profile
     }
 
     private fun resolveTrackSubtype(mimeType: String): Int {
