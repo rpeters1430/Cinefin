@@ -896,8 +896,54 @@ class GenerativeAiRepository @Inject constructor(
         }
     }
 
-    fun isUsingOnDeviceAI(): Boolean = false
-    fun retryNanoDownload() = Unit
+    val downloadState: Flow<AiDownloadState> = (primaryModel as? HybridAiTextModel)?.downloadState 
+        ?: kotlinx.coroutines.flow.flowOf(AiDownloadState.NOT_SUPPORTED)
+
+    val isNanoActive: Flow<Boolean> = (primaryModel as? HybridAiTextModel)?.isNanoActive
+        ?: kotlinx.coroutines.flow.flowOf(false)
+
+    /**
+     * Triggers the initialization (availability check and download) of on-device AI.
+     */
+    suspend fun initialize() {
+        (primaryModel as? HybridAiTextModel)?.initialize()
+        (proModel as? HybridAiTextModel)?.initialize()
+    }
+
+    /**
+     * Manually retry the Nano model download.
+     */
+    suspend fun retryNanoDownload() {
+        (primaryModel as? HybridAiTextModel)?.retryDownload()
+        (proModel as? HybridAiTextModel)?.retryDownload()
+    }
+
+    fun isUsingOnDeviceAI(): Boolean {
+        // Simplified check for legacy callers
+        return (primaryModel as? HybridAiTextModel)?.isNanoActive?.value == true
+    }
+
+    /**
+     * More accurate check that actually performs the availability check if needed.
+     */
+    suspend fun getDetailedAiStatus(): String {
+        val isPrimaryNano = (primaryModel as? HybridAiTextModel)?.isNanoActive?.value == true
+        val isProNano = (proModel as? HybridAiTextModel)?.isNanoActive?.value == true
+        
+        return when {
+            isPrimaryNano && isProNano -> "On-Device (Nano) for all tasks"
+            isPrimaryNano -> "On-Device (Nano) for basic tasks, Cloud for Pro"
+            else -> {
+                val state = (primaryModel as? HybridAiTextModel)?.downloadState?.value
+                when (state) {
+                    AiDownloadState.DOWNLOADING -> "Downloading AI Model..."
+                    AiDownloadState.SUPPORTED_NOT_DOWNLOADED -> "AI Model Needs Download"
+                    AiDownloadState.FAILED -> "AI Download Failed"
+                    else -> "Cloud API (Firebase)"
+                }
+            }
+        }
+    }
 
     /**
      * Analyzes an image (e.g., movie poster) and provides insights.

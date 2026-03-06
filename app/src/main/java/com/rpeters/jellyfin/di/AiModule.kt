@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.di
 
+import android.content.Context
 import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
@@ -7,10 +8,12 @@ import com.google.firebase.ai.type.GenerativeBackend
 import com.google.firebase.ai.type.RequestOptions
 import com.google.firebase.ai.type.generationConfig
 import com.rpeters.jellyfin.data.ai.AiTextModel
+import com.rpeters.jellyfin.data.ai.HybridAiTextModel
 import com.rpeters.jellyfin.data.repository.RemoteConfigRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -27,12 +30,21 @@ object AiModule {
     @Provides
     @Singleton
     @Named("primary-model")
-    fun providePrimaryModel(remoteConfig: RemoteConfigRepository): AiTextModel {
-        return FirebaseAiTextModel(
+    fun providePrimaryModel(
+        @ApplicationContext context: Context,
+        remoteConfig: RemoteConfigRepository,
+    ): AiTextModel {
+        val cloudModel = FirebaseAiTextModel(
             remoteConfig = remoteConfig,
             modelNameKey = "ai_primary_model_name",
             temperatureKey = "ai_primary_model_temperature",
             maxTokensKey = "ai_primary_model_max_tokens",
+            label = "primary",
+        )
+        return HybridAiTextModel(
+            context = context,
+            remoteConfig = remoteConfig,
+            cloudModel = cloudModel,
             label = "primary",
         )
     }
@@ -40,12 +52,22 @@ object AiModule {
     @Provides
     @Singleton
     @Named("pro-model")
-    fun provideProModel(remoteConfig: RemoteConfigRepository): AiTextModel {
-        return FirebaseAiTextModel(
+    fun provideProModel(
+        @ApplicationContext context: Context,
+        remoteConfig: RemoteConfigRepository,
+    ): AiTextModel {
+        val cloudModel = FirebaseAiTextModel(
             remoteConfig = remoteConfig,
             modelNameKey = "ai_pro_model_name",
             temperatureKey = "ai_pro_model_temperature",
             maxTokensKey = "ai_pro_model_max_tokens",
+            label = "pro",
+        )
+        // Pro model usually stays in cloud for better accuracy, but can be hybrid too
+        return HybridAiTextModel(
+            context = context,
+            remoteConfig = remoteConfig,
+            cloudModel = cloudModel,
             label = "pro",
         )
     }

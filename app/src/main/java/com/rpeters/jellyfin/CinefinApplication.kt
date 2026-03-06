@@ -245,9 +245,11 @@ class CinefinApplication : Application(), SingletonImageLoader.Factory, Configur
         applicationScope.launch {
             try {
                 SecureLogger.i(TAG, "Initializing AI backend in background")
-                SecureLogger.i(TAG, "AI backend mode: Cloud API only")
+                generativeAiRepository.initialize()
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: Exception) {
+                SecureLogger.e(TAG, "Failed to initialize AI backend", e)
             }
         }
     }

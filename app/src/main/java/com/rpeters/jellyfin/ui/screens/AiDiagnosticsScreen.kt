@@ -35,6 +35,7 @@ fun AiDiagnosticsScreen(
         downloadBytesProgress = state.downloadBytesProgress,
         canRetryDownload = state.canRetryDownload,
         errorCode = state.errorCode,
+        detailedStatus = state.detailedStatus,
         onBackClick = onBackClick,
         onRetryClick = viewModel::retryNanoDownload,
         modifier = modifier,
@@ -50,6 +51,7 @@ private fun AiDiagnosticsScreenContent(
     downloadBytesProgress: String?,
     canRetryDownload: Boolean,
     errorCode: Int?,
+    detailedStatus: String,
     onBackClick: () -> Unit,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -122,32 +124,65 @@ private fun AiDiagnosticsScreenContent(
             }
 
             item {
-                InfoCard()
+                StatusCard(
+                    isUsingNano = isUsingNano,
+                    isDownloading = isDownloading,
+                    detailedStatus = detailedStatus,
+                )
             }
-        }
-    }
-}
-
-@Composable
-private fun StatusCard(
-    isUsingNano: Boolean,
-    isDownloading: Boolean,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
+            ...
+            @Composable
+            private fun StatusCard(
+            isUsingNano: Boolean,
+            isDownloading: Boolean,
+            detailedStatus: String,
+            ) {
+            Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
             containerColor = when {
                 isDownloading -> MaterialTheme.colorScheme.secondaryContainer
                 isUsingNano -> MaterialTheme.colorScheme.primaryContainer
                 else -> MaterialTheme.colorScheme.tertiaryContainer
             },
-        ),
-    ) {
-        Row(
+            ),
+            ) {
+            Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+            Icon(
+                imageVector = when {
+                    isDownloading -> Icons.Default.Sync
+                    isUsingNano -> Icons.Default.Memory
+                    else -> Icons.Default.Cloud
+                },
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+            )
+
+            Column {
+                Text(
+                    text = detailedStatus,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = when {
+                        isDownloading -> "Downloading AI engine assets..."
+                        isUsingNano -> "On-Device Inference Active"
+                        else -> "Cloud API (Firebase AI Logic)"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            }
+            }
+            }
+
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Icon(

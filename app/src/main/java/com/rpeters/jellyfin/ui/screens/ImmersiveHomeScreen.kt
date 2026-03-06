@@ -90,6 +90,10 @@ fun ImmersiveHomeScreen(
     val managementEnabled = libraryActionPrefs.enableManagementActions
     val managementDisabledMessage = stringResource(id = R.string.library_actions_management_disabled)
 
+    // AI Status
+    val aiDownloadState by viewModel.generativeAiRepository.downloadState.collectAsStateWithLifecycle(com.rpeters.jellyfin.data.ai.AiDownloadState.IDLE)
+    val isNanoActive by viewModel.generativeAiRepository.isNanoActive.collectAsStateWithLifecycle(false)
+
     // ✅ Performance: Stabilize internal callbacks
     val handleItemLongPress = remember(managementEnabled, coroutineScope, managementDisabledMessage) {
         { item: BaseItemDto ->
@@ -200,6 +204,46 @@ fun ImmersiveHomeScreen(
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(12.dp).size(24.dp),
                 )
+            }
+        }
+
+        // Floating Search and AI Action Buttons
+        androidx.compose.animation.AnimatedVisibility(
+            visible = topBarVisible,
+            enter = androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut(),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 120.dp), // Height above mini player
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.End,
+            ) {
+                // Show AI Mode Chip above the AI button
+                AiStatusChip(state = aiDownloadState, isNanoActive = isNanoActive)
+
+                FloatingActionButton(
+                    onClick = onAiAssistantClick,
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = stringResource(id = R.string.ai_assistant),
+                    )
+                }
+
+                FloatingActionButton(
+                    onClick = onSearchClick,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = stringResource(id = R.string.search),
+                    )
+                }
             }
         }
 

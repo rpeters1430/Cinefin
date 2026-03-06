@@ -235,6 +235,7 @@ dependencies {
     implementation(libs.firebase.ai) // Firebase AI Logic (cloud API mode)
     implementation(libs.firebase.config)
     implementation(libs.google.firebase.analytics)
+    implementation(libs.google.mlkit.genai.prompt) // ML Kit Gemini Nano (on-device)
 
     // Hilt
     implementation(libs.dagger.hilt.android)
