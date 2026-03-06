@@ -34,9 +34,10 @@ object RemoteConfigModule {
         val defaults = mapOf(
             // AI Feature Flags
             "enable_ai_features" to true,
+            "enable_on_device_ai" to true,
             "ai_force_pro_model" to false,
             "ai_primary_model_name" to "gemini-3-flash-preview",
-            "ai_pro_model_name" to "gemini-3-pro-preview",
+            "ai_pro_model_name" to "gemini-3.1-pro-preview",
             "ai_primary_model_temperature" to 0.7,
             "ai_pro_model_temperature" to 0.8,
             "ai_primary_model_max_tokens" to 2048L,

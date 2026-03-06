@@ -141,6 +141,9 @@ constructor(
         private const val API_DEFAULT_LIMIT = 100
     }
 
+    val aiDownloadState = generativeAiRepository.downloadState
+    val isNanoActive = generativeAiRepository.isNanoActive
+
     init {
         // Observe network connectivity to trigger offline sync when online
         viewModelScope.launch {

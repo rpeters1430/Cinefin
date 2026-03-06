@@ -91,8 +91,8 @@ fun ImmersiveHomeScreen(
     val managementDisabledMessage = stringResource(id = R.string.library_actions_management_disabled)
 
     // AI Status
-    val aiDownloadState by viewModel.generativeAiRepository.downloadState.collectAsStateWithLifecycle(com.rpeters.jellyfin.data.ai.AiDownloadState.IDLE)
-    val isNanoActive by viewModel.generativeAiRepository.isNanoActive.collectAsStateWithLifecycle(false)
+    val aiDownloadState by viewModel.aiDownloadState.collectAsStateWithLifecycle(com.rpeters.jellyfin.data.ai.AiDownloadState.IDLE)
+    val isNanoActive by viewModel.isNanoActive.collectAsStateWithLifecycle(false)
 
     // ✅ Performance: Stabilize internal callbacks
     val handleItemLongPress = remember(managementEnabled, coroutineScope, managementDisabledMessage) {

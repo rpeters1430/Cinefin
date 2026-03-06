@@ -67,7 +67,12 @@
       "Bash(head:*)",
       "Skill(code-review:code-review)",
       "Bash(git:*)",
-      "Bash(sudo apt-get:*)"
+      "Bash(sudo apt-get:*)",
+      "Bash(jar tf:*)",
+      "Read(//tmp/**)",
+      "Bash(jar xf /home/rpeters1428/.gradle/caches/modules-2/files-2.1/com.google.mlkit/genai-prompt/1.0.0-beta1/eff401c5da633b45dea8b64fe76eef543c60c221/genai-prompt-1.0.0-beta1-javadoc.jar)",
+      "Bash(javap:*)",
+      "Bash(jar xf:*)"
     ],
     "deny": [],
     "ask": [],

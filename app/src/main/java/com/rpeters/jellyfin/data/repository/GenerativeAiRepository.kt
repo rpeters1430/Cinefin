@@ -1,7 +1,9 @@
 package com.rpeters.jellyfin.data.repository
 
 import android.util.Log
+import com.rpeters.jellyfin.data.ai.AiDownloadState
 import com.rpeters.jellyfin.data.ai.AiTextModel
+import com.rpeters.jellyfin.data.ai.HybridAiTextModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn

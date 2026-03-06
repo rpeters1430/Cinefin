@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.di
 
-import android.content.Context
 import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
@@ -13,7 +12,6 @@ import com.rpeters.jellyfin.data.repository.RemoteConfigRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -25,13 +23,12 @@ import javax.inject.Singleton
 object AiModule {
 
     private const val TAG = "AiModule"
-    private const val BASELINE_MODEL = "gemini-2.5-flash"
+    private const val BASELINE_MODEL = "gemini-3-flash-preview"
 
     @Provides
     @Singleton
     @Named("primary-model")
     fun providePrimaryModel(
-        @ApplicationContext context: Context,
         remoteConfig: RemoteConfigRepository,
     ): AiTextModel {
         val cloudModel = FirebaseAiTextModel(
@@ -42,7 +39,6 @@ object AiModule {
             label = "primary",
         )
         return HybridAiTextModel(
-            context = context,
             remoteConfig = remoteConfig,
             cloudModel = cloudModel,
             label = "primary",
@@ -53,7 +49,6 @@ object AiModule {
     @Singleton
     @Named("pro-model")
     fun provideProModel(
-        @ApplicationContext context: Context,
         remoteConfig: RemoteConfigRepository,
     ): AiTextModel {
         val cloudModel = FirebaseAiTextModel(
@@ -63,9 +58,8 @@ object AiModule {
             maxTokensKey = "ai_pro_model_max_tokens",
             label = "pro",
         )
-        // Pro model usually stays in cloud for better accuracy, but can be hybrid too
+        // Pro model wraps cloud with Nano fallback for consistency
         return HybridAiTextModel(
-            context = context,
             remoteConfig = remoteConfig,
             cloudModel = cloudModel,
             label = "pro",
@@ -80,18 +74,27 @@ object AiModule {
         private val label: String,
     ) : AiTextModel {
 
-        private fun getModel() = Firebase.ai(
-            backend = GenerativeBackend.googleAI(),
-        ).generativeModel(
-            modelName = remoteConfig.getString(modelNameKey).ifBlank { BASELINE_MODEL },
-            generationConfig = generationConfig {
-                temperature = remoteConfig.getDouble(temperatureKey).toFloat().coerceIn(0f, 2f)
-                topK = 40
-                topP = 0.95f
-                maxOutputTokens = remoteConfig.getLong(maxTokensKey).toInt().coerceAtLeast(1)
-            },
-            requestOptions = RequestOptions(timeoutInMillis = 30_000L),
-        )
+        private fun getModel(): com.google.firebase.ai.GenerativeModel {
+            val modelName = remoteConfig.getString(modelNameKey).ifBlank { BASELINE_MODEL }
+            val temperature = remoteConfig.getDouble(temperatureKey).let {
+                if (it <= 0.0) 0.7f else it.toFloat().coerceIn(0f, 2f)
+            }
+            val maxTokens = remoteConfig.getLong(maxTokensKey).let {
+                if (it <= 0L) 2048 else it.toInt().coerceAtMost(8192)
+            }
+            return Firebase.ai(
+                backend = GenerativeBackend.googleAI(),
+            ).generativeModel(
+                modelName = modelName,
+                generationConfig = generationConfig {
+                    this.temperature = temperature
+                    topK = 40
+                    topP = 0.95f
+                    maxOutputTokens = maxTokens
+                },
+                requestOptions = RequestOptions(timeoutInMillis = 30_000L),
+            )
+        }
 
         override suspend fun generateText(prompt: String): String {
             val model = getModel()

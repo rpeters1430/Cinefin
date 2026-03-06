@@ -96,6 +96,7 @@ private fun AiDiagnosticsScreenContent(
                 StatusCard(
                     isUsingNano = isUsingNano,
                     isDownloading = isDownloading,
+                    detailedStatus = detailedStatus,
                 )
             }
 
@@ -124,36 +125,35 @@ private fun AiDiagnosticsScreenContent(
             }
 
             item {
-                StatusCard(
-                    isUsingNano = isUsingNano,
-                    isDownloading = isDownloading,
-                    detailedStatus = detailedStatus,
-                )
+                InfoCard()
             }
-            ...
-            @Composable
-            private fun StatusCard(
-            isUsingNano: Boolean,
-            isDownloading: Boolean,
-            detailedStatus: String,
-            ) {
-            Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
+        }
+    }
+}
+
+@Composable
+private fun StatusCard(
+    isUsingNano: Boolean,
+    isDownloading: Boolean,
+    detailedStatus: String,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
             containerColor = when {
                 isDownloading -> MaterialTheme.colorScheme.secondaryContainer
                 isUsingNano -> MaterialTheme.colorScheme.primaryContainer
                 else -> MaterialTheme.colorScheme.tertiaryContainer
             },
-            ),
-            ) {
-            Row(
+        ),
+    ) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
+        ) {
             Icon(
                 imageVector = when {
                     isDownloading -> Icons.Default.Sync
@@ -177,47 +177,6 @@ private fun AiDiagnosticsScreenContent(
                         else -> "Cloud API (Firebase AI Logic)"
                     },
                     style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            }
-            }
-            }
-
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Icon(
-                imageVector = when {
-                    isDownloading -> Icons.Default.Download
-                    isUsingNano -> Icons.Default.Smartphone
-                    else -> Icons.Default.Cloud
-                },
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = when {
-                    isDownloading -> MaterialTheme.colorScheme.onSecondaryContainer
-                    isUsingNano -> MaterialTheme.colorScheme.onPrimaryContainer
-                    else -> MaterialTheme.colorScheme.onTertiaryContainer
-                },
-            )
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = when {
-                        isDownloading -> "Downloading Model"
-                        isUsingNano -> "Cloud AI (legacy state)"
-                        else -> "Cloud AI (Gemini API)"
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = when {
-                        isDownloading -> "Installing on-device model..."
-                        isUsingNano -> "Cloud mode only"
-                        else -> "Internet required • API key required"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -385,25 +344,25 @@ private fun InfoCard() {
             )
 
             InfoRow(
-                icon = Icons.Default.Cloud,
-                title = "Gemini API",
-                description = "Cloud-only mode is enabled to simplify troubleshooting and verify key/project configuration.",
+                icon = Icons.Default.Smartphone,
+                title = "Gemini Nano (On-Device)",
+                description = "Runs entirely on your device for privacy and speed. Requires device support and a one-time download (~100MB).",
             )
 
             HorizontalDivider()
 
             InfoRow(
                 icon = Icons.Default.Cloud,
-                title = "Model Routing",
-                description = "All requests go through Firebase AI Logic using Google AI backend from AiModule.",
+                title = "Gemini API (Cloud)",
+                description = "Cloud fallback used when on-device AI is unavailable. Requires internet and a configured API key.",
             )
 
             HorizontalDivider()
 
             InfoRow(
                 icon = Icons.Default.AutoAwesome,
-                title = "Debug Focus",
-                description = "Use this screen together with Home AI status and logcat to validate active key, model, and endpoint.",
+                title = "Model Routing",
+                description = "On-device Nano is used when available. Cloud API is the automatic fallback for all other devices.",
             )
         }
     }
