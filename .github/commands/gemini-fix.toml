@@ -1,16 +1,17 @@
-description = "Implements fixes or features based on issue analysis"
+description = "Implements fixes or features based on issue analysis or PR feedback"
 prompt = """
 You are an expert Android developer for the **Cinefin** Jellyfin client (Jetpack Compose + Material 3 + Kotlin MVVM).
 
-Your task is to implement fixes or new features based on either:
-1. An issue that has an implementation plan (from a `/review` command)
-2. A direct request to fix a specific problem
+Your task is to implement fixes or new features based on:
+1. An issue that has a "Gemini Implementation Plan" (from a `/review` command)
+2. A pull request that has actionable code suggestions from a previous `/review`
 
-## Environment Variables
+## Context
 
-- `ISSUE_NUMBER` — the issue or PR number
-- `REPOSITORY` — owner/repo
-- `ADDITIONAL_CONTEXT` — any extra focus or instructions from the user
+- **GitHub Repository**: !{echo $REPOSITORY}
+- **Number**: !{echo $ISSUE_NUMBER}
+- **Is Pull Request**: !{echo $IS_PULL_REQUEST}
+- **Additional Context**: !{echo $ADDITIONAL_CONTEXT}
 
 ---
 
@@ -18,143 +19,48 @@ Your task is to implement fixes or new features based on either:
 
 ### Step 1: Gather Context
 
-1. **Read the Issue**: Use `github__issue_read` with method `get` to read the issue title, body, and all comments.
-   - Look for a comment containing "## 🗺️ Gemini Implementation Plan" - this is the preferred blueprint.
-   - If no plan exists, analyze the issue description to understand what needs to be fixed.
+1. **Read the Context**:
+   - If **IS_PULL_REQUEST** is true:
+     - Use `pull_request_read.get` and `pull_request_read.get_comments` to find code suggestions.
+     - Look for comments with `suggestion` blocks.
+   - If **IS_PULL_REQUEST** is false:
+     - Use `issue_read.get` and `issue_read.get_comments`.
+     - Look for "## 🗺️ Gemini Implementation Plan".
 
-2. **Understand the Codebase**: Use `github__search_code` and `github__get_file_contents` to:
-   - Find relevant files mentioned in the implementation plan or issue
-   - Read existing code to understand the current state
-   - Identify patterns and conventions used in the codebase
+2. **Understand the Code**: Use `get_file_contents` to read relevant files.
 
-### Step 2: Create a Branch
+### Step 2: Determine Branch
 
-Use `github__create_branch` to create a new branch for your changes:
-- Branch name format: `gemini/fix-issue-{ISSUE_NUMBER}` or `gemini/implement-{feature-name}`
-- Base branch: `main` (or check the repo's default branch)
+- If **IS_PULL_REQUEST** is true:
+  - Use `pull_request_read.get` to find the head branch name and head repository.
+  - You will apply changes directly to this branch.
+- If **IS_PULL_REQUEST** is false:
+  - Use `create_branch` to create a new branch: `gemini/fix-issue-{ISSUE_NUMBER}`.
+  - Base branch: `main` (or the repository's default branch).
 
 ### Step 3: Implement Changes
 
-Follow these best practices:
+Follow Cinefin project conventions:
+- MVVM, Hilt, Jetpack Compose, Material 3.
+- Use `SecureLogger` for logging.
+- Use `create_or_update_file` to apply changes.
+- Commit messages MUST follow Conventional Commits (e.g., `fix:`, `feat:`).
 
-**Architecture & Patterns:**
-- MVVM architecture: ViewModels expose StateFlow, Compose UI collects with `collectAsStateWithLifecycle()`
-- All Jellyfin SDK calls MUST go through Repositories (never direct from ViewModels)
-- Repositories return `ApiResult<T>` sealed class for error handling
-- Use Hilt for dependency injection (constructor injection only)
-- Use `viewModelScope` for coroutines in ViewModels
+### Step 4: Finalize
 
-**Security:**
-- Use `SecureLogger` for all logging (strips PII automatically)
-- NEVER put auth tokens in URL parameters (use Authorization headers)
-- Store sensitive data with `SecureCredentialManager` (Android Keystore)
-
-**Compose Best Practices:**
-- Use `remember` for state, `derivedStateOf` for computed values
-- Use `LaunchedEffect` for side effects, `DisposableEffect` for cleanup
-- Always provide unique `key()` in LazyColumn/LazyRow items
-- Material 3 components preferred, use adaptive layouts for different screen sizes
-
-**Testing:**
-- Write unit tests for new ViewModels and Repositories
-- Use `coEvery` (not `every`) for mocking suspend functions and Flows
-- Use `StandardTestDispatcher` with `advanceUntilIdle()` for ViewModel tests
-- Target 70%+ coverage for new code
-
-**Code Changes:**
-- Make minimal, focused changes
-- Follow Kotlin conventions: PascalCase for classes, camelCase for functions
-- Use Conventional Commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`
-- Keep commits atomic and focused
-
-### Step 4: Make File Changes
-
-For each file that needs changes:
-
-1. Use `github__get_file_contents` to read the current content
-2. Use `github__create_or_update_file` to apply changes:
-   - Provide clear commit messages following Conventional Commits
-   - Include the branch name created in Step 2
-   - Make one logical change per commit when possible
-
-### Step 5: Create Pull Request
-
-Once all changes are complete:
-
-1. Use `github__create_pull_request` to create a PR:
-   - Title: Clear description of what was fixed/implemented
-   - Body: Should include:
-     - Summary of changes
-     - Reference to the original issue: "Fixes #{ISSUE_NUMBER}"
-     - Testing instructions (how to verify the fix)
-     - Any breaking changes or important notes
-   - Base: `main` (or repo's default branch)
-   - Head: your branch from Step 2
-
-2. Use `github__add_issue_comment` to post a completion message on the original issue:
-
-```markdown
-## ✅ Implementation Complete
-
-I've implemented the fix/feature as described in the issue.
-
-**Pull Request:** #{PR_NUMBER}
-
-**Summary of Changes:**
-- <List the main changes made>
-- <File1.kt: what was changed>
-- <File2.kt: what was changed>
-
-**Testing:**
-- <Describe what tests were added>
-- <Manual testing instructions if applicable>
-
-Please review the PR and let me know if any adjustments are needed!
-```
+- If **IS_PULL_REQUEST** is true:
+  - Post a comment on the PR using `add_issue_comment`: "## ✅ Applied Suggestions: I've applied the requested changes to this branch."
+- If **IS_PULL_REQUEST** is false:
+  - Use `create_pull_request` to create a new PR linking to the issue ("Fixes #{ISSUE_NUMBER}").
+  - Post a comment on the issue with a link to the new PR.
 
 ---
 
-## Error Handling
+## Cinefin Project Quick Reference
 
-If you encounter errors:
-- **File not found**: Double-check the path, use `github__search_code` to find it
-- **Merge conflicts**: The branch might be outdated; you may need to inform the user
-- **API errors**: Check your permissions and retry once
-- **Unclear requirements**: Ask for clarification in an issue comment rather than guessing
-
----
-
-## Cinefin Project Conventions (Quick Reference)
-
-| Concern | Convention |
-|---|---|
-| Language | Kotlin 2.3.10, JDK 21 required |
-| UI | Jetpack Compose BOM 2026.01.01, Material 3 Expressive (Alpha 13) |
-| DI | Hilt 2.59.1 — always constructor injection |
-| Async | Coroutines 1.10.2 + StateFlow, use `viewModelScope` |
-| Data access | Repositories only, returns `ApiResult<T>` |
-| Media | ExoPlayer (Media3 1.9.1) |
-| Networking | Retrofit 3.0.0 + OkHttp 5.3.2 + Jellyfin SDK 1.8.6 |
-| Images | Coil 3.3.0 with custom optimizations |
-| Logging | `SecureLogger` only — strips PII |
-| Security | Auth via Authorization header, NOT URL params |
-| Testing | JUnit4, MockK, Turbine for Flow testing |
-| Commits | Conventional Commits format |
-
-**Key Files:**
-- Main app: `app/src/main/java/com/rpeters/jellyfin/JellyfinApplication.kt`
-- Navigation: `ui/navigation/NavGraph.kt`
-- Repositories: `data/repository/*.kt`
-- ViewModels: `ui/viewmodel/*.kt`
-- DI modules: `di/*.kt`
-
-**Build Commands (Windows):**
-```bash
-gradlew assembleDebug        # Build
-gradlew testDebugUnitTest    # Unit tests
-gradlew lintDebug            # Lint check
-```
-
-If `ADDITIONAL_CONTEXT` is set, prioritize those specific areas in your implementation.
+- **Language**: Kotlin, JDK 21.
+- **UI**: Jetpack Compose, Material 3 Expressive.
+- **Async**: Coroutines + StateFlow.
+- **Data**: Repositories returning `ApiResult<T>`.
+- **Testing**: Unit tests for ViewModels/Repositories.
 """
-

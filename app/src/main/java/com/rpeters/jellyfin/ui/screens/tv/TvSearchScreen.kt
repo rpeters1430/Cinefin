@@ -120,13 +120,22 @@ fun TvSearchScreen(
                         .height(64.dp)
                         .focusRequester(searchFieldFocusRequester)
                         .onPreviewKeyEvent { keyEvent ->
-                            if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
-                                if (searchState.selectedContentTypes.isNotEmpty()) {
-                                    firstFilterFocusRequester.requestFocus()
-                                } else if (searchState.searchResults.isNotEmpty()) {
-                                    resultsFocusRequester.requestFocus()
+                            if (keyEvent.type == KeyEventType.KeyDown) {
+                                when (keyEvent.key) {
+                                    Key.DirectionDown -> {
+                                        if (searchState.selectedContentTypes.isNotEmpty()) {
+                                            firstFilterFocusRequester.requestFocus()
+                                        } else if (searchState.searchResults.isNotEmpty()) {
+                                            resultsFocusRequester.requestFocus()
+                                        }
+                                        true
+                                    }
+                                    Key.DirectionLeft -> {
+                                        focusManager.moveFocus(FocusDirection.Left)
+                                        true
+                                    }
+                                    else -> false
                                 }
-                                true
                             } else {
                                 false
                             }
@@ -183,6 +192,11 @@ fun TvSearchScreen(
                                         keyEvent.key == Key.DirectionDown &&
                                         searchState.searchResults.isNotEmpty() -> {
                                         resultsFocusRequester.requestFocus()
+                                        true
+                                    }
+                                    keyEvent.type == KeyEventType.KeyDown &&
+                                        keyEvent.key == Key.DirectionLeft -> {
+                                        focusManager.moveFocus(FocusDirection.Left)
                                         true
                                     }
                                     else -> false

@@ -7,13 +7,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -25,7 +22,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.tv.material3.DrawerValue
 import androidx.tv.material3.Icon
-import androidx.tv.material3.ModalNavigationDrawer
+import androidx.tv.material3.NavigationDrawer
 import androidx.tv.material3.NavigationDrawerItem
 import androidx.tv.material3.rememberDrawerState
 import com.rpeters.jellyfin.ui.theme.JellyfinAndroidTheme
@@ -125,24 +122,15 @@ fun TvMainScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
-    val drawerItemFocusRequesters = remember {
-        TvNavigationItem.items.associateWith { FocusRequester() }
-    }
     val selectedItem = TvNavigationItem.items.firstOrNull { item ->
         currentDestination?.hierarchy?.any {
             normalizeTvRoute(it.route) == item.route
         } == true
     }
 
-    LaunchedEffect(selectedItem?.route) {
-        selectedItem?.let { item ->
-            drawerItemFocusRequesters[item]?.requestFocus()
-        }
-    }
-
-    ModalNavigationDrawer(
+    NavigationDrawer(
         drawerState = drawerState,
-        drawerContent = {
+        drawerContent = { _ ->
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -163,21 +151,12 @@ fun TvMainScreen(
                     
                     NavigationDrawerItem(
                         selected = selected,
-                        modifier = Modifier.focusRequester(
-                            drawerItemFocusRequesters.getValue(item),
-                        ),
                         onClick = {
                             navController.navigate(item.route) {
-                                // Pop up to the start destination of the graph to
-                                // avoid building up a large stack of destinations
-                                // on the back stack as users select items
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
-                                // Avoid multiple copies of the same destination when
-                                // reselecting the same item
                                 launchSingleTop = true
-                                // Restore state when reselecting a previously selected item
                                 restoreState = true
                             }
                         },

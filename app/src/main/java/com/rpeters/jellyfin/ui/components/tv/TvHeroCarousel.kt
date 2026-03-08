@@ -36,6 +36,9 @@ import com.rpeters.jellyfin.ui.image.JellyfinAsyncImage
 import com.rpeters.jellyfin.ui.image.rememberScreenWidthHeight
 import org.jellyfin.sdk.model.api.BaseItemDto
 
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+
 /**
  * A featured content carousel for the TV Home screen.
  * Uses Material 3 TV Carousel with immersive backdrops and quick actions.
@@ -49,6 +52,7 @@ fun TvHeroCarousel(
     getBackdropUrl: (BaseItemDto) -> String?,
     modifier: Modifier = Modifier,
     carouselState: CarouselState = rememberCarouselState(),
+    focusRequester: FocusRequester = remember { FocusRequester() },
 ) {
     if (featuredItems.isEmpty()) return
 
@@ -56,7 +60,8 @@ fun TvHeroCarousel(
         itemCount = featuredItems.size,
         modifier = modifier
             .fillMaxWidth()
-            .height(400.dp),
+            .height(400.dp)
+            .focusRequester(focusRequester),
         carouselState = carouselState,
         contentTransformStartToEnd = fadeIn().togetherWith(fadeOut()),
         contentTransformEndToStart = fadeIn().togetherWith(fadeOut()),

@@ -1,6 +1,8 @@
 package com.rpeters.jellyfin.ui.components.tv
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,9 +37,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.tv.material3.Border
 import androidx.tv.material3.Card as TvCard
 import androidx.tv.material3.CardDefaults as TvCardDefaults
+import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.Glow
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
+import androidx.tv.material3.StandardCardLayout
 import androidx.tv.material3.Text as TvText
 import coil3.request.crossfade
 import com.rpeters.jellyfin.R
@@ -142,6 +148,7 @@ fun TvContentCarousel(
     }
 }
 
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TvContentCard(
     item: BaseItemDto,
@@ -152,8 +159,8 @@ fun TvContentCard(
     modifier: Modifier = Modifier,
     focusRequester: FocusRequester? = null,
     isFocused: Boolean = false,
-    posterWidth: Dp = 240.dp,
-    posterHeight: Dp = 360.dp,
+    posterWidth: Dp = 200.dp,
+    posterHeight: Dp = 300.dp,
 ) {
     val imageUrl = if (item.type == org.jellyfin.sdk.model.api.BaseItemKind.EPISODE) {
         getImageUrl(item) ?: getSeriesImageUrl(item)
@@ -164,7 +171,7 @@ fun TvContentCard(
     val progressRatio = item.playbackProgressRatio()
     val isInProgress = progressRatio > 0f && !isPlayed
 
-    Column(
+    StandardCardLayout(
         modifier = modifier
             .width(posterWidth)
             .onFocusChanged { focusState ->
@@ -172,76 +179,85 @@ fun TvContentCard(
                     onItemFocus()
                 }
             },
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        TvCard(
-            onClick = { onItemSelect() },
-            modifier = Modifier
-                .size(posterWidth, posterHeight)
-                .then(
-                    if (focusRequester != null) {
-                        Modifier.focusRequester(focusRequester)
-                    } else {
-                        Modifier
-                    }
+        imageCard = { interactionSource ->
+            TvCard(
+                onClick = { onItemSelect() },
+                modifier = Modifier
+                    .size(posterWidth, posterHeight)
+                    .then(
+                        if (focusRequester != null) {
+                            Modifier.focusRequester(focusRequester)
+                        } else {
+                            Modifier
+                        }
+                    ),
+                interactionSource = interactionSource,
+                colors = TvCardDefaults.colors(
+                    containerColor = TvMaterialTheme.colorScheme.surfaceVariant,
+                    focusedContainerColor = TvMaterialTheme.colorScheme.surfaceVariant,
                 ),
-            colors = TvCardDefaults.colors(
-                containerColor = TvMaterialTheme.colorScheme.surfaceVariant,
-            ),
-            scale = TvCardDefaults.scale(focusedScale = 1.1f),
-            glow = TvCardDefaults.glow(
-                focusedGlow = androidx.tv.material3.Glow(
-                    elevationColor = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    elevation = 12.dp,
-                ),
-            ),
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                JellyfinAsyncImage(
-                    model = imageUrl,
-                    contentDescription = item.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    requestSize = rememberCoilSize(posterWidth, posterHeight),
-                    builder = { crossfade(true) },
-                )
-
-                TvPlaybackStatusBadge(
-                    isPlayed = isPlayed,
-                    isInProgress = isInProgress,
-                    modifier = Modifier.padding(10.dp),
-                )
-
-                if (isInProgress) {
-                    TvPlaybackProgressBar(
-                        progressRatio = progressRatio,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .fillMaxWidth()
-                            .height(5.dp)
+                scale = TvCardDefaults.scale(focusedScale = 1.1f),
+                border = TvCardDefaults.border(
+                    focusedBorder = Border(
+                        border = BorderStroke(
+                            width = 3.dp,
+                            color = TvMaterialTheme.colorScheme.border
+                        ),
                     )
+                ),
+                glow = TvCardDefaults.glow(
+                    focusedGlow = Glow(
+                        elevationColor = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        elevation = 20.dp,
+                    ),
+                ),
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    JellyfinAsyncImage(
+                        model = imageUrl,
+                        contentDescription = item.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        requestSize = rememberCoilSize(posterWidth, posterHeight),
+                        builder = { crossfade(true) },
+                    )
+
+                    TvPlaybackStatusBadge(
+                        isPlayed = isPlayed,
+                        isInProgress = isInProgress,
+                        modifier = Modifier.padding(10.dp),
+                    )
+
+                    if (isInProgress) {
+                        TvPlaybackProgressBar(
+                            progressRatio = progressRatio,
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .fillMaxWidth()
+                                .height(5.dp)
+                        )
+                    }
                 }
             }
-        }
-
-        // Title below the card
-        TvText(
-            text = item.name ?: stringResource(id = R.string.unknown),
-            style = TvMaterialTheme.typography.titleMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = if (isFocused) Color.White else TvMaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-
-        // Subtitle
-        item.productionYear?.let { year ->
+        },
+        title = {
             TvText(
-                text = year.toString(),
-                style = TvMaterialTheme.typography.bodyMedium,
-                color = TvMaterialTheme.colorScheme.onSurfaceVariant,
+                text = item.name ?: stringResource(id = R.string.unknown),
+                style = TvMaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (isFocused) Color.White else TvMaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = 8.dp)
             )
+        },
+        subtitle = {
+            item.productionYear?.let { year ->
+                TvText(
+                    text = year.toString(),
+                    style = TvMaterialTheme.typography.bodyMedium,
+                    color = TvMaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
-    }
+    )
 }

@@ -115,3 +115,5 @@ session_log_*
 gha-creds-*.json
 app/google-services.json
 app/google-services.json
+
+.gemini/

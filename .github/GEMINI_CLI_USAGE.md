@@ -14,71 +14,59 @@ The Gemini CLI system provides AI-powered assistance for:
 
 You can trigger Gemini CLI workflows by commenting on issues or pull requests with these commands:
 
-### `/triage`
-Analyzes an issue and automatically applies appropriate labels from the repository's label list.
-
-**Usage:**
-```
-/triage
-```
-
-**When to use:**
-- Manually trigger triage on an existing issue (triage runs automatically on new issues)
-- Re-triage an issue after significant updates
-
----
-
 ### `/review`
 Reviews code or analyzes an issue to create an implementation plan.
 
 **Behavior depends on context:**
-- **On a Pull Request**: Reviews the code changes and provides feedback
-- **On an Issue**: Analyzes the issue and posts a detailed implementation plan
+- **On a Pull Request**: Reviews the code changes and provides feedback with actionable suggestions.
+- **On an Issue**: Analyzes the issue and posts a **Gemini Implementation Plan**.
 
 **Usage:**
 ```
-/review
+@gemini-cli /review
 ```
-
-Or with additional context:
-```
-/review Focus on security implications
-```
-
-**What you get:**
-- For PRs: Code review with feedback on correctness, architecture, security, testing, and performance
-- For Issues: A detailed implementation plan including affected files, steps, and testing instructions
 
 ---
 
-### `/fix` or `/implement`
-Implements fixes or features based on an issue's implementation plan or description.
+### `/fix`, `/implement`, or `/approve`
+Executes fixes based on a review or implementation plan.
 
 **Usage:**
 ```
-/fix
+@gemini-cli /fix
 ```
-
 Or:
 ```
-/implement
+@gemini-cli /implement
+```
+Or:
+```
+@gemini-cli /approve
 ```
 
-With additional context:
+**Behavior:**
+- **On an Issue**: Creates a new branch `gemini/fix-issue-{number}`, implements the plan, and creates a new Pull Request.
+- **On a Pull Request**: Applies code suggestions from the review directly to the PR branch.
+
+---
+
+### `/deny`
+Cancels a suggested implementation plan.
+
+**Usage:**
 ```
-/fix Please prioritize performance optimization
+@gemini-cli /deny
 ```
 
-**What happens:**
-1. Gemini reads the issue and looks for an implementation plan (from a previous `/review`)
-2. Creates a new branch for the changes
-3. Implements the changes following Cinefin coding conventions
-4. Creates a Pull Request with the changes
-5. Posts a completion comment with a link to the PR
+---
 
-**Requirements:**
-- Must be run by a repository OWNER, MEMBER, or COLLABORATOR
-- Works best when there's an existing implementation plan from `/review`
+### `/triage`
+Analyzes an issue and automatically applies appropriate labels.
+
+**Usage:**
+```
+@gemini-cli /triage
+```
 
 ---
 

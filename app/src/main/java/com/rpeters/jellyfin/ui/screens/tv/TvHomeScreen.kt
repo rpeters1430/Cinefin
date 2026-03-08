@@ -17,7 +17,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
@@ -45,8 +51,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 
 private const val RECENT_MOVIES_ID = "recent_movies"
 private const val RECENT_TV_SHOW_EPISODES_ID = "recent_tv_show_episodes"
-private const val ALL_MOVIES_ID = "all_movies"
-private const val ALL_TV_SHOWS_ID = "all_tv_shows"
+private const val RECENT_STUFF_ID = "recent_stuff"
 private const val CONTINUE_WATCHING_ID = "continue_watching"
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -80,23 +85,15 @@ fun TvHomeScreen(
     val continueWatching = appState.continueWatching
         .sortedWith(tvInProgressComparator())
         .take(10)
+    
     val recentMovies = appState.recentlyAddedByTypes[BaseItemKind.MOVIE.name]?.take(10) ?: emptyList()
     val recentTvShowEpisodes = appState.recentlyAddedByTypes[BaseItemKind.EPISODE.name]?.take(10) ?: emptyList()
-    val allMovies = appState.allMovies.take(10)
-    val allTvShows = appState.allTVShows.take(10)
-    val featuredItems = buildList {
-        addAll(continueWatching)
-        addAll(
-            appState.recentlyAdded
-                .sortedWith(tvInProgressComparator())
-                .take(10),
-        )
-        addAll(recentTvShowEpisodes)
-        addAll(recentMovies)
-    }
-        .distinctBy { it.id }
-        .sortedWith(tvInProgressComparator())
-        .take(5)
+    
+    // "Stuff" (Home Videos) - usually BaseItemKind.VIDEO in recentlyAddedByTypes
+    val recentStuff = appState.recentlyAddedByTypes[BaseItemKind.VIDEO.name]?.take(10) ?: emptyList()
+
+    // Featured Carousel: Last 5 movies added
+    val featuredItems = recentMovies.take(5)
 
     val sections = listOf(
         TvHomeMediaSection(
@@ -106,35 +103,29 @@ fun TvHomeScreen(
             isLoading = appState.isLoading,
         ),
         TvHomeMediaSection(
+            id = RECENT_TV_SHOW_EPISODES_ID,
+            title = "Recently Added TV Episodes",
+            items = recentTvShowEpisodes,
+            isLoading = appState.isLoading,
+        ),
+        TvHomeMediaSection(
             id = RECENT_MOVIES_ID,
             title = "Recently Added Movies",
             items = recentMovies,
             isLoading = appState.isLoading,
         ),
         TvHomeMediaSection(
-            id = RECENT_TV_SHOW_EPISODES_ID,
-            title = "Recently Added TV Show Episodes",
-            items = recentTvShowEpisodes,
+            id = RECENT_STUFF_ID,
+            title = "Recently Added Stuff",
+            items = recentStuff,
             isLoading = appState.isLoading,
-        ),
-        TvHomeMediaSection(
-            id = ALL_MOVIES_ID,
-            title = "Movies",
-            items = allMovies,
-            isLoading = appState.isLoadingMovies,
-        ),
-        TvHomeMediaSection(
-            id = ALL_TV_SHOWS_ID,
-            title = "TV Shows",
-            items = allTvShows,
-            isLoading = appState.isLoadingTVShows,
         ),
     ).filter { it.items.isNotEmpty() || it.isLoading }
 
     val firstSectionId = sections.firstOrNull()?.id
     val initialFocusRequester = remember(layoutConfig.shouldShowDualPane) { FocusRequester() }
     initialFocusRequester.requestInitialFocus(
-        condition = firstSectionId != null && layoutConfig.supportsFocusNavigation,
+        condition = (featuredItems.isNotEmpty() || firstSectionId != null) && layoutConfig.supportsFocusNavigation,
     )
 
     TvScreenFocusScope(
@@ -207,8 +198,28 @@ fun TvHomeScreen(
                                         onPlay(item.id.toString(), item.name ?: "", 0L)
                                     },
                                     getBackdropUrl = viewModel::getBackdropUrl,
-                                    modifier = Modifier.padding(bottom = 24.dp)
+                                    modifier = Modifier
+                                        .padding(bottom = 24.dp)
+                                        .onPreviewKeyEvent { keyEvent ->
+                                            if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionLeft) {
+                                                focusManager?.moveFocus(FocusDirection.Left) ?: false
+                                                true
+                                            } else {
+                                                false
+                                            }
+                                        },
+                                    focusRequester = initialFocusRequester,
                                 )
+                                
+                                // Library Cards under Carousel
+                                if (appState.libraries.isNotEmpty()) {
+                                    TvLibrariesSection(
+                                        libraries = appState.libraries,
+                                        onLibrarySelect = onLibrarySelect,
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                                        isLoading = appState.isLoading,
+                                    )
+                                }
                             }
                         },
                         onItemFocus = { item ->
@@ -220,10 +231,10 @@ fun TvHomeScreen(
                         focusBridgeManager = focusManager,
                         getImageUrl = viewModel::getImageUrl,
                         getSeriesImageUrl = viewModel::getSeriesImageUrl,
-                        libraries = appState.libraries,
+                        libraries = emptyList(), // Moved to header
                         onLibrarySelect = onLibrarySelect,
                         isLoadingLibraries = appState.isLoading,
-                        initialFocusRequester = initialFocusRequester.takeIf { firstSectionId != null },
+                        initialFocusRequester = if (featuredItems.isEmpty()) initialFocusRequester else null,
                     )
                 } else {
                     TvCarouselHomeContent(
@@ -245,8 +256,28 @@ fun TvHomeScreen(
                                         onPlay(item.id.toString(), item.name ?: "", 0L)
                                     },
                                     getBackdropUrl = viewModel::getBackdropUrl,
-                                    modifier = Modifier.padding(bottom = 24.dp)
+                                    modifier = Modifier
+                                        .padding(bottom = 24.dp)
+                                        .onPreviewKeyEvent { keyEvent ->
+                                            if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionLeft) {
+                                                focusManager?.moveFocus(FocusDirection.Left) ?: false
+                                                true
+                                            } else {
+                                                false
+                                            }
+                                        },
+                                    focusRequester = initialFocusRequester,
                                 )
+                                
+                                // Library Cards under Carousel
+                                if (appState.libraries.isNotEmpty()) {
+                                    TvLibrariesSection(
+                                        libraries = appState.libraries,
+                                        onLibrarySelect = onLibrarySelect,
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                                        isLoading = appState.isLoading,
+                                    )
+                                }
                             }
                         },
                         onItemFocus = { item ->
@@ -256,10 +287,10 @@ fun TvHomeScreen(
                             onItemSelect(item.id.toString())
                         },
                         focusBridgeManager = focusManager,
-                        libraries = appState.libraries,
+                        libraries = emptyList(), // Moved to header
                         onLibrarySelect = onLibrarySelect,
                         isLoadingLibraries = appState.isLoading,
-                        initialFocusRequester = initialFocusRequester,
+                        initialFocusRequester = if (featuredItems.isEmpty()) initialFocusRequester else FocusRequester(),
                         firstSectionId = firstSectionId,
                     )
                 }

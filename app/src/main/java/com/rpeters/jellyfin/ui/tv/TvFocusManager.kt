@@ -175,7 +175,6 @@ fun TvFocusableCarousel(
 
     val focusModifier = Modifier
         .focusRequester(actualFocusRequester)
-        .focusable()
         .onFocusChanged { focusState ->
             hasFocus = focusState.hasFocus
             onFocusChanged(hasFocus, focusedIndex)
@@ -250,7 +249,6 @@ fun TvFocusableGrid(
 
     val focusModifier = Modifier
         .focusRequester(actualFocusRequester)
-        .focusable()
         .onFocusChanged { focusState ->
             hasFocus = focusState.hasFocus
             onFocusChanged(hasFocus, focusedIndex)

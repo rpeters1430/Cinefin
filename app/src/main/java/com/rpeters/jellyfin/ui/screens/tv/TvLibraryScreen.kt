@@ -25,6 +25,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rpeters.jellyfin.OptInAppExperimentalApis
@@ -165,6 +170,14 @@ fun TvLibraryScreen(
                     },
                     style = TvMaterialTheme.typography.displaySmall,
                     color = Color.White,
+                    modifier = Modifier.onPreviewKeyEvent { keyEvent ->
+                        if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionLeft) {
+                            localFocusManager.moveFocus(FocusDirection.Left)
+                            true
+                        } else {
+                            false
+                        }
+                    }
                 )
 
                 if (isLibraryLoading && items.isEmpty()) {

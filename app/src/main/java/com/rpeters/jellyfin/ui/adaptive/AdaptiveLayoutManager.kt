@@ -522,7 +522,7 @@ private fun calculateCarouselItemWidth(
     orientation: ScreenOrientation,
 ): Dp {
     return when {
-        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 240.dp else 220.dp
+        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 200.dp else 180.dp
         formFactor == DeviceFormFactor.TABLET || formFactor == DeviceFormFactor.FOLDABLE -> {
             if (orientation == ScreenOrientation.PORTRAIT) 200.dp else 220.dp
         }
@@ -540,7 +540,7 @@ private fun calculateCarouselItemHeight(
     orientation: ScreenOrientation,
 ): Dp {
     return when {
-        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 360.dp else 320.dp
+        isTV -> if (orientation == ScreenOrientation.TV_LANDSCAPE) 300.dp else 270.dp
         formFactor == DeviceFormFactor.TABLET || formFactor == DeviceFormFactor.FOLDABLE -> {
             if (orientation == ScreenOrientation.PORTRAIT) 300.dp else 320.dp
         }
