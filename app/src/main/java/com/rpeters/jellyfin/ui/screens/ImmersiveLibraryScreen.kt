@@ -69,11 +69,6 @@ import com.rpeters.jellyfin.ui.components.MiniPlayer
 import com.rpeters.jellyfin.ui.components.immersive.rememberImmersivePerformanceConfig
 import com.rpeters.jellyfin.ui.components.shimmer
 import com.rpeters.jellyfin.ui.theme.ImmersiveDimens
-import com.rpeters.jellyfin.ui.theme.LibraryBooksAccent
-import com.rpeters.jellyfin.ui.theme.LibraryHomeVideosAccent
-import com.rpeters.jellyfin.ui.theme.LibraryMixedAccent
-import com.rpeters.jellyfin.ui.theme.LibraryMusicVideosAccent
-import com.rpeters.jellyfin.ui.theme.LibraryPlaylistsAccent
 import com.rpeters.jellyfin.utils.getItemKey
 import kotlinx.coroutines.CancellationException
 import org.jellyfin.sdk.model.api.BaseItemDto

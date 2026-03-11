@@ -63,7 +63,7 @@ fun ImmersiveMediaRow(
             // ✅ Performance: Stabilize callbacks per item to allow recomposition skipping
             val stableOnCardClick = remember(item, onItemClick) { { onItemClick(item) } }
             val stableOnCardLongPress = remember(item, onItemLongPress) { { onItemLongPress(item) } }
-            
+
             ImmersiveMediaCard(
                 title = item.name ?: "Unknown",
                 imageUrl = getImageUrl(item) ?: "",

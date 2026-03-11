@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
@@ -37,16 +36,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil3.compose.SubcomposeAsyncImage
 import com.rpeters.jellyfin.OptInAppExperimentalApis
-import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.ShimmerBox
-import com.rpeters.jellyfin.ui.components.MaterialText
 import com.rpeters.jellyfin.ui.components.UnwatchedEpisodeCountBadge
 import com.rpeters.jellyfin.ui.components.WatchProgressBar
 import com.rpeters.jellyfin.ui.components.WatchedIndicatorBadge
@@ -78,7 +73,7 @@ fun LibraryItemCard(
         isCompact -> LibraryScreenDefaults.CompactCardWidth
         else -> null
     }
-    
+
     val handleInfo = {
         if (libraryType == LibraryType.TV_SHOWS && item.type == BaseItemKind.SERIES) {
             val seriesId = item.id.toString()
@@ -93,9 +88,9 @@ fun LibraryItemCard(
             .fillMaxWidth()
             .combinedClickable(
                 onClick = handleInfo,
-                onLongClick = { 
+                onLongClick = {
                     showMenu = true
-                    onItemLongPress?.invoke(item) 
+                    onItemLongPress?.invoke(item)
                 },
             )
             .then(if (cardWidth != null) Modifier.width(cardWidth) else Modifier)
@@ -121,7 +116,7 @@ fun LibraryItemCard(
                                     when {
                                         isTablet -> LibraryScreenDefaults.TabletCompactCardImageHeight
                                         else -> LibraryScreenDefaults.CompactCardImageHeight
-                                    }
+                                    },
                                 ),
                             loading = { ShimmerBox() },
                             error = {
@@ -132,20 +127,20 @@ fun LibraryItemCard(
                                             when {
                                                 isTablet -> LibraryScreenDefaults.TabletCompactCardImageHeight
                                                 else -> LibraryScreenDefaults.CompactCardImageHeight
-                                            }
+                                            },
                                         )
                                         .background(MaterialTheme.colorScheme.surfaceVariant),
-                                    contentAlignment = Alignment.Center
+                                    contentAlignment = Alignment.Center,
                                 ) {
                                     Icon(
                                         imageVector = libraryType.icon,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                                     )
                                 }
-                            }
+                            },
                         )
-                        
+
                         // Indicators in top-right corner
                         Column(
                             modifier = Modifier
@@ -169,20 +164,20 @@ fun LibraryItemCard(
                         }
                         WatchProgressBar(item = item, modifier = Modifier.align(Alignment.BottomCenter))
                     }
-                    
+
                     Column(modifier = Modifier.padding(8.dp)) {
                         Text(
                             text = item.name ?: "",
                             style = MaterialTheme.typography.labelLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         if (!item.productionYear.toString().isNullOrBlank() && item.productionYear != 0) {
                             Text(
                                 text = item.productionYear.toString(),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -193,7 +188,7 @@ fun LibraryItemCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     val imageHeight = if (isTablet) 100.dp else 80.dp
                     // Derive width from the server-reported aspect ratio so thumbnails
@@ -201,7 +196,7 @@ fun LibraryItemCard(
                     val imageWidth = item.primaryImageAspectRatio
                         ?.toFloat()
                         ?.let { imageHeight * it }
-                        ?: imageHeight  // fall back to square when ratio is unknown
+                        ?: imageHeight // fall back to square when ratio is unknown
 
                     SubcomposeAsyncImage(
                         model = getImageUrl(item),
@@ -211,18 +206,18 @@ fun LibraryItemCard(
                             .height(imageHeight)
                             .width(imageWidth)
                             .clip(MaterialTheme.shapes.small),
-                        loading = { ShimmerBox() }
+                        loading = { ShimmerBox() },
                     )
-                    
+
                     Spacer(modifier = Modifier.width(16.dp))
-                    
+
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = item.name ?: "",
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         if (!item.overview.isNullOrBlank()) {
                             Text(
@@ -230,14 +225,14 @@ fun LibraryItemCard(
                                 style = MaterialTheme.typography.bodySmall,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
-                    
-                    IconButton(onClick = { 
+
+                    IconButton(onClick = {
                         showMenu = true
-                        onMoreClick?.invoke(item) 
+                        onMoreClick?.invoke(item)
                     }) {
                         Icon(imageVector = Icons.Default.MoreVert, contentDescription = "More")
                     }
@@ -249,7 +244,7 @@ fun LibraryItemCard(
         DropdownMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
-            modifier = Modifier.width(180.dp)
+            modifier = Modifier.width(180.dp),
         ) {
             DropdownMenuItem(
                 text = { Text("Play") },
@@ -259,7 +254,7 @@ fun LibraryItemCard(
                 },
                 leadingIcon = {
                     Icon(Icons.Default.PlayArrow, contentDescription = null)
-                }
+                },
             )
             DropdownMenuItem(
                 text = { Text("Info") },
@@ -269,7 +264,7 @@ fun LibraryItemCard(
                 },
                 leadingIcon = {
                     Icon(Icons.Default.Info, contentDescription = null)
-                }
+                },
             )
             if (onDeleteClick != null) {
                 DropdownMenuItem(
@@ -280,7 +275,7 @@ fun LibraryItemCard(
                     },
                     leadingIcon = {
                         Icon(Icons.Default.Delete, contentDescription = null)
-                    }
+                    },
                 )
             }
         }

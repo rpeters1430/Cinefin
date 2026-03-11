@@ -92,7 +92,8 @@ fun ImmersiveHomeScreen(
 
     // ✅ Performance: Stabilize internal callbacks
     val handleItemLongPress = remember(managementEnabled, coroutineScope, managementDisabledMessage) {
-        { item: BaseItemDto ->
+        {
+                item: BaseItemDto ->
             if (managementEnabled) {
                 selectedItem = item
                 showManageSheet = true
@@ -106,7 +107,8 @@ fun ImmersiveHomeScreen(
     }
 
     val handlePlay = remember(viewModel, context, coroutineScope) {
-        { item: BaseItemDto ->
+        {
+                item: BaseItemDto ->
             val streamUrl = viewModel.getStreamUrl(item)
             if (streamUrl != null) {
                 MediaPlayerUtils.playMedia(context, streamUrl, item)
@@ -184,7 +186,7 @@ fun ImmersiveHomeScreen(
             visible = topBarVisible,
             enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
             exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(),
-            modifier = Modifier.align(Alignment.TopEnd)
+            modifier = Modifier.align(Alignment.TopEnd),
         ) {
             Surface(
                 onClick = onSettingsClick,
@@ -271,7 +273,8 @@ fun ImmersiveHomeScreen(
                 }
             }
             val onDeleteFromSheet = remember(item, viewModel, deleteSuccessMessage) {
-                { dismissed: Boolean, _: Boolean ->
+                {
+                        dismissed: Boolean, _: Boolean ->
                     if (dismissed) {
                         coroutineScope.launch {
                             viewModel.deleteItem(item)
@@ -290,7 +293,7 @@ fun ImmersiveHomeScreen(
                 sheetState = sheetState,
                 onDismiss = onDismissSheet,
                 onPlay = onPlayFromSheet,
-                onDelete = { dismissed, _ -> 
+                onDelete = { dismissed, _ ->
                     onDeleteFromSheet(dismissed, true)
                     Unit // Ensure Unit return type
                 },
@@ -408,9 +411,10 @@ private fun ImmersiveHomeContent(
                             )
                         }
                     }
-                    
+
                     val carouselOnItemClick = remember(stableOnItemClick, contentLists.featuredItems) {
-                        { selected: CarouselItem ->
+                        {
+                                selected: CarouselItem ->
                             contentLists.featuredItems.firstOrNull { it.id.toString() == selected.id }
                                 ?.let { stableOnItemClick(it) }
                             Unit
@@ -431,7 +435,6 @@ private fun ImmersiveHomeContent(
                     }
                 }
             }
-
 
             // Viewing Mood Widget (AI-powered mood analysis)
             if (viewingMood != null) {
