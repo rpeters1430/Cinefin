@@ -46,6 +46,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -266,12 +268,20 @@ private fun ImmersiveCardContent(
                     }
                 }
             } else if (unwatchedEpisodeCount != null && unwatchedEpisodeCount > 0) {
+                val countText = if (unwatchedEpisodeCount > 99) "99+" else unwatchedEpisodeCount.toString()
+                val description = when {
+                    unwatchedEpisodeCount > 99 -> "99 or more unwatched episodes"
+                    unwatchedEpisodeCount == 1 -> "1 unwatched episode"
+                    else -> "$unwatchedEpisodeCount unwatched episodes"
+                }
                 Surface(
                     shape = RoundedCornerShape(50),
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.semantics {
+                        contentDescription = description
+                    },
                 ) {
-                    val countText = if (unwatchedEpisodeCount > 99) "99+" else unwatchedEpisodeCount.toString()
                     Text(
                         text = countText,
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
