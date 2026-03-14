@@ -17,6 +17,7 @@ import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -69,17 +70,19 @@ fun UnwatchedEpisodeCountBadge(
                 "$totalEpisodes total episode${if (totalEpisodes != 1) "s" else ""}"
             }
 
-            Badge(
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = modifier.semantics {
                     contentDescription = accessibilityLabel
                     role = Role.Image
                 },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
                 Text(
                     text = text,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 )
             }
         }
@@ -94,19 +97,24 @@ fun WatchedIndicatorBadge(
     when {
         // Series completely watched indicator
         item.type == BaseItemKind.SERIES && item.isCompletelyWatched() -> {
-            Badge(
-                modifier = modifier.semantics {
-                    contentDescription = "Series completely watched"
-                    role = Role.Image
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = modifier
+                    .size(28.dp)
+                    .semantics {
+                        contentDescription = "Series completely watched"
+                        role = Role.Image
+                    },
             ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
         }
         // Movie/Episode watched indicator
@@ -116,36 +124,46 @@ fun WatchedIndicatorBadge(
                 BaseItemKind.EPISODE -> "Episode watched"
                 else -> "Watched"
             }
-            Badge(
-                modifier = modifier.semantics {
-                    contentDescription = description
-                    role = Role.Image
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = modifier
+                    .size(28.dp)
+                    .semantics {
+                        contentDescription = description
+                        role = Role.Image
+                    },
             ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
         }
         // Resume indicator for partially watched content
         item.canResume() -> {
-            Badge(
-                modifier = modifier.semantics {
-                    contentDescription = "Resume watching"
-                    role = Role.Image
-                },
-                containerColor = MaterialTheme.colorScheme.secondary,
-                contentColor = MaterialTheme.colorScheme.onSecondary,
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = modifier
+                    .size(28.dp)
+                    .semantics {
+                        contentDescription = "Resume watching"
+                        role = Role.Image
+                    },
             ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
         }
     }
