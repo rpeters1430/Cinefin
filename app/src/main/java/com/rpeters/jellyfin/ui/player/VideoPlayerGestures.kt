@@ -18,11 +18,15 @@ object VideoPlayerGestureConstants {
 
 /**
  * Modifier extension to handle video player gestures (tap, double-tap, vertical drag).
+ *
+ * @param enableVerticalDragGestures When false, vertical drag (brightness/volume) gestures are
+ *   disabled. This should be set to false in portrait mode where such gestures are unreliable.
  */
 fun Modifier.videoPlayerGestures(
     onTap: (isCenterTap: Boolean) -> Unit,
     onDoubleTap: (isRightSide: Boolean) -> Unit,
     onVerticalDrag: (isLeftSide: Boolean, deltaY: Float) -> Unit,
+    enableVerticalDragGestures: Boolean = true,
 ): Modifier = this
     .pointerInput(Unit) {
         detectTapGestures(
@@ -38,9 +42,15 @@ fun Modifier.videoPlayerGestures(
             },
         )
     }
-    .pointerInput(Unit) {
-        detectDragGestures { change, _ ->
-            val deltaY = change.previousPosition.y - change.position.y
-            onVerticalDrag(change.position.x < size.width / 2, deltaY)
-        }
-    }
+    .then(
+        if (enableVerticalDragGestures) {
+            Modifier.pointerInput(Unit) {
+                detectDragGestures { change, _ ->
+                    val deltaY = change.previousPosition.y - change.position.y
+                    onVerticalDrag(change.position.x < size.width / 2, deltaY)
+                }
+            }
+        } else {
+            Modifier
+        },
+    )

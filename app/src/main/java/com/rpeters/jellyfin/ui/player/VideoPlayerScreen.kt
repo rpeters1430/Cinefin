@@ -1,5 +1,6 @@
 package com.rpeters.jellyfin.ui.player
 
+import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.os.Build
 import android.view.SurfaceView
@@ -17,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
@@ -164,11 +166,17 @@ fun VideoPlayerScreen(
         }
     }
 
+    // Brightness/volume swipe gestures are only reliable in landscape orientation.
+    // In portrait mode the gesture conflicts with system scroll/navigation and produces
+    // erratic behaviour, so we disable them.
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(playerColors.background)
             .videoPlayerGestures(
+                enableVerticalDragGestures = isLandscape,
                 onTap = { isCenterTap ->
                     if (isCenterTap) {
                         onPlayPause()
