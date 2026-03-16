@@ -36,7 +36,7 @@
 
 ## 3) Phased Upgrade Plan
 
-## Phase 0 (Week 1): Baseline and Documentation Alignment
+### Phase 0 (Week 1): Baseline and Documentation Alignment
 
 ### Deliverables
 - Create a single authoritative status table and align conflicting docs.
