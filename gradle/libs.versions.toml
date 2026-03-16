@@ -2,7 +2,7 @@
 agp = "9.1.0"
 desugar_jdk_libs = "2.1.5"
 hiltAndroidTestingVersion = "2.59.2"
-kotlin = "2.3.10"
+kotlin = "2.3.20"
 ksp = "2.3.6"
 coreKtx = "1.18.0"
 junit = "4.13.2"
