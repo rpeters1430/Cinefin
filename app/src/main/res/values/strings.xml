@@ -474,6 +474,8 @@
     <string name="go_back">Go Back</string>
     <string name="close">Close</string>
     <string name="select_audio_track">Select Audio Track</string>
+    <string name="select_quality">Select Quality</string>
+    <string name="quality_auto">Auto</string>
     <string name="subtitles">Subtitles</string>
     <string name="cast_to_device">Cast to Device</string>
     <string name="no_cast_devices_found_detailed">No Cast devices found. Make sure your Chromecast or other Cast-enabled device is on the same network.</string>
