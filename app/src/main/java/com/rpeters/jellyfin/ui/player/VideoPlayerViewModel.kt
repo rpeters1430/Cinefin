@@ -11,9 +11,9 @@ import com.rpeters.jellyfin.data.repository.JellyfinRepository
 import com.rpeters.jellyfin.utils.SecureLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -40,7 +40,7 @@ class VideoPlayerViewModel @Inject constructor(
 
     val playerState: StateFlow<VideoPlayerState> = stateManager.playerState
     val playbackProgress: StateFlow<PlaybackProgress> = playbackProgressManager.playbackProgress
-    
+
     val exoPlayer get() = playbackManager.exoPlayer
 
     private var currentItemMetadata: BaseItemDto? = null
@@ -55,7 +55,7 @@ class VideoPlayerViewModel @Inject constructor(
         override fun onPlaybackStateChanged(playbackState: Int) {
             playbackManager.handlePlaybackStateChanged(playbackState, previousPlaybackState, viewModelScope)
             previousPlaybackState = playbackState
-            
+
             if (playbackState == Player.STATE_READY) {
                 playbackManager.startPositionUpdates(viewModelScope)
             } else if (playbackState == Player.STATE_ENDED) {
@@ -64,11 +64,13 @@ class VideoPlayerViewModel @Inject constructor(
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
-            stateManager.updateState { it.copy(
-                isPlaying = isPlaying,
-                // Safety net: a playing player cannot be in a loading/buffering state
-                isLoading = if (isPlaying) false else it.isLoading,
-            ) }
+            stateManager.updateState {
+                it.copy(
+                    isPlaying = isPlaying,
+                    // Safety net: a playing player cannot be in a loading/buffering state
+                    isLoading = if (isPlaying) false else it.isLoading,
+                )
+            }
             if (isPlaying) playbackManager.startPositionUpdates(viewModelScope) else playbackManager.stopPositionUpdates()
         }
 
@@ -77,10 +79,12 @@ class VideoPlayerViewModel @Inject constructor(
         }
 
         override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
-            stateManager.updateState { it.copy(
-                videoWidth = videoSize.width,
-                videoHeight = videoSize.height
-            ) }
+            stateManager.updateState {
+                it.copy(
+                    videoWidth = videoSize.width,
+                    videoHeight = videoSize.height,
+                )
+            }
         }
 
         override fun onPlayerError(error: PlaybackException) {
@@ -93,13 +97,13 @@ class VideoPlayerViewModel @Inject constructor(
     init {
         castManager.initialize(
             scope = viewModelScope,
-            onStartPlayback = { itemId, itemName, pos -> 
+            onStartPlayback = { itemId, itemName, pos ->
                 viewModelScope.launch { initializePlayer(itemId, itemName, pos) }
             },
-            onReleasePlayer = { 
+            onReleasePlayer = {
                 viewModelScope.launch { playbackManager.releasePlayer(reportStop = false) }
             },
-            onStartCasting = cast@ { startPosition ->
+            onStartCasting = cast@{ startPosition ->
                 val mediaItem = playbackManager.currentMediaItem ?: return@cast
                 val metadata = currentItemMetadata ?: return@cast
                 castManager.startCasting(
@@ -133,7 +137,7 @@ class VideoPlayerViewModel @Inject constructor(
         startPosition: Long = 0,
         subtitleIndex: Int? = null,
         audioIndex: Int? = null,
-        forceOffline: Boolean = false
+        forceOffline: Boolean = false,
     ) {
         SecureLogger.d("VideoPlayer", "Initializing playback for $itemName")
 
@@ -145,17 +149,19 @@ class VideoPlayerViewModel @Inject constructor(
                 else -> playbackProgressManager.getResumePosition(itemId)
             }
         }
-        
-        stateManager.updateState { it.copy(
-            itemId = itemId,
-            itemName = itemName,
-            isLoading = true,
-            error = null,
-            qualityRecommendation = null,
-            nextEpisode = null,
-            showNextEpisodeCountdown = false,
-            nextEpisodeCountdown = 0,
-        ) }
+
+        stateManager.updateState {
+            it.copy(
+                itemId = itemId,
+                itemName = itemName,
+                isLoading = true,
+                error = null,
+                qualityRecommendation = null,
+                nextEpisode = null,
+                showNextEpisodeCountdown = false,
+                nextEpisodeCountdown = 0,
+            )
+        }
 
         try {
             // Load metadata and skip markers
@@ -186,7 +192,7 @@ class VideoPlayerViewModel @Inject constructor(
                 audioIndex = audioIndex,
                 subtitleIndex = subtitleIndex,
                 mediaSourceIdHint = mediaSourceId,
-                scope = viewModelScope
+                scope = viewModelScope,
             )
 
             // Start tracking
@@ -204,10 +210,12 @@ class VideoPlayerViewModel @Inject constructor(
             )
         } catch (e: Exception) {
             SecureLogger.e("VideoPlayer", "Initialization failed: ${e.message}", e)
-            stateManager.updateState { it.copy(
-                error = "Failed to initialize: ${e.message}",
-                isLoading = false
-            ) }
+            stateManager.updateState {
+                it.copy(
+                    error = "Failed to initialize: ${e.message}",
+                    isLoading = false,
+                )
+            }
         }
     }
 
@@ -260,7 +268,7 @@ class VideoPlayerViewModel @Inject constructor(
             initializePlayer(
                 itemId = nextEpisode.id.toString(),
                 itemName = nextEpisode.name ?: "Next Episode",
-                startPosition = 0
+                startPosition = 0,
             )
         }
     }
@@ -330,7 +338,7 @@ class VideoPlayerViewModel @Inject constructor(
                         itemName = stateManager.playerState.value.itemName,
                         startPosition = currentPos,
                         audioIndex = audioIndex,
-                        subtitleIndex = stateManager.playerState.value.selectedSubtitleTrack?.format?.id?.toIntOrNull()
+                        subtitleIndex = stateManager.playerState.value.selectedSubtitleTrack?.format?.id?.toIntOrNull(),
                     )
                 }
                 return
@@ -357,7 +365,7 @@ class VideoPlayerViewModel @Inject constructor(
                         itemId = stateManager.playerState.value.itemId,
                         itemName = stateManager.playerState.value.itemName,
                         startPosition = currentPos,
-                        subtitleIndex = subIndex
+                        subtitleIndex = subIndex,
                     )
                 }
                 return
