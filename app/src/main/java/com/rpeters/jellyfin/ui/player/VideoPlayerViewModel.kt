@@ -64,7 +64,11 @@ class VideoPlayerViewModel @Inject constructor(
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
-            stateManager.updateState { it.copy(isPlaying = isPlaying) }
+            stateManager.updateState { it.copy(
+                isPlaying = isPlaying,
+                // Safety net: a playing player cannot be in a loading/buffering state
+                isLoading = if (isPlaying) false else it.isLoading,
+            ) }
             if (isPlaying) playbackManager.startPositionUpdates(viewModelScope) else playbackManager.stopPositionUpdates()
         }
 
@@ -164,7 +168,9 @@ class VideoPlayerViewModel @Inject constructor(
             val subtitles = metadataManager.extractSubtitleSpecs(metadata, playbackInfo)
             val mediaSourceId = playbackInfo?.mediaSources?.firstOrNull()?.id
 
-            // Initialize ExoPlayer if needed
+            // Initialize ExoPlayer if needed, resetting playback state tracking
+            // so stale state from a previous session doesn't affect the new player.
+            previousPlaybackState = Player.STATE_IDLE
             if (playbackManager.exoPlayer == null) {
                 playbackManager.initializeExoPlayer(playerListener)
             }

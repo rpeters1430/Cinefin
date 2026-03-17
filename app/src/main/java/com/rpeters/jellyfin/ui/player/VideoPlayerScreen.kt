@@ -109,6 +109,7 @@ fun VideoPlayerScreen(
     var controlsVisible by remember { mutableStateOf(true) }
     var showAudioDialog by remember { mutableStateOf(false) }
     var showSubtitleDialog by remember { mutableStateOf(false) }
+    var showQualityDialog by remember { mutableStateOf(false) }
 
     // Gesture feedback states
     var showSeekFeedback by remember { mutableStateOf(false) }
@@ -143,8 +144,10 @@ fun VideoPlayerScreen(
             controlsVisible = false
         }
     }
-    LaunchedEffect(playerState.isLoading, playerState.isPlaying) {
-        if (playerState.isLoading || !playerState.isPlaying) controlsVisible = true
+    LaunchedEffect(playerState.isPlaying, playerState.isLoading) {
+        // Show controls when paused/stopped (not playing and not mid-seek buffering),
+        // or during initial load before playback begins (loading but not yet playing).
+        if (!playerState.isPlaying) controlsVisible = true
     }
 
     // Errors
@@ -293,7 +296,7 @@ fun VideoPlayerScreen(
                 onPlayPause = onPlayPause,
                 onSeek = onSeek,
                 onSeekBy = { delta -> onSeek((playerState.currentPosition + delta).coerceIn(0L, playerState.duration)) },
-                onQualityClick = { onQualityChange(null) /* Simplified for now */ },
+                onQualityClick = { showQualityDialog = true },
                 onAudioClick = { showAudioDialog = true },
                 onCastClick = onCastClick,
                 onSubtitlesClick = { showSubtitleDialog = true },
@@ -311,6 +314,15 @@ fun VideoPlayerScreen(
                 availableTracks = playerState.availableAudioTracks,
                 onTrackSelect = onAudioTrackSelect,
                 onDismiss = { showAudioDialog = false },
+            )
+        }
+
+        if (showQualityDialog) {
+            QualitySelectionDialog(
+                availableQualities = playerState.availableQualities,
+                selectedQuality = playerState.selectedQuality,
+                onQualitySelect = onQualityChange,
+                onDismiss = { showQualityDialog = false },
             )
         }
 

@@ -75,6 +75,60 @@ fun AudioTrackSelectionDialog(
 
 @UnstableApi
 @Composable
+fun QualitySelectionDialog(
+    availableQualities: List<VideoQuality>,
+    selectedQuality: VideoQuality?,
+    onQualitySelect: (VideoQuality?) -> Unit,
+    onDismiss: () -> Unit,
+    maxHeight: Dp = LocalConfiguration.current.screenHeightDp.dp * 0.6f,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.select_quality)) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxHeight)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                TextButton(
+                    onClick = {
+                        onQualitySelect(null)
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.quality_auto),
+                        fontWeight = if (selectedQuality == null) FontWeight.Bold else FontWeight.Normal,
+                    )
+                }
+
+                availableQualities.forEach { quality ->
+                    TextButton(
+                        onClick = {
+                            onQualitySelect(quality)
+                            onDismiss()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = quality.label,
+                            fontWeight = if (quality == selectedQuality) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.close)) }
+        },
+    )
+}
+
+@UnstableApi
+@Composable
 fun SubtitleTrackSelectionDialog(
     availableTracks: List<TrackInfo>,
     selectedTrack: TrackInfo?,
