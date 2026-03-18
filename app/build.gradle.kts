@@ -306,7 +306,7 @@ configurations.all {
 
         // Force Material3 to use a consistent version across all dependencies
         if (group == "androidx.compose.material3") {
-            useVersion("1.5.0-alpha13")
+            useVersion("1.5.0-alpha15")
             because("Force consistent Material3 version across all adaptive and expressive components")
         }
     }
