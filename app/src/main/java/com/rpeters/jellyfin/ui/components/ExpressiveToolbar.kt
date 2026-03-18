@@ -1,7 +1,8 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.rpeters.jellyfin.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cast
@@ -24,13 +24,14 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Queue
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -38,7 +39,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.rpeters.jellyfin.ui.theme.MotionTokens
 
 /**
  * Material 3 Expressive Floating Toolbar
@@ -71,107 +71,67 @@ fun ExpressiveFloatingToolbar(
         ) + fadeOut(),
         modifier = modifier,
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(28.dp),
-                ),
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            tonalElevation = 3.dp,
+        HorizontalFloatingToolbar(
+            expanded = true,
+            modifier = Modifier.padding(16.dp),
+            colors = FloatingToolbarDefaults.standardFloatingToolbarColors(),
+            floatingActionButton = {
+                FloatingToolbarDefaults.StandardFloatingActionButton(
+                    onClick = when (primaryAction) {
+                        ToolbarAction.PLAY -> onPlayClick
+                        ToolbarAction.DOWNLOAD -> onDownloadClick
+                        ToolbarAction.FAVORITE -> onFavoriteClick
+                    },
+                ) {
+                    Icon(
+                        imageVector = when (primaryAction) {
+                            ToolbarAction.PLAY -> Icons.Default.PlayArrow
+                            ToolbarAction.DOWNLOAD -> Icons.Default.Download
+                            ToolbarAction.FAVORITE -> Icons.Default.Favorite
+                        },
+                        contentDescription = when (primaryAction) {
+                            ToolbarAction.PLAY -> "Play"
+                            ToolbarAction.DOWNLOAD -> "Download"
+                            ToolbarAction.FAVORITE -> "Favorite"
+                        },
+                    )
+                }
+            },
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Primary action (larger FAB)
-                when (primaryAction) {
-                    ToolbarAction.PLAY -> {
-                        FloatingActionButton(
-                            onClick = onPlayClick,
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(56.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = "Play",
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                    }
-                    ToolbarAction.DOWNLOAD -> {
-                        FloatingActionButton(
-                            onClick = onDownloadClick,
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(56.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Download,
-                                contentDescription = "Download",
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                    }
-                    ToolbarAction.FAVORITE -> {
-                        FloatingActionButton(
-                            onClick = onFavoriteClick,
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(56.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Favorite,
-                                contentDescription = "Favorite",
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                    }
+                if (showQueueAction) {
+                    ExpressiveToolbarButton(
+                        icon = Icons.Default.Queue,
+                        contentDescription = "Add to Queue",
+                        onClick = onQueueClick,
+                    )
                 }
 
-                // Secondary actions
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (showQueueAction) {
-                        ExpressiveToolbarButton(
-                            icon = Icons.Default.Queue,
-                            contentDescription = "Add to Queue",
-                            onClick = onQueueClick,
-                        )
-                    }
+                if (showCastAction) {
+                    ExpressiveToolbarButton(
+                        icon = Icons.Default.Cast,
+                        contentDescription = "Cast",
+                        onClick = onCastClick,
+                    )
+                }
 
-                    if (showCastAction) {
-                        ExpressiveToolbarButton(
-                            icon = Icons.Default.Cast,
-                            contentDescription = "Cast",
-                            onClick = onCastClick,
-                        )
-                    }
+                if (showShareAction) {
+                    ExpressiveToolbarButton(
+                        icon = Icons.Default.Share,
+                        contentDescription = "Share",
+                        onClick = onShareClick,
+                    )
+                }
 
-                    if (showShareAction) {
-                        ExpressiveToolbarButton(
-                            icon = Icons.Default.Share,
-                            contentDescription = "Share",
-                            onClick = onShareClick,
-                        )
-                    }
-
-                    if (showMoreAction) {
-                        ExpressiveToolbarButton(
-                            icon = Icons.Default.MoreVert,
-                            contentDescription = "More options",
-                            onClick = onMoreClick,
-                        )
-                    }
+                if (showMoreAction) {
+                    ExpressiveToolbarButton(
+                        icon = Icons.Default.MoreVert,
+                        contentDescription = "More options",
+                        onClick = onMoreClick,
+                    )
                 }
             }
         }
@@ -197,30 +157,18 @@ fun ExpressiveCompactToolbar(
         ) + fadeOut(),
         modifier = modifier,
     ) {
-        Surface(
-            modifier = Modifier
-                .padding(16.dp)
-                .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(24.dp),
-                ),
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            tonalElevation = 3.dp,
+        HorizontalFloatingToolbar(
+            expanded = true,
+            modifier = Modifier.padding(16.dp),
+            colors = FloatingToolbarDefaults.standardFloatingToolbarColors(),
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                actions.forEach { action ->
-                    ExpressiveToolbarButton(
-                        icon = action.icon,
-                        contentDescription = action.contentDescription,
-                        onClick = action.onClick,
-                        isActive = action.isActive,
-                    )
-                }
+            actions.forEach { action ->
+                ExpressiveToolbarButton(
+                    icon = action.icon,
+                    contentDescription = action.contentDescription,
+                    onClick = action.onClick,
+                    isActive = action.isActive,
+                )
             }
         }
     }
@@ -234,37 +182,20 @@ private fun ExpressiveToolbarButton(
     modifier: Modifier = Modifier,
     isActive: Boolean = false,
 ) {
-    val scale by animateFloatAsState(
-        targetValue = if (isActive) 1.1f else 1.0f,
-        animationSpec = MotionTokens.expressiveEnter,
-        label = "toolbar_button_scale",
-    )
-
-    Surface(
+    IconButton(
         onClick = onClick,
         modifier = modifier.size(40.dp),
-        shape = CircleShape,
-        color = if (isActive) {
-            MaterialTheme.colorScheme.primaryContainer
-        } else {
-            Color.Transparent
-        },
     ) {
-        IconButton(
-            onClick = onClick,
-            modifier = Modifier.size(40.dp),
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = if (isActive) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                modifier = Modifier.size(20.dp),
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = if (isActive) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 

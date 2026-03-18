@@ -30,18 +30,15 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 
 /**
- * Material 3 Expressive Menu Components
- * Wrapper components for the new expressive menu items introduced in Material 3 1.5.0-alpha09+
+ * Shared menu wrappers built on official Material 3 `DropdownMenu` and `DropdownMenuItem`
+ * primitives.
  *
- * Features:
- * - Toggleable menu items with switch
- * - Selectable menu items with checkboxes
- * - Menu groups with dividers
- * - Enhanced expressive styling
+ * These components provide app-specific menu patterns such as toggleable and selectable items, but
+ * they are not dedicated expressive-only Material 3 menu APIs.
  */
 
 /**
- * Expressive dropdown menu for media item actions
+ * Media actions dropdown menu wrapper.
  */
 @Composable
 fun ExpressiveMediaActionsMenu(
@@ -172,8 +169,7 @@ fun ExpressiveMediaActionsMenu(
 }
 
 /**
- * Expressive toggleable menu item with switch
- * New component type introduced in Material 3 1.5.0-alpha09
+ * Toggleable menu row built from an official `DropdownMenuItem` plus `Switch`.
  */
 @Composable
 fun ExpressiveToggleableMenuItem(
@@ -223,8 +219,7 @@ fun ExpressiveToggleableMenuItem(
 }
 
 /**
- * Expressive selectable menu item with checkbox
- * New component type introduced in Material 3 1.5.0-alpha09
+ * Selectable menu row built from an official `DropdownMenuItem` plus trailing selection icon.
  */
 @Composable
 fun ExpressiveSelectableMenuItem(

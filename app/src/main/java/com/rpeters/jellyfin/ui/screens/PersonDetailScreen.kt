@@ -70,8 +70,8 @@ import com.rpeters.jellyfin.ui.viewmodel.PersonDetailViewModel
 import org.jellyfin.sdk.model.api.BaseItemDto
 
 /**
- * Person Detail Screen showing all movies and TV shows an actor has appeared in.
- * Beautiful Material 3 Expressive design with tabs for Movies/TV Shows.
+ * Person detail screen showing movies and TV shows for a person, using standard Material 3 screen
+ * structure plus app-level styling.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

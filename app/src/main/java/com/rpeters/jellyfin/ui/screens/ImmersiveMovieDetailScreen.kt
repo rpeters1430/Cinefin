@@ -147,6 +147,16 @@ fun ImmersiveMovieDetailScreen(
                 modifier = Modifier.height(400.dp),
             )
 
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 328.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.background,
+                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    ),
+            )
+
             // 2. Main Content
             LazyColumn(
                 state = listState,

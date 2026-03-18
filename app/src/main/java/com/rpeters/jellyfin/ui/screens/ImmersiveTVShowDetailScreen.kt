@@ -593,7 +593,7 @@ private fun ShowMetadataSection(
                     isLoading = isLoadingAiSummary
                 )
 
-                // ✨ Beautiful Material 3 Expressive Media Info Cards
+                // App-styled media info cards built from shared card primitives
                 series.mediaSources?.firstOrNull()?.mediaStreams?.let { streams ->
                     val videoStream = streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.VIDEO }
                     val audioStream = streams.find { it.type == org.jellyfin.sdk.model.api.MediaStreamType.AUDIO }

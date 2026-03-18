@@ -1,6 +1,5 @@
 package com.rpeters.jellyfin.ui.screens.details.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,7 +50,6 @@ fun MovieHeroContent(
         modifier = modifier
             .fillMaxWidth()
             .padding(top = 120.dp) // Offset for background
-            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 16.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -76,7 +74,7 @@ fun MovieHeroContent(
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = Color.White,
             )
         }
 
@@ -91,7 +89,7 @@ fun MovieHeroContent(
                     text = year.toString(),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    color = Color.White.copy(alpha = 0.78f),
                 )
             }
 
@@ -106,7 +104,7 @@ fun MovieHeroContent(
                         text = durationText,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        color = Color.White.copy(alpha = 0.78f),
                     )
                 }
             }
@@ -150,7 +148,7 @@ fun MovieHeroContent(
                 Text(
                     text = "/ 10",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    color = Color.White.copy(alpha = 0.6f),
                 )
             }
         }

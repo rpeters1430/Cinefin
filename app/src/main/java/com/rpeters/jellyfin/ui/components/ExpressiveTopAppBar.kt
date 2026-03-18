@@ -8,8 +8,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,10 +27,9 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.R
 
 /**
- * Material 3 Expressive Top App Bar
+ * Styled top app bar built from official Material 3 top app bar and icon button primitives.
  *
- * A styled top app bar with circular surfaces for the title and action buttons.
- * Provides visual consistency across screens with shadow elevation and proper spacing.
+ * The title pill remains custom because there is no dedicated expressive top app bar API here.
  */
 @Composable
 fun ExpressiveTopAppBar(
@@ -65,7 +65,7 @@ fun ExpressiveTopAppBar(
 }
 
 /**
- * Circular action button for use in ExpressiveTopAppBar
+ * Top app bar action button built from official Material 3 icon button components.
  *
  * @param icon The icon to display
  * @param contentDescription Accessibility description
@@ -81,19 +81,18 @@ fun ExpressiveTopAppBarAction(
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.primary,
 ) {
-    Surface(
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 4.dp,
+    FilledTonalIconButton(
+        onClick = onClick,
         modifier = modifier.padding(horizontal = 4.dp),
+        colors = IconButtonDefaults.filledTonalIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = tint,
+        ),
     ) {
-        IconButton(onClick = onClick) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = tint,
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+        )
     }
 }
 
@@ -116,27 +115,26 @@ fun ExpressiveTopAppBarRefreshAction(
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.primary,
 ) {
-    Surface(
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 4.dp,
+    FilledTonalIconButton(
+        onClick = onClick,
         modifier = modifier.padding(horizontal = 4.dp),
+        colors = IconButtonDefaults.filledTonalIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = tint,
+        ),
     ) {
         if (isLoading) {
-            Box(modifier = Modifier.padding(12.dp)) {
+            Box(modifier = Modifier.size(24.dp)) {
                 ExpressiveCircularLoading(
                     size = 24.dp,
                     color = tint,
                 )
             }
         } else {
-            IconButton(onClick = onClick) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = contentDescription,
-                    tint = tint,
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+            )
         }
     }
 }
@@ -162,26 +160,24 @@ fun ExpressiveTopAppBarMenuAction(
     tint: Color = MaterialTheme.colorScheme.primary,
     menuContent: @Composable () -> Unit,
 ) {
-    Surface(
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 4.dp,
-        modifier = modifier.padding(horizontal = 4.dp),
-    ) {
-        Box {
-            IconButton(onClick = { onExpandedChange(true) }) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = contentDescription,
-                    tint = tint,
-                )
-            }
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { onExpandedChange(false) },
-            ) {
-                menuContent()
-            }
+    Box(modifier = modifier.padding(horizontal = 4.dp)) {
+        FilledTonalIconButton(
+            onClick = { onExpandedChange(true) },
+            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = tint,
+            ),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) },
+        ) {
+            menuContent()
         }
     }
 }
@@ -194,18 +190,17 @@ fun ExpressiveBackNavigationIcon(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 4.dp,
+    FilledTonalIconButton(
+        onClick = onClick,
         modifier = modifier.padding(start = 8.dp),
+        colors = IconButtonDefaults.filledTonalIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
     ) {
-        IconButton(onClick = onClick) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = stringResource(id = R.string.navigate_up),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+            contentDescription = stringResource(id = R.string.navigate_up),
+        )
     }
 }

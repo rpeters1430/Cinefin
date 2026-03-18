@@ -173,8 +173,7 @@ private fun CarouselMovieCard(
 }
 
 /**
- * Enhanced Material 3 Expressive Carousel for all content types
- * Supports Movies, TV Shows, Episodes, Music, and more
+ * Carousel for mixed content types built on the official Material 3 carousel APIs.
  */
 @OptInAppExperimentalApis
 @Composable

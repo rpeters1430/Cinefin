@@ -58,22 +58,10 @@ import com.rpeters.jellyfin.ui.image.OptimizedImage
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 
 /**
- * Material 3 Expressive Media Card for displaying movies, shows, music, etc.
+ * Media card wrapper built from official Material 3 card primitives.
  *
- * @param title The title to display
- * @param subtitle Optional subtitle text
- * @param imageUrl URL of the image to display
- * @param rating Optional rating value (e.g., 8.5)
- * @param isFavorite Whether the item is marked as favorite
- * @param isWatched Whether the item has been watched (shows checkmark badge)
- * @param watchProgress Progress value from 0.0 to 1.0 (shows progress bar)
- * @param unwatchedEpisodeCount For series - shows count badge if > 0
- * @param onCardClick Click handler for the card
- * @param onPlayClick Click handler for play action
- * @param onFavoriteClick Click handler for favorite action
- * @param onMoreClick Click handler for more actions
- * @param modifier Optional modifier
- * @param cardType Card style variant
+ * The expressive treatment here comes from the app's styling, motion, and layout choices layered
+ * on top of standard `Card` / `ElevatedCard` / `OutlinedCard` components.
  */
 @Composable
 fun ExpressiveMediaCard(
@@ -374,16 +362,7 @@ private fun MediaCardContent(
 }
 
 /**
- * Compact expressive card for lists and grids
- *
- * @param title The title to display
- * @param subtitle Optional subtitle text
- * @param imageUrl URL of the image to display
- * @param onClick Click handler for the card
- * @param onLongClick Optional long click handler (for action menus)
- * @param leadingIcon Optional leading icon
- * @param trailingContent Optional trailing content slot
- * @param modifier Optional modifier
+ * Compact card wrapper for lists and grids built from official Material 3 `Card`.
  */
 @Composable
 fun ExpressiveCompactCard(
@@ -478,15 +457,7 @@ fun ExpressiveCompactCard(
 }
 
 /**
- * Material 3 Expressive Content Card for generic content like settings, widgets, and info blocks.
- *
- * @param onClick Optional click handler for the card
- * @param modifier Optional modifier
- * @param containerColor Background color of the card
- * @param contentColor Content color for the card
- * @param shape Card shape
- * @param elevation Card elevation
- * @param content Card content
+ * Generic content card wrapper built from official Material 3 `ElevatedCard`.
  */
 @Composable
 fun ExpressiveContentCard(

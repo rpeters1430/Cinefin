@@ -2,8 +2,10 @@ package com.rpeters.jellyfin.ui.player
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -24,6 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,24 +48,23 @@ fun AudioTrackSelectionDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.select_audio_track)) },
         text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = maxHeight)
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                availableTracks.forEach { track ->
-                    TextButton(
-                        onClick = {
-                            onTrackSelect(track)
-                            onDismiss()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = track.displayName,
-                            fontWeight = if (track.isSelected) FontWeight.Bold else FontWeight.Normal,
-                        )
+            SelectionDialogContent(maxHeight = maxHeight) {
+                if (availableTracks.isEmpty()) {
+                    EmptySelectionMessage(message = "No audio tracks are available for this video.")
+                } else {
+                    availableTracks.forEach { track ->
+                        TextButton(
+                            onClick = {
+                                onTrackSelect(track)
+                                onDismiss()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = track.displayName,
+                                fontWeight = if (track.isSelected) FontWeight.Bold else FontWeight.Normal,
+                            )
+                        }
                     }
                 }
             }
@@ -86,12 +88,7 @@ fun QualitySelectionDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.select_quality)) },
         text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = maxHeight)
-                    .verticalScroll(rememberScrollState()),
-            ) {
+            SelectionDialogContent(maxHeight = maxHeight) {
                 TextButton(
                     onClick = {
                         onQualitySelect(null)
@@ -103,6 +100,10 @@ fun QualitySelectionDialog(
                         text = stringResource(id = R.string.quality_auto),
                         fontWeight = if (selectedQuality == null) FontWeight.Bold else FontWeight.Normal,
                     )
+                }
+
+                if (availableQualities.isEmpty()) {
+                    EmptySelectionMessage(message = "No alternate quality options are available right now.")
                 }
 
                 availableQualities.forEach { quality ->
@@ -140,12 +141,7 @@ fun SubtitleTrackSelectionDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.subtitles)) },
         text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = maxHeight)
-                    .verticalScroll(rememberScrollState()),
-            ) {
+            SelectionDialogContent(maxHeight = maxHeight) {
                 TextButton(
                     onClick = {
                         onTrackSelect(null)
@@ -157,6 +153,10 @@ fun SubtitleTrackSelectionDialog(
                         text = "Off",
                         fontWeight = if (selectedTrack == null) FontWeight.Bold else FontWeight.Normal,
                     )
+                }
+
+                if (availableTracks.isEmpty()) {
+                    EmptySelectionMessage(message = "No subtitle tracks are available for this video.")
                 }
 
                 availableTracks.forEach { track ->
@@ -178,6 +178,78 @@ fun SubtitleTrackSelectionDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.close)) }
         },
+    )
+}
+
+@Composable
+private fun SelectionDialogContent(
+    maxHeight: Dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val scrollState = rememberScrollState()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = maxHeight),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 12.dp)
+                .verticalScroll(scrollState),
+            content = content,
+        )
+        DialogScrollbar(
+            scrollState = scrollState,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .fillMaxHeight()
+                .width(4.dp),
+        )
+    }
+}
+
+@Composable
+private fun DialogScrollbar(
+    scrollState: androidx.compose.foundation.ScrollState,
+    modifier: Modifier = Modifier,
+) {
+    val maxValue = scrollState.maxValue
+    val viewportSize = scrollState.viewportSize
+    if (maxValue <= 0 || viewportSize <= 0) return
+
+    val totalContentHeight = maxValue + viewportSize
+    val visibleFraction = (viewportSize.toFloat() / totalContentHeight.toFloat()).coerceIn(0.15f, 1f)
+    val offsetFraction = (scrollState.value.toFloat() / maxValue.toFloat()).coerceIn(0f, 1f)
+    val trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+    val thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+
+    Box(
+        modifier = modifier.drawWithContent {
+            drawRoundRect(
+                color = trackColor,
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width / 2f, size.width / 2f),
+            )
+
+            val handleHeight = size.height * visibleFraction
+            val handleY = (size.height - handleHeight) * offsetFraction
+            drawRoundRect(
+                color = thumbColor,
+                topLeft = androidx.compose.ui.geometry.Offset(0f, handleY),
+                size = androidx.compose.ui.geometry.Size(size.width, handleHeight),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width / 2f, size.width / 2f),
+            )
+        },
+    )
+}
+
+@Composable
+private fun EmptySelectionMessage(message: String) {
+    Text(
+        text = message,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
     )
 }
 

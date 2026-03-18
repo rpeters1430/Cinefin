@@ -26,19 +26,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 /**
- * Material 3 Expressive List Items
- * Wrapper components for the new expressive list items introduced in Material 3 1.5.0-alpha11
+ * Shared list item wrappers built on official Material 3 `ListItem`, `Checkbox`, `Switch`, and
+ * `RadioButton` primitives.
  *
- * Features:
- * - Enhanced visual hierarchy with expressive styling
- * - Better interaction feedback
- * - Segmented styling support
- * - Accessibility improvements
+ * These are app-level styling wrappers, not dedicated expressive-only Material 3 components.
  */
 
 /**
- * Expressive media list item for movies, shows, episodes, etc.
- * Uses Material 3 expressive styling for enhanced visual appeal
+ * Media list item wrapper for movies, shows, episodes, and similar content.
  */
 @Composable
 fun ExpressiveMediaListItem(
@@ -110,7 +105,7 @@ fun ExpressiveMediaListItem(
 }
 
 /**
- * Expressive list item with checkbox for multi-select scenarios
+ * Checkable list item wrapper for multi-select scenarios.
  */
 @Composable
 fun ExpressiveCheckableListItem(
@@ -152,7 +147,7 @@ fun ExpressiveCheckableListItem(
 }
 
 /**
- * Expressive list item with switch for settings
+ * Switch list item wrapper for settings rows.
  */
 @Composable
 fun ExpressiveSwitchListItem(
@@ -205,7 +200,7 @@ fun ExpressiveSwitchListItem(
 }
 
 /**
- * Expressive list item with radio button for single-selection choices
+ * Radio-style list item wrapper for single-selection choices.
  */
 @Composable
 fun ExpressiveRadioListItem(
@@ -325,7 +320,7 @@ fun ExpressiveSegmentedListItem(
 }
 
 /**
- * Example usage for library sections with expressive styling
+ * Example usage for library sections with shared list item wrappers.
  */
 @Composable
 fun MediaLibrarySection(

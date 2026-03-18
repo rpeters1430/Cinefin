@@ -244,7 +244,7 @@ data class AdaptiveLayoutConfig(
             isTablet || isFoldable -> if (isLandscapeFirst) 180.dp else 160.dp
             windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact -> {
                 // Check for ultra-compact phones
-                if (carouselItemWidth < 150.dp) 132.dp else 144.dp
+                if (carouselItemWidth < 150.dp) 140.dp else 152.dp
             }
             else -> 160.dp
         }

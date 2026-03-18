@@ -28,14 +28,14 @@ import androidx.compose.ui.unit.dp
 import com.rpeters.jellyfin.OptInAppExperimentalApis
 
 /**
- * Material 3 Expressive Buttons
+ * Shared button wrappers built on official Material 3 button components.
  *
- * Enhanced button components with Material 3 Expressive styling, animations, and interactions.
- * These buttons provide better visual hierarchy and more engaging interactions.
+ * The `Expressive*` naming here reflects the app design system, not a dedicated Material 3
+ * expressive-only button API. Each wrapper delegates to an official Material 3 button primitive.
  */
 
 /**
- * Expressive Filled Button - Highest emphasis
+ * Filled button wrapper over official Material 3 `Button`.
  *
  * Use for primary actions like "Play", "Download", "Save"
  *
@@ -79,7 +79,7 @@ fun ExpressiveFilledButton(
 }
 
 /**
- * Expressive Elevated Button - High emphasis with shadow
+ * Elevated button wrapper over official Material 3 `ElevatedButton`.
  *
  * Use for important secondary actions like "Add to Favorites", "Share"
  *
@@ -123,7 +123,7 @@ fun ExpressiveElevatedButton(
 }
 
 /**
- * Expressive Tonal Button - Medium emphasis
+ * Tonal button wrapper over official Material 3 `FilledTonalButton`.
  *
  * Use for secondary actions in context like "View Details", "More Info"
  *
@@ -167,7 +167,7 @@ fun ExpressiveTonalButton(
 }
 
 /**
- * Expressive Outlined Button - Medium-low emphasis
+ * Outlined button wrapper over official Material 3 `OutlinedButton`.
  *
  * Use for alternative actions like "Cancel", "Not Now"
  *
@@ -211,7 +211,7 @@ fun ExpressiveOutlinedButton(
 }
 
 /**
- * Expressive Text Button - Lowest emphasis
+ * Text button wrapper over official Material 3 `TextButton`.
  *
  * Use for tertiary actions like "Learn More", "Skip"
  *
@@ -254,12 +254,10 @@ fun ExpressiveTextButton(
     )
 }
 
-// ===== Convenience Buttons with Icons =====
+// Convenience wrappers built from the shared button primitives above.
 
 /**
- * Expressive Icon Button - Filled style with icon and text
- *
- * Common pattern for media actions
+ * Filled button convenience wrapper with leading icon and label.
  *
  * @param text Button text
  * @param icon Icon to display
@@ -292,9 +290,7 @@ fun ExpressiveIconButton(
 }
 
 /**
- * Expressive Play Button - Pre-styled for video/audio playback
- *
- * Prominent filled button optimized for play actions
+ * Pre-styled play-action button built on the shared filled button wrapper.
  *
  * @param onClick Called when button is clicked
  * @param modifier Modifier for the button
@@ -332,9 +328,7 @@ fun ExpressivePlayButton(
 }
 
 /**
- * Expressive More Info Button - Pre-styled for detail/info actions
- *
- * Tonal button optimized for navigating to details
+ * Pre-styled info button built on the shared tonal button wrapper.
  *
  * @param onClick Called when button is clicked
  * @param modifier Modifier for the button

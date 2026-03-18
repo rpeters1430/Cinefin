@@ -3,6 +3,7 @@ package com.rpeters.jellyfin.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -68,19 +70,40 @@ fun UnwatchedEpisodeCountBadge(
             } else {
                 "$totalEpisodes total episode${if (totalEpisodes != 1) "s" else ""}"
             }
+            val isCompactCircle = text.length <= 2
 
             Badge(
-                modifier = modifier.semantics {
-                    contentDescription = accessibilityLabel
-                    role = Role.Image
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+                modifier = modifier,
+                containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                contentColor = androidx.compose.ui.graphics.Color.Unspecified,
             ) {
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                )
+                Surface(
+                    modifier = Modifier
+                        .semantics {
+                            contentDescription = accessibilityLabel
+                            role = Role.Image
+                        }
+                        .then(
+                            if (isCompactCircle) {
+                                Modifier.size(28.dp)
+                            } else {
+                                Modifier.defaultMinSize(minWidth = 28.dp, minHeight = 28.dp)
+                            },
+                        ),
+                    shape = if (isCompactCircle) CircleShape else RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ) {
+                    Box(
+                        modifier = Modifier.padding(horizontal = if (isCompactCircle) 0.dp else 8.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        )
+                    }
+                }
             }
         }
     }

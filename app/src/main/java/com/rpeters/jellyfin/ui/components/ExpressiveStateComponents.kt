@@ -34,19 +34,11 @@ import com.rpeters.jellyfin.R
 import com.rpeters.jellyfin.ui.theme.MotionTokens
 
 /**
- * Material 3 Expressive State Components
- *
- * Shared components for displaying error and empty states with consistent styling.
+ * Shared state components for displaying error and empty states with consistent app styling.
  */
 
 /**
- * Expressive Error State component with elevated card styling
- *
- * @param title Error title text
- * @param message Error message describing what went wrong
- * @param icon Icon to display (defaults to same as other screens for consistency)
- * @param onRetry Callback when retry button is clicked
- * @param modifier Optional modifier
+ * Error state component built from shared button wrappers and official Material 3 card primitives.
  */
 @OptInAppExperimentalApis
 @Composable
@@ -111,12 +103,7 @@ fun ExpressiveErrorState(
 }
 
 /**
- * Simplified Expressive Error State with default title
- *
- * @param message Error message describing what went wrong
- * @param icon Icon to display
- * @param onRetry Callback when retry button is clicked
- * @param modifier Optional modifier
+ * Simplified error state variant with default title text.
  */
 @OptInAppExperimentalApis
 @Composable

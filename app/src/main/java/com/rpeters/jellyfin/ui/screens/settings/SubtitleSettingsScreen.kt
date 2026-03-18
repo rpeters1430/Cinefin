@@ -45,7 +45,8 @@ import com.rpeters.jellyfin.ui.theme.SubtitlePreviewGradientStart
 import com.rpeters.jellyfin.ui.viewmodel.SubtitleAppearancePreferencesViewModel
 
 /**
- * Enhanced Subtitle Settings screen with live preview and modern Material 3 Expressive UI.
+ * Subtitle settings screen with live preview, built from standard Material 3 components and shared
+ * app wrappers.
  */
 @OptInAppExperimentalApis
 @Composable
