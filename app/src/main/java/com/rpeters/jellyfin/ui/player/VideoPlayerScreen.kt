@@ -108,8 +108,14 @@ fun VideoPlayerScreen(
     val playerColors = rememberVideoPlayerColors()
     var controlsVisible by remember { mutableStateOf(true) }
     var showAudioDialog by remember { mutableStateOf(false) }
-    var showSubtitleDialog by remember { mutableStateOf(false) }
     var showQualityDialog by remember { mutableStateOf(false) }
+    val showPrimaryLoadingUi = remember(
+        playerState.isLoading,
+        playerState.currentPosition,
+        playerState.isPlaying,
+    ) {
+        playerState.isLoading && playerState.currentPosition <= 0L && !playerState.isPlaying
+    }
 
     // Gesture feedback states
     var showSeekFeedback by remember { mutableStateOf(false) }
@@ -163,10 +169,10 @@ fun VideoPlayerScreen(
             controlsVisible = false
         }
     }
-    LaunchedEffect(playerState.isPlaying, playerState.isLoading, currentPosMs) {
-        // Show controls when paused/stopped (not playing and not mid-seek buffering),
-        // or during initial load before playback begins (loading but not yet playing).
-        if (!playerState.isPlaying && (!playerState.isLoading || currentPosMs == 0L)) {
+    LaunchedEffect(playerState.isPlaying, showPrimaryLoadingUi) {
+        // Keep controls visible whenever playback is paused/stopped, and during the initial
+        // startup buffer before the first frame is rendered.
+        if (!playerState.isPlaying || showPrimaryLoadingUi) {
             controlsVisible = true
         }
     }
@@ -295,13 +301,14 @@ fun VideoPlayerScreen(
 
             ExpressiveVideoControls(
                 playerState = playerState,
+                showPrimaryLoadingUi = showPrimaryLoadingUi,
                 onPlayPause = onPlayPause,
                 onSeek = onSeek,
                 onSeekBy = { delta -> onSeek((playerState.currentPosition + delta).coerceIn(0L, playerState.duration)) },
                 onQualityClick = { showQualityDialog = true },
                 onAudioClick = { showAudioDialog = true },
                 onCastClick = onCastClick,
-                onSubtitlesClick = { showSubtitleDialog = true },
+                onSubtitlesClick = onSubtitlesClick,
                 onAspectRatioChange = onAspectRatioChange,
                 onPlaybackSpeedChange = onPlaybackSpeedChange,
                 onBackClick = onClose,
@@ -328,12 +335,12 @@ fun VideoPlayerScreen(
             )
         }
 
-        if (showSubtitleDialog) {
+        if (playerState.showSubtitleDialog) {
             SubtitleTrackSelectionDialog(
                 availableTracks = playerState.availableSubtitleTracks,
                 selectedTrack = playerState.selectedSubtitleTrack,
                 onTrackSelect = onSubtitleTrackSelect,
-                onDismiss = { showSubtitleDialog = false },
+                onDismiss = onSubtitleDialogDismiss,
             )
         }
 

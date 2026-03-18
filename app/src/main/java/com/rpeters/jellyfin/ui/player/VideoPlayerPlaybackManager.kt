@@ -141,6 +141,12 @@ class VideoPlayerPlaybackManager @Inject constructor(
         mediaSourceIdHint: String? = null,
         scope: CoroutineScope
     ) {
+        hasAttemptedTranscodingFallback = false
+        hasAttemptedOfflineFallback = false
+        savedPositionBeforeFlush = null
+        wasBufferingBeforeReady = false
+        positionRestoreAttempts = 0
+        lastRestoreAttemptTime = 0L
         currentPreparedSubtitleSpecs = sideLoadedSubs
         currentPreparedMediaSourceId = mediaSourceIdHint
         currentPlaybackSessionId = null
@@ -176,6 +182,7 @@ class VideoPlayerPlaybackManager @Inject constructor(
             isDirectPlaying = false,
             isDirectStreaming = false,
             isTranscoding = false,
+            transcodingReason = null,
             playbackMethod = "Offline",
             duration = if (initialDuration > 0) initialDuration else it.duration
         ) }
@@ -242,6 +249,7 @@ class VideoPlayerPlaybackManager @Inject constructor(
             isDirectPlaying = true,
             isDirectStreaming = false,
             isTranscoding = false,
+            transcodingReason = null,
             playbackMethod = "Direct Play"
         ) }
         currentPlaybackSessionId = result.playSessionId ?: UUID.randomUUID().toString()

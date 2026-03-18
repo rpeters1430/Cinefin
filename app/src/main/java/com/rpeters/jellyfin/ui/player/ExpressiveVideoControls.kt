@@ -77,6 +77,7 @@ import com.rpeters.jellyfin.ui.theme.MotionTokens
 @Composable
 fun ExpressiveVideoControls(
     playerState: VideoPlayerState,
+    showPrimaryLoadingUi: Boolean,
     onPlayPause: () -> Unit,
     onSeek: (Long) -> Unit,
     onSeekBy: (Long) -> Unit,
@@ -130,6 +131,7 @@ fun ExpressiveVideoControls(
                 // Bottom Progress and Controls (now includes play button and all controls)
                 ExpressiveBottomControls(
                     playerState = playerState,
+                    showPrimaryLoadingUi = showPrimaryLoadingUi,
                     onSeek = onSeek,
                     onPlayPause = onPlayPause,
                     onAudioClick = onAudioClick,
@@ -294,6 +296,7 @@ private fun ExpressiveTopControls(
 @Composable
 private fun ExpressiveBottomControls(
     playerState: VideoPlayerState,
+    showPrimaryLoadingUi: Boolean,
     onSeek: (Long) -> Unit,
     onPlayPause: () -> Unit,
     onAudioClick: () -> Unit,
@@ -390,7 +393,7 @@ private fun ExpressiveBottomControls(
                                 icon = if (playing) Icons.Default.Pause else Icons.Default.PlayArrow,
                                 contentDescription = if (playing) "Pause" else "Play",
                                 onClick = onPlayPause,
-                                isLoading = playerState.isLoading,
+                                isLoading = showPrimaryLoadingUi,
                             )
                         }
 

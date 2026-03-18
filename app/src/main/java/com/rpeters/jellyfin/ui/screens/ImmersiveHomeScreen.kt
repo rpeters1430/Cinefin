@@ -458,7 +458,7 @@ private fun ImmersiveHomeContent(
                         getImageUrl = getImageUrl,
                         onItemClick = stableOnItemClick,
                         onItemLongPress = stableOnItemLongPress,
-                        size = ImmersiveCardSize.MEDIUM,
+                        size = ImmersiveCardSize.SMALL,
                     )
                 }
             }
@@ -472,7 +472,7 @@ private fun ImmersiveHomeContent(
                         getImageUrl = { getSeriesImageUrl(it) ?: getImageUrl(it) },
                         onItemClick = stableOnItemClick,
                         onItemLongPress = stableOnItemLongPress,
-                        size = ImmersiveCardSize.MEDIUM,
+                        size = ImmersiveCardSize.SMALL,
                     )
                 }
             }
@@ -486,7 +486,7 @@ private fun ImmersiveHomeContent(
                         getImageUrl = getImageUrl,
                         onItemClick = stableOnItemClick,
                         onItemLongPress = stableOnItemLongPress,
-                        size = ImmersiveCardSize.MEDIUM,
+                        size = ImmersiveCardSize.SMALL,
                     )
                 }
             }
@@ -500,7 +500,7 @@ private fun ImmersiveHomeContent(
                         getImageUrl = getImageUrl,
                         onItemClick = stableOnItemClick,
                         onItemLongPress = stableOnItemLongPress,
-                        size = ImmersiveCardSize.MEDIUM,
+                        size = ImmersiveCardSize.SMALL,
                     )
                 }
             }
@@ -511,10 +511,10 @@ private fun ImmersiveHomeContent(
                     ImmersiveMediaRow(
                         title = stringResource(id = R.string.home_recently_added_stuff),
                         items = contentLists.recentVideos,
-                        getImageUrl = getImageUrl, // Use poster image for vertical cards
+                        getImageUrl = getImageUrl,
                         onItemClick = stableOnItemClick,
                         onItemLongPress = stableOnItemLongPress,
-                        size = ImmersiveCardSize.MEDIUM, // ✅ Changed to MEDIUM for vertical cards
+                        size = ImmersiveCardSize.SMALL,
                     )
                 }
             }

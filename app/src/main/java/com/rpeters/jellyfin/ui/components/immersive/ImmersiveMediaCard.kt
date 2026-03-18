@@ -24,7 +24,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.material3.Badge
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -275,14 +275,18 @@ private fun ImmersiveCardContent(
 
             // Watch status on the right
             if (unwatchedEpisodeCount != null && unwatchedEpisodeCount > 0) {
-                Badge(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.primary,
                 ) {
                     val countText = if (unwatchedEpisodeCount > 99) "99+" else unwatchedEpisodeCount.toString()
                     Text(
                         text = countText,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier
+                            .defaultMinSize(minWidth = 32.dp, minHeight = 32.dp)
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
                     )
                 }
             } else if (isWatched) {

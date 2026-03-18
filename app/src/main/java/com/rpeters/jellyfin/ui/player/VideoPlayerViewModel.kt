@@ -155,7 +155,25 @@ class VideoPlayerViewModel @Inject constructor(
                 itemId = itemId,
                 itemName = itemName,
                 isLoading = true,
+                isPlaying = false,
+                currentPosition = 0L,
+                duration = 0L,
+                bufferedPosition = 0L,
+                hasEnded = false,
                 error = null,
+                videoWidth = 0,
+                videoHeight = 0,
+                isHdrContent = false,
+                isDirectPlaying = false,
+                isDirectStreaming = false,
+                isTranscoding = false,
+                transcodingReason = null,
+                playbackMethod = "Unknown",
+                availableAudioTracks = emptyList(),
+                selectedAudioTrack = null,
+                availableSubtitleTracks = emptyList(),
+                selectedSubtitleTrack = null,
+                showSubtitleDialog = false,
                 qualityRecommendation = null,
                 nextEpisode = null,
                 showNextEpisodeCountdown = false,
@@ -351,6 +369,7 @@ class VideoPlayerViewModel @Inject constructor(
             .clearOverridesOfType(androidx.media3.common.C.TRACK_TYPE_AUDIO)
             .addOverride(override)
             .build()
+        stateManager.updateState { it.copy(selectedAudioTrack = track) }
     }
 
     fun selectSubtitleTrack(track: TrackInfo?) {
@@ -381,6 +400,12 @@ class VideoPlayerViewModel @Inject constructor(
             builder.setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_TEXT, false).addOverride(override)
         }
         player.trackSelectionParameters = builder.build()
+        stateManager.updateState {
+            it.copy(
+                selectedSubtitleTrack = track,
+                showSubtitleDialog = false,
+            )
+        }
     }
 
     fun acceptQualityRecommendation() {
