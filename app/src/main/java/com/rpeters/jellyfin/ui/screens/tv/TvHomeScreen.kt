@@ -64,6 +64,7 @@ fun TvHomeScreen(
     onPlay: (itemId: String, itemName: String, startMs: Long) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
+    screenKey: String = "tv_home",
 ) {
     val appState by viewModel.appState.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -129,7 +130,7 @@ fun TvHomeScreen(
     )
 
     TvScreenFocusScope(
-        screenKey = "tv_home",
+        screenKey = screenKey,
         focusManager = tvFocusManager,
     ) {
         Box(

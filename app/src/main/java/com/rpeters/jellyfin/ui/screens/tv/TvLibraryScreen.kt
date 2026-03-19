@@ -59,6 +59,7 @@ fun TvLibraryScreen(
     onSearch: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     viewModel: MainAppViewModel = hiltViewModel(),
+    screenKey: String = libraryId?.let { "tv_library_$it" } ?: "tv_library_all",
 ) {
     val context = LocalContext.current
     val windowSizeClass = calculateWindowSizeClass(context as android.app.Activity)
@@ -136,7 +137,7 @@ fun TvLibraryScreen(
     }
 
     TvScreenFocusScope(
-        screenKey = "tv_library_${library?.id ?: libraryId ?: "all"}",
+        screenKey = screenKey,
         focusManager = focusManager,
     ) {
         Box(
@@ -214,7 +215,7 @@ fun TvLibraryScreen(
                     }
 
                     TvFocusableGrid(
-                        gridId = "library_${libraryId ?: "all"}",
+                        gridId = "${screenKey}_grid",
                         focusManager = focusManager,
                         lazyGridState = gridState,
                         itemCount = items.size,
