@@ -1,12 +1,25 @@
 # Cinefin TV Roadmap
 
-> Repo-ready planning document for the Android TV / Google TV experience in Cinefin.
+> Source-of-truth roadmap for the Android TV / Google TV experience in Cinefin.
 >
-> Purpose: turn the current TV mode into a polished, TV-first product with predictable D-pad behavior, strong focus restoration, premium browsing surfaces, and a dedicated playback experience.
+> This document replaces the older split between `ANDROID_TV_MODERNIZATION_PLAN.md`, `features/tv detail.md`, `TV_DETAIL_UPGRADES_REVIEW.md`, and `TV_SHOWS_SCREEN_IMPROVEMENTS.md` as the primary planning artifact to follow going forward.
 
 ---
 
-## Summary
+## Purpose
+
+Turn the current TV mode into a polished, TV-first product with:
+
+- predictable D-pad behavior
+- strong focus restoration
+- premium 10-foot browsing surfaces
+- clear route-specific library behavior
+- a dedicated TV playback experience
+- enough automated/manual validation to stop regressions from slipping back in
+
+---
+
+## Current truth snapshot
 
 Cinefin already has a real TV foundation in place:
 
@@ -14,86 +27,98 @@ Cinefin already has a real TV foundation in place:
 - `TvJellyfinApp` provides a dedicated TV shell
 - `TvNavGraph` defines TV routes
 - TV-specific screens already exist for home, library, details, search, settings, server connection, and quick connect
-- TV focus and remote helpers are already present
+- TV focus and remote helpers already exist
+- the older modernization plan claims the initial TV shell, navigation drawer, home hero patterns, detail screen, player shell, library, and search work have all landed
 
-This means the TV app is **past the prototype stage**. The remaining work is mostly about:
+### What is already substantially done
 
-1. tightening TV-specific architecture
-2. fixing D-pad/focus consistency
-3. making Home, Library, and Details feel premium on a 10-foot UI
-4. rebuilding playback chrome to be TV-first
-5. protecting the TV experience with tests
+These items were previously tracked as completed across the older TV plan and TV UI review docs and should be treated as **baseline shipped work**, not net-new roadmap items:
+
+- TV app shell and side navigation are in place
+- TV home already has immersive/hero concepts
+- TV library browsing already works
+- TV search already exists as a dedicated TV flow
+- TV detail screens already have a meaningful redesign foundation
+- TV player controls already have a dedicated TV implementation
+- TV Shows mobile/tablet expressive work was completed and reviewed separately
+- Android TV detail metadata work was completed and reviewed separately
+
+### What still appears incomplete or risky
+
+The older docs drifted toward over-reporting completion. Based on the repo planning set as a whole, the biggest remaining TV risks are still:
+
+- focus restoration consistency across drawer, rows, grids, details, search, and playback return
+- route-specific library polish for Movies / TV Shows / Music / Stuff / Favorites
+- TV details that feel premium across all content types, not just acceptable
+- playback return/orientation polish after exit and autoplay-next flows
+- real-device validation and regression coverage
+- documentation drift between roadmap, review, and implementation notes
+
+### Planning rule from this point forward
+
+Use the status markers below consistently:
+
+- ✅ **Done**: implemented and considered baseline behavior
+- 🔄 **In progress / partial**: exists, but still needs meaningful follow-up
+- ⏳ **Planned**: not started or not reliable enough to count as shipped quality
 
 ---
 
-## Current assessment
+## Consolidated status matrix
 
-### What is working
+| Area | Status | Notes |
+| :--- | :--- | :--- |
+| TV entry path and shell | ✅ Done | Dedicated TV app path and shell already exist. |
+| TV navigation drawer | ✅ Done | Navigation foundation is present. |
+| TV home immersive foundation | ✅ Done | Hero/background concepts exist; quality pass still needed. |
+| TV library browsing foundation | ✅ Done | Browsing works, but route-specific polish remains. |
+| TV search foundation | ✅ Done | Dedicated TV search flow exists. |
+| TV detail foundation | 🔄 Partial | Solid base exists; premium action/rail/focus polish still needed. |
+| TV playback overlay foundation | 🔄 Partial | Dedicated TV playback exists; remote-first chrome still needs refinement. |
+| Focus restoration and D-pad reliability | 🔄 Partial | Helpers exist, but this is still the highest-risk usability area. |
+| Route-specific TV library UX | 🔄 Partial | Works today, but several routes still feel generic. |
+| TV settings / sign-in polish | 🔄 Partial | Functional, but not fully refined for a 10-foot UI. |
+| Real-device validation | ⏳ Planned | Older docs marked this done too optimistically; treat as required work. |
+| TV automated testing coverage | ⏳ Planned | Needed to prevent regressions. |
 
-- Dedicated TV entry path exists
-- Dedicated TV navigation exists
-- Dedicated TV screens exist
-- Immersive TV home concepts already exist
-- Library browsing already works in TV mode
-- TV sign-in and quick connect already exist
-- There is already a reusable focus-memory system
+---
 
-### What still feels weak
+## Documents folded into this roadmap
 
-- TV still appears to share too much infrastructure and behavior with the mobile app
-- Some TV routes are still generic wrappers instead of truly content-specific surfaces
-- Focus restoration likely is not yet fully consistent across drawer, rows, grids, details, search, and playback return
-- Several screens work, but do not yet feel fully designed for a living-room / remote-first experience
-- Playback UI likely still needs a dedicated TV overlay pass rather than incremental reuse of mobile playback controls
+### `docs/plans/ANDROID_TV_MODERNIZATION_PLAN.md`
+Folded in as the historical record for the initial TV modernization push. Its completed phases now map to the “baseline shipped work” and “status matrix” sections above.
+
+### `docs/features/tv detail.md`
+Folded in as the original expressive upgrade plan for TV shows/detail surfaces. The actionable parts now live under the library/detail milestones below.
+
+### `docs/features/TV_DETAIL_UPGRADES_REVIEW.md`
+Folded in as implementation evidence that several TV-related UI upgrades are already complete. Those completed items now inform the status matrix instead of living as a separate planning track.
+
+### `docs/features/TV_SHOWS_SCREEN_IMPROVEMENTS.md`
+Folded in as a completed implementation summary for the TV shows browse experience. It is reference material, not an active roadmap.
 
 ---
 
 ## Roadmap priorities
 
-1. TV architecture cleanup
-2. Focus and D-pad reliability
+1. Focus and D-pad reliability
+2. TV architecture cleanup where it improves maintainability
 3. Home screen polish
-4. Library browsing polish
-5. Detail screen redesign
+4. Route-specific library browsing polish
+5. Detail screen redesign completion
 6. Search / settings / sign-in polish
-7. TV playback overlay
+7. TV playback overlay refinement
 8. TV UI tests and device validation
 
 ---
 
-## Milestone 1 — TV architecture cleanup
-
-### Goal
-Create a clearer TV-only presentation layer so TV stops inheriting mobile design and navigation assumptions.
-
-### Tasks
-- [ ] Create a clearer package boundary for TV-only code
-- [ ] Move TV helpers into a more consistent namespace
-- [ ] Audit TV screens for accidental mobile-only UI dependencies
-- [ ] Keep data/domain/viewmodel shared, but isolate TV presentation decisions
-- [ ] Create a dedicated `CinefinTvTheme` if one does not already exist in a clean form
-- [ ] Define TV-specific design tokens for spacing, typography, focus glow, scale, gutters, and content width
-- [ ] Review whether TV should continue sharing the same launcher/activity path as mobile
-- [ ] Re-evaluate whether Leanback support should remain optional for the current build strategy
-
-### Suggested file targets
-- `app/src/main/java/com/rpeters/jellyfin/MainActivity.kt`
-- `app/src/main/java/com/rpeters/jellyfin/ui/tv/TvJellyfinApp.kt`
-- `app/src/main/java/com/rpeters/jellyfin/ui/tv/TvNavGraph.kt`
-- `app/src/main/java/com/rpeters/jellyfin/ui/theme/*`
-- `app/src/main/AndroidManifest.xml`
-
-### Definition of done
-- TV code is easier to follow
-- TV presentation is no longer accidentally driven by mobile assumptions
-- Theme and layout decisions for TV are explicit rather than incidental
-
----
-
-## Milestone 2 — Focus, D-pad, and restoration
+## Milestone 1 — Focus, D-pad, and restoration
 
 ### Goal
 Make navigation on TV reliable and predictable on every screen.
+
+### Why this moved to the top
+The repo already has a lot of TV UI in place. The biggest remaining reason the experience can still feel “wonky” is focus inconsistency, not lack of screens.
 
 ### Screen-level contract to define everywhere
 Each TV screen should define:
@@ -136,10 +161,37 @@ Each TV screen should define:
 
 ---
 
+## Milestone 2 — TV architecture cleanup
+
+### Goal
+Create a clearer TV-only presentation layer so TV stops inheriting mobile design and navigation assumptions where that causes friction.
+
+### Tasks
+- [ ] Create a clearer package boundary for TV-only code
+- [ ] Move TV helpers into a more consistent namespace
+- [ ] Audit TV screens for accidental mobile-only UI dependencies
+- [ ] Keep data/domain/viewmodel shared, but isolate TV presentation decisions
+- [ ] Create a dedicated `CinefinTvTheme` if one does not already exist in a clean form
+- [ ] Define TV-specific design tokens for spacing, typography, focus glow, scale, gutters, and content width
+- [ ] Review whether TV should continue sharing the same launcher/activity path as mobile
+- [ ] Re-evaluate whether Leanback support should remain optional for the current build strategy
+
+### Definition of done
+- TV code is easier to follow
+- TV presentation is no longer accidentally driven by mobile assumptions
+- Theme and layout decisions for TV are explicit rather than incidental
+
+---
+
 ## Milestone 3 — Home screen polish
 
 ### Goal
 Make Home the flagship TV surface and the visual standard for the rest of the TV app.
+
+### Already landed
+- immersive/hero foundations
+- backdrop-driven browsing patterns
+- TV row infrastructure
 
 ### Tasks
 - [ ] Improve hero / featured item selection logic
@@ -152,11 +204,6 @@ Make Home the flagship TV surface and the visual standard for the rest of the TV
 - [ ] Audit recomposition hotspots caused by focus and backdrop changes
 - [ ] Prefetch nearby hero and backdrop images to reduce jank
 
-### Suggested file targets
-- `app/src/main/java/com/rpeters/jellyfin/ui/screens/tv/TvHomeScreen.kt`
-- `app/src/main/java/com/rpeters/jellyfin/ui/tv/components/*`
-- any shared image-loading / artwork helpers used by TV home
-
 ### Definition of done
 - Home feels cinematic and intentional
 - Moving through rows feels smooth
@@ -164,10 +211,15 @@ Make Home the flagship TV surface and the visual standard for the rest of the TV
 
 ---
 
-## Milestone 4 — Library browsing polish
+## Milestone 4 — Route-specific library browsing polish
 
 ### Goal
 Turn Movies, TV Shows, Music, Stuff, and Favorites into purpose-built TV destinations instead of one generic grid with minor route differences.
+
+### Already landed
+- TV library browsing works
+- TV shows browse/detail-related expressive work was heavily upgraded in the non-TV phone/tablet surfaces and reviewed
+- Android TV already has dedicated browse routes and card infrastructure
 
 ### Tasks
 - [ ] Define route-specific behavior for Movies, TV Shows, Music, Stuff, and Favorites
@@ -180,11 +232,6 @@ Turn Movies, TV Shows, Music, Stuff, and Favorites into purpose-built TV destina
 - [ ] Prevent focus jumps while more items append
 - [ ] Preserve exact focus position after entering/exiting details
 
-### Suggested file targets
-- `app/src/main/java/com/rpeters/jellyfin/ui/screens/tv/TvLibraryScreen.kt`
-- `app/src/main/java/com/rpeters/jellyfin/ui/tv/TvNavGraph.kt`
-- TV grid/card/focus helper components
-
 ### Definition of done
 - Each library route feels intentional
 - Large libraries remain comfortable to browse with a remote
@@ -192,25 +239,28 @@ Turn Movies, TV Shows, Music, Stuff, and Favorites into purpose-built TV destina
 
 ---
 
-## Milestone 5 — Detail screen redesign
+## Milestone 5 — Detail screen redesign completion
 
 ### Goal
-Make TV details feel like a premium streaming app surface.
+Make TV details feel like a premium streaming app surface across movie, series, season, episode, and home-video flows.
+
+### Already landed
+- Android TV detail screens use `androidx.tv.material3`
+- richer metadata work has already been implemented and reviewed
+- TV shows/seasons/episodes have already seen expressive design improvements outside the TV-specific surface
+
+### Corrective note from the older docs
+The old modernization plan marked detail work as fully done, while the roadmap still had major redesign items open. The most accurate interpretation is: **the foundation is implemented, but the premium polish pass is still incomplete**.
 
 ### Tasks
-- [ ] Build a TV-first detail template with backdrop, logo/title area, metadata row, actions row, overview, and related rails
-- [ ] Support content-type variants for movie, series, season, and episode
+- [ ] Build or finalize a TV-first detail template with backdrop, logo/title area, metadata row, actions row, overview, and related rails
+- [ ] Support content-type variants for movie, series, season, episode, and home video
 - [ ] Standardize primary action order: Play/Resume, Play from Beginning, Next Episode, Favorite, Watched, Audio/Subtitles, More
 - [ ] Make resume progress obvious and useful
 - [ ] Set dynamic default focus to the most useful action
 - [ ] Add rails for seasons, episodes, related titles, cast, and next-up content where available
 - [ ] Preserve focus correctly between actions and nested rails
 - [ ] Improve transition flow from library/home → detail and between series → season → episode levels
-
-### Suggested file targets
-- `app/src/main/java/com/rpeters/jellyfin/ui/screens/tv/TvItemDetailScreen.kt`
-- TV detail action/rail components
-- related metadata or item mapping helpers if needed
 
 ### Definition of done
 - Details feel premium rather than utilitarian
@@ -219,10 +269,10 @@ Make TV details feel like a premium streaming app surface.
 
 ---
 
-## Milestone 6 — Search, settings, and sign-in polish
+## Milestone 6 — Search, settings, sign-in, and support flows
 
 ### Goal
-Make all supporting flows feel designed specifically for TV.
+Make all supporting flows feel designed specifically for TV rather than simply functional.
 
 ### Search tasks
 - [ ] Improve D-pad-first search flow
@@ -234,46 +284,38 @@ Make all supporting flows feel designed specifically for TV.
 ### Settings tasks
 - [ ] Rework settings into a TV-friendly settings hub
 - [ ] Group settings into clear categories such as Account, Playback, Audio/Subtitles, Appearance, Diagnostics
-- [ ] Improve focus and selected state affordances for rows, toggles, and list options
+- [ ] Improve focus and selected-state affordances for rows, toggles, and list options
 
-### Sign-in / quick connect tasks
+### Sign-in / quick connect / connection tasks
 - [ ] Improve visual hierarchy on server connection
-- [ ] Improve validation and auth failure recovery
-- [ ] Confirm quick connect survives recomposition / lifecycle changes cleanly
-- [ ] Confirm post-login focus lands in the right place
-
-### Suggested file targets
-- `app/src/main/java/com/rpeters/jellyfin/ui/screens/tv/TvSearchScreen.kt`
-- `app/src/main/java/com/rpeters/jellyfin/ui/screens/tv/TvSettingsScreen.kt`
-- `app/src/main/java/com/rpeters/jellyfin/ui/screens/tv/TvServerConnectionScreen.kt`
-- `app/src/main/java/com/rpeters/jellyfin/ui/screens/tv/TvQuickConnectScreen.kt`
+- [ ] Improve quick connect readability from typical couch distance
+- [ ] Verify polling, timeout, retry, and error states
+- [ ] Preserve readable 10-foot layout at all times
 
 ### Definition of done
-- Search is comfortable using only a remote
-- Settings feel native to TV
-- Sign-in and quick connect feel polished and resilient
+- Support flows feel intentional on a remote
+- New users can sign in without confusion
+- Settings are comfortable to browse on a TV
 
 ---
 
-## Milestone 7 — TV playback overlay
+## Milestone 7 — TV playback overlay refinement
 
 ### Goal
 Keep the playback engine stable, but rebuild playback chrome so it is truly remote-first.
 
+### Corrective note from the older docs
+The older modernization plan marked the player as done. Treat that as “dedicated TV player shell exists,” not “final polish is complete.”
+
 ### Tasks
 - [ ] Keep playback internals as-is unless there is a specific bug requiring deeper work
-- [ ] Build a TV-first overlay with large focusable transport controls
+- [ ] Build or refine a TV-first overlay with large focusable transport controls
 - [ ] Add clearly focusable controls for play/pause, seek, timeline, subtitles, audio, speed, next episode, and more actions where supported
 - [ ] Add an Up Next panel
 - [ ] Make resume / continue progress obvious
 - [ ] Ensure exiting playback restores focus to the launching item
 - [ ] Ensure autoplay-next integrates properly with TV details and home rows
 - [ ] Verify remote keys in playback on real devices
-
-### Suggested file targets
-- TV player screen / overlay files in the project
-- any player controls UI used by TV mode
-- navigation return logic related to player exit
 
 ### Definition of done
 - Playback controls feel designed for TV rather than adapted from touch UI
@@ -293,11 +335,7 @@ Protect the TV experience from regressions as the UI evolves.
 - [ ] Validate on emulator and at least one real TV / Google TV device
 - [ ] Validate on 1080p and 4K
 - [ ] Validate with simple remotes and keyboard-enabled remotes where possible
-
-### Suggested file targets
-- `app/src/androidTest/...`
-- test helpers for TV focus/nav behavior
-- CI workflow files if TV test automation is added later
+- [ ] Capture a repeatable manual QA checklist and link it from this roadmap
 
 ### Definition of done
 - TV regressions are caught earlier
@@ -367,8 +405,8 @@ Protect the TV experience from regressions as the UI evolves.
 ## Suggested sprint order
 
 ### Sprint 1
-- [ ] Milestone 1 — architecture cleanup
-- [ ] Milestone 2 — focus contracts and restoration
+- [ ] Milestone 1 — focus contracts and restoration
+- [ ] Milestone 2 — architecture cleanup
 - [ ] Home screen focus/restore fixes
 
 ### Sprint 2
@@ -377,12 +415,12 @@ Protect the TV experience from regressions as the UI evolves.
 - [ ] Library restore/pagination polish
 
 ### Sprint 3
-- [ ] Detail screen redesign
+- [ ] Detail screen redesign completion
 - [ ] Search polish
-- [ ] Settings polish
+- [ ] Settings/sign-in polish
 
 ### Sprint 4
-- [ ] TV playback overlay
+- [ ] TV playback overlay refinement
 - [ ] TV UI tests
 - [ ] Device validation pass
 
@@ -400,6 +438,7 @@ The TV app can be considered stable when:
 - detail pages feel like a streaming app, not a utility screen
 - search and sign-in are comfortable with only a remote
 - playback controls are clearly TV-first
+- emulator and real-device QA both pass a shared checklist
 
 ---
 

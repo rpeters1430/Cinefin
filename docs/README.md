@@ -21,6 +21,7 @@ Welcome to the central documentation repository for the Jellyfin Android client.
 - [Transcoding Diagnostics Guide](features/TRANSCODING_DIAGNOSTICS_GUIDE.md)
 - [Transcoding Fix Diagram](features/TRANSCODING_FIX_DIAGRAM.md)
 - [Transcoding Fix Summary](features/TRANSCODING_FIX_SUMMARY.md)
+- [TV Roadmap](plans/TV_ROADMAP.md)
 - [TV Detail Upgrades Review](features/TV_DETAIL_UPGRADES_REVIEW.md)
 - [TV Shows Screen Improvements](features/TV_SHOWS_SCREEN_IMPROVEMENTS.md)
 
@@ -28,6 +29,7 @@ Welcome to the central documentation repository for the Jellyfin Android client.
 *Milestones, session summaries, and the path forward.*
 
 - [Roadmap](plans/ROADMAP.md)
+- [TV Roadmap](plans/TV_ROADMAP.md)
 - [Current Status](plans/CURRENT_STATUS.md)
 - [Phase 2 Completion Summary](plans/PHASE_2_COMPLETION_SUMMARY.md)
 - [Phase 3 Progress](plans/PHASE_3_PROGRESS.md)
